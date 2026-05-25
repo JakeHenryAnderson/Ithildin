@@ -31,6 +31,7 @@ rules:
     )
     return Settings(
         admin_token=token,
+        audit_log_path=tmp_path / "audit.jsonl",
         db_path=tmp_path / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
         policy_path=policy_path,

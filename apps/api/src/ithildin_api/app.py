@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import Depends, FastAPI
+from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
 from ithildin_schemas import JsonObject
 
@@ -27,6 +28,9 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         configure_logging(resolved_settings.log_level)
         app_instance.state.settings = resolved_settings
         initialize_database(resolved_settings.db_path)
+        audit_writer = AuditWriter(resolved_settings.db_path, resolved_settings.audit_log_path)
+        audit_writer.initialize()
+        app_instance.state.audit_writer = audit_writer
         app_instance.state.registry = ToolRegistry.load(resolved_settings.manifest_dir)
         app_instance.state.policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
         logging.getLogger(__name__).info("api service started")

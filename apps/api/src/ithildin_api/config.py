@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     )
 
     admin_token: str = Field(min_length=1)
+    audit_log_path: Path = Path("var/logs/audit.jsonl")
     db_path: Path = Path("var/db/ithildin.sqlite3")
     manifest_dir: Path = Path("tool-manifests")
     policy_path: Path = Path("policies/default.yaml")

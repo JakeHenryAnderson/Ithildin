@@ -47,3 +47,10 @@ def test_policy_public_exports() -> None:
 
     for exported_name in ["PolicyDocument", "PolicyError", "PolicyEvaluator", "PolicyRule"]:
         assert hasattr(policy_package, exported_name)
+
+
+def test_audit_public_exports() -> None:
+    audit_package = importlib.import_module("ithildin_audit_core")
+
+    for exported_name in ["AuditWriteError", "AuditWriter"]:
+        assert hasattr(audit_package, exported_name)
