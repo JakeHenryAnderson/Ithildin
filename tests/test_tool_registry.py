@@ -110,6 +110,8 @@ def test_committed_read_tool_manifests_load() -> None:
 
     assert [tool.manifest.name for tool in registry.list_tools()] == [
         "fs.list",
+        "fs.patch.apply",
+        "fs.patch.propose",
         "fs.read",
         "fs.search",
         "fs.stat",

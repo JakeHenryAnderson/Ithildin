@@ -66,5 +66,12 @@ def test_mcp_public_exports() -> None:
 def test_api_public_exports() -> None:
     api_package = importlib.import_module("ithildin_api")
 
-    for exported_name in ["ReadToolExecutor", "Settings", "ToolRegistry", "create_app"]:
+    for exported_name in [
+        "PatchProposalService",
+        "PatchProposalStore",
+        "ReadToolExecutor",
+        "Settings",
+        "ToolRegistry",
+        "create_app",
+    ]:
         assert hasattr(api_package, exported_name)

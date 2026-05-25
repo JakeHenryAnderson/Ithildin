@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
 from ithildin_api.app import create_app
 from ithildin_api.config import Settings
 from ithildin_api.database import initialize_database
+from ithildin_api.patches import PatchProposalService
 from pydantic import ValidationError
 
 
@@ -217,6 +219,49 @@ input_schema:
         }
     ]
     assert response.json()["tools"][0]["manifest_hash"].startswith("sha256:")
+
+
+def test_patch_proposal_endpoints_require_authentication(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path))
+
+    with TestClient(app) as client:
+        response = client.get("/patch-proposals")
+
+    assert response.status_code == 401
+
+
+def test_patch_proposal_endpoints_return_metadata(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        patch_service = cast(PatchProposalService, app.state.patch_proposal_service)
+        proposal = patch_service.create_proposal(
+            request_id="req_1",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff="--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n",
+        )
+        list_response = client.get(
+            "/patch-proposals",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        get_response = client.get(
+            f"/patch-proposals/{proposal.proposal_id}",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        missing_response = client.get(
+            "/patch-proposals/patch_missing",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert list_response.status_code == 200
+    assert list_response.json()["patch_proposals"][0]["proposal_id"] == proposal.proposal_id
+    assert get_response.status_code == 200
+    assert get_response.json()["proposal_hash"] == proposal.proposal_hash
+    assert missing_response.status_code == 404
 
 
 def test_app_startup_fails_for_invalid_manifest(tmp_path: Path) -> None:

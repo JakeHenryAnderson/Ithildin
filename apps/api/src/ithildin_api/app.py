@@ -24,6 +24,7 @@ from ithildin_api.auth import require_admin_token
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.logging import configure_logging
+from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 
@@ -49,11 +50,19 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         )
         app_instance.state.registry = ToolRegistry.load(resolved_settings.manifest_dir)
         app_instance.state.policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
-        app_instance.state.read_tool_executor = ReadToolExecutor.from_settings(
+        read_tool_executor = ReadToolExecutor.from_settings(
             workspace_root=resolved_settings.workspace_root,
             max_read_bytes=resolved_settings.max_read_bytes,
             search_result_limit=resolved_settings.search_result_limit,
             git_log_limit=resolved_settings.git_log_limit,
+        )
+        app_instance.state.read_tool_executor = read_tool_executor
+        patch_store = PatchProposalStore(resolved_settings.db_path)
+        patch_store.initialize()
+        app_instance.state.patch_proposal_service = PatchProposalService(
+            patch_store,
+            read_tool_executor.filesystem,
+            resolved_settings.max_patch_bytes,
         )
         logging.getLogger(__name__).info("api service started")
         yield
@@ -73,6 +82,20 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         registry = api.state.registry
         tools = [tool.summary() for tool in registry.list_tools(principal=principal)]
         return {"tools": tools}
+
+    @api.get("/patch-proposals", dependencies=[Depends(require_admin_token)])
+    def list_patch_proposals() -> dict[str, list[JsonObject]]:
+        patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
+        proposals = [proposal.summary() for proposal in patch_service.list_proposals()]
+        return {"patch_proposals": proposals}
+
+    @api.get("/patch-proposals/{proposal_id}", dependencies=[Depends(require_admin_token)])
+    def get_patch_proposal(proposal_id: str) -> JsonObject:
+        patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
+        try:
+            return patch_service.get_proposal(proposal_id).summary()
+        except PatchProposalError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @api.post("/approvals", dependencies=[Depends(require_admin_token)])
     def create_approval(payload: CreateApprovalPayload) -> ApprovalRequest:

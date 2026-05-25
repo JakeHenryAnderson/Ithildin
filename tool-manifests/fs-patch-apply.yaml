@@ -1,0 +1,25 @@
+name: fs.patch.apply
+version: 0.1.0
+title: Apply an approved workspace patch
+risk: write
+category: filesystem
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: false
+input_schema:
+  type: object
+  additionalProperties: false
+  oneOf:
+    - required:
+        - proposal_id
+      properties:
+        proposal_id:
+          type: string
+          pattern: "^patch_[0-9a-f]+$"
+    - required:
+        - approval_id
+      properties:
+        approval_id:
+          type: string
+          pattern: "^appr_[0-9a-f]+$"

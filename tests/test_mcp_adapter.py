@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
@@ -30,6 +31,14 @@ rules:
     reason: reads allowed
     match:
       tool.risk: read
+      resource.in_scope: true
+    obligations:
+      audit_level: full
+  - id: allow_write_proposals
+    decision: allow
+    reason: proposals allowed
+    match:
+      tool.risk: write-proposal
       resource.in_scope: true
     obligations:
       audit_level: full
@@ -62,10 +71,35 @@ input_schema:
     )
 
 
+def write_patch_propose_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("fs-patch-propose.yaml").write_text(
+        """
+name: fs.patch.propose
+version: 1.0.0
+title: Propose patch
+risk: write-proposal
+category: test
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["path", "unified_diff"]
+  properties:
+    path:
+      type: string
+    unified_diff:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 def make_adapter(tmp_path: Path) -> IthildinMcpAdapter:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
     write_manifest(manifest_dir, "fs.apply_patch", "write")
+    write_patch_propose_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
         """
 name: internal.hidden
@@ -96,16 +130,24 @@ input_schema:
         default_expiry=timedelta(minutes=15),
     )
     registry = ToolRegistry.load(manifest_dir)
+    read_executor = ReadToolExecutor.from_settings(
+        workspace_root=workspace_root,
+        max_read_bytes=1024,
+        search_result_limit=10,
+        git_log_limit=10,
+    )
+    patch_store = PatchProposalStore(db_path)
+    patch_store.initialize()
     service = GovernedToolCallService(
         registry,
         PolicyEvaluator.load(policy_path),
         approval_service,
         audit_writer,
-        ReadToolExecutor.from_settings(
-            workspace_root=workspace_root,
-            max_read_bytes=1024,
-            search_result_limit=10,
-            git_log_limit=10,
+        read_executor,
+        PatchProposalService(
+            patch_store,
+            read_executor.filesystem,
+            max_patch_bytes=1024,
         ),
     )
     return IthildinMcpAdapter(registry=registry, tool_call_service=service)
@@ -116,7 +158,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
 
     tools = asyncio.run(adapter.list_tools())
 
-    assert [tool.name for tool in tools] == ["fs.apply_patch", "fs.read"]
+    assert [tool.name for tool in tools] == ["fs.apply_patch", "fs.patch.propose", "fs.read"]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
 
 
@@ -149,6 +191,25 @@ def test_mcp_call_returns_real_read_output(tmp_path: Path) -> None:
     assert result.structuredContent["status"] == "completed"
     assert result.structuredContent["content"] == "hello from mcp\n"
     assert result.structuredContent["byte_count"] == 15
+
+
+def test_mcp_call_returns_patch_proposal_metadata(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path)
+    unified_diff = "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-hello from mcp\n+changed\n"
+
+    result = asyncio.run(
+        adapter.call_tool(
+            "fs.patch.propose",
+            {"path": "README.md", "unified_diff": unified_diff},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert result.structuredContent["proposal_id"].startswith("patch_")
+    assert result.structuredContent["path"] == "README.md"
+    assert "unified_diff" not in result.structuredContent
 
 
 def test_mcp_call_unknown_tool_returns_safe_error(tmp_path: Path) -> None:

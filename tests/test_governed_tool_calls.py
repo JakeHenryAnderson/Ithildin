@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import cast
 
 from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
@@ -31,6 +32,14 @@ rules:
     reason: writes require approval
     match:
       tool.risk: write
+    obligations:
+      audit_level: full
+  - id: allow_write_proposals
+    decision: allow
+    reason: proposals allowed
+    match:
+      tool.risk: write-proposal
+      resource.in_scope: true
     obligations:
       audit_level: full
   - id: allow_reads
@@ -63,6 +72,31 @@ input_schema:
   required: ["{required}"]
   properties:
     {required}:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
+def write_patch_propose_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("fs-patch-propose.yaml").write_text(
+        """
+name: fs.patch.propose
+version: 1.0.0
+title: Propose patch
+risk: write-proposal
+category: test
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["path", "unified_diff"]
+  properties:
+    path:
+      type: string
+    unified_diff:
       type: string
 """,
         encoding="utf-8",
@@ -116,6 +150,38 @@ def make_read_service(tmp_path: Path) -> GovernedToolCallService:
             search_result_limit=10,
             git_log_limit=10,
         ),
+    )
+
+
+def make_patch_service(tmp_path: Path) -> GovernedToolCallService:
+    manifest_dir = tmp_path / "manifests"
+    write_patch_propose_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")
+    read_executor = ReadToolExecutor.from_settings(
+        workspace_root=workspace_root,
+        max_read_bytes=1024,
+        search_result_limit=10,
+        git_log_limit=10,
+    )
+    patch_store = PatchProposalStore(db_path)
+    patch_store.initialize()
+    return GovernedToolCallService(
+        ToolRegistry.load(manifest_dir),
+        PolicyEvaluator.load(policy_path),
+        approval_service,
+        audit_writer,
+        read_executor,
+        PatchProposalService(patch_store, read_executor.filesystem, max_patch_bytes=1024),
     )
 
 
@@ -231,6 +297,48 @@ def test_arbitrary_git_flags_are_rejected_by_manifest_schema(tmp_path: Path) -> 
     assert result.status == "denied"
     assert result.content == {"reason": "invalid tool arguments"}
     assert [payload["event_type"] for payload in audit_payloads(tmp_path)] == ["policy.evaluated"]
+
+
+def test_patch_proposal_runs_through_policy_and_audit(tmp_path: Path) -> None:
+    service = make_patch_service(tmp_path)
+    unified_diff = "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n"
+
+    result = service.call_tool(
+        tool_name="fs.patch.propose",
+        arguments={"path": "README.md", "unified_diff": unified_diff},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "completed"
+    assert result.content["proposal_id"]
+    assert result.content["path"] == "README.md"
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+
+
+def test_invalid_patch_proposal_is_audited_as_failed_execution(tmp_path: Path) -> None:
+    service = make_patch_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="fs.patch.propose",
+        arguments={"path": "../README.md", "unified_diff": "not a diff"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert result.is_error is True
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.failed",
+    ]
 
 
 def test_write_call_creates_approval_required_response(tmp_path: Path) -> None:

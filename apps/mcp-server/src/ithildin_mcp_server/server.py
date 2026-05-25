@@ -10,6 +10,7 @@ from typing import Any, cast
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
+from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
@@ -109,17 +110,26 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
     )
     registry = ToolRegistry.load(resolved_settings.manifest_dir)
     policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
+    read_tool_executor = ReadToolExecutor.from_settings(
+        workspace_root=resolved_settings.workspace_root,
+        max_read_bytes=resolved_settings.max_read_bytes,
+        search_result_limit=resolved_settings.search_result_limit,
+        git_log_limit=resolved_settings.git_log_limit,
+    )
+    patch_store = PatchProposalStore(resolved_settings.db_path)
+    patch_store.initialize()
+    patch_proposal_service = PatchProposalService(
+        patch_store,
+        read_tool_executor.filesystem,
+        resolved_settings.max_patch_bytes,
+    )
     tool_call_service = GovernedToolCallService(
         registry,
         policy_evaluator,
         approval_service,
         audit_writer,
-        ReadToolExecutor.from_settings(
-            workspace_root=resolved_settings.workspace_root,
-            max_read_bytes=resolved_settings.max_read_bytes,
-            search_result_limit=resolved_settings.search_result_limit,
-            git_log_limit=resolved_settings.git_log_limit,
-        ),
+        read_tool_executor,
+        patch_proposal_service,
     )
     return IthildinMcpAdapter(registry=registry, tool_call_service=tool_call_service)
 

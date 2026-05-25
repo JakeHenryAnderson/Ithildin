@@ -19,6 +19,7 @@ from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 
 from ithildin_api.approvals import ApprovalService, CreateApprovalInput
+from ithildin_api.patches import PATCH_PROPOSE_TOOL, PatchProposalError, PatchProposalService
 from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 
@@ -40,12 +41,14 @@ class GovernedToolCallService:
         approval_service: ApprovalService,
         audit_writer: AuditWriter,
         read_tool_executor: ReadToolExecutor | None = None,
+        patch_proposal_service: PatchProposalService | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
         self.approval_service = approval_service
         self.audit_writer = audit_writer
         self.read_tool_executor = read_tool_executor
+        self.patch_proposal_service = patch_proposal_service
 
     def call_tool(
         self,
@@ -159,6 +162,61 @@ class GovernedToolCallService:
                     "expires_at": approval.expires_at.isoformat(),
                     "policy_reason": policy_decision.reason,
                 },
+            )
+
+        if self.patch_proposal_service is not None and tool_name == PATCH_PROPOSE_TOOL:
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_STARTED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=request_hash,
+                metadata={"executor": "patch_proposal"},
+            )
+            try:
+                proposal = self.patch_proposal_service.create_proposal(
+                    request_id=request_id,
+                    principal=principal,
+                    path=_string_argument(arguments, "path"),
+                    unified_diff=_string_argument(arguments, "unified_diff"),
+                )
+            except PatchProposalError as exc:
+                self._audit_execution(
+                    event_type=AuditEventType.TOOL_EXECUTION_FAILED,
+                    request_id=request_id,
+                    principal=principal,
+                    tool_name=tool_name,
+                    resource=resource,
+                    input_hash=request_hash,
+                    metadata={"executor": "patch_proposal", "reason": exc.reason},
+                )
+                return GovernedToolCallResult(
+                    status="denied",
+                    request_id=request_id,
+                    tool_name=tool_name,
+                    content={"reason": exc.reason},
+                    is_error=True,
+                )
+
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=request_hash,
+                metadata={
+                    "executor": "patch_proposal",
+                    "proposal_id": proposal.proposal_id,
+                    "proposal_hash": proposal.proposal_hash,
+                },
+            )
+            return GovernedToolCallResult(
+                status="completed",
+                request_id=request_id,
+                tool_name=tool_name,
+                content=proposal.tool_result(),
             )
 
         if self.read_tool_executor is not None and self.read_tool_executor.supports(tool_name):
@@ -298,3 +356,10 @@ def _resource_from_arguments(arguments: JsonObject, risk: ToolRisk) -> JsonObjec
         resource["path"] = arguments["path"]
         resource["type"] = "file"
     return resource
+
+
+def _string_argument(arguments: JsonObject, name: str) -> str:
+    value = arguments.get(name)
+    if not isinstance(value, str):
+        raise PatchProposalError(f"{name} must be a string")
+    return value

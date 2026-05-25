@@ -1,0 +1,21 @@
+name: fs.patch.propose
+version: 0.1.0
+title: Propose a workspace patch
+risk: write-proposal
+category: filesystem
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: false
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+    - path
+    - unified_diff
+  properties:
+    path:
+      type: string
+    unified_diff:
+      type: string
+      minLength: 1

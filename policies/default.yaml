@@ -23,6 +23,16 @@ rules:
     obligations:
       audit_level: full
 
+  - id: allow_in_scope_patch_proposals
+    decision: allow
+    reason: Patch proposals may be reviewed without modifying files.
+    match:
+      tool.risk: write-proposal
+      resource.in_scope: true
+    obligations:
+      audit_level: full
+      max_execution_seconds: 30
+
   - id: require_approval_for_writes
     decision: require_approval
     reason: File writes require approval.
