@@ -5,11 +5,19 @@ description = "Local-first governed MCP/tool gateway for AI agents."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "fastapi>=0.128.8",
     "pydantic>=2,<3",
+    "pydantic-settings>=2.11.0",
+    "uvicorn>=0.39.0",
 ]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "mypy>=1.15.0",
     "pytest>=8.3.5",
     "ruff>=0.12.0",
@@ -34,6 +42,24 @@ target-version = "py39"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["UP045"]
+
+[tool.setuptools]
+packages = [
+    "ithildin_api",
+    "ithildin_audit_core",
+    "ithildin_mcp_server",
+    "ithildin_policy_core",
+    "ithildin_schemas",
+    "ithildin_tool_sdk",
+]
+
+[tool.setuptools.package-dir]
+ithildin_api = "apps/api/src/ithildin_api"
+ithildin_audit_core = "packages/audit-core/src/ithildin_audit_core"
+ithildin_mcp_server = "apps/mcp-server/src/ithildin_mcp_server"
+ithildin_policy_core = "packages/policy-core/src/ithildin_policy_core"
+ithildin_schemas = "packages/schemas/src/ithildin_schemas"
+ithildin_tool_sdk = "packages/tool-sdk/src/ithildin_tool_sdk"
 
 [tool.mypy]
 python_version = "3.9"

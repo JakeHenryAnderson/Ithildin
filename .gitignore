@@ -6,6 +6,7 @@ __pycache__/
 .venv/
 venv/
 *.pyc
+*.egg-info/
 
 # Node
 node_modules/
@@ -28,4 +29,3 @@ workspaces/*
 .DS_Store
 .idea/
 .vscode/
-
