@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     admin_token: str = Field(min_length=1)
     db_path: Path = Path("var/db/ithildin.sqlite3")
+    manifest_dir: Path = Path("tool-manifests")
     log_level: str = "INFO"
 
 

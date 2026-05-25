@@ -12,7 +12,13 @@ from pydantic import ValidationError
 
 
 def make_settings(tmp_path: Path, token: str = "test-admin-token") -> Settings:
-    return Settings(admin_token=token, db_path=tmp_path / "ithildin.sqlite3")
+    manifest_dir = tmp_path / "tool-manifests"
+    manifest_dir.mkdir()
+    return Settings(
+        admin_token=token,
+        db_path=tmp_path / "ithildin.sqlite3",
+        manifest_dir=manifest_dir,
+    )
 
 
 def test_healthz_returns_service_health(tmp_path: Path) -> None:
@@ -74,6 +80,81 @@ def test_admin_status_accepts_correct_bearer_token(tmp_path: Path) -> None:
         "service": "ithildin-api",
         "admin": "authenticated",
     }
+
+
+def test_tools_requires_authentication(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path))
+
+    with TestClient(app) as client:
+        response = client.get("/tools")
+
+    assert response.status_code == 401
+
+
+def test_tools_returns_empty_list_without_manifests(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path))
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/tools",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"tools": []}
+
+
+def test_tools_returns_manifest_summaries(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    (settings.manifest_dir / "fs-read.yaml").write_text(
+        """
+name: fs.read
+version: 1.0.0
+title: Read file
+risk: read
+category: filesystem
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  required: ["path"]
+  properties:
+    path:
+      type: string
+""",
+        encoding="utf-8",
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/tools?principal=agent:local-dev",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["tools"] == [
+        {
+            "name": "fs.read",
+            "version": "1.0.0",
+            "title": "Read file",
+            "risk": "read",
+            "category": "filesystem",
+            "manifest_hash": response.json()["tools"][0]["manifest_hash"],
+            "mcp": {"exposed": True},
+        }
+    ]
+    assert response.json()["tools"][0]["manifest_hash"].startswith("sha256:")
+
+
+def test_app_startup_fails_for_invalid_manifest(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    (settings.manifest_dir / "invalid.yaml").write_text("name: fs.read\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError):
+        with TestClient(app):
+            pass
 
 
 def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
