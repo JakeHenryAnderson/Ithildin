@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+*.pyc
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Local runtime state
+.env
+.env.*
+!.env.example
+var/db/*
+var/logs/*
+!var/db/.gitkeep
+!var/logs/.gitkeep
+workspaces/*
+!workspaces/.gitkeep
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+

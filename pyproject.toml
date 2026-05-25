@@ -1,0 +1,57 @@
+[project]
+name = "ithildin"
+version = "0.1.0"
+description = "Local-first governed MCP/tool gateway for AI agents."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2,<3",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+    "ruff>=0.12.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = [
+    "apps/api/src",
+    "apps/mcp-server/src",
+    "packages/audit-core/src",
+    "packages/policy-core/src",
+    "packages/schemas/src",
+    "packages/tool-sdk/src",
+]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["UP045"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+mypy_path = [
+    "apps/api/src",
+    "apps/mcp-server/src",
+    "packages/audit-core/src",
+    "packages/policy-core/src",
+    "packages/schemas/src",
+    "packages/tool-sdk/src",
+]
+files = [
+    "apps/api/src",
+    "apps/mcp-server/src",
+    "packages/audit-core/src",
+    "packages/policy-core/src",
+    "packages/schemas/src",
+    "packages/tool-sdk/src",
+    "tests",
+]
