@@ -99,6 +99,60 @@ def test_admin_status_accepts_correct_bearer_token(tmp_path: Path) -> None:
     }
 
 
+def test_create_get_approve_and_deny_approval_endpoints(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        create_response = client.post(
+            "/approvals",
+            headers={"Authorization": "Bearer correct-token"},
+            json={
+                "principal": {"id": "agent:local-dev"},
+                "tool_name": "fs.apply_patch",
+                "resource": {"path": "/workspace/app.py"},
+                "summary": "Modify app.py",
+                "one_time_scope": {"tool_name": "fs.apply_patch"},
+            },
+        )
+        created = create_response.json()
+        get_response = client.get(
+            f"/approvals/{created['approval_id']}",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        approve_response = client.post(
+            f"/approvals/{created['approval_id']}/approve",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"decision": "approve", "decided_by": "user:alice"},
+        )
+
+        deny_create_response = client.post(
+            "/approvals",
+            headers={"Authorization": "Bearer correct-token"},
+            json={
+                "principal": {"id": "agent:local-dev"},
+                "tool_name": "fs.apply_patch",
+                "resource": {"path": "/workspace/other.py"},
+                "summary": "Modify other.py",
+                "one_time_scope": {"tool_name": "fs.apply_patch"},
+            },
+        )
+        deny_created = deny_create_response.json()
+        deny_response = client.post(
+            f"/approvals/{deny_created['approval_id']}/deny",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"decision": "deny", "decided_by": "user:alice", "reason": "not now"},
+        )
+
+    assert create_response.status_code == 200
+    assert created["status"] == "pending"
+    assert get_response.status_code == 200
+    assert get_response.json()["approval_id"] == created["approval_id"]
+    assert approve_response.status_code == 200
+    assert approve_response.json()["status"] == "approved"
+    assert deny_response.status_code == 200
+    assert deny_response.json()["status"] == "denied"
+
+
 def test_tools_requires_authentication(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path))
 

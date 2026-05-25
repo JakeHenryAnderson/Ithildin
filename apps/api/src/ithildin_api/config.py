@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     db_path: Path = Path("var/db/ithildin.sqlite3")
     manifest_dir: Path = Path("tool-manifests")
     policy_path: Path = Path("policies/default.yaml")
+    approval_expiry_seconds: int = Field(default=900, gt=0)
     log_level: str = "INFO"
 
 
