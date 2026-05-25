@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from ithildin_schemas import (
@@ -26,7 +26,7 @@ from pydantic import ValidationError
 VALID_HASH = "sha256:" + ("a" * 64)
 PREV_HASH = "sha256:" + ("b" * 64)
 EVENT_HASH = "sha256:" + ("c" * 64)
-NOW = datetime(2026, 5, 25, 12, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 5, 25, 12, 0, tzinfo=UTC)
 
 
 def test_valid_models_construct() -> None:

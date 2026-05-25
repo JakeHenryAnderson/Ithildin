@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import JsonValue
 
@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-class ToolRisk(str, Enum):
+class ToolRisk(StrEnum):
     READ = "read"
     WRITE_PROPOSAL = "write-proposal"
     WRITE = "write"
@@ -27,13 +27,13 @@ class ToolRisk(str, Enum):
     DESTRUCTIVE = "destructive"
 
 
-class PolicyDecisionValue(str, Enum):
+class PolicyDecisionValue(StrEnum):
     ALLOW = "allow"
     DENY = "deny"
     REQUIRE_APPROVAL = "require_approval"
 
 
-class ApprovalStatus(str, Enum):
+class ApprovalStatus(StrEnum):
     CREATED = "created"
     PENDING = "pending"
     APPROVED = "approved"
@@ -45,12 +45,12 @@ class ApprovalStatus(str, Enum):
     FAILED = "failed"
 
 
-class ApprovalDecisionValue(str, Enum):
+class ApprovalDecisionValue(StrEnum):
     APPROVE = "approve"
     DENY = "deny"
 
 
-class AuditEventType(str, Enum):
+class AuditEventType(StrEnum):
     AGENT_SESSION_STARTED = "agent.session.started"
     TOOL_LIST_REQUESTED = "tool.list.requested"
     TOOL_CALL_PROPOSED = "tool.call.proposed"

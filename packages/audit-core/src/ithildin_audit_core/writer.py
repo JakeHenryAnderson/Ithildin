@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional, cast
 
@@ -77,7 +77,7 @@ class AuditWriter:
     ) -> AuditEvent:
         effective_redactions = set(redactions or []) | self.redact_fields
         prev_event_hash = self._latest_event_hash()
-        event_timestamp = timestamp or datetime.now(timezone.utc)
+        event_timestamp = timestamp or datetime.now(UTC)
         event_data = {
             "event_id": event_id,
             "timestamp": event_timestamp,

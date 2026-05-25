@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -10,7 +10,7 @@ from ithildin_audit_core import AuditWriteError, AuditWriter
 from ithildin_schemas import AuditEventType, PolicyDecisionValue
 
 VALID_HASH = "sha256:" + ("a" * 64)
-NOW = datetime(2026, 5, 25, 12, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 5, 25, 12, 0, tzinfo=UTC)
 
 
 def make_writer(tmp_path: Path, redact_fields: set[str] | None = None) -> AuditWriter:
