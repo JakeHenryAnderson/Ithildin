@@ -61,3 +61,10 @@ def test_mcp_public_exports() -> None:
 
     for exported_name in ["IthildinMcpAdapter", "create_mcp_server"]:
         assert hasattr(mcp_package, exported_name)
+
+
+def test_api_public_exports() -> None:
+    api_package = importlib.import_module("ithildin_api")
+
+    for exported_name in ["ReadToolExecutor", "Settings", "ToolRegistry", "create_app"]:
+        assert hasattr(api_package, exported_name)

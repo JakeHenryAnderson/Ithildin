@@ -10,6 +10,7 @@ from typing import Any, cast
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
+from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
@@ -113,6 +114,12 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         policy_evaluator,
         approval_service,
         audit_writer,
+        ReadToolExecutor.from_settings(
+            workspace_root=resolved_settings.workspace_root,
+            max_read_bytes=resolved_settings.max_read_bytes,
+            search_result_limit=resolved_settings.search_result_limit,
+            git_log_limit=resolved_settings.git_log_limit,
+        ),
     )
     return IthildinMcpAdapter(registry=registry, tool_call_service=tool_call_service)
 

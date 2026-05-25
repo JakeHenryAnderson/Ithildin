@@ -1,0 +1,16 @@
+name: fs.list
+version: 0.1.0
+title: List workspace files
+risk: read
+category: filesystem
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    path:
+      type: string
+      default: "."

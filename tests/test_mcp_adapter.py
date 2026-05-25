@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
@@ -48,6 +49,8 @@ risk: {risk}
 category: test
 mcp:
   exposed: true
+  annotations:
+    readOnlyHint: {str(risk == "read").lower()}
 input_schema:
   type: object
   required: ["path"]
@@ -80,6 +83,9 @@ input_schema:
     policy_path = tmp_path / "policy.yaml"
     write_policy(policy_path)
     db_path = tmp_path / "ithildin.sqlite3"
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    workspace_root.joinpath("README.md").write_text("hello from mcp\n", encoding="utf-8")
     audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
     audit_writer.initialize()
     approval_store = ApprovalStore(db_path)
@@ -95,6 +101,12 @@ input_schema:
         PolicyEvaluator.load(policy_path),
         approval_service,
         audit_writer,
+        ReadToolExecutor.from_settings(
+            workspace_root=workspace_root,
+            max_read_bytes=1024,
+            search_result_limit=10,
+            git_log_limit=10,
+        ),
     )
     return IthildinMcpAdapter(registry=registry, tool_call_service=service)
 
@@ -125,6 +137,18 @@ def test_mcp_call_returns_safe_approval_required_response(tmp_path: Path) -> Non
         "policy_reason",
     }
     assert "path" not in result.structuredContent
+
+
+def test_mcp_call_returns_real_read_output(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path)
+
+    result = asyncio.run(adapter.call_tool("fs.read", {"path": "README.md"}))
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert result.structuredContent["content"] == "hello from mcp\n"
+    assert result.structuredContent["byte_count"] == 15
 
 
 def test_mcp_call_unknown_tool_returns_safe_error(tmp_path: Path) -> None:

@@ -35,6 +35,7 @@ rules:
         db_path=tmp_path / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
         policy_path=policy_path,
+        workspace_root=tmp_path / "workspace",
     )
 
 

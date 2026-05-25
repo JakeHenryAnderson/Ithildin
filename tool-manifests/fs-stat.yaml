@@ -1,0 +1,17 @@
+name: fs.stat
+version: 0.1.0
+title: Inspect workspace file metadata
+risk: read
+category: filesystem
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+    - path
+  properties:
+    path:
+      type: string

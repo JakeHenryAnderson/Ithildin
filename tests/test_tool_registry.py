@@ -103,3 +103,17 @@ def test_unknown_tool_lookup_has_audit_ready_denial_metadata(tmp_path: Path) -> 
         "decision": "deny",
         "reason": "unknown tool",
     }
+
+
+def test_committed_read_tool_manifests_load() -> None:
+    registry = ToolRegistry.load(Path("tool-manifests"))
+
+    assert [tool.manifest.name for tool in registry.list_tools()] == [
+        "fs.list",
+        "fs.read",
+        "fs.search",
+        "fs.stat",
+        "git.diff",
+        "git.log",
+        "git.status",
+    ]

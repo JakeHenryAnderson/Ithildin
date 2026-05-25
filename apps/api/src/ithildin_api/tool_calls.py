@@ -19,6 +19,7 @@ from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 
 from ithildin_api.approvals import ApprovalService, CreateApprovalInput
+from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 
 
@@ -38,11 +39,13 @@ class GovernedToolCallService:
         policy_evaluator: PolicyEvaluator,
         approval_service: ApprovalService,
         audit_writer: AuditWriter,
+        read_tool_executor: ReadToolExecutor | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
         self.approval_service = approval_service
         self.audit_writer = audit_writer
+        self.read_tool_executor = read_tool_executor
 
     def call_tool(
         self,
@@ -158,6 +161,52 @@ class GovernedToolCallService:
                 },
             )
 
+        if self.read_tool_executor is not None and self.read_tool_executor.supports(tool_name):
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_STARTED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=request_hash,
+                metadata={"executor": "in_process_read"},
+            )
+            try:
+                content = self.read_tool_executor.execute(tool_name, arguments)
+            except ReadToolError as exc:
+                self._audit_execution(
+                    event_type=AuditEventType.TOOL_EXECUTION_FAILED,
+                    request_id=request_id,
+                    principal=principal,
+                    tool_name=tool_name,
+                    resource=resource,
+                    input_hash=request_hash,
+                    metadata={"executor": "in_process_read", "reason": exc.reason},
+                )
+                return GovernedToolCallResult(
+                    status="denied",
+                    request_id=request_id,
+                    tool_name=tool_name,
+                    content={"reason": exc.reason},
+                    is_error=True,
+                )
+
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=request_hash,
+                metadata={"executor": "in_process_read"},
+            )
+            return GovernedToolCallResult(
+                status="completed",
+                request_id=request_id,
+                tool_name=tool_name,
+                content=content,
+            )
+
         return GovernedToolCallResult(
             status="allowed",
             request_id=request_id,
@@ -190,6 +239,28 @@ class GovernedToolCallService:
             decision=decision,
             policy_version=policy_version,
             matched_rules=matched_rules or [],
+            input_hash=input_hash,
+            metadata=metadata,
+        )
+
+    def _audit_execution(
+        self,
+        *,
+        event_type: AuditEventType,
+        request_id: str,
+        principal: JsonObject,
+        tool_name: str,
+        resource: JsonObject,
+        input_hash: str,
+        metadata: JsonObject,
+    ) -> None:
+        self.audit_writer.write_event(
+            event_id=_new_id("evt"),
+            event_type=event_type,
+            request_id=request_id,
+            principal=principal,
+            tool_name=tool_name,
+            resource=resource,
             input_hash=input_hash,
             metadata=metadata,
         )

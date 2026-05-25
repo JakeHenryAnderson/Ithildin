@@ -1,0 +1,19 @@
+name: git.log
+version: 0.1.0
+title: Read git log
+risk: read
+category: git
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    path:
+      type: string
+      default: "."
+    limit:
+      type: integer
+      minimum: 1

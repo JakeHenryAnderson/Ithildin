@@ -24,6 +24,7 @@ from ithildin_api.auth import require_admin_token
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.logging import configure_logging
+from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 
 SERVICE_NAME = "ithildin-api"
@@ -48,6 +49,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         )
         app_instance.state.registry = ToolRegistry.load(resolved_settings.manifest_dir)
         app_instance.state.policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
+        app_instance.state.read_tool_executor = ReadToolExecutor.from_settings(
+            workspace_root=resolved_settings.workspace_root,
+            max_read_bytes=resolved_settings.max_read_bytes,
+            search_result_limit=resolved_settings.search_result_limit,
+            git_log_limit=resolved_settings.git_log_limit,
+        )
         logging.getLogger(__name__).info("api service started")
         yield
 

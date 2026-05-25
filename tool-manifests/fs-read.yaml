@@ -1,0 +1,17 @@
+name: fs.read
+version: 0.1.0
+title: Read a workspace text file
+risk: read
+category: filesystem
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+    - path
+  properties:
+    path:
+      type: string

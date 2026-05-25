@@ -1,0 +1,16 @@
+name: git.status
+version: 0.1.0
+title: Read git status
+risk: read
+category: git
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    path:
+      type: string
+      default: "."
