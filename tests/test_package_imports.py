@@ -40,3 +40,10 @@ def test_schema_public_exports() -> None:
 
     for exported_name in exported_names:
         assert hasattr(schema_package, exported_name)
+
+
+def test_policy_public_exports() -> None:
+    policy_package = importlib.import_module("ithildin_policy_core")
+
+    for exported_name in ["PolicyDocument", "PolicyError", "PolicyEvaluator", "PolicyRule"]:
+        assert hasattr(policy_package, exported_name)

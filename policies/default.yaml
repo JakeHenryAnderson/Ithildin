@@ -1,0 +1,44 @@
+version: default-v1
+rules:
+  - id: deny_dangerous_tool_names
+    decision: deny
+    reason: Deletes, shell, Docker, and secrets are denied in the MVP.
+    match:
+      tool.name_prefix:
+        - delete.
+        - docker.
+        - shell.
+        - secret.
+        - secrets.
+        - fs.delete
+        - git.clean
+    obligations:
+      audit_level: full
+
+  - id: deny_destructive_risk
+    decision: deny
+    reason: Destructive tools are denied in the MVP.
+    match:
+      tool.risk: destructive
+    obligations:
+      audit_level: full
+
+  - id: require_approval_for_writes
+    decision: require_approval
+    reason: File writes require approval.
+    match:
+      tool.risk: write
+    obligations:
+      audit_level: full
+      approval_required: true
+      max_execution_seconds: 30
+
+  - id: allow_in_scope_reads
+    decision: allow
+    reason: Read-only access is allowed within assigned workspace scope.
+    match:
+      tool.risk: read
+      resource.in_scope: true
+    obligations:
+      audit_level: full
+      max_execution_seconds: 30

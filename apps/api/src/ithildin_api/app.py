@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import Depends, FastAPI
+from ithildin_policy_core import PolicyEvaluator
 from ithildin_schemas import JsonObject
 
 from ithildin_api.auth import require_admin_token
@@ -27,6 +28,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         app_instance.state.settings = resolved_settings
         initialize_database(resolved_settings.db_path)
         app_instance.state.registry = ToolRegistry.load(resolved_settings.manifest_dir)
+        app_instance.state.policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
         logging.getLogger(__name__).info("api service started")
         yield
 

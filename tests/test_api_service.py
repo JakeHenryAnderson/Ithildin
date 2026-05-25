@@ -14,10 +14,26 @@ from pydantic import ValidationError
 def make_settings(tmp_path: Path, token: str = "test-admin-token") -> Settings:
     manifest_dir = tmp_path / "tool-manifests"
     manifest_dir.mkdir()
+    policy_path = tmp_path / "policy.yaml"
+    policy_path.write_text(
+        """
+version: test
+rules:
+  - id: allow_test_reads
+    decision: allow
+    reason: ok
+    match:
+      tool.risk: read
+    obligations:
+      audit_level: full
+""",
+        encoding="utf-8",
+    )
     return Settings(
         admin_token=token,
         db_path=tmp_path / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
+        policy_path=policy_path,
     )
 
 
@@ -150,6 +166,16 @@ input_schema:
 def test_app_startup_fails_for_invalid_manifest(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     (settings.manifest_dir / "invalid.yaml").write_text("name: fs.read\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError):
+        with TestClient(app):
+            pass
+
+
+def test_app_startup_fails_for_invalid_policy(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    settings.policy_path.write_text("version: test\n", encoding="utf-8")
     app = create_app(settings)
 
     with pytest.raises(RuntimeError):
