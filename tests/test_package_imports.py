@@ -54,3 +54,10 @@ def test_audit_public_exports() -> None:
 
     for exported_name in ["AuditWriteError", "AuditWriter"]:
         assert hasattr(audit_package, exported_name)
+
+
+def test_mcp_public_exports() -> None:
+    mcp_package = importlib.import_module("ithildin_mcp_server")
+
+    for exported_name in ["IthildinMcpAdapter", "create_mcp_server"]:
+        assert hasattr(mcp_package, exported_name)
