@@ -10,16 +10,15 @@ mcp:
 input_schema:
   type: object
   additionalProperties: false
+  properties:
+    proposal_id:
+      type: string
+      pattern: "^patch_[0-9a-f]+$"
+    approval_id:
+      type: string
+      pattern: "^appr_[0-9a-f]+$"
   oneOf:
     - required:
         - proposal_id
-      properties:
-        proposal_id:
-          type: string
-          pattern: "^patch_[0-9a-f]+$"
     - required:
         - approval_id
-      properties:
-        approval_id:
-          type: string
-          pattern: "^appr_[0-9a-f]+$"

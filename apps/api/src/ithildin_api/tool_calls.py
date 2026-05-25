@@ -18,8 +18,13 @@ from ithildin_schemas import (
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 
-from ithildin_api.approvals import ApprovalService, CreateApprovalInput
-from ithildin_api.patches import PATCH_PROPOSE_TOOL, PatchProposalError, PatchProposalService
+from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
+from ithildin_api.patches import (
+    PATCH_APPLY_TOOL,
+    PATCH_PROPOSE_TOOL,
+    PatchProposalError,
+    PatchProposalService,
+)
 from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 
@@ -134,6 +139,63 @@ class GovernedToolCallService:
             )
 
         if policy_decision.decision == PolicyDecisionValue.REQUIRE_APPROVAL:
+            if self.patch_proposal_service is not None and tool_name == PATCH_APPLY_TOOL:
+                if "approval_id" in arguments:
+                    return self._execute_approved_patch(
+                        request_id=request_id,
+                        principal=principal,
+                        tool_name=tool_name,
+                        resource=resource,
+                        input_hash=request_hash,
+                        approval_id=_string_argument(arguments, "approval_id"),
+                    )
+                if "proposal_id" in arguments:
+                    try:
+                        one_time_scope = self.patch_proposal_service.approval_scope(
+                            _string_argument(arguments, "proposal_id"),
+                            registered_tool.manifest_hash,
+                        )
+                    except PatchProposalError as exc:
+                        return GovernedToolCallResult(
+                            status="denied",
+                            request_id=request_id,
+                            tool_name=tool_name,
+                            content={"reason": exc.reason},
+                            is_error=True,
+                        )
+                    approval = self.approval_service.create_pending(
+                        CreateApprovalInput(
+                            request_id=request_id,
+                            request_hash=request_hash,
+                            principal=principal,
+                            tool_name=tool_name,
+                            resource=resource,
+                            summary=f"Apply patch {one_time_scope['proposal_id']}",
+                            one_time_scope=one_time_scope,
+                            metadata={
+                                "policy_reason": policy_decision.reason,
+                                "proposal_id": one_time_scope["proposal_id"],
+                                "proposal_hash": one_time_scope["proposal_hash"],
+                            },
+                        )
+                    )
+                    return GovernedToolCallResult(
+                        status="approval_required",
+                        request_id=request_id,
+                        tool_name=tool_name,
+                        content={
+                            "approval_id": approval.approval_id,
+                            "request_id": request_id,
+                            "tool_name": tool_name,
+                            "proposal_id": one_time_scope["proposal_id"],
+                            "proposal_hash": one_time_scope["proposal_hash"],
+                            "path": one_time_scope["path"],
+                            "summary": approval.summary,
+                            "expires_at": approval.expires_at.isoformat(),
+                            "policy_reason": policy_decision.reason,
+                        },
+                    )
+
             approval = self.approval_service.create_pending(
                 CreateApprovalInput(
                     request_id=request_id,
@@ -299,6 +361,88 @@ class GovernedToolCallService:
             matched_rules=matched_rules or [],
             input_hash=input_hash,
             metadata=metadata,
+        )
+
+    def _execute_approved_patch(
+        self,
+        *,
+        request_id: str,
+        principal: JsonObject,
+        tool_name: str,
+        resource: JsonObject,
+        input_hash: str,
+        approval_id: str,
+    ) -> GovernedToolCallResult:
+        if self.patch_proposal_service is None:
+            return GovernedToolCallResult(
+                status="denied",
+                request_id=request_id,
+                tool_name=tool_name,
+                content={"reason": "patch application is not configured"},
+                is_error=True,
+            )
+
+        self._audit_execution(
+            event_type=AuditEventType.TOOL_EXECUTION_STARTED,
+            request_id=request_id,
+            principal=principal,
+            tool_name=tool_name,
+            resource=resource,
+            input_hash=input_hash,
+            metadata={"executor": "patch_apply", "approval_id": approval_id},
+        )
+        try:
+            proposal = self.patch_proposal_service.apply_approved(
+                approval_service=self.approval_service,
+                approval_id=approval_id,
+            )
+        except (ApprovalError, PatchProposalError) as exc:
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_FAILED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=input_hash,
+                metadata={
+                    "executor": "patch_apply",
+                    "approval_id": approval_id,
+                    "reason": str(exc),
+                },
+            )
+            return GovernedToolCallResult(
+                status="denied",
+                request_id=request_id,
+                tool_name=tool_name,
+                content={"reason": str(exc)},
+                is_error=True,
+            )
+
+        self._audit_execution(
+            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+            request_id=request_id,
+            principal=principal,
+            tool_name=tool_name,
+            resource=resource,
+            input_hash=input_hash,
+            metadata={
+                "executor": "patch_apply",
+                "approval_id": approval_id,
+                "proposal_id": proposal.proposal_id,
+                "proposal_hash": proposal.proposal_hash,
+            },
+        )
+        return GovernedToolCallResult(
+            status="completed",
+            request_id=request_id,
+            tool_name=tool_name,
+            content={
+                "approval_id": approval_id,
+                "proposal_id": proposal.proposal_id,
+                "proposal_hash": proposal.proposal_hash,
+                "path": proposal.path,
+                "proposal_status": proposal.status,
+            },
         )
 
     def _audit_execution(

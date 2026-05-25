@@ -95,11 +95,38 @@ input_schema:
     )
 
 
+def write_patch_apply_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("fs-patch-apply.yaml").write_text(
+        """
+name: fs.patch.apply
+version: 1.0.0
+title: Apply patch
+risk: write
+category: test
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    proposal_id:
+      type: string
+    approval_id:
+      type: string
+  oneOf:
+    - required: ["proposal_id"]
+    - required: ["approval_id"]
+""",
+        encoding="utf-8",
+    )
+
+
 def make_adapter(tmp_path: Path) -> IthildinMcpAdapter:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
     write_manifest(manifest_dir, "fs.apply_patch", "write")
     write_patch_propose_manifest(manifest_dir)
+    write_patch_apply_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
         """
 name: internal.hidden
@@ -158,7 +185,12 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
 
     tools = asyncio.run(adapter.list_tools())
 
-    assert [tool.name for tool in tools] == ["fs.apply_patch", "fs.patch.propose", "fs.read"]
+    assert [tool.name for tool in tools] == [
+        "fs.apply_patch",
+        "fs.patch.apply",
+        "fs.patch.propose",
+        "fs.read",
+    ]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
 
 
@@ -209,6 +241,32 @@ def test_mcp_call_returns_patch_proposal_metadata(tmp_path: Path) -> None:
     assert result.structuredContent["status"] == "completed"
     assert result.structuredContent["proposal_id"].startswith("patch_")
     assert result.structuredContent["path"] == "README.md"
+    assert "unified_diff" not in result.structuredContent
+
+
+def test_mcp_patch_apply_returns_safe_approval_required_response(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path)
+    unified_diff = "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-hello from mcp\n+changed\n"
+    proposal = asyncio.run(
+        adapter.call_tool(
+            "fs.patch.propose",
+            {"path": "README.md", "unified_diff": unified_diff},
+        )
+    )
+    assert proposal.structuredContent is not None
+
+    result = asyncio.run(
+        adapter.call_tool(
+            "fs.patch.apply",
+            {"proposal_id": proposal.structuredContent["proposal_id"]},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "approval_required"
+    assert result.structuredContent["approval_id"].startswith("appr_")
+    assert result.structuredContent["proposal_id"] == proposal.structuredContent["proposal_id"]
     assert "unified_diff" not in result.structuredContent
 
 

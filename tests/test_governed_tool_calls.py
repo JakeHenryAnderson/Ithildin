@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import sqlite3
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import cast
@@ -103,6 +105,33 @@ input_schema:
     )
 
 
+def write_patch_apply_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("fs-patch-apply.yaml").write_text(
+        """
+name: fs.patch.apply
+version: 1.0.0
+title: Apply patch
+risk: write
+category: test
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    proposal_id:
+      type: string
+    approval_id:
+      type: string
+  oneOf:
+    - required: ["proposal_id"]
+    - required: ["approval_id"]
+""",
+        encoding="utf-8",
+    )
+
+
 def make_service(tmp_path: Path) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -153,9 +182,18 @@ def make_read_service(tmp_path: Path) -> GovernedToolCallService:
     )
 
 
-def make_patch_service(tmp_path: Path) -> GovernedToolCallService:
+@dataclass(frozen=True)
+class PatchHarness:
+    service: GovernedToolCallService
+    approval_service: ApprovalService
+    db_path: Path
+    workspace_root: Path
+
+
+def make_patch_harness(tmp_path: Path) -> PatchHarness:
     manifest_dir = tmp_path / "manifests"
     write_patch_propose_manifest(manifest_dir)
+    write_patch_apply_manifest(manifest_dir)
     policy_path = tmp_path / "policy.yaml"
     write_policy(policy_path)
     db_path = tmp_path / "ithildin.sqlite3"
@@ -175,7 +213,7 @@ def make_patch_service(tmp_path: Path) -> GovernedToolCallService:
     )
     patch_store = PatchProposalStore(db_path)
     patch_store.initialize()
-    return GovernedToolCallService(
+    service = GovernedToolCallService(
         ToolRegistry.load(manifest_dir),
         PolicyEvaluator.load(policy_path),
         approval_service,
@@ -183,6 +221,11 @@ def make_patch_service(tmp_path: Path) -> GovernedToolCallService:
         read_executor,
         PatchProposalService(patch_store, read_executor.filesystem, max_patch_bytes=1024),
     )
+    return PatchHarness(service, approval_service, db_path, workspace_root)
+
+
+def make_patch_service(tmp_path: Path) -> GovernedToolCallService:
+    return make_patch_harness(tmp_path).service
 
 
 def principal() -> JsonObject:
@@ -341,6 +384,115 @@ def test_invalid_patch_proposal_is_audited_as_failed_execution(tmp_path: Path) -
     ]
 
 
+def test_patch_apply_with_proposal_id_returns_approval_required(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"proposal_id": proposal["proposal_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "approval_required"
+    assert result.content["approval_id"]
+    assert result.content["proposal_id"] == proposal["proposal_id"]
+    assert result.content["proposal_hash"] == proposal["proposal_hash"]
+    assert result.content["path"] == "README.md"
+
+
+def test_approved_patch_apply_writes_file_and_replay_is_rejected(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+    replay = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "completed"
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "new\n"
+    assert replay.status == "denied"
+    assert "not proposed" in str(replay.content["reason"])
+    event_types = [payload["event_type"] for payload in audit_payloads(tmp_path)]
+    assert "tool.execution.completed" in event_types
+    assert event_types[-1] == "tool.execution.failed"
+
+
+def test_patch_apply_rejects_proposal_hash_mismatch(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    with sqlite3.connect(harness.db_path) as connection:
+        connection.execute(
+            "UPDATE patch_proposals SET proposal_hash = ? WHERE proposal_id = ?",
+            ("sha256:" + ("1" * 64), proposal["proposal_id"]),
+        )
+        connection.commit()
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "hash mismatch" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
+
+
+def test_patch_apply_rejects_stale_base_without_partial_write(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.workspace_root.joinpath("README.md").write_text("changed elsewhere\n", encoding="utf-8")
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "changed since proposal" in str(result.content["reason"])
+    assert (
+        harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8")
+        == "changed elsewhere\n"
+    )
+
+
+def test_direct_patch_payload_cannot_be_applied(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={
+            "proposal_id": "patch_123",
+            "unified_diff": "--- a/README.md\n+++ b/README.md\n",
+        },
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert result.content == {"reason": "invalid tool arguments"}
+
+
 def test_write_call_creates_approval_required_response(tmp_path: Path) -> None:
     service = make_service(tmp_path)
 
@@ -375,3 +527,31 @@ def test_denied_policy_decision_is_audited(tmp_path: Path) -> None:
     assert result.status == "denied"
     metadata = cast(JsonObject, audit_payloads(tmp_path)[0]["metadata"])
     assert metadata["reason"] == "shell denied"
+
+
+def propose_patch(service: GovernedToolCallService) -> JsonObject:
+    result = service.call_tool(
+        tool_name="fs.patch.propose",
+        arguments={
+            "path": "README.md",
+            "unified_diff": "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n",
+        },
+        principal=principal(),
+        session_id="sess_1",
+    )
+    assert result.status == "completed"
+    return result.content
+
+
+def request_patch_apply_approval(
+    service: GovernedToolCallService,
+    proposal_id: str,
+) -> JsonObject:
+    result = service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"proposal_id": proposal_id},
+        principal=principal(),
+        session_id="sess_1",
+    )
+    assert result.status == "approval_required"
+    return result.content

@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
+import tempfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from ithildin_schemas import JsonObject, canonical_json, sha256_digest
+from ithildin_schemas import ApprovalRequest, JsonObject, canonical_json, sha256_digest
 
+from ithildin_api.approvals import ApprovalService
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError
 
 PATCH_PROPOSE_TOOL = "fs.patch.propose"
@@ -168,6 +171,22 @@ class PatchProposalStore:
             raise PatchProposalError(f"patch proposal not found: {proposal_id}")
         return _proposal_from_row(row)
 
+    def set_status(self, proposal_id: str, status: str) -> PatchProposal:
+        with sqlite3.connect(self.db_path) as connection:
+            updated = connection.execute(
+                """
+                UPDATE patch_proposals
+                SET status = ?,
+                    updated_at = ?
+                WHERE proposal_id = ?
+                """,
+                (status, datetime.now(UTC).isoformat(), proposal_id),
+            ).rowcount
+            connection.commit()
+        if updated != 1:
+            raise PatchProposalError(f"patch proposal not found: {proposal_id}")
+        return self.get(proposal_id)
+
 
 class PatchProposalService:
     def __init__(
@@ -239,6 +258,67 @@ class PatchProposalService:
 
     def get_proposal(self, proposal_id: str) -> PatchProposal:
         return self.store.get(proposal_id)
+
+    def approval_scope(self, proposal_id: str, manifest_hash: str) -> JsonObject:
+        proposal = self.get_proposal(proposal_id)
+        if proposal.status != "proposed":
+            raise PatchProposalError(f"patch proposal is not proposed: {proposal.status}")
+        return {
+            "tool_name": PATCH_APPLY_TOOL,
+            "proposal_id": proposal.proposal_id,
+            "proposal_hash": proposal.proposal_hash,
+            "path": proposal.path,
+            "manifest_hash": manifest_hash,
+        }
+
+    def apply_approved(
+        self,
+        *,
+        approval_service: ApprovalService,
+        approval_id: str,
+    ) -> PatchProposal:
+        approval = approval_service.get(approval_id)
+        proposal = self._proposal_for_approval(approval)
+        approval_service.begin_execution(approval_id, approval.request_hash)
+        try:
+            self._apply_proposal(proposal)
+            applied = self.store.set_status(proposal.proposal_id, "applied")
+        except PatchProposalError:
+            approval_service.complete_execution(approval_id, success=False)
+            raise
+        except OSError as exc:
+            approval_service.complete_execution(approval_id, success=False)
+            raise PatchProposalError("failed to apply patch safely") from exc
+
+        approval_service.complete_execution(approval_id, success=True)
+        return applied
+
+    def _proposal_for_approval(self, approval: ApprovalRequest) -> PatchProposal:
+        if approval.tool_name != PATCH_APPLY_TOOL:
+            raise PatchProposalError("approval is not for patch application")
+        scope = approval.one_time_scope
+        proposal_id = _scope_string(scope, "proposal_id")
+        proposal_hash = _scope_string(scope, "proposal_hash")
+        path = _scope_string(scope, "path")
+        proposal = self.get_proposal(proposal_id)
+        if proposal.status != "proposed":
+            raise PatchProposalError(f"patch proposal is not proposed: {proposal.status}")
+        if proposal.proposal_hash != proposal_hash:
+            raise PatchProposalError("patch proposal hash mismatch")
+        if proposal.path != path:
+            raise PatchProposalError("patch proposal path mismatch")
+        return proposal
+
+    def _apply_proposal(self, proposal: PatchProposal) -> None:
+        target = self.filesystem.resolve_existing_path(proposal.path)
+        if not target.is_file():
+            raise PatchProposalError("patch target is not a file")
+        current_content = target.read_text(encoding="utf-8")
+        current_hash = sha256_digest(current_content)
+        if current_hash != proposal.base_file_hash:
+            raise PatchProposalError("patch target has changed since proposal")
+        patched_content = apply_unified_diff(current_content, proposal.unified_diff)
+        _atomic_write_text(target, patched_content)
 
 
 def normalize_unified_diff(unified_diff: str) -> str:
@@ -366,6 +446,34 @@ def _clean_diff_path(path: str) -> str:
 def _require_original_line(lines: list[str], index: int, expected: str) -> None:
     if index >= len(lines) or lines[index] != expected:
         raise PatchProposalError("patch hunk context does not match target file")
+
+
+def _scope_string(scope: JsonObject, key: str) -> str:
+    value = scope.get(key)
+    if not isinstance(value, str):
+        raise PatchProposalError(f"approval scope missing {key}")
+    return value
+
+
+def _atomic_write_text(target: Path, content: str) -> None:
+    mode = target.stat().st_mode
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=target.parent,
+            delete=False,
+        ) as temp_file:
+            temp_path = Path(temp_file.name)
+            temp_file.write(content)
+            temp_file.flush()
+            os.fsync(temp_file.fileno())
+        os.chmod(temp_path, mode)
+        temp_path.replace(target)
+    finally:
+        if temp_path is not None and temp_path.exists():
+            temp_path.unlink()
 
 
 def _new_id(prefix: str) -> str:
