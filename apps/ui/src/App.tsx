@@ -49,6 +49,32 @@ type PatchProposal = {
   unified_diff?: string;
 };
 
+type ToolSummary = {
+  name: string;
+  version: string;
+  title: string;
+  risk: string;
+  category: string;
+  manifest_hash: string;
+  mcp: JsonObject;
+};
+
+type PolicyPreviewResult = {
+  tool_name: string;
+  manifest_hash: string | null;
+  manifest_risk: string | null;
+  manifest_version: string | null;
+  valid_arguments: boolean;
+  argument_error: string | null;
+  policy_input: JsonObject | null;
+  resource: JsonObject;
+  decision: string;
+  reason: string;
+  policy_version: string;
+  matched_rules: string[];
+  obligations: JsonObject;
+};
+
 type AuditEvent = {
   event_id: string;
   timestamp: string;
@@ -76,6 +102,7 @@ type AuditVerification = {
 };
 
 type DashboardData = {
+  tools: ToolSummary[];
   approvals: Approval[];
   patches: PatchProposal[];
   auditEvents: AuditEvent[];
@@ -95,6 +122,7 @@ export function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "");
   const [draftToken, setDraftToken] = useState(token);
   const [data, setData] = useState<DashboardData>({
+    tools: [],
     approvals: [],
     patches: [],
     auditEvents: [],
@@ -102,6 +130,14 @@ export function App() {
   });
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<PatchProposal | null>(null);
+  const [selectedToolName, setSelectedToolName] = useState("");
+  const [argumentsJson, setArgumentsJson] = useState("{}");
+  const [principalJson, setPrincipalJson] = useState(
+    '{"id":"admin:local-ui","roles":["Admin"]}',
+  );
+  const [previewResult, setPreviewResult] = useState<PolicyPreviewResult | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [denyReasons, setDenyReasons] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -116,11 +152,16 @@ export function App() {
     () => data.patches.find((patch) => patch.proposal_id === selectedProposalId) ?? null,
     [data.patches, selectedProposalId],
   );
+  const selectedTool = useMemo(
+    () => data.tools.find((tool) => tool.name === selectedToolName) ?? null,
+    [data.tools, selectedToolName],
+  );
 
   async function loadDashboard(activeToken = token) {
     if (!activeToken) {
-      setData({ approvals: [], patches: [], auditEvents: [], verification: null });
+      setData({ tools: [], approvals: [], patches: [], auditEvents: [], verification: null });
       setSelectedProposal(null);
+      setPreviewResult(null);
       setError(null);
       return;
     }
@@ -128,19 +169,24 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      const [approvalsResponse, patchesResponse, auditResponse, verificationResponse] =
+      const [toolsResponse, approvalsResponse, patchesResponse, auditResponse, verificationResponse] =
         await Promise.all([
+          apiRequest<{ tools: ToolSummary[] }>("/tools", activeToken),
           apiRequest<{ approvals: Approval[] }>("/approvals?status=pending", activeToken),
           apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
           apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
           apiRequest<AuditVerification>("/audit-events/verify", activeToken),
         ]);
       setData({
+        tools: toolsResponse.tools,
         approvals: approvalsResponse.approvals,
         patches: patchesResponse.patch_proposals,
         auditEvents: auditResponse.audit_events,
         verification: verificationResponse,
       });
+      if (!selectedToolName && toolsResponse.tools[0]) {
+        setSelectedToolName(toolsResponse.tools[0].name);
+      }
       if (!selectedProposalId && patchesResponse.patch_proposals[0]) {
         setSelectedProposalId(patchesResponse.patch_proposals[0].proposal_id);
       }
@@ -179,8 +225,37 @@ export function App() {
       void loadDashboard(nextToken);
     } else {
       sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-      setData({ approvals: [], patches: [], auditEvents: [], verification: null });
+      setData({ tools: [], approvals: [], patches: [], auditEvents: [], verification: null });
       setSelectedProposal(null);
+      setPreviewResult(null);
+    }
+  }
+
+  async function runPolicyPreview(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !selectedToolName) {
+      return;
+    }
+
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewResult(null);
+    try {
+      const parsedArguments = parseJsonObject(argumentsJson, "Arguments");
+      const parsedPrincipal = parseJsonObject(principalJson, "Principal");
+      const result = await apiRequest<PolicyPreviewResult>("/policy/preview", token, {
+        method: "POST",
+        body: JSON.stringify({
+          tool_name: selectedToolName,
+          arguments: parsedArguments,
+          principal: parsedPrincipal,
+        }),
+      });
+      setPreviewResult(result);
+    } catch (caught) {
+      setPreviewError(errorMessage(caught));
+    } finally {
+      setPreviewLoading(false);
     }
   }
 
@@ -292,6 +367,110 @@ export function App() {
           <RefreshCcw aria-hidden="true" size={18} />
           {loading ? "Refreshing" : "Refresh"}
         </button>
+      </section>
+
+      <section className="policy-section">
+        <Panel title="Policy Preview" icon={<ShieldCheck size={18} />}>
+          <form className="policy-preview-form" onSubmit={runPolicyPreview}>
+            <div className="policy-controls">
+              <label>
+                <span>Tool</span>
+                <select
+                  value={selectedToolName}
+                  disabled={!token || data.tools.length === 0}
+                  onChange={(event) => {
+                    setSelectedToolName(event.target.value);
+                    setPreviewResult(null);
+                    setPreviewError(null);
+                  }}
+                >
+                  {data.tools.map((tool) => (
+                    <option key={tool.name} value={tool.name}>
+                      {tool.name} · {tool.risk} · {tool.category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="primary-action"
+                type="submit"
+                disabled={!token || !selectedToolName || previewLoading}
+              >
+                <ShieldCheck aria-hidden="true" size={16} />
+                {previewLoading ? "Previewing" : "Preview"}
+              </button>
+            </div>
+            <div className="json-editors">
+              <label>
+                <span>Arguments</span>
+                <textarea
+                  value={argumentsJson}
+                  onChange={(event) => setArgumentsJson(event.target.value)}
+                  spellCheck={false}
+                />
+              </label>
+              <label>
+                <span>Principal</span>
+                <textarea
+                  value={principalJson}
+                  onChange={(event) => setPrincipalJson(event.target.value)}
+                  spellCheck={false}
+                />
+              </label>
+            </div>
+          </form>
+          {previewError ? (
+            <div className="inline-error">
+              <AlertTriangle aria-hidden="true" size={16} />
+              <span>{previewError}</span>
+            </div>
+          ) : null}
+          {!token ? <EmptyState text="Locked." /> : null}
+          {token && data.tools.length === 0 ? <EmptyState text="No registered tools." /> : null}
+          {previewResult ? (
+            <div className="preview-result">
+              <div className="preview-heading">
+                <div>
+                  <h3>{previewResult.tool_name}</h3>
+                  <p>{selectedTool?.title ?? previewResult.manifest_version ?? ""}</p>
+                </div>
+                <StatusPill status={previewResult.decision} />
+              </div>
+              <dl className="meta-list preview-meta">
+                <div>
+                  <dt>Arguments</dt>
+                  <dd>{previewResult.valid_arguments ? "valid" : "invalid"}</dd>
+                </div>
+                <div>
+                  <dt>Risk</dt>
+                  <dd>{previewResult.manifest_risk ?? "unknown"}</dd>
+                </div>
+                <div>
+                  <dt>Manifest</dt>
+                  <dd>{previewResult.manifest_hash ? shortHash(previewResult.manifest_hash) : ""}</dd>
+                </div>
+              </dl>
+              <p className="preview-reason">{previewResult.reason}</p>
+              {previewResult.argument_error ? (
+                <p className="preview-argument-error">{previewResult.argument_error}</p>
+              ) : null}
+              <div className="preview-detail-grid">
+                <div>
+                  <h3>Matched Rules</h3>
+                  <pre>{JSON.stringify(previewResult.matched_rules, null, 2)}</pre>
+                </div>
+                <div>
+                  <h3>Obligations</h3>
+                  <pre>{JSON.stringify(previewResult.obligations, null, 2)}</pre>
+                </div>
+                <div>
+                  <h3>Resource</h3>
+                  <pre>{JSON.stringify(previewResult.resource, null, 2)}</pre>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </Panel>
       </section>
 
       <section className="integrity-section">
@@ -562,6 +741,18 @@ async function apiRequest<T>(
     throw new ApiError(response.status, detail);
   }
   return (await response.json()) as T;
+}
+
+function parseJsonObject(raw: string, label: string): JsonObject {
+  const parsed = JSON.parse(raw) as unknown;
+  if (!isJsonObject(parsed)) {
+    throw new Error(`${label} must be a JSON object.`);
+  }
+  return parsed;
+}
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function errorMessage(caught: unknown) {

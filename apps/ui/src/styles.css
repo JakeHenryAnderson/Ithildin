@@ -16,7 +16,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -43,6 +45,28 @@ input {
   color: #17201b;
   min-height: 36px;
   padding: 0 10px;
+}
+
+select,
+textarea {
+  border: 1px solid #c9d3ce;
+  background: #ffffff;
+  color: #17201b;
+  width: 100%;
+}
+
+select {
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+textarea {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  min-height: 120px;
+  padding: 10px;
+  resize: vertical;
 }
 
 .console-shell {
@@ -307,6 +331,124 @@ h3 {
   color: #7b2f2b;
 }
 
+.status-allow {
+  border-color: #9acdb7;
+  background: #e6f7ef;
+  color: #23634c;
+}
+
+.status-require_approval {
+  border-color: #d4be78;
+  background: #fff8db;
+  color: #725f17;
+}
+
+.status-deny {
+  border-color: #e1aaa5;
+  background: #fff0ef;
+  color: #7b2f2b;
+}
+
+.policy-section {
+  margin-bottom: 16px;
+}
+
+.policy-preview-form {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.policy-controls {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(240px, 1fr) auto;
+}
+
+.policy-controls label,
+.json-editors label {
+  display: grid;
+  gap: 6px;
+}
+
+.policy-controls span,
+.json-editors span {
+  color: #506057;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.json-editors {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inline-error {
+  align-items: center;
+  border-top: 1px solid #f0d1cb;
+  color: #7b2f24;
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.preview-result {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.preview-heading {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.preview-heading p {
+  color: #66776e;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.preview-meta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.preview-reason {
+  color: #26483b;
+  font-size: 0.9rem;
+}
+
+.preview-argument-error {
+  color: #7b2f24;
+  font-size: 0.86rem;
+}
+
+.preview-detail-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.preview-detail-grid pre {
+  background: #f6f8f7;
+  border: 1px solid #dce5e0;
+  color: #17201b;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 8px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px;
+  white-space: pre;
+}
+
 .meta-list {
   display: grid;
   gap: 8px;
@@ -439,7 +581,10 @@ th {
   .review-grid,
   .summary-strip,
   .patch-layout,
-  .integrity-grid {
+  .integrity-grid,
+  .policy-controls,
+  .json-editors,
+  .preview-detail-grid {
     grid-template-columns: 1fr;
   }
 

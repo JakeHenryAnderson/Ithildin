@@ -26,6 +26,10 @@ from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.logging import configure_logging
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
+from ithildin_api.policy_preview import (
+    DEFAULT_PREVIEW_SESSION_ID,
+    PolicyPreviewService,
+)
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 
@@ -49,8 +53,11 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             audit_writer,
             timedelta(seconds=resolved_settings.approval_expiry_seconds),
         )
-        app_instance.state.registry = ToolRegistry.load(resolved_settings.manifest_dir)
-        app_instance.state.policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
+        registry = ToolRegistry.load(resolved_settings.manifest_dir)
+        policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
+        app_instance.state.registry = registry
+        app_instance.state.policy_evaluator = policy_evaluator
+        app_instance.state.policy_preview_service = PolicyPreviewService(registry, policy_evaluator)
         read_tool_executor = ReadToolExecutor.from_settings(
             workspace_root=resolved_settings.workspace_root,
             max_read_bytes=resolved_settings.max_read_bytes,
@@ -95,6 +102,16 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         registry = api.state.registry
         tools = [tool.summary() for tool in registry.list_tools(principal=principal)]
         return {"tools": tools}
+
+    @api.post("/policy/preview", dependencies=[Depends(require_admin_token)])
+    def preview_policy(payload: PolicyPreviewPayload) -> JsonObject:
+        preview_service = cast(PolicyPreviewService, api.state.policy_preview_service)
+        return preview_service.preview(
+            tool_name=payload.tool_name,
+            arguments=payload.arguments,
+            principal=payload.principal,
+            session_id=payload.session_id,
+        )
 
     @api.get("/patch-proposals", dependencies=[Depends(require_admin_token)])
     def list_patch_proposals() -> dict[str, list[JsonObject]]:
@@ -209,6 +226,13 @@ class ApprovalDecisionPayload(BaseModel):
     decision: ApprovalDecisionValue
     decided_by: str
     reason: Optional[str] = None
+
+
+class PolicyPreviewPayload(BaseModel):
+    tool_name: str
+    arguments: JsonObject
+    principal: Optional[JsonObject] = None
+    session_id: str = DEFAULT_PREVIEW_SESSION_ID
 
 
 def _approval_or_404(approval_service: ApprovalService, approval_id: str) -> ApprovalRequest:

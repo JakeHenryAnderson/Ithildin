@@ -44,6 +44,36 @@ rules:
     )
 
 
+def write_manifest(manifest_dir: Path, *, name: str, risk: str, required: list[str]) -> None:
+    required_block = "\n".join(f"    - {field}" for field in required)
+    manifest_dir.joinpath(f"{name.replace('.', '-')}.yaml").write_text(
+        f"""
+name: {name}
+version: 1.0.0
+title: {name}
+risk: {risk}
+category: filesystem
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+{required_block}
+  properties:
+    path:
+      type: string
+    proposal_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
+def write_policy(settings: Settings, rules_yaml: str) -> None:
+    settings.policy_path.write_text(f"version: test\nrules:\n{rules_yaml}", encoding="utf-8")
+
+
 def test_healthz_returns_service_health(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path))
 
@@ -276,6 +306,130 @@ input_schema:
     assert response.json()["tools"][0]["manifest_hash"].startswith("sha256:")
 
 
+def test_policy_preview_requires_authentication(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path))
+
+    with TestClient(app) as client:
+        response = client.post("/policy/preview", json={"tool_name": "fs.list", "arguments": {}})
+
+    assert response.status_code == 401
+
+
+def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={"tool_name": "fs.read", "arguments": {"path": "README.md"}},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is True
+    assert payload["decision"] == "allow"
+    assert payload["matched_rules"] == ["allow_test_reads"]
+    assert payload["resource"] == {
+        "type": "file",
+        "in_scope": True,
+        "risk": "read",
+        "path": "README.md",
+    }
+    assert payload["policy_input"]["principal"] == {"id": "admin:local-ui", "roles": ["Admin"]}
+    assert payload["manifest_hash"].startswith("sha256:")
+
+
+def test_policy_preview_requires_approval_for_write_tool(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(
+        settings.manifest_dir,
+        name="fs.patch.apply",
+        risk="write",
+        required=["proposal_id"],
+    )
+    write_policy(
+        settings,
+        """
+  - id: require_write_approval
+    decision: require_approval
+    reason: writes require approval
+    match:
+      tool.risk: write
+""",
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={
+                "tool_name": "fs.patch.apply",
+                "arguments": {"proposal_id": "patch_1234"},
+                "principal": {"id": "agent:test", "roles": ["Developer"]},
+                "session_id": "preview-test",
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is True
+    assert payload["decision"] == "require_approval"
+    assert payload["reason"] == "writes require approval"
+    assert payload["matched_rules"] == ["require_write_approval"]
+    assert payload["policy_input"]["principal"] == {"id": "agent:test", "roles": ["Developer"]}
+    assert payload["policy_input"]["context"] == {"session_id": "preview-test"}
+
+
+def test_policy_preview_unknown_tool_is_safe_and_side_effect_free(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={"tool_name": "fs.missing", "arguments": {}},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["decision"] == "deny"
+    assert response.json()["valid_arguments"] is False
+    assert response.json()["reason"] == "unknown tool"
+    assert _row_count(settings.db_path, "audit_events") == 0
+    assert _row_count(settings.db_path, "approvals") == 0
+    assert _row_count(settings.db_path, "patch_proposals") == 0
+
+
+def test_policy_preview_invalid_arguments_do_not_evaluate_policy_or_write_audit(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={"tool_name": "fs.read", "arguments": {}},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is False
+    assert payload["argument_error"]
+    assert payload["decision"] == "deny"
+    assert payload["matched_rules"] == []
+    assert payload["policy_input"] is None
+    assert _row_count(settings.db_path, "audit_events") == 0
+    assert _row_count(settings.db_path, "approvals") == 0
+    assert _row_count(settings.db_path, "patch_proposals") == 0
+
+
 def test_patch_proposal_endpoints_require_authentication(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path))
 
@@ -454,3 +608,8 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
         ).fetchall()
 
     assert rows == [("schema_version", "1")]
+
+
+def _row_count(db_path: Path, table_name: str) -> int:
+    with sqlite3.connect(db_path) as connection:
+        return int(connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0])
