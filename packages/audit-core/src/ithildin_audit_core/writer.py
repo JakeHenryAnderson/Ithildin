@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional, cast
@@ -24,6 +25,40 @@ REDACTED_VALUE = "[REDACTED]"
 
 class AuditWriteError(RuntimeError):
     """Raised when audit evidence cannot be written safely."""
+
+
+@dataclass(frozen=True)
+class AuditVerificationFailure:
+    row_number: int
+    event_id: Optional[str]
+    reason: str
+
+    def as_dict(self) -> JsonObject:
+        return {
+            "row_number": self.row_number,
+            "event_id": self.event_id,
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
+class AuditVerificationResult:
+    valid: bool
+    event_count: int
+    first_timestamp: Optional[str]
+    last_timestamp: Optional[str]
+    head_hash: str
+    failure: Optional[AuditVerificationFailure] = None
+
+    def as_dict(self) -> JsonObject:
+        return {
+            "valid": self.valid,
+            "event_count": self.event_count,
+            "first_timestamp": self.first_timestamp,
+            "last_timestamp": self.last_timestamp,
+            "head_hash": self.head_hash,
+            "failure": self.failure.as_dict() if self.failure else None,
+        }
 
 
 class AuditWriter:
@@ -150,6 +185,104 @@ class AuditWriter:
 
         return [cast(JsonObject, json.loads(str(row[0]))) for row in rows]
 
+    def verify_chain(self) -> AuditVerificationResult:
+        rows = self._payload_rows()
+        if not rows:
+            return AuditVerificationResult(
+                valid=True,
+                event_count=0,
+                first_timestamp=None,
+                last_timestamp=None,
+                head_hash=GENESIS_HASH,
+            )
+
+        previous_hash = GENESIS_HASH
+        first_timestamp: Optional[str] = None
+        last_timestamp: Optional[str] = None
+        head_hash = GENESIS_HASH
+
+        for index, row in enumerate(rows, start=1):
+            payload_json = str(row[0])
+            try:
+                payload = cast(JsonObject, json.loads(payload_json))
+            except json.JSONDecodeError:
+                return _failed_verification(
+                    rows=rows,
+                    row_number=index,
+                    head_hash=head_hash,
+                    reason="invalid audit payload JSON",
+                )
+
+            event_id = _optional_string(payload.get("event_id"))
+            try:
+                event = AuditEvent.model_validate(payload)
+            except ValidationError:
+                return _failed_verification(
+                    rows=rows,
+                    row_number=index,
+                    head_hash=head_hash,
+                    reason="invalid audit event schema",
+                    event_id=event_id,
+                )
+
+            if event.prev_event_hash != previous_hash:
+                return _failed_verification(
+                    rows=rows,
+                    row_number=index,
+                    head_hash=head_hash,
+                    reason="previous event hash mismatch",
+                    event_id=event.event_id,
+                )
+
+            expected_hash = _event_hash_from_event(event)
+            if event.event_hash != expected_hash:
+                return _failed_verification(
+                    rows=rows,
+                    row_number=index,
+                    head_hash=head_hash,
+                    reason="event hash mismatch",
+                    event_id=event.event_id,
+                )
+
+            if first_timestamp is None:
+                first_timestamp = event.timestamp.isoformat()
+            last_timestamp = event.timestamp.isoformat()
+            previous_hash = event.event_hash
+            head_hash = event.event_hash
+
+        return AuditVerificationResult(
+            valid=True,
+            event_count=len(rows),
+            first_timestamp=first_timestamp,
+            last_timestamp=last_timestamp,
+            head_hash=head_hash,
+        )
+
+    def export_jsonl_bundle(self) -> str:
+        verification = self.verify_chain()
+        metadata = {
+            "bundle_type": "ithildin.audit.export",
+            "format_version": "1",
+            "generated_at": datetime.now(UTC).isoformat(),
+            "event_count": verification.event_count,
+            "head_hash": verification.head_hash,
+            "verification": verification.as_dict(),
+        }
+        lines = [
+            json.dumps({"metadata": metadata}, sort_keys=True, separators=(",", ":")),
+            *[str(row[0]) for row in self._payload_rows()],
+        ]
+        return "\n".join(lines) + "\n"
+
+    def _payload_rows(self) -> list[tuple[object]]:
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                return connection.execute(
+                    "SELECT payload_json FROM audit_events ORDER BY rowid ASC"
+                ).fetchall()
+        except sqlite3.Error as exc:
+            raise AuditWriteError("failed to read audit events") from exc
+
     def _persist_event(self, event: AuditEvent) -> None:
         payload = event.model_dump(mode="json")
         payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -218,3 +351,65 @@ def _json_ready(value: object) -> JsonValue:
     if isinstance(value, list):
         return [_json_ready(item) for item in value]
     return cast(JsonValue, value)
+
+
+def _event_hash_from_event(event: AuditEvent) -> str:
+    event_data = {
+        "event_id": event.event_id,
+        "timestamp": event.timestamp,
+        "event_type": event.event_type,
+        "request_id": event.request_id,
+        "principal": event.principal,
+        "tool_name": event.tool_name,
+        "resource": event.resource,
+        "decision": event.decision,
+        "policy_version": event.policy_version,
+        "matched_rules": event.matched_rules,
+        "input_hash": event.input_hash,
+        "redactions": event.redactions,
+        "metadata": event.metadata,
+        "prev_event_hash": event.prev_event_hash,
+    }
+    return sha256_digest(_json_ready(event_data))
+
+
+def _failed_verification(
+    *,
+    rows: list[tuple[object]],
+    row_number: int,
+    head_hash: str,
+    reason: str,
+    event_id: Optional[str] = None,
+) -> AuditVerificationResult:
+    timestamps = _timestamps_from_rows(rows)
+    return AuditVerificationResult(
+        valid=False,
+        event_count=len(rows),
+        first_timestamp=timestamps[0],
+        last_timestamp=timestamps[1],
+        head_hash=head_hash,
+        failure=AuditVerificationFailure(
+            row_number=row_number,
+            event_id=event_id,
+            reason=reason,
+        ),
+    )
+
+
+def _timestamps_from_rows(rows: list[tuple[object]]) -> tuple[Optional[str], Optional[str]]:
+    timestamps: list[str] = []
+    for row in rows:
+        try:
+            payload = json.loads(str(row[0]))
+        except json.JSONDecodeError:
+            continue
+        timestamp = payload.get("timestamp") if isinstance(payload, dict) else None
+        if isinstance(timestamp, str):
+            timestamps.append(timestamp)
+    if not timestamps:
+        return None, None
+    return timestamps[0], timestamps[-1]
+
+
+def _optional_string(value: object) -> Optional[str]:
+    return value if isinstance(value, str) else None

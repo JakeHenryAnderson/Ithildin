@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 from typing import cast
@@ -352,6 +353,73 @@ def test_audit_events_endpoint_requires_auth_filters_and_bounds_results(tmp_path
     assert unauthenticated.status_code == 401
     assert [event["event_id"] for event in limited_response.json()["audit_events"]] == ["evt_2"]
     assert [event["event_id"] for event in filtered_response.json()["audit_events"]] == ["evt_1"]
+
+
+def test_audit_verification_and_export_endpoints(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        audit_writer.write_event(
+            event_id="evt_1",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_1",
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.read",
+        )
+        unauthenticated_verify = client.get("/audit-events/verify")
+        verify_response = client.get(
+            "/audit-events/verify",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        export_response = client.get(
+            "/audit-events/export",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated_verify.status_code == 401
+    assert verify_response.status_code == 200
+    assert verify_response.json()["valid"] is True
+    assert verify_response.json()["event_count"] == 1
+    assert export_response.status_code == 200
+    assert export_response.headers["content-type"].startswith("application/x-ndjson")
+    lines = export_response.text.splitlines()
+    assert json.loads(lines[0])["metadata"]["verification"]["valid"] is True
+    assert json.loads(lines[1])["event_id"] == "evt_1"
+
+
+def test_audit_export_reflects_failed_verification(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        audit_writer.write_event(
+            event_id="evt_1",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_1",
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.read",
+        )
+        with sqlite3.connect(settings.db_path) as connection:
+            payload_json = connection.execute(
+                "SELECT payload_json FROM audit_events WHERE event_id = 'evt_1'"
+            ).fetchone()[0]
+            payload = json.loads(str(payload_json))
+            payload["tool_name"] = "fs.changed"
+            connection.execute(
+                "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_1'",
+                (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
+            )
+            connection.commit()
+        export_response = client.get(
+            "/audit-events/export",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    metadata = json.loads(export_response.text.splitlines()[0])["metadata"]
+    assert metadata["verification"]["valid"] is False
+    assert metadata["verification"]["failure"]["reason"] == "event hash mismatch"
 
 
 def test_app_startup_fails_for_invalid_manifest(tmp_path: Path) -> None:

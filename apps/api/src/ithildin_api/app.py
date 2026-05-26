@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Optional, cast
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
@@ -175,6 +175,20 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 request_id=request_id,
             )
         }
+
+    @api.get("/audit-events/verify", dependencies=[Depends(require_admin_token)])
+    def verify_audit_events() -> JsonObject:
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        return audit_writer.verify_chain().as_dict()
+
+    @api.get("/audit-events/export", dependencies=[Depends(require_admin_token)])
+    def export_audit_events() -> Response:
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        return Response(
+            content=audit_writer.export_jsonl_bundle(),
+            media_type="application/x-ndjson",
+            headers={"Content-Disposition": 'attachment; filename="ithildin-audit-export.jsonl"'},
+        )
 
     return api
 

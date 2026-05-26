@@ -72,6 +72,135 @@ def test_audit_writer_hash_chain_links_events(tmp_path: Path) -> None:
     assert second.prev_event_hash == first.event_hash
 
 
+def test_audit_writer_verifies_valid_multi_event_chain(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    first = writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_CALL_PROPOSED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    second = writer.write_event(
+        event_id="evt_2",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_2",
+        principal={"id": "agent:local-dev"},
+    )
+
+    result = writer.verify_chain()
+
+    assert result.valid is True
+    assert result.event_count == 2
+    assert result.first_timestamp == first.timestamp.isoformat()
+    assert result.last_timestamp == second.timestamp.isoformat()
+    assert result.head_hash == second.event_hash
+    assert result.failure is None
+
+
+def test_audit_writer_verifies_empty_chain(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+
+    result = writer.verify_chain()
+
+    assert result.as_dict() == {
+        "valid": True,
+        "event_count": 0,
+        "first_timestamp": None,
+        "last_timestamp": None,
+        "head_hash": "sha256:" + ("0" * 64),
+        "failure": None,
+    }
+
+
+def test_audit_writer_detects_tampered_payload(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    with sqlite3.connect(tmp_path / "audit.sqlite3") as connection:
+        payload_json = connection.execute(
+            "SELECT payload_json FROM audit_events WHERE event_id = 'evt_1'"
+        ).fetchone()[0]
+        payload = json.loads(str(payload_json))
+        payload["tool_name"] = "fs.tampered"
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_1'",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
+        )
+        connection.commit()
+
+    result = writer.verify_chain()
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "event hash mismatch"
+    assert result.failure.event_id == "evt_1"
+
+
+def test_audit_writer_detects_broken_previous_hash(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_CALL_PROPOSED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.write_event(
+        event_id="evt_2",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_2",
+        principal={"id": "agent:local-dev"},
+    )
+    with sqlite3.connect(tmp_path / "audit.sqlite3") as connection:
+        payload_json = connection.execute(
+            "SELECT payload_json FROM audit_events WHERE event_id = 'evt_2'"
+        ).fetchone()[0]
+        payload = json.loads(str(payload_json))
+        payload["prev_event_hash"] = "sha256:" + ("1" * 64)
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_2'",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
+        )
+        connection.commit()
+
+    result = writer.verify_chain()
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "previous event hash mismatch"
+    assert result.failure.event_id == "evt_2"
+
+
+def test_audit_writer_export_includes_metadata_and_jsonl_events(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    event = writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+
+    bundle_lines = writer.export_jsonl_bundle().splitlines()
+
+    metadata = json.loads(bundle_lines[0])["metadata"]
+    event_payload = json.loads(bundle_lines[1])
+    assert metadata["bundle_type"] == "ithildin.audit.export"
+    assert metadata["format_version"] == "1"
+    assert metadata["event_count"] == 1
+    assert metadata["head_hash"] == event.event_hash
+    assert metadata["verification"]["valid"] is True
+    assert event_payload["event_id"] == "evt_1"
+
+
 def test_audit_writer_redacts_configured_fields(tmp_path: Path) -> None:
     writer = make_writer(tmp_path, redact_fields={"token"})
 

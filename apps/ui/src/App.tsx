@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Check,
   ClipboardList,
+  Download,
   FileDiff,
   KeyRound,
   RefreshCcw,
@@ -59,10 +60,26 @@ type AuditEvent = {
   metadata: JsonObject;
 };
 
+type AuditVerificationFailure = {
+  row_number: number;
+  event_id: string | null;
+  reason: string;
+};
+
+type AuditVerification = {
+  valid: boolean;
+  event_count: number;
+  first_timestamp: string | null;
+  last_timestamp: string | null;
+  head_hash: string;
+  failure: AuditVerificationFailure | null;
+};
+
 type DashboardData = {
   approvals: Approval[];
   patches: PatchProposal[];
   auditEvents: AuditEvent[];
+  verification: AuditVerification | null;
 };
 
 class ApiError extends Error {
@@ -81,12 +98,14 @@ export function App() {
     approvals: [],
     patches: [],
     auditEvents: [],
+    verification: null,
   });
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<PatchProposal | null>(null);
   const [denyReasons, setDenyReasons] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pendingCount = data.approvals.length;
@@ -100,7 +119,7 @@ export function App() {
 
   async function loadDashboard(activeToken = token) {
     if (!activeToken) {
-      setData({ approvals: [], patches: [], auditEvents: [] });
+      setData({ approvals: [], patches: [], auditEvents: [], verification: null });
       setSelectedProposal(null);
       setError(null);
       return;
@@ -109,15 +128,18 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      const [approvalsResponse, patchesResponse, auditResponse] = await Promise.all([
-        apiRequest<{ approvals: Approval[] }>("/approvals?status=pending", activeToken),
-        apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
-        apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
-      ]);
+      const [approvalsResponse, patchesResponse, auditResponse, verificationResponse] =
+        await Promise.all([
+          apiRequest<{ approvals: Approval[] }>("/approvals?status=pending", activeToken),
+          apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
+          apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
+          apiRequest<AuditVerification>("/audit-events/verify", activeToken),
+        ]);
       setData({
         approvals: approvalsResponse.approvals,
         patches: patchesResponse.patch_proposals,
         auditEvents: auditResponse.audit_events,
+        verification: verificationResponse,
       });
       if (!selectedProposalId && patchesResponse.patch_proposals[0]) {
         setSelectedProposalId(patchesResponse.patch_proposals[0].proposal_id);
@@ -157,8 +179,34 @@ export function App() {
       void loadDashboard(nextToken);
     } else {
       sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-      setData({ approvals: [], patches: [], auditEvents: [] });
+      setData({ approvals: [], patches: [], auditEvents: [], verification: null });
       setSelectedProposal(null);
+    }
+  }
+
+  async function exportAuditBundle() {
+    setExportLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE}/audit-events/export`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new ApiError(response.status, response.statusText);
+      }
+      const bundle = await response.blob();
+      const objectUrl = URL.createObjectURL(bundle);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = "ithildin-audit-export.jsonl";
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setExportLoading(false);
     }
   }
 
@@ -244,6 +292,63 @@ export function App() {
           <RefreshCcw aria-hidden="true" size={18} />
           {loading ? "Refreshing" : "Refresh"}
         </button>
+      </section>
+
+      <section className="integrity-section">
+        <Panel title="Audit Integrity" icon={<ShieldCheck size={18} />}>
+          <div className="integrity-grid">
+            <div className="integrity-status">
+              {data.verification ? (
+                <>
+                  <span
+                    className={
+                      data.verification.valid
+                        ? "integrity-indicator valid"
+                        : "integrity-indicator invalid"
+                    }
+                  >
+                    {data.verification.valid ? "Verified" : "Attention required"}
+                  </span>
+                  <dl className="meta-list">
+                    <div>
+                      <dt>Events</dt>
+                      <dd>{data.verification.event_count}</dd>
+                    </div>
+                    <div>
+                      <dt>Head hash</dt>
+                      <dd>{shortHash(data.verification.head_hash)}</dd>
+                    </div>
+                    <div>
+                      <dt>Last event</dt>
+                      <dd>
+                        {data.verification.last_timestamp
+                          ? formatDate(data.verification.last_timestamp)
+                          : "None"}
+                      </dd>
+                    </div>
+                  </dl>
+                  {data.verification.failure ? (
+                    <p className="integrity-failure">
+                      Row {data.verification.failure.row_number}:{" "}
+                      {data.verification.failure.reason}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <EmptyState text={token ? "Verification unavailable." : "Locked."} />
+              )}
+            </div>
+            <button
+              className="export-button"
+              type="button"
+              disabled={!token || exportLoading}
+              onClick={() => void exportAuditBundle()}
+            >
+              <Download aria-hidden="true" size={18} />
+              {exportLoading ? "Exporting" : "Export JSONL"}
+            </button>
+          </div>
+        </Panel>
       </section>
 
       <section className="review-grid">
