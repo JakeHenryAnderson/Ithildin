@@ -9,9 +9,10 @@ from datetime import datetime, timedelta
 from typing import Optional, cast
 
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
-from ithildin_schemas import ApprovalDecisionValue, ApprovalRequest, JsonObject
+from ithildin_schemas import ApprovalDecisionValue, ApprovalRequest, ApprovalStatus, JsonObject
 from pydantic import BaseModel
 
 from ithildin_api.approvals import (
@@ -68,6 +69,18 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         yield
 
     api = FastAPI(title="Ithildin API", lifespan=lifespan)
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+            "http://127.0.0.1:5174",
+            "http://localhost:5174",
+        ],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
 
     @api.get("/healthz")
     def healthz() -> dict[str, str]:
@@ -93,9 +106,14 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     def get_patch_proposal(proposal_id: str) -> JsonObject:
         patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
         try:
-            return patch_service.get_proposal(proposal_id).summary()
+            return patch_service.get_proposal(proposal_id).detail()
         except PatchProposalError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @api.get("/approvals", dependencies=[Depends(require_admin_token)])
+    def list_approvals(status: Optional[ApprovalStatus] = None) -> dict[str, list[ApprovalRequest]]:
+        approval_service = cast(ApprovalService, api.state.approval_service)
+        return {"approvals": approval_service.list(status=status)}
 
     @api.post("/approvals", dependencies=[Depends(require_admin_token)])
     def create_approval(payload: CreateApprovalPayload) -> ApprovalRequest:
@@ -142,6 +160,21 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             )
         except ApprovalError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    @api.get("/audit-events", dependencies=[Depends(require_admin_token)])
+    def list_audit_events(
+        limit: int = 100,
+        event_type: Optional[str] = None,
+        request_id: Optional[str] = None,
+    ) -> dict[str, list[JsonObject]]:
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        return {
+            "audit_events": audit_writer.list_events(
+                limit=limit,
+                event_type=event_type,
+                request_id=request_id,
+            )
+        }
 
     return api
 

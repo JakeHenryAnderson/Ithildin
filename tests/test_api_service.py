@@ -10,6 +10,8 @@ from ithildin_api.app import create_app
 from ithildin_api.config import Settings
 from ithildin_api.database import initialize_database
 from ithildin_api.patches import PatchProposalService
+from ithildin_audit_core import AuditWriter
+from ithildin_schemas import AuditEventType
 from pydantic import ValidationError
 
 
@@ -156,6 +158,58 @@ def test_create_get_approve_and_deny_approval_endpoints(tmp_path: Path) -> None:
     assert deny_response.json()["status"] == "denied"
 
 
+def test_approval_list_requires_auth_and_supports_status_filter(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        unauthenticated = client.get("/approvals")
+        first_response = client.post(
+            "/approvals",
+            headers={"Authorization": "Bearer correct-token"},
+            json={
+                "principal": {"id": "agent:local-dev"},
+                "tool_name": "fs.patch.apply",
+                "resource": {"path": "README.md"},
+                "summary": "Apply README patch",
+                "one_time_scope": {"tool_name": "fs.patch.apply"},
+            },
+        )
+        second_response = client.post(
+            "/approvals",
+            headers={"Authorization": "Bearer correct-token"},
+            json={
+                "principal": {"id": "agent:local-dev"},
+                "tool_name": "fs.patch.apply",
+                "resource": {"path": "other.md"},
+                "summary": "Apply other patch",
+                "one_time_scope": {"tool_name": "fs.patch.apply"},
+            },
+        )
+        client.post(
+            f"/approvals/{first_response.json()['approval_id']}/approve",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"decision": "approve", "decided_by": "user:alice"},
+        )
+        all_response = client.get(
+            "/approvals",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        pending_response = client.get(
+            "/approvals?status=pending",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert second_response.status_code == 200
+    assert [approval["status"] for approval in all_response.json()["approvals"]] == [
+        "approved",
+        "pending",
+    ]
+    assert [approval["approval_id"] for approval in pending_response.json()["approvals"]] == [
+        second_response.json()["approval_id"]
+    ]
+
+
 def test_tools_requires_authentication(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path))
 
@@ -258,10 +312,46 @@ def test_patch_proposal_endpoints_return_metadata(tmp_path: Path) -> None:
         )
 
     assert list_response.status_code == 200
+    assert "unified_diff" not in list_response.json()["patch_proposals"][0]
     assert list_response.json()["patch_proposals"][0]["proposal_id"] == proposal.proposal_id
     assert get_response.status_code == 200
     assert get_response.json()["proposal_hash"] == proposal.proposal_hash
+    assert get_response.json()["unified_diff"].startswith("--- a/README.md")
     assert missing_response.status_code == 404
+
+
+def test_audit_events_endpoint_requires_auth_filters_and_bounds_results(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        audit_writer.write_event(
+            event_id="evt_1",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_1",
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.read",
+        )
+        audit_writer.write_event(
+            event_id="evt_2",
+            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+            request_id="req_2",
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.read",
+        )
+        unauthenticated = client.get("/audit-events")
+        limited_response = client.get(
+            "/audit-events?limit=1",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        filtered_response = client.get(
+            "/audit-events?event_type=policy.evaluated&request_id=req_1",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert [event["event_id"] for event in limited_response.json()["audit_events"]] == ["evt_2"]
+    assert [event["event_id"] for event in filtered_response.json()["audit_events"]] == ["evt_1"]
 
 
 def test_app_startup_fails_for_invalid_manifest(tmp_path: Path) -> None:

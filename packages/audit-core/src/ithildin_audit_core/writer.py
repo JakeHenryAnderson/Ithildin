@@ -119,6 +119,37 @@ class AuditWriter:
             return GENESIS_HASH
         return str(row[0])
 
+    def list_events(
+        self,
+        *,
+        limit: int = 100,
+        event_type: Optional[str] = None,
+        request_id: Optional[str] = None,
+    ) -> list[JsonObject]:
+        bounded_limit = max(1, min(limit, 500))
+        filters: list[str] = []
+        parameters: list[str | int] = []
+        if event_type:
+            filters.append("event_type = ?")
+            parameters.append(event_type)
+        if request_id:
+            filters.append("request_id = ?")
+            parameters.append(request_id)
+
+        query = "SELECT payload_json FROM audit_events"
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+        query += " ORDER BY rowid DESC LIMIT ?"
+        parameters.append(bounded_limit)
+
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                rows = connection.execute(query, tuple(parameters)).fetchall()
+        except sqlite3.Error as exc:
+            raise AuditWriteError("failed to read audit events") from exc
+
+        return [cast(JsonObject, json.loads(str(row[0]))) for row in rows]
+
     def _persist_event(self, event: AuditEvent) -> None:
         payload = event.model_dump(mode="json")
         payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))

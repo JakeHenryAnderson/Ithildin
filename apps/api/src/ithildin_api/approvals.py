@@ -134,19 +134,34 @@ class ApprovalStore:
         if row is None:
             raise ApprovalError(f"approval not found: {approval_id}")
 
-        return ApprovalRequest(
-            approval_id=str(row[0]),
-            request_id=str(row[1]),
-            request_hash=str(row[2]),
-            principal=json.loads(str(row[3])),
-            tool_name=str(row[4]),
-            resource=json.loads(str(row[5])),
-            status=ApprovalStatus(str(row[6])),
-            summary=str(row[7]),
-            expires_at=datetime.fromisoformat(str(row[8])),
-            one_time_scope=json.loads(str(row[9])),
-            metadata=json.loads(str(row[10])),
-        )
+        return _approval_from_row(row)
+
+    def list(self, status: Optional[ApprovalStatus] = None) -> list[ApprovalRequest]:
+        query = """
+            SELECT
+                approval_id,
+                request_id,
+                request_hash,
+                principal_json,
+                tool_name,
+                resource_json,
+                status,
+                summary,
+                expires_at,
+                one_time_scope_json,
+                metadata_json
+            FROM approvals
+        """
+        parameters: tuple[str, ...] = ()
+        if status is not None:
+            query += " WHERE status = ?"
+            parameters = (status.value,)
+        query += " ORDER BY updated_at DESC"
+
+        with sqlite3.connect(self.db_path) as connection:
+            rows = connection.execute(query, parameters).fetchall()
+
+        return [_approval_from_row(row) for row in rows]
 
     def set_status(
         self,
@@ -219,6 +234,10 @@ class ApprovalService:
             approval = self.store.set_status(approval_id, ApprovalStatus.EXPIRED)
         return approval
 
+    def list(self, status: Optional[ApprovalStatus] = None) -> list[ApprovalRequest]:
+        approvals = self.store.list(status=status)
+        return [self.get(approval.approval_id) for approval in approvals]
+
     def approve(
         self, approval_id: str, decided_by: str, reason: Optional[str] = None
     ) -> ApprovalRequest:
@@ -285,6 +304,22 @@ class ApprovalService:
 
 def _new_id(prefix: str) -> str:
     return f"{prefix}_{uuid4().hex}"
+
+
+def _approval_from_row(row: tuple[object, ...]) -> ApprovalRequest:
+    return ApprovalRequest(
+        approval_id=str(row[0]),
+        request_id=str(row[1]),
+        request_hash=str(row[2]),
+        principal=json.loads(str(row[3])),
+        tool_name=str(row[4]),
+        resource=json.loads(str(row[5])),
+        status=ApprovalStatus(str(row[6])),
+        summary=str(row[7]),
+        expires_at=datetime.fromisoformat(str(row[8])),
+        one_time_scope=json.loads(str(row[9])),
+        metadata=json.loads(str(row[10])),
+    )
 
 
 def _request_hash(

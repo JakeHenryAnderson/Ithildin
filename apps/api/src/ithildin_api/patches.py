@@ -56,6 +56,11 @@ class PatchProposal:
             "metadata": self.metadata,
         }
 
+    def detail(self) -> JsonObject:
+        result = self.summary()
+        result["unified_diff"] = self.unified_diff
+        return result
+
     def tool_result(self) -> JsonObject:
         result = self.summary()
         result["proposal_status"] = result.pop("status")
