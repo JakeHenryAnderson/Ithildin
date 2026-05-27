@@ -1,0 +1,12 @@
+{
+  "bundle_hash": "sha256:677f07176eb4892a86cf21e0c5fdfc4d0d34e7048acad72b38ea8ec9b5cb0890",
+  "bundle_manifest_version": 1,
+  "bundle_version": "opa-demo-v1",
+  "entrypoint": "ithildin/decision",
+  "sources": [
+    {
+      "path": "ithildin.rego",
+      "source_hash": "sha256:deaf77fdec8423a4ed9542c786f89ebb60be31c08d82a68f4a7796e7a68c0f4f"
+    }
+  ]
+}

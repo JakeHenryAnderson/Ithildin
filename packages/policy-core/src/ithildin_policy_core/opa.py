@@ -18,6 +18,8 @@ from ithildin_schemas import (
 )
 from pydantic import ValidationError
 
+from ithildin_policy_core.opa_bundle import OpaBundleEvidence
+
 
 class OpaOpener(Protocol):
     def open(self, fullurl: Request, timeout: float = ...) -> Any:
@@ -35,6 +37,7 @@ class OpaPolicyEvaluator:
     decision_path: str
     timeout_seconds: float = 2.0
     opener: OpaOpener | None = None
+    bundle_evidence: OpaBundleEvidence | None = None
 
     engine_name = "opa"
 
@@ -46,6 +49,8 @@ class OpaPolicyEvaluator:
 
     @property
     def policy_hash(self) -> str:
+        if self.bundle_evidence is not None:
+            return self.bundle_evidence.bundle_hash
         return sha256_digest(
             {
                 "engine": self.engine_name,
@@ -56,6 +61,8 @@ class OpaPolicyEvaluator:
 
     @property
     def document_version(self) -> str:
+        if self.bundle_evidence is not None:
+            return self.bundle_evidence.bundle_version
         return self.decision_path
 
     @property
@@ -63,13 +70,18 @@ class OpaPolicyEvaluator:
         return 0
 
     def status(self) -> JsonObject:
-        return {
+        status: JsonObject = {
             "engine": self.engine_name,
             "document_version": self.document_version,
             "policy_hash": self.policy_hash,
             "rule_count": self.rule_count,
             "decision_url": _decision_url(self.base_url, self.decision_path),
         }
+        if self.bundle_evidence is not None:
+            status.update(self.bundle_evidence.as_status())
+        else:
+            status["bundle_verified"] = False
+        return status
 
     def evaluate(self, policy_input: PolicyInput) -> PolicyDecision:
         try:

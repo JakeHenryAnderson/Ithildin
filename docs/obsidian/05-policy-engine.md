@@ -23,6 +23,10 @@ selected with `ITHILDIN_POLICY_ENGINE=opa`, `ITHILDIN_OPA_URL`, and
 decision result below. If the sidecar is unavailable or returns malformed data, Ithildin returns a
 deny decision with a fail-closed obligation.
 
+OPA mode also verifies `ITHILDIN_OPA_BUNDLE_MANIFEST_PATH` before startup. The bundle manifest pins
+the local Rego source hash and entrypoint; verified bundle evidence is surfaced in policy status and
+used as the fallback policy version when OPA omits one.
+
 ## Policy Input Shape
 
 ```json

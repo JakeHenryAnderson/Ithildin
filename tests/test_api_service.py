@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from pathlib import Path
@@ -14,6 +15,7 @@ from ithildin_api.manifest_lock import ManifestLockRecord, write_manifest_lock
 from ithildin_api.patches import PatchProposalService
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter
+from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType
 from pydantic import ValidationError
 
@@ -408,6 +410,29 @@ def test_policy_status_requires_authentication_and_returns_evidence(tmp_path: Pa
     assert response.json()["policy_hash"].startswith("sha256:")
 
 
+def test_policy_status_reports_verified_opa_bundle_evidence(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    settings.policy_engine = "opa"
+    settings.opa_url = "http://opa.example:8181"
+    settings.opa_bundle_manifest_path = write_opa_bundle(tmp_path)
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/policy/status",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["engine"] == "opa"
+    assert payload["document_version"] == "opa-test-v1"
+    assert payload["bundle_version"] == "opa-test-v1"
+    assert payload["bundle_entrypoint"] == "ithildin/decision"
+    assert payload["bundle_verified"] is True
+    assert payload["policy_hash"] == payload["bundle_hash"]
+
+
 def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
@@ -780,3 +805,31 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
 def _row_count(db_path: Path, table_name: str) -> int:
     with sqlite3.connect(db_path) as connection:
         return int(connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0])
+
+
+def write_opa_bundle(tmp_path: Path) -> Path:
+    bundle_dir = tmp_path / "opa"
+    bundle_dir.mkdir()
+    source_path = bundle_dir / "ithildin.rego"
+    source_path.write_text("package ithildin\n", encoding="utf-8")
+    source_hash = "sha256:" + hashlib.sha256(source_path.read_bytes()).hexdigest()
+    bundle_hash = opa_bundle_hash(
+        bundle_version="opa-test-v1",
+        entrypoint="ithildin/decision",
+        sources=(OpaBundleSource(path="ithildin.rego", source_hash=source_hash),),
+    )
+    manifest_path = bundle_dir / "bundle.lock.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "bundle_manifest_version": 1,
+                "bundle_version": "opa-test-v1",
+                "entrypoint": "ithildin/decision",
+                "bundle_hash": bundle_hash,
+                "sources": [{"path": "ithildin.rego", "source_hash": source_hash}],
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    return manifest_path

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from urllib.error import URLError
@@ -8,7 +9,15 @@ from urllib.request import Request
 import pytest
 from ithildin_api.config import Settings
 from ithildin_api.policy import load_policy_engine
-from ithildin_policy_core import OpaPolicyEvaluator, PolicyError
+from ithildin_policy_core import (
+    OpaBundleError,
+    OpaBundleEvidence,
+    OpaBundleSource,
+    OpaPolicyEvaluator,
+    PolicyError,
+    opa_bundle_hash,
+    verify_opa_bundle_manifest,
+)
 from ithildin_schemas import PolicyDecisionValue, PolicyInput
 
 
@@ -92,6 +101,24 @@ def test_opa_policy_evaluator_parses_require_approval_decision() -> None:
     assert decision.matched_rules == ["opa_write"]
 
 
+def test_opa_policy_evaluator_uses_bundle_hash_when_result_has_no_policy_version(
+    tmp_path: Path,
+) -> None:
+    bundle_evidence = write_opa_bundle(tmp_path)
+    evaluator = OpaPolicyEvaluator(
+        base_url="http://opa.example:8181",
+        decision_path="/v1/data/ithildin/decision",
+        opener=FakeOpaOpener(),
+        bundle_evidence=bundle_evidence,
+    )
+
+    decision = evaluator.evaluate(policy_input("fs.read", "read"))
+
+    assert decision.decision == PolicyDecisionValue.ALLOW
+    assert decision.policy_version == bundle_evidence.bundle_hash
+    assert evaluator.policy_hash == bundle_evidence.bundle_hash
+
+
 @pytest.mark.parametrize(
     "response",
     [
@@ -128,17 +155,115 @@ def test_opa_policy_status_reports_engine_metadata() -> None:
     assert status["policy_hash"] == evaluator.policy_hash
     assert status["rule_count"] == 0
     assert status["decision_url"] == "http://opa.example:8181/v1/data/ithildin/decision"
+    assert status["bundle_verified"] is False
+
+
+def test_opa_policy_status_reports_verified_bundle_evidence(tmp_path: Path) -> None:
+    bundle_evidence = write_opa_bundle(tmp_path)
+    evaluator = OpaPolicyEvaluator(
+        base_url="http://opa.example:8181",
+        decision_path="/v1/data/ithildin/decision",
+        bundle_evidence=bundle_evidence,
+    )
+
+    status = evaluator.status()
+
+    assert status["engine"] == "opa"
+    assert status["document_version"] == "opa-test-v1"
+    assert status["policy_hash"] == bundle_evidence.bundle_hash
+    assert status["bundle_version"] == "opa-test-v1"
+    assert status["bundle_entrypoint"] == "ithildin/decision"
+    assert status["bundle_hash"] == bundle_evidence.bundle_hash
+    assert status["bundle_verified"] is True
+    assert status["bundle_sources"] == [
+        {"path": "ithildin.rego", "source_hash": bundle_evidence.sources[0].source_hash}
+    ]
 
 
 def test_policy_engine_loader_selects_opa_and_requires_url(tmp_path: Path) -> None:
-    settings = make_settings(tmp_path, policy_engine="opa", opa_url="http://opa.example:8181")
+    bundle_evidence = write_opa_bundle(tmp_path)
+    settings = make_settings(
+        tmp_path,
+        policy_engine="opa",
+        opa_url="http://opa.example:8181",
+        opa_bundle_manifest_path=bundle_evidence.manifest_path,
+    )
     evaluator = load_policy_engine(settings)
 
     assert evaluator.status()["engine"] == "opa"
+    assert evaluator.status()["bundle_verified"] is True
 
-    missing_url = make_settings(tmp_path, policy_engine="opa", opa_url="")
+    missing_url = make_settings(
+        tmp_path,
+        policy_engine="opa",
+        opa_url="",
+        opa_bundle_manifest_path=bundle_evidence.manifest_path,
+    )
     with pytest.raises(PolicyError, match="ITHILDIN_OPA_URL"):
         load_policy_engine(missing_url)
+
+
+def test_policy_engine_loader_requires_verified_opa_bundle(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, policy_engine="opa", opa_url="http://opa.example:8181")
+
+    with pytest.raises(OpaBundleError, match="not found"):
+        load_policy_engine(settings)
+
+
+def test_opa_bundle_manifest_rejects_tampered_source(tmp_path: Path) -> None:
+    evidence = write_opa_bundle(tmp_path)
+    evidence.manifest_path.with_name("ithildin.rego").write_text(
+        "package changed\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(OpaBundleError, match="source hash mismatch"):
+        verify_opa_bundle_manifest(evidence.manifest_path)
+
+
+def test_opa_bundle_manifest_rejects_missing_source(tmp_path: Path) -> None:
+    evidence = write_opa_bundle(tmp_path)
+    evidence.manifest_path.with_name("ithildin.rego").unlink()
+
+    with pytest.raises(OpaBundleError, match="source not found"):
+        verify_opa_bundle_manifest(evidence.manifest_path)
+
+
+def test_opa_bundle_manifest_rejects_path_escape(tmp_path: Path) -> None:
+    bundle_dir = tmp_path / "opa"
+    bundle_dir.mkdir()
+    source_hash = "sha256:" + ("1" * 64)
+    bundle_dir.joinpath("bundle.lock.json").write_text(
+        json.dumps(
+            {
+                "bundle_manifest_version": 1,
+                "bundle_version": "opa-test-v1",
+                "entrypoint": "ithildin/decision",
+                "bundle_hash": opa_bundle_hash(
+                    bundle_version="opa-test-v1",
+                    entrypoint="ithildin/decision",
+                    sources=(OpaBundleSource(path="../escape.rego", source_hash=source_hash),),
+                ),
+                "sources": [{"path": "../escape.rego", "source_hash": source_hash}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(OpaBundleError, match="stay under"):
+        verify_opa_bundle_manifest(bundle_dir / "bundle.lock.json")
+
+
+def test_opa_bundle_manifest_rejects_malformed_metadata(tmp_path: Path) -> None:
+    bundle_dir = tmp_path / "opa"
+    bundle_dir.mkdir()
+    bundle_dir.joinpath("bundle.lock.json").write_text(
+        json.dumps({"bundle_manifest_version": 1}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(OpaBundleError, match="missing bundle_version"):
+        verify_opa_bundle_manifest(bundle_dir / "bundle.lock.json")
 
 
 def policy_input(tool_name: str, tool_risk: str) -> PolicyInput:
@@ -155,6 +280,7 @@ def make_settings(
     *,
     policy_engine: str = "yaml",
     opa_url: str = "",
+    opa_bundle_manifest_path: Path | None = None,
 ) -> Settings:
     manifest_dir = tmp_path / "manifests"
     manifest_dir.mkdir(exist_ok=True)
@@ -169,4 +295,42 @@ def make_settings(
         policy_path=policy_path,
         policy_engine=policy_engine,
         opa_url=opa_url,
+        opa_bundle_manifest_path=(
+            opa_bundle_manifest_path or tmp_path / "opa" / "bundle.lock.json"
+        ),
     )
+
+
+def write_opa_bundle(tmp_path: Path) -> OpaBundleEvidence:
+    bundle_dir = tmp_path / "opa"
+    bundle_dir.mkdir(exist_ok=True)
+    source_path = bundle_dir / "ithildin.rego"
+    source_path.write_text(
+        """
+package ithildin
+
+default decision := {"decision": "deny"}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    source_hash = "sha256:" + hashlib.sha256(source_path.read_bytes()).hexdigest()
+    bundle_hash = opa_bundle_hash(
+        bundle_version="opa-test-v1",
+        entrypoint="ithildin/decision",
+        sources=(OpaBundleSource(path="ithildin.rego", source_hash=source_hash),),
+    )
+    manifest_path = bundle_dir / "bundle.lock.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "bundle_manifest_version": 1,
+                "bundle_version": "opa-test-v1",
+                "entrypoint": "ithildin/decision",
+                "bundle_hash": bundle_hash,
+                "sources": [{"path": "ithildin.rego", "source_hash": source_hash}],
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    return verify_opa_bundle_manifest(manifest_path)

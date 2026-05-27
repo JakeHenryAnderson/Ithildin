@@ -37,8 +37,9 @@ Trusted tool manifests are hash-pinned by `tool-manifests.lock.json`; run `make 
 after intentionally changing a manifest.
 The default policy engine is the local YAML evaluator. To prototype an OPA sidecar, set
 `ITHILDIN_POLICY_ENGINE=opa`, `ITHILDIN_OPA_URL=http://<opa-host>:8181`, and keep
-`ITHILDIN_OPA_DECISION_PATH=/v1/data/ithildin/decision`. OPA is optional and is not started
-by the local Compose stack in this task.
+`ITHILDIN_OPA_DECISION_PATH=/v1/data/ithildin/decision`. OPA mode verifies
+`policies/opa/bundle.lock.json` before startup and reports the verified bundle hash in policy
+status. OPA is optional and is not started by the local Compose stack in this task.
 
 ## Services
 
