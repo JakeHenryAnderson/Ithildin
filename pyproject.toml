@@ -33,6 +33,7 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "-q"
 pythonpath = [
+    ".",
     "apps/api/src",
     "apps/mcp-server/src",
     "packages/audit-core/src",
@@ -72,6 +73,7 @@ ithildin_tool_sdk = "packages/tool-sdk/src/ithildin_tool_sdk"
 python_version = "3.12"
 strict = true
 mypy_path = [
+    ".",
     "apps/api/src",
     "apps/mcp-server/src",
     "packages/audit-core/src",

@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed lint manifest-lock manifest-lock-check release-check test typecheck ui-dev
+.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -53,6 +53,12 @@ compose-smoke:
 
 demo-flow: demo-seed
 	uv run python scripts/demo_flow.py --env-file $(COMPOSE_ENV_FILE)
+
+ollama-smoke:
+	uv run python scripts/ollama_demo.py smoke
+
+local-model-demo: ollama-smoke
+	uv run python scripts/ollama_demo.py local-demo
 
 clean:
 	rm -rf .mypy_cache .pytest_cache .ruff_cache

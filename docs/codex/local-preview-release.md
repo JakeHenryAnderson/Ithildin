@@ -12,6 +12,7 @@ evidence.
 4. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
 5. Open `http://127.0.0.1:5173` and use the configured admin token.
 6. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
+7. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
 
 ## Trust Inputs
 
@@ -44,11 +45,12 @@ The local console shows:
 - Tool outputs are redacted before returning to agents.
 - Audit events are stored in SQLite and hash-chained JSONL.
 - Docker is only used to run the local demo stack.
+- Ollama local-model demos are host-side only; Ithildin does not run or proxy models.
 
 ## Deferred
 
-- Production authentication, identity/RBAC, OIDC, SAML, and SCIM.
+- Production authentication, OIDC, SAML, and SCIM.
 - Postgres storage, OpenTelemetry export, and hosted control-plane workflows.
 - Kubernetes, Docker socket access, shell execution, and broad filesystem writes.
 - Cryptographic signing/notarization for manifests and audit exports.
-- Local model demo packaging with Ollama.
+- Managed model serving or hosted LLM control-plane workflows.

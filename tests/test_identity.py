@@ -19,12 +19,18 @@ def test_principal_registry_loads_seed_records() -> None:
     registry = PrincipalRegistry.load(Path("principals/local.yaml"))
 
     principal = registry.resolve_active("agent:mcp-local")
+    model_principal = registry.resolve_active("model:ollama-local")
 
     assert registry.count >= 3
     assert principal.trusted_principal() == {
         "id": "agent:mcp-local",
         "type": "agent",
         "roles": ["AgentDeveloper"],
+    }
+    assert model_principal.trusted_principal() == {
+        "id": "model:ollama-local",
+        "type": "model",
+        "roles": ["AgentReadOnly"],
     }
 
 

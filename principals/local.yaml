@@ -54,3 +54,13 @@ principals:
     enabled: true
     metadata:
       source: local-seed
+
+  - id: model:ollama-local
+    type: model
+    display_name: Local Ollama Model
+    roles:
+      - AgentReadOnly
+    enabled: true
+    metadata:
+      source: local-model-demo
+      managed_by: host-ollama
