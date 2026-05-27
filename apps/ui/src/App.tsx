@@ -126,6 +126,25 @@ type SystemStatus = {
     event_count: number;
     head_hash: string;
   };
+  security: {
+    preview_label: string;
+    production_ready: boolean;
+    dev_admin_token: {
+      sample_token_active: boolean;
+      explicitly_allowed: boolean;
+    };
+    local_only: {
+      api_host_publish: string;
+      ui_host_publish: string;
+      remote_mcp_enabled: boolean;
+    };
+    cors: {
+      allow_credentials: boolean;
+      allow_origins: string[];
+      wildcard_allowed: boolean;
+    };
+    warnings: string[];
+  };
   limits: {
     approval_expiry_seconds: number;
     max_read_bytes: number;
@@ -187,6 +206,7 @@ export function App() {
   const pendingCount = data.approvals.length;
   const proposedPatchCount = data.patches.filter((patch) => patch.status === "proposed").length;
   const recentFailures = data.auditEvents.filter((event) => event.event_type.endsWith(".failed"));
+  const securityWarnings = data.systemStatus?.security.warnings ?? [];
 
   const selectedPatchFromList = useMemo(
     () => data.patches.find((patch) => patch.proposal_id === selectedProposalId) ?? null,
@@ -428,6 +448,13 @@ export function App() {
         </section>
       ) : null}
 
+      {securityWarnings.length > 0 ? (
+        <section className="notice warning" role="alert">
+          <AlertTriangle aria-hidden="true" size={18} />
+          <span>{securityWarnings.join(" · ")}</span>
+        </section>
+      ) : null}
+
       <section className="summary-strip" aria-label="Review summary">
         <Metric icon={<ClipboardList size={20} />} label="Pending" value={pendingCount} />
         <Metric icon={<FileDiff size={20} />} label="Proposed patches" value={proposedPatchCount} />
@@ -478,6 +505,26 @@ export function App() {
                 <div>
                   <dt>Tools</dt>
                   <dd>{data.systemStatus.tool_count}</dd>
+                </div>
+                <div>
+                  <dt>Preview</dt>
+                  <dd>{data.systemStatus.security.preview_label}</dd>
+                </div>
+                <div>
+                  <dt>Dev Token</dt>
+                  <dd>
+                    {data.systemStatus.security.dev_admin_token.sample_token_active
+                      ? "enabled"
+                      : "not active"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>CORS</dt>
+                  <dd>
+                    {data.systemStatus.security.cors.wildcard_allowed
+                      ? "wildcard"
+                      : "local only"}
+                  </dd>
                 </div>
                 <div>
                   <dt>Read Limit</dt>

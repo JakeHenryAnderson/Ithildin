@@ -21,6 +21,7 @@ from ithildin_api.policy import load_policy_engine
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.security_status import validate_security_settings
 from ithildin_api.storage import validate_storage_settings
 from ithildin_api.telemetry import configure_telemetry
 from ithildin_api.tool_calls import GovernedToolCallService
@@ -121,6 +122,7 @@ def create_mcp_server(adapter: IthildinMcpAdapter) -> Server:
 
 def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
     resolved_settings = settings or load_settings()
+    validate_security_settings(resolved_settings)
     validate_storage_settings(resolved_settings)
     telemetry = configure_telemetry(resolved_settings)
     initialize_database(resolved_settings.db_path)

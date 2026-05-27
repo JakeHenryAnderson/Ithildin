@@ -8,6 +8,7 @@ from urllib.error import HTTPError
 from urllib.request import Request
 
 import pytest
+import yaml
 from ithildin_api.approvals import (
     ApprovalError,
     ApprovalService,
@@ -212,6 +213,27 @@ def test_security_regression_redaction_and_denied_audit_chain(tmp_path: Path) ->
         "tool.execution.started",
         "tool.execution.failed",
     ]
+
+
+def test_deployment_security_boundaries_are_loopback_and_no_docker_socket() -> None:
+    compose_text = Path("deploy/docker-compose.yml").read_text(encoding="utf-8")
+    compose = yaml.safe_load(compose_text)
+    services = compose["services"]
+
+    all_ports = [
+        port
+        for service in services.values()
+        for port in service.get("ports", [])
+    ]
+    all_volumes = [
+        volume
+        for service in services.values()
+        for volume in service.get("volumes", [])
+    ]
+
+    assert all(str(port).startswith("127.0.0.1:") for port in all_ports)
+    assert "docker.sock" not in compose_text
+    assert all("docker.sock" not in str(volume) for volume in all_volumes)
 
 
 def _filesystem(tmp_path: Path, *, max_read_bytes: int = 128) -> FilesystemReadTools:

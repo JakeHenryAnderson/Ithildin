@@ -2,6 +2,10 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
+**v0.1 local-preview warning:** Ithildin is not production security software. It is a
+mediation layer, not a kernel sandbox, EDR, MDM, production identity system, hosted MCP platform, or
+tamper-proof audit store.
+
 The project goal is to let AI agents use local tools through narrow, policy-scoped, auditable interfaces instead of unrestricted endpoint access.
 
 ## Product Thesis
@@ -109,5 +113,6 @@ No agent-originated action reaches the endpoint unless:
 ## Start Reading
 
 Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md), then use
+[docs/codex/threat-model-and-non-goals.md](docs/codex/threat-model-and-non-goals.md),
 [docs/obsidian/00-index.md](docs/obsidian/00-index.md) and
 [docs/codex/project-brief.md](docs/codex/project-brief.md) when starting implementation work.

@@ -40,6 +40,11 @@ from ithildin_api.policy_preview import (
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.security_status import (
+    LOCAL_CORS_ORIGINS,
+    security_status,
+    validate_security_settings,
+)
 from ithildin_api.storage import storage_status, validate_storage_settings
 from ithildin_api.telemetry import Telemetry, configure_telemetry, safe_span_attributes
 
@@ -51,6 +56,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
         resolved_settings = settings or load_settings()
         configure_logging(resolved_settings.log_level)
+        validate_security_settings(resolved_settings)
         validate_storage_settings(resolved_settings)
         telemetry = configure_telemetry(resolved_settings)
         app_instance.state.settings = resolved_settings
@@ -122,12 +128,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     api = FastAPI(title="Ithildin API", lifespan=lifespan)
     api.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://127.0.0.1:5173",
-            "http://localhost:5173",
-            "http://127.0.0.1:5174",
-            "http://localhost:5174",
-        ],
+        allow_origins=list(LOCAL_CORS_ORIGINS),
         allow_credentials=False,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
@@ -165,6 +166,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     "required": settings_state.require_known_principals,
                 },
                 "storage": storage_status(settings_state),
+                "security": security_status(settings_state),
                 "telemetry": telemetry.status(),
                 "policy": policy_evaluator.status(),
                 "audit": {

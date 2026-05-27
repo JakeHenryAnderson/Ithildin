@@ -4,6 +4,9 @@ This guide describes the current v0.1 local-preview workflow. It is intended for
 running Ithildin locally, connecting an MCP-capable client, reviewing approvals, and exporting audit
 evidence.
 
+Read [Threat Model and Non-Goals](threat-model-and-non-goals.md) before treating the preview as a
+security boundary. Ithildin is a local mediation layer, not production security software.
+
 ## Quick Start
 
 1. Install Python 3.12, `uv`, Node/npm, and Docker Desktop if you want the Compose demo.
@@ -27,6 +30,8 @@ evidence.
   status.
 - Principal identities are loaded from `principals/local.yaml`; unknown or disabled principals fail
   closed in governed flows.
+- The sample admin token works only when `ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and the API/UI report
+  that warning in system status.
 - SQLite is the only runtime storage backend. Postgres settings are surfaced as readiness evidence
   only.
 - OpenTelemetry is disabled by default and reports only safe span metadata when enabled.

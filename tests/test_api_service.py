@@ -4,7 +4,7 @@ import hashlib
 import json
 import sqlite3
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,6 +18,7 @@ from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType
 from pydantic import ValidationError
+from starlette.middleware.cors import CORSMiddleware
 
 
 def make_settings(
@@ -182,6 +183,9 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "otlp_endpoint_configured": False,
         "exporters": [],
     }
+    assert payload["security"]["production_ready"] is False
+    assert payload["security"]["cors"]["wildcard_allowed"] is False
+    assert payload["security"]["local_only"]["remote_mcp_enabled"] is False
     assert payload["policy"]["engine"] == "yaml"
     assert payload["policy"]["policy_hash"].startswith("sha256:")
     assert payload["audit"] == {
@@ -227,6 +231,54 @@ def test_unknown_principal_endpoint_returns_404(tmp_path: Path) -> None:
 
     assert response.status_code == 404
     assert "unknown principal" in response.json()["detail"]
+
+
+def test_sample_admin_token_requires_explicit_demo_flag(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="dev-admin-token-change-me")
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError, match="sample admin token"):
+        with TestClient(app):
+            pass
+
+
+def test_sample_admin_token_demo_flag_reports_warning(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="dev-admin-token-change-me")
+    settings.allow_dev_admin_token = True
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer dev-admin-token-change-me"},
+        )
+
+    assert response.status_code == 200
+    security = response.json()["security"]
+    assert security["dev_admin_token"] == {
+        "sample_token_active": True,
+        "explicitly_allowed": True,
+    }
+    assert security["warnings"] == ["sample admin token is enabled for local demo use"]
+
+
+def test_cors_origins_are_local_only(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path))
+
+    cors = next(
+        middleware
+        for middleware in app.user_middleware
+        if getattr(middleware.cls, "__name__", "") == "CORSMiddleware"
+    )
+    cors_kwargs = cast(dict[str, Any], cors.kwargs)
+    allow_origins = cast(list[str], cors_kwargs["allow_origins"])
+
+    assert "*" not in allow_origins
+    assert all(
+        origin.startswith(("http://127.0.0.1:", "http://localhost:"))
+        for origin in allow_origins
+    )
+    assert cors_kwargs["allow_credentials"] is False
 
 
 def test_postgres_storage_backend_fails_closed(tmp_path: Path) -> None:

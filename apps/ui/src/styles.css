@@ -150,6 +150,12 @@ h3 {
   color: #7b2f24;
 }
 
+.notice.warning {
+  border-color: #d4be78;
+  background: #fff8db;
+  color: #725f17;
+}
+
 .summary-strip {
   display: grid;
   gap: 12px;

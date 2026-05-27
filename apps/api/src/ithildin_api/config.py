@@ -7,6 +7,8 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEV_ADMIN_TOKEN = "dev-admin-token-change-me"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -16,6 +18,7 @@ class Settings(BaseSettings):
     )
 
     admin_token: str = Field(min_length=1)
+    allow_dev_admin_token: bool = False
     audit_log_path: Path = Path("var/logs/audit.jsonl")
     db_path: Path = Path("var/db/ithildin.sqlite3")
     storage_backend: str = "sqlite"
