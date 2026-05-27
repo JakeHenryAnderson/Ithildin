@@ -169,6 +169,9 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "required": False,
         "path": settings.manifest_lock_path.as_posix(),
     }
+    assert payload["principals"]["required"] is True
+    assert payload["principals"]["count"] >= 1
+    assert payload["principals"]["enabled_count"] >= 1
     assert payload["policy"]["engine"] == "yaml"
     assert payload["policy"]["policy_hash"].startswith("sha256:")
     assert payload["audit"] == {
@@ -179,6 +182,52 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
     assert payload["limits"]["max_read_bytes"] == settings.max_read_bytes
     assert payload["limits"]["max_patch_bytes"] == settings.max_patch_bytes
     assert payload["limits"]["http_allowlist_configured"] is True
+
+
+def test_principal_endpoints_require_auth_and_return_records(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        unauthenticated = client.get("/principals")
+        response = client.get(
+            "/principals",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        detail_response = client.get(
+            "/principals/agent:local-dev",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert response.status_code == 200
+    principals = response.json()["principals"]
+    assert any(principal["id"] == "agent:local-dev" for principal in principals)
+    assert detail_response.status_code == 200
+    assert detail_response.json()["roles"] == ["AgentDeveloper"]
+
+
+def test_unknown_principal_endpoint_returns_404(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/principals/agent:missing",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 404
+    assert "unknown principal" in response.json()["detail"]
+
+
+def test_app_startup_requires_principal_registry_when_configured(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    settings.principal_registry_path = tmp_path / "missing-principals.yaml"
+    settings.require_known_principals = True
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError, match="principal registry not found"):
+        with TestClient(app):
+            pass
 
 
 def test_create_get_approve_and_deny_approval_endpoints(tmp_path: Path) -> None:

@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     manifest_dir: Path = Path("tool-manifests")
     manifest_lock_path: Path = Path("tool-manifests.lock.json")
     require_manifest_lock: bool = True
+    principal_registry_path: Path = Path("principals/local.yaml")
+    require_known_principals: bool = True
     policy_path: Path = Path("policies/default.yaml")
     policy_engine: str = "yaml"
     opa_url: str = ""

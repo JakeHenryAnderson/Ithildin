@@ -25,6 +25,7 @@ from ithildin_api.auth import require_admin_token
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.http_tools import HttpFetchExecutor
+from ithildin_api.identity import PrincipalRegistry, PrincipalRegistryError
 from ithildin_api.logging import configure_logging
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
 from ithildin_api.policy import load_policy_engine
@@ -61,8 +62,13 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             lock_path=resolved_settings.manifest_lock_path,
             require_lock=resolved_settings.require_manifest_lock,
         )
+        principal_registry = PrincipalRegistry.load(
+            resolved_settings.principal_registry_path,
+            require_registry=resolved_settings.require_known_principals,
+        )
         policy_evaluator = load_policy_engine(resolved_settings)
         app_instance.state.registry = registry
+        app_instance.state.principal_registry = principal_registry
         app_instance.state.policy_evaluator = policy_evaluator
         http_fetch_executor = HttpFetchExecutor.from_settings(
             http_allowlist=resolved_settings.http_allowlist,
@@ -124,6 +130,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     def system_status() -> JsonObject:
         settings_state = cast(Settings, api.state.settings)
         registry = cast(ToolRegistry, api.state.registry)
+        principal_registry = cast(PrincipalRegistry, api.state.principal_registry)
         policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         tools = registry.list_tools()
@@ -135,6 +142,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             "manifest_lock": {
                 "required": settings_state.require_manifest_lock,
                 "path": settings_state.manifest_lock_path.as_posix(),
+            },
+            "principals": {
+                **principal_registry.status(),
+                "required": settings_state.require_known_principals,
             },
             "policy": policy_evaluator.status(),
             "audit": {
@@ -160,6 +171,23 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         registry = api.state.registry
         tools = [tool.summary() for tool in registry.list_tools(principal=principal)]
         return {"tools": tools}
+
+    @api.get("/principals", dependencies=[Depends(require_admin_token)])
+    def list_principals() -> dict[str, list[JsonObject]]:
+        principal_registry = cast(PrincipalRegistry, api.state.principal_registry)
+        return {
+            "principals": [
+                principal.safe_summary() for principal in principal_registry.list_principals()
+            ]
+        }
+
+    @api.get("/principals/{principal_id}", dependencies=[Depends(require_admin_token)])
+    def get_principal(principal_id: str) -> JsonObject:
+        principal_registry = cast(PrincipalRegistry, api.state.principal_registry)
+        try:
+            return principal_registry.get(principal_id).safe_summary()
+        except PrincipalRegistryError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @api.post("/policy/preview", dependencies=[Depends(require_admin_token)])
     def preview_policy(payload: PolicyPreviewPayload) -> JsonObject:

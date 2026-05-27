@@ -1,0 +1,38 @@
+principals:
+  - id: admin:local-ui
+    type: admin
+    display_name: Local Review Console Admin
+    roles:
+      - Admin
+      - Approver
+      - Auditor
+    enabled: true
+    metadata:
+      source: local-seed
+
+  - id: agent:mcp-local
+    type: agent
+    display_name: Local MCP Agent
+    roles:
+      - AgentDeveloper
+    enabled: true
+    metadata:
+      source: local-seed
+
+  - id: agent:local-dev
+    type: agent
+    display_name: Local Development Agent
+    roles:
+      - AgentDeveloper
+    enabled: true
+    metadata:
+      source: local-seed
+
+  - id: agent:test
+    type: agent
+    display_name: Test Agent
+    roles:
+      - AgentDeveloper
+    enabled: true
+    metadata:
+      source: local-seed

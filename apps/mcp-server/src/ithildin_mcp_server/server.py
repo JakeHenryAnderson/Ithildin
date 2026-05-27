@@ -11,6 +11,7 @@ from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.http_tools import HttpFetchExecutor
+from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.policy import load_policy_engine
 from ithildin_api.read_tools import ReadToolExecutor
@@ -114,6 +115,10 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         resolved_settings.manifest_dir,
         lock_path=resolved_settings.manifest_lock_path,
         require_lock=resolved_settings.require_manifest_lock,
+    )
+    PrincipalRegistry.load(
+        resolved_settings.principal_registry_path,
+        require_registry=resolved_settings.require_known_principals,
     )
     policy_evaluator = load_policy_engine(resolved_settings)
     http_fetch_executor = HttpFetchExecutor.from_settings(
