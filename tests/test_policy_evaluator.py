@@ -76,6 +76,12 @@ def test_policy_allows_in_scope_reads(tmp_path: Path) -> None:
     assert decision.matched_rules == ["allow_in_scope_reads"]
     assert decision.policy_version.startswith("sha256:")
     assert decision.obligations["audit_level"] == "full"
+    assert evaluator.status() == {
+        "engine": "yaml",
+        "document_version": "test-v1",
+        "policy_hash": evaluator.policy_hash,
+        "rule_count": 4,
+    }
 
 
 def test_policy_requires_approval_for_writes(tmp_path: Path) -> None:

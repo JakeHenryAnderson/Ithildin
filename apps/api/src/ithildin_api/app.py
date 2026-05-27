@@ -131,6 +131,11 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             session_id=payload.session_id,
         )
 
+    @api.get("/policy/status", dependencies=[Depends(require_admin_token)])
+    def policy_status() -> JsonObject:
+        policy_evaluator = cast(PolicyEvaluator, api.state.policy_evaluator)
+        return policy_evaluator.status()
+
     @api.get("/patch-proposals", dependencies=[Depends(require_admin_token)])
     def list_patch_proposals() -> dict[str, list[JsonObject]]:
         patch_service = cast(PatchProposalService, api.state.patch_proposal_service)

@@ -10,6 +10,7 @@ from ithildin_policy_core import PolicyEvaluator
 from ithildin_schemas import (
     AuditEventType,
     JsonObject,
+    JsonValue,
     PolicyDecisionValue,
     PolicyInput,
     sha256_digest,
@@ -130,6 +131,8 @@ class GovernedToolCallService:
             context={"session_id": session_id},
         )
         policy_decision = self.policy_evaluator.evaluate(policy_input)
+        obligation_keys: list[JsonValue] = []
+        obligation_keys.extend(sorted(policy_decision.obligations.keys()))
         self._audit_decision(
             request_id=request_id,
             principal=principal,
@@ -138,7 +141,15 @@ class GovernedToolCallService:
             policy_version=policy_decision.policy_version,
             matched_rules=policy_decision.matched_rules,
             input_hash=request_hash,
-            metadata={"reason": policy_decision.reason},
+            metadata={
+                "reason": policy_decision.reason,
+                "policy_engine": self.policy_evaluator.engine_name,
+                "policy_document_version": self.policy_evaluator.document_version,
+                "policy_hash": self.policy_evaluator.policy_hash,
+                "manifest_hash": registered_tool.manifest_hash,
+                "resource_type": resource.get("type"),
+                "obligation_keys": obligation_keys,
+            },
         )
         redaction_keys = _redact_fields(policy_decision.obligations)
 

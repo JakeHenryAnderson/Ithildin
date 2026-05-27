@@ -40,6 +40,7 @@ class PolicyPreviewService:
             registered_tool = self.registry.get_tool(tool_name)
         except UnknownToolDenied as exc:
             return {
+                **self._policy_evidence(),
                 "tool_name": tool_name,
                 "manifest_hash": None,
                 "manifest_risk": None,
@@ -66,6 +67,7 @@ class PolicyPreviewService:
             validate_json_schema(instance=arguments, schema=manifest.input_schema)
         except JsonSchemaValidationError as exc:
             return {
+                **self._policy_evidence(),
                 "tool_name": manifest.name,
                 "manifest_hash": registered_tool.manifest_hash,
                 "manifest_risk": manifest.risk.value,
@@ -96,6 +98,7 @@ class PolicyPreviewService:
         matched_rules: list[JsonValue] = [rule_id for rule_id in policy_decision.matched_rules]
 
         return {
+            **self._policy_evidence(),
             "tool_name": manifest.name,
             "manifest_hash": registered_tool.manifest_hash,
             "manifest_risk": manifest.risk.value,
@@ -109,4 +112,11 @@ class PolicyPreviewService:
             "policy_version": policy_decision.policy_version,
             "matched_rules": matched_rules,
             "obligations": policy_decision.obligations,
+        }
+
+    def _policy_evidence(self) -> JsonObject:
+        return {
+            "policy_engine": self.policy_evaluator.engine_name,
+            "policy_document_version": self.policy_evaluator.document_version,
+            "policy_hash": self.policy_evaluator.policy_hash,
         }

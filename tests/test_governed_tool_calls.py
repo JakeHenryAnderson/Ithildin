@@ -408,6 +408,15 @@ def test_read_tool_executes_after_policy_allow_and_is_audited(tmp_path: Path) ->
         "tool.execution.started",
         "tool.execution.completed",
     ]
+    policy_metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert policy_metadata["policy_engine"] == "yaml"
+    assert policy_metadata["policy_document_version"] == "test"
+    assert policy_metadata["policy_hash"] == payloads[0]["policy_version"]
+    manifest_hash = policy_metadata["manifest_hash"]
+    assert isinstance(manifest_hash, str)
+    assert manifest_hash.startswith("sha256:")
+    assert policy_metadata["resource_type"] == "file"
+    assert policy_metadata["obligation_keys"] == ["audit_level"]
     metadata = cast(JsonObject, payloads[-1]["metadata"])
     assert metadata["redaction_applied"] is True
     assert metadata["redaction_count"] == 0

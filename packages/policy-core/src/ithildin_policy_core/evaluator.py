@@ -36,9 +36,27 @@ class PolicyDocument(StrictBaseModel):
 
 
 class PolicyEvaluator:
+    engine_name = "yaml"
+
     def __init__(self, policy: PolicyDocument, policy_hash: str) -> None:
         self.policy = policy
         self.policy_hash = policy_hash
+
+    @property
+    def document_version(self) -> str:
+        return self.policy.version
+
+    @property
+    def rule_count(self) -> int:
+        return len(self.policy.rules)
+
+    def status(self) -> JsonObject:
+        return {
+            "engine": self.engine_name,
+            "document_version": self.document_version,
+            "policy_hash": self.policy_hash,
+            "rule_count": self.rule_count,
+        }
 
     @classmethod
     def load(cls, policy_path: Path) -> PolicyEvaluator:

@@ -322,6 +322,27 @@ def test_policy_preview_requires_authentication(tmp_path: Path) -> None:
     assert response.status_code == 401
 
 
+def test_policy_status_requires_authentication_and_returns_evidence(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path))
+
+    with TestClient(app) as client:
+        unauthenticated = client.get("/policy/status")
+        response = client.get(
+            "/policy/status",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert response.status_code == 200
+    assert response.json() == {
+        "engine": "yaml",
+        "document_version": "test",
+        "policy_hash": response.json()["policy_hash"],
+        "rule_count": 1,
+    }
+    assert response.json()["policy_hash"].startswith("sha256:")
+
+
 def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
@@ -347,6 +368,10 @@ def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
     }
     assert payload["policy_input"]["principal"] == {"id": "admin:local-ui", "roles": ["Admin"]}
     assert payload["manifest_hash"].startswith("sha256:")
+    assert payload["policy_engine"] == "yaml"
+    assert payload["policy_document_version"] == "test"
+    assert payload["policy_hash"] == payload["policy_version"]
+    assert payload["policy_hash"].startswith("sha256:")
 
 
 def test_policy_preview_requires_approval_for_write_tool(tmp_path: Path) -> None:
