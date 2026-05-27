@@ -147,6 +147,40 @@ def test_admin_status_accepts_correct_bearer_token(tmp_path: Path) -> None:
     }
 
 
+def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token", http_allowlist="https://example.com")
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        unauthenticated = client.get("/system/status")
+        response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["service"] == "ithildin-api"
+    assert payload["tool_count"] == 1
+    assert payload["manifest_lock"] == {
+        "required": False,
+        "path": settings.manifest_lock_path.as_posix(),
+    }
+    assert payload["policy"]["engine"] == "yaml"
+    assert payload["policy"]["policy_hash"].startswith("sha256:")
+    assert payload["audit"] == {
+        "valid": True,
+        "event_count": 0,
+        "head_hash": "sha256:" + ("0" * 64),
+    }
+    assert payload["limits"]["max_read_bytes"] == settings.max_read_bytes
+    assert payload["limits"]["max_patch_bytes"] == settings.max_patch_bytes
+    assert payload["limits"]["http_allowlist_configured"] is True
+
+
 def test_create_get_approve_and_deny_approval_endpoints(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path, token="correct-token"))
 

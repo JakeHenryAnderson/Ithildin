@@ -101,7 +101,46 @@ type AuditVerification = {
   failure: AuditVerificationFailure | null;
 };
 
+type PolicyStatus = {
+  engine: string;
+  document_version: string;
+  policy_hash: string;
+  rule_count: number;
+  bundle_verified?: boolean;
+  bundle_version?: string;
+  bundle_hash?: string;
+  bundle_entrypoint?: string;
+};
+
+type SystemStatus = {
+  status: string;
+  service: string;
+  tool_count: number;
+  manifest_lock: {
+    required: boolean;
+    path: string;
+  };
+  policy: PolicyStatus;
+  audit: {
+    valid: boolean;
+    event_count: number;
+    head_hash: string;
+  };
+  limits: {
+    approval_expiry_seconds: number;
+    max_read_bytes: number;
+    max_patch_bytes: number;
+    search_result_limit: number;
+    git_log_limit: number;
+    http_allowlist_configured: boolean;
+    http_timeout_seconds: number;
+    http_max_response_bytes: number;
+    http_max_redirects: number;
+  };
+};
+
 type DashboardData = {
+  systemStatus: SystemStatus | null;
   tools: ToolSummary[];
   approvals: Approval[];
   patches: PatchProposal[];
@@ -122,6 +161,7 @@ export function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "");
   const [draftToken, setDraftToken] = useState(token);
   const [data, setData] = useState<DashboardData>({
+    systemStatus: null,
     tools: [],
     approvals: [],
     patches: [],
@@ -159,7 +199,14 @@ export function App() {
 
   async function loadDashboard(activeToken = token) {
     if (!activeToken) {
-      setData({ tools: [], approvals: [], patches: [], auditEvents: [], verification: null });
+      setData({
+        systemStatus: null,
+        tools: [],
+        approvals: [],
+        patches: [],
+        auditEvents: [],
+        verification: null,
+      });
       setSelectedProposal(null);
       setPreviewResult(null);
       setError(null);
@@ -169,15 +216,23 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      const [toolsResponse, approvalsResponse, patchesResponse, auditResponse, verificationResponse] =
-        await Promise.all([
-          apiRequest<{ tools: ToolSummary[] }>("/tools", activeToken),
-          apiRequest<{ approvals: Approval[] }>("/approvals?status=pending", activeToken),
-          apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
-          apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
-          apiRequest<AuditVerification>("/audit-events/verify", activeToken),
-        ]);
+      const [
+        systemStatus,
+        toolsResponse,
+        approvalsResponse,
+        patchesResponse,
+        auditResponse,
+        verificationResponse,
+      ] = await Promise.all([
+        apiRequest<SystemStatus>("/system/status", activeToken),
+        apiRequest<{ tools: ToolSummary[] }>("/tools", activeToken),
+        apiRequest<{ approvals: Approval[] }>("/approvals?status=pending", activeToken),
+        apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
+        apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
+        apiRequest<AuditVerification>("/audit-events/verify", activeToken),
+      ]);
       setData({
+        systemStatus,
         tools: toolsResponse.tools,
         approvals: approvalsResponse.approvals,
         patches: patchesResponse.patch_proposals,
@@ -225,7 +280,14 @@ export function App() {
       void loadDashboard(nextToken);
     } else {
       sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-      setData({ tools: [], approvals: [], patches: [], auditEvents: [], verification: null });
+      setData({
+        systemStatus: null,
+        tools: [],
+        approvals: [],
+        patches: [],
+        auditEvents: [],
+        verification: null,
+      });
       setSelectedProposal(null);
       setPreviewResult(null);
     }
@@ -359,6 +421,13 @@ export function App() {
         </section>
       ) : null}
 
+      {loading && token ? (
+        <section className="notice">
+          <RefreshCcw aria-hidden="true" size={18} />
+          <span>Refreshing console data.</span>
+        </section>
+      ) : null}
+
       <section className="summary-strip" aria-label="Review summary">
         <Metric icon={<ClipboardList size={20} />} label="Pending" value={pendingCount} />
         <Metric icon={<FileDiff size={20} />} label="Proposed patches" value={proposedPatchCount} />
@@ -367,6 +436,106 @@ export function App() {
           <RefreshCcw aria-hidden="true" size={18} />
           {loading ? "Refreshing" : "Refresh"}
         </button>
+      </section>
+
+      <section className="trust-grid">
+        <Panel title="System Trust" icon={<ShieldCheck size={18} />}>
+          {data.systemStatus ? (
+            <div className="trust-panel">
+              <div className="trust-heading">
+                <span
+                  className={
+                    data.systemStatus.audit.valid
+                      ? "integrity-indicator valid"
+                      : "integrity-indicator invalid"
+                  }
+                >
+                  {data.systemStatus.audit.valid ? "Verified" : "Attention required"}
+                </span>
+                <span className="trust-service">{data.systemStatus.service}</span>
+              </div>
+              <dl className="meta-list trust-list">
+                <div>
+                  <dt>Manifest Lock</dt>
+                  <dd>{data.systemStatus.manifest_lock.required ? "enforced" : "optional"}</dd>
+                </div>
+                <div>
+                  <dt>Policy</dt>
+                  <dd>{data.systemStatus.policy.engine}</dd>
+                </div>
+                <div>
+                  <dt>Policy Hash</dt>
+                  <dd>{shortHash(data.systemStatus.policy.policy_hash)}</dd>
+                </div>
+                <div>
+                  <dt>OPA Bundle</dt>
+                  <dd>{data.systemStatus.policy.bundle_verified ? "verified" : "not active"}</dd>
+                </div>
+                <div>
+                  <dt>Audit Head</dt>
+                  <dd>{shortHash(data.systemStatus.audit.head_hash)}</dd>
+                </div>
+                <div>
+                  <dt>Tools</dt>
+                  <dd>{data.systemStatus.tool_count}</dd>
+                </div>
+                <div>
+                  <dt>Read Limit</dt>
+                  <dd>{formatBytes(data.systemStatus.limits.max_read_bytes)}</dd>
+                </div>
+                <div>
+                  <dt>Patch Limit</dt>
+                  <dd>{formatBytes(data.systemStatus.limits.max_patch_bytes)}</dd>
+                </div>
+                <div>
+                  <dt>HTTP</dt>
+                  <dd>
+                    {data.systemStatus.limits.http_allowlist_configured
+                      ? "allowlist set"
+                      : "allowlist empty"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <EmptyState text={token ? "System status unavailable." : "Locked."} />
+          )}
+        </Panel>
+
+        <Panel title="Registered Tools" icon={<ClipboardList size={18} />}>
+          {data.tools.length === 0 ? (
+            <EmptyState text={token ? "No registered tools." : "Locked."} />
+          ) : (
+            <div className="table-wrap compact-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tool</th>
+                    <th>Risk</th>
+                    <th>Category</th>
+                    <th>Version</th>
+                    <th>Manifest</th>
+                    <th>MCP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.tools.map((tool) => (
+                    <tr key={tool.name}>
+                      <td>{tool.name}</td>
+                      <td>
+                        <StatusPill status={tool.risk} />
+                      </td>
+                      <td>{tool.category}</td>
+                      <td>{tool.version}</td>
+                      <td>{shortHash(tool.manifest_hash)}</td>
+                      <td>{tool.mcp.exposed === true ? "yes" : "no"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
       </section>
 
       <section className="policy-section">
@@ -784,4 +953,11 @@ function shortId(value: string) {
 
 function shortHash(value: string) {
   return value.replace("sha256:", "").slice(0, 12);
+}
+
+function formatBytes(value: number) {
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 1,
+    notation: value >= 1_000_000 ? "compact" : "standard",
+  }).format(value);
 }

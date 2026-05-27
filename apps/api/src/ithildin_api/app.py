@@ -120,6 +120,41 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     def admin_status() -> dict[str, str]:
         return {"status": "ok", "service": SERVICE_NAME, "admin": "authenticated"}
 
+    @api.get("/system/status", dependencies=[Depends(require_admin_token)])
+    def system_status() -> JsonObject:
+        settings_state = cast(Settings, api.state.settings)
+        registry = cast(ToolRegistry, api.state.registry)
+        policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        tools = registry.list_tools()
+        verification = audit_writer.verify_chain().as_dict()
+        return {
+            "status": "ok",
+            "service": SERVICE_NAME,
+            "tool_count": len(tools),
+            "manifest_lock": {
+                "required": settings_state.require_manifest_lock,
+                "path": settings_state.manifest_lock_path.as_posix(),
+            },
+            "policy": policy_evaluator.status(),
+            "audit": {
+                "valid": verification["valid"],
+                "event_count": verification["event_count"],
+                "head_hash": verification["head_hash"],
+            },
+            "limits": {
+                "approval_expiry_seconds": settings_state.approval_expiry_seconds,
+                "max_read_bytes": settings_state.max_read_bytes,
+                "max_patch_bytes": settings_state.max_patch_bytes,
+                "search_result_limit": settings_state.search_result_limit,
+                "git_log_limit": settings_state.git_log_limit,
+                "http_allowlist_configured": bool(settings_state.http_allowlist.strip()),
+                "http_timeout_seconds": settings_state.http_timeout_seconds,
+                "http_max_response_bytes": settings_state.http_max_response_bytes,
+                "http_max_redirects": settings_state.http_max_redirects,
+            },
+        }
+
     @api.get("/tools", dependencies=[Depends(require_admin_token)])
     def list_tools(principal: Optional[str] = None) -> dict[str, list[JsonObject]]:
         registry = api.state.registry

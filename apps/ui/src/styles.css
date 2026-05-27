@@ -200,6 +200,36 @@ h3 {
   margin-bottom: 16px;
 }
 
+.trust-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(520px, 1.4fr);
+  margin-bottom: 16px;
+}
+
+.trust-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.trust-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.trust-service {
+  color: #607168;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.trust-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .integrity-section {
   margin-bottom: 16px;
 }
@@ -347,6 +377,20 @@ h3 {
   border-color: #e1aaa5;
   background: #fff0ef;
   color: #7b2f2b;
+}
+
+.status-read,
+.status-network {
+  border-color: #9acdb7;
+  background: #e6f7ef;
+  color: #23634c;
+}
+
+.status-write,
+.status-write-proposal {
+  border-color: #d4be78;
+  background: #fff8db;
+  color: #725f17;
 }
 
 .policy-section {
@@ -547,6 +591,10 @@ h3 {
   overflow-x: auto;
 }
 
+.compact-table table {
+  min-width: 680px;
+}
+
 table {
   border-collapse: collapse;
   min-width: 920px;
@@ -579,6 +627,7 @@ th {
 @media (max-width: 980px) {
   .topbar,
   .review-grid,
+  .trust-grid,
   .summary-strip,
   .patch-layout,
   .integrity-grid,
