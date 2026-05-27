@@ -29,6 +29,8 @@ make demo-flow
 
 Open `http://127.0.0.1:5173` and use the token from `.env.example`, or copy
 `.env.example` to `.env` and change `ITHILDIN_ADMIN_TOKEN`.
+Keep `ITHILDIN_HTTP_ALLOWLIST` empty unless the demo needs a specific external fetch
+destination; entries are exact hosts or scheme-qualified hosts, not wildcards.
 
 ## Services
 
@@ -43,7 +45,8 @@ The Compose stack mounts only:
 - `var/`.
 
 It does not mount the Docker socket.
-Kubernetes is intentionally deferred; Docker is used here only to run the local demo stack.
+Kubernetes and Docker agent powers are intentionally deferred; Docker is used here only to run
+the local demo stack.
 
 ## Demo Flow
 

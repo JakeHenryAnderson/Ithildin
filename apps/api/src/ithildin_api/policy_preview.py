@@ -3,20 +3,28 @@
 from __future__ import annotations
 
 from ithildin_policy_core import PolicyEvaluator
-from ithildin_schemas import JsonObject, JsonValue, PolicyDecisionValue, PolicyInput, ToolRisk
+from ithildin_schemas import JsonObject, JsonValue, PolicyDecisionValue, PolicyInput
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 
+from ithildin_api.http_tools import HttpAllowlist
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
+from ithildin_api.resources import resource_from_arguments
 
 DEFAULT_PREVIEW_PRINCIPAL: JsonObject = {"id": "admin:local-ui", "roles": ["Admin"]}
 DEFAULT_PREVIEW_SESSION_ID = "policy-preview"
 
 
 class PolicyPreviewService:
-    def __init__(self, registry: ToolRegistry, policy_evaluator: PolicyEvaluator) -> None:
+    def __init__(
+        self,
+        registry: ToolRegistry,
+        policy_evaluator: PolicyEvaluator,
+        http_allowlist: HttpAllowlist | None = None,
+    ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
+        self.http_allowlist = http_allowlist or HttpAllowlist(())
 
     def preview(
         self,
@@ -48,7 +56,11 @@ class PolicyPreviewService:
             }
 
         manifest = registered_tool.manifest
-        resource = resource_from_arguments(arguments, manifest.risk)
+        resource = resource_from_arguments(
+            arguments,
+            manifest.risk,
+            http_allowlist=self.http_allowlist,
+        )
 
         try:
             validate_json_schema(instance=arguments, schema=manifest.input_schema)
@@ -98,15 +110,3 @@ class PolicyPreviewService:
             "matched_rules": matched_rules,
             "obligations": policy_decision.obligations,
         }
-
-
-def resource_from_arguments(arguments: JsonObject, risk: ToolRisk) -> JsonObject:
-    resource: JsonObject = {
-        "type": "tool_call",
-        "in_scope": True,
-        "risk": risk.value,
-    }
-    if "path" in arguments:
-        resource["path"] = arguments["path"]
-        resource["type"] = "file"
-    return resource

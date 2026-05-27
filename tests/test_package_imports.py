@@ -72,6 +72,7 @@ def test_api_public_exports() -> None:
     api_package = importlib.import_module("ithildin_api")
 
     for exported_name in [
+        "HttpFetchExecutor",
         "PatchProposalService",
         "PatchProposalStore",
         "ReadToolExecutor",

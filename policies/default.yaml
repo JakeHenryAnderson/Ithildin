@@ -52,3 +52,13 @@ rules:
     obligations:
       audit_level: full
       max_execution_seconds: 30
+
+  - id: allow_in_scope_network
+    decision: allow
+    reason: Network access is allowed only for exact allowlisted destinations.
+    match:
+      tool.risk: network
+      resource.in_scope: true
+    obligations:
+      audit_level: full
+      max_execution_seconds: 30

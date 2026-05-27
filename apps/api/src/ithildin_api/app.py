@@ -24,6 +24,7 @@ from ithildin_api.approvals import (
 from ithildin_api.auth import require_admin_token
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
+from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.logging import configure_logging
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
 from ithildin_api.policy_preview import (
@@ -57,7 +58,18 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
         app_instance.state.registry = registry
         app_instance.state.policy_evaluator = policy_evaluator
-        app_instance.state.policy_preview_service = PolicyPreviewService(registry, policy_evaluator)
+        http_fetch_executor = HttpFetchExecutor.from_settings(
+            http_allowlist=resolved_settings.http_allowlist,
+            timeout_seconds=resolved_settings.http_timeout_seconds,
+            max_response_bytes=resolved_settings.http_max_response_bytes,
+            max_redirects=resolved_settings.http_max_redirects,
+        )
+        app_instance.state.http_fetch_executor = http_fetch_executor
+        app_instance.state.policy_preview_service = PolicyPreviewService(
+            registry,
+            policy_evaluator,
+            http_fetch_executor.allowlist,
+        )
         read_tool_executor = ReadToolExecutor.from_settings(
             workspace_root=resolved_settings.workspace_root,
             max_read_bytes=resolved_settings.max_read_bytes,

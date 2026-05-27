@@ -59,6 +59,8 @@ The local Docker Compose demo runs the API and review console with a seeded work
 Use the admin token in `.env.example`, or copy `.env.example` to `.env` and change it.
 The review console is served at `http://127.0.0.1:5173`.
 Docker is only used for the local demo stack; Kubernetes support is deferred.
+`http.fetch` is disabled until `ITHILDIN_HTTP_ALLOWLIST` names exact destinations such as
+`example.com`, `example.com:443`, or `https://example.com`.
 
 MCP is launched by an MCP client rather than as a persistent Compose service:
 

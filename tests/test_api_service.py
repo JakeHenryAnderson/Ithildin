@@ -16,7 +16,11 @@ from ithildin_schemas import AuditEventType
 from pydantic import ValidationError
 
 
-def make_settings(tmp_path: Path, token: str = "test-admin-token") -> Settings:
+def make_settings(
+    tmp_path: Path,
+    token: str = "test-admin-token",
+    http_allowlist: str = "",
+) -> Settings:
     manifest_dir = tmp_path / "tool-manifests"
     manifest_dir.mkdir()
     policy_path = tmp_path / "policy.yaml"
@@ -41,6 +45,7 @@ rules:
         manifest_dir=manifest_dir,
         policy_path=policy_path,
         workspace_root=tmp_path / "workspace",
+        http_allowlist=http_allowlist,
     )
 
 
@@ -64,6 +69,8 @@ input_schema:
     path:
       type: string
     proposal_id:
+      type: string
+    url:
       type: string
 """,
         encoding="utf-8",
@@ -382,6 +389,76 @@ def test_policy_preview_requires_approval_for_write_tool(tmp_path: Path) -> None
     assert payload["matched_rules"] == ["require_write_approval"]
     assert payload["policy_input"]["principal"] == {"id": "agent:test", "roles": ["Developer"]}
     assert payload["policy_input"]["context"] == {"session_id": "preview-test"}
+
+
+def test_policy_preview_allows_allowlisted_http_fetch(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, http_allowlist="https://example.com")
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    write_policy(
+        settings,
+        """
+  - id: allow_network
+    decision: allow
+    reason: network allowed
+    match:
+      tool.risk: network
+      resource.in_scope: true
+""",
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={"tool_name": "http.fetch", "arguments": {"url": "https://example.com/data"}},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is True
+    assert payload["decision"] == "allow"
+    assert payload["matched_rules"] == ["allow_network"]
+    assert payload["resource"] == {
+        "type": "network",
+        "in_scope": True,
+        "risk": "network",
+        "url": "https://example.com/data",
+        "scheme": "https",
+        "host": "example.com",
+    }
+    assert _row_count(settings.db_path, "audit_events") == 0
+
+
+def test_policy_preview_denies_unallowlisted_http_fetch_without_audit(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    write_policy(
+        settings,
+        """
+  - id: allow_network
+    decision: allow
+    reason: network allowed
+    match:
+      tool.risk: network
+      resource.in_scope: true
+""",
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={"tool_name": "http.fetch", "arguments": {"url": "https://example.com/data"}},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is True
+    assert payload["decision"] == "deny"
+    assert payload["resource"]["in_scope"] is False
+    assert _row_count(settings.db_path, "audit_events") == 0
 
 
 def test_policy_preview_unknown_tool_is_safe_and_side_effect_free(tmp_path: Path) -> None:

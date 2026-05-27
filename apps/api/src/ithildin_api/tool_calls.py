@@ -12,13 +12,13 @@ from ithildin_schemas import (
     JsonObject,
     PolicyDecisionValue,
     PolicyInput,
-    ToolRisk,
     sha256_digest,
 )
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 
 from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
+from ithildin_api.http_tools import HttpFetchError, HttpFetchExecutor
 from ithildin_api.patches import (
     PATCH_APPLY_TOOL,
     PATCH_PROPOSE_TOOL,
@@ -27,6 +27,7 @@ from ithildin_api.patches import (
 )
 from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
+from ithildin_api.resources import resource_from_arguments
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class GovernedToolCallService:
         audit_writer: AuditWriter,
         read_tool_executor: ReadToolExecutor | None = None,
         patch_proposal_service: PatchProposalService | None = None,
+        http_fetch_executor: HttpFetchExecutor | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
@@ -54,6 +56,7 @@ class GovernedToolCallService:
         self.audit_writer = audit_writer
         self.read_tool_executor = read_tool_executor
         self.patch_proposal_service = patch_proposal_service
+        self.http_fetch_executor = http_fetch_executor
 
     def call_tool(
         self,
@@ -105,7 +108,13 @@ class GovernedToolCallService:
                 is_error=True,
             )
 
-        resource = _resource_from_arguments(arguments, manifest.risk)
+        resource = resource_from_arguments(
+            arguments,
+            manifest.risk,
+            http_allowlist=(
+                self.http_fetch_executor.allowlist if self.http_fetch_executor is not None else None
+            ),
+        )
         policy_input = PolicyInput(
             principal=principal,
             tool={
@@ -327,6 +336,52 @@ class GovernedToolCallService:
                 content=content,
             )
 
+        if self.http_fetch_executor is not None and self.http_fetch_executor.supports(tool_name):
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_STARTED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=request_hash,
+                metadata={"executor": "in_process_http"},
+            )
+            try:
+                content = self.http_fetch_executor.execute(tool_name, arguments)
+            except HttpFetchError as exc:
+                self._audit_execution(
+                    event_type=AuditEventType.TOOL_EXECUTION_FAILED,
+                    request_id=request_id,
+                    principal=principal,
+                    tool_name=tool_name,
+                    resource=resource,
+                    input_hash=request_hash,
+                    metadata={"executor": "in_process_http", "reason": exc.reason},
+                )
+                return GovernedToolCallResult(
+                    status="denied",
+                    request_id=request_id,
+                    tool_name=tool_name,
+                    content={"reason": exc.reason},
+                    is_error=True,
+                )
+
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=request_hash,
+                metadata={"executor": "in_process_http"},
+            )
+            return GovernedToolCallResult(
+                status="completed",
+                request_id=request_id,
+                tool_name=tool_name,
+                content=content,
+            )
+
         return GovernedToolCallResult(
             status="allowed",
             request_id=request_id,
@@ -488,18 +543,6 @@ def _tool_call_hash(
             "session_id": session_id,
         }
     )
-
-
-def _resource_from_arguments(arguments: JsonObject, risk: ToolRisk) -> JsonObject:
-    resource: JsonObject = {
-        "type": "tool_call",
-        "in_scope": True,
-        "risk": risk.value,
-    }
-    if "path" in arguments:
-        resource["path"] = arguments["path"]
-        resource["type"] = "file"
-    return resource
 
 
 def _string_argument(arguments: JsonObject, name: str) -> str:

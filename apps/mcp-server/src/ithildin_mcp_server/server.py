@@ -10,6 +10,7 @@ from typing import Any, cast
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
+from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
@@ -110,6 +111,12 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
     )
     registry = ToolRegistry.load(resolved_settings.manifest_dir)
     policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
+    http_fetch_executor = HttpFetchExecutor.from_settings(
+        http_allowlist=resolved_settings.http_allowlist,
+        timeout_seconds=resolved_settings.http_timeout_seconds,
+        max_response_bytes=resolved_settings.http_max_response_bytes,
+        max_redirects=resolved_settings.http_max_redirects,
+    )
     read_tool_executor = ReadToolExecutor.from_settings(
         workspace_root=resolved_settings.workspace_root,
         max_read_bytes=resolved_settings.max_read_bytes,
@@ -130,6 +137,7 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         audit_writer,
         read_tool_executor,
         patch_proposal_service,
+        http_fetch_executor,
     )
     return IthildinMcpAdapter(registry=registry, tool_call_service=tool_call_service)
 

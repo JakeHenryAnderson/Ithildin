@@ -118,4 +118,5 @@ def test_committed_read_tool_manifests_load() -> None:
         "git.diff",
         "git.log",
         "git.status",
+        "http.fetch",
     ]

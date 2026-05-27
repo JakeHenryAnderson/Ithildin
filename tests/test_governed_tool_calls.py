@@ -6,8 +6,10 @@ from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import cast
+from urllib.request import Request
 
 from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.http_tools import HTTP_FETCH_TOOL, HttpAllowlist, HttpFetchExecutor
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
@@ -15,6 +17,26 @@ from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
 from ithildin_schemas import JsonObject
+
+
+class FakeHttpResponse:
+    code = 200
+    headers = {"Content-Type": "text/plain; charset=utf-8"}
+
+    def read(self, size: int) -> bytes:
+        return b"hello network"[:size]
+
+    def getcode(self) -> int:
+        return self.code
+
+
+class FakeHttpOpener:
+    def __init__(self) -> None:
+        self.requests: list[Request] = []
+
+    def open(self, fullurl: Request, timeout: float = 0) -> FakeHttpResponse:
+        self.requests.append(fullurl)
+        return FakeHttpResponse()
 
 
 def write_policy(path: Path) -> None:
@@ -49,6 +71,14 @@ rules:
     reason: reads allowed
     match:
       tool.risk: read
+      resource.in_scope: true
+    obligations:
+      audit_level: full
+  - id: allow_network
+    decision: allow
+    reason: network allowed
+    match:
+      tool.risk: network
       resource.in_scope: true
     obligations:
       audit_level: full
@@ -132,6 +162,29 @@ input_schema:
     )
 
 
+def write_http_fetch_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("http-fetch.yaml").write_text(
+        """
+name: http.fetch
+version: 1.0.0
+title: Fetch URL
+risk: network
+category: network
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["url"]
+  properties:
+    url:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 def make_service(tmp_path: Path) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -179,6 +232,40 @@ def make_read_service(tmp_path: Path) -> GovernedToolCallService:
             search_result_limit=10,
             git_log_limit=10,
         ),
+    )
+
+
+def make_http_service(
+    tmp_path: Path,
+    *,
+    allowlist: str = "https://example.com",
+    opener: FakeHttpOpener | None = None,
+) -> GovernedToolCallService:
+    manifest_dir = tmp_path / "manifests"
+    write_http_fetch_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    http_opener = opener or FakeHttpOpener()
+    http_executor = HttpFetchExecutor(
+        allowlist=HttpAllowlist.from_csv(allowlist),
+        timeout_seconds=1,
+        max_response_bytes=1024,
+        max_redirects=3,
+        resolver=lambda host, port: ["93.184.216.34"],
+        opener=http_opener,
+    )
+    return GovernedToolCallService(
+        ToolRegistry.load(manifest_dir),
+        PolicyEvaluator.load(policy_path),
+        approval_service,
+        audit_writer,
+        http_fetch_executor=http_executor,
     )
 
 
@@ -325,6 +412,47 @@ def test_denied_read_attempt_is_audited_as_failed_execution(tmp_path: Path) -> N
         "tool.execution.started",
         "tool.execution.failed",
     ]
+
+
+def test_http_fetch_executes_after_policy_allow_and_is_audited(tmp_path: Path) -> None:
+    opener = FakeHttpOpener()
+    service = make_http_service(tmp_path, opener=opener)
+
+    result = service.call_tool(
+        tool_name=HTTP_FETCH_TOOL,
+        arguments={"url": "https://example.com/data"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "completed"
+    assert result.content["body_text"] == "hello network"
+    assert opener.requests[0].full_url == "https://example.com/data"
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+
+
+def test_unallowlisted_http_fetch_is_denied_by_policy_and_audited(tmp_path: Path) -> None:
+    opener = FakeHttpOpener()
+    service = make_http_service(tmp_path, allowlist="", opener=opener)
+
+    result = service.call_tool(
+        tool_name=HTTP_FETCH_TOOL,
+        arguments={"url": "https://example.com/data"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert result.is_error is True
+    assert opener.requests == []
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == ["policy.evaluated"]
+    assert payloads[0]["decision"] == "deny"
 
 
 def test_arbitrary_git_flags_are_rejected_by_manifest_schema(tmp_path: Path) -> None:
