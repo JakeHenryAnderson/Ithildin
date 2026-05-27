@@ -13,6 +13,7 @@ node_modules/
 dist/
 build/
 .vite/
+site/
 
 # Local runtime state
 .env

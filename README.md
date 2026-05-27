@@ -48,6 +48,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.
 - `make manifest-lock-check` - verify trusted tool manifests still match the committed lock.
 - `make release-check` - run manifest lock verification, tests, lint, typecheck, and UI build.
+- `make docs-site` - build a small local static docs site under ignored `site/`.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
 - `make local-model-demo` - print host-side MCP wiring for an Ollama-backed local model client.
 - `make ui-dev` - start the Vite UI app.
@@ -74,6 +75,8 @@ baseline for common tokens, secrets, passwords, cookies, and private keys; add l
 with `ITHILDIN_REDACTION_EXTRA_KEYS` and `ITHILDIN_REDACTION_EXTRA_PATTERNS`.
 OPA is optional. When `ITHILDIN_POLICY_ENGINE=opa`, Ithildin verifies
 `policies/opa/bundle.lock.json` before startup and reports bundle evidence in policy/system status.
+SQLite is the runtime storage backend for v0.1. Postgres settings are readiness/status evidence only.
+OpenTelemetry is opt-in preview instrumentation and is disabled by default.
 
 MCP is launched by an MCP client rather than as a persistent Compose service:
 
@@ -83,6 +86,12 @@ uv run python -m ithildin_mcp_server
 
 For local model demos, run `make local-model-demo`; Ollama remains a host-side client companion,
 not an Ithildin-managed service or tool power.
+
+Build local handoff docs with:
+
+```sh
+make docs-site
+```
 
 ## Core Invariant
 

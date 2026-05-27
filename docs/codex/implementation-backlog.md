@@ -29,16 +29,22 @@
 | 023 - Manifest lock verification | Done | Sprint checkpoint |
 | 024 - OPA bundle verification | Done | Sprint checkpoint |
 | 025 - Review console trust status | Done | Sprint checkpoint |
-| 026 - Local preview release guide | Done | This document |
+| 026 - Local preview release guide | Done | Sprint checkpoint |
+| 027 - Local principal registry | Done | Sprint checkpoint |
+| 028 - Role-aware tool visibility | Done | Sprint checkpoint |
+| 029 - Ops backbone readiness | Done | Sprint checkpoint |
+| 030 - Local model demo | Done | Sprint checkpoint |
+| 031 - v0.1 release packaging | Done | This document |
 
-## Next Candidate Track
+## Future Candidate Track
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Identity/RBAC seed | Planned | Local principal registry and role-aware filtering. |
-| Ops backbone | Planned | Postgres option and OpenTelemetry export prototype. |
-| Release packaging | Planned | Documentation site, source verification, and v0.1 OSS prep. |
-| Local model demo | Planned | Ollama-based demo packaging without broadening tool powers. |
+| Production identity | Deferred | OIDC, SAML, SCIM, hosted sessions, and multi-tenant stores. |
+| Runtime Postgres | Deferred | Real Postgres stores and migrations; current support is readiness-only. |
+| Hosted observability | Deferred | Production collectors and dashboards; current OpenTelemetry is opt-in preview. |
+| Kubernetes and executor hardening | Deferred | Kubernetes assets and containerized execution remain outside v0.1. |
+| Signatures/notarization | Deferred | Cryptographic signing for manifests and audit exports. |
 
 ## Definition of MVP Done
 
@@ -50,4 +56,6 @@
 - Audit events are stored in SQLite and hash-chained JSONL.
 - Path traversal, symlink escape, SSRF, approval replay, and invalid schema cases have tests.
 - Documentation explains the threat model and security limitations.
+- Principal registry and role-aware tool visibility are enabled for local preview.
+- Static docs site generation exists for handoff review.
 - `make release-check` passes before local-preview handoff.

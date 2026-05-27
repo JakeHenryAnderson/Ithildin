@@ -72,10 +72,20 @@ Deliver:
 - end-to-end demo scripts;
 - v0.1 OSS release.
 
-Status: partially complete. OPA bundle evidence, hash-pinned manifests, improved review console,
-and local-preview release checks are implemented. Postgres, OpenTelemetry, Ollama packaging,
-documentation site, and v0.1 OSS packaging remain future work.
+Status: complete for v0.1 local preview. OPA bundle evidence, hash-pinned manifests, improved
+review console, local principal registry, role-aware tool visibility, Postgres readiness status,
+OpenTelemetry preview hooks, Ollama host-side demo helpers, static docs generation, and
+local-preview release checks are implemented.
 
 Success criteria:
 
 - a developer can install locally, connect an MCP client, run governed workflows, review approvals, and export audit evidence.
+
+## Deferred After v0.1 Local Preview
+
+- Runtime Postgres storage adapters and migrations.
+- Production identity integrations such as OIDC, SAML, SCIM, and hosted sessions.
+- Hosted observability collectors and production telemetry dashboards.
+- Kubernetes deployment and agent-facing Docker/Kubernetes tools.
+- Cryptographic signing or notarization for manifests and audit exports.
+- Managed model serving or LLM proxy workflows.

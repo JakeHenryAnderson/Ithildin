@@ -24,7 +24,14 @@ The source strategy text includes market and standards claims that should be ver
 - Okta AI agent identity positioning.
 - Official MCP reference server production-readiness statements.
 
+## Current Release Positioning
+
+- Postgres is documented as readiness-only; SQLite is the only runtime storage backend in v0.1.
+- OpenTelemetry is opt-in preview instrumentation and should not be described as production
+  observability.
+- Ollama support is host-side demo wiring only; Ithildin does not run, package, or proxy models.
+- The static docs site is a local generated artifact, not a hosted documentation service.
+
 ## Research Rule
 
 Keep public docs conservative unless a claim is backed by a current primary source.
-
