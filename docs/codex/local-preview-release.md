@@ -6,6 +6,8 @@ evidence.
 
 Read [Threat Model and Non-Goals](threat-model-and-non-goals.md) before treating the preview as a
 security boundary. Ithildin is a local mediation layer, not production security software.
+For public-preview wording, also read
+[v0.1 Public Preview Release Notes](v0.1-public-preview-release-notes.md).
 
 ## Quick Start
 
@@ -15,8 +17,9 @@ security boundary. Ithildin is a local mediation layer, not production security 
 4. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
 5. Open `http://127.0.0.1:5173` and use the configured admin token.
 6. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
-7. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-8. Run `make docs-site` to build local handoff docs under ignored `site/`.
+7. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
+8. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
+9. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 
@@ -32,6 +35,7 @@ security boundary. Ithildin is a local mediation layer, not production security 
   closed in governed flows.
 - The sample admin token works only when `ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and the API/UI report
   that warning in system status.
+- Public-preview guardrails fail if docs omit warning labels or Compose exposes non-loopback ports.
 - SQLite is the only runtime storage backend. Postgres settings are surfaced as readiness evidence
   only.
 - OpenTelemetry is disabled by default and reports only safe span metadata when enabled.
@@ -53,6 +57,8 @@ The local console shows:
 - Read tools are scoped to the configured workspace root.
 - Patch application is stored-proposal-only and approval-gated.
 - HTTP fetch is GET-only, allowlisted, and blocks non-global/private destinations.
+- Filesystem and patch executors reject symlinks, hidden/sensitive paths, binary targets, ambiguous
+  text encodings, and stale patch bases.
 - Tool outputs are redacted before returning to agents.
 - Audit events are stored in SQLite and hash-chained JSONL.
 - Docker is only used to run the local demo stack.

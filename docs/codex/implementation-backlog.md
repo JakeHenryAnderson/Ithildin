@@ -34,7 +34,11 @@
 | 028 - Role-aware tool visibility | Done | Sprint checkpoint |
 | 029 - Ops backbone readiness | Done | Sprint checkpoint |
 | 030 - Local model demo | Done | Sprint checkpoint |
-| 031 - v0.1 release packaging | Done | This document |
+| 031 - v0.1 release packaging | Done | Sprint checkpoint |
+| 032 - Public boundary hardening | Done | [threat-model-and-non-goals.md](threat-model-and-non-goals.md) |
+| 033 - Approval and evidence binding | Done | Sprint checkpoint |
+| 034 - Executor security edge cases | Done | Sprint checkpoint |
+| 035 - Public v0.1 release candidate polish | Done | [v0.1-public-preview-release-notes.md](v0.1-public-preview-release-notes.md) |
 
 ## Future Candidate Track
 
@@ -45,6 +49,8 @@
 | Hosted observability | Deferred | Production collectors and dashboards; current OpenTelemetry is opt-in preview. |
 | Kubernetes and executor hardening | Deferred | Kubernetes assets and containerized execution remain outside v0.1. |
 | Signatures/notarization | Deferred | Cryptographic signing for manifests and audit exports. |
+| Remote MCP hosting | Deferred | Stdio-only local MCP remains the v0.1 boundary. |
+| Plugin SDK and marketplace | Deferred | Requires stronger signing, review UX, executor contracts, and policy tests. |
 
 ## Definition of MVP Done
 
@@ -58,4 +64,5 @@
 - Documentation explains the threat model and security limitations.
 - Principal registry and role-aware tool visibility are enabled for local preview.
 - Static docs site generation exists for handoff review.
+- Public-preview warning labels, threat model links, MCP examples, and release notes are checked.
 - `make release-check` passes before local-preview handoff.

@@ -5,6 +5,9 @@ Ithildin is a local-first governed MCP/tool gateway for AI agents.
 **v0.1 local-preview warning:** Ithildin is not production security software. It is a
 mediation layer, not a kernel sandbox, EDR, MDM, production identity system, hosted MCP platform, or
 tamper-proof audit store.
+Local principals are attribution labels for local policy, not enterprise authentication. The audit
+log is local and tamper-evident, not externally notarized or tamper-proof. Redaction is best-effort
+leak reduction, not a guarantee that secrets cannot be exposed.
 
 The project goal is to let AI agents use local tools through narrow, policy-scoped, auditable interfaces instead of unrestricted endpoint access.
 
@@ -52,6 +55,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.
 - `make manifest-lock-check` - verify trusted tool manifests still match the committed lock.
 - `make release-check` - run manifest lock verification, tests, lint, typecheck, and UI build.
+- `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make docs-site` - build a small local static docs site under ignored `site/`.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
 - `make local-model-demo` - print host-side MCP wiring for an Ollama-backed local model client.
@@ -67,7 +71,9 @@ The local Docker Compose demo runs the API and review console with a seeded work
 - `make demo-flow` - run governed reads, redaction, patch proposal, approval, apply, and audit checks.
 - `make compose-down` - stop the stack.
 
-Use the admin token in `.env.example`, or copy `.env.example` to `.env` and change it.
+Copy `.env.example` to `.env` and set a unique `ITHILDIN_ADMIN_TOKEN` for normal use. The sample
+token works only when `ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and that mode is visibly warned in
+`/system/status` and the review console.
 The review console is served at `http://127.0.0.1:5173`.
 Docker is only used for the local demo stack; Kubernetes support is deferred.
 Tool manifests are hash-pinned by default; run `make manifest-lock` only after intentional
@@ -87,6 +93,9 @@ MCP is launched by an MCP client rather than as a persistent Compose service:
 ```sh
 uv run python -m ithildin_mcp_server
 ```
+
+See [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md) for copy-paste stdio
+client snippets and local-permission warnings.
 
 For local model demos, run `make local-model-demo`; Ollama remains a host-side client companion,
 not an Ithildin-managed service or tool power.
@@ -112,7 +121,9 @@ No agent-originated action reaches the endpoint unless:
 
 ## Start Reading
 
-Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md), then use
+Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md), then read
+[docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
+[docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/threat-model-and-non-goals.md](docs/codex/threat-model-and-non-goals.md),
 [docs/obsidian/00-index.md](docs/obsidian/00-index.md) and
 [docs/codex/project-brief.md](docs/codex/project-brief.md) when starting implementation work.

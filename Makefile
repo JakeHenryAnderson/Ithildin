@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check test typecheck ui-dev
+.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check release-guardrails test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -20,7 +20,10 @@ typecheck:
 	uv run mypy
 	npm run typecheck --prefix apps/ui
 
-release-check: manifest-lock-check test lint typecheck docs-site
+release-guardrails:
+	uv run python scripts/release_guardrails.py
+
+release-check: manifest-lock-check release-guardrails test lint typecheck docs-site
 	npm run build --prefix apps/ui
 
 ui-dev:
