@@ -57,6 +57,9 @@ the local demo stack.
 
 - API health, tool listing, policy preview, approvals, audit verification, and audit export;
 - governed `fs.read`;
+- governed output redaction for a seeded demo secret;
+- `http.fetch` registration and network-resource policy preview without requiring external
+  internet access;
 - governed `fs.patch.propose`;
 - approval creation and approval through the admin API;
 - approved `fs.patch.apply`;

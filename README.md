@@ -53,7 +53,7 @@ The local Docker Compose demo runs the API and review console with a seeded work
 - `make demo-seed` - copy tracked demo files into ignored `workspaces/demo/`.
 - `make compose-up` - build and start the local API/UI stack.
 - `make compose-smoke` - check API health, authenticated tool listing, and UI reachability.
-- `make demo-flow` - run a governed read, patch proposal, approval, apply, and audit check.
+- `make demo-flow` - run governed reads, redaction, patch proposal, approval, apply, and audit checks.
 - `make compose-down` - stop the stack.
 
 Use the admin token in `.env.example`, or copy `.env.example` to `.env` and change it.

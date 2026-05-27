@@ -19,6 +19,8 @@ JsonObject = dict[str, Any]
 DEFAULT_API_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_TOKEN = "dev-admin-token-change-me"
 DEMO_PATH = "demo/README.md"
+REDACTION_CHECK_PATH = "demo/redaction-check.txt"
+REDACTION_SECRET = "demo-secret-token"
 PATCH_FIND = "This workspace is intentionally small and safe to mutate during local demos."
 PATCH_REPLACE = (
     "This workspace is intentionally small, visible, and safe to mutate during local demos."
@@ -49,10 +51,25 @@ def main() -> None:
     tool_names = [tool["name"] for tool in tools.get("tools", [])]
     _expect("fs.list" in tool_names, "fs.list is not registered")
     _expect("fs.patch.apply" in tool_names, "fs.patch.apply is not registered")
+    _expect("http.fetch" in tool_names, "http.fetch is not registered")
 
     print("Previewing policy...")
     preview = api.post("/policy/preview", {"tool_name": "fs.list", "arguments": {}})
     _expect(preview.get("decision") == "allow", "fs.list preview was not allowed")
+    http_preview = api.post(
+        "/policy/preview",
+        {"tool_name": "http.fetch", "arguments": {"url": "https://example.com/"}},
+    )
+    _expect(http_preview.get("valid_arguments") is True, "http.fetch preview arguments invalid")
+    _expect(
+        http_preview.get("decision") in {"allow", "deny"},
+        "http.fetch preview did not produce a safe policy decision",
+    )
+    http_resource = http_preview.get("resource")
+    _expect(
+        isinstance(http_resource, dict) and http_resource.get("type") == "network",
+        "http.fetch preview did not produce a network resource",
+    )
 
     print("Checking approvals list...")
     approvals = api.get("/approvals?status=pending")
@@ -84,6 +101,16 @@ async def _run_governed_tool_flow(api: ApiClient) -> None:
     _expect(read_content.get("status") == "completed", "fs.read did not complete")
 
     workspace_root = Path(os.environ.get("ITHILDIN_WORKSPACE_ROOT", "workspaces"))
+    redaction_file = workspace_root / REDACTION_CHECK_PATH
+    redaction_file.write_text(f"TOKEN={REDACTION_SECRET}\nvisible\n", encoding="utf-8")
+    redaction_result = await adapter.call_tool("fs.read", {"path": REDACTION_CHECK_PATH})
+    _expect(not redaction_result.isError, "redaction fs.read returned an error")
+    redaction_content = _structured_content(redaction_result.structuredContent, "redaction fs.read")
+    rendered_redaction = json.dumps(redaction_content, sort_keys=True)
+    _expect(REDACTION_SECRET not in rendered_redaction, "structured content leaked demo secret")
+    _expect("[REDACTED]" in rendered_redaction, "structured content did not show redaction")
+    _expect(REDACTION_SECRET not in _text_content(redaction_result), "MCP text leaked demo secret")
+
     demo_file = workspace_root / DEMO_PATH
     current_text = demo_file.read_text(encoding="utf-8")
     _expect(PATCH_FIND in current_text, "demo workspace is not in its expected seeded state")
@@ -126,6 +153,15 @@ def _structured_content(value: JsonObject | None, tool_name: str) -> JsonObject:
     _expect(value is not None, f"{tool_name} did not return structured content")
     assert value is not None
     return value
+
+
+def _text_content(result: object) -> str:
+    content = getattr(result, "content", [])
+    if not content:
+        return ""
+    first = content[0]
+    text = getattr(first, "text", "")
+    return str(text)
 
 
 def _unified_diff(path: str, before: str, after: str) -> str:
