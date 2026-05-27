@@ -20,6 +20,13 @@ from jsonschema import validate as validate_json_schema
 
 from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
 from ithildin_api.http_tools import HttpFetchError, HttpFetchExecutor
+from ithildin_api.identity import (
+    PrincipalRegistry,
+    PrincipalRegistryError,
+    can_access_risk,
+    principal_denial_metadata,
+    resolve_trusted_principal,
+)
 from ithildin_api.patches import (
     PATCH_APPLY_TOOL,
     PATCH_PROPOSE_TOOL,
@@ -52,6 +59,7 @@ class GovernedToolCallService:
         patch_proposal_service: PatchProposalService | None = None,
         http_fetch_executor: HttpFetchExecutor | None = None,
         redaction_service: RedactionService | None = None,
+        principal_registry: PrincipalRegistry | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
@@ -61,6 +69,7 @@ class GovernedToolCallService:
         self.patch_proposal_service = patch_proposal_service
         self.http_fetch_executor = http_fetch_executor
         self.redaction_service = redaction_service or RedactionService()
+        self.principal_registry = principal_registry
 
     def call_tool(
         self,
@@ -93,6 +102,53 @@ class GovernedToolCallService:
             )
 
         manifest = registered_tool.manifest
+        if self.principal_registry is not None:
+            try:
+                principal_record = resolve_trusted_principal(self.principal_registry, principal)
+            except PrincipalRegistryError as exc:
+                self._audit_decision(
+                    request_id=request_id,
+                    principal=principal,
+                    tool_name=tool_name,
+                    decision=PolicyDecisionValue.DENY,
+                    input_hash=request_hash,
+                    metadata=principal_denial_metadata(str(exc)),
+                )
+                return GovernedToolCallResult(
+                    status="denied",
+                    request_id=request_id,
+                    tool_name=tool_name,
+                    content=self._redact_content({"reason": str(exc)}).value,
+                    is_error=True,
+                )
+
+            principal = principal_record.trusted_principal()
+            request_hash = _tool_call_hash(request_id, tool_name, arguments, principal, session_id)
+            if not can_access_risk(principal_record, manifest.risk):
+                reason = (
+                    f"principal {principal_record.id} is not authorized "
+                    f"for {manifest.risk.value} tools"
+                )
+                self._audit_decision(
+                    request_id=request_id,
+                    principal=principal,
+                    tool_name=tool_name,
+                    decision=PolicyDecisionValue.DENY,
+                    input_hash=request_hash,
+                    metadata={
+                        **principal_denial_metadata(reason),
+                        "manifest_hash": registered_tool.manifest_hash,
+                        "tool_risk": manifest.risk.value,
+                    },
+                )
+                return GovernedToolCallResult(
+                    status="denied",
+                    request_id=request_id,
+                    tool_name=tool_name,
+                    content=self._redact_content({"reason": reason}).value,
+                    is_error=True,
+                )
+
         try:
             validate_json_schema(instance=arguments, schema=manifest.input_schema)
         except JsonSchemaValidationError as exc:

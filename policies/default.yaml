@@ -29,6 +29,12 @@ rules:
     match:
       tool.risk: write-proposal
       resource.in_scope: true
+      principal.roles_contains:
+        - Owner
+        - Admin
+        - SecurityAdmin
+        - Developer
+        - AgentDeveloper
     obligations:
       audit_level: full
       max_execution_seconds: 30
@@ -38,6 +44,12 @@ rules:
     reason: File writes require approval.
     match:
       tool.risk: write
+      principal.roles_contains:
+        - Owner
+        - Admin
+        - SecurityAdmin
+        - Developer
+        - AgentDeveloper
     obligations:
       audit_level: full
       approval_required: true
@@ -49,6 +61,15 @@ rules:
     match:
       tool.risk: read
       resource.in_scope: true
+      principal.roles_contains:
+        - Owner
+        - Admin
+        - SecurityAdmin
+        - Developer
+        - Approver
+        - Auditor
+        - AgentReadOnly
+        - AgentDeveloper
     obligations:
       audit_level: full
       max_execution_seconds: 30
@@ -59,6 +80,12 @@ rules:
     match:
       tool.risk: network
       resource.in_scope: true
+      principal.roles_contains:
+        - Owner
+        - Admin
+        - SecurityAdmin
+        - Developer
+        - AgentDeveloper
     obligations:
       audit_level: full
       max_execution_seconds: 30

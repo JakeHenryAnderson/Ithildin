@@ -401,6 +401,58 @@ input_schema:
     assert response.json()["tools"][0]["manifest_hash"].startswith("sha256:")
 
 
+def test_tools_filters_by_trusted_principal_roles(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    write_manifest(
+        settings.manifest_dir,
+        name="fs.patch.propose",
+        risk="write-proposal",
+        required=["path"],
+    )
+    write_manifest(settings.manifest_dir, name="fs.patch.apply", risk="write", required=["path"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        all_tools = client.get(
+            "/tools",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+        developer = client.get(
+            "/tools?principal=agent:local-dev",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+        read_only = client.get(
+            "/tools?principal=agent:readonly",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+        auditor = client.get(
+            "/tools?principal=user:auditor",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+        missing = client.get(
+            "/tools?principal=agent:missing",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert [tool["name"] for tool in all_tools.json()["tools"]] == [
+        "fs.patch.apply",
+        "fs.patch.propose",
+        "fs.read",
+        "http.fetch",
+    ]
+    assert [tool["name"] for tool in developer.json()["tools"]] == [
+        "fs.patch.apply",
+        "fs.patch.propose",
+        "fs.read",
+        "http.fetch",
+    ]
+    assert [tool["name"] for tool in read_only.json()["tools"]] == ["fs.read"]
+    assert [tool["name"] for tool in auditor.json()["tools"]] == ["fs.read"]
+    assert missing.json() == {"tools": []}
+
+
 def test_app_startup_enforces_manifest_lock_when_enabled(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
@@ -539,7 +591,11 @@ def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
         "risk": "read",
         "path": "README.md",
     }
-    assert payload["policy_input"]["principal"] == {"id": "admin:local-ui", "roles": ["Admin"]}
+    assert payload["policy_input"]["principal"] == {
+        "id": "admin:local-ui",
+        "type": "admin",
+        "roles": ["Admin", "Approver", "Auditor"],
+    }
     assert payload["manifest_hash"].startswith("sha256:")
     assert payload["policy_engine"] == "yaml"
     assert payload["policy_document_version"] == "test"
@@ -585,8 +641,62 @@ def test_policy_preview_requires_approval_for_write_tool(tmp_path: Path) -> None
     assert payload["decision"] == "require_approval"
     assert payload["reason"] == "writes require approval"
     assert payload["matched_rules"] == ["require_write_approval"]
-    assert payload["policy_input"]["principal"] == {"id": "agent:test", "roles": ["Developer"]}
+    assert payload["policy_input"]["principal"] == {
+        "id": "agent:test",
+        "type": "agent",
+        "roles": ["AgentDeveloper"],
+    }
     assert payload["policy_input"]["context"] == {"session_id": "preview-test"}
+
+
+def test_policy_preview_denies_unknown_principal_without_side_effects(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={
+                "tool_name": "fs.read",
+                "arguments": {"path": "README.md"},
+                "principal": {"id": "agent:missing", "roles": ["Admin"]},
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision"] == "deny"
+    assert payload["valid_arguments"] is False
+    assert "unknown principal" in payload["reason"]
+    assert payload["policy_input"] is None
+    assert _row_count(settings.db_path, "audit_events") == 0
+
+
+def test_policy_preview_denies_role_unauthorized_principal(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={
+                "tool_name": "http.fetch",
+                "arguments": {"url": "https://example.com/data"},
+                "principal": {"id": "agent:readonly", "roles": ["Admin"]},
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision"] == "deny"
+    assert payload["valid_arguments"] is False
+    assert "not authorized" in payload["reason"]
+    assert payload["policy_input"] is None
+    assert _row_count(settings.db_path, "audit_events") == 0
 
 
 def test_policy_preview_allows_allowlisted_http_fetch(tmp_path: Path) -> None:

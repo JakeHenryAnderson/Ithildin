@@ -36,3 +36,21 @@ principals:
     enabled: true
     metadata:
       source: local-seed
+
+  - id: agent:readonly
+    type: agent
+    display_name: Read-only Local Agent
+    roles:
+      - AgentReadOnly
+    enabled: true
+    metadata:
+      source: local-seed
+
+  - id: user:auditor
+    type: user
+    display_name: Local Auditor
+    roles:
+      - Auditor
+    enabled: true
+    metadata:
+      source: local-seed

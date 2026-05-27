@@ -133,6 +133,40 @@ def test_policy_defaults_to_deny_when_no_rule_matches(tmp_path: Path) -> None:
     assert decision.matched_rules == []
 
 
+def test_policy_can_match_principal_role_membership(tmp_path: Path) -> None:
+    policy_path = tmp_path / "policy.yaml"
+    policy_path.write_text(
+        """
+version: test-v1
+rules:
+  - id: allow_developer_reads
+    decision: allow
+    reason: developer reads allowed
+    match:
+      tool.risk: read
+      principal.roles_contains:
+        - Developer
+        - AgentDeveloper
+""",
+        encoding="utf-8",
+    )
+    evaluator = PolicyEvaluator.load(policy_path)
+
+    allowed = evaluator.evaluate(policy_input("fs.read", "read"))
+    denied = evaluator.evaluate(
+        PolicyInput(
+            principal={"id": "agent:readonly", "roles": ["AgentReadOnly"]},
+            tool={"name": "fs.read", "risk": "read", "version": "1.0.0"},
+            resource={"type": "file", "path": "README.md", "in_scope": True},
+            context={"session_id": "sess_123"},
+        )
+    )
+
+    assert allowed.decision == PolicyDecisionValue.ALLOW
+    assert allowed.matched_rules == ["allow_developer_reads"]
+    assert denied.decision == PolicyDecisionValue.DENY
+
+
 def test_invalid_policy_fails_closed(tmp_path: Path) -> None:
     policy_path = tmp_path / "policy.yaml"
     policy_path.write_text("version: test\n", encoding="utf-8")

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 import yaml
-from ithildin_schemas import JsonObject
+from ithildin_schemas import JsonObject, ToolRisk
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, ValidationError, field_validator
 
@@ -23,6 +24,10 @@ class UnknownPrincipalError(PrincipalRegistryError):
 
 class DisabledPrincipalError(PrincipalRegistryError):
     """Raised when a disabled principal is used for active work."""
+
+
+class PrincipalAccessDeniedError(PrincipalRegistryError):
+    """Raised when a trusted principal cannot use a tool risk class."""
 
 
 class PrincipalType(StrEnum):
@@ -156,6 +161,66 @@ class PrincipalRegistry:
 def principal_id_from_json(principal: JsonObject) -> str | None:
     principal_id = principal.get("id")
     return principal_id if isinstance(principal_id, str) else None
+
+
+def resolve_trusted_principal(
+    registry: PrincipalRegistry,
+    principal: JsonObject,
+) -> PrincipalRecord:
+    principal_id = principal_id_from_json(principal)
+    if principal_id is None:
+        raise UnknownPrincipalError("principal id is required")
+    return registry.resolve_active(principal_id)
+
+
+def can_access_risk(principal: PrincipalRecord, risk: ToolRisk) -> bool:
+    allowed_risks: set[ToolRisk] = set()
+    for role in principal.roles:
+        allowed_risks.update(_risks_for_role(role))
+    return risk in allowed_risks
+
+
+def filter_tools_for_principal[T](
+    tools: list[T],
+    principal: PrincipalRecord,
+    risk_getter: Callable[[T], ToolRisk],
+) -> list[T]:
+    return [tool for tool in tools if can_access_risk(principal, risk_getter(tool))]
+
+
+def principal_denial_metadata(reason: str) -> JsonObject:
+    return {
+        "reason": reason,
+        "identity_source": "principal_registry",
+    }
+
+
+def _risks_for_role(role: PrincipalRole) -> set[ToolRisk]:
+    if role in {
+        PrincipalRole.OWNER,
+        PrincipalRole.ADMIN,
+        PrincipalRole.SECURITY_ADMIN,
+    }:
+        return {
+            ToolRisk.READ,
+            ToolRisk.NETWORK,
+            ToolRisk.WRITE_PROPOSAL,
+            ToolRisk.WRITE,
+            ToolRisk.DESTRUCTIVE,
+        }
+
+    if role in {PrincipalRole.DEVELOPER, PrincipalRole.AGENT_DEVELOPER}:
+        return {
+            ToolRisk.READ,
+            ToolRisk.NETWORK,
+            ToolRisk.WRITE_PROPOSAL,
+            ToolRisk.WRITE,
+        }
+
+    if role in {PrincipalRole.AUDITOR, PrincipalRole.AGENT_READ_ONLY}:
+        return {ToolRisk.READ}
+
+    return set()
 
 
 def _json_object(value: dict[Any, Any]) -> JsonObject:

@@ -10,6 +10,7 @@ from urllib.request import Request
 
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.http_tools import HTTP_FETCH_TOOL, HttpAllowlist, HttpFetchExecutor
+from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
@@ -214,6 +215,27 @@ def make_service(tmp_path: Path) -> GovernedToolCallService:
     )
 
 
+def make_identity_service(tmp_path: Path) -> GovernedToolCallService:
+    manifest_dir = tmp_path / "manifests"
+    write_manifest(manifest_dir, "fs.read", "read")
+    write_manifest(manifest_dir, "http.fetch", "network", required="url")
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    return GovernedToolCallService(
+        ToolRegistry.load(manifest_dir),
+        PolicyEvaluator.load(policy_path),
+        approval_service,
+        audit_writer,
+        principal_registry=PrincipalRegistry.load(Path("principals/local.yaml")),
+    )
+
+
 def make_read_service(
     tmp_path: Path,
     *,
@@ -371,6 +393,50 @@ def test_invalid_arguments_are_denied_before_policy(tmp_path: Path) -> None:
     assert result.content == {"reason": "invalid tool arguments"}
     metadata = cast(JsonObject, audit_payloads(tmp_path)[0]["metadata"])
     assert metadata["reason"] == "invalid tool arguments"
+
+
+def test_unknown_principal_is_denied_and_audited_before_policy(tmp_path: Path) -> None:
+    service = make_identity_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="fs.read",
+        arguments={"path": "README.md"},
+        principal={"id": "agent:missing", "roles": ["Admin"]},
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert result.is_error is True
+    assert "unknown principal" in str(result.content["reason"])
+    payload = audit_payloads(tmp_path)[0]
+    metadata = cast(JsonObject, payload["metadata"])
+    assert payload["principal"] == {"id": "agent:missing", "roles": ["Admin"]}
+    assert payload["decision"] == "deny"
+    assert metadata["identity_source"] == "principal_registry"
+
+
+def test_role_unauthorized_principal_is_denied_before_execution(tmp_path: Path) -> None:
+    service = make_identity_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="http.fetch",
+        arguments={"url": "https://example.com/data"},
+        principal={"id": "agent:readonly", "roles": ["Admin"]},
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert result.is_error is True
+    assert "not authorized" in str(result.content["reason"])
+    payload = audit_payloads(tmp_path)[0]
+    metadata = cast(JsonObject, payload["metadata"])
+    assert payload["principal"] == {
+        "id": "agent:readonly",
+        "type": "agent",
+        "roles": ["AgentReadOnly"],
+    }
+    assert payload["decision"] == "deny"
+    assert metadata["tool_risk"] == "network"
 
 
 def test_read_allow_returns_governance_only_success(tmp_path: Path) -> None:

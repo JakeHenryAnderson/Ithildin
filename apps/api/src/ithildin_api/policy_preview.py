@@ -8,6 +8,13 @@ from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 
 from ithildin_api.http_tools import HttpAllowlist
+from ithildin_api.identity import (
+    PrincipalRegistry,
+    PrincipalRegistryError,
+    can_access_risk,
+    principal_denial_metadata,
+    resolve_trusted_principal,
+)
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.resources import resource_from_arguments
 
@@ -21,10 +28,12 @@ class PolicyPreviewService:
         registry: ToolRegistry,
         policy_evaluator: PolicyEngine,
         http_allowlist: HttpAllowlist | None = None,
+        principal_registry: PrincipalRegistry | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
         self.http_allowlist = http_allowlist or HttpAllowlist(())
+        self.principal_registry = principal_registry
 
     def preview(
         self,
@@ -57,6 +66,38 @@ class PolicyPreviewService:
             }
 
         manifest = registered_tool.manifest
+        if self.principal_registry is not None:
+            try:
+                principal_record = resolve_trusted_principal(
+                    self.principal_registry,
+                    preview_principal,
+                )
+            except PrincipalRegistryError as exc:
+                return self._deny_preview(
+                    tool_name=manifest.name,
+                    manifest_hash=registered_tool.manifest_hash,
+                    manifest_risk=manifest.risk.value,
+                    manifest_version=manifest.version,
+                    reason=str(exc),
+                    resource={"type": "tool_call", "in_scope": False},
+                    metadata=principal_denial_metadata(str(exc)),
+            )
+            preview_principal = principal_record.trusted_principal()
+            if not can_access_risk(principal_record, manifest.risk):
+                reason = (
+                    f"principal {principal_record.id} is not authorized "
+                    f"for {manifest.risk.value} tools"
+                )
+                return self._deny_preview(
+                    tool_name=manifest.name,
+                    manifest_hash=registered_tool.manifest_hash,
+                    manifest_risk=manifest.risk.value,
+                    manifest_version=manifest.version,
+                    reason=reason,
+                    resource={"type": "tool_call", "in_scope": False},
+                    metadata=principal_denial_metadata(reason),
+                )
+
         resource = resource_from_arguments(
             arguments,
             manifest.risk,
@@ -119,4 +160,32 @@ class PolicyPreviewService:
             "policy_engine": self.policy_evaluator.engine_name,
             "policy_document_version": self.policy_evaluator.document_version,
             "policy_hash": self.policy_evaluator.policy_hash,
+        }
+
+    def _deny_preview(
+        self,
+        *,
+        tool_name: str,
+        manifest_hash: str | None,
+        manifest_risk: str | None,
+        manifest_version: str | None,
+        reason: str,
+        resource: JsonObject,
+        metadata: JsonObject | None = None,
+    ) -> JsonObject:
+        return {
+            **self._policy_evidence(),
+            "tool_name": tool_name,
+            "manifest_hash": manifest_hash,
+            "manifest_risk": manifest_risk,
+            "manifest_version": manifest_version,
+            "valid_arguments": False,
+            "argument_error": reason,
+            "policy_input": None,
+            "resource": resource,
+            "decision": PolicyDecisionValue.DENY.value,
+            "reason": reason,
+            "policy_version": self.policy_evaluator.policy_hash,
+            "matched_rules": [],
+            "obligations": {"audit_level": "full", **(metadata or {})},
         }

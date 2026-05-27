@@ -9,6 +9,7 @@ import pytest
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings
 from ithildin_api.http_tools import HttpAllowlist, HttpFetchExecutor
+from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
@@ -264,6 +265,30 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "http.fetch",
     ]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
+
+
+def test_mcp_tools_list_filters_for_configured_agent_principal(tmp_path: Path) -> None:
+    unfiltered_adapter = make_adapter(tmp_path)
+    registry_path = tmp_path / "principals.yaml"
+    registry_path.write_text(
+        """
+principals:
+  - id: agent:mcp-local
+    type: agent
+    display_name: Read-only MCP Agent
+    roles: [AgentReadOnly]
+""",
+        encoding="utf-8",
+    )
+    adapter = IthildinMcpAdapter(
+        registry=unfiltered_adapter.registry,
+        tool_call_service=unfiltered_adapter.tool_call_service,
+        principal_registry=PrincipalRegistry.load(registry_path),
+    )
+
+    tools = asyncio.run(adapter.list_tools())
+
+    assert [tool.name for tool in tools] == ["fs.read"]
 
 
 def test_mcp_call_returns_safe_approval_required_response(tmp_path: Path) -> None:

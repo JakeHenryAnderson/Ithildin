@@ -11,7 +11,11 @@ from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.http_tools import HttpFetchExecutor
-from ithildin_api.identity import PrincipalRegistry
+from ithildin_api.identity import (
+    PrincipalRegistry,
+    PrincipalRegistryError,
+    filter_tools_for_principal,
+)
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.policy import load_policy_engine
 from ithildin_api.read_tools import ReadToolExecutor
@@ -35,10 +39,24 @@ DEFAULT_AGENT_PRINCIPAL: JsonObject = {
 class IthildinMcpAdapter:
     registry: ToolRegistry
     tool_call_service: GovernedToolCallService
+    principal_registry: PrincipalRegistry | None = None
 
     async def list_tools(self) -> list[types.Tool]:
         tools: list[types.Tool] = []
-        for registered_tool in self.registry.list_tools():
+        if self.principal_registry is None:
+            registered_tools = self.registry.list_tools()
+        else:
+            try:
+                principal = self.principal_registry.resolve_active("agent:mcp-local")
+            except PrincipalRegistryError:
+                registered_tools = []
+            else:
+                registered_tools = filter_tools_for_principal(
+                    self.registry.list_tools(),
+                    principal,
+                    lambda tool: tool.manifest.risk,
+                )
+        for registered_tool in registered_tools:
             manifest = registered_tool.manifest
             mcp_metadata = manifest.mcp or {}
             if mcp_metadata.get("exposed") is not True:
@@ -116,7 +134,7 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         lock_path=resolved_settings.manifest_lock_path,
         require_lock=resolved_settings.require_manifest_lock,
     )
-    PrincipalRegistry.load(
+    principal_registry = PrincipalRegistry.load(
         resolved_settings.principal_registry_path,
         require_registry=resolved_settings.require_known_principals,
     )
@@ -153,8 +171,13 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         patch_proposal_service,
         http_fetch_executor,
         redaction_service,
+        principal_registry,
     )
-    return IthildinMcpAdapter(registry=registry, tool_call_service=tool_call_service)
+    return IthildinMcpAdapter(
+        registry=registry,
+        tool_call_service=tool_call_service,
+        principal_registry=principal_registry,
+    )
 
 
 async def run_stdio_server(settings: Settings | None = None) -> None:

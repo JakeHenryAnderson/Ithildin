@@ -113,6 +113,13 @@ def _matcher_matches(input_data: dict[str, Any], key: str, expected: JsonValue) 
             isinstance(prefix, str) and actual_name.startswith(prefix) for prefix in prefixes
         )
 
+    if key == "principal.roles_contains":
+        actual_roles = _lookup(input_data, "principal.roles")
+        if not isinstance(actual_roles, list):
+            return False
+        expected_roles = expected if isinstance(expected, list) else [expected]
+        return any(role in actual_roles for role in expected_roles if isinstance(role, str))
+
     actual = _lookup(input_data, key)
     if isinstance(expected, list):
         return bool(actual in expected)

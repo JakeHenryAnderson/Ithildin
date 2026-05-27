@@ -25,7 +25,11 @@ from ithildin_api.auth import require_admin_token
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.http_tools import HttpFetchExecutor
-from ithildin_api.identity import PrincipalRegistry, PrincipalRegistryError
+from ithildin_api.identity import (
+    PrincipalRegistry,
+    PrincipalRegistryError,
+    filter_tools_for_principal,
+)
 from ithildin_api.logging import configure_logging
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
 from ithildin_api.policy import load_policy_engine
@@ -86,6 +90,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             registry,
             policy_evaluator,
             http_fetch_executor.allowlist,
+            principal_registry,
         )
         read_tool_executor = ReadToolExecutor.from_settings(
             workspace_root=resolved_settings.workspace_root,
@@ -168,8 +173,21 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @api.get("/tools", dependencies=[Depends(require_admin_token)])
     def list_tools(principal: Optional[str] = None) -> dict[str, list[JsonObject]]:
-        registry = api.state.registry
-        tools = [tool.summary() for tool in registry.list_tools(principal=principal)]
+        registry = cast(ToolRegistry, api.state.registry)
+        registered_tools = registry.list_tools()
+        if principal is not None:
+            principal_registry = cast(PrincipalRegistry, api.state.principal_registry)
+            try:
+                principal_record = principal_registry.resolve_active(principal)
+            except PrincipalRegistryError:
+                registered_tools = []
+            else:
+                registered_tools = filter_tools_for_principal(
+                    registered_tools,
+                    principal_record,
+                    lambda tool: tool.manifest.risk,
+                )
+        tools = [tool.summary() for tool in registered_tools]
         return {"tools": tools}
 
     @api.get("/principals", dependencies=[Depends(require_admin_token)])
