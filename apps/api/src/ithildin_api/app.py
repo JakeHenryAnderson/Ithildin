@@ -32,6 +32,7 @@ from ithildin_api.policy_preview import (
     PolicyPreviewService,
 )
 from ithildin_api.read_tools import ReadToolExecutor
+from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
 
 SERVICE_NAME = "ithildin-api"
@@ -65,6 +66,11 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             max_redirects=resolved_settings.http_max_redirects,
         )
         app_instance.state.http_fetch_executor = http_fetch_executor
+        redaction_service = RedactionService.from_settings(
+            extra_keys=resolved_settings.redaction_extra_keys,
+            extra_patterns=resolved_settings.redaction_extra_patterns,
+        )
+        app_instance.state.redaction_service = redaction_service
         app_instance.state.policy_preview_service = PolicyPreviewService(
             registry,
             policy_evaluator,

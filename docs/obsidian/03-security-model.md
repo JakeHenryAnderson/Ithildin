@@ -42,6 +42,5 @@ No agent-originated action reaches the endpoint unless:
 | Sandbox | Containerized execution, non-root, explicit mounts. |
 | Path control | Canonical path validation and workspace allowlists. |
 | Network control | HTTP allowlists; block private/link-local destinations. |
-| Secret handling | Redaction in logs; no secret-returning tools in MVP. |
+| Secret handling | Redaction in tool outputs and logs; no secret-returning tools in MVP. |
 | Failure mode | Fail closed if policy, approval, or audit writer is unavailable. |
-

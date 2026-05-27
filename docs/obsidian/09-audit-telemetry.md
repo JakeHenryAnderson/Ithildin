@@ -53,5 +53,4 @@ Use two layers:
 
 ## Redaction Requirement
 
-Audit events may include file paths, prompts, parameters, network destinations, and policy metadata. Add redaction hooks early and test them.
-
+Audit events may include file paths, prompts, parameters, network destinations, and policy metadata. Tool outputs are redacted before agent return, and execution events record redaction counts and paths without storing raw result bodies.

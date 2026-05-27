@@ -20,23 +20,31 @@ from ithildin_schemas import JsonObject
 
 
 class FakeHttpResponse:
-    code = 200
-    headers = {"Content-Type": "text/plain; charset=utf-8"}
+    def __init__(
+        self,
+        *,
+        body: bytes = b"hello network",
+        content_type: str = "text/plain; charset=utf-8",
+    ) -> None:
+        self.body = body
+        self.code = 200
+        self.headers = {"Content-Type": content_type}
 
     def read(self, size: int) -> bytes:
-        return b"hello network"[:size]
+        return self.body[:size]
 
     def getcode(self) -> int:
         return self.code
 
 
 class FakeHttpOpener:
-    def __init__(self) -> None:
+    def __init__(self, response: FakeHttpResponse | None = None) -> None:
         self.requests: list[Request] = []
+        self.response = response or FakeHttpResponse()
 
     def open(self, fullurl: Request, timeout: float = 0) -> FakeHttpResponse:
         self.requests.append(fullurl)
-        return FakeHttpResponse()
+        return self.response
 
 
 def write_policy(path: Path) -> None:
@@ -206,12 +214,20 @@ def make_service(tmp_path: Path) -> GovernedToolCallService:
     )
 
 
-def make_read_service(tmp_path: Path) -> GovernedToolCallService:
+def make_read_service(
+    tmp_path: Path,
+    *,
+    content: str = "hello governed reads\n",
+    policy_yaml: str | None = None,
+) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
     write_manifest(manifest_dir, "git.status", "read", required="path")
     policy_path = tmp_path / "policy.yaml"
-    write_policy(policy_path)
+    if policy_yaml is None:
+        write_policy(policy_path)
+    else:
+        policy_path.write_text(policy_yaml, encoding="utf-8")
     db_path = tmp_path / "ithildin.sqlite3"
     audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
     audit_writer.initialize()
@@ -220,7 +236,7 @@ def make_read_service(tmp_path: Path) -> GovernedToolCallService:
     approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
     workspace_root = tmp_path / "workspace"
     workspace_root.mkdir()
-    workspace_root.joinpath("README.md").write_text("hello governed reads\n", encoding="utf-8")
+    workspace_root.joinpath("README.md").write_text(content, encoding="utf-8")
     return GovernedToolCallService(
         ToolRegistry.load(manifest_dir),
         PolicyEvaluator.load(policy_path),
@@ -392,6 +408,57 @@ def test_read_tool_executes_after_policy_allow_and_is_audited(tmp_path: Path) ->
         "tool.execution.started",
         "tool.execution.completed",
     ]
+    metadata = cast(JsonObject, payloads[-1]["metadata"])
+    assert metadata["redaction_applied"] is True
+    assert metadata["redaction_count"] == 0
+
+
+def test_read_tool_output_is_redacted_and_audit_summary_is_recorded(tmp_path: Path) -> None:
+    service = make_read_service(tmp_path, content="TOKEN=secret-value\nvisible\n")
+
+    result = service.call_tool(
+        tool_name="fs.read",
+        arguments={"path": "README.md"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "completed"
+    assert result.content["content"] == "TOKEN=[REDACTED]\nvisible\n"
+    payloads = audit_payloads(tmp_path)
+    metadata = cast(JsonObject, payloads[-1]["metadata"])
+    assert metadata["redaction_count"] == 1
+    assert metadata["redaction_paths"] == ["$.content"]
+
+
+def test_policy_obligation_redact_fields_extends_output_redaction(tmp_path: Path) -> None:
+    policy_yaml = """
+version: test
+rules:
+  - id: allow_reads
+    decision: allow
+    reason: reads allowed
+    match:
+      tool.risk: read
+      resource.in_scope: true
+    obligations:
+      audit_level: full
+      redact_fields:
+        - content
+"""
+    service = make_read_service(tmp_path, content="ordinary content\n", policy_yaml=policy_yaml)
+
+    result = service.call_tool(
+        tool_name="fs.read",
+        arguments={"path": "README.md"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "completed"
+    assert result.content["content"] == "[REDACTED]"
+    metadata = cast(JsonObject, audit_payloads(tmp_path)[-1]["metadata"])
+    assert metadata["redaction_paths"] == ["$.content"]
 
 
 def test_denied_read_attempt_is_audited_as_failed_execution(tmp_path: Path) -> None:
@@ -433,6 +500,36 @@ def test_http_fetch_executes_after_policy_allow_and_is_audited(tmp_path: Path) -
         "policy.evaluated",
         "tool.execution.started",
         "tool.execution.completed",
+    ]
+
+
+def test_http_fetch_output_is_redacted_before_return(tmp_path: Path) -> None:
+    opener = FakeHttpOpener(
+        FakeHttpResponse(
+            body=b'{"token":"secret-token","message":"Bearer abcdefghijklmnopqrstuvwxyz"}',
+            content_type="application/json; charset=utf-8",
+        )
+    )
+    service = make_http_service(tmp_path, opener=opener)
+
+    result = service.call_tool(
+        tool_name=HTTP_FETCH_TOOL,
+        arguments={"url": "https://example.com/data"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "completed"
+    assert "secret-token" not in str(result.content)
+    assert "abcdefghijklmnopqrstuvwxyz" not in str(result.content)
+    body_json = cast(JsonObject, result.content["body_json"])
+    assert body_json["token"] == "[REDACTED]"
+    metadata = cast(JsonObject, audit_payloads(tmp_path)[-1]["metadata"])
+    assert metadata["redaction_count"] == 3
+    assert metadata["redaction_paths"] == [
+        "$.body_text",
+        "$.body_json.token",
+        "$.body_json.message",
     ]
 
 

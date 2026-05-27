@@ -14,26 +14,30 @@ from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_mcp_server import IthildinMcpAdapter, create_mcp_server
 from ithildin_policy_core import PolicyEvaluator
+from mcp import types
 
 
 class FakeHttpResponse:
-    code = 200
-    headers = {"Content-Type": "text/plain; charset=utf-8"}
+    def __init__(self, body: bytes = b"mcp network") -> None:
+        self.body = body
+        self.code = 200
+        self.headers = {"Content-Type": "text/plain; charset=utf-8"}
 
     def read(self, size: int) -> bytes:
-        return b"mcp network"[:size]
+        return self.body[:size]
 
     def getcode(self) -> int:
         return self.code
 
 
 class FakeHttpOpener:
-    def __init__(self) -> None:
+    def __init__(self, body: bytes = b"mcp network") -> None:
         self.requests: list[Request] = []
+        self.body = body
 
     def open(self, fullurl: Request, timeout: float = 0) -> FakeHttpResponse:
         self.requests.append(fullurl)
-        return FakeHttpResponse()
+        return FakeHttpResponse(self.body)
 
 
 def write_policy(path: Path) -> None:
@@ -175,7 +179,7 @@ input_schema:
     )
 
 
-def make_adapter(tmp_path: Path) -> IthildinMcpAdapter:
+def make_adapter(tmp_path: Path, *, http_body: bytes = b"mcp network") -> IthildinMcpAdapter:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
     write_manifest(manifest_dir, "fs.apply_patch", "write")
@@ -224,7 +228,7 @@ input_schema:
         max_response_bytes=1024,
         max_redirects=3,
         resolver=lambda host, port: ["93.184.216.34"],
-        opener=FakeHttpOpener(),
+        opener=FakeHttpOpener(http_body),
     )
     patch_store = PatchProposalStore(db_path)
     patch_store.initialize()
@@ -300,6 +304,19 @@ def test_mcp_call_returns_real_http_fetch_output(tmp_path: Path) -> None:
     assert result.structuredContent["status"] == "completed"
     assert result.structuredContent["body_text"] == "mcp network"
     assert result.structuredContent["url"] == "https://example.com/data"
+
+
+def test_mcp_call_returns_redacted_text_and_structured_content(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, http_body=b"TOKEN=secret-value")
+
+    result = asyncio.run(adapter.call_tool("http.fetch", {"url": "https://example.com/data"}))
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["body_text"] == "TOKEN=[REDACTED]"
+    text_content = result.content[0]
+    assert isinstance(text_content, types.TextContent)
+    assert "secret-value" not in text_content.text
 
 
 def test_mcp_call_returns_patch_proposal_metadata(tmp_path: Path) -> None:

@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     http_timeout_seconds: float = Field(default=10.0, gt=0)
     http_max_response_bytes: int = Field(default=131_072, gt=0)
     http_max_redirects: int = Field(default=3, ge=0)
+    redaction_extra_keys: str = ""
+    redaction_extra_patterns: str = ""
     search_result_limit: int = Field(default=100, gt=0)
     git_log_limit: int = Field(default=20, gt=0)
     log_level: str = "INFO"

@@ -26,6 +26,7 @@ from ithildin_api.patches import (
     PatchProposalService,
 )
 from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
+from ithildin_api.redaction import RedactionResult, RedactionService, RedactionSummary
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.resources import resource_from_arguments
 
@@ -49,6 +50,7 @@ class GovernedToolCallService:
         read_tool_executor: ReadToolExecutor | None = None,
         patch_proposal_service: PatchProposalService | None = None,
         http_fetch_executor: HttpFetchExecutor | None = None,
+        redaction_service: RedactionService | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
@@ -57,6 +59,7 @@ class GovernedToolCallService:
         self.read_tool_executor = read_tool_executor
         self.patch_proposal_service = patch_proposal_service
         self.http_fetch_executor = http_fetch_executor
+        self.redaction_service = redaction_service or RedactionService()
 
     def call_tool(
         self,
@@ -84,7 +87,7 @@ class GovernedToolCallService:
                 status="denied",
                 request_id=request_id,
                 tool_name=tool_name,
-                content={"reason": "unknown tool"},
+                content=self._redact_content({"reason": "unknown tool"}).value,
                 is_error=True,
             )
 
@@ -104,7 +107,7 @@ class GovernedToolCallService:
                 status="denied",
                 request_id=request_id,
                 tool_name=tool_name,
-                content={"reason": "invalid tool arguments"},
+                content=self._redact_content({"reason": "invalid tool arguments"}).value,
                 is_error=True,
             )
 
@@ -137,13 +140,17 @@ class GovernedToolCallService:
             input_hash=request_hash,
             metadata={"reason": policy_decision.reason},
         )
+        redaction_keys = _redact_fields(policy_decision.obligations)
 
         if policy_decision.decision == PolicyDecisionValue.DENY:
             return GovernedToolCallResult(
                 status="denied",
                 request_id=request_id,
                 tool_name=tool_name,
-                content={"reason": policy_decision.reason},
+                content=self._redact_content(
+                    {"reason": policy_decision.reason},
+                    extra_keys=redaction_keys,
+                ).value,
                 is_error=True,
             )
 
@@ -157,6 +164,7 @@ class GovernedToolCallService:
                         resource=resource,
                         input_hash=request_hash,
                         approval_id=_string_argument(arguments, "approval_id"),
+                        redaction_keys=redaction_keys,
                     )
                 if "proposal_id" in arguments:
                     try:
@@ -169,7 +177,10 @@ class GovernedToolCallService:
                             status="denied",
                             request_id=request_id,
                             tool_name=tool_name,
-                            content={"reason": exc.reason},
+                            content=self._redact_content(
+                                {"reason": exc.reason},
+                                extra_keys=redaction_keys,
+                            ).value,
                             is_error=True,
                         )
                     approval = self.approval_service.create_pending(
@@ -188,11 +199,8 @@ class GovernedToolCallService:
                             },
                         )
                     )
-                    return GovernedToolCallResult(
-                        status="approval_required",
-                        request_id=request_id,
-                        tool_name=tool_name,
-                        content={
+                    content = self._redact_content(
+                        {
                             "approval_id": approval.approval_id,
                             "request_id": request_id,
                             "tool_name": tool_name,
@@ -203,6 +211,13 @@ class GovernedToolCallService:
                             "expires_at": approval.expires_at.isoformat(),
                             "policy_reason": policy_decision.reason,
                         },
+                        extra_keys=redaction_keys,
+                    ).value
+                    return GovernedToolCallResult(
+                        status="approval_required",
+                        request_id=request_id,
+                        tool_name=tool_name,
+                        content=content,
                     )
 
             approval = self.approval_service.create_pending(
@@ -221,11 +236,8 @@ class GovernedToolCallService:
                     metadata={"policy_reason": policy_decision.reason},
                 )
             )
-            return GovernedToolCallResult(
-                status="approval_required",
-                request_id=request_id,
-                tool_name=tool_name,
-                content={
+            content = self._redact_content(
+                {
                     "approval_id": approval.approval_id,
                     "request_id": request_id,
                     "tool_name": tool_name,
@@ -233,6 +245,13 @@ class GovernedToolCallService:
                     "expires_at": approval.expires_at.isoformat(),
                     "policy_reason": policy_decision.reason,
                 },
+                extra_keys=redaction_keys,
+            ).value
+            return GovernedToolCallResult(
+                status="approval_required",
+                request_id=request_id,
+                tool_name=tool_name,
+                content=content,
             )
 
         if self.patch_proposal_service is not None and tool_name == PATCH_PROPOSE_TOOL:
@@ -253,6 +272,10 @@ class GovernedToolCallService:
                     unified_diff=_string_argument(arguments, "unified_diff"),
                 )
             except PatchProposalError as exc:
+                redacted = self._redact_content(
+                    {"reason": exc.reason},
+                    extra_keys=redaction_keys,
+                )
                 self._audit_execution(
                     event_type=AuditEventType.TOOL_EXECUTION_FAILED,
                     request_id=request_id,
@@ -260,16 +283,20 @@ class GovernedToolCallService:
                     tool_name=tool_name,
                     resource=resource,
                     input_hash=request_hash,
-                    metadata={"executor": "patch_proposal", "reason": exc.reason},
+                    metadata=_with_redaction_summary(
+                        {"executor": "patch_proposal", "reason": exc.reason},
+                        redacted.summary,
+                    ),
                 )
                 return GovernedToolCallResult(
                     status="denied",
                     request_id=request_id,
                     tool_name=tool_name,
-                    content={"reason": exc.reason},
+                    content=redacted.value,
                     is_error=True,
                 )
 
+            redacted = self._redact_content(proposal.tool_result(), extra_keys=redaction_keys)
             self._audit_execution(
                 event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
                 request_id=request_id,
@@ -277,17 +304,20 @@ class GovernedToolCallService:
                 tool_name=tool_name,
                 resource=resource,
                 input_hash=request_hash,
-                metadata={
-                    "executor": "patch_proposal",
-                    "proposal_id": proposal.proposal_id,
-                    "proposal_hash": proposal.proposal_hash,
-                },
+                metadata=_with_redaction_summary(
+                    {
+                        "executor": "patch_proposal",
+                        "proposal_id": proposal.proposal_id,
+                        "proposal_hash": proposal.proposal_hash,
+                    },
+                    redacted.summary,
+                ),
             )
             return GovernedToolCallResult(
                 status="completed",
                 request_id=request_id,
                 tool_name=tool_name,
-                content=proposal.tool_result(),
+                content=redacted.value,
             )
 
         if self.read_tool_executor is not None and self.read_tool_executor.supports(tool_name):
@@ -303,6 +333,10 @@ class GovernedToolCallService:
             try:
                 content = self.read_tool_executor.execute(tool_name, arguments)
             except ReadToolError as exc:
+                redacted = self._redact_content(
+                    {"reason": exc.reason},
+                    extra_keys=redaction_keys,
+                )
                 self._audit_execution(
                     event_type=AuditEventType.TOOL_EXECUTION_FAILED,
                     request_id=request_id,
@@ -310,16 +344,20 @@ class GovernedToolCallService:
                     tool_name=tool_name,
                     resource=resource,
                     input_hash=request_hash,
-                    metadata={"executor": "in_process_read", "reason": exc.reason},
+                    metadata=_with_redaction_summary(
+                        {"executor": "in_process_read", "reason": exc.reason},
+                        redacted.summary,
+                    ),
                 )
                 return GovernedToolCallResult(
                     status="denied",
                     request_id=request_id,
                     tool_name=tool_name,
-                    content={"reason": exc.reason},
+                    content=redacted.value,
                     is_error=True,
                 )
 
+            redacted = self._redact_content(content, extra_keys=redaction_keys)
             self._audit_execution(
                 event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
                 request_id=request_id,
@@ -327,13 +365,16 @@ class GovernedToolCallService:
                 tool_name=tool_name,
                 resource=resource,
                 input_hash=request_hash,
-                metadata={"executor": "in_process_read"},
+                metadata=_with_redaction_summary(
+                    {"executor": "in_process_read"},
+                    redacted.summary,
+                ),
             )
             return GovernedToolCallResult(
                 status="completed",
                 request_id=request_id,
                 tool_name=tool_name,
-                content=content,
+                content=redacted.value,
             )
 
         if self.http_fetch_executor is not None and self.http_fetch_executor.supports(tool_name):
@@ -349,6 +390,10 @@ class GovernedToolCallService:
             try:
                 content = self.http_fetch_executor.execute(tool_name, arguments)
             except HttpFetchError as exc:
+                redacted = self._redact_content(
+                    {"reason": exc.reason},
+                    extra_keys=redaction_keys,
+                )
                 self._audit_execution(
                     event_type=AuditEventType.TOOL_EXECUTION_FAILED,
                     request_id=request_id,
@@ -356,16 +401,20 @@ class GovernedToolCallService:
                     tool_name=tool_name,
                     resource=resource,
                     input_hash=request_hash,
-                    metadata={"executor": "in_process_http", "reason": exc.reason},
+                    metadata=_with_redaction_summary(
+                        {"executor": "in_process_http", "reason": exc.reason},
+                        redacted.summary,
+                    ),
                 )
                 return GovernedToolCallResult(
                     status="denied",
                     request_id=request_id,
                     tool_name=tool_name,
-                    content={"reason": exc.reason},
+                    content=redacted.value,
                     is_error=True,
                 )
 
+            redacted = self._redact_content(content, extra_keys=redaction_keys)
             self._audit_execution(
                 event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
                 request_id=request_id,
@@ -373,24 +422,31 @@ class GovernedToolCallService:
                 tool_name=tool_name,
                 resource=resource,
                 input_hash=request_hash,
-                metadata={"executor": "in_process_http"},
+                metadata=_with_redaction_summary(
+                    {"executor": "in_process_http"},
+                    redacted.summary,
+                ),
             )
             return GovernedToolCallResult(
                 status="completed",
                 request_id=request_id,
                 tool_name=tool_name,
-                content=content,
+                content=redacted.value,
             )
 
-        return GovernedToolCallResult(
-            status="allowed",
-            request_id=request_id,
-            tool_name=tool_name,
-            content={
+        redacted = self._redact_content(
+            {
                 "request_id": request_id,
                 "tool_name": tool_name,
                 "message": "Governance approved; execution is not implemented in this sprint.",
             },
+            extra_keys=redaction_keys,
+        )
+        return GovernedToolCallResult(
+            status="allowed",
+            request_id=request_id,
+            tool_name=tool_name,
+            content=redacted.value,
         )
 
     def _audit_decision(
@@ -427,13 +483,17 @@ class GovernedToolCallService:
         resource: JsonObject,
         input_hash: str,
         approval_id: str,
+        redaction_keys: set[str] | None = None,
     ) -> GovernedToolCallResult:
         if self.patch_proposal_service is None:
             return GovernedToolCallResult(
                 status="denied",
                 request_id=request_id,
                 tool_name=tool_name,
-                content={"reason": "patch application is not configured"},
+                content=self._redact_content(
+                    {"reason": "patch application is not configured"},
+                    extra_keys=redaction_keys,
+                ).value,
                 is_error=True,
             )
 
@@ -452,6 +512,10 @@ class GovernedToolCallService:
                 approval_id=approval_id,
             )
         except (ApprovalError, PatchProposalError) as exc:
+            redacted = self._redact_content(
+                {"reason": str(exc)},
+                extra_keys=redaction_keys,
+            )
             self._audit_execution(
                 event_type=AuditEventType.TOOL_EXECUTION_FAILED,
                 request_id=request_id,
@@ -459,20 +523,31 @@ class GovernedToolCallService:
                 tool_name=tool_name,
                 resource=resource,
                 input_hash=input_hash,
-                metadata={
-                    "executor": "patch_apply",
-                    "approval_id": approval_id,
-                    "reason": str(exc),
-                },
+                metadata=_with_redaction_summary(
+                    {
+                        "executor": "patch_apply",
+                        "approval_id": approval_id,
+                        "reason": str(exc),
+                    },
+                    redacted.summary,
+                ),
             )
             return GovernedToolCallResult(
                 status="denied",
                 request_id=request_id,
                 tool_name=tool_name,
-                content={"reason": str(exc)},
+                content=redacted.value,
                 is_error=True,
             )
 
+        content: JsonObject = {
+            "approval_id": approval_id,
+            "proposal_id": proposal.proposal_id,
+            "proposal_hash": proposal.proposal_hash,
+            "path": proposal.path,
+            "proposal_status": proposal.status,
+        }
+        redacted = self._redact_content(content, extra_keys=redaction_keys)
         self._audit_execution(
             event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
             request_id=request_id,
@@ -480,25 +555,30 @@ class GovernedToolCallService:
             tool_name=tool_name,
             resource=resource,
             input_hash=input_hash,
-            metadata={
-                "executor": "patch_apply",
-                "approval_id": approval_id,
-                "proposal_id": proposal.proposal_id,
-                "proposal_hash": proposal.proposal_hash,
-            },
+            metadata=_with_redaction_summary(
+                {
+                    "executor": "patch_apply",
+                    "approval_id": approval_id,
+                    "proposal_id": proposal.proposal_id,
+                    "proposal_hash": proposal.proposal_hash,
+                },
+                redacted.summary,
+            ),
         )
         return GovernedToolCallResult(
             status="completed",
             request_id=request_id,
             tool_name=tool_name,
-            content={
-                "approval_id": approval_id,
-                "proposal_id": proposal.proposal_id,
-                "proposal_hash": proposal.proposal_hash,
-                "path": proposal.path,
-                "proposal_status": proposal.status,
-            },
+            content=redacted.value,
         )
+
+    def _redact_content(
+        self,
+        content: JsonObject,
+        *,
+        extra_keys: set[str] | None = None,
+    ) -> RedactionResult:
+        return self.redaction_service.redact(content, extra_keys=extra_keys)
 
     def _audit_execution(
         self,
@@ -543,6 +623,17 @@ def _tool_call_hash(
             "session_id": session_id,
         }
     )
+
+
+def _with_redaction_summary(metadata: JsonObject, summary: RedactionSummary) -> JsonObject:
+    return {**metadata, **summary.as_metadata()}
+
+
+def _redact_fields(obligations: JsonObject) -> set[str]:
+    redact_fields = obligations.get("redact_fields")
+    if not isinstance(redact_fields, list):
+        return set()
+    return {field for field in redact_fields if isinstance(field, str)}
 
 
 def _string_argument(arguments: JsonObject, name: str) -> str:

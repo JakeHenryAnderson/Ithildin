@@ -76,6 +76,7 @@ def test_api_public_exports() -> None:
         "PatchProposalService",
         "PatchProposalStore",
         "ReadToolExecutor",
+        "RedactionService",
         "Settings",
         "ToolRegistry",
         "create_app",

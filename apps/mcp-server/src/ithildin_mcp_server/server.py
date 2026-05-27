@@ -13,6 +13,7 @@ from ithildin_api.database import initialize_database
 from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
+from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
@@ -117,6 +118,10 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         max_response_bytes=resolved_settings.http_max_response_bytes,
         max_redirects=resolved_settings.http_max_redirects,
     )
+    redaction_service = RedactionService.from_settings(
+        extra_keys=resolved_settings.redaction_extra_keys,
+        extra_patterns=resolved_settings.redaction_extra_patterns,
+    )
     read_tool_executor = ReadToolExecutor.from_settings(
         workspace_root=resolved_settings.workspace_root,
         max_read_bytes=resolved_settings.max_read_bytes,
@@ -138,6 +143,7 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         read_tool_executor,
         patch_proposal_service,
         http_fetch_executor,
+        redaction_service,
     )
     return IthildinMcpAdapter(registry=registry, tool_call_service=tool_call_service)
 
