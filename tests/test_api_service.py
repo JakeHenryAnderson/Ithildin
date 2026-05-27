@@ -18,7 +18,6 @@ from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType
 from pydantic import ValidationError
-from starlette.middleware.cors import CORSMiddleware
 
 
 def make_settings(

@@ -17,7 +17,7 @@ from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
-from ithildin_schemas import JsonObject
+from ithildin_schemas import JsonObject, canonical_json, sha256_digest
 
 
 class FakeHttpResponse:
@@ -702,6 +702,37 @@ def test_patch_apply_with_proposal_id_returns_approval_required(tmp_path: Path) 
     assert result.content["path"] == "README.md"
 
 
+def test_patch_apply_approval_scope_binds_evidence(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"proposal_id": proposal["proposal_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    approval = harness.approval_service.get(str(result.content["approval_id"]))
+    scope = approval.one_time_scope
+    assert scope["tool_name"] == "fs.patch.apply"
+    assert scope["proposal_id"] == proposal["proposal_id"]
+    assert scope["proposal_hash"] == proposal["proposal_hash"]
+    assert scope["base_file_hash"] == proposal["base_file_hash"]
+    assert scope["manifest_hash"]
+    assert scope["manifest_version"] == "1.0.0"
+    tool_input_schema_hash = scope["tool_input_schema_hash"]
+    assert isinstance(tool_input_schema_hash, str)
+    assert tool_input_schema_hash.startswith("sha256:")
+    assert scope["policy_engine"] == "yaml"
+    assert scope["policy_hash"] == scope["policy_version"]
+    assert scope["matched_rules"] == ["require_write_approval"]
+    assert scope["requesting_principal"] == principal()
+    assert scope["request_hash"] == approval.request_hash
+    assert scope["expires_at"] == approval.expires_at.isoformat()
+    assert approval.metadata["approval_scope_hash"] == sha256_digest(scope)
+
+
 def test_approved_patch_apply_writes_file_and_replay_is_rejected(tmp_path: Path) -> None:
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
@@ -751,6 +782,51 @@ def test_patch_apply_rejects_proposal_hash_mismatch(tmp_path: Path) -> None:
 
     assert result.status == "denied"
     assert "hash mismatch" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
+
+
+def test_patch_apply_rejects_manifest_scope_mismatch(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    approval_record = harness.approval_service.get(str(approval["approval_id"]))
+    scope = dict(approval_record.one_time_scope)
+    scope["manifest_hash"] = "sha256:" + ("2" * 64)
+    with sqlite3.connect(harness.db_path) as connection:
+        connection.execute(
+            "UPDATE approvals SET one_time_scope_json = ? WHERE approval_id = ?",
+            (canonical_json(scope), approval["approval_id"]),
+        )
+        connection.commit()
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "manifest hash mismatch" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
+
+
+def test_patch_apply_rejects_wrong_requesting_principal(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal={"id": "agent:other", "roles": ["AgentDeveloper"]},
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "principal mismatch" in str(result.content["reason"])
     assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
 
 

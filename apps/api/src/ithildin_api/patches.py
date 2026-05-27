@@ -10,6 +10,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 from uuid import uuid4
 
 from ithildin_schemas import ApprovalRequest, JsonObject, canonical_json, sha256_digest
@@ -264,26 +265,75 @@ class PatchProposalService:
     def get_proposal(self, proposal_id: str) -> PatchProposal:
         return self.store.get(proposal_id)
 
-    def approval_scope(self, proposal_id: str, manifest_hash: str) -> JsonObject:
+    def approval_scope(
+        self,
+        proposal_id: str,
+        *,
+        manifest_hash: str,
+        manifest_version: str,
+        tool_input_schema_hash: str,
+        policy_engine: str,
+        policy_hash: str,
+        policy_version: str,
+        policy_document_version: str,
+        matched_rules: list[str],
+        requesting_principal: JsonObject,
+        request_hash: str,
+        expires_at: datetime,
+    ) -> JsonObject:
         proposal = self.get_proposal(proposal_id)
         if proposal.status != "proposed":
             raise PatchProposalError(f"patch proposal is not proposed: {proposal.status}")
-        return {
-            "tool_name": PATCH_APPLY_TOOL,
-            "proposal_id": proposal.proposal_id,
-            "proposal_hash": proposal.proposal_hash,
-            "path": proposal.path,
-            "manifest_hash": manifest_hash,
-        }
+        return cast(
+            JsonObject,
+            {
+                "tool_name": PATCH_APPLY_TOOL,
+                "proposal_id": proposal.proposal_id,
+                "proposal_hash": proposal.proposal_hash,
+                "base_file_hash": proposal.base_file_hash,
+                "path": proposal.path,
+                "manifest_hash": manifest_hash,
+                "manifest_version": manifest_version,
+                "tool_input_schema_hash": tool_input_schema_hash,
+                "policy_engine": policy_engine,
+                "policy_hash": policy_hash,
+                "policy_version": policy_version,
+                "policy_document_version": policy_document_version,
+                "matched_rules": matched_rules,
+                "requesting_principal": requesting_principal,
+                "request_hash": request_hash,
+                "expires_at": expires_at.isoformat(),
+            },
+        )
 
     def apply_approved(
         self,
         *,
         approval_service: ApprovalService,
         approval_id: str,
+        expected_manifest_hash: str,
+        expected_manifest_version: str,
+        expected_tool_input_schema_hash: str,
+        expected_policy_engine: str,
+        expected_policy_hash: str,
+        expected_policy_version: str,
+        expected_policy_document_version: str,
+        expected_matched_rules: list[str],
+        expected_principal: JsonObject,
     ) -> PatchProposal:
         approval = approval_service.get(approval_id)
-        proposal = self._proposal_for_approval(approval)
+        proposal = self._proposal_for_approval(
+            approval,
+            expected_manifest_hash=expected_manifest_hash,
+            expected_manifest_version=expected_manifest_version,
+            expected_tool_input_schema_hash=expected_tool_input_schema_hash,
+            expected_policy_engine=expected_policy_engine,
+            expected_policy_hash=expected_policy_hash,
+            expected_policy_version=expected_policy_version,
+            expected_policy_document_version=expected_policy_document_version,
+            expected_matched_rules=expected_matched_rules,
+            expected_principal=expected_principal,
+        )
         approval_service.begin_execution(approval_id, approval.request_hash)
         try:
             self._apply_proposal(proposal)
@@ -298,18 +348,61 @@ class PatchProposalService:
         approval_service.complete_execution(approval_id, success=True)
         return applied
 
-    def _proposal_for_approval(self, approval: ApprovalRequest) -> PatchProposal:
+    def _proposal_for_approval(
+        self,
+        approval: ApprovalRequest,
+        *,
+        expected_manifest_hash: str,
+        expected_manifest_version: str,
+        expected_tool_input_schema_hash: str,
+        expected_policy_engine: str,
+        expected_policy_hash: str,
+        expected_policy_version: str,
+        expected_policy_document_version: str,
+        expected_matched_rules: list[str],
+        expected_principal: JsonObject,
+    ) -> PatchProposal:
         if approval.tool_name != PATCH_APPLY_TOOL:
             raise PatchProposalError("approval is not for patch application")
         scope = approval.one_time_scope
+        if _scope_string(scope, "tool_name") != PATCH_APPLY_TOOL:
+            raise PatchProposalError("approval scope tool mismatch")
+        if _scope_string(scope, "request_hash") != approval.request_hash:
+            raise PatchProposalError("approval scope request hash mismatch")
+        if _scope_string(scope, "expires_at") != approval.expires_at.isoformat():
+            raise PatchProposalError("approval scope expiry mismatch")
+        if _scope_string(scope, "manifest_hash") != expected_manifest_hash:
+            raise PatchProposalError("approval scope manifest hash mismatch")
+        if _scope_string(scope, "manifest_version") != expected_manifest_version:
+            raise PatchProposalError("approval scope manifest version mismatch")
+        if _scope_string(scope, "tool_input_schema_hash") != expected_tool_input_schema_hash:
+            raise PatchProposalError("approval scope tool input schema mismatch")
+        if _scope_string(scope, "policy_engine") != expected_policy_engine:
+            raise PatchProposalError("approval scope policy engine mismatch")
+        if _scope_string(scope, "policy_hash") != expected_policy_hash:
+            raise PatchProposalError("approval scope policy hash mismatch")
+        if _scope_string(scope, "policy_version") != expected_policy_version:
+            raise PatchProposalError("approval scope policy version mismatch")
+        if _scope_string(scope, "policy_document_version") != expected_policy_document_version:
+            raise PatchProposalError("approval scope policy document version mismatch")
+        if _scope_string_list(scope, "matched_rules") != expected_matched_rules:
+            raise PatchProposalError("approval scope matched rules mismatch")
+        requesting_principal = _scope_object(scope, "requesting_principal")
+        if canonical_json(requesting_principal) != canonical_json(approval.principal):
+            raise PatchProposalError("approval scope principal mismatch")
+        if canonical_json(requesting_principal) != canonical_json(expected_principal):
+            raise PatchProposalError("approval principal mismatch")
         proposal_id = _scope_string(scope, "proposal_id")
         proposal_hash = _scope_string(scope, "proposal_hash")
+        base_file_hash = _scope_string(scope, "base_file_hash")
         path = _scope_string(scope, "path")
         proposal = self.get_proposal(proposal_id)
         if proposal.status != "proposed":
             raise PatchProposalError(f"patch proposal is not proposed: {proposal.status}")
         if proposal.proposal_hash != proposal_hash:
             raise PatchProposalError("patch proposal hash mismatch")
+        if proposal.base_file_hash != base_file_hash:
+            raise PatchProposalError("patch proposal base hash mismatch")
         if proposal.path != path:
             raise PatchProposalError("patch proposal path mismatch")
         return proposal
@@ -456,6 +549,20 @@ def _require_original_line(lines: list[str], index: int, expected: str) -> None:
 def _scope_string(scope: JsonObject, key: str) -> str:
     value = scope.get(key)
     if not isinstance(value, str):
+        raise PatchProposalError(f"approval scope missing {key}")
+    return value
+
+
+def _scope_string_list(scope: JsonObject, key: str) -> list[str]:
+    value = scope.get(key)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise PatchProposalError(f"approval scope missing {key}")
+    return cast(list[str], value)
+
+
+def _scope_object(scope: JsonObject, key: str) -> JsonObject:
+    value = scope.get(key)
+    if not isinstance(value, dict) or not all(isinstance(item, str) for item in value):
         raise PatchProposalError(f"approval scope missing {key}")
     return value
 

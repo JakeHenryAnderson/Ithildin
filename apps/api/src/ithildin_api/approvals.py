@@ -7,7 +7,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 from uuid import uuid4
 
 from ithildin_audit_core import AuditWriter
@@ -189,6 +189,36 @@ class ApprovalStore:
             raise ApprovalError(f"approval not found: {approval_id}")
         return self.get(approval_id)
 
+    def compare_and_set_status(
+        self,
+        approval_id: str,
+        *,
+        expected_status: ApprovalStatus,
+        next_status: ApprovalStatus,
+    ) -> ApprovalRequest:
+        with sqlite3.connect(self.db_path) as connection:
+            updated = connection.execute(
+                """
+                UPDATE approvals
+                SET status = ?,
+                    updated_at = ?
+                WHERE approval_id = ?
+                  AND status = ?
+                """,
+                (
+                    next_status.value,
+                    datetime.now(UTC).isoformat(),
+                    approval_id,
+                    expected_status.value,
+                ),
+            ).rowcount
+            connection.commit()
+
+        if updated != 1:
+            current = self.get(approval_id)
+            raise ApprovalError(f"approval is not {expected_status.value}: {current.status.value}")
+        return self.get(approval_id)
+
 
 class ApprovalService:
     def __init__(
@@ -272,17 +302,26 @@ class ApprovalService:
         approval = self.get(approval_id)
         if approval.status != ApprovalStatus.APPROVED:
             raise ApprovalError(f"approval is not approved: {approval.status.value}")
+        if _is_expired(approval):
+            self.store.compare_and_set_status(
+                approval_id,
+                expected_status=ApprovalStatus.APPROVED,
+                next_status=ApprovalStatus.EXPIRED,
+            )
+            raise ApprovalError("approval is expired")
         if approval.request_hash != request_hash:
             raise ApprovalError("approval request hash mismatch")
-        return self.store.set_status(approval_id, ApprovalStatus.EXECUTING)
+        return self.store.compare_and_set_status(
+            approval_id,
+            expected_status=ApprovalStatus.APPROVED,
+            next_status=ApprovalStatus.EXECUTING,
+        )
 
     def complete_execution(self, approval_id: str, success: bool) -> ApprovalRequest:
-        approval = self.store.get(approval_id)
-        if approval.status != ApprovalStatus.EXECUTING:
-            raise ApprovalError(f"approval is not executing: {approval.status.value}")
-        return self.store.set_status(
+        return self.store.compare_and_set_status(
             approval_id,
-            ApprovalStatus.EXECUTED if success else ApprovalStatus.FAILED,
+            expected_status=ApprovalStatus.EXECUTING,
+            next_status=ApprovalStatus.EXECUTED if success else ApprovalStatus.FAILED,
         )
 
     def _audit(self, event_type: AuditEventType, approval: ApprovalRequest) -> None:
@@ -294,11 +333,16 @@ class ApprovalService:
             tool_name=approval.tool_name,
             resource=approval.resource,
             input_hash=approval.request_hash,
-            metadata={
-                "approval_id": approval.approval_id,
-                "status": approval.status.value,
-                "summary": approval.summary,
-            },
+            metadata=cast(
+                JsonObject,
+                {
+                    "approval_id": approval.approval_id,
+                    "status": approval.status.value,
+                    "summary": approval.summary,
+                    "one_time_scope_hash": sha256_digest(approval.one_time_scope),
+                    "one_time_scope_keys": sorted(approval.one_time_scope.keys()),
+                },
+            ),
         )
 
 

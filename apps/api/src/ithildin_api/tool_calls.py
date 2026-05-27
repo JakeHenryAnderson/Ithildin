@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from ithildin_audit_core import AuditWriter
@@ -248,13 +249,32 @@ class GovernedToolCallService:
                         resource=resource,
                         input_hash=request_hash,
                         approval_id=_string_argument(arguments, "approval_id"),
+                        manifest_hash=registered_tool.manifest_hash,
+                        manifest_version=manifest.version,
+                        tool_input_schema_hash=sha256_digest(manifest.input_schema),
+                        policy_engine=self.policy_evaluator.engine_name,
+                        policy_hash=self.policy_evaluator.policy_hash,
+                        policy_version=policy_decision.policy_version,
+                        policy_document_version=self.policy_evaluator.document_version,
+                        matched_rules=policy_decision.matched_rules,
                         redaction_keys=redaction_keys,
                     )
                 if "proposal_id" in arguments:
+                    approval_expires_at = datetime.now(UTC) + self.approval_service.default_expiry
                     try:
                         one_time_scope = self.patch_proposal_service.approval_scope(
                             _string_argument(arguments, "proposal_id"),
-                            registered_tool.manifest_hash,
+                            manifest_hash=registered_tool.manifest_hash,
+                            manifest_version=manifest.version,
+                            tool_input_schema_hash=sha256_digest(manifest.input_schema),
+                            policy_engine=self.policy_evaluator.engine_name,
+                            policy_hash=self.policy_evaluator.policy_hash,
+                            policy_version=policy_decision.policy_version,
+                            policy_document_version=self.policy_evaluator.document_version,
+                            matched_rules=policy_decision.matched_rules,
+                            requesting_principal=principal,
+                            request_hash=request_hash,
+                            expires_at=approval_expires_at,
                         )
                     except PatchProposalError as exc:
                         return GovernedToolCallResult(
@@ -276,10 +296,20 @@ class GovernedToolCallService:
                             resource=resource,
                             summary=f"Apply patch {one_time_scope['proposal_id']}",
                             one_time_scope=one_time_scope,
+                            expires_at=approval_expires_at,
                             metadata={
                                 "policy_reason": policy_decision.reason,
+                                "policy_engine": self.policy_evaluator.engine_name,
+                                "policy_hash": self.policy_evaluator.policy_hash,
+                                "policy_version": policy_decision.policy_version,
+                                "policy_document_version": self.policy_evaluator.document_version,
+                                "manifest_hash": registered_tool.manifest_hash,
+                                "manifest_version": manifest.version,
+                                "tool_input_schema_hash": sha256_digest(manifest.input_schema),
+                                "approval_scope_hash": sha256_digest(one_time_scope),
                                 "proposal_id": one_time_scope["proposal_id"],
                                 "proposal_hash": one_time_scope["proposal_hash"],
+                                "base_file_hash": one_time_scope["base_file_hash"],
                             },
                         )
                     )
@@ -579,6 +609,14 @@ class GovernedToolCallService:
         resource: JsonObject,
         input_hash: str,
         approval_id: str,
+        manifest_hash: str,
+        manifest_version: str,
+        tool_input_schema_hash: str,
+        policy_engine: str,
+        policy_hash: str,
+        policy_version: str,
+        policy_document_version: str,
+        matched_rules: list[str],
         redaction_keys: set[str] | None = None,
     ) -> GovernedToolCallResult:
         if self.patch_proposal_service is None:
@@ -610,6 +648,15 @@ class GovernedToolCallService:
                 proposal = self.patch_proposal_service.apply_approved(
                     approval_service=self.approval_service,
                     approval_id=approval_id,
+                    expected_manifest_hash=manifest_hash,
+                    expected_manifest_version=manifest_version,
+                    expected_tool_input_schema_hash=tool_input_schema_hash,
+                    expected_policy_engine=policy_engine,
+                    expected_policy_hash=policy_hash,
+                    expected_policy_version=policy_version,
+                    expected_policy_document_version=policy_document_version,
+                    expected_matched_rules=matched_rules,
+                    expected_principal=principal,
                 )
         except (ApprovalError, PatchProposalError) as exc:
             redacted = self._redact_content(
@@ -627,6 +674,7 @@ class GovernedToolCallService:
                     {
                         "executor": "patch_apply",
                         "approval_id": approval_id,
+                        "approval_binding_verified": False,
                         "reason": str(exc),
                     },
                     redacted.summary,
@@ -659,8 +707,14 @@ class GovernedToolCallService:
                 {
                     "executor": "patch_apply",
                     "approval_id": approval_id,
+                    "approval_binding_verified": True,
                     "proposal_id": proposal.proposal_id,
                     "proposal_hash": proposal.proposal_hash,
+                    "base_file_hash": proposal.base_file_hash,
+                    "manifest_hash": manifest_hash,
+                    "manifest_version": manifest_version,
+                    "policy_hash": policy_hash,
+                    "policy_version": policy_version,
                 },
                 redacted.summary,
             ),
