@@ -46,6 +46,24 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make typecheck` - run Python and UI type checks.
 - `make ui-dev` - start the Vite UI app.
 
+## Local Demo
+
+The local Docker Compose demo runs the API and review console with a seeded workspace:
+
+- `make demo-seed` - copy tracked demo files into ignored `workspaces/demo/`.
+- `make compose-up` - build and start the local API/UI stack.
+- `make compose-smoke` - check API health, authenticated tool listing, and UI reachability.
+- `make compose-down` - stop the stack.
+
+Use the admin token in `.env.example`, or copy `.env.example` to `.env` and change it.
+The review console is served at `http://127.0.0.1:5173`.
+
+MCP is launched by an MCP client rather than as a persistent Compose service:
+
+```sh
+uv run python -m ithildin_mcp_server
+```
+
 ## Core Invariant
 
 No agent-originated action reaches the endpoint unless:

@@ -1,0 +1,24 @@
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock README.md ./
+COPY apps ./apps
+COPY packages ./packages
+
+RUN uv sync --frozen --no-dev \
+    && groupadd --gid 10001 ithildin \
+    && useradd --uid 10001 --gid ithildin --home-dir /app --no-create-home ithildin \
+    && mkdir -p /app/var/db /app/var/logs /app/workspaces /tmp/ithildin \
+    && chown -R 10001:10001 /app/var /app/workspaces /tmp/ithildin
+
+USER 10001:10001
+
+EXPOSE 8000
+
+CMD ["uvicorn", "ithildin_api.app:app", "--host", "0.0.0.0", "--port", "8000"]

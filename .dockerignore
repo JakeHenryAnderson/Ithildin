@@ -1,0 +1,33 @@
+# Local config and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+*.pyc
+*.egg-info/
+
+# Node
+node_modules/
+apps/ui/node_modules/
+apps/ui/dist/
+dist/
+build/
+.vite/
+
+# Local runtime state
+var/db/*
+var/logs/*
+workspaces/*
+
+# Git/editor noise
+.git/
+.DS_Store
+.idea/
+.vscode/
