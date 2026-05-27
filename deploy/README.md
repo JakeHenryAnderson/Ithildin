@@ -5,10 +5,26 @@ It is intended for demos and development validation, not production hosting.
 
 ## Start
 
+Install and launch Docker Desktop first. On macOS, follow Docker's official install flow
+for your chip architecture, then verify:
+
+```sh
+docker --version
+docker compose version
+docker info
+```
+
+If `docker` is not found or `docker info` cannot connect to the daemon, open Docker Desktop
+from Applications and wait until it reports that the engine is running.
+If the CLI is installed but Docker returns HTTP 500 while the dashboard says "Starting the
+Docker Engine", quit Docker Desktop, reopen it, and use Docker Desktop's Troubleshoot panel
+if the engine does not become ready.
+
 ```sh
 make demo-seed
 make compose-up
 make compose-smoke
+make demo-flow
 ```
 
 Open `http://127.0.0.1:5173` and use the token from `.env.example`, or copy
@@ -27,6 +43,19 @@ The Compose stack mounts only:
 - `var/`.
 
 It does not mount the Docker socket.
+Kubernetes is intentionally deferred; Docker is used here only to run the local demo stack.
+
+## Demo Flow
+
+`make demo-flow` assumes the Compose stack is already running. It reseeds
+`workspaces/demo/`, then verifies:
+
+- API health, tool listing, policy preview, approvals, audit verification, and audit export;
+- governed `fs.read`;
+- governed `fs.patch.propose`;
+- approval creation and approval through the admin API;
+- approved `fs.patch.apply`;
+- a valid audit hash chain after the flow.
 
 ## MCP
 

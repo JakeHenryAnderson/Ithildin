@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-seed lint test typecheck ui-dev
+.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed lint test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -41,6 +41,9 @@ compose-smoke:
 	curl -fsS -H "Authorization: Bearer $$TOKEN" http://127.0.0.1:8000/tools >/dev/null; \
 	curl -fsS http://127.0.0.1:5173/ >/dev/null; \
 	echo "Compose smoke passed."
+
+demo-flow: demo-seed
+	uv run python scripts/demo_flow.py --env-file $(COMPOSE_ENV_FILE)
 
 clean:
 	rm -rf .mypy_cache .pytest_cache .ruff_cache
