@@ -33,6 +33,10 @@ Keep `ITHILDIN_HTTP_ALLOWLIST` empty unless the demo needs a specific external f
 destination; entries are exact hosts or scheme-qualified hosts, not wildcards.
 Tool output redaction is always enabled. Use `ITHILDIN_REDACTION_EXTRA_KEYS` for additional
 JSON field names and `ITHILDIN_REDACTION_EXTRA_PATTERNS` for newline-separated regex patterns.
+The default policy engine is the local YAML evaluator. To prototype an OPA sidecar, set
+`ITHILDIN_POLICY_ENGINE=opa`, `ITHILDIN_OPA_URL=http://<opa-host>:8181`, and keep
+`ITHILDIN_OPA_DECISION_PATH=/v1/data/ithildin/decision`. OPA is optional and is not started
+by the local Compose stack in this task.
 
 ## Services
 

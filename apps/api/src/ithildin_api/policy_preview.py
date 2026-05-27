@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ithildin_policy_core import PolicyEvaluator
+from ithildin_policy_core import PolicyEngine
 from ithildin_schemas import JsonObject, JsonValue, PolicyDecisionValue, PolicyInput
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
@@ -19,7 +19,7 @@ class PolicyPreviewService:
     def __init__(
         self,
         registry: ToolRegistry,
-        policy_evaluator: PolicyEvaluator,
+        policy_evaluator: PolicyEngine,
         http_allowlist: HttpAllowlist | None = None,
     ) -> None:
         self.registry = registry

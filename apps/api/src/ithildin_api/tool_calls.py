@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from uuid import uuid4
 
 from ithildin_audit_core import AuditWriter
-from ithildin_policy_core import PolicyEvaluator
+from ithildin_policy_core import PolicyEngine
 from ithildin_schemas import (
     AuditEventType,
     JsonObject,
@@ -45,7 +45,7 @@ class GovernedToolCallService:
     def __init__(
         self,
         registry: ToolRegistry,
-        policy_evaluator: PolicyEvaluator,
+        policy_evaluator: PolicyEngine,
         approval_service: ApprovalService,
         audit_writer: AuditWriter,
         read_tool_executor: ReadToolExecutor | None = None,

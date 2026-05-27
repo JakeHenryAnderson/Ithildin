@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     db_path: Path = Path("var/db/ithildin.sqlite3")
     manifest_dir: Path = Path("tool-manifests")
     policy_path: Path = Path("policies/default.yaml")
+    policy_engine: str = "yaml"
+    opa_url: str = ""
+    opa_decision_path: str = "/v1/data/ithildin/decision"
     approval_expiry_seconds: int = Field(default=900, gt=0)
     workspace_root: Path = Path("workspaces")
     max_read_bytes: int = Field(default=131_072, gt=0)

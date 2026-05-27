@@ -11,7 +11,7 @@ from typing import Optional, cast
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from ithildin_audit_core import AuditWriter
-from ithildin_policy_core import PolicyEvaluator
+from ithildin_policy_core import PolicyEngine
 from ithildin_schemas import ApprovalDecisionValue, ApprovalRequest, ApprovalStatus, JsonObject
 from pydantic import BaseModel
 
@@ -27,6 +27,7 @@ from ithildin_api.database import initialize_database
 from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.logging import configure_logging
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
+from ithildin_api.policy import load_policy_engine
 from ithildin_api.policy_preview import (
     DEFAULT_PREVIEW_SESSION_ID,
     PolicyPreviewService,
@@ -56,7 +57,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             timedelta(seconds=resolved_settings.approval_expiry_seconds),
         )
         registry = ToolRegistry.load(resolved_settings.manifest_dir)
-        policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
+        policy_evaluator = load_policy_engine(resolved_settings)
         app_instance.state.registry = registry
         app_instance.state.policy_evaluator = policy_evaluator
         http_fetch_executor = HttpFetchExecutor.from_settings(
@@ -133,7 +134,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @api.get("/policy/status", dependencies=[Depends(require_admin_token)])
     def policy_status() -> JsonObject:
-        policy_evaluator = cast(PolicyEvaluator, api.state.policy_evaluator)
+        policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
         return policy_evaluator.status()
 
     @api.get("/patch-proposals", dependencies=[Depends(require_admin_token)])

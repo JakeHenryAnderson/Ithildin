@@ -17,6 +17,12 @@ Use a typed policy input model from day one.
 
 Do not invent a full custom policy language in the MVP.
 
+The runtime now defaults to `ITHILDIN_POLICY_ENGINE=yaml`. An optional OPA prototype can be
+selected with `ITHILDIN_POLICY_ENGINE=opa`, `ITHILDIN_OPA_URL`, and
+`ITHILDIN_OPA_DECISION_PATH`. OPA responses must return a JSON `result` object shaped like the
+decision result below. If the sidecar is unavailable or returns malformed data, Ithildin returns a
+deny decision with a fail-closed obligation.
+
 ## Policy Input Shape
 
 ```json
@@ -69,4 +75,3 @@ Decision values: `allow`, `deny`, `require_approval`.
 - Writes require approval.
 - Deletes, shell, Docker, secret reads, and broad network access are denied.
 - Unknown tools, unknown principals, invalid inputs, and out-of-scope resources are denied.
-

@@ -12,6 +12,9 @@ services:
       ITHILDIN_AUDIT_LOG_PATH: /app/var/logs/audit.jsonl
       ITHILDIN_MANIFEST_DIR: /app/tool-manifests
       ITHILDIN_POLICY_PATH: /app/policies/default.yaml
+      ITHILDIN_POLICY_ENGINE: "${ITHILDIN_POLICY_ENGINE:-yaml}"
+      ITHILDIN_OPA_URL: "${ITHILDIN_OPA_URL:-}"
+      ITHILDIN_OPA_DECISION_PATH: "${ITHILDIN_OPA_DECISION_PATH:-/v1/data/ithildin/decision}"
       ITHILDIN_WORKSPACE_ROOT: /app/workspaces
       ITHILDIN_LOG_LEVEL: "${ITHILDIN_LOG_LEVEL:-INFO}"
       ITHILDIN_MAX_READ_BYTES: "${ITHILDIN_MAX_READ_BYTES:-131072}"

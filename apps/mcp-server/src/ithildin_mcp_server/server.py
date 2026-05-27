@@ -12,12 +12,12 @@ from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
 from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
+from ithildin_api.policy import load_policy_engine
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
-from ithildin_policy_core import PolicyEvaluator
 from ithildin_schemas import JsonObject
 from mcp import types
 from mcp.server import Server
@@ -111,7 +111,7 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         default_expiry=timedelta(seconds=resolved_settings.approval_expiry_seconds),
     )
     registry = ToolRegistry.load(resolved_settings.manifest_dir)
-    policy_evaluator = PolicyEvaluator.load(resolved_settings.policy_path)
+    policy_evaluator = load_policy_engine(resolved_settings)
     http_fetch_executor = HttpFetchExecutor.from_settings(
         http_allowlist=resolved_settings.http_allowlist,
         timeout_seconds=resolved_settings.http_timeout_seconds,
