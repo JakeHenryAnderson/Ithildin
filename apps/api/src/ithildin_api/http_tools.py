@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import SplitResult, urljoin, urlsplit, urlunsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from ithildin_schemas import JsonObject, JsonValue
 
@@ -129,7 +129,7 @@ class HttpFetchExecutor:
         self.max_response_bytes = max_response_bytes
         self.max_redirects = max_redirects
         self.resolver = resolver or _resolve_host
-        self.opener = opener or build_opener(_NoRedirectHandler)
+        self.opener = opener or build_opener(ProxyHandler({}), _NoRedirectHandler)
 
     @classmethod
     def from_settings(
@@ -207,14 +207,23 @@ class HttpFetchExecutor:
         if not self.allowlist.allows(parsed_url):
             raise HttpFetchError("URL is not in the HTTP allowlist")
 
+        first_resolution = self._validated_resolution(parsed_url)
+        second_resolution = self._validated_resolution(parsed_url)
+        if first_resolution != second_resolution:
+            raise HttpFetchError("destination DNS resolution changed during validation")
+
+    def _validated_resolution(self, parsed_url: ParsedHttpUrl) -> frozenset[str]:
         resolved_ips = self.resolver(parsed_url.host, parsed_url.port)
         if not resolved_ips:
             raise HttpFetchError("destination host could not be resolved")
 
+        validated: set[str] = set()
         for resolved_ip in resolved_ips:
             ip_address = ipaddress.ip_address(resolved_ip)
-            if not ip_address.is_global:
+            if _is_blocked_ip(ip_address):
                 raise HttpFetchError("destination resolves to a blocked IP range")
+            validated.add(ip_address.compressed)
+        return frozenset(validated)
 
     def _result_from_response(
         self,
@@ -224,8 +233,13 @@ class HttpFetchExecutor:
     ) -> JsonObject:
         headers = response.headers
         content_length = headers.get("Content-Length")
-        if content_length is not None and int(content_length) > self.max_response_bytes:
-            raise HttpFetchError("response exceeds configured byte limit")
+        if content_length is not None:
+            try:
+                declared_length = int(content_length)
+            except ValueError as exc:
+                raise HttpFetchError("response content length was invalid") from exc
+            if declared_length > self.max_response_bytes:
+                raise HttpFetchError("response exceeds configured byte limit")
 
         body = _read_bounded(response, self.max_response_bytes)
         content_type = headers.get("Content-Type") or ""
@@ -336,10 +350,30 @@ def _normalize_host(host: str) -> str:
     stripped = host.rstrip(".").lower()
     if not stripped:
         raise HttpFetchError("host must not be empty")
+    if _looks_like_obfuscated_ip(stripped):
+        raise HttpFetchError("host uses unsupported IP notation")
     try:
         return ipaddress.ip_address(stripped).compressed
     except ValueError:
         return stripped.encode("idna").decode("ascii")
+
+
+def _looks_like_obfuscated_ip(host: str) -> bool:
+    if host.startswith("0x") or host.isdecimal():
+        return True
+    parts = host.split(".")
+    if 1 < len(parts) <= 4 and all(part for part in parts):
+        numericish = all(
+            part.isdecimal() or part.startswith("0x") or (part.startswith("0") and len(part) > 1)
+            for part in parts
+        )
+        if numericish:
+            try:
+                ipaddress.ip_address(host)
+                return False
+            except ValueError:
+                return True
+    return False
 
 
 def _resolve_host(host: str, port: int) -> Sequence[str]:
@@ -353,6 +387,18 @@ def _resolve_host(host: str, port: int) -> Sequence[str]:
         if isinstance(host_address, str):
             resolved.add(host_address)
     return tuple(resolved)
+
+
+def _is_blocked_ip(ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    return (
+        not ip_address.is_global
+        or ip_address.is_loopback
+        or ip_address.is_private
+        or ip_address.is_link_local
+        or ip_address.is_multicast
+        or ip_address.is_reserved
+        or ip_address.is_unspecified
+    )
 
 
 def _read_bounded(response: HttpResponse, max_response_bytes: int) -> bytes:

@@ -49,10 +49,15 @@ class FakeOpener:
         return response
 
 
-def test_security_regression_filesystem_scope_and_secret_paths(tmp_path: Path) -> None:
+def test_security_regression_filesystem_scope_and_secret_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     filesystem = _filesystem(tmp_path, max_read_bytes=4)
     filesystem.workspace_root.joinpath("ok.txt").write_text("ok", encoding="utf-8")
     filesystem.workspace_root.joinpath("large.txt").write_text("large", encoding="utf-8")
+    filesystem.workspace_root.joinpath("binary.txt").write_bytes(b"ok\x00")
+    filesystem.workspace_root.joinpath("latin1.txt").write_bytes(b"\xff")
     filesystem.workspace_root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
     secrets = filesystem.workspace_root / "secrets"
     secrets.mkdir()
@@ -60,18 +65,38 @@ def test_security_regression_filesystem_scope_and_secret_paths(tmp_path: Path) -
     outside = tmp_path / "outside.txt"
     outside.write_text("secret", encoding="utf-8")
     filesystem.workspace_root.joinpath("link.txt").symlink_to(outside)
+    filesystem.workspace_root.joinpath("inside-link.txt").symlink_to(
+        filesystem.workspace_root / "ok.txt"
+    )
 
     denied = [
         ("../ok.txt", "traversal"),
         (str(outside), "absolute"),
-        ("link.txt", "escapes"),
+        ("link.txt", "symlink"),
+        ("inside-link.txt", "symlink"),
         (".env", "hidden or sensitive"),
         ("secrets/note.txt", "hidden or sensitive"),
         ("large.txt", "read limit"),
+        ("binary.txt", "binary"),
+        ("latin1.txt", "UTF-8"),
     ]
     for path, reason in denied:
         with pytest.raises(ReadToolError, match=reason):
             filesystem.read_file(path)
+
+    race_target = filesystem.workspace_root / "race.txt"
+    race_target.write_text("safe", encoding="utf-8")
+    original_resolver = filesystem.resolve_existing_path
+
+    def swap_to_symlink(path: str) -> Path:
+        resolved = original_resolver(path)
+        resolved.unlink()
+        resolved.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(filesystem, "resolve_existing_path", swap_to_symlink)
+    with pytest.raises(ReadToolError, match="safe regular file"):
+        filesystem.read_file("race.txt")
 
 
 def test_security_regression_patch_validation_and_stale_apply(tmp_path: Path) -> None:
@@ -93,6 +118,15 @@ def test_security_regression_patch_validation_and_stale_apply(tmp_path: Path) ->
                 path="README.md",
                 unified_diff=invalid_diff,
             )
+
+    target.write_bytes(b"old\x00")
+    with pytest.raises(PatchProposalError, match="binary"):
+        service.create_proposal(
+            request_id="req_2",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff="--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n",
+        )
 
 
 def test_security_regression_approval_replay_and_hash_mismatch(tmp_path: Path) -> None:

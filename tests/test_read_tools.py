@@ -61,7 +61,7 @@ def test_filesystem_denies_symlink_escape(tmp_path: Path) -> None:
     outside.write_text("secret", encoding="utf-8")
     filesystem.workspace_root.joinpath("link.txt").symlink_to(outside)
 
-    with pytest.raises(ReadToolError, match="escapes"):
+    with pytest.raises(ReadToolError, match="symlink"):
         filesystem.read_file("link.txt")
 
 

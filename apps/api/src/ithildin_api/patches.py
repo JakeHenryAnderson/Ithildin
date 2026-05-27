@@ -224,9 +224,9 @@ class PatchProposalService:
             raise PatchProposalError("patch target is not a file")
 
         try:
-            current_content = target.read_text(encoding="utf-8")
-        except UnicodeDecodeError as exc:
-            raise PatchProposalError("patch target is not a UTF-8 text file") from exc
+            current_content = self.filesystem.read_text_file(target)
+        except ReadToolError as exc:
+            raise PatchProposalError(exc.reason) from exc
 
         normalized_path = self.filesystem.relative_path(target)
         normalized_diff = normalize_unified_diff(unified_diff)
@@ -411,7 +411,10 @@ class PatchProposalService:
         target = self.filesystem.resolve_existing_path(proposal.path)
         if not target.is_file():
             raise PatchProposalError("patch target is not a file")
-        current_content = target.read_text(encoding="utf-8")
+        try:
+            current_content = self.filesystem.read_text_file(target)
+        except ReadToolError as exc:
+            raise PatchProposalError(exc.reason) from exc
         current_hash = sha256_digest(current_content)
         if current_hash != proposal.base_file_hash:
             raise PatchProposalError("patch target has changed since proposal")

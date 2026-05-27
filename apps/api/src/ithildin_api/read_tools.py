@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import stat
 import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -118,12 +120,7 @@ class FilesystemReadTools:
 
     def read_file(self, path: str) -> JsonObject:
         target = self.resolve_existing_path(path)
-        if not target.is_file():
-            raise ReadToolError("path is not a file")
-        size = target.stat().st_size
-        if size > self.max_read_bytes:
-            raise ReadToolError("file exceeds configured read limit")
-        content = target.read_text(encoding="utf-8", errors="replace")
+        content = self.read_text_file(target)
         return {
             "path": self.relative_path(target),
             "content": content,
@@ -149,7 +146,10 @@ class FilesystemReadTools:
                 continue
             if allowed_candidate.stat().st_size > self.max_read_bytes:
                 continue
-            self._append_file_matches(allowed_candidate, query, matches)
+            try:
+                self._append_file_matches(allowed_candidate, query, matches)
+            except ReadToolError:
+                continue
 
         return {
             "path": self.relative_path(target),
@@ -168,6 +168,8 @@ class FilesystemReadTools:
             raise ReadToolError("path traversal is outside the workspace scope")
 
         target = self.workspace_root.joinpath(requested)
+        if target.is_symlink():
+            raise ReadToolError("path is a symlink")
         try:
             resolved = target.resolve(strict=True)
         except OSError as exc:
@@ -176,6 +178,36 @@ class FilesystemReadTools:
         self._ensure_under_workspace(resolved)
         self._ensure_not_sensitive(resolved)
         return resolved
+
+    def read_text_file(self, path: Path) -> str:
+        data = self.read_file_bytes(path)
+        if b"\x00" in data:
+            raise ReadToolError("file appears to be binary")
+        try:
+            return data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ReadToolError("file is not valid UTF-8 text") from exc
+
+    def read_file_bytes(self, path: Path) -> bytes:
+        flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        try:
+            fd = os.open(path, flags)
+        except OSError as exc:
+            raise ReadToolError("path is not a safe regular file") from exc
+        try:
+            stat_result = os.fstat(fd)
+            if not stat.S_ISREG(stat_result.st_mode):
+                raise ReadToolError("path is not a file")
+            if stat_result.st_size > self.max_read_bytes:
+                raise ReadToolError("file exceeds configured read limit")
+            data = os.read(fd, self.max_read_bytes + 1)
+        finally:
+            os.close(fd)
+        if len(data) > self.max_read_bytes:
+            raise ReadToolError("file exceeds configured read limit")
+        return data
 
     def relative_path(self, path: Path) -> str:
         try:

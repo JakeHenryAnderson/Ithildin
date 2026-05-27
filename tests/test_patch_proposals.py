@@ -74,7 +74,7 @@ def test_invalid_patch_paths_are_denied(tmp_path: Path) -> None:
     for path, reason in [
         ("../README.md", "traversal"),
         (str(outside), "absolute"),
-        ("link.txt", "escapes"),
+        ("link.txt", "symlink"),
         (".env", "hidden or sensitive"),
     ]:
         with pytest.raises(PatchProposalError, match=reason):

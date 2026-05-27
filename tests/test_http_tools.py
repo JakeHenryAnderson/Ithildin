@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from email.message import Message
 from pathlib import Path
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
 import pytest
@@ -141,6 +141,19 @@ def test_private_ip_resolution_is_denied() -> None:
     assert opener.requests == []
 
 
+@pytest.mark.parametrize(
+    "resolved_ip",
+    ["::1", "fc00::1", "fe80::1", "2001:db8::1", "169.254.169.254", "224.0.0.1"],
+)
+def test_blocked_ip_ranges_are_denied(resolved_ip: str) -> None:
+    executor, opener = make_executor(resolved_ips=[resolved_ip])
+
+    with pytest.raises(HttpFetchError, match="blocked IP"):
+        executor.fetch("https://example.com/")
+
+    assert opener.requests == []
+
+
 def test_redirect_destination_is_revalidated() -> None:
     redirect = HTTPError(
         "https://example.com/",
@@ -167,6 +180,22 @@ def test_redirect_destination_is_revalidated() -> None:
     assert len(opener.requests) == 1
 
 
+def test_dns_rebinding_style_resolution_change_is_denied() -> None:
+    calls = 0
+
+    def changing_resolver(host: str, port: int) -> Sequence[str]:
+        nonlocal calls
+        calls += 1
+        return ["93.184.216.34"] if calls == 1 else ["93.184.216.35"]
+
+    executor, opener = make_executor(resolver=changing_resolver)
+
+    with pytest.raises(HttpFetchError, match="DNS resolution changed"):
+        executor.fetch("https://example.com/")
+
+    assert opener.requests == []
+
+
 def test_redirect_limit_is_enforced() -> None:
     redirect = HTTPError(
         "https://example.com/",
@@ -189,6 +218,50 @@ def test_response_byte_limit_is_enforced() -> None:
 
     with pytest.raises(HttpFetchError, match="byte limit"):
         executor.fetch("https://example.com/")
+
+
+def test_response_byte_limit_is_enforced_without_content_length() -> None:
+    executor, _ = make_executor(
+        responses=[FakeResponse(body=b"too large")],
+        max_response_bytes=4,
+    )
+
+    with pytest.raises(HttpFetchError, match="byte limit"):
+        executor.fetch("https://example.com/")
+
+
+def test_timeout_and_url_errors_return_safe_error() -> None:
+    executor, _ = make_executor(responses=[URLError("secret backend detail")])
+
+    with pytest.raises(HttpFetchError, match="HTTP fetch failed safely") as exc_info:
+        executor.fetch("https://example.com/")
+
+    assert "secret backend detail" not in str(exc_info.value)
+
+
+def test_obfuscated_ipv4_hosts_are_rejected() -> None:
+    with pytest.raises(HttpFetchError, match="unsupported IP notation"):
+        HttpAllowlist.from_csv("2130706433")
+    with pytest.raises(HttpFetchError, match="unsupported IP notation"):
+        HttpAllowlist.from_csv("0177.0.0.1")
+
+
+def test_idna_hosts_match_exact_punycode_allowlist() -> None:
+    seen_hosts: list[str] = []
+
+    def resolver(host: str, port: int) -> Sequence[str]:
+        seen_hosts.append(host)
+        return ["93.184.216.34"]
+
+    executor, _ = make_executor(
+        allowlist="https://xn--bcher-kva.example",
+        resolver=resolver,
+    )
+
+    result = executor.fetch("https://bücher.example/path")
+
+    assert result["url"] == "https://xn--bcher-kva.example/path"
+    assert seen_hosts == ["xn--bcher-kva.example", "xn--bcher-kva.example"]
 
 
 def test_extra_headers_are_rejected_by_manifest_schema(tmp_path: Path) -> None:
