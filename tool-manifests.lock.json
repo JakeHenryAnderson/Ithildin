@@ -1,0 +1,66 @@
+{
+  "lockfile_version": 1,
+  "manifest_dir": "tool-manifests",
+  "manifests": [
+    {
+      "manifest_hash": "sha256:81ebf6b0064cd8c405baf08b96a161ed7f1018467b9d506c4cff4289262104a8",
+      "name": "fs.list",
+      "path": "tool-manifests/fs-list.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:7cfeb4fd42ceaff028266ee83ce92103b33d5eef6971f4c9040a877c9083c974",
+      "name": "fs.patch.apply",
+      "path": "tool-manifests/fs-patch-apply.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:2dc7abbcc11cb2e163d7a83f2778a042d7b2e186434404ec5ddc422993d59206",
+      "name": "fs.patch.propose",
+      "path": "tool-manifests/fs-patch-propose.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:8cfaa42c9ee8a0c55afb322acf653a1d23f73ab7d393151b958721963999302a",
+      "name": "fs.read",
+      "path": "tool-manifests/fs-read.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:3e59091f8a010a48c1fecfa34de0496392eaa765392a4de5f2d3f01b3c3e7dab",
+      "name": "fs.search",
+      "path": "tool-manifests/fs-search.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:4dae6ebce6bcf64874103c4adf29a835b95aad64316c68c4dd66143f40295758",
+      "name": "fs.stat",
+      "path": "tool-manifests/fs-stat.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:100c8299c9a50b5286ec400988b47cf94f1cad33e3eb365eaf87db07e6dc5fc5",
+      "name": "git.diff",
+      "path": "tool-manifests/git-diff.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:b07745f67390fefcb3afd136eade16defc8e8eb3d8805bbf5e147c67a32b54c8",
+      "name": "git.log",
+      "path": "tool-manifests/git-log.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:51a4d948dc5d9351b02f0734bed689636124ed2d0f8f691d32c0fe71c21171b1",
+      "name": "git.status",
+      "path": "tool-manifests/git-status.yaml",
+      "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:10d3f07d802a0d71476b247083e2194a3e569a6a025d8e99fb6e9ece5936e975",
+      "name": "http.fetch",
+      "path": "tool-manifests/http-fetch.yaml",
+      "version": "0.1.0"
+    }
+  ]
+}

@@ -10,6 +10,11 @@ import yaml
 from ithildin_schemas import JsonObject, ToolManifest, sha256_digest
 from pydantic import ValidationError
 
+from ithildin_api.manifest_lock import (
+    ManifestLockRecord,
+    verify_manifest_lock,
+)
+
 
 class ToolRegistryError(RuntimeError):
     """Base class for registry startup failures."""
@@ -61,10 +66,18 @@ class ToolRegistry:
         self._tools = tools
 
     @classmethod
-    def load(cls, manifest_dir: Path) -> ToolRegistry:
+    def load(
+        cls,
+        manifest_dir: Path,
+        *,
+        lock_path: Path | None = None,
+        require_lock: bool = False,
+    ) -> ToolRegistry:
         tools: dict[str, RegisteredTool] = {}
 
         if not manifest_dir.exists():
+            if require_lock and lock_path is not None:
+                verify_manifest_lock(manifest_dir=manifest_dir, lock_path=lock_path, records=[])
             return cls(tools)
 
         for manifest_path in sorted(manifest_dir.iterdir()):
@@ -76,6 +89,23 @@ class ToolRegistry:
             if tool_name in tools:
                 raise DuplicateToolManifest(f"duplicate tool manifest for {tool_name}")
             tools[tool_name] = registered_tool
+
+        if require_lock:
+            if lock_path is None:
+                raise ToolRegistryError("manifest lock is required but no lock path is configured")
+            verify_manifest_lock(
+                manifest_dir=manifest_dir,
+                lock_path=lock_path,
+                records=[
+                    ManifestLockRecord(
+                        path=tool.source_path,
+                        name=tool.manifest.name,
+                        version=tool.manifest.version,
+                        manifest_hash=tool.manifest_hash,
+                    )
+                    for tool in tools.values()
+                ],
+            )
 
         return cls(tools)
 

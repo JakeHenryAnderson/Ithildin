@@ -165,6 +165,7 @@ def make_settings(
         db_path=tmp_path / "ithildin.sqlite3",
         audit_log_path=tmp_path / "audit.jsonl",
         manifest_dir=manifest_dir,
+        require_manifest_lock=False,
         policy_path=policy_path,
         policy_engine=policy_engine,
         opa_url=opa_url,

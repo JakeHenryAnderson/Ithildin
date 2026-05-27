@@ -110,7 +110,11 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         audit_writer,
         default_expiry=timedelta(seconds=resolved_settings.approval_expiry_seconds),
     )
-    registry = ToolRegistry.load(resolved_settings.manifest_dir)
+    registry = ToolRegistry.load(
+        resolved_settings.manifest_dir,
+        lock_path=resolved_settings.manifest_lock_path,
+        require_lock=resolved_settings.require_manifest_lock,
+    )
     policy_evaluator = load_policy_engine(resolved_settings)
     http_fetch_executor = HttpFetchExecutor.from_settings(
         http_allowlist=resolved_settings.http_allowlist,

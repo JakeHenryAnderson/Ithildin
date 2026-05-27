@@ -5,7 +5,9 @@ from datetime import timedelta
 from pathlib import Path
 from urllib.request import Request
 
+import pytest
 from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.config import Settings
 from ithildin_api.http_tools import HttpAllowlist, HttpFetchExecutor
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
@@ -13,6 +15,7 @@ from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_mcp_server import IthildinMcpAdapter, create_mcp_server
+from ithildin_mcp_server.server import create_adapter
 from ithildin_policy_core import PolicyEvaluator
 from mcp import types
 
@@ -381,3 +384,23 @@ def test_create_mcp_server_uses_official_server_type(tmp_path: Path) -> None:
     server = create_mcp_server(adapter)
 
     assert server.name == "ithildin-mcp"
+
+
+def test_create_adapter_enforces_manifest_lock_when_enabled(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    write_manifest(manifest_dir, "fs.read", "read")
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    settings = Settings(
+        admin_token="test-admin-token",
+        db_path=tmp_path / "ithildin.sqlite3",
+        audit_log_path=tmp_path / "audit.jsonl",
+        manifest_dir=manifest_dir,
+        manifest_lock_path=tmp_path / "missing.lock.json",
+        require_manifest_lock=True,
+        policy_path=policy_path,
+        workspace_root=tmp_path / "workspace",
+    )
+
+    with pytest.raises(RuntimeError, match="manifest lock"):
+        create_adapter(settings)

@@ -10,7 +10,9 @@ from fastapi.testclient import TestClient
 from ithildin_api.app import create_app
 from ithildin_api.config import Settings
 from ithildin_api.database import initialize_database
+from ithildin_api.manifest_lock import ManifestLockRecord, write_manifest_lock
 from ithildin_api.patches import PatchProposalService
+from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter
 from ithildin_schemas import AuditEventType
 from pydantic import ValidationError
@@ -43,6 +45,7 @@ rules:
         audit_log_path=tmp_path / "audit.jsonl",
         db_path=tmp_path / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
+        require_manifest_lock=False,
         policy_path=policy_path,
         workspace_root=tmp_path / "workspace",
         http_allowlist=http_allowlist,
@@ -311,6 +314,68 @@ input_schema:
         }
     ]
     assert response.json()["tools"][0]["manifest_hash"].startswith("sha256:")
+
+
+def test_app_startup_enforces_manifest_lock_when_enabled(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    settings.require_manifest_lock = True
+    settings.manifest_lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(settings.manifest_dir)
+    write_manifest_lock(
+        manifest_dir=settings.manifest_dir,
+        lock_path=settings.manifest_lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/tools",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["tools"][0]["name"] == "fs.read"
+
+
+def test_app_startup_fails_for_tampered_manifest_lock(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    manifest_path = settings.manifest_dir / "fs-read.yaml"
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    settings.require_manifest_lock = True
+    settings.manifest_lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(settings.manifest_dir)
+    write_manifest_lock(
+        manifest_dir=settings.manifest_dir,
+        lock_path=settings.manifest_lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    manifest_path.write_text(
+        manifest_path.read_text(encoding="utf-8").replace("fs.read", "fs.stat"),
+        encoding="utf-8",
+    )
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError):
+        with TestClient(app):
+            pass
 
 
 def test_policy_preview_requires_authentication(tmp_path: Path) -> None:

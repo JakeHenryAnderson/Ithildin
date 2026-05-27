@@ -11,6 +11,8 @@ services:
       ITHILDIN_DB_PATH: /app/var/db/ithildin.sqlite3
       ITHILDIN_AUDIT_LOG_PATH: /app/var/logs/audit.jsonl
       ITHILDIN_MANIFEST_DIR: /app/tool-manifests
+      ITHILDIN_MANIFEST_LOCK_PATH: /app/tool-manifests.lock.json
+      ITHILDIN_REQUIRE_MANIFEST_LOCK: "${ITHILDIN_REQUIRE_MANIFEST_LOCK:-true}"
       ITHILDIN_POLICY_PATH: /app/policies/default.yaml
       ITHILDIN_POLICY_ENGINE: "${ITHILDIN_POLICY_ENGINE:-yaml}"
       ITHILDIN_OPA_URL: "${ITHILDIN_OPA_URL:-}"
@@ -30,6 +32,7 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
+      - ../tool-manifests.lock.json:/app/tool-manifests.lock.json:ro
       - ../tool-manifests:/app/tool-manifests:ro
       - ../policies:/app/policies:ro
       - ../workspaces:/app/workspaces

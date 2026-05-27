@@ -2,13 +2,19 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed lint test typecheck ui-dev
+.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed lint manifest-lock manifest-lock-check test typecheck ui-dev
 
 test:
 	uv run pytest
 
 lint:
 	uv run ruff check .
+
+manifest-lock:
+	uv run python scripts/manifest_lock.py
+
+manifest-lock-check:
+	uv run python scripts/manifest_lock.py --check
 
 typecheck:
 	uv run mypy

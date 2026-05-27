@@ -56,7 +56,11 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             audit_writer,
             timedelta(seconds=resolved_settings.approval_expiry_seconds),
         )
-        registry = ToolRegistry.load(resolved_settings.manifest_dir)
+        registry = ToolRegistry.load(
+            resolved_settings.manifest_dir,
+            lock_path=resolved_settings.manifest_lock_path,
+            require_lock=resolved_settings.require_manifest_lock,
+        )
         policy_evaluator = load_policy_engine(resolved_settings)
         app_instance.state.registry = registry
         app_instance.state.policy_evaluator = policy_evaluator

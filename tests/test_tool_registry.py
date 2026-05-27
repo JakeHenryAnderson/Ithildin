@@ -3,6 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from ithildin_api.manifest_lock import (
+    ManifestLockError,
+    ManifestLockRecord,
+    write_manifest_lock,
+)
 from ithildin_api.registry import (
     DuplicateToolManifest,
     InvalidToolManifest,
@@ -106,7 +111,11 @@ def test_unknown_tool_lookup_has_audit_ready_denial_metadata(tmp_path: Path) -> 
 
 
 def test_committed_read_tool_manifests_load() -> None:
-    registry = ToolRegistry.load(Path("tool-manifests"))
+    registry = ToolRegistry.load(
+        Path("tool-manifests"),
+        lock_path=Path("tool-manifests.lock.json"),
+        require_lock=True,
+    )
 
     assert [tool.manifest.name for tool in registry.list_tools()] == [
         "fs.list",
@@ -119,4 +128,117 @@ def test_committed_read_tool_manifests_load() -> None:
         "git.log",
         "git.status",
         "http.fetch",
+    ]
+
+
+def test_manifest_lock_generation_is_deterministic(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    records = _lock_records(registry)
+
+    write_manifest_lock(manifest_dir=manifest_dir, lock_path=lock_path, records=records)
+    first = lock_path.read_text(encoding="utf-8")
+    write_manifest_lock(manifest_dir=manifest_dir, lock_path=lock_path, records=records)
+    second = lock_path.read_text(encoding="utf-8")
+
+    assert first == second
+    assert '"manifest_hash": "sha256:' in first
+
+
+def test_valid_manifest_lock_allows_registry_load(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+
+    locked_registry = ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+    assert [tool.manifest.name for tool in locked_registry.list_tools()] == ["fs.read"]
+
+
+def test_missing_manifest_lock_fails_closed(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "fs-read.yaml")
+
+    with pytest.raises(ManifestLockError, match="not found"):
+        ToolRegistry.load(
+            tmp_path,
+            lock_path=tmp_path / "missing.lock.json",
+            require_lock=True,
+        )
+
+
+def test_manifest_missing_from_lock_fails_closed(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    write_manifest(manifest_dir / "fs-stat.yaml", name="fs.stat")
+
+    with pytest.raises(ManifestLockError, match="missing from lock"):
+        ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+
+def test_stale_manifest_lock_entry_fails_closed(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    manifest_path = manifest_dir / "fs-read.yaml"
+    write_manifest(manifest_path)
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    manifest_path.unlink()
+
+    with pytest.raises(ManifestLockError, match="stale"):
+        ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+
+def test_manifest_lock_hash_mismatch_fails_closed(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    manifest_path = manifest_dir / "fs-read.yaml"
+    write_manifest(manifest_path)
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    manifest_path.write_text(
+        manifest_path.read_text(encoding="utf-8").replace("Read file", "Tampered read file"),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ManifestLockError, match="hash mismatch"):
+        ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+
+def _lock_records(registry: ToolRegistry) -> list[ManifestLockRecord]:
+    return [
+        ManifestLockRecord(
+            path=tool.source_path,
+            name=tool.manifest.name,
+            version=tool.manifest.version,
+            manifest_hash=tool.manifest_hash,
+        )
+        for tool in registry.list_tools()
     ]

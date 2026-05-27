@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     audit_log_path: Path = Path("var/logs/audit.jsonl")
     db_path: Path = Path("var/db/ithildin.sqlite3")
     manifest_dir: Path = Path("tool-manifests")
+    manifest_lock_path: Path = Path("tool-manifests.lock.json")
+    require_manifest_lock: bool = True
     policy_path: Path = Path("policies/default.yaml")
     policy_engine: str = "yaml"
     opa_url: str = ""
