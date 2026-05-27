@@ -1,7 +1,7 @@
-# Local Demo Deployment
+# Local Preview Deployment
 
-Task 015 provides a local Docker Compose deployment for the Ithildin API and review console.
-It is intended for demos and development validation, not production hosting.
+This local preview deployment runs the Ithildin API and review console for demos and
+development validation. It is not production hosting.
 
 ## Start
 
@@ -56,6 +56,17 @@ The Compose stack mounts only:
 It does not mount the Docker socket.
 Kubernetes and Docker agent powers are intentionally deferred; Docker is used here only to run
 the local demo stack.
+
+## Release Check
+
+Before handing off a local preview build, run:
+
+```sh
+make release-check
+```
+
+This verifies the manifest lock, Python tests, lint, Python/UI type checks, and the UI production
+build.
 
 ## Demo Flow
 
