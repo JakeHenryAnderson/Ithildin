@@ -172,6 +172,16 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
     assert payload["principals"]["required"] is True
     assert payload["principals"]["count"] >= 1
     assert payload["principals"]["enabled_count"] >= 1
+    assert payload["storage"]["runtime_backend"] == "sqlite"
+    assert payload["storage"]["sqlite"]["runtime_enabled"] is True
+    assert payload["storage"]["postgres"]["runtime_enabled"] is False
+    assert payload["telemetry"] == {
+        "enabled": False,
+        "service_name": "ithildin-api",
+        "console_export": False,
+        "otlp_endpoint_configured": False,
+        "exporters": [],
+    }
     assert payload["policy"]["engine"] == "yaml"
     assert payload["policy"]["policy_hash"].startswith("sha256:")
     assert payload["audit"] == {
@@ -217,6 +227,61 @@ def test_unknown_principal_endpoint_returns_404(tmp_path: Path) -> None:
 
     assert response.status_code == 404
     assert "unknown principal" in response.json()["detail"]
+
+
+def test_postgres_storage_backend_fails_closed(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    settings.storage_backend = "postgres"
+    settings.postgres_dsn = "postgresql://ithildin@example.invalid/ithildin"
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError, match="not runtime-enabled"):
+        with TestClient(app):
+            pass
+
+
+def test_storage_status_reports_postgres_readiness_target(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.postgres_dsn = "postgresql://ithildin@example.invalid/ithildin"
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 200
+    storage = response.json()["storage"]
+    assert storage["runtime_backend"] == "sqlite"
+    assert storage["postgres"] == {
+        "configured": True,
+        "dsn_configured": True,
+        "runtime_enabled": False,
+        "readiness": "configured_not_runtime_enabled",
+    }
+
+
+def test_telemetry_status_reports_enabled_console_export(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.otel_enabled = True
+    settings.otel_console_export = True
+    settings.otel_service_name = "ithildin-test"
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 200
+    telemetry = response.json()["telemetry"]
+    assert telemetry["enabled"] is True
+    assert telemetry["service_name"] == "ithildin-test"
+    assert telemetry["console_export"] is True
+    assert telemetry["otlp_endpoint_configured"] is False
+    assert telemetry["exporters"] == ["console"]
 
 
 def test_app_startup_requires_principal_registry_when_configured(tmp_path: Path) -> None:

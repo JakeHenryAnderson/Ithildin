@@ -10,6 +10,8 @@ from ithildin_api.policy_preview import PolicyPreviewService
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.storage import storage_status
+from ithildin_api.telemetry import Telemetry
 
 __all__ = [
     "ApprovalService",
@@ -21,10 +23,12 @@ __all__ = [
     "PrincipalRegistry",
     "RedactionService",
     "Settings",
+    "Telemetry",
     "ReadToolExecutor",
     "ToolRegistry",
     "__version__",
     "create_app",
+    "storage_status",
 ]
 
 __version__ = "0.1.0"

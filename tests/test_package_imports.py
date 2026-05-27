@@ -79,7 +79,9 @@ def test_api_public_exports() -> None:
         "ReadToolExecutor",
         "RedactionService",
         "Settings",
+        "Telemetry",
         "ToolRegistry",
         "create_app",
+        "storage_status",
     ]:
         assert hasattr(api_package, exported_name)

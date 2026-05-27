@@ -37,6 +37,7 @@ from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
 from ithildin_api.redaction import RedactionResult, RedactionService, RedactionSummary
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.resources import resource_from_arguments
+from ithildin_api.telemetry import Telemetry, safe_span_attributes
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,7 @@ class GovernedToolCallService:
         http_fetch_executor: HttpFetchExecutor | None = None,
         redaction_service: RedactionService | None = None,
         principal_registry: PrincipalRegistry | None = None,
+        telemetry: Telemetry | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
@@ -70,6 +72,12 @@ class GovernedToolCallService:
         self.http_fetch_executor = http_fetch_executor
         self.redaction_service = redaction_service or RedactionService()
         self.principal_registry = principal_registry
+        self.telemetry = telemetry or Telemetry(
+            enabled=False,
+            service_name="ithildin-api",
+            console_export=False,
+            otlp_endpoint="",
+        )
 
     def call_tool(
         self,
@@ -186,7 +194,16 @@ class GovernedToolCallService:
             resource=resource,
             context={"session_id": session_id},
         )
-        policy_decision = self.policy_evaluator.evaluate(policy_input)
+        with self.telemetry.start_span(
+            "ithildin.tool.policy_evaluate",
+            safe_span_attributes(
+                tool_name=manifest.name,
+                tool_risk=manifest.risk.value,
+                policy_engine=self.policy_evaluator.engine_name,
+                resource_type=resource.get("type"),
+            ),
+        ):
+            policy_decision = self.policy_evaluator.evaluate(policy_input)
         obligation_keys: list[JsonValue] = []
         obligation_keys.extend(sorted(policy_decision.obligations.keys()))
         self._audit_decision(
@@ -332,12 +349,16 @@ class GovernedToolCallService:
                 metadata={"executor": "patch_proposal"},
             )
             try:
-                proposal = self.patch_proposal_service.create_proposal(
-                    request_id=request_id,
-                    principal=principal,
-                    path=_string_argument(arguments, "path"),
-                    unified_diff=_string_argument(arguments, "unified_diff"),
-                )
+                with self.telemetry.start_span(
+                    "ithildin.tool.execute",
+                    safe_span_attributes(tool_name=tool_name, executor="patch_proposal"),
+                ):
+                    proposal = self.patch_proposal_service.create_proposal(
+                        request_id=request_id,
+                        principal=principal,
+                        path=_string_argument(arguments, "path"),
+                        unified_diff=_string_argument(arguments, "unified_diff"),
+                    )
             except PatchProposalError as exc:
                 redacted = self._redact_content(
                     {"reason": exc.reason},
@@ -398,7 +419,11 @@ class GovernedToolCallService:
                 metadata={"executor": "in_process_read"},
             )
             try:
-                content = self.read_tool_executor.execute(tool_name, arguments)
+                with self.telemetry.start_span(
+                    "ithildin.tool.execute",
+                    safe_span_attributes(tool_name=tool_name, executor="in_process_read"),
+                ):
+                    content = self.read_tool_executor.execute(tool_name, arguments)
             except ReadToolError as exc:
                 redacted = self._redact_content(
                     {"reason": exc.reason},
@@ -455,7 +480,11 @@ class GovernedToolCallService:
                 metadata={"executor": "in_process_http"},
             )
             try:
-                content = self.http_fetch_executor.execute(tool_name, arguments)
+                with self.telemetry.start_span(
+                    "ithildin.tool.execute",
+                    safe_span_attributes(tool_name=tool_name, executor="in_process_http"),
+                ):
+                    content = self.http_fetch_executor.execute(tool_name, arguments)
             except HttpFetchError as exc:
                 redacted = self._redact_content(
                     {"reason": exc.reason},
@@ -574,10 +603,14 @@ class GovernedToolCallService:
             metadata={"executor": "patch_apply", "approval_id": approval_id},
         )
         try:
-            proposal = self.patch_proposal_service.apply_approved(
-                approval_service=self.approval_service,
-                approval_id=approval_id,
-            )
+            with self.telemetry.start_span(
+                "ithildin.tool.execute",
+                safe_span_attributes(tool_name=tool_name, executor="patch_apply"),
+            ):
+                proposal = self.patch_proposal_service.apply_approved(
+                    approval_service=self.approval_service,
+                    approval_id=approval_id,
+                )
         except (ApprovalError, PatchProposalError) as exc:
             redacted = self._redact_content(
                 {"reason": str(exc)},

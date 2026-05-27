@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     admin_token: str = Field(min_length=1)
     audit_log_path: Path = Path("var/logs/audit.jsonl")
     db_path: Path = Path("var/db/ithildin.sqlite3")
+    storage_backend: str = "sqlite"
+    postgres_dsn: str = ""
     manifest_dir: Path = Path("tool-manifests")
     manifest_lock_path: Path = Path("tool-manifests.lock.json")
     require_manifest_lock: bool = True
@@ -40,6 +42,10 @@ class Settings(BaseSettings):
     redaction_extra_patterns: str = ""
     search_result_limit: int = Field(default=100, gt=0)
     git_log_limit: int = Field(default=20, gt=0)
+    otel_enabled: bool = False
+    otel_service_name: str = "ithildin-api"
+    otel_console_export: bool = False
+    otel_otlp_endpoint: str = ""
     log_level: str = "INFO"
 
 

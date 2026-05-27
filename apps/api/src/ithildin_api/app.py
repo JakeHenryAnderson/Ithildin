@@ -40,6 +40,8 @@ from ithildin_api.policy_preview import (
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.storage import storage_status, validate_storage_settings
+from ithildin_api.telemetry import Telemetry, configure_telemetry, safe_span_attributes
 
 SERVICE_NAME = "ithildin-api"
 
@@ -49,63 +51,71 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
         resolved_settings = settings or load_settings()
         configure_logging(resolved_settings.log_level)
+        validate_storage_settings(resolved_settings)
+        telemetry = configure_telemetry(resolved_settings)
         app_instance.state.settings = resolved_settings
-        initialize_database(resolved_settings.db_path)
-        audit_writer = AuditWriter(resolved_settings.db_path, resolved_settings.audit_log_path)
-        audit_writer.initialize()
-        app_instance.state.audit_writer = audit_writer
-        approval_store = ApprovalStore(resolved_settings.db_path)
-        approval_store.initialize()
-        app_instance.state.approval_service = ApprovalService(
-            approval_store,
-            audit_writer,
-            timedelta(seconds=resolved_settings.approval_expiry_seconds),
-        )
-        registry = ToolRegistry.load(
-            resolved_settings.manifest_dir,
-            lock_path=resolved_settings.manifest_lock_path,
-            require_lock=resolved_settings.require_manifest_lock,
-        )
-        principal_registry = PrincipalRegistry.load(
-            resolved_settings.principal_registry_path,
-            require_registry=resolved_settings.require_known_principals,
-        )
-        policy_evaluator = load_policy_engine(resolved_settings)
-        app_instance.state.registry = registry
-        app_instance.state.principal_registry = principal_registry
-        app_instance.state.policy_evaluator = policy_evaluator
-        http_fetch_executor = HttpFetchExecutor.from_settings(
-            http_allowlist=resolved_settings.http_allowlist,
-            timeout_seconds=resolved_settings.http_timeout_seconds,
-            max_response_bytes=resolved_settings.http_max_response_bytes,
-            max_redirects=resolved_settings.http_max_redirects,
-        )
-        app_instance.state.http_fetch_executor = http_fetch_executor
-        redaction_service = RedactionService.from_settings(
-            extra_keys=resolved_settings.redaction_extra_keys,
-            extra_patterns=resolved_settings.redaction_extra_patterns,
-        )
-        app_instance.state.redaction_service = redaction_service
-        app_instance.state.policy_preview_service = PolicyPreviewService(
-            registry,
-            policy_evaluator,
-            http_fetch_executor.allowlist,
-            principal_registry,
-        )
-        read_tool_executor = ReadToolExecutor.from_settings(
-            workspace_root=resolved_settings.workspace_root,
-            max_read_bytes=resolved_settings.max_read_bytes,
-            search_result_limit=resolved_settings.search_result_limit,
-            git_log_limit=resolved_settings.git_log_limit,
-        )
-        app_instance.state.read_tool_executor = read_tool_executor
-        patch_store = PatchProposalStore(resolved_settings.db_path)
-        patch_store.initialize()
-        app_instance.state.patch_proposal_service = PatchProposalService(
-            patch_store,
-            read_tool_executor.filesystem,
-            resolved_settings.max_patch_bytes,
-        )
+        app_instance.state.telemetry = telemetry
+        with telemetry.start_span(
+            "ithildin.api.startup",
+            safe_span_attributes(storage_backend=resolved_settings.storage_backend),
+        ):
+            initialize_database(resolved_settings.db_path)
+            audit_writer = AuditWriter(resolved_settings.db_path, resolved_settings.audit_log_path)
+            audit_writer.initialize()
+            app_instance.state.audit_writer = audit_writer
+            approval_store = ApprovalStore(resolved_settings.db_path)
+            approval_store.initialize()
+            app_instance.state.approval_service = ApprovalService(
+                approval_store,
+                audit_writer,
+                timedelta(seconds=resolved_settings.approval_expiry_seconds),
+            )
+            registry = ToolRegistry.load(
+                resolved_settings.manifest_dir,
+                lock_path=resolved_settings.manifest_lock_path,
+                require_lock=resolved_settings.require_manifest_lock,
+            )
+            principal_registry = PrincipalRegistry.load(
+                resolved_settings.principal_registry_path,
+                require_registry=resolved_settings.require_known_principals,
+            )
+            policy_evaluator = load_policy_engine(resolved_settings)
+            app_instance.state.registry = registry
+            app_instance.state.principal_registry = principal_registry
+            app_instance.state.policy_evaluator = policy_evaluator
+            http_fetch_executor = HttpFetchExecutor.from_settings(
+                http_allowlist=resolved_settings.http_allowlist,
+                timeout_seconds=resolved_settings.http_timeout_seconds,
+                max_response_bytes=resolved_settings.http_max_response_bytes,
+                max_redirects=resolved_settings.http_max_redirects,
+            )
+            app_instance.state.http_fetch_executor = http_fetch_executor
+            redaction_service = RedactionService.from_settings(
+                extra_keys=resolved_settings.redaction_extra_keys,
+                extra_patterns=resolved_settings.redaction_extra_patterns,
+            )
+            app_instance.state.redaction_service = redaction_service
+            app_instance.state.policy_preview_service = PolicyPreviewService(
+                registry,
+                policy_evaluator,
+                http_fetch_executor.allowlist,
+                principal_registry,
+            )
+            read_tool_executor = ReadToolExecutor.from_settings(
+                workspace_root=resolved_settings.workspace_root,
+                max_read_bytes=resolved_settings.max_read_bytes,
+                search_result_limit=resolved_settings.search_result_limit,
+                git_log_limit=resolved_settings.git_log_limit,
+            )
+            app_instance.state.read_tool_executor = read_tool_executor
+            patch_store = PatchProposalStore(resolved_settings.db_path)
+            patch_store.initialize()
+            app_instance.state.patch_proposal_service = PatchProposalService(
+                patch_store,
+                read_tool_executor.filesystem,
+                resolved_settings.max_patch_bytes,
+            )
+            app_instance.state.tool_call_telemetry = telemetry
         logging.getLogger(__name__).info("api service started")
         yield
 
@@ -138,38 +148,42 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         principal_registry = cast(PrincipalRegistry, api.state.principal_registry)
         policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
+        telemetry = cast(Telemetry, api.state.telemetry)
         tools = registry.list_tools()
         verification = audit_writer.verify_chain().as_dict()
-        return {
-            "status": "ok",
-            "service": SERVICE_NAME,
-            "tool_count": len(tools),
-            "manifest_lock": {
-                "required": settings_state.require_manifest_lock,
-                "path": settings_state.manifest_lock_path.as_posix(),
-            },
-            "principals": {
-                **principal_registry.status(),
-                "required": settings_state.require_known_principals,
-            },
-            "policy": policy_evaluator.status(),
-            "audit": {
-                "valid": verification["valid"],
-                "event_count": verification["event_count"],
-                "head_hash": verification["head_hash"],
-            },
-            "limits": {
-                "approval_expiry_seconds": settings_state.approval_expiry_seconds,
-                "max_read_bytes": settings_state.max_read_bytes,
-                "max_patch_bytes": settings_state.max_patch_bytes,
-                "search_result_limit": settings_state.search_result_limit,
-                "git_log_limit": settings_state.git_log_limit,
-                "http_allowlist_configured": bool(settings_state.http_allowlist.strip()),
-                "http_timeout_seconds": settings_state.http_timeout_seconds,
-                "http_max_response_bytes": settings_state.http_max_response_bytes,
-                "http_max_redirects": settings_state.http_max_redirects,
-            },
-        }
+        with telemetry.start_span("ithildin.api.system_status"):
+            return {
+                "status": "ok",
+                "service": SERVICE_NAME,
+                "tool_count": len(tools),
+                "manifest_lock": {
+                    "required": settings_state.require_manifest_lock,
+                    "path": settings_state.manifest_lock_path.as_posix(),
+                },
+                "principals": {
+                    **principal_registry.status(),
+                    "required": settings_state.require_known_principals,
+                },
+                "storage": storage_status(settings_state),
+                "telemetry": telemetry.status(),
+                "policy": policy_evaluator.status(),
+                "audit": {
+                    "valid": verification["valid"],
+                    "event_count": verification["event_count"],
+                    "head_hash": verification["head_hash"],
+                },
+                "limits": {
+                    "approval_expiry_seconds": settings_state.approval_expiry_seconds,
+                    "max_read_bytes": settings_state.max_read_bytes,
+                    "max_patch_bytes": settings_state.max_patch_bytes,
+                    "search_result_limit": settings_state.search_result_limit,
+                    "git_log_limit": settings_state.git_log_limit,
+                    "http_allowlist_configured": bool(settings_state.http_allowlist.strip()),
+                    "http_timeout_seconds": settings_state.http_timeout_seconds,
+                    "http_max_response_bytes": settings_state.http_max_response_bytes,
+                    "http_max_redirects": settings_state.http_max_redirects,
+                },
+            }
 
     @api.get("/tools", dependencies=[Depends(require_admin_token)])
     def list_tools(principal: Optional[str] = None) -> dict[str, list[JsonObject]]:
