@@ -52,6 +52,13 @@
 | Remote MCP hosting | Deferred | Stdio-only local MCP remains the v0.1 boundary. |
 | Plugin SDK and marketplace | Deferred | Requires stronger signing, review UX, executor contracts, and policy tests. |
 
+## v0.2 Planning Seed
+
+Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
+after external public-preview review feedback is collected. The current seed prioritizes signed
+audit exports, signed manifest locks, policy tests, workspace modeling, approval review UX, policy
+diff/impact preview, and local admin-auth hardening.
+
 ## Definition of MVP Done
 
 - Local Docker Compose deployment exists.

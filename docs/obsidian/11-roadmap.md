@@ -85,6 +85,9 @@ Success criteria:
 
 ## Deferred After v0.1 Local Preview
 
+- v0.2 planning starts from [../codex/v0.2-planning-seed.md](../codex/v0.2-planning-seed.md):
+  signed audit exports, signed manifest locks, policy tests, workspace modeling, approval review UX,
+  policy diff/impact preview, and local admin-auth hardening.
 - Runtime Postgres storage adapters and migrations.
 - Production identity integrations such as OIDC, SAML, SCIM, and hosted sessions.
 - Hosted observability collectors and production telemetry dashboards.

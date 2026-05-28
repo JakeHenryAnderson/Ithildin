@@ -20,6 +20,7 @@ DEFAULT_DOCS = [
     "docs/codex/local-model-demo.md",
     "docs/codex/v0.1-local-preview-checklist.md",
     "docs/codex/implementation-backlog.md",
+    "docs/codex/v0.2-planning-seed.md",
     "docs/obsidian/03-security-model.md",
     "docs/obsidian/04-threat-model.md",
     "docs/obsidian/11-roadmap.md",
