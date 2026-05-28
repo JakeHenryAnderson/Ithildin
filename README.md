@@ -55,6 +55,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.
 - `make manifest-lock-check` - verify trusted tool manifests still match the committed lock.
 - `make release-check` - run manifest lock verification, tests, lint, typecheck, and UI build.
+- `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make docs-site` - build a small local static docs site under ignored `site/`.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
