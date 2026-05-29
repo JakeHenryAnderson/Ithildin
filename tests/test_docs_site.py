@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.build_docs_site import build_site, markdown_to_html
+from scripts.build_docs_site import DEFAULT_DOCS, build_site, markdown_to_html
 
 
 def test_markdown_to_html_renders_basic_blocks() -> None:
@@ -37,3 +37,7 @@ def test_build_site_creates_index_and_pages(tmp_path: Path) -> None:
     assert (output_dir / "index.html").exists()
     assert (output_dir / pages[0].output_name).read_text(encoding="utf-8").startswith("<!doctype")
     assert "Demo Docs" in (output_dir / "index.html").read_text(encoding="utf-8")
+
+
+def test_default_docs_include_v02_review_packet() -> None:
+    assert "docs/codex/v0.2-review-packet.md" in DEFAULT_DOCS

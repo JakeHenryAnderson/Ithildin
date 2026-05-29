@@ -54,6 +54,9 @@
 | 056 - Approval drift regressions | Done | `tests/test_governed_tool_calls.py` |
 | 057 - Path ambiguity hardening | Done | `tests/test_read_tools.py`, `tests/test_patch_proposals.py` |
 | 058 - HTTP proxy regression coverage | Done | `tests/test_http_tools.py` |
+| 059 - v0.2 roadmap refresh | Done | [v0.2-planning-seed.md](v0.2-planning-seed.md) |
+| 060 - Release packet evidence | Done | `make release-packet`, `scripts/release_packet.py` |
+| 061 - v0.2 review packet | Done | [v0.2-review-packet.md](v0.2-review-packet.md) |
 
 ## Future Candidate Track
 
@@ -69,8 +72,9 @@
 
 ## v0.2 Planning Seed
 
-Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the completed trust-focused v0.2 roadmap and
-starting point for external/code review. The current track has completed trust-evidence,
+Use [v0.2-review-packet.md](v0.2-review-packet.md) as the external/code review handoff and
+[v0.2-planning-seed.md](v0.2-planning-seed.md) as the completed trust-focused v0.2 roadmap. The
+current track has completed trust-evidence,
 policy-confidence, workspace/approval UX, local-operations polish, evidence-clarity, and
 security-matrix closure items.
 
@@ -93,4 +97,5 @@ security-matrix closure items.
 - Evidence contracts document stable audit, policy, approval, redaction, and signed-bundle fields.
 - Security matrix closure tests cover approval drift, path ambiguity, hardlinks, HTTP proxy
   inheritance, and canonical host behavior.
+- v0.2 review packet and `make release-packet` exist for external review handoff.
 - `make release-check` passes before local-preview handoff.

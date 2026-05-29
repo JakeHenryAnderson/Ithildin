@@ -8,6 +8,8 @@ Read [Threat Model and Non-Goals](threat-model-and-non-goals.md) before treating
 security boundary. Ithildin is a local mediation layer, not production security software.
 For public-preview wording, also read
 [v0.1 Public Preview Release Notes](v0.1-public-preview-release-notes.md).
+For v0.2 external/code review handoff, start with
+[v0.2 Review Packet](v0.2-review-packet.md).
 
 ## Quick Start
 
@@ -22,10 +24,11 @@ For public-preview wording, also read
 8. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
 9. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
    approval-required, denial, and audit verification flows.
-10. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-11. Optional: run `make audit-keygen` to enable signed audit exports.
-12. Optional: run `make audit-diagnostics` to explain local audit verification state.
-13. Run `make docs-site` to build local handoff docs under ignored `site/`.
+10. Optional: run `make release-evidence` and `make release-packet` before external review handoff.
+11. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
+12. Optional: run `make audit-keygen` to enable signed audit exports.
+13. Optional: run `make audit-diagnostics` to explain local audit verification state.
+14. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 

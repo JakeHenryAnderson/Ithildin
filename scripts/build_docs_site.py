@@ -11,6 +11,7 @@ from pathlib import Path
 
 DEFAULT_DOCS = [
     "README.md",
+    "docs/codex/v0.2-review-packet.md",
     "docs/codex/v0.1-review-packet.md",
     "docs/codex/v0.1-external-review-prompt.md",
     "docs/codex/v0.1-release-evidence.md",

@@ -67,6 +67,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make policy-test` - run committed offline fixtures against `policies/default.yaml`.
 - `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
+- `make release-packet` - print a v0.2 external-review packet snapshot.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification state without mutating evidence.
@@ -146,7 +147,8 @@ make docs-site
 
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
-`make release-check` and `make release-evidence` before tagging.
+`make release-check`, `make release-evidence`, and `make release-packet` before tagging or external
+review handoff.
 
 ## Core Invariant
 
@@ -163,7 +165,9 @@ No agent-originated action reaches the endpoint unless:
 
 ## Start Reading
 
-Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md), then read
+Begin with [docs/codex/v0.2-review-packet.md](docs/codex/v0.2-review-packet.md) for external/code
+review handoff, or [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md) for
+local operator setup. Then read
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),

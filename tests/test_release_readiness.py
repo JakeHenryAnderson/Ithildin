@@ -71,3 +71,9 @@ def test_release_packet_json_is_secret_free(
     assert "tool-manifests.lock.json" in output
     assert "http.fetch" in output
     assert "production identity" in output
+
+
+def test_release_packet_review_docs_exist() -> None:
+    missing = [doc for doc in release_packet.REVIEW_DOCS if not Path(doc).exists()]
+
+    assert missing == []
