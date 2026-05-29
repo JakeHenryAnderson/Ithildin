@@ -43,6 +43,8 @@ For public-preview wording, also read
 - Candidate YAML policy changes can be compared with
   `uv run python scripts/policy_impact.py --candidate-path path/to/policy.yaml` or the review
   console policy impact panel. This is read-only and fixture-driven.
+- Runtime and preview policy evidence fields are summarized in
+  [Evidence Contracts](evidence-contracts.md).
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.
@@ -82,6 +84,8 @@ The local console shows:
 - Filesystem and patch executors reject symlinks, hidden/sensitive paths, binary targets, ambiguous
   text encodings, and stale patch bases.
 - Tool outputs are redacted before returning to agents.
+- Redaction evidence surfaces counts and safe paths only; see
+  [Evidence Contracts](evidence-contracts.md).
 - Audit events are stored in SQLite and hash-chained JSONL.
 - Signed audit exports use a local Ed25519 keypair when configured; see
   [Signed Audit Exports](signed-audit-exports.md).

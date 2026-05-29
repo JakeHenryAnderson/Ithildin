@@ -48,6 +48,9 @@
 | 050 - Local admin auth ergonomics | Done | `make admin-token-generate`, `/system/status` token posture |
 | 051 - Audit diagnostics | Done | `/audit-events/diagnostics`, `make audit-diagnostics` |
 | 052 - MCP Inspector recipes | Done | [mcp-inspector-recipes.md](mcp-inspector-recipes.md) |
+| 053 - Redaction evidence UX | Done | `/system/status`, review console audit table |
+| 054 - Policy decision evidence | Done | `decision_evidence.py`, `/policy/preview` |
+| 055 - Evidence contracts | Done | [evidence-contracts.md](evidence-contracts.md) |
 
 ## Future Candidate Track
 
@@ -65,7 +68,8 @@
 
 Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
 after external public-preview review feedback is collected. The current seed has completed the
-initial trust-evidence, policy-confidence, workspace/approval UX, and local-operations polish items.
+initial trust-evidence, policy-confidence, workspace/approval UX, local-operations polish, and
+evidence-clarity items.
 
 ## Definition of MVP Done
 
@@ -83,4 +87,5 @@ initial trust-evidence, policy-confidence, workspace/approval UX, and local-oper
 - Static docs site generation exists for handoff review.
 - Public-preview warning labels, threat model links, MCP examples, and release notes are checked.
 - MCP Inspector recipes document governed list/call, approval-required, denial, and audit flows.
+- Evidence contracts document stable audit, policy, approval, redaction, and signed-bundle fields.
 - `make release-check` passes before local-preview handoff.

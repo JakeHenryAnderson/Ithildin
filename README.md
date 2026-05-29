@@ -120,6 +120,8 @@ console or `/audit-events/export/signed`; see
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md).
 Use `make audit-diagnostics` when audit verification fails; diagnostics are read-only and do not
 repair or rewrite the local evidence chain.
+Evidence fields for audit events, policy decisions, approvals, redaction summaries, and signed
+bundles are summarized in [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md).
 
 MCP is launched by an MCP client rather than as a persistent Compose service:
 
@@ -165,6 +167,7 @@ Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-releas
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
+[docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md),
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md),
 [docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md),
 [docs/codex/threat-model-and-non-goals.md](docs/codex/threat-model-and-non-goals.md),
