@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from scripts import release_evidence, release_guardrails, release_packet
+from scripts import (
+    release_evidence,
+    release_guardrails,
+    release_packet,
+    review_packet_bundle,
+)
 
 
 def test_release_evidence_fails_outside_repo_markers(
@@ -77,3 +82,104 @@ def test_release_packet_review_docs_exist() -> None:
     missing = [doc for doc in release_packet.REVIEW_DOCS if not Path(doc).exists()]
 
     assert missing == []
+
+
+def test_review_packet_bundle_fails_outside_repo_markers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["review_packet_bundle.py"])
+
+    result = review_packet_bundle.main()
+
+    assert result == 1
+    assert "must be run from the Ithildin repo root" in capsys.readouterr().err
+
+
+def test_review_packet_bundle_rejects_dirty_tree(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_project_markers(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        review_packet_bundle,
+        "_git",
+        lambda args: " M README.md" if args == ["status", "--short"] else "abc123",
+    )
+
+    with pytest.raises(review_packet_bundle.BundleError, match="working tree is dirty"):
+        review_packet_bundle.build_bundle(
+            repo_root=tmp_path,
+            output_root=tmp_path / "var/review-packets/v0.2",
+            allow_dirty=False,
+            run_release_check=False,
+        )
+
+
+def test_review_packet_bundle_layout_and_exclusions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_project_markers(tmp_path)
+    docs = ["README.md", "docs/codex/v0.2-review-packet.md"]
+    for doc in docs:
+        path = tmp_path / doc
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {path.stem}\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(review_packet_bundle, "REVIEW_DOCS", docs)
+
+    def fake_git(args: list[str]) -> str:
+        if args == ["status", "--short"]:
+            return ""
+        if args == ["rev-parse", "HEAD"]:
+            return "abcdef1234567890"
+        if args == ["branch", "--show-current"]:
+            return "main"
+        if args == ["log", "-12", "--oneline"]:
+            return "abcdef1 test commit"
+        raise AssertionError(args)
+
+    def fake_capture(command: list[str]) -> review_packet_bundle.CommandOutput:
+        return review_packet_bundle.CommandOutput(
+            command=command,
+            returncode=0,
+            stdout='{"secret_free": true}\n' if "release_evidence.py" in command else "ok\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(review_packet_bundle, "_git", fake_git)
+    monkeypatch.setattr(review_packet_bundle, "_run_capture", fake_capture)
+
+    result = review_packet_bundle.build_bundle(
+        repo_root=tmp_path,
+        output_root=tmp_path / "var/review-packets/v0.2",
+        allow_dirty=False,
+        run_release_check=True,
+    )
+
+    assert result.path.joinpath("INDEX.md").exists()
+    assert result.path.joinpath("release-check.txt").exists()
+    assert result.path.joinpath("release-evidence.json").exists()
+    assert result.path.joinpath("release-packet.md").exists()
+    assert result.path.joinpath("release-packet.json").exists()
+    assert result.path.joinpath("git-summary.txt").exists()
+    assert result.path.joinpath("docs/README.md").exists()
+    assert result.path.joinpath("docs/docs/codex/v0.2-review-packet.md").exists()
+    bundle_paths = [path.as_posix() for path in result.path.rglob("*")]
+    assert not any("/.env" in path for path in bundle_paths)
+    assert not any("/var/keys/" in path for path in bundle_paths)
+
+
+def _write_project_markers(root: Path) -> None:
+    directory_markers = {"apps/api", "apps/mcp-server"}
+    for marker in review_packet_bundle.PROJECT_MARKERS:
+        path = root / marker
+        if marker in directory_markers:
+            path.mkdir(parents=True)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("", encoding="utf-8")
