@@ -9,6 +9,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from ithildin_api.config import Settings
 from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.manifest_lock import ManifestLockRecord, manifest_lock_payload
@@ -20,17 +23,7 @@ from ithildin_api.telemetry import configure_telemetry
 from ithildin_api.workspaces import WorkspaceRegistry
 from ithildin_audit_core import AuditWriter
 
-REVIEW_DOCS = [
-    "README.md",
-    "docs/codex/v0.2-review-response-and-rc-cleanup.md",
-    "docs/codex/v0.2-review-packet.md",
-    "docs/codex/v0.2-external-review-prompt.md",
-    "docs/codex/v0.2-planning-seed.md",
-    "docs/codex/v0.1-security-test-matrix.md",
-    "docs/codex/evidence-contracts.md",
-    "docs/codex/threat-model-and-non-goals.md",
-    "docs/codex/local-preview-release.md",
-]
+from scripts.review_docs import REVIEW_DOCS, collect_review_doc_metadata
 
 PROJECT_MARKERS = (
     "pyproject.toml",
@@ -127,6 +120,7 @@ def build_packet(repo_root: Path, marker_status: dict[str, bool]) -> dict[str, A
         "telemetry": configure_telemetry(settings).status(),
         "security": security_status(settings),
         "audit": _audit_snapshot(audit_writer),
+        "review_doc_hashes": collect_review_doc_metadata(repo_root),
         "deferred_boundaries": [
             "production identity",
             "runtime Postgres",
@@ -207,6 +201,13 @@ def render_markdown(packet: dict[str, Any]) -> str:
         "## Review Documents",
         "",
         *[f"- [{doc}]({doc})" for doc in packet["review_docs"]],
+        "",
+        "## Review Document Hashes",
+        "",
+        *[
+            f"- `{doc['path']}` `{doc['sha256']}` `{doc['bytes']} bytes`"
+            for doc in packet["review_doc_hashes"]
+        ],
         "",
     ]
     return "\n".join(lines)

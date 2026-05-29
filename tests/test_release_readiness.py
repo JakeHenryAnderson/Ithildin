@@ -9,6 +9,7 @@ from scripts import (
     release_evidence,
     release_guardrails,
     release_packet,
+    review_docs,
     review_packet_bundle,
 )
 
@@ -76,12 +77,35 @@ def test_release_packet_json_is_secret_free(
     assert "tool-manifests.lock.json" in output
     assert "http.fetch" in output
     assert "production identity" in output
+    assert "review_doc_hashes" in output
 
 
 def test_release_packet_review_docs_exist() -> None:
-    missing = [doc for doc in release_packet.REVIEW_DOCS if not Path(doc).exists()]
+    missing = [doc for doc in review_docs.REVIEW_DOCS if not Path(doc).exists()]
 
     assert missing == []
+
+
+def test_review_doc_metadata_is_deterministic(tmp_path: Path) -> None:
+    doc = tmp_path / "README.md"
+    doc.write_text("hello\n", encoding="utf-8")
+
+    first = review_docs.collect_review_doc_metadata(tmp_path, ["README.md"])
+    second = review_docs.collect_review_doc_metadata(tmp_path, ["README.md"])
+
+    assert first == second
+    assert first == [
+        {
+            "path": "README.md",
+            "sha256": "sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03",
+            "bytes": 6,
+        }
+    ]
+
+
+def test_review_doc_metadata_fails_for_missing_doc(tmp_path: Path) -> None:
+    with pytest.raises(review_docs.ReviewDocError, match="review document is missing"):
+        review_docs.collect_review_doc_metadata(tmp_path, ["missing.md"])
 
 
 def test_review_packet_bundle_fails_outside_repo_markers(
@@ -166,12 +190,46 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert result.path.joinpath("release-evidence.json").exists()
     assert result.path.joinpath("release-packet.md").exists()
     assert result.path.joinpath("release-packet.json").exists()
+    assert result.path.joinpath("review-doc-hashes.json").exists()
     assert result.path.joinpath("git-summary.txt").exists()
     assert result.path.joinpath("docs/README.md").exists()
     assert result.path.joinpath("docs/docs/codex/v0.2-review-packet.md").exists()
     bundle_paths = [path.as_posix() for path in result.path.rglob("*")]
     assert not any("/.env" in path for path in bundle_paths)
     assert not any("/var/keys/" in path for path in bundle_paths)
+    assert "review-doc-hashes.json" in result.path.joinpath("INDEX.md").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_release_evidence_records_attached_release_check_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    transcript = tmp_path / "release-check.txt"
+    transcript.write_text("passed\n", encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "release_evidence.py",
+            "--release-check-transcript",
+            transcript.as_posix(),
+            "--release-check-observed-status",
+            "passed",
+            "--release-check-commit",
+            "abc123",
+        ],
+    )
+
+    result = release_evidence.main()
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert '"transcript_attached": true' in output
+    assert '"observed_status": "passed"' in output
+    assert '"observed_commit": "abc123"' in output
 
 
 def _write_project_markers(root: Path) -> None:

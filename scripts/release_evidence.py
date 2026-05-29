@@ -10,6 +10,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from ithildin_api.config import Settings
 from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.manifest_lock import (
@@ -24,6 +27,8 @@ from ithildin_api.storage import storage_status
 from ithildin_api.telemetry import configure_telemetry
 from ithildin_api.workspaces import WorkspaceRegistry
 from ithildin_audit_core import AuditWriter, audit_signing_status
+
+from scripts.review_docs import collect_review_doc_metadata
 
 PROJECT_MARKERS = (
     "pyproject.toml",
@@ -41,6 +46,20 @@ def main() -> int:
         action="store_true",
         help="run make release-check before writing the snapshot",
     )
+    parser.add_argument(
+        "--release-check-transcript",
+        type=Path,
+        help="path to an attached release-check transcript",
+    )
+    parser.add_argument(
+        "--release-check-observed-status",
+        choices=("passed", "failed", "not_run"),
+        help="observed release-check status when a transcript is attached",
+    )
+    parser.add_argument(
+        "--release-check-commit",
+        help="commit associated with the attached release-check transcript",
+    )
     args = parser.parse_args()
 
     repo_root = Path.cwd().resolve()
@@ -56,7 +75,14 @@ def main() -> int:
         )
         return 1
 
-    release_check = _release_check(args.check_release)
+    current_commit = _git(["rev-parse", "HEAD"])
+    release_check = _release_check(
+        args.check_release,
+        transcript=args.release_check_transcript,
+        observed_status=args.release_check_observed_status,
+        observed_commit=args.release_check_commit,
+        current_commit=current_commit,
+    )
     settings = Settings(admin_token="ithildin_admin_release_evidence_placeholder_000000000000")
     registry = ToolRegistry.load(
         settings.manifest_dir,
@@ -89,11 +115,12 @@ def main() -> int:
             "project_markers": marker_status,
         },
         "git": {
-            "commit": _git(["rev-parse", "HEAD"]),
+            "commit": current_commit,
             "branch": _git(["branch", "--show-current"]),
             "dirty": bool(_git(["status", "--short"])),
         },
         "release_check": release_check,
+        "review_docs": collect_review_doc_metadata(repo_root),
         "manifest_lock": {
             "path": settings.manifest_lock_path.as_posix(),
             "required": settings.require_manifest_lock,
@@ -148,19 +175,43 @@ def _project_marker_status(repo_root: Path) -> dict[str, bool]:
     return {marker: repo_root.joinpath(marker).exists() for marker in PROJECT_MARKERS}
 
 
-def _release_check(enabled: bool) -> dict[str, Any]:
+def _release_check(
+    enabled: bool,
+    *,
+    transcript: Path | None,
+    observed_status: str | None,
+    observed_commit: str | None,
+    current_commit: str,
+) -> dict[str, Any]:
+    transcript_attached = transcript is not None
+    transcript_exists = transcript.exists() if transcript is not None else False
     if not enabled:
-        return {"executed": False, "status": "not_run"}
+        status = observed_status or "not_run"
+        return {
+            "executed": False,
+            "status": "not_run",
+            "transcript_attached": transcript_attached,
+            "transcript_path": transcript.as_posix() if transcript is not None else None,
+            "transcript_exists": transcript_exists,
+            "observed_status": status,
+            "observed_commit": observed_commit or (current_commit if transcript_attached else None),
+        }
     completed = subprocess.run(
         ["make", "release-check"],
         check=False,
         capture_output=True,
         text=True,
     )
+    status = "passed" if completed.returncode == 0 else "failed"
     return {
         "executed": True,
-        "status": "passed" if completed.returncode == 0 else "failed",
+        "status": status,
         "returncode": completed.returncode,
+        "transcript_attached": transcript_attached,
+        "transcript_path": transcript.as_posix() if transcript is not None else None,
+        "transcript_exists": transcript_exists,
+        "observed_status": observed_status or status,
+        "observed_commit": observed_commit or current_commit,
     }
 
 

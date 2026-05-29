@@ -9,6 +9,12 @@ import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.review_docs import REVIEW_DOCS, ReviewDocMetadata, collect_review_doc_metadata
 
 PROJECT_MARKERS = (
     "pyproject.toml",
@@ -17,24 +23,6 @@ PROJECT_MARKERS = (
     "apps/mcp-server",
     "tool-manifests.lock.json",
 )
-
-REVIEW_DOCS = [
-    "README.md",
-    "docs/codex/v0.2-review-response-and-rc-cleanup.md",
-    "docs/codex/v0.2-review-packet.md",
-    "docs/codex/v0.2-external-review-prompt.md",
-    "docs/codex/v0.2-planning-seed.md",
-    "docs/codex/v0.1-security-test-matrix.md",
-    "docs/codex/evidence-contracts.md",
-    "docs/codex/threat-model-and-non-goals.md",
-    "docs/codex/local-preview-release.md",
-    "docs/codex/mcp-client-examples.md",
-    "docs/codex/mcp-inspector-recipes.md",
-    "docs/codex/signed-audit-exports.md",
-    "docs/codex/signed-manifest-locks.md",
-    "docs/research/source-verification.md",
-]
-
 
 class BundleError(RuntimeError):
     """Raised for release-bundle failures that should be shown to the operator."""
@@ -127,9 +115,24 @@ def build_bundle(
     if release_check.returncode != 0:
         raise BundleError("make release-check failed; see release-check.txt")
 
+    review_doc_hashes = collect_review_doc_metadata(repo_root, REVIEW_DOCS)
+    _write_json(bundle_dir / "review-doc-hashes.json", review_doc_hashes)
     _write_command_output(
         bundle_dir / "release-evidence.json",
-        _required_command(["uv", "run", "python", "scripts/release_evidence.py"]),
+        _required_command(
+            [
+                "uv",
+                "run",
+                "python",
+                "scripts/release_evidence.py",
+                "--release-check-transcript",
+                (bundle_dir / "release-check.txt").as_posix(),
+                "--release-check-observed-status",
+                "passed",
+                "--release-check-commit",
+                commit,
+            ]
+        ),
     )
     _write_command_output(
         bundle_dir / "release-packet.md",
@@ -141,7 +144,7 @@ def build_bundle(
     )
     _write_git_summary(bundle_dir / "git-summary.txt", repo_root, commit, dirty_status)
     _copy_review_docs(repo_root, bundle_dir)
-    _write_index(bundle_dir, commit, marker_status, allow_dirty)
+    _write_index(bundle_dir, commit, marker_status, allow_dirty, review_doc_hashes)
 
     return BundleResult(
         path=bundle_dir,
@@ -195,6 +198,12 @@ def _write_command_output(path: Path, output: CommandOutput) -> None:
     )
 
 
+def _write_json(path: Path, value: Any) -> None:
+    import json
+
+    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def _write_git_summary(
     path: Path,
     repo_root: Path,
@@ -235,8 +244,13 @@ def _write_index(
     commit: str,
     marker_status: dict[str, bool],
     allow_dirty: bool,
+    review_doc_hashes: list[ReviewDocMetadata],
 ) -> None:
     docs_list = "\n".join(f"- `docs/{doc}`" for doc in REVIEW_DOCS)
+    doc_hashes = "\n".join(
+        f"- `{doc['path']}` `{doc['sha256']}` `{doc['bytes']} bytes`"
+        for doc in review_doc_hashes
+    )
     markers = "\n".join(
         f"- `{marker}`: `{str(present).lower()}`"
         for marker, present in marker_status.items()
@@ -261,11 +275,16 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 - `release-evidence.json`
 - `release-packet.md`
 - `release-packet.json`
+- `review-doc-hashes.json`
 - `git-summary.txt`
 
 ## Included Review Documents
 
 {docs_list}
+
+## Review Document Hashes
+
+{doc_hashes}
 
 ## Project Markers
 
