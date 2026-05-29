@@ -10,7 +10,8 @@ For public-preview wording, also read
 [v0.1 Public Preview Release Notes](v0.1-public-preview-release-notes.md).
 For v0.2 external/code review handoff, start with
 [v0.2 Review Response and RC Cleanup](v0.2-review-response-and-rc-cleanup.md) and
-[v0.2 Review Packet](v0.2-review-packet.md).
+[v0.2 Review Packet](v0.2-review-packet.md), then follow
+[Reviewer Reproduction Map](reviewer-reproduction-map.md).
 
 ## Quick Start
 

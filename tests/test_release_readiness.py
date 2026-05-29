@@ -108,6 +108,35 @@ def test_negative_review_recipes_reference_existing_tools_and_commands() -> None
         assert command in recipes
 
 
+def test_reviewer_reproduction_map_references_implemented_targets() -> None:
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    for target in [
+        "release-check",
+        "release-evidence",
+        "release-packet",
+        "signed-evidence-demo",
+        "review-packet-bundle",
+        "docs-site",
+    ]:
+        assert f"make {target}" in reproduction_map
+        assert f"{target}:" in makefile
+    assert "artifact-hashes.json" in reproduction_map
+    assert "review-doc-hashes.json" in reproduction_map
+
+
+def test_security_matrix_splits_link_race_coverage() -> None:
+    matrix = Path("docs/codex/v0.1-security-test-matrix.md").read_text(encoding="utf-8")
+
+    assert "Hardlink ambiguity and deeper TOCTOU cases" not in matrix
+    assert "Hardlink and symlink cases" in matrix
+    assert "Broader TOCTOU/race proofs" in matrix
+    assert "Covered after v0.2" not in matrix
+    assert "Covered by v0.2 tests; pending external review" in matrix
+
+
 def test_review_doc_metadata_is_deterministic(tmp_path: Path) -> None:
     doc = tmp_path / "README.md"
     doc.write_text("hello\n", encoding="utf-8")

@@ -44,3 +44,4 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v0.2-review-response-and-rc-cleanup.md" in DEFAULT_DOCS
     assert "docs/codex/v0.2-external-review-prompt.md" in DEFAULT_DOCS
     assert "docs/codex/negative-review-recipes.md" in DEFAULT_DOCS
+    assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS

@@ -154,7 +154,9 @@ make docs-site
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
 `make release-check`, `make release-evidence`, `make release-packet`, `make signed-evidence-demo`,
-and `make review-packet-bundle` before tagging or external review handoff.
+and `make review-packet-bundle` before tagging or external review handoff. Use
+[docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
+the full evidence sequence and locate generated hashes/transcripts.
 
 ## Core Invariant
 
@@ -176,6 +178,7 @@ and [docs/codex/v0.2-review-packet.md](docs/codex/v0.2-review-packet.md) for ext
 handoff, or [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md) for local
 operator setup. Then read
 [docs/codex/v0.2-external-review-prompt.md](docs/codex/v0.2-external-review-prompt.md),
+[docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md),
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
