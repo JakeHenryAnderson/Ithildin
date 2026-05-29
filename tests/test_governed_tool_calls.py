@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import cast
 from urllib.request import Request
 
+import pytest
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.http_tools import HTTP_FETCH_TOOL, HttpAllowlist, HttpFetchExecutor
 from ithildin_api.identity import PrincipalRegistry
@@ -822,6 +823,46 @@ def test_patch_apply_rejects_manifest_scope_mismatch(tmp_path: Path) -> None:
     assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
 
 
+@pytest.mark.parametrize(
+    ("scope_key", "replacement", "expected_reason"),
+    [
+        ("policy_hash", "sha256:" + ("3" * 64), "policy hash mismatch"),
+        ("policy_version", "sha256:" + ("4" * 64), "policy version mismatch"),
+        ("policy_document_version", "drifted-policy", "policy document version mismatch"),
+        ("matched_rules", ["different_rule"], "matched rules mismatch"),
+        ("manifest_version", "9.9.9", "manifest version mismatch"),
+        ("tool_input_schema_hash", "sha256:" + ("5" * 64), "tool input schema mismatch"),
+    ],
+)
+def test_patch_apply_rejects_approval_scope_drift(
+    tmp_path: Path,
+    scope_key: str,
+    replacement: object,
+    expected_reason: str,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    _mutate_approval_scope(harness.db_path, str(approval["approval_id"]), scope_key, replacement)
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert expected_reason in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
+    failed_event = audit_payloads(tmp_path)[-1]
+    assert failed_event["event_type"] == "tool.execution.failed"
+    failed_metadata = cast(JsonObject, failed_event["metadata"])
+    assert failed_metadata["approval_binding_verified"] is False
+    assert expected_reason in str(failed_metadata["reason"])
+
+
 def test_patch_apply_rejects_wrong_requesting_principal(tmp_path: Path) -> None:
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
@@ -941,3 +982,23 @@ def request_patch_apply_approval(
     )
     assert result.status == "approval_required"
     return result.content
+
+
+def _mutate_approval_scope(
+    db_path: Path,
+    approval_id: str,
+    key: str,
+    replacement: object,
+) -> None:
+    with sqlite3.connect(db_path) as connection:
+        raw_scope = connection.execute(
+            "SELECT one_time_scope_json FROM approvals WHERE approval_id = ?",
+            (approval_id,),
+        ).fetchone()[0]
+        scope = json.loads(str(raw_scope))
+        scope[key] = replacement
+        connection.execute(
+            "UPDATE approvals SET one_time_scope_json = ? WHERE approval_id = ?",
+            (canonical_json(scope), approval_id),
+        )
+        connection.commit()
