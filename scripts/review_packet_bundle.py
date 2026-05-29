@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -166,6 +167,12 @@ def build_bundle(
         review_doc_hashes,
         signed_demo_included,
     )
+    artifact_hashes = _collect_artifact_hashes(
+        bundle_dir=bundle_dir,
+        review_docs=BUNDLE_DOCS,
+        signed_demo_included=signed_demo_included,
+    )
+    _write_json(bundle_dir / "artifact-hashes.json", artifact_hashes)
 
     return BundleResult(
         path=bundle_dir,
@@ -270,6 +277,41 @@ def _copy_signed_evidence_demo_summary(repo_root: Path, bundle_dir: Path) -> boo
     return True
 
 
+def _collect_artifact_hashes(
+    *,
+    bundle_dir: Path,
+    review_docs: list[str],
+    signed_demo_included: bool,
+) -> list[dict[str, Any]]:
+    paths = [
+        Path("INDEX.md"),
+        Path("release-check.txt"),
+        Path("release-evidence.json"),
+        Path("release-packet.md"),
+        Path("release-packet.json"),
+        Path("review-doc-hashes.json"),
+        Path("git-summary.txt"),
+    ]
+    paths.extend(Path("docs") / doc for doc in review_docs)
+    if signed_demo_included:
+        paths.append(Path("signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"))
+
+    artifacts: list[dict[str, Any]] = []
+    for relative_path in paths:
+        artifact_path = bundle_dir / relative_path
+        if not artifact_path.exists():
+            raise BundleError(f"bundle artifact is missing: {relative_path.as_posix()}")
+        content = artifact_path.read_bytes()
+        artifacts.append(
+            {
+                "path": relative_path.as_posix(),
+                "sha256": "sha256:" + hashlib.sha256(content).hexdigest(),
+                "bytes": len(content),
+            }
+        )
+    return artifacts
+
+
 def _write_index(
     bundle_dir: Path,
     commit: str,
@@ -308,6 +350,7 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 - `release-packet.md`
 - `release-packet.json`
 - `review-doc-hashes.json`
+- `artifact-hashes.json`
 - `signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md` if `make signed-evidence-demo` was run first
 - `git-summary.txt`
 
@@ -323,8 +366,15 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 
 included: `{str(signed_demo_included).lower()}`
 
-Run `make signed-evidence-demo` before `make review-packet-bundle` to include the non-production
-demo summary.
+Runtime audit signing and manifest-lock signing may be unconfigured by default. Run
+`make signed-evidence-demo` before `make review-packet-bundle` to include the separate
+non-production fixture summary. That demo proves the local signing and verification flow only; it is
+not external notarization, hosted custody, or official supply-chain signing.
+
+## Bundle Artifact Hashes
+
+See `artifact-hashes.json` for SHA-256 digests of the generated bundle outputs, copied review
+documents, and copied signed-evidence demo summary when present.
 
 ## Project Markers
 

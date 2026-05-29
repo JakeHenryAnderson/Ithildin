@@ -183,18 +183,18 @@ def _release_check(
     observed_commit: str | None,
     current_commit: str,
 ) -> dict[str, Any]:
-    transcript_attached = transcript is not None
     transcript_exists = transcript.exists() if transcript is not None else False
+    transcript_path = transcript.as_posix() if transcript is not None else None
     if not enabled:
         status = observed_status or "not_run"
         return {
-            "executed": False,
-            "status": "not_run",
-            "transcript_attached": transcript_attached,
-            "transcript_path": transcript.as_posix() if transcript is not None else None,
-            "transcript_exists": transcript_exists,
-            "observed_status": status,
-            "observed_commit": observed_commit or (current_commit if transcript_attached else None),
+            "gate_executed_by_release_packet": False,
+            "gate_status": "not_run",
+            "attached_transcript_exists": transcript_exists,
+            "attached_transcript_path": transcript_path,
+            "attached_transcript_status": status,
+            "attached_transcript_commit": observed_commit
+            or (current_commit if transcript is not None else None),
         }
     completed = subprocess.run(
         ["make", "release-check"],
@@ -204,14 +204,13 @@ def _release_check(
     )
     status = "passed" if completed.returncode == 0 else "failed"
     return {
-        "executed": True,
-        "status": status,
-        "returncode": completed.returncode,
-        "transcript_attached": transcript_attached,
-        "transcript_path": transcript.as_posix() if transcript is not None else None,
-        "transcript_exists": transcript_exists,
-        "observed_status": observed_status or status,
-        "observed_commit": observed_commit or current_commit,
+        "gate_executed_by_release_packet": True,
+        "gate_status": status,
+        "gate_returncode": completed.returncode,
+        "attached_transcript_exists": transcript_exists,
+        "attached_transcript_path": transcript_path,
+        "attached_transcript_status": observed_status or status,
+        "attached_transcript_commit": observed_commit or current_commit,
     }
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -219,14 +220,30 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert result.path.joinpath("release-packet.md").exists()
     assert result.path.joinpath("release-packet.json").exists()
     assert result.path.joinpath("review-doc-hashes.json").exists()
+    assert result.path.joinpath("artifact-hashes.json").exists()
     assert result.path.joinpath("git-summary.txt").exists()
     assert result.path.joinpath("docs/README.md").exists()
     assert result.path.joinpath("docs/docs/codex/v0.2-review-packet.md").exists()
     assert result.path.joinpath("signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md").exists()
+    artifact_hashes = json.loads(
+        result.path.joinpath("artifact-hashes.json").read_text(encoding="utf-8")
+    )
+    artifact_paths = {artifact["path"] for artifact in artifact_hashes}
+    assert "INDEX.md" in artifact_paths
+    assert "release-check.txt" in artifact_paths
+    assert "release-evidence.json" in artifact_paths
+    assert "release-packet.md" in artifact_paths
+    assert "release-packet.json" in artifact_paths
+    assert "review-doc-hashes.json" in artifact_paths
+    assert "docs/README.md" in artifact_paths
+    assert "signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md" in artifact_paths
     bundle_paths = [path.as_posix() for path in result.path.rglob("*")]
     assert not any("/.env" in path for path in bundle_paths)
     assert not any("/var/keys/" in path for path in bundle_paths)
     assert "review-doc-hashes.json" in result.path.joinpath("INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    assert "artifact-hashes.json" in result.path.joinpath("INDEX.md").read_text(
         encoding="utf-8"
     )
 
@@ -256,9 +273,11 @@ def test_release_evidence_records_attached_release_check_metadata(
 
     assert result == 0
     output = capsys.readouterr().out
-    assert '"transcript_attached": true' in output
-    assert '"observed_status": "passed"' in output
-    assert '"observed_commit": "abc123"' in output
+    assert '"gate_executed_by_release_packet": false' in output
+    assert '"gate_status": "not_run"' in output
+    assert '"attached_transcript_exists": true' in output
+    assert '"attached_transcript_status": "passed"' in output
+    assert '"attached_transcript_commit": "abc123"' in output
 
 
 def _write_project_markers(root: Path) -> None:

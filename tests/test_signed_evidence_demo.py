@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import cast
@@ -25,6 +26,18 @@ def test_signed_evidence_demo_generates_and_verifies(tmp_path: Path) -> None:
     assert Path(str(audit["tampered_bundle_path"])).exists()
     assert Path(str(manifest_lock["signature_path"])).exists()
     assert (tmp_path / "demo/SIGNED_EVIDENCE_DEMO.md").exists()
+    artifacts = cast(JsonObject, summary["artifacts"])
+    for artifact_name in [
+        "signed_audit_export_demo_bundle",
+        "tampered_audit_export_demo_bundle",
+        "manifest_lock_signature_demo_bundle",
+        "signed_evidence_demo_summary",
+    ]:
+        artifact = cast(JsonObject, artifacts[artifact_name])
+        artifact_path = Path(str(artifact["path"]))
+        assert artifact_path.exists()
+        assert artifact["sha256"] == _sha256_file(artifact_path)
+        assert isinstance(artifact["bytes"], int)
 
     signed_bundle = cast(
         JsonObject,
@@ -51,3 +64,7 @@ def test_signed_evidence_demo_keeps_key_material_in_ignored_demo_path(tmp_path: 
     private_keys = sorted(output_dir.rglob("*private.pem"))
     assert private_keys
     assert all("var/review-packets/v0.2" in path.as_posix() for path in private_keys)
+
+
+def _sha256_file(path: Path) -> str:
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()

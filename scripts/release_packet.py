@@ -95,7 +95,11 @@ def build_packet(repo_root: Path, marker_status: dict[str, bool]) -> dict[str, A
         },
         "release_check": {
             "command": "make release-check",
-            "status": "not_run_by_release_packet",
+            "gate_executed_by_release_packet": False,
+            "gate_status": "not_run",
+            "attached_transcript_note": (
+                "review bundles attach a passing release-check transcript from the same commit"
+            ),
         },
         "manifest_lock": {
             "path": settings.manifest_lock_path.as_posix(),
@@ -168,7 +172,16 @@ def render_markdown(packet: dict[str, Any]) -> str:
         "## Required Gate",
         "",
         "- run `make release-check` before attaching this packet to a review handoff;",
-        f"- packet status: `{packet['release_check']['status']}`.",
+        "- `make release-packet` does not itself run the gate;",
+        f"- packet gate status: `{packet['release_check']['gate_status']}`;",
+        f"- transcript note: {packet['release_check']['attached_transcript_note']}.",
+        "",
+        "## Locally Signed Evidence",
+        "",
+        "- runtime audit signing and manifest-lock signing may be unconfigured by default;",
+        "- `make signed-evidence-demo` creates separate non-production fixture evidence;",
+        "- the demo proves local signing and verification flow only, not external notarization,",
+        "  hosted custody, or official supply-chain signing.",
         "",
         "## Trust Evidence",
         "",

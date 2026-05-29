@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 from datetime import UTC, datetime
@@ -109,6 +110,7 @@ def build_demo(*, output_dir: Path, lock_path: Path) -> JsonObject:
         public_key_path=manifest_public_key,
     )
 
+    summary_path = output_dir / "SIGNED_EVIDENCE_DEMO.md"
     summary = cast(
         JsonObject,
         {
@@ -127,10 +129,20 @@ def build_demo(*, output_dir: Path, lock_path: Path) -> JsonObject:
             "signature_path": manifest_signature_path.as_posix(),
             "verified": manifest_verification.valid,
         },
+        "artifacts": {
+            "signed_audit_export_demo_bundle": _artifact_metadata(signed_audit_path),
+            "tampered_audit_export_demo_bundle": _artifact_metadata(tampered_path),
+            "manifest_lock_signature_demo_bundle": _artifact_metadata(
+                manifest_signature_path
+            ),
+        },
         },
     )
     _write_json(output_dir / "summary.json", summary)
-    _write_markdown_summary(output_dir / "SIGNED_EVIDENCE_DEMO.md", summary)
+    _write_markdown_summary(summary_path, summary)
+    artifacts = cast(JsonObject, summary["artifacts"])
+    artifacts["signed_evidence_demo_summary"] = _artifact_metadata(summary_path)
+    _write_json(output_dir / "summary.json", summary)
     return summary
 
 
@@ -139,9 +151,25 @@ def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _artifact_metadata(path: Path) -> JsonObject:
+    content = path.read_bytes()
+    return {
+        "path": path.as_posix(),
+        "sha256": "sha256:" + hashlib.sha256(content).hexdigest(),
+        "bytes": len(content),
+    }
+
+
 def _write_markdown_summary(path: Path, summary: JsonObject) -> None:
     audit = cast(JsonObject, summary["audit"])
     manifest_lock = cast(JsonObject, summary["manifest_lock"])
+    artifacts = cast(JsonObject, summary["artifacts"])
+    signed_audit = cast(JsonObject, artifacts["signed_audit_export_demo_bundle"])
+    tampered_audit = cast(JsonObject, artifacts["tampered_audit_export_demo_bundle"])
+    manifest_signature = cast(
+        JsonObject,
+        artifacts["manifest_lock_signature_demo_bundle"],
+    )
     path.write_text(
         f"""# Signed Evidence Demo
 
@@ -153,15 +181,23 @@ or official release signing keys.
 
 - key ID: `{audit["key_id"]}`
 - signed bundle: `{audit["signed_bundle_path"]}`
+- signed bundle SHA-256: `{signed_audit["sha256"]}`
 - verification valid: `{str(audit["verified"]).lower()}`
 - tampered bundle: `{audit["tampered_bundle_path"]}`
+- tampered bundle SHA-256: `{tampered_audit["sha256"]}`
 - tampered verification valid: `{str(audit["tampered_verified"]).lower()}`
 
 ## Manifest Lock
 
 - key ID: `{manifest_lock["key_id"]}`
 - signature bundle: `{manifest_lock["signature_path"]}`
+- signature bundle SHA-256: `{manifest_signature["sha256"]}`
 - verification valid: `{str(manifest_lock["verified"]).lower()}`
+
+## Artifact Hashes
+
+`summary.json` includes SHA-256 digests for this markdown summary, the signed audit export demo
+bundle, the tampered audit export demo bundle, and the manifest-lock signature demo bundle.
 
 ## Warning
 
