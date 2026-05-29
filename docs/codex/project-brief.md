@@ -26,7 +26,7 @@ MCP client
   -> schema validation
   -> policy evaluation
   -> approval state machine
-  -> sandboxed tool execution
+  -> scoped tool execution
   -> audit writer
 ```
 
@@ -52,4 +52,3 @@ MCP client
 8. Add MCP adapter.
 9. Add read-only filesystem/git tools.
 10. Add patch proposal and approved patch apply.
-

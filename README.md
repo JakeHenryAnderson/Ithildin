@@ -2,12 +2,18 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
-**v0.1 local-preview warning:** Ithildin is not production security software. It is a
-mediation layer, not a kernel sandbox, EDR, MDM, production identity system, hosted MCP platform, or
-tamper-proof audit store.
-Local principals are attribution labels for local policy, not enterprise authentication. The audit
-log is local and tamper-evident, not externally notarized or tamper-proof. Redaction is best-effort
-leak reduction, not a guarantee that secrets cannot be exposed.
+**v0.1 local-preview warning:** Ithildin v0.1 is a local-preview mediation layer for
+AI-agent tool use. It is not a sandbox, EDR/MDM agent, SIEM, production identity system, hosted MCP
+platform, compliance audit system, or immutable evidence store. It assumes the local host, local
+admin, trusted tool manifests, and local policy files are part of the trusted computing base. Audit
+records are tamper-evident local evidence, not notarized or custody-grade logs. Redaction is
+best-effort leak reduction, not a guarantee that secrets cannot be exposed.
+
+v0.1 supports narrow built-in tools only: workspace reads, git reads, stored patch proposals,
+approval-gated patch apply, and exact-allowlist GET-only HTTP fetch. It deliberately does not
+support shell execution, Docker socket access, Kubernetes tools, browser automation, arbitrary HTTP
+methods/headers/bodies, broad filesystem writes, plugin marketplaces, hosted MCP, production
+identity, or hosted telemetry.
 
 The project goal is to let AI agents use local tools through narrow, policy-scoped, auditable interfaces instead of unrestricted endpoint access.
 
@@ -23,7 +29,7 @@ Agent / local LLM
   -> Ithildin MCP Gateway
   -> schema validation + policy decision
   -> approval + audit
-  -> sandboxed governed tools
+  -> scoped governed executors
   -> endpoint workspace / APIs / local services
 ```
 
@@ -121,7 +127,7 @@ No agent-originated action reaches the endpoint unless:
 4. the resource is in scope;
 5. policy allows it or requires approval;
 6. approval is satisfied when required;
-7. execution happens inside the declared sandbox;
+7. execution happens inside the declared scope;
 8. the full decision and result are logged.
 
 ## Start Reading

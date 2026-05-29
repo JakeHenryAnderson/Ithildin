@@ -17,7 +17,7 @@ No agent-originated action reaches the endpoint unless:
 4. the resource is in scope;
 5. policy allows it or requires approval;
 6. approval is satisfied when required;
-7. execution happens inside the declared sandbox;
+7. execution happens inside the declared scope;
 8. the full decision and result are logged.
 
 ## Trust Zones
