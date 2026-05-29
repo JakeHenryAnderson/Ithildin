@@ -69,6 +69,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
+- `make audit-diagnostics` - explain local audit verification state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
 - `make docs-site` - build a small local static docs site under ignored `site/`.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
@@ -116,6 +117,8 @@ OpenTelemetry is opt-in preview instrumentation and is disabled by default.
 Signed audit exports are optional v0.2 local evidence. Run `make audit-keygen`, then use the review
 console or `/audit-events/export/signed`; see
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md).
+Use `make audit-diagnostics` when audit verification fails; diagnostics are read-only and do not
+repair or rewrite the local evidence chain.
 
 MCP is launched by an MCP client rather than as a persistent Compose service:
 

@@ -1346,6 +1346,32 @@ def test_audit_verification_and_export_endpoints(tmp_path: Path) -> None:
     assert json.loads(lines[1])["event_id"] == "evt_1"
 
 
+def test_audit_diagnostics_endpoint_requires_auth_and_reports_state(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        audit_writer.write_event(
+            event_id="evt_1",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_1",
+            principal={"id": "agent:test"},
+        )
+        unauthenticated = client.get("/audit-events/diagnostics")
+        response = client.get(
+            "/audit-events/diagnostics",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["category"] == "valid"
+    assert payload["verification"]["valid"] is True
+    assert payload["verification"]["event_count"] == 1
+    assert payload["signing"]["signed_export_available"] is False
+
+
 def test_signed_audit_export_endpoint_requires_auth_and_keys(tmp_path: Path) -> None:
     settings = make_settings(tmp_path, token="correct-token")
     app = create_app(settings)

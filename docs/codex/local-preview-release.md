@@ -22,7 +22,8 @@ For public-preview wording, also read
 8. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
 9. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
 10. Optional: run `make audit-keygen` to enable signed audit exports.
-11. Run `make docs-site` to build local handoff docs under ignored `site/`.
+11. Optional: run `make audit-diagnostics` to explain local audit verification state.
+12. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 
@@ -82,6 +83,8 @@ The local console shows:
 - Audit events are stored in SQLite and hash-chained JSONL.
 - Signed audit exports use a local Ed25519 keypair when configured; see
   [Signed Audit Exports](signed-audit-exports.md).
+- Audit diagnostics are read-only explanations for verification failures. They do not repair,
+  truncate, rewrite, or bless local evidence.
 - Signed manifest locks use a separate local Ed25519 keypair when configured; this is local
   operator evidence, not hosted supply-chain signing.
 - Docker is only used to run the local demo stack.

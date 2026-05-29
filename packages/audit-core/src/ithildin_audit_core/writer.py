@@ -274,6 +274,60 @@ class AuditWriter:
         ]
         return "\n".join(lines) + "\n"
 
+    def diagnostics(self) -> JsonObject:
+        db_exists = self.db_path.exists()
+        jsonl_exists = self.jsonl_path.exists()
+        jsonl_line_count: Optional[int] = None
+        jsonl_error: Optional[str] = None
+        if jsonl_exists:
+            try:
+                with self.jsonl_path.open("r", encoding="utf-8") as jsonl_file:
+                    jsonl_line_count = sum(1 for _line in jsonl_file)
+            except OSError as exc:
+                jsonl_error = str(exc)
+
+        if not db_exists:
+            verification: JsonObject = {
+                "valid": True,
+                "event_count": 0,
+                "first_timestamp": None,
+                "last_timestamp": None,
+                "head_hash": GENESIS_HASH,
+                "failure": None,
+            }
+            category = "not_initialized"
+        else:
+            try:
+                result = self.verify_chain()
+            except AuditWriteError as exc:
+                verification = {
+                    "valid": False,
+                    "event_count": 0,
+                    "first_timestamp": None,
+                    "last_timestamp": None,
+                    "head_hash": GENESIS_HASH,
+                    "failure": {
+                        "row_number": 0,
+                        "event_id": None,
+                        "reason": str(exc),
+                    },
+                }
+                category = "storage_read_failure"
+            else:
+                verification = result.as_dict()
+                category = _diagnostic_category(result)
+
+        return {
+            "db_path": self.db_path.as_posix(),
+            "log_path": self.jsonl_path.as_posix(),
+            "db_exists": db_exists,
+            "jsonl_exists": jsonl_exists,
+            "jsonl_line_count": jsonl_line_count,
+            "jsonl_error": jsonl_error,
+            "category": category,
+            "verification": verification,
+        }
+
     def _payload_rows(self) -> list[tuple[object]]:
         try:
             with sqlite3.connect(self.db_path) as connection:
@@ -394,6 +448,24 @@ def _failed_verification(
             reason=reason,
         ),
     )
+
+
+def _diagnostic_category(result: AuditVerificationResult) -> str:
+    if result.valid and result.event_count == 0:
+        return "empty_valid"
+    if result.valid:
+        return "valid"
+    if result.failure is None:
+        return "unknown_failure"
+    if result.failure.reason == "invalid audit payload JSON":
+        return "invalid_json"
+    if result.failure.reason == "invalid audit event schema":
+        return "invalid_schema"
+    if result.failure.reason == "previous event hash mismatch":
+        return "previous_hash_mismatch"
+    if result.failure.reason == "event hash mismatch":
+        return "event_hash_mismatch"
+    return "verification_failure"
 
 
 def _timestamps_from_rows(rows: list[tuple[object]]) -> tuple[Optional[str], Optional[str]]:

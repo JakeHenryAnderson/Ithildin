@@ -419,6 +419,18 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         return audit_writer.verify_chain().as_dict()
 
+    @api.get("/audit-events/diagnostics", dependencies=[Depends(require_admin_token)])
+    def audit_diagnostics() -> JsonObject:
+        settings_state = cast(Settings, api.state.settings)
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        return {
+            **audit_writer.diagnostics(),
+            "signing": audit_signing_status(
+                settings_state.audit_signing_private_key_path,
+                settings_state.audit_signing_public_key_path,
+            ),
+        }
+
     @api.get("/audit-events/export", dependencies=[Depends(require_admin_token)])
     def export_audit_events() -> Response:
         audit_writer = cast(AuditWriter, api.state.audit_writer)

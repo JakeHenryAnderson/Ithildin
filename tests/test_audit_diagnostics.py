@@ -1,0 +1,141 @@
+from __future__ import annotations
+
+import json
+import sqlite3
+import subprocess
+from pathlib import Path
+from typing import Any, cast
+
+from ithildin_audit_core import AuditWriter
+from ithildin_schemas import AuditEventType
+
+
+def test_audit_diagnostics_reports_empty_and_valid_chains(tmp_path: Path) -> None:
+    writer = AuditWriter(tmp_path / "audit.sqlite3", tmp_path / "audit.jsonl")
+    writer.initialize()
+
+    empty = cast(dict[str, Any], writer.diagnostics())
+    assert empty["category"] == "empty_valid"
+    assert empty["verification"]["valid"] is True
+    assert empty["verification"]["event_count"] == 0
+
+    writer.write_event(
+        event_id="evt_1",
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:test"},
+    )
+
+    populated = cast(dict[str, Any], writer.diagnostics())
+    assert populated["category"] == "valid"
+    assert populated["verification"]["valid"] is True
+    assert populated["verification"]["event_count"] == 1
+    assert populated["jsonl_line_count"] == 1
+
+
+def test_audit_diagnostics_classifies_tampered_payload(tmp_path: Path) -> None:
+    writer = AuditWriter(tmp_path / "audit.sqlite3", tmp_path / "audit.jsonl")
+    writer.initialize()
+    writer.write_event(
+        event_id="evt_1",
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:test"},
+    )
+
+    with sqlite3.connect(writer.db_path) as connection:
+        payload_json = connection.execute(
+            "SELECT payload_json FROM audit_events WHERE event_id = 'evt_1'"
+        ).fetchone()[0]
+        payload = json.loads(str(payload_json))
+        payload["metadata"] = {"tampered": True}
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_1'",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
+        )
+        connection.commit()
+
+    diagnostics = cast(dict[str, Any], writer.diagnostics())
+    assert diagnostics["category"] == "event_hash_mismatch"
+    assert diagnostics["verification"]["valid"] is False
+    assert diagnostics["verification"]["failure"]["event_id"] == "evt_1"
+
+
+def test_audit_diagnostics_classifies_invalid_json(tmp_path: Path) -> None:
+    writer = AuditWriter(tmp_path / "audit.sqlite3", tmp_path / "audit.jsonl")
+    writer.initialize()
+    writer.write_event(
+        event_id="evt_1",
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:test"},
+    )
+
+    with sqlite3.connect(writer.db_path) as connection:
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_1'",
+            ("{",),
+        )
+        connection.commit()
+
+    diagnostics = cast(dict[str, Any], writer.diagnostics())
+    assert diagnostics["category"] == "invalid_json"
+    assert diagnostics["verification"]["valid"] is False
+    assert diagnostics["verification"]["failure"]["reason"] == "invalid audit payload JSON"
+
+
+def test_audit_diagnostics_cli_json_and_fail_on_invalid(tmp_path: Path) -> None:
+    writer = AuditWriter(tmp_path / "audit.sqlite3", tmp_path / "audit.jsonl")
+    writer.initialize()
+
+    valid = subprocess.run(
+        [
+            "uv",
+            "run",
+            "python",
+            "scripts/audit_diagnostics.py",
+            "--db-path",
+            str(writer.db_path),
+            "--log-path",
+            str(writer.jsonl_path),
+            "--json",
+            "--fail-on-invalid",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert json.loads(valid.stdout)["category"] == "empty_valid"
+
+    writer.write_event(
+        event_id="evt_1",
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:test"},
+    )
+    with sqlite3.connect(writer.db_path) as connection:
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_1'",
+            ("{",),
+        )
+        connection.commit()
+
+    invalid = subprocess.run(
+        [
+            "uv",
+            "run",
+            "python",
+            "scripts/audit_diagnostics.py",
+            "--db-path",
+            str(writer.db_path),
+            "--log-path",
+            str(writer.jsonl_path),
+            "--json",
+            "--fail-on-invalid",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert invalid.returncode == 2
+    assert json.loads(invalid.stdout)["category"] == "invalid_json"
