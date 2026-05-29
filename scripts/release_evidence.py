@@ -20,6 +20,14 @@ from ithildin_api.storage import storage_status
 from ithildin_api.telemetry import configure_telemetry
 from ithildin_audit_core import AuditWriter
 
+PROJECT_MARKERS = (
+    "pyproject.toml",
+    "Makefile",
+    "apps/api",
+    "apps/mcp-server",
+    "tool-manifests.lock.json",
+)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -29,6 +37,19 @@ def main() -> int:
         help="run make release-check before writing the snapshot",
     )
     args = parser.parse_args()
+
+    repo_root = Path.cwd().resolve()
+    marker_status = _project_marker_status(repo_root)
+    missing_markers = [
+        marker for marker, present in marker_status.items() if not present
+    ]
+    if missing_markers:
+        print(
+            "release evidence must be run from the Ithildin repo root; "
+            f"missing markers: {', '.join(missing_markers)}",
+            file=sys.stderr,
+        )
+        return 1
 
     release_check = _release_check(args.check_release)
     settings = Settings(admin_token="release-evidence-token")  # type: ignore[call-arg]
@@ -51,6 +72,11 @@ def main() -> int:
 
     snapshot = {
         "generated_at": datetime.now(UTC).isoformat(),
+        "repo": {
+            "repo_root": repo_root.as_posix(),
+            "current_working_directory": Path.cwd().resolve().as_posix(),
+            "project_markers": marker_status,
+        },
         "git": {
             "commit": _git(["rev-parse", "HEAD"]),
             "branch": _git(["branch", "--show-current"]),
@@ -94,6 +120,10 @@ def main() -> int:
     json.dump(snapshot, sys.stdout, indent=2, sort_keys=True)
     sys.stdout.write("\n")
     return 0
+
+
+def _project_marker_status(repo_root: Path) -> dict[str, bool]:
+    return {marker: repo_root.joinpath(marker).exists() for marker in PROJECT_MARKERS}
 
 
 def _release_check(enabled: bool) -> dict[str, Any]:

@@ -107,6 +107,10 @@ Build local handoff docs with:
 make docs-site
 ```
 
+The corrected public-preview release evidence is preserved in
+[docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
+`make release-check` and `make release-evidence` before tagging.
+
 ## Core Invariant
 
 No agent-originated action reaches the endpoint unless:

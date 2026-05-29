@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check release-evidence release-guardrails test typecheck ui-dev
+.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check release-context release-evidence release-guardrails test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -26,7 +26,12 @@ release-guardrails:
 release-evidence:
 	uv run python scripts/release_evidence.py
 
-release-check: manifest-lock-check release-guardrails test lint typecheck docs-site
+release-context:
+	@echo "repo_root=$$(pwd)"
+	@echo "git_commit=$$(git rev-parse HEAD)"
+	@echo "git_dirty=$$(test -z "$$(git status --short)" && echo false || echo true)"
+
+release-check: release-context manifest-lock-check release-guardrails test lint typecheck docs-site
 	npm run build --prefix apps/ui
 
 ui-dev:
