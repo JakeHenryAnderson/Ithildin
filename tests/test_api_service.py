@@ -230,6 +230,12 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
     assert payload["security"]["production_ready"] is False
     assert payload["security"]["cors"]["wildcard_allowed"] is False
     assert payload["security"]["local_only"]["remote_mcp_enabled"] is False
+    assert payload["security"]["admin_token"] == {
+        "recommended_min_length": 32,
+        "length_ok": False,
+        "contains_whitespace": False,
+        "weak": True,
+    }
     assert payload["policy"]["engine"] == "yaml"
     assert payload["policy"]["policy_hash"].startswith("sha256:")
     assert payload["audit"] == {
@@ -324,6 +330,12 @@ def test_sample_admin_token_demo_flag_reports_warning(tmp_path: Path) -> None:
     assert security["dev_admin_token"] == {
         "sample_token_active": True,
         "explicitly_allowed": True,
+    }
+    assert security["admin_token"] == {
+        "recommended_min_length": 32,
+        "length_ok": False,
+        "contains_whitespace": False,
+        "weak": False,
     }
     assert security["warnings"] == ["sample admin token is enabled for local demo use"]
 

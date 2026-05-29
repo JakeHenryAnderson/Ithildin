@@ -12,7 +12,8 @@ For public-preview wording, also read
 ## Quick Start
 
 1. Install Python 3.12, `uv`, Node/npm, and Docker Desktop if you want the Compose demo.
-2. Copy `.env.example` to `.env` and change `ITHILDIN_ADMIN_TOKEN`.
+2. Copy `.env.example` to `.env`, run `make admin-token-generate`, and paste the generated
+   `ITHILDIN_ADMIN_TOKEN=...` line into your local `.env`.
 3. Run `make policy-test` for a fast YAML policy confidence check.
 4. Run `make release-check` before demoing or handing off a build.
 5. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
@@ -46,7 +47,8 @@ For public-preview wording, also read
 - Principal identities are loaded from `principals/local.yaml`; unknown or disabled principals fail
   closed in governed flows.
 - The sample admin token works only when `ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and the API/UI report
-  that warning in system status.
+  that warning in system status. `make admin-token-generate` prints a strong replacement token but
+  never writes `.env` automatically.
 - Public-preview guardrails fail if docs omit warning labels or Compose exposes non-loopback ports.
 - SQLite is the only runtime storage backend. Postgres settings are surfaced as readiness evidence
   only.

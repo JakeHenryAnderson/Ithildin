@@ -6,6 +6,8 @@ from ithildin_schemas import JsonObject, JsonValue
 
 from ithildin_api.config import DEV_ADMIN_TOKEN, Settings
 
+RECOMMENDED_ADMIN_TOKEN_LENGTH = 32
+
 LOCAL_CORS_ORIGINS = (
     "http://127.0.0.1:5173",
     "http://localhost:5173",
@@ -28,8 +30,16 @@ def validate_security_settings(settings: Settings) -> None:
 def security_status(settings: Settings) -> JsonObject:
     warnings: list[JsonValue] = []
     dev_token_active = settings.admin_token == DEV_ADMIN_TOKEN
+    token_has_whitespace = settings.admin_token.strip() != settings.admin_token or any(
+        character.isspace() for character in settings.admin_token
+    )
+    token_length_ok = len(settings.admin_token) >= RECOMMENDED_ADMIN_TOKEN_LENGTH
     if dev_token_active and settings.allow_dev_admin_token:
         warnings.append("sample admin token is enabled for local demo use")
+    if token_has_whitespace:
+        warnings.append("admin token contains whitespace")
+    if not dev_token_active and not token_length_ok:
+        warnings.append("admin token is shorter than the recommended local minimum")
     if settings.storage_backend.strip().lower() != "sqlite":
         warnings.append("unsupported runtime storage backend requested")
     if settings.otel_enabled:
@@ -41,6 +51,12 @@ def security_status(settings: Settings) -> JsonObject:
         "dev_admin_token": {
             "sample_token_active": dev_token_active,
             "explicitly_allowed": settings.allow_dev_admin_token,
+        },
+        "admin_token": {
+            "recommended_min_length": RECOMMENDED_ADMIN_TOKEN_LENGTH,
+            "length_ok": token_length_ok,
+            "contains_whitespace": token_has_whitespace,
+            "weak": token_has_whitespace or (not dev_token_active and not token_length_ok),
         },
         "local_only": {
             "api_host_publish": "127.0.0.1:8000 in Compose",

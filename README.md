@@ -63,6 +63,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make manifest-lock-keygen` - create a local Ed25519 keypair for manifest lock signatures.
 - `make manifest-lock-sign` - sign the current `tool-manifests.lock.json`.
 - `make manifest-lock-signature-check` - verify the local manifest lock signature.
+- `make admin-token-generate` - print a strong local `ITHILDIN_ADMIN_TOKEN=...` line.
 - `make policy-test` - run committed offline fixtures against `policies/default.yaml`.
 - `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
@@ -84,9 +85,11 @@ The local Docker Compose demo runs the API and review console with a seeded work
 - `make demo-flow` - run governed reads, redaction, patch proposal, approval, apply, and audit checks.
 - `make compose-down` - stop the stack.
 
-Copy `.env.example` to `.env` and set a unique `ITHILDIN_ADMIN_TOKEN` for normal use. The sample
-token works only when `ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and that mode is visibly warned in
-`/system/status` and the review console.
+Copy `.env.example` to `.env` and set a unique `ITHILDIN_ADMIN_TOKEN` for normal use. Use
+`make admin-token-generate` to print a strong token line, then paste it into your local `.env` and
+restart the API/UI. The helper never writes secrets to disk. The sample token works only when
+`ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and that mode is visibly warned in `/system/status` and the
+review console.
 The review console is served at `http://127.0.0.1:5173`.
 Docker is only used for the local demo stack; Kubernetes support is deferred.
 Tool manifests are hash-pinned by default; run `make manifest-lock` only after intentional

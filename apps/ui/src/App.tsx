@@ -191,6 +191,12 @@ type SystemStatus = {
       sample_token_active: boolean;
       explicitly_allowed: boolean;
     };
+    admin_token: {
+      recommended_min_length: number;
+      length_ok: boolean;
+      contains_whitespace: boolean;
+      weak: boolean;
+    };
     local_only: {
       api_host_publish: string;
       ui_host_publish: string;
@@ -626,6 +632,10 @@ export function App() {
                       ? "enabled"
                       : "not active"}
                   </dd>
+                </div>
+                <div>
+                  <dt>Admin Token</dt>
+                  <dd>{data.systemStatus.security.admin_token.weak ? "review" : "ok"}</dd>
                 </div>
                 <div>
                   <dt>CORS</dt>
