@@ -478,10 +478,20 @@ def test_read_tool_executes_after_policy_allow_and_is_audited(tmp_path: Path) ->
     assert policy_metadata["policy_engine"] == "yaml"
     assert policy_metadata["policy_document_version"] == "test"
     assert policy_metadata["policy_hash"] == payloads[0]["policy_version"]
+    assert policy_metadata["policy_version"] == payloads[0]["policy_version"]
+    assert policy_metadata["decision"] == "allow"
+    assert policy_metadata["reason"] == "reads allowed"
     manifest_hash = policy_metadata["manifest_hash"]
     assert isinstance(manifest_hash, str)
     assert manifest_hash.startswith("sha256:")
+    assert policy_metadata["tool_name"] == "fs.read"
+    assert policy_metadata["tool_version"] == "1.0.0"
+    assert policy_metadata["tool_risk"] == "read"
     assert policy_metadata["resource_type"] == "file"
+    assert policy_metadata["resource_in_scope"] is True
+    assert policy_metadata["principal_id"] == "agent:local-dev"
+    assert policy_metadata["principal_roles"] == ["AgentDeveloper"]
+    assert policy_metadata["session_id"] == "sess_1"
     assert policy_metadata["obligation_keys"] == ["audit_level"]
     metadata = cast(JsonObject, payloads[-1]["metadata"])
     assert metadata["redaction_applied"] is True

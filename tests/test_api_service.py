@@ -959,6 +959,25 @@ def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
     assert payload["policy_document_version"] == "test"
     assert payload["policy_hash"] == payload["policy_version"]
     assert payload["policy_hash"].startswith("sha256:")
+    assert payload["decision_evidence"] == {
+        "decision": "allow",
+        "reason": "ok",
+        "policy_engine": "yaml",
+        "policy_hash": payload["policy_hash"],
+        "policy_version": payload["policy_version"],
+        "policy_document_version": "test",
+        "matched_rules": ["allow_test_reads"],
+        "obligation_keys": ["audit_level"],
+        "tool_name": "fs.read",
+        "tool_version": "1.0.0",
+        "tool_risk": "read",
+        "manifest_hash": payload["manifest_hash"],
+        "resource_type": "file",
+        "resource_in_scope": True,
+        "principal_id": "admin:local-ui",
+        "principal_roles": ["Admin", "Approver", "Auditor"],
+        "session_id": "policy-preview",
+    }
 
 
 def test_policy_preview_requires_approval_for_write_tool(tmp_path: Path) -> None:
@@ -1005,6 +1024,9 @@ def test_policy_preview_requires_approval_for_write_tool(tmp_path: Path) -> None
         "roles": ["AgentDeveloper"],
     }
     assert payload["policy_input"]["context"] == {"session_id": "preview-test"}
+    assert payload["decision_evidence"]["decision"] == "require_approval"
+    assert payload["decision_evidence"]["session_id"] == "preview-test"
+    assert payload["decision_evidence"]["principal_id"] == "agent:test"
 
 
 def test_policy_preview_denies_unknown_principal_without_side_effects(tmp_path: Path) -> None:

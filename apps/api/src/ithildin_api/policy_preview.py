@@ -7,6 +7,7 @@ from ithildin_schemas import JsonObject, JsonValue, PolicyDecisionValue, PolicyI
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 
+from ithildin_api.decision_evidence import policy_decision_evidence
 from ithildin_api.http_tools import HttpAllowlist
 from ithildin_api.identity import (
     PrincipalRegistry,
@@ -63,6 +64,7 @@ class PolicyPreviewService:
                 "policy_version": self.policy_evaluator.policy_hash,
                 "matched_rules": [],
                 "obligations": {"audit_level": "full"},
+                "decision_evidence": None,
             }
 
         manifest = registered_tool.manifest
@@ -122,6 +124,7 @@ class PolicyPreviewService:
                 "policy_version": self.policy_evaluator.policy_hash,
                 "matched_rules": [],
                 "obligations": {"audit_level": "full"},
+                "decision_evidence": None,
             }
 
         policy_input = PolicyInput(
@@ -137,6 +140,13 @@ class PolicyPreviewService:
         )
         policy_decision = self.policy_evaluator.evaluate(policy_input)
         matched_rules: list[JsonValue] = [rule_id for rule_id in policy_decision.matched_rules]
+        decision_evidence = policy_decision_evidence(
+            policy_engine=self.policy_evaluator.engine_name,
+            policy_hash=self.policy_evaluator.policy_hash,
+            policy_document_version=self.policy_evaluator.document_version,
+            policy_input=policy_input,
+            policy_decision=policy_decision,
+        )
 
         return {
             **self._policy_evidence(),
@@ -153,6 +163,7 @@ class PolicyPreviewService:
             "policy_version": policy_decision.policy_version,
             "matched_rules": matched_rules,
             "obligations": policy_decision.obligations,
+            "decision_evidence": decision_evidence,
         }
 
     def _policy_evidence(self) -> JsonObject:
@@ -188,4 +199,5 @@ class PolicyPreviewService:
             "policy_version": self.policy_evaluator.policy_hash,
             "matched_rules": [],
             "obligations": {"audit_level": "full", **(metadata or {})},
+            "decision_evidence": None,
         }
