@@ -169,6 +169,7 @@ Begin with [docs/codex/v0.2-review-response-and-rc-cleanup.md](docs/codex/v0.2-r
 and [docs/codex/v0.2-review-packet.md](docs/codex/v0.2-review-packet.md) for external/code review
 handoff, or [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md) for local
 operator setup. Then read
+[docs/codex/v0.2-external-review-prompt.md](docs/codex/v0.2-external-review-prompt.md),
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),

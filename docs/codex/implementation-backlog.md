@@ -58,6 +58,7 @@
 | 060 - Release packet evidence | Done | `make release-packet`, `scripts/release_packet.py` |
 | 061 - v0.2 review packet | Done | [v0.2-review-packet.md](v0.2-review-packet.md) |
 | 062 - Review response cleanup | Done | [v0.2-review-response-and-rc-cleanup.md](v0.2-review-response-and-rc-cleanup.md) |
+| 063 - v0.2 external review prompt | Done | [v0.2-external-review-prompt.md](v0.2-external-review-prompt.md) |
 
 ## Future Candidate Track
 
