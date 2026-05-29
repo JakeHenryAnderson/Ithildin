@@ -20,6 +20,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.1-public-preview-release-notes.md",
     "docs/codex/local-model-demo.md",
     "docs/codex/v0.1-local-preview-checklist.md",
+    "docs/codex/v0.1-security-test-matrix.md",
     "docs/codex/implementation-backlog.md",
     "docs/codex/v0.2-planning-seed.md",
     "docs/obsidian/03-security-model.md",

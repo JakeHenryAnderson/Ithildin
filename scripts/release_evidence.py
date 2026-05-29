@@ -52,7 +52,7 @@ def main() -> int:
         return 1
 
     release_check = _release_check(args.check_release)
-    settings = Settings(admin_token="release-evidence-token")  # type: ignore[call-arg]
+    settings = Settings(admin_token="release-evidence-token")
     registry = ToolRegistry.load(
         settings.manifest_dir,
         lock_path=settings.manifest_lock_path,
@@ -163,7 +163,7 @@ def _manifest_lock_is_current(
         records=records,
     )
     current = json.loads(lock_path.read_text(encoding="utf-8"))
-    return current == expected
+    return bool(current == expected)
 
 
 def _audit_snapshot(audit_writer: AuditWriter) -> dict[str, Any]:
