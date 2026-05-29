@@ -587,7 +587,10 @@ class PatchProposalService:
 
     def _apply_proposal(self, proposal: PatchProposal) -> None:
         filesystem = self._filesystem(proposal.workspace_id)
-        target = filesystem.resolve_existing_path(proposal.path)
+        try:
+            target = filesystem.resolve_existing_path(proposal.path)
+        except ReadToolError as exc:
+            raise PatchProposalError(exc.reason) from exc
         if not target.is_file():
             raise PatchProposalError("patch target is not a file")
         try:

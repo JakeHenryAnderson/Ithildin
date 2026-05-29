@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import stat
 import subprocess
+import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -231,6 +232,7 @@ class FilesystemReadTools:
     def resolve_existing_path(self, path: str) -> Path:
         if not path:
             path = "."
+        _reject_ambiguous_path_input(path)
         requested = Path(path)
         if requested.is_absolute():
             raise ReadToolError("absolute paths are outside the workspace scope")
@@ -247,6 +249,7 @@ class FilesystemReadTools:
 
         self._ensure_under_workspace(resolved)
         self._ensure_not_sensitive(resolved)
+        self._ensure_not_hardlinked_file(resolved)
         return resolved
 
     def read_text_file(self, path: Path) -> str:
@@ -329,6 +332,14 @@ class FilesystemReadTools:
             lowered = part.lower()
             if part.startswith(".") or lowered in {"secret", "secrets"} or lowered == ".env":
                 raise ReadToolError("path is hidden or sensitive")
+
+    def _ensure_not_hardlinked_file(self, path: Path) -> None:
+        try:
+            stat_result = path.stat()
+        except OSError as exc:
+            raise ReadToolError("path does not exist in the workspace") from exc
+        if stat.S_ISREG(stat_result.st_mode) and stat_result.st_nlink > 1:
+            raise ReadToolError("hardlinked files are not allowed")
 
 
 @dataclass(frozen=True)
@@ -431,6 +442,14 @@ def _path_type(path: Path) -> str:
     if path.is_file():
         return "file"
     return "other"
+
+
+def _reject_ambiguous_path_input(path: str) -> None:
+    lowered = path.lower()
+    if any(token in lowered for token in ("%2e", "%2f", "%5c")):
+        raise ReadToolError("encoded path tokens are not allowed")
+    if not unicodedata.is_normalized("NFC", path):
+        raise ReadToolError("path is not Unicode-normalized")
 
 
 def _git_log_lines(output: str) -> list[JsonValue]:

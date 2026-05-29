@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import subprocess
+import unicodedata
 from pathlib import Path
 from typing import cast
 
@@ -77,6 +79,35 @@ def test_filesystem_denies_hidden_and_sensitive_paths(tmp_path: Path) -> None:
 
     with pytest.raises(ReadToolError, match="hidden or sensitive"):
         filesystem.read_file("secrets/note.txt")
+
+
+@pytest.mark.parametrize("path", ["..%2fsecret.txt", "%2e%2e/secret.txt", "safe%5csecret.txt"])
+def test_filesystem_denies_encoded_path_tokens(tmp_path: Path, path: str) -> None:
+    filesystem = make_filesystem(tmp_path)
+
+    with pytest.raises(ReadToolError, match="encoded path tokens"):
+        filesystem.read_file(path)
+
+
+def test_filesystem_denies_non_normalized_unicode_paths(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path)
+    decomposed = unicodedata.normalize("NFD", "café.txt")
+
+    with pytest.raises(ReadToolError, match="Unicode-normalized"):
+        filesystem.read_file(decomposed)
+
+
+def test_filesystem_denies_hardlinked_file_targets(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path)
+    target = filesystem.workspace_root / "README.md"
+    target.write_text("linked\n", encoding="utf-8")
+    try:
+        os.link(target, filesystem.workspace_root / "README-copy.md")
+    except OSError as exc:
+        pytest.skip(f"hardlinks unavailable: {exc}")
+
+    with pytest.raises(ReadToolError, match="hardlinked"):
+        filesystem.read_file("README.md")
 
 
 def test_filesystem_denies_oversized_reads(tmp_path: Path) -> None:

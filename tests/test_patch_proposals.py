@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import difflib
+import os
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -128,6 +130,8 @@ def test_invalid_patch_paths_are_denied(tmp_path: Path) -> None:
         (str(outside), "absolute"),
         ("link.txt", "symlink"),
         (".env", "hidden or sensitive"),
+        ("..%2fREADME.md", "encoded path tokens"),
+        (unicodedata.normalize("NFD", "café.txt"), "Unicode-normalized"),
     ]:
         with pytest.raises(PatchProposalError, match=reason):
             service.create_proposal(
@@ -136,6 +140,21 @@ def test_invalid_patch_paths_are_denied(tmp_path: Path) -> None:
                 path=path,
                 unified_diff=diff,
             )
+
+    try:
+        os.link(
+            service.filesystem.workspace_root / "README.md",
+            service.filesystem.workspace_root / "README-hardlink.md",
+        )
+    except OSError as exc:
+        pytest.skip(f"hardlinks unavailable: {exc}")
+    with pytest.raises(PatchProposalError, match="hardlinked"):
+        service.create_proposal(
+            request_id="req_1",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff=diff,
+        )
 
 
 def test_invalid_diff_shapes_are_denied(tmp_path: Path) -> None:

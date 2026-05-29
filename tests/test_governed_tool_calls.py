@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from dataclasses import dataclass
 from datetime import timedelta
@@ -901,6 +902,28 @@ def test_patch_apply_rejects_stale_base_without_partial_write(tmp_path: Path) ->
         harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8")
         == "changed elsewhere\n"
     )
+
+
+def test_patch_apply_rejects_hardlinked_target_without_partial_write(tmp_path: Path) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    try:
+        os.link(harness.workspace_root / "README.md", harness.workspace_root / "README-copy.md")
+    except OSError as exc:
+        pytest.skip(f"hardlinks unavailable: {exc}")
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "hardlinked" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
 
 
 def test_direct_patch_payload_cannot_be_applied(tmp_path: Path) -> None:
