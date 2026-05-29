@@ -17,3 +17,6 @@ input_schema:
     limit:
       type: integer
       minimum: 1
+    workspace_id:
+      type: string
+      default: default

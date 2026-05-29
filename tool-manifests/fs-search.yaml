@@ -19,3 +19,6 @@ input_schema:
     query:
       type: string
       minLength: 1
+    workspace_id:
+      type: string
+      default: default

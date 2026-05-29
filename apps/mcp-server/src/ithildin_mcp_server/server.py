@@ -25,6 +25,7 @@ from ithildin_api.security_status import validate_security_settings
 from ithildin_api.storage import validate_storage_settings
 from ithildin_api.telemetry import configure_telemetry
 from ithildin_api.tool_calls import GovernedToolCallService
+from ithildin_api.workspaces import WorkspaceRegistry
 from ithildin_audit_core import AuditWriter
 from ithildin_schemas import JsonObject
 from mcp import types
@@ -147,6 +148,12 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         resolved_settings.principal_registry_path,
         require_registry=resolved_settings.require_known_principals,
     )
+    workspace_registry = WorkspaceRegistry.load(
+        resolved_settings.workspace_registry_path,
+        require_registry=resolved_settings.require_known_workspaces,
+        fallback_root=resolved_settings.workspace_root,
+        default_workspace_id=resolved_settings.default_workspace_id,
+    )
     policy_evaluator = load_policy_engine(resolved_settings)
     http_fetch_executor = HttpFetchExecutor.from_settings(
         http_allowlist=resolved_settings.http_allowlist,
@@ -163,6 +170,7 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         max_read_bytes=resolved_settings.max_read_bytes,
         search_result_limit=resolved_settings.search_result_limit,
         git_log_limit=resolved_settings.git_log_limit,
+        workspace_registry=workspace_registry,
     )
     patch_store = PatchProposalStore(resolved_settings.db_path)
     patch_store.initialize()
@@ -170,6 +178,8 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         patch_store,
         read_tool_executor.filesystem,
         resolved_settings.max_patch_bytes,
+        read_tool_executor.filesystems,
+        read_tool_executor.default_workspace_id,
     )
     tool_call_service = GovernedToolCallService(
         registry,

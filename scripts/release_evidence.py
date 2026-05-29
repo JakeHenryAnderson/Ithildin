@@ -22,6 +22,7 @@ from ithildin_api.registry import ToolRegistry
 from ithildin_api.security_status import security_status
 from ithildin_api.storage import storage_status
 from ithildin_api.telemetry import configure_telemetry
+from ithildin_api.workspaces import WorkspaceRegistry
 from ithildin_audit_core import AuditWriter, audit_signing_status
 
 PROJECT_MARKERS = (
@@ -66,6 +67,12 @@ def main() -> int:
         settings.principal_registry_path,
         require_registry=settings.require_known_principals,
     )
+    workspace_registry = WorkspaceRegistry.load(
+        settings.workspace_registry_path,
+        require_registry=settings.require_known_workspaces,
+        fallback_root=settings.workspace_root,
+        default_workspace_id=settings.default_workspace_id,
+    )
     policy = load_policy_engine(settings)
     audit_writer = AuditWriter(settings.db_path, settings.audit_log_path)
     manifest_lock_current = _manifest_lock_is_current(
@@ -108,6 +115,7 @@ def main() -> int:
             **principal_registry.status(),
             "required": settings.require_known_principals,
         },
+        "workspaces": workspace_registry.status(),
         "storage": storage_status(settings),
         "telemetry": configure_telemetry(settings).status(),
         "security": security_status(settings),

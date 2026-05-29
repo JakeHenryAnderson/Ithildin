@@ -42,6 +42,7 @@
 | 044 - Signed audit exports | Done | [signed-audit-exports.md](signed-audit-exports.md) |
 | 045 - Signed manifest locks | Done | [signed-manifest-locks.md](signed-manifest-locks.md) |
 | 046 - Policy test harness | Done | `policies/tests/default.yaml`, `scripts/policy_test.py` |
+| 047 - Named workspace model | Done | `workspaces/local.yaml`, `/workspaces` |
 
 ## Future Candidate Track
 
@@ -59,7 +60,7 @@
 
 Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
 after external public-preview review feedback is collected. The current seed prioritizes signed
-policy evidence, workspace modeling, approval review UX, policy
+policy evidence, approval review UX, policy
 diff/impact preview, and local admin-auth hardening.
 
 ## Definition of MVP Done
@@ -74,6 +75,7 @@ diff/impact preview, and local admin-auth hardening.
 - Path traversal, symlink escape, SSRF, approval replay, and invalid schema cases have tests.
 - Documentation explains the threat model and security limitations.
 - Principal registry and role-aware tool visibility are enabled for local preview.
+- Named workspace registry is enabled for scoped read, git, and patch proposal tools.
 - Static docs site generation exists for handoff review.
 - Public-preview warning labels, threat model links, MCP examples, and release notes are checked.
 - `make release-check` passes before local-preview handoff.

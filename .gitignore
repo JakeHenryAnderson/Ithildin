@@ -29,6 +29,7 @@ var/signatures/*
 !var/signatures/.gitkeep
 workspaces/*
 !workspaces/.gitkeep
+!workspaces/local.yaml
 
 # OS/editor
 .DS_Store

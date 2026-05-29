@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     opa_bundle_manifest_path: Path = Path("policies/opa/bundle.lock.json")
     approval_expiry_seconds: int = Field(default=900, gt=0)
     workspace_root: Path = Path("workspaces")
+    workspace_registry_path: Path = Path("workspaces/local.yaml")
+    require_known_workspaces: bool = True
+    default_workspace_id: str = "default"
     max_read_bytes: int = Field(default=131_072, gt=0)
     max_patch_bytes: int = Field(default=131_072, gt=0)
     http_allowlist: str = ""

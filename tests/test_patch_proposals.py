@@ -19,6 +19,30 @@ def make_service(tmp_path: Path, *, max_patch_bytes: int = 4096) -> PatchProposa
     return PatchProposalService(store, filesystem, max_patch_bytes)
 
 
+def make_multi_workspace_service(tmp_path: Path) -> PatchProposalService:
+    alpha = FilesystemReadTools(
+        workspace_root=tmp_path / "alpha",
+        max_read_bytes=4096,
+        search_result_limit=10,
+        workspace_id="alpha",
+    )
+    beta = FilesystemReadTools(
+        workspace_root=tmp_path / "beta",
+        max_read_bytes=4096,
+        search_result_limit=10,
+        workspace_id="beta",
+    )
+    store = PatchProposalStore(tmp_path / "ithildin.sqlite3")
+    store.initialize()
+    return PatchProposalService(
+        store,
+        alpha,
+        4096,
+        {"alpha": alpha, "beta": beta},
+        "alpha",
+    )
+
+
 def unified_diff(path: str, before: str, after: str) -> str:
     return "\n".join(
         difflib.unified_diff(
@@ -51,6 +75,7 @@ def test_valid_unified_diff_proposal_is_stored_with_stable_hash(tmp_path: Path) 
     )
 
     assert first.proposal_id.startswith("patch_")
+    assert first.workspace_id == "default"
     assert first.path == "README.md"
     assert first.status == "proposed"
     assert first.base_file_hash == second.base_file_hash
@@ -60,6 +85,33 @@ def test_valid_unified_diff_proposal_is_stored_with_stable_hash(tmp_path: Path) 
         first.proposal_id,
         second.proposal_id,
     ]
+
+
+def test_proposal_hash_and_storage_bind_workspace_id(tmp_path: Path) -> None:
+    service = make_multi_workspace_service(tmp_path)
+    for filesystem in service.filesystems.values():
+        filesystem.workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")
+    diff = unified_diff("README.md", "old\n", "new\n")
+
+    alpha = service.create_proposal(
+        request_id="req_1",
+        principal={"id": "agent:test"},
+        path="README.md",
+        unified_diff=diff,
+        workspace_id="alpha",
+    )
+    beta = service.create_proposal(
+        request_id="req_2",
+        principal={"id": "agent:test"},
+        path="README.md",
+        unified_diff=diff,
+        workspace_id="beta",
+    )
+
+    assert alpha.workspace_id == "alpha"
+    assert beta.workspace_id == "beta"
+    assert alpha.proposal_hash != beta.proposal_hash
+    assert service.get_proposal(beta.proposal_id).workspace_id == "beta"
 
 
 def test_invalid_patch_paths_are_denied(tmp_path: Path) -> None:

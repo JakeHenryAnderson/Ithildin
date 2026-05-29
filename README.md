@@ -91,6 +91,8 @@ The review console is served at `http://127.0.0.1:5173`.
 Docker is only used for the local demo stack; Kubernetes support is deferred.
 Tool manifests are hash-pinned by default; run `make manifest-lock` only after intentional
 manifest changes.
+Named workspaces are trusted local configuration in `workspaces/local.yaml`; read, git, and patch
+proposal tools accept optional `workspace_id` and default to `default`.
 Signed manifest locks are optional v0.2 local evidence. Run `make manifest-lock-keygen` and
 `make manifest-lock-sign`, then set `ITHILDIN_REQUIRE_SIGNED_MANIFEST_LOCK=true` only when you want
 startup to fail closed on missing or invalid local signature evidence. See

@@ -12,6 +12,7 @@ from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.storage import storage_status
 from ithildin_api.telemetry import Telemetry
+from ithildin_api.workspaces import WorkspaceRegistry
 
 __all__ = [
     "ApprovalService",
@@ -26,6 +27,7 @@ __all__ = [
     "Telemetry",
     "ReadToolExecutor",
     "ToolRegistry",
+    "WorkspaceRegistry",
     "__version__",
     "create_app",
     "storage_status",

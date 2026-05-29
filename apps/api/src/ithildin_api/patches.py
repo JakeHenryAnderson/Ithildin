@@ -35,6 +35,7 @@ class PatchProposal:
     proposal_id: str
     request_id: str
     principal: JsonObject
+    workspace_id: str
     path: str
     unified_diff: str
     base_file_hash: str
@@ -48,6 +49,7 @@ class PatchProposal:
         return {
             "proposal_id": self.proposal_id,
             "request_id": self.request_id,
+            "workspace_id": self.workspace_id,
             "path": self.path,
             "base_file_hash": self.base_file_hash,
             "proposal_hash": self.proposal_hash,
@@ -81,6 +83,7 @@ class PatchProposalStore:
                     proposal_id TEXT PRIMARY KEY,
                     request_id TEXT NOT NULL,
                     principal_json TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL DEFAULT 'default',
                     path TEXT NOT NULL,
                     unified_diff TEXT NOT NULL,
                     base_file_hash TEXT NOT NULL,
@@ -92,6 +95,15 @@ class PatchProposalStore:
                 )
                 """
             )
+            columns = {
+                str(row[1])
+                for row in connection.execute("PRAGMA table_info(patch_proposals)").fetchall()
+            }
+            if "workspace_id" not in columns:
+                connection.execute(
+                    "ALTER TABLE patch_proposals "
+                    "ADD COLUMN workspace_id TEXT NOT NULL DEFAULT 'default'"
+                )
             connection.commit()
 
     def create(self, proposal: PatchProposal) -> PatchProposal:
@@ -102,6 +114,7 @@ class PatchProposalStore:
                     proposal_id,
                     request_id,
                     principal_json,
+                    workspace_id,
                     path,
                     unified_diff,
                     base_file_hash,
@@ -111,12 +124,13 @@ class PatchProposalStore:
                     updated_at,
                     metadata_json
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     proposal.proposal_id,
                     proposal.request_id,
                     canonical_json(proposal.principal),
+                    proposal.workspace_id,
                     proposal.path,
                     proposal.unified_diff,
                     proposal.base_file_hash,
@@ -138,6 +152,7 @@ class PatchProposalStore:
                     proposal_id,
                     request_id,
                     principal_json,
+                    workspace_id,
                     path,
                     unified_diff,
                     base_file_hash,
@@ -160,6 +175,7 @@ class PatchProposalStore:
                     proposal_id,
                     request_id,
                     principal_json,
+                    workspace_id,
                     path,
                     unified_diff,
                     base_file_hash,
@@ -200,9 +216,13 @@ class PatchProposalService:
         store: PatchProposalStore,
         filesystem: FilesystemReadTools,
         max_patch_bytes: int,
+        filesystems: dict[str, FilesystemReadTools] | None = None,
+        default_workspace_id: str | None = None,
     ) -> None:
         self.store = store
         self.filesystem = filesystem
+        self.filesystems = filesystems or {filesystem.workspace_id: filesystem}
+        self.default_workspace_id = default_workspace_id or filesystem.workspace_id
         self.max_patch_bytes = max_patch_bytes
 
     def create_proposal(
@@ -212,23 +232,25 @@ class PatchProposalService:
         principal: JsonObject,
         path: str,
         unified_diff: str,
+        workspace_id: str | None = None,
     ) -> PatchProposal:
         if len(unified_diff.encode("utf-8")) > self.max_patch_bytes:
             raise PatchProposalError("patch exceeds configured size limit")
 
+        filesystem = self._filesystem(workspace_id)
         try:
-            target = self.filesystem.resolve_existing_path(path)
+            target = filesystem.resolve_existing_path(path)
         except ReadToolError as exc:
             raise PatchProposalError(exc.reason) from exc
         if not target.is_file():
             raise PatchProposalError("patch target is not a file")
 
         try:
-            current_content = self.filesystem.read_text_file(target)
+            current_content = filesystem.read_text_file(target)
         except ReadToolError as exc:
             raise PatchProposalError(exc.reason) from exc
 
-        normalized_path = self.filesystem.relative_path(target)
+        normalized_path = filesystem.relative_path(target)
         normalized_diff = normalize_unified_diff(unified_diff)
         validate_unified_diff(
             target_path=normalized_path,
@@ -238,6 +260,7 @@ class PatchProposalService:
         base_file_hash = sha256_digest(current_content)
         proposal_hash = sha256_digest(
             {
+                "workspace_id": filesystem.workspace_id,
                 "path": normalized_path,
                 "unified_diff": normalized_diff,
                 "base_file_hash": base_file_hash,
@@ -248,6 +271,7 @@ class PatchProposalService:
             proposal_id=_new_id("patch"),
             request_id=request_id,
             principal=principal,
+            workspace_id=filesystem.workspace_id,
             path=normalized_path,
             unified_diff=normalized_diff,
             base_file_hash=base_file_hash,
@@ -291,6 +315,7 @@ class PatchProposalService:
                 "proposal_id": proposal.proposal_id,
                 "proposal_hash": proposal.proposal_hash,
                 "base_file_hash": proposal.base_file_hash,
+                "workspace_id": proposal.workspace_id,
                 "path": proposal.path,
                 "manifest_hash": manifest_hash,
                 "manifest_version": manifest_version,
@@ -396,6 +421,7 @@ class PatchProposalService:
         proposal_hash = _scope_string(scope, "proposal_hash")
         base_file_hash = _scope_string(scope, "base_file_hash")
         path = _scope_string(scope, "path")
+        workspace_id = _scope_string(scope, "workspace_id")
         proposal = self.get_proposal(proposal_id)
         if proposal.status != "proposed":
             raise PatchProposalError(f"patch proposal is not proposed: {proposal.status}")
@@ -403,16 +429,19 @@ class PatchProposalService:
             raise PatchProposalError("patch proposal hash mismatch")
         if proposal.base_file_hash != base_file_hash:
             raise PatchProposalError("patch proposal base hash mismatch")
+        if proposal.workspace_id != workspace_id:
+            raise PatchProposalError("patch proposal workspace mismatch")
         if proposal.path != path:
             raise PatchProposalError("patch proposal path mismatch")
         return proposal
 
     def _apply_proposal(self, proposal: PatchProposal) -> None:
-        target = self.filesystem.resolve_existing_path(proposal.path)
+        filesystem = self._filesystem(proposal.workspace_id)
+        target = filesystem.resolve_existing_path(proposal.path)
         if not target.is_file():
             raise PatchProposalError("patch target is not a file")
         try:
-            current_content = self.filesystem.read_text_file(target)
+            current_content = filesystem.read_text_file(target)
         except ReadToolError as exc:
             raise PatchProposalError(exc.reason) from exc
         current_hash = sha256_digest(current_content)
@@ -420,6 +449,13 @@ class PatchProposalService:
             raise PatchProposalError("patch target has changed since proposal")
         patched_content = apply_unified_diff(current_content, proposal.unified_diff)
         _atomic_write_text(target, patched_content)
+
+    def _filesystem(self, workspace_id: str | None) -> FilesystemReadTools:
+        resolved_id = workspace_id or self.default_workspace_id
+        try:
+            return self.filesystems[resolved_id]
+        except KeyError as exc:
+            raise PatchProposalError(f"unknown workspace: {resolved_id}") from exc
 
 
 def normalize_unified_diff(unified_diff: str) -> str:
@@ -497,14 +533,15 @@ def _proposal_from_row(row: tuple[object, ...]) -> PatchProposal:
         proposal_id=str(row[0]),
         request_id=str(row[1]),
         principal=json.loads(str(row[2])),
-        path=str(row[3]),
-        unified_diff=str(row[4]),
-        base_file_hash=str(row[5]),
-        proposal_hash=str(row[6]),
-        status=str(row[7]),
-        created_at=datetime.fromisoformat(str(row[8])),
-        updated_at=datetime.fromisoformat(str(row[9])),
-        metadata=json.loads(str(row[10])),
+        workspace_id=str(row[3]),
+        path=str(row[4]),
+        unified_diff=str(row[5]),
+        base_file_hash=str(row[6]),
+        proposal_hash=str(row[7]),
+        status=str(row[8]),
+        created_at=datetime.fromisoformat(str(row[9])),
+        updated_at=datetime.fromisoformat(str(row[10])),
+        metadata=json.loads(str(row[11])),
     )
 
 

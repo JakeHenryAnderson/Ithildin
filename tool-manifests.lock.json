@@ -3,7 +3,7 @@
   "manifest_dir": "tool-manifests",
   "manifests": [
     {
-      "manifest_hash": "sha256:81ebf6b0064cd8c405baf08b96a161ed7f1018467b9d506c4cff4289262104a8",
+      "manifest_hash": "sha256:f306e6ef95c30d9a166edf7643330217b86ca5d5eca2ed0c48faedc420b8b028",
       "name": "fs.list",
       "path": "tool-manifests/fs-list.yaml",
       "version": "0.1.0"
@@ -15,43 +15,43 @@
       "version": "0.1.0"
     },
     {
-      "manifest_hash": "sha256:2dc7abbcc11cb2e163d7a83f2778a042d7b2e186434404ec5ddc422993d59206",
+      "manifest_hash": "sha256:7abcbfd7fd8ea7d063f3ffb581611fa986dbf00611d97563426a30b1ebd3763f",
       "name": "fs.patch.propose",
       "path": "tool-manifests/fs-patch-propose.yaml",
       "version": "0.1.0"
     },
     {
-      "manifest_hash": "sha256:8cfaa42c9ee8a0c55afb322acf653a1d23f73ab7d393151b958721963999302a",
+      "manifest_hash": "sha256:cfe3d89e0c45f9c644b7bf8106b50d57e196aa479fdb904670307bc54052d59a",
       "name": "fs.read",
       "path": "tool-manifests/fs-read.yaml",
       "version": "0.1.0"
     },
     {
-      "manifest_hash": "sha256:3e59091f8a010a48c1fecfa34de0496392eaa765392a4de5f2d3f01b3c3e7dab",
+      "manifest_hash": "sha256:5b3b06c0ebb71bce5e746805f862fa8e6ab0b8c39b03481545d49fe1e43d18e1",
       "name": "fs.search",
       "path": "tool-manifests/fs-search.yaml",
       "version": "0.1.0"
     },
     {
-      "manifest_hash": "sha256:4dae6ebce6bcf64874103c4adf29a835b95aad64316c68c4dd66143f40295758",
+      "manifest_hash": "sha256:f0490aaf5f4efa75fd165fa50fa89c3a9160648ae1197df989f78e9cc5799f3c",
       "name": "fs.stat",
       "path": "tool-manifests/fs-stat.yaml",
       "version": "0.1.0"
     },
     {
-      "manifest_hash": "sha256:100c8299c9a50b5286ec400988b47cf94f1cad33e3eb365eaf87db07e6dc5fc5",
+      "manifest_hash": "sha256:c2ae28f70b69a3746ba7cdce6865792e3ec69cbb720414b9312aabd8a3ebf973",
       "name": "git.diff",
       "path": "tool-manifests/git-diff.yaml",
       "version": "0.1.0"
     },
     {
-      "manifest_hash": "sha256:b07745f67390fefcb3afd136eade16defc8e8eb3d8805bbf5e147c67a32b54c8",
+      "manifest_hash": "sha256:063af7771e65982c73224e535f3a0fc2d4e6d15cfdbf3e6bb7beb2aed0c5d9f0",
       "name": "git.log",
       "path": "tool-manifests/git-log.yaml",
       "version": "0.1.0"
     },
     {
-      "manifest_hash": "sha256:51a4d948dc5d9351b02f0734bed689636124ed2d0f8f691d32c0fe71c21171b1",
+      "manifest_hash": "sha256:76acc36b2acf49c0b4de73c4191eafa45693f19dae6448b60ae0187f553b20d6",
       "name": "git.status",
       "path": "tool-manifests/git-status.yaml",
       "version": "0.1.0"

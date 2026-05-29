@@ -53,6 +53,7 @@ from ithildin_api.security_status import (
 )
 from ithildin_api.storage import storage_status, validate_storage_settings
 from ithildin_api.telemetry import Telemetry, configure_telemetry, safe_span_attributes
+from ithildin_api.workspaces import WorkspaceRegistry
 
 SERVICE_NAME = "ithildin-api"
 
@@ -94,9 +95,16 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 resolved_settings.principal_registry_path,
                 require_registry=resolved_settings.require_known_principals,
             )
+            workspace_registry = WorkspaceRegistry.load(
+                resolved_settings.workspace_registry_path,
+                require_registry=resolved_settings.require_known_workspaces,
+                fallback_root=resolved_settings.workspace_root,
+                default_workspace_id=resolved_settings.default_workspace_id,
+            )
             policy_evaluator = load_policy_engine(resolved_settings)
             app_instance.state.registry = registry
             app_instance.state.principal_registry = principal_registry
+            app_instance.state.workspace_registry = workspace_registry
             app_instance.state.policy_evaluator = policy_evaluator
             http_fetch_executor = HttpFetchExecutor.from_settings(
                 http_allowlist=resolved_settings.http_allowlist,
@@ -121,6 +129,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 max_read_bytes=resolved_settings.max_read_bytes,
                 search_result_limit=resolved_settings.search_result_limit,
                 git_log_limit=resolved_settings.git_log_limit,
+                workspace_registry=workspace_registry,
             )
             app_instance.state.read_tool_executor = read_tool_executor
             patch_store = PatchProposalStore(resolved_settings.db_path)
@@ -129,6 +138,8 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 patch_store,
                 read_tool_executor.filesystem,
                 resolved_settings.max_patch_bytes,
+                read_tool_executor.filesystems,
+                read_tool_executor.default_workspace_id,
             )
             app_instance.state.tool_call_telemetry = telemetry
         logging.getLogger(__name__).info("api service started")
@@ -156,6 +167,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         settings_state = cast(Settings, api.state.settings)
         registry = cast(ToolRegistry, api.state.registry)
         principal_registry = cast(PrincipalRegistry, api.state.principal_registry)
+        workspace_registry = cast(WorkspaceRegistry, api.state.workspace_registry)
         policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         telemetry = cast(Telemetry, api.state.telemetry)
@@ -180,6 +192,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     **principal_registry.status(),
                     "required": settings_state.require_known_principals,
                 },
+                "workspaces": workspace_registry.status(),
                 "storage": storage_status(settings_state),
                 "security": security_status(settings_state),
                 "telemetry": telemetry.status(),
@@ -241,6 +254,15 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             return principal_registry.get(principal_id).safe_summary()
         except PrincipalRegistryError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @api.get("/workspaces", dependencies=[Depends(require_admin_token)])
+    def list_workspaces() -> dict[str, list[JsonObject]]:
+        workspace_registry = cast(WorkspaceRegistry, api.state.workspace_registry)
+        return {
+            "workspaces": [
+                workspace.safe_summary() for workspace in workspace_registry.list_workspaces()
+            ]
+        }
 
     @api.post("/policy/preview", dependencies=[Depends(require_admin_token)])
     def preview_policy(payload: PolicyPreviewPayload) -> JsonObject:

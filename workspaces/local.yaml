@@ -1,0 +1,15 @@
+version: local-workspaces-v1
+default_workspace_id: default
+workspaces:
+  - id: default
+    root: workspaces
+    display_name: Default workspace
+    enabled: true
+    metadata:
+      purpose: local-preview
+  - id: demo
+    root: workspaces/demo
+    display_name: Demo workspace
+    enabled: true
+    metadata:
+      purpose: compose-demo

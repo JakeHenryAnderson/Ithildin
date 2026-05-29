@@ -85,6 +85,7 @@ def test_api_public_exports() -> None:
         "Settings",
         "Telemetry",
         "ToolRegistry",
+        "WorkspaceRegistry",
         "create_app",
         "storage_status",
     ]:

@@ -14,3 +14,6 @@ input_schema:
     path:
       type: string
       default: "."
+    workspace_id:
+      type: string
+      default: default

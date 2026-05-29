@@ -190,6 +190,13 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
     assert payload["principals"]["required"] is True
     assert payload["principals"]["count"] >= 1
     assert payload["principals"]["enabled_count"] >= 1
+    assert payload["workspaces"] == {
+        "required": True,
+        "path": settings.workspace_registry_path.as_posix(),
+        "default_workspace_id": "default",
+        "count": 1,
+        "enabled_count": 1,
+    }
     assert payload["storage"]["runtime_backend"] == "sqlite"
     assert payload["storage"]["sqlite"]["runtime_enabled"] is True
     assert payload["storage"]["postgres"]["runtime_enabled"] is False
@@ -248,6 +255,28 @@ def test_unknown_principal_endpoint_returns_404(tmp_path: Path) -> None:
 
     assert response.status_code == 404
     assert "unknown principal" in response.json()["detail"]
+
+
+def test_workspace_endpoint_requires_auth_and_returns_records(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        unauthenticated = client.get("/workspaces")
+        response = client.get(
+            "/workspaces",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert response.status_code == 200
+    assert response.json()["workspaces"] == [
+        {
+            "id": "default",
+            "display_name": "Default workspace",
+            "enabled": True,
+            "metadata": {},
+        }
+    ]
 
 
 def test_sample_admin_token_requires_explicit_demo_flag(tmp_path: Path) -> None:
@@ -360,6 +389,17 @@ def test_app_startup_requires_principal_registry_when_configured(tmp_path: Path)
     app = create_app(settings)
 
     with pytest.raises(RuntimeError, match="principal registry not found"):
+        with TestClient(app):
+            pass
+
+
+def test_app_startup_requires_workspace_registry_when_configured(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    settings.workspace_registry_path = tmp_path / "missing-workspaces.yaml"
+    settings.require_known_workspaces = True
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError, match="workspace registry not found"):
         with TestClient(app):
             pass
 

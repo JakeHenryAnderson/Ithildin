@@ -12,6 +12,8 @@ from typing import Optional
 
 from ithildin_schemas import JsonObject, JsonValue
 
+from ithildin_api.workspaces import WorkspaceRegistry
+
 READ_TOOL_NAMES = frozenset(
     {
         "fs.list",
@@ -43,6 +45,9 @@ class GitOutput:
 class ReadToolExecutor:
     filesystem: FilesystemReadTools
     git: GitReadTools
+    filesystems: dict[str, FilesystemReadTools]
+    git_tools: dict[str, GitReadTools]
+    default_workspace_id: str
 
     @classmethod
     def from_settings(
@@ -52,50 +57,109 @@ class ReadToolExecutor:
         max_read_bytes: int,
         search_result_limit: int,
         git_log_limit: int,
+        workspace_registry: WorkspaceRegistry | None = None,
     ) -> ReadToolExecutor:
-        filesystem = FilesystemReadTools(
-            workspace_root=workspace_root,
-            max_read_bytes=max_read_bytes,
-            search_result_limit=search_result_limit,
-        )
-        return cls(
-            filesystem=filesystem,
-            git=GitReadTools(
+        if workspace_registry is None:
+            default_workspace_id = "default"
+            filesystem = FilesystemReadTools(
+                workspace_root=workspace_root,
+                max_read_bytes=max_read_bytes,
+                search_result_limit=search_result_limit,
+                workspace_id=default_workspace_id,
+            )
+            git = GitReadTools(
                 filesystem=filesystem,
                 max_output_bytes=max_read_bytes,
                 git_log_limit=git_log_limit,
-            ),
+            )
+            return cls(
+                filesystem=filesystem,
+                git=git,
+                filesystems={default_workspace_id: filesystem},
+                git_tools={default_workspace_id: git},
+                default_workspace_id=default_workspace_id,
+            )
+
+        filesystems: dict[str, FilesystemReadTools] = {}
+        git_tools: dict[str, GitReadTools] = {}
+        for workspace in workspace_registry.list_workspaces():
+            if not workspace.enabled:
+                continue
+            _, root = workspace_registry.resolve_active(workspace.id)
+            workspace_filesystem = FilesystemReadTools(
+                workspace_root=root,
+                max_read_bytes=max_read_bytes,
+                search_result_limit=search_result_limit,
+                workspace_id=workspace.id,
+            )
+            filesystems[workspace.id] = workspace_filesystem
+            git_tools[workspace.id] = GitReadTools(
+                filesystem=workspace_filesystem,
+                max_output_bytes=max_read_bytes,
+                git_log_limit=git_log_limit,
+            )
+
+        default_workspace_id = workspace_registry.default_workspace_id
+        filesystem = filesystems[default_workspace_id]
+        return cls(
+            filesystem=filesystem,
+            git=git_tools[default_workspace_id],
+            filesystems=filesystems,
+            git_tools=git_tools,
+            default_workspace_id=default_workspace_id,
         )
 
     def supports(self, tool_name: str) -> bool:
         return tool_name in READ_TOOL_NAMES
 
     def execute(self, tool_name: str, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        filesystem = self._filesystem(workspace_id)
+        git = self._git(workspace_id)
         if tool_name == "fs.list":
-            return self.filesystem.list_path(_string_arg(arguments, "path", default="."))
+            return filesystem.list_path(_string_arg(arguments, "path", default="."))
         if tool_name == "fs.stat":
-            return self.filesystem.stat_path(_string_arg(arguments, "path"))
+            return filesystem.stat_path(_string_arg(arguments, "path"))
         if tool_name == "fs.read":
-            return self.filesystem.read_file(_string_arg(arguments, "path"))
+            return filesystem.read_file(_string_arg(arguments, "path"))
         if tool_name == "fs.search":
-            return self.filesystem.search(
+            return filesystem.search(
                 path=_string_arg(arguments, "path", default="."),
                 query=_string_arg(arguments, "query"),
             )
         if tool_name == "git.status":
-            return self.git.status(_string_arg(arguments, "path", default="."))
+            return git.status(_string_arg(arguments, "path", default="."))
         if tool_name == "git.diff":
-            return self.git.diff(_string_arg(arguments, "path", default="."))
+            return git.diff(_string_arg(arguments, "path", default="."))
         if tool_name == "git.log":
-            return self.git.log(
+            return git.log(
                 path=_string_arg(arguments, "path", default="."),
-                limit=_int_arg(arguments, "limit", default=self.git.git_log_limit),
+                limit=_int_arg(arguments, "limit", default=git.git_log_limit),
             )
         raise ReadToolError("unsupported read tool")
 
+    def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
+        try:
+            return self.filesystems[workspace_id]
+        except KeyError as exc:
+            raise ReadToolError(f"unknown workspace: {workspace_id}") from exc
+
+    def _git(self, workspace_id: str) -> GitReadTools:
+        try:
+            return self.git_tools[workspace_id]
+        except KeyError as exc:
+            raise ReadToolError(f"unknown workspace: {workspace_id}") from exc
+
 
 class FilesystemReadTools:
-    def __init__(self, workspace_root: Path, max_read_bytes: int, search_result_limit: int) -> None:
+    def __init__(
+        self,
+        workspace_root: Path,
+        max_read_bytes: int,
+        search_result_limit: int,
+        workspace_id: str = "default",
+    ) -> None:
+        self.workspace_id = workspace_id
         self.workspace_root = workspace_root.resolve(strict=False)
         self.workspace_root.mkdir(parents=True, exist_ok=True)
         self.max_read_bytes = max_read_bytes
@@ -113,7 +177,11 @@ class FilesystemReadTools:
             except ReadToolError:
                 continue
             entries.append(self._metadata(allowed_child))
-        return {"path": self.relative_path(target), "entries": entries}
+        return {
+            "workspace_id": self.workspace_id,
+            "path": self.relative_path(target),
+            "entries": entries,
+        }
 
     def stat_path(self, path: str) -> JsonObject:
         return self._metadata(self.resolve_existing_path(path))
@@ -122,6 +190,7 @@ class FilesystemReadTools:
         target = self.resolve_existing_path(path)
         content = self.read_text_file(target)
         return {
+            "workspace_id": self.workspace_id,
             "path": self.relative_path(target),
             "content": content,
             "byte_count": len(content.encode("utf-8")),
@@ -152,6 +221,7 @@ class FilesystemReadTools:
                 continue
 
         return {
+            "workspace_id": self.workspace_id,
             "path": self.relative_path(target),
             "query": query,
             "matches": matches[: self.search_result_limit],
@@ -273,6 +343,7 @@ class GitReadTools:
         status_lines: list[JsonValue] = []
         status_lines.extend(output.text.splitlines())
         return {
+            "workspace_id": self.filesystem.workspace_id,
             "path": self.filesystem.relative_path(repo),
             "status": status_lines,
             "truncated": output.truncated,
@@ -282,6 +353,7 @@ class GitReadTools:
         repo = self._repo_path(path)
         output = self._run_git(repo, ["diff", "--no-ext-diff", "--"])
         return {
+            "workspace_id": self.filesystem.workspace_id,
             "path": self.filesystem.relative_path(repo),
             "diff": output.text,
             "truncated": output.truncated,
@@ -292,6 +364,7 @@ class GitReadTools:
         bounded_limit = max(1, min(limit, self.git_log_limit))
         output = self._run_git(repo, ["log", "--oneline", "-n", str(bounded_limit)])
         return {
+            "workspace_id": self.filesystem.workspace_id,
             "path": self.filesystem.relative_path(repo),
             "commits": _git_log_lines(output.text),
             "truncated": output.truncated,
@@ -333,6 +406,13 @@ def _string_arg(arguments: JsonObject, name: str, *, default: Optional[str] = No
     value = arguments.get(name, default)
     if not isinstance(value, str):
         raise ReadToolError(f"{name} must be a string")
+    return value
+
+
+def _workspace_id_arg(arguments: JsonObject, default: str) -> str:
+    value = arguments.get("workspace_id", default)
+    if not isinstance(value, str) or not value:
+        raise ReadToolError("workspace_id must be a non-empty string")
     return value
 
 

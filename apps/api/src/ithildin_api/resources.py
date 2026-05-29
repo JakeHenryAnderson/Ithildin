@@ -25,4 +25,6 @@ def resource_from_arguments(
     if "path" in arguments:
         resource["path"] = arguments["path"]
         resource["type"] = "file"
+    if "workspace_id" in arguments:
+        resource["workspace_id"] = arguments["workspace_id"]
     return resource

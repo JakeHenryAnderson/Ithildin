@@ -320,6 +320,7 @@ class GovernedToolCallService:
                             "tool_name": tool_name,
                             "proposal_id": one_time_scope["proposal_id"],
                             "proposal_hash": one_time_scope["proposal_hash"],
+                            "workspace_id": one_time_scope["workspace_id"],
                             "path": one_time_scope["path"],
                             "summary": approval.summary,
                             "expires_at": approval.expires_at.isoformat(),
@@ -388,6 +389,7 @@ class GovernedToolCallService:
                         principal=principal,
                         path=_string_argument(arguments, "path"),
                         unified_diff=_string_argument(arguments, "unified_diff"),
+                        workspace_id=_optional_string_argument(arguments, "workspace_id"),
                     )
             except PatchProposalError as exc:
                 redacted = self._redact_content(
@@ -427,6 +429,7 @@ class GovernedToolCallService:
                         "executor": "patch_proposal",
                         "proposal_id": proposal.proposal_id,
                         "proposal_hash": proposal.proposal_hash,
+                        "workspace_id": proposal.workspace_id,
                     },
                     redacted.summary,
                 ),
@@ -692,6 +695,7 @@ class GovernedToolCallService:
             "approval_id": approval_id,
             "proposal_id": proposal.proposal_id,
             "proposal_hash": proposal.proposal_hash,
+            "workspace_id": proposal.workspace_id,
             "path": proposal.path,
             "proposal_status": proposal.status,
         }
@@ -711,6 +715,7 @@ class GovernedToolCallService:
                     "proposal_id": proposal.proposal_id,
                     "proposal_hash": proposal.proposal_hash,
                     "base_file_hash": proposal.base_file_hash,
+                    "workspace_id": proposal.workspace_id,
                     "manifest_hash": manifest_hash,
                     "manifest_version": manifest_version,
                     "policy_hash": policy_hash,
@@ -794,4 +799,13 @@ def _string_argument(arguments: JsonObject, name: str) -> str:
     value = arguments.get(name)
     if not isinstance(value, str):
         raise PatchProposalError(f"{name} must be a string")
+    return value
+
+
+def _optional_string_argument(arguments: JsonObject, name: str) -> str | None:
+    value = arguments.get(name)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value:
+        raise PatchProposalError(f"{name} must be a non-empty string")
     return value

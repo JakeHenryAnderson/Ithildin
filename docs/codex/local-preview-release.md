@@ -29,6 +29,8 @@ For public-preview wording, also read
   `tool-manifests.lock.json`.
 - After intentional manifest edits, run `make manifest-lock`, review the lockfile diff, then run
   `make manifest-lock-check`.
+- Named workspaces live in trusted local config at `workspaces/local.yaml`; read, git, and patch
+  proposal tools default to workspace `default` unless `workspace_id` is provided.
 - Optional local manifest-lock signatures can be created with `make manifest-lock-keygen` and
   `make manifest-lock-sign`; see [Signed Manifest Locks](signed-manifest-locks.md).
 - YAML policy is the default engine through `policies/default.yaml`.
@@ -63,6 +65,7 @@ The local console shows:
 ## Safety Boundaries
 
 - Read tools are scoped to the configured workspace root.
+- Named workspace roots are still local trusted roots; they clarify scope, not OS isolation.
 - Patch application is stored-proposal-only and approval-gated.
 - HTTP fetch is GET-only, allowlisted, and blocks non-global/private destinations.
 - Filesystem and patch executors reject symlinks, hidden/sensitive paths, binary targets, ambiguous
