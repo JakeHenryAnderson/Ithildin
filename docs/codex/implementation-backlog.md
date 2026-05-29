@@ -57,6 +57,7 @@
 | 059 - v0.2 roadmap refresh | Done | [v0.2-planning-seed.md](v0.2-planning-seed.md) |
 | 060 - Release packet evidence | Done | `make release-packet`, `scripts/release_packet.py` |
 | 061 - v0.2 review packet | Done | [v0.2-review-packet.md](v0.2-review-packet.md) |
+| 062 - Review response cleanup | Done | [v0.2-review-response-and-rc-cleanup.md](v0.2-review-response-and-rc-cleanup.md) |
 
 ## Future Candidate Track
 
@@ -72,7 +73,8 @@
 
 ## v0.2 Planning Seed
 
-Use [v0.2-review-packet.md](v0.2-review-packet.md) as the external/code review handoff and
+Use [v0.2-review-response-and-rc-cleanup.md](v0.2-review-response-and-rc-cleanup.md) and
+[v0.2-review-packet.md](v0.2-review-packet.md) as the external/code review handoff, with
 [v0.2-planning-seed.md](v0.2-planning-seed.md) as the completed trust-focused v0.2 roadmap. The
 current track has completed trust-evidence,
 policy-confidence, workspace/approval UX, local-operations polish, evidence-clarity, and

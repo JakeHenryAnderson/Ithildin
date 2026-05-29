@@ -41,3 +41,4 @@ def test_build_site_creates_index_and_pages(tmp_path: Path) -> None:
 
 def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v0.2-review-packet.md" in DEFAULT_DOCS
+    assert "docs/codex/v0.2-review-response-and-rc-cleanup.md" in DEFAULT_DOCS
