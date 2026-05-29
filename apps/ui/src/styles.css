@@ -318,6 +318,45 @@ h3 {
   border-bottom: 0;
 }
 
+.evidence-block {
+  border: 1px solid #dce5e0;
+  background: #f8faf9;
+  padding: 10px;
+}
+
+.evidence-block h4 {
+  color: #314239;
+  font-size: 0.76rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.evidence-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.evidence-grid div {
+  min-width: 0;
+}
+
+.evidence-grid dt {
+  color: #66776e;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.evidence-grid dd {
+  color: #1c2a23;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .item-heading,
 .diff-heading {
   align-items: start;

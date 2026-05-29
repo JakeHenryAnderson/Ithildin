@@ -775,6 +775,7 @@ export function App() {
                       <dd>{formatDate(approval.expires_at)}</dd>
                     </div>
                   </dl>
+                  <ApprovalEvidence approval={approval} />
                   <div className="decision-row">
                     <input
                       aria-label={`Deny reason for ${approval.approval_id}`}
@@ -933,6 +934,45 @@ function StatusPill({ status }: { status: string }) {
   return <span className={`status-pill status-${status}`}>{status}</span>;
 }
 
+function ApprovalEvidence({ approval }: { approval: Approval }) {
+  const scope = approval.one_time_scope;
+  const evidence = [
+    ["Proposal", scopeString(scope, "proposal_id")],
+    ["Proposal hash", scopeString(scope, "proposal_hash")],
+    ["Base hash", scopeString(scope, "base_file_hash")],
+    ["Target", scopeString(scope, "path")],
+    ["Manifest hash", scopeString(scope, "manifest_hash")],
+    ["Manifest version", scopeString(scope, "manifest_version")],
+    ["Policy engine", scopeString(scope, "policy_engine")],
+    ["Policy hash", scopeString(scope, "policy_hash")],
+    ["Policy version", scopeString(scope, "policy_version")],
+    ["Policy doc", scopeString(scope, "policy_document_version")],
+    ["Matched rules", scopeList(scope, "matched_rules").join(", ")],
+    ["Principal", formatJsonCompact(scopeObject(scope, "requesting_principal") ?? approval.principal)],
+    ["Request hash", scopeString(scope, "request_hash") || approval.request_hash],
+    ["Expires", scopeString(scope, "expires_at") || approval.expires_at],
+    ["Input schema", scopeString(scope, "tool_input_schema_hash")],
+  ].filter((entry): entry is [string, string] => Boolean(entry[1]));
+
+  if (evidence.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="evidence-block" aria-label={`Approval evidence for ${approval.approval_id}`}>
+      <h4>Binding Evidence</h4>
+      <dl className="evidence-grid">
+        {evidence.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd title={value}>{formatEvidenceValue(value)}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
 async function apiRequest<T>(
   path: string,
   token: string,
@@ -969,6 +1009,37 @@ function parseJsonObject(raw: string, label: string): JsonObject {
 
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function scopeString(scope: JsonObject, key: string) {
+  const value = scope[key];
+  return typeof value === "string" ? value : "";
+}
+
+function scopeList(scope: JsonObject, key: string) {
+  const value = scope[key];
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+    ? value
+    : [];
+}
+
+function scopeObject(scope: JsonObject, key: string) {
+  const value = scope[key];
+  return isJsonObject(value) ? value : null;
+}
+
+function formatJsonCompact(value: JsonObject) {
+  return JSON.stringify(value);
+}
+
+function formatEvidenceValue(value: string) {
+  if (value.startsWith("sha256:")) {
+    return shortHash(value);
+  }
+  if (value.length > 42) {
+    return `${value.slice(0, 24)}...${value.slice(-12)}`;
+  }
+  return value;
 }
 
 function errorMessage(caught: unknown) {
