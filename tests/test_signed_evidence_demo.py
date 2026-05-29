@@ -1,0 +1,53 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import cast
+
+from ithildin_api.manifest_lock import verify_manifest_lock_signature
+from ithildin_audit_core import verify_signed_audit_export_bundle
+from ithildin_schemas import JsonObject
+
+from scripts.signed_evidence_demo import build_demo
+
+
+def test_signed_evidence_demo_generates_and_verifies(tmp_path: Path) -> None:
+    lock_path = Path("tool-manifests.lock.json")
+
+    summary = build_demo(output_dir=tmp_path / "demo", lock_path=lock_path)
+
+    audit = cast(JsonObject, summary["audit"])
+    manifest_lock = cast(JsonObject, summary["manifest_lock"])
+    assert audit["verified"] is True
+    assert audit["tampered_verified"] is False
+    assert manifest_lock["verified"] is True
+    assert Path(str(audit["signed_bundle_path"])).exists()
+    assert Path(str(audit["tampered_bundle_path"])).exists()
+    assert Path(str(manifest_lock["signature_path"])).exists()
+    assert (tmp_path / "demo/SIGNED_EVIDENCE_DEMO.md").exists()
+
+    signed_bundle = cast(
+        JsonObject,
+        json.loads(Path(str(audit["signed_bundle_path"])).read_text(encoding="utf-8")),
+    )
+    audit_public_key = tmp_path / "demo/keys/audit-demo-ed25519-public.pem"
+    assert verify_signed_audit_export_bundle(
+        signed_bundle,
+        public_key_path=audit_public_key,
+    ).valid
+    assert verify_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=Path(str(manifest_lock["signature_path"])),
+        public_key_path=tmp_path / "demo/keys/manifest-lock-demo-ed25519-public.pem",
+    ).valid
+
+
+def test_signed_evidence_demo_keeps_key_material_in_ignored_demo_path(tmp_path: Path) -> None:
+    lock_path = Path("tool-manifests.lock.json")
+
+    summary = build_demo(output_dir=tmp_path / "var/review-packets/v0.2/demo", lock_path=lock_path)
+
+    output_dir = Path(str(summary["output_dir"]))
+    private_keys = sorted(output_dir.rglob("*private.pem"))
+    assert private_keys
+    assert all("var/review-packets/v0.2" in path.as_posix() for path in private_keys)
