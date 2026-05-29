@@ -39,6 +39,7 @@ from ithildin_api.logging import configure_logging
 from ithildin_api.manifest_lock import manifest_lock_signature_status
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
 from ithildin_api.policy import load_policy_engine
+from ithildin_api.policy_impact import PolicyImpactError, PolicyImpactService
 from ithildin_api.policy_preview import (
     DEFAULT_PREVIEW_SESSION_ID,
     PolicyPreviewService,
@@ -123,6 +124,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 policy_evaluator,
                 http_fetch_executor.allowlist,
                 principal_registry,
+            )
+            app_instance.state.policy_impact_service = PolicyImpactService(
+                current_policy_path=resolved_settings.policy_path,
+                tests_path=resolved_settings.policy_tests_path,
             )
             read_tool_executor = ReadToolExecutor.from_settings(
                 workspace_root=resolved_settings.workspace_root,
@@ -279,6 +284,14 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
         return policy_evaluator.status()
 
+    @api.post("/policy/impact-preview", dependencies=[Depends(require_admin_token)])
+    def preview_policy_impact(payload: PolicyImpactPreviewPayload) -> JsonObject:
+        impact_service = cast(PolicyImpactService, api.state.policy_impact_service)
+        try:
+            return impact_service.preview_candidate_yaml(payload.candidate_policy_yaml)
+        except PolicyImpactError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     @api.get("/patch-proposals", dependencies=[Depends(require_admin_token)])
     def list_patch_proposals() -> dict[str, list[JsonObject]]:
         patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
@@ -412,6 +425,10 @@ class PolicyPreviewPayload(BaseModel):
     arguments: JsonObject
     principal: Optional[JsonObject] = None
     session_id: str = DEFAULT_PREVIEW_SESSION_ID
+
+
+class PolicyImpactPreviewPayload(BaseModel):
+    candidate_policy_yaml: str
 
 
 def _approval_or_404(approval_service: ApprovalService, approval_id: str) -> ApprovalRequest:

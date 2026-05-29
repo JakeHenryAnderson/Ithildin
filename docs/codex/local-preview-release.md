@@ -36,6 +36,9 @@ For public-preview wording, also read
 - YAML policy is the default engine through `policies/default.yaml`.
 - YAML policy has committed offline fixtures under `policies/tests/default.yaml`; run
   `make policy-test` before changing policy rules.
+- Candidate YAML policy changes can be compared with
+  `uv run python scripts/policy_impact.py --candidate-path path/to/policy.yaml` or the review
+  console policy impact panel. This is read-only and fixture-driven.
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.
@@ -57,6 +60,7 @@ The local console shows:
   configured limits;
 - registered tools and short manifest hashes;
 - policy previews for hypothetical tool calls;
+- policy impact previews for candidate YAML policy changes;
 - pending approvals with approve/deny actions;
 - patch proposal details with unified diffs;
 - recent audit events, audit verification, and JSONL export.

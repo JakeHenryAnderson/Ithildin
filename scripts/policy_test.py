@@ -47,6 +47,7 @@ class PolicyCaseResult:
     decision: str
     matched_rules: list[str]
     reason: str
+    obligations: JsonObject
 
     def as_dict(self) -> JsonObject:
         return cast(
@@ -58,6 +59,7 @@ class PolicyCaseResult:
                 "decision": self.decision,
                 "matched_rules": self.matched_rules,
                 "reason": self.reason,
+                "obligations": self.obligations,
             },
         )
 
@@ -191,6 +193,7 @@ def _run_case(evaluator: PolicyEvaluator, case: PolicyTestCase) -> PolicyCaseRes
         decision=decision.decision.value,
         matched_rules=decision.matched_rules,
         reason=decision.reason,
+        obligations=decision.obligations,
     )
 
 

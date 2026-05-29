@@ -106,6 +106,8 @@ OPA is optional. When `ITHILDIN_POLICY_ENGINE=opa`, Ithildin verifies
 `policies/opa/bundle.lock.json` before startup and reports bundle evidence in policy/system status.
 Run `make policy-test` before intentional YAML policy changes; the committed fixture harness is
 offline and does not call the API, create approvals, write audit events, or require an OPA sidecar.
+Use `uv run python scripts/policy_impact.py --candidate-path path/to/policy.yaml` to compare a
+candidate YAML policy against the same fixtures before runtime configuration changes.
 SQLite is the runtime storage backend for v0.1. Postgres settings are readiness/status evidence only.
 OpenTelemetry is opt-in preview instrumentation and is disabled by default.
 Signed audit exports are optional v0.2 local evidence. Run `make audit-keygen`, then use the review

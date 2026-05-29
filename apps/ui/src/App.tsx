@@ -75,6 +75,27 @@ type PolicyPreviewResult = {
   obligations: JsonObject;
 };
 
+type PolicyImpactSummary = {
+  policy_hash: string;
+  passed: number;
+  failed: number;
+  case_count: number;
+  failures: { id: string; failures: string[] }[];
+};
+
+type PolicyImpactChangedCase = {
+  id: string;
+  changes: string[];
+  current: JsonObject | null;
+  candidate: JsonObject;
+};
+
+type PolicyImpactResult = {
+  current: PolicyImpactSummary;
+  candidate: PolicyImpactSummary;
+  changed_cases: PolicyImpactChangedCase[];
+};
+
 type AuditEvent = {
   event_id: string;
   timestamp: string;
@@ -214,6 +235,12 @@ export function App() {
   const [previewResult, setPreviewResult] = useState<PolicyPreviewResult | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [candidatePolicyYaml, setCandidatePolicyYaml] = useState(
+    "version: candidate-v1\nrules: []\n",
+  );
+  const [impactResult, setImpactResult] = useState<PolicyImpactResult | null>(null);
+  const [impactLoading, setImpactLoading] = useState(false);
+  const [impactError, setImpactError] = useState<string | null>(null);
   const [denyReasons, setDenyReasons] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -246,6 +273,7 @@ export function App() {
       });
       setSelectedProposal(null);
       setPreviewResult(null);
+      setImpactResult(null);
       setError(null);
       return;
     }
@@ -327,6 +355,7 @@ export function App() {
       });
       setSelectedProposal(null);
       setPreviewResult(null);
+      setImpactResult(null);
     }
   }
 
@@ -355,6 +384,28 @@ export function App() {
       setPreviewError(errorMessage(caught));
     } finally {
       setPreviewLoading(false);
+    }
+  }
+
+  async function runPolicyImpact(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token) {
+      return;
+    }
+
+    setImpactLoading(true);
+    setImpactError(null);
+    setImpactResult(null);
+    try {
+      const result = await apiRequest<PolicyImpactResult>("/policy/impact-preview", token, {
+        method: "POST",
+        body: JSON.stringify({ candidate_policy_yaml: candidatePolicyYaml }),
+      });
+      setImpactResult(result);
+    } catch (caught) {
+      setImpactError(errorMessage(caught));
+    } finally {
+      setImpactLoading(false);
     }
   }
 
@@ -722,6 +773,91 @@ export function App() {
                   <pre>{JSON.stringify(previewResult.resource, null, 2)}</pre>
                 </div>
               </div>
+            </div>
+          ) : null}
+        </Panel>
+
+        <Panel title="Policy Impact" icon={<FileDiff size={18} />}>
+          <form className="policy-preview-form" onSubmit={runPolicyImpact}>
+            <div className="policy-controls">
+              <label>
+                <span>Candidate YAML</span>
+                <textarea
+                  value={candidatePolicyYaml}
+                  onChange={(event) => setCandidatePolicyYaml(event.target.value)}
+                  spellCheck={false}
+                />
+              </label>
+              <button
+                className="primary-action"
+                type="submit"
+                disabled={!token || impactLoading}
+              >
+                <FileDiff aria-hidden="true" size={16} />
+                {impactLoading ? "Comparing" : "Compare"}
+              </button>
+            </div>
+          </form>
+          {impactError ? (
+            <div className="inline-error">
+              <AlertTriangle aria-hidden="true" size={16} />
+              <span>{impactError}</span>
+            </div>
+          ) : null}
+          {!token ? <EmptyState text="Locked." /> : null}
+          {impactResult ? (
+            <div className="preview-result">
+              <div className="preview-heading">
+                <div>
+                  <h3>{impactResult.changed_cases.length} changed cases</h3>
+                  <p>{shortHash(impactResult.candidate.policy_hash)}</p>
+                </div>
+                <StatusPill status={impactResult.candidate.failed === 0 ? "allow" : "deny"} />
+              </div>
+              <dl className="meta-list preview-meta">
+                <div>
+                  <dt>Current</dt>
+                  <dd>
+                    {impactResult.current.passed}/{impactResult.current.case_count}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Candidate</dt>
+                  <dd>
+                    {impactResult.candidate.passed}/{impactResult.candidate.case_count}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Failures</dt>
+                  <dd>{impactResult.candidate.failed}</dd>
+                </div>
+              </dl>
+              {impactResult.changed_cases.length === 0 ? (
+                <EmptyState text="No fixture-visible policy impact." />
+              ) : (
+                <div className="table-wrap compact-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Case</th>
+                        <th>Changes</th>
+                        <th>Current</th>
+                        <th>Candidate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {impactResult.changed_cases.map((changed) => (
+                        <tr key={changed.id}>
+                          <td>{changed.id}</td>
+                          <td>{changed.changes.join(", ")}</td>
+                          <td>{changed.current ? scopeString(changed.current, "decision") : ""}</td>
+                          <td>{scopeString(changed.candidate, "decision")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           ) : null}
         </Panel>

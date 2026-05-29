@@ -6,6 +6,7 @@ from ithildin_api.config import Settings
 from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
+from ithildin_api.policy_impact import PolicyImpactService
 from ithildin_api.policy_preview import PolicyPreviewService
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
@@ -21,6 +22,7 @@ __all__ = [
     "PatchProposalService",
     "PatchProposalStore",
     "PolicyPreviewService",
+    "PolicyImpactService",
     "PrincipalRegistry",
     "RedactionService",
     "Settings",

@@ -79,6 +79,7 @@ def test_api_public_exports() -> None:
         "HttpFetchExecutor",
         "PatchProposalService",
         "PatchProposalStore",
+        "PolicyImpactService",
         "PrincipalRegistry",
         "ReadToolExecutor",
         "RedactionService",

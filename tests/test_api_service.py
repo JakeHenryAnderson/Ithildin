@@ -47,6 +47,23 @@ rules:
 """,
         encoding="utf-8",
     )
+    policy_tests_path = tmp_path / "policy-tests.yaml"
+    policy_tests_path.write_text(
+        """
+version: test-fixtures-v1
+cases:
+  - id: read_case
+    policy_input:
+      principal: {id: "agent:test", roles: ["AgentDeveloper"]}
+      tool: {name: fs.read, risk: read, version: "1.0.0"}
+      resource: {type: file, path: README.md, in_scope: true}
+      context: {session_id: policy-test}
+    expect:
+      decision: allow
+      matched_rules: [allow_test_reads]
+""",
+        encoding="utf-8",
+    )
     return Settings(
         admin_token=token,
         audit_log_path=tmp_path / "audit.jsonl",
@@ -59,6 +76,7 @@ rules:
         manifest_lock_signing_public_key_path=tmp_path / "keys" / "manifest-public.pem",
         manifest_lock_signature_path=tmp_path / "signatures" / "tool-manifests.lock.sig.json",
         policy_path=policy_path,
+        policy_tests_path=policy_tests_path,
         workspace_root=tmp_path / "workspace",
         http_allowlist=http_allowlist,
     )
@@ -841,6 +859,50 @@ def test_policy_status_reports_verified_opa_bundle_evidence(tmp_path: Path) -> N
     assert payload["bundle_entrypoint"] == "ithildin/decision"
     assert payload["bundle_verified"] is True
     assert payload["policy_hash"] == payload["bundle_hash"]
+
+
+def test_policy_impact_preview_requires_auth_and_reports_changes(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    app = create_app(settings)
+    candidate_yaml = settings.policy_path.read_text(encoding="utf-8").replace(
+        "decision: allow",
+        "decision: deny",
+        1,
+    )
+
+    with TestClient(app) as client:
+        unauthorized = client.post(
+            "/policy/impact-preview",
+            json={"candidate_policy_yaml": candidate_yaml},
+        )
+        response = client.post(
+            "/policy/impact-preview",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"candidate_policy_yaml": candidate_yaml},
+        )
+
+    assert unauthorized.status_code == 401
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["current"]["failed"] == 0
+    assert payload["candidate"]["failed"] >= 1
+    assert payload["changed_cases"]
+
+
+def test_policy_impact_preview_rejects_invalid_candidate_yaml(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/impact-preview",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"candidate_policy_yaml": "version: ["},
+        )
+
+    assert response.status_code == 400
+    assert "invalid YAML policy" in response.json()["detail"]
 
 
 def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:

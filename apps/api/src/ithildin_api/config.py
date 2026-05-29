@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     principal_registry_path: Path = Path("principals/local.yaml")
     require_known_principals: bool = True
     policy_path: Path = Path("policies/default.yaml")
+    policy_tests_path: Path = Path("policies/tests/default.yaml")
     policy_engine: str = "yaml"
     opa_url: str = ""
     opa_decision_path: str = "/v1/data/ithildin/decision"
