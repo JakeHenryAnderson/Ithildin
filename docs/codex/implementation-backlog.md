@@ -59,6 +59,8 @@
 | 061 - v0.2 review packet | Done | [v0.2-review-packet.md](v0.2-review-packet.md) |
 | 062 - Review response cleanup | Done | [v0.2-review-response-and-rc-cleanup.md](v0.2-review-response-and-rc-cleanup.md) |
 | 063 - v0.2 external review prompt | Done | [v0.2-external-review-prompt.md](v0.2-external-review-prompt.md) |
+| 064 - v0.2 review bundle command | Done | `make review-packet-bundle`, `scripts/review_packet_bundle.py` |
+| 065 - v0.2 handoff polish | Done | README/release packet handoff sequence |
 
 ## Future Candidate Track
 
@@ -101,4 +103,5 @@ security-matrix closure items.
 - Security matrix closure tests cover approval drift, path ambiguity, hardlinks, HTTP proxy
   inheritance, and canonical host behavior.
 - v0.2 review packet and `make release-packet` exist for external review handoff.
+- `make review-packet-bundle` packages the review docs and secret-free command outputs.
 - `make release-check` passes before local-preview handoff.

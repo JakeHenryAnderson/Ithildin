@@ -68,6 +68,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
+- `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification state without mutating evidence.
@@ -147,8 +148,8 @@ make docs-site
 
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
-`make release-check`, `make release-evidence`, and `make release-packet` before tagging or external
-review handoff.
+`make release-check`, `make release-evidence`, `make release-packet`, and
+`make review-packet-bundle` before tagging or external review handoff.
 
 ## Core Invariant
 
