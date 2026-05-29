@@ -41,6 +41,7 @@
 | 035 - Public v0.1 release candidate polish | Done | [v0.1-public-preview-release-notes.md](v0.1-public-preview-release-notes.md) |
 | 044 - Signed audit exports | Done | [signed-audit-exports.md](signed-audit-exports.md) |
 | 045 - Signed manifest locks | Done | [signed-manifest-locks.md](signed-manifest-locks.md) |
+| 046 - Policy test harness | Done | `policies/tests/default.yaml`, `scripts/policy_test.py` |
 
 ## Future Candidate Track
 
@@ -52,13 +53,13 @@
 | Kubernetes and executor hardening | Deferred | Kubernetes assets and containerized execution remain outside v0.1. |
 | External anchoring and hosted supply-chain signing | Deferred | Local audit export and manifest lock signing exist; external trust roots remain future work. |
 | Remote MCP hosting | Deferred | Stdio-only local MCP remains the v0.1 boundary. |
-| Plugin SDK and marketplace | Deferred | Requires stronger signing, review UX, executor contracts, and policy tests. |
+| Plugin SDK and marketplace | Deferred | Requires stronger signing, review UX, executor contracts, and stable policy impact tooling. |
 
 ## v0.2 Planning Seed
 
 Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
 after external public-preview review feedback is collected. The current seed prioritizes signed
-policy tests, workspace modeling, approval review UX, policy
+policy evidence, workspace modeling, approval review UX, policy
 diff/impact preview, and local admin-auth hardening.
 
 ## Definition of MVP Done
@@ -67,6 +68,7 @@ diff/impact preview, and local admin-auth hardening.
 - MCP client can list and call governed tools.
 - Static tool manifests are validated on startup.
 - Policy evaluator is deny-default.
+- Committed policy fixtures pass through `make policy-test`.
 - Write tools require approval.
 - Audit events are stored in SQLite and hash-chained JSONL.
 - Path traversal, symlink escape, SSRF, approval replay, and invalid schema cases have tests.

@@ -1,0 +1,262 @@
+version: default-policy-tests-v1
+cases:
+  - id: allow_agent_in_scope_read
+    description: Agent developers can read files inside assigned workspace scope.
+    policy_input:
+      principal:
+        id: "agent:mcp-local"
+        type: agent
+        roles:
+          - AgentDeveloper
+      tool:
+        name: fs.read
+        risk: read
+        version: "0.1.0"
+      resource:
+        type: file
+        path: README.md
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: allow
+      matched_rules:
+        - allow_in_scope_reads
+      reason_contains: Read-only access
+      obligations_contains:
+        audit_level: full
+        max_execution_seconds: 30
+
+  - id: allow_readonly_agent_in_scope_read
+    description: Read-only agents can use read-risk tools inside assigned scope.
+    policy_input:
+      principal:
+        id: "agent:readonly"
+        type: agent
+        roles:
+          - AgentReadOnly
+      tool:
+        name: fs.list
+        risk: read
+        version: "0.1.0"
+      resource:
+        type: directory
+        path: "."
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: allow
+      matched_rules:
+        - allow_in_scope_reads
+      obligations_contains:
+        audit_level: full
+
+  - id: require_approval_for_developer_write
+    description: Developer-capable principals need approval for write-risk tools.
+    policy_input:
+      principal:
+        id: "agent:mcp-local"
+        type: agent
+        roles:
+          - AgentDeveloper
+      tool:
+        name: fs.patch.apply
+        risk: write
+        version: "0.1.0"
+      resource:
+        type: file
+        path: README.md
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: require_approval
+      matched_rules:
+        - require_approval_for_writes
+      reason_contains: File writes require approval
+      obligations_contains:
+        audit_level: full
+        approval_required: true
+
+  - id: allow_developer_patch_proposal
+    description: Patch proposals are allowed because they do not modify files.
+    policy_input:
+      principal:
+        id: "agent:mcp-local"
+        type: agent
+        roles:
+          - AgentDeveloper
+      tool:
+        name: fs.patch.propose
+        risk: write-proposal
+        version: "0.1.0"
+      resource:
+        type: file
+        path: README.md
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: allow
+      matched_rules:
+        - allow_in_scope_patch_proposals
+      reason_contains: Patch proposals may be reviewed
+      obligations_contains:
+        audit_level: full
+
+  - id: allow_allowlisted_network
+    description: Network-risk tools are allowed only when resource scope is already allowlisted.
+    policy_input:
+      principal:
+        id: "agent:mcp-local"
+        type: agent
+        roles:
+          - AgentDeveloper
+      tool:
+        name: http.fetch
+        risk: network
+        version: "0.1.0"
+      resource:
+        type: network
+        url: https://example.com/data.json
+        scheme: https
+        host: example.com
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: allow
+      matched_rules:
+        - allow_in_scope_network
+      reason_contains: exact allowlisted destinations
+      obligations_contains:
+        audit_level: full
+
+  - id: deny_shell_tool_prefix
+    description: Dangerous tool-name prefixes deny before any write approval rule.
+    policy_input:
+      principal:
+        id: "agent:mcp-local"
+        type: agent
+        roles:
+          - AgentDeveloper
+      tool:
+        name: shell.run
+        risk: write
+        version: "0.1.0"
+      resource:
+        type: command
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: deny
+      matched_rules:
+        - deny_dangerous_tool_names
+      reason_contains: shell
+      obligations_contains:
+        audit_level: full
+
+  - id: deny_destructive_risk
+    description: Destructive tools are denied even for owner-capable principals.
+    policy_input:
+      principal:
+        id: "admin:local-ui"
+        type: human
+        roles:
+          - Owner
+      tool:
+        name: fs.remove
+        risk: destructive
+        version: "0.1.0"
+      resource:
+        type: file
+        path: README.md
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: deny
+      matched_rules:
+        - deny_destructive_risk
+      reason_contains: Destructive tools are denied
+      obligations_contains:
+        audit_level: full
+
+  - id: deny_out_of_scope_read
+    description: Read-risk tools deny by default outside assigned workspace scope.
+    policy_input:
+      principal:
+        id: "agent:mcp-local"
+        type: agent
+        roles:
+          - AgentDeveloper
+      tool:
+        name: fs.read
+        risk: read
+        version: "0.1.0"
+      resource:
+        type: file
+        path: ../README.md
+        in_scope: false
+      context:
+        session_id: policy-test
+    expect:
+      decision: deny
+      matched_rules: []
+      reason_contains: no matching policy rule
+      obligations_contains:
+        audit_level: full
+
+  - id: deny_readonly_agent_write
+    description: Read-only agents do not match write approval rules.
+    policy_input:
+      principal:
+        id: "agent:readonly"
+        type: agent
+        roles:
+          - AgentReadOnly
+      tool:
+        name: fs.patch.apply
+        risk: write
+        version: "0.1.0"
+      resource:
+        type: file
+        path: README.md
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: deny
+      matched_rules: []
+      reason_contains: no matching policy rule
+      obligations_contains:
+        audit_level: full
+
+  - id: deny_auditor_network
+    description: Auditor principals can read but cannot use network-risk tools by default.
+    policy_input:
+      principal:
+        id: "auditor:local"
+        type: human
+        roles:
+          - Auditor
+      tool:
+        name: http.fetch
+        risk: network
+        version: "0.1.0"
+      resource:
+        type: network
+        url: https://example.com/data.json
+        scheme: https
+        host: example.com
+        in_scope: true
+      context:
+        session_id: policy-test
+    expect:
+      decision: deny
+      matched_rules: []
+      reason_contains: no matching policy rule
+      obligations_contains:
+        audit_level: full

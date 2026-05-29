@@ -13,14 +13,15 @@ For public-preview wording, also read
 
 1. Install Python 3.12, `uv`, Node/npm, and Docker Desktop if you want the Compose demo.
 2. Copy `.env.example` to `.env` and change `ITHILDIN_ADMIN_TOKEN`.
-3. Run `make release-check` before demoing or handing off a build.
-4. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
-5. Open `http://127.0.0.1:5173` and use the configured admin token.
-6. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
-7. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
-8. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-9. Optional: run `make audit-keygen` to enable signed audit exports.
-10. Run `make docs-site` to build local handoff docs under ignored `site/`.
+3. Run `make policy-test` for a fast YAML policy confidence check.
+4. Run `make release-check` before demoing or handing off a build.
+5. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
+6. Open `http://127.0.0.1:5173` and use the configured admin token.
+7. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
+8. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
+9. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
+10. Optional: run `make audit-keygen` to enable signed audit exports.
+11. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 
@@ -31,9 +32,12 @@ For public-preview wording, also read
 - Optional local manifest-lock signatures can be created with `make manifest-lock-keygen` and
   `make manifest-lock-sign`; see [Signed Manifest Locks](signed-manifest-locks.md).
 - YAML policy is the default engine through `policies/default.yaml`.
+- YAML policy has committed offline fixtures under `policies/tests/default.yaml`; run
+  `make policy-test` before changing policy rules.
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.
+  OPA fixture execution is deferred until an explicit OPA test server or mocking layer exists.
 - Principal identities are loaded from `principals/local.yaml`; unknown or disabled principals fail
   closed in governed flows.
 - The sample admin token works only when `ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and the API/UI report

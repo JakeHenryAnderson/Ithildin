@@ -63,7 +63,8 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make manifest-lock-keygen` - create a local Ed25519 keypair for manifest lock signatures.
 - `make manifest-lock-sign` - sign the current `tool-manifests.lock.json`.
 - `make manifest-lock-signature-check` - verify the local manifest lock signature.
-- `make release-check` - run manifest lock verification, tests, lint, typecheck, and UI build.
+- `make policy-test` - run committed offline fixtures against `policies/default.yaml`.
+- `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
@@ -101,6 +102,8 @@ baseline for common tokens, secrets, passwords, cookies, and private keys; add l
 with `ITHILDIN_REDACTION_EXTRA_KEYS` and `ITHILDIN_REDACTION_EXTRA_PATTERNS`.
 OPA is optional. When `ITHILDIN_POLICY_ENGINE=opa`, Ithildin verifies
 `policies/opa/bundle.lock.json` before startup and reports bundle evidence in policy/system status.
+Run `make policy-test` before intentional YAML policy changes; the committed fixture harness is
+offline and does not call the API, create approvals, write audit events, or require an OPA sidecar.
 SQLite is the runtime storage backend for v0.1. Postgres settings are readiness/status evidence only.
 OpenTelemetry is opt-in preview instrumentation and is disabled by default.
 Signed audit exports are optional v0.2 local evidence. Run `make audit-keygen`, then use the review
