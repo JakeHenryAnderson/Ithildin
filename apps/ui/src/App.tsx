@@ -119,6 +119,15 @@ type SystemStatus = {
   manifest_lock: {
     required: boolean;
     path: string;
+    signature: {
+      required: boolean;
+      signature_path: string;
+      public_key_configured: boolean;
+      signature_configured: boolean;
+      verified: boolean;
+      key_id: string | null;
+      error?: string;
+    };
   };
   policy: PolicyStatus;
   audit: {
@@ -496,6 +505,16 @@ export function App() {
                 <div>
                   <dt>Manifest Lock</dt>
                   <dd>{data.systemStatus.manifest_lock.required ? "enforced" : "optional"}</dd>
+                </div>
+                <div>
+                  <dt>Lock Signature</dt>
+                  <dd>
+                    {data.systemStatus.manifest_lock.signature.verified
+                      ? shortHash(data.systemStatus.manifest_lock.signature.key_id ?? "")
+                      : data.systemStatus.manifest_lock.signature.required
+                        ? "required"
+                        : "optional"}
+                  </dd>
                 </div>
                 <div>
                   <dt>Policy</dt>

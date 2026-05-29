@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     manifest_dir: Path = Path("tool-manifests")
     manifest_lock_path: Path = Path("tool-manifests.lock.json")
     require_manifest_lock: bool = True
+    manifest_lock_signing_private_key_path: Path = Path(
+        "var/keys/manifest-lock-ed25519-private.pem"
+    )
+    manifest_lock_signing_public_key_path: Path = Path(
+        "var/keys/manifest-lock-ed25519-public.pem"
+    )
+    manifest_lock_signature_path: Path = Path("var/signatures/tool-manifests.lock.sig.json")
+    require_signed_manifest_lock: bool = False
     principal_registry_path: Path = Path("principals/local.yaml")
     require_known_principals: bool = True
     policy_path: Path = Path("policies/default.yaml")

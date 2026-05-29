@@ -10,6 +10,12 @@ from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings
 from ithildin_api.http_tools import HttpAllowlist, HttpFetchExecutor
 from ithildin_api.identity import PrincipalRegistry
+from ithildin_api.manifest_lock import (
+    ManifestLockRecord,
+    generate_manifest_lock_signing_keypair,
+    write_manifest_lock,
+    write_manifest_lock_signature,
+)
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
@@ -428,4 +434,94 @@ def test_create_adapter_enforces_manifest_lock_when_enabled(tmp_path: Path) -> N
     )
 
     with pytest.raises(RuntimeError, match="manifest lock"):
+        create_adapter(settings)
+
+
+def test_create_adapter_enforces_signed_manifest_lock_when_enabled(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    write_manifest(manifest_dir, "fs.read", "read")
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    signature_path = tmp_path / "tool-manifests.lock.sig.json"
+    generate_manifest_lock_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    write_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    settings = Settings(
+        admin_token="test-admin-token",
+        db_path=tmp_path / "ithildin.sqlite3",
+        audit_log_path=tmp_path / "audit.jsonl",
+        manifest_dir=manifest_dir,
+        manifest_lock_path=lock_path,
+        require_manifest_lock=True,
+        manifest_lock_signing_public_key_path=public_key_path,
+        manifest_lock_signature_path=signature_path,
+        require_signed_manifest_lock=True,
+        policy_path=policy_path,
+        workspace_root=tmp_path / "workspace",
+    )
+
+    adapter = create_adapter(settings)
+
+    assert [tool.manifest.name for tool in adapter.registry.list_tools()] == ["fs.read"]
+
+
+def test_create_adapter_fails_when_signed_manifest_lock_is_missing(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    write_manifest(manifest_dir, "fs.read", "read")
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    settings = Settings(
+        admin_token="test-admin-token",
+        db_path=tmp_path / "ithildin.sqlite3",
+        audit_log_path=tmp_path / "audit.jsonl",
+        manifest_dir=manifest_dir,
+        manifest_lock_path=lock_path,
+        require_manifest_lock=True,
+        manifest_lock_signing_public_key_path=tmp_path / "missing-public.pem",
+        manifest_lock_signature_path=tmp_path / "missing-signature.json",
+        require_signed_manifest_lock=True,
+        policy_path=policy_path,
+        workspace_root=tmp_path / "workspace",
+    )
+
+    with pytest.raises(RuntimeError, match="manifest lock signature"):
         create_adapter(settings)

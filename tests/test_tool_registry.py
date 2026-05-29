@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from ithildin_api.manifest_lock import (
     ManifestLockError,
     ManifestLockRecord,
+    generate_manifest_lock_signing_keypair,
+    manifest_lock_signature_status,
+    verify_manifest_lock_signature,
     write_manifest_lock,
+    write_manifest_lock_signature,
 )
 from ithildin_api.registry import (
     DuplicateToolManifest,
@@ -163,6 +169,187 @@ def test_valid_manifest_lock_allows_registry_load(tmp_path: Path) -> None:
     locked_registry = ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
 
     assert [tool.manifest.name for tool in locked_registry.list_tools()] == ["fs.read"]
+
+
+def test_manifest_lock_signature_generation_and_verification(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    private_key_path = tmp_path / "keys" / "private.pem"
+    public_key_path = tmp_path / "keys" / "public.pem"
+    signature_path = tmp_path / "signatures" / "tool-manifests.lock.sig.json"
+
+    key_id = generate_manifest_lock_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = cast(
+        dict[str, Any],
+        write_manifest_lock_signature(
+            lock_path=lock_path,
+            signature_path=signature_path,
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+        ),
+    )
+    result = verify_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        public_key_path=public_key_path,
+    )
+
+    assert bundle["signature_type"] == "ithildin.manifest_lock.signature"
+    assert bundle["format_version"] == "1"
+    assert bundle["lock_sha256"].startswith("sha256:")
+    assert bundle["signature"]["algorithm"] == "ed25519"
+    assert bundle["signature"]["key_id"] == key_id
+    assert result.valid is True
+    assert result.key_id == key_id
+
+
+def test_signed_manifest_lock_allows_registry_load(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    signature_path = tmp_path / "tool-manifests.lock.sig.json"
+    generate_manifest_lock_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    write_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+
+    locked_registry = ToolRegistry.load(
+        manifest_dir,
+        lock_path=lock_path,
+        require_lock=True,
+        signature_path=signature_path,
+        signature_public_key_path=public_key_path,
+        require_signed_lock=True,
+    )
+
+    assert [tool.manifest.name for tool in locked_registry.list_tools()] == ["fs.read"]
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    ["lock", "signature", "public_key", "key_id", "wrong_public_key_file", "missing_signature"],
+)
+def test_manifest_lock_signature_tampering_fails_closed(tmp_path: Path, tamper: str) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    signature_path = tmp_path / "tool-manifests.lock.sig.json"
+    generate_manifest_lock_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    write_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    if tamper == "lock":
+        write_manifest(manifest_dir / "fs-stat.yaml", name="fs.stat")
+        write_manifest_lock(
+            manifest_dir=manifest_dir,
+            lock_path=lock_path,
+            records=_lock_records(ToolRegistry.load(manifest_dir)),
+        )
+    elif tamper == "wrong_public_key_file":
+        generate_manifest_lock_signing_keypair(
+            private_key_path=tmp_path / "wrong-private.pem",
+            public_key_path=public_key_path,
+            overwrite=True,
+        )
+    elif tamper == "missing_signature":
+        signature_path.unlink()
+    else:
+        payload = cast(dict[str, Any], json.loads(signature_path.read_text(encoding="utf-8")))
+        if tamper == "signature":
+            payload["signature"]["signature"] = "AA" + payload["signature"]["signature"][2:]
+        elif tamper == "public_key":
+            payload["signature"]["public_key"] = "AA" + payload["signature"]["public_key"][2:]
+        else:
+            payload["signature"]["key_id"] = "sha256:" + ("b" * 64)
+        signature_path.write_text(
+            json.dumps(payload, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    result = verify_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        public_key_path=public_key_path,
+    )
+
+    assert result.valid is False
+    with pytest.raises(ManifestLockError):
+        ToolRegistry.load(
+            manifest_dir,
+            lock_path=lock_path,
+            require_lock=True,
+            signature_path=signature_path,
+            signature_public_key_path=public_key_path,
+            require_signed_lock=True,
+        )
+
+
+def test_manifest_lock_signature_status_reports_optional_and_verified(tmp_path: Path) -> None:
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    write_manifest_lock(
+        manifest_dir=tmp_path / "missing-manifests",
+        lock_path=lock_path,
+        records=[],
+    )
+    signature_path = tmp_path / "missing-signature.json"
+    public_key_path = tmp_path / "missing-public.pem"
+
+    status = manifest_lock_signature_status(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        public_key_path=public_key_path,
+        required=False,
+    )
+
+    assert status == {
+        "required": False,
+        "signature_path": signature_path.as_posix(),
+        "public_key_configured": False,
+        "signature_configured": False,
+        "verified": False,
+        "key_id": None,
+    }
 
 
 def test_missing_manifest_lock_fails_closed(tmp_path: Path) -> None:

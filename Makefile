@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check release-context release-evidence release-guardrails test typecheck ui-dev
+.PHONY: audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check ollama-smoke release-check release-context release-evidence release-guardrails test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -15,6 +15,15 @@ manifest-lock:
 
 manifest-lock-check:
 	uv run python scripts/manifest_lock.py --check
+
+manifest-lock-keygen:
+	uv run python scripts/manifest_lock_signing.py keygen
+
+manifest-lock-sign:
+	uv run python scripts/manifest_lock_signing.py sign
+
+manifest-lock-signature-check:
+	uv run python scripts/manifest_lock_signing.py verify
 
 audit-keygen:
 	uv run python scripts/audit_signing.py keygen

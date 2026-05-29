@@ -28,6 +28,8 @@ For public-preview wording, also read
   `tool-manifests.lock.json`.
 - After intentional manifest edits, run `make manifest-lock`, review the lockfile diff, then run
   `make manifest-lock-check`.
+- Optional local manifest-lock signatures can be created with `make manifest-lock-keygen` and
+  `make manifest-lock-sign`; see [Signed Manifest Locks](signed-manifest-locks.md).
 - YAML policy is the default engine through `policies/default.yaml`.
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
@@ -65,6 +67,8 @@ The local console shows:
 - Audit events are stored in SQLite and hash-chained JSONL.
 - Signed audit exports use a local Ed25519 keypair when configured; see
   [Signed Audit Exports](signed-audit-exports.md).
+- Signed manifest locks use a separate local Ed25519 keypair when configured; this is local
+  operator evidence, not hosted supply-chain signing.
 - Docker is only used to run the local demo stack.
 - Ollama local-model demos are host-side only; Ithildin does not run or proxy models.
 - The generated docs site is local-only build output under `site/`.
@@ -74,5 +78,5 @@ The local console shows:
 - Production authentication, OIDC, SAML, and SCIM.
 - Runtime Postgres storage, hosted telemetry collectors, and hosted control-plane workflows.
 - Kubernetes, Docker socket access, shell execution, and broad filesystem writes.
-- Signed manifest locks and external audit anchoring.
+- External audit anchoring and official hosted supply-chain signing.
 - Managed model serving or hosted LLM control-plane workflows.

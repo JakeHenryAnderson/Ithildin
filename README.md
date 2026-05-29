@@ -60,6 +60,9 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.
 - `make manifest-lock-check` - verify trusted tool manifests still match the committed lock.
+- `make manifest-lock-keygen` - create a local Ed25519 keypair for manifest lock signatures.
+- `make manifest-lock-sign` - sign the current `tool-manifests.lock.json`.
+- `make manifest-lock-signature-check` - verify the local manifest lock signature.
 - `make release-check` - run manifest lock verification, tests, lint, typecheck, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
@@ -87,6 +90,10 @@ The review console is served at `http://127.0.0.1:5173`.
 Docker is only used for the local demo stack; Kubernetes support is deferred.
 Tool manifests are hash-pinned by default; run `make manifest-lock` only after intentional
 manifest changes.
+Signed manifest locks are optional v0.2 local evidence. Run `make manifest-lock-keygen` and
+`make manifest-lock-sign`, then set `ITHILDIN_REQUIRE_SIGNED_MANIFEST_LOCK=true` only when you want
+startup to fail closed on missing or invalid local signature evidence. See
+[docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md).
 `http.fetch` is disabled until `ITHILDIN_HTTP_ALLOWLIST` names exact destinations such as
 `example.com`, `example.com:443`, or `https://example.com`.
 Governed tool outputs are redacted before they are returned to agents using an always-on
@@ -141,6 +148,7 @@ Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-releas
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md),
+[docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md),
 [docs/codex/threat-model-and-non-goals.md](docs/codex/threat-model-and-non-goals.md),
 [docs/obsidian/00-index.md](docs/obsidian/00-index.md) and
 [docs/codex/project-brief.md](docs/codex/project-brief.md) when starting implementation work.

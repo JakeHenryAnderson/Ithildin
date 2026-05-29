@@ -11,7 +11,12 @@ from fastapi.testclient import TestClient
 from ithildin_api.app import create_app
 from ithildin_api.config import Settings
 from ithildin_api.database import initialize_database
-from ithildin_api.manifest_lock import ManifestLockRecord, write_manifest_lock
+from ithildin_api.manifest_lock import (
+    ManifestLockRecord,
+    generate_manifest_lock_signing_keypair,
+    write_manifest_lock,
+    write_manifest_lock_signature,
+)
 from ithildin_api.patches import PatchProposalService
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
@@ -50,6 +55,9 @@ rules:
         db_path=tmp_path / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
         require_manifest_lock=False,
+        manifest_lock_signing_private_key_path=tmp_path / "keys" / "manifest-private.pem",
+        manifest_lock_signing_public_key_path=tmp_path / "keys" / "manifest-public.pem",
+        manifest_lock_signature_path=tmp_path / "signatures" / "tool-manifests.lock.sig.json",
         policy_path=policy_path,
         workspace_root=tmp_path / "workspace",
         http_allowlist=http_allowlist,
@@ -170,6 +178,14 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
     assert payload["manifest_lock"] == {
         "required": False,
         "path": settings.manifest_lock_path.as_posix(),
+        "signature": {
+            "required": False,
+            "signature_path": settings.manifest_lock_signature_path.as_posix(),
+            "public_key_configured": False,
+            "signature_configured": False,
+            "verified": False,
+            "key_id": None,
+        },
     }
     assert payload["principals"]["required"] is True
     assert payload["principals"]["count"] >= 1
@@ -600,6 +616,107 @@ def test_app_startup_enforces_manifest_lock_when_enabled(tmp_path: Path) -> None
 
     assert response.status_code == 200
     assert response.json()["tools"][0]["name"] == "fs.read"
+
+
+def test_app_startup_allows_unsigned_manifest_lock_by_default(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    settings.require_manifest_lock = True
+    settings.manifest_lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(settings.manifest_dir)
+    write_manifest_lock(
+        manifest_dir=settings.manifest_dir,
+        lock_path=settings.manifest_lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+
+    with TestClient(create_app(settings)) as client:
+        response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["manifest_lock"]["signature"]["verified"] is False
+
+
+def test_app_startup_enforces_signed_manifest_lock_when_enabled(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    settings.require_manifest_lock = True
+    settings.require_signed_manifest_lock = True
+    settings.manifest_lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(settings.manifest_dir)
+    write_manifest_lock(
+        manifest_dir=settings.manifest_dir,
+        lock_path=settings.manifest_lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    generate_manifest_lock_signing_keypair(
+        private_key_path=settings.manifest_lock_signing_private_key_path,
+        public_key_path=settings.manifest_lock_signing_public_key_path,
+    )
+    write_manifest_lock_signature(
+        lock_path=settings.manifest_lock_path,
+        signature_path=settings.manifest_lock_signature_path,
+        private_key_path=settings.manifest_lock_signing_private_key_path,
+        public_key_path=settings.manifest_lock_signing_public_key_path,
+    )
+
+    with TestClient(create_app(settings)) as client:
+        response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["manifest_lock"]["signature"]["required"] is True
+    assert response.json()["manifest_lock"]["signature"]["verified"] is True
+
+
+def test_app_startup_fails_when_signed_manifest_lock_required_but_missing(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    settings.require_manifest_lock = True
+    settings.require_signed_manifest_lock = True
+    settings.manifest_lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(settings.manifest_dir)
+    write_manifest_lock(
+        manifest_dir=settings.manifest_dir,
+        lock_path=settings.manifest_lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    app = create_app(settings)
+
+    with pytest.raises(RuntimeError):
+        with TestClient(app):
+            pass
 
 
 def test_app_startup_fails_for_tampered_manifest_lock(tmp_path: Path) -> None:

@@ -139,6 +139,9 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         resolved_settings.manifest_dir,
         lock_path=resolved_settings.manifest_lock_path,
         require_lock=resolved_settings.require_manifest_lock,
+        signature_path=resolved_settings.manifest_lock_signature_path,
+        signature_public_key_path=resolved_settings.manifest_lock_signing_public_key_path,
+        require_signed_lock=resolved_settings.require_signed_manifest_lock,
     )
     principal_registry = PrincipalRegistry.load(
         resolved_settings.principal_registry_path,

@@ -22,9 +22,11 @@ site/
 var/db/*
 var/keys/*
 var/logs/*
+var/signatures/*
 !var/db/.gitkeep
 !var/keys/.gitkeep
 !var/logs/.gitkeep
+!var/signatures/.gitkeep
 workspaces/*
 !workspaces/.gitkeep
 

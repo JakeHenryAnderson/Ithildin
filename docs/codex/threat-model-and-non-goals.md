@@ -36,7 +36,7 @@ principal labels, policy, approval, scoped executors, redaction, and tamper-evid
 ## Deferred Security Work
 
 - Production identity integration such as OIDC, SAML, SCIM, tenant isolation, and managed sessions.
-- Signed manifests, signed audit exports, and external audit anchoring.
+- External audit anchoring, hosted supply-chain signing, and key-management policy.
 - Runtime Postgres storage adapters and migrations.
 - Stronger OS sandboxing/containerized execution.
 - Remote MCP transports and hosted control-plane deployment.

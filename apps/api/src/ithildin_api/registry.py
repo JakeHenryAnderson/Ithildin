@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from ithildin_api.manifest_lock import (
     ManifestLockRecord,
+    require_manifest_lock_signature,
     verify_manifest_lock,
 )
 
@@ -72,12 +73,27 @@ class ToolRegistry:
         *,
         lock_path: Path | None = None,
         require_lock: bool = False,
+        signature_path: Path | None = None,
+        signature_public_key_path: Path | None = None,
+        require_signed_lock: bool = False,
     ) -> ToolRegistry:
         tools: dict[str, RegisteredTool] = {}
 
         if not manifest_dir.exists():
             if require_lock and lock_path is not None:
                 verify_manifest_lock(manifest_dir=manifest_dir, lock_path=lock_path, records=[])
+                if require_signed_lock:
+                    if signature_path is None or signature_public_key_path is None:
+                        raise ToolRegistryError(
+                            "signed manifest lock is required but signature config is incomplete"
+                        )
+                    require_manifest_lock_signature(
+                        lock_path=lock_path,
+                        signature_path=signature_path,
+                        public_key_path=signature_public_key_path,
+                    )
+            elif require_signed_lock:
+                raise ToolRegistryError("signed manifest lock requires manifest lock enforcement")
             return cls(tools)
 
         for manifest_path in sorted(manifest_dir.iterdir()):
@@ -106,6 +122,18 @@ class ToolRegistry:
                     for tool in tools.values()
                 ],
             )
+            if require_signed_lock:
+                if signature_path is None or signature_public_key_path is None:
+                    raise ToolRegistryError(
+                        "signed manifest lock is required but signature config is incomplete"
+                    )
+                require_manifest_lock_signature(
+                    lock_path=lock_path,
+                    signature_path=signature_path,
+                    public_key_path=signature_public_key_path,
+                )
+        elif require_signed_lock:
+            raise ToolRegistryError("signed manifest lock requires manifest lock enforcement")
 
         return cls(tools)
 

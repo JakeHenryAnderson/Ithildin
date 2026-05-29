@@ -92,8 +92,8 @@ Success criteria:
 - Production identity integrations such as OIDC, SAML, SCIM, and hosted sessions.
 - Hosted observability collectors and production telemetry dashboards.
 - Kubernetes deployment and agent-facing Docker/Kubernetes tools.
-- Signed manifest locks and external audit anchoring; local signed audit exports exist as v0.2
-  trust evidence.
+- External audit anchoring and hosted supply-chain signing; local signed audit exports and signed
+  manifest locks exist as v0.2 trust evidence.
 - Managed model serving or LLM proxy workflows.
 - Remote MCP hosting, plugin SDKs, browser automation, shell tools, broad filesystem writes, Docker
   socket access, and Kubernetes agent tools.

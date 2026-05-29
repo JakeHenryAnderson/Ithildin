@@ -12,7 +12,11 @@ from typing import Any
 
 from ithildin_api.config import Settings
 from ithildin_api.identity import PrincipalRegistry
-from ithildin_api.manifest_lock import ManifestLockRecord, manifest_lock_payload
+from ithildin_api.manifest_lock import (
+    ManifestLockRecord,
+    manifest_lock_payload,
+    manifest_lock_signature_status,
+)
 from ithildin_api.policy import load_policy_engine
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.security_status import security_status
@@ -87,6 +91,12 @@ def main() -> int:
             "path": settings.manifest_lock_path.as_posix(),
             "required": settings.require_manifest_lock,
             "current": manifest_lock_current,
+            "signature": manifest_lock_signature_status(
+                lock_path=settings.manifest_lock_path,
+                signature_path=settings.manifest_lock_signature_path,
+                public_key_path=settings.manifest_lock_signing_public_key_path,
+                required=settings.require_signed_manifest_lock,
+            ),
         },
         "docs_site": {"command": "make docs-site", "output_dir": "site"},
         "tools": {
@@ -118,7 +128,7 @@ def main() -> int:
             "arbitrary HTTP methods, headers, or bodies",
             "broad filesystem writes",
             "plugin SDK and marketplace",
-            "signed manifest locks and external audit anchoring",
+            "external audit anchoring and hosted supply-chain signing",
         ],
     }
     json.dump(snapshot, sys.stdout, indent=2, sort_keys=True)
