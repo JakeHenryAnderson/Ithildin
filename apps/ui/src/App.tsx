@@ -39,6 +39,7 @@ type Approval = {
 type PatchProposal = {
   proposal_id: string;
   request_id: string;
+  workspace_id: string;
   path: string;
   base_file_hash: string;
   proposal_hash: string;
@@ -47,6 +48,25 @@ type PatchProposal = {
   updated_at: string;
   metadata: JsonObject;
   unified_diff?: string;
+  review?: PatchReview;
+};
+
+type PatchReview = JsonObject & {
+  stale?: boolean;
+  stale_reason?: string | null;
+  base_file_hash_matches?: boolean;
+};
+
+type BindingReview = {
+  valid: boolean;
+  checks: Record<string, boolean>;
+  reasons: string[];
+  proposal?: JsonObject | null;
+};
+
+type ApprovalReview = {
+  approval: Approval;
+  review: BindingReview;
 };
 
 type ToolSummary = {
@@ -199,7 +219,7 @@ type SystemStatus = {
 type DashboardData = {
   systemStatus: SystemStatus | null;
   tools: ToolSummary[];
-  approvals: Approval[];
+  approvals: ApprovalReview[];
   patches: PatchProposal[];
   auditEvents: AuditEvent[];
   verification: AuditVerification | null;
@@ -291,7 +311,7 @@ export function App() {
       ] = await Promise.all([
         apiRequest<SystemStatus>("/system/status", activeToken),
         apiRequest<{ tools: ToolSummary[] }>("/tools", activeToken),
-        apiRequest<{ approvals: Approval[] }>("/approvals?status=pending", activeToken),
+        apiRequest<{ approvals: ApprovalReview[] }>("/approvals/review?status=pending", activeToken),
         apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
         apiRequest<AuditVerification>("/audit-events/verify", activeToken),
@@ -941,14 +961,16 @@ export function App() {
             <EmptyState text={token ? "No pending approvals." : "Locked."} />
           ) : (
             <div className="approval-list">
-              {data.approvals.map((approval) => (
+              {data.approvals.map((approvalReview) => {
+                const approval = approvalReview.approval;
+                return (
                 <article className="approval-item" key={approval.approval_id}>
                   <div className="item-heading">
                     <div>
                       <h3>{approval.summary}</h3>
                       <p>{approval.tool_name}</p>
                     </div>
-                    <StatusPill status={approval.status} />
+                    <StatusPill status={approvalReview.review.valid ? approval.status : "stale"} />
                   </div>
                   <dl className="meta-list">
                     <div>
@@ -963,7 +985,12 @@ export function App() {
                       <dt>Expires</dt>
                       <dd>{formatDate(approval.expires_at)}</dd>
                     </div>
+                    <div>
+                      <dt>Workspace</dt>
+                      <dd>{scopeString(approval.one_time_scope, "workspace_id") || "default"}</dd>
+                    </div>
                   </dl>
+                  <BindingReviewSummary review={approvalReview.review} />
                   <ApprovalEvidence approval={approval} />
                   <div className="decision-row">
                     <input
@@ -984,6 +1011,7 @@ export function App() {
                     <button
                       className="primary-action"
                       type="button"
+                      disabled={!approvalReview.review.valid}
                       onClick={() => void decideApproval(approval.approval_id, "approve")}
                     >
                       <Check aria-hidden="true" size={16} />
@@ -991,7 +1019,8 @@ export function App() {
                     </button>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
         </Panel>
@@ -1010,6 +1039,7 @@ export function App() {
                     onClick={() => setSelectedProposalId(patch.proposal_id)}
                   >
                     <span>{patch.path}</span>
+                    <small>{patch.workspace_id}</small>
                     <StatusPill status={patch.status} />
                   </button>
                 ))
@@ -1023,10 +1053,21 @@ export function App() {
                   <div className="diff-heading">
                     <div>
                       <h3>{selectedProposal.path}</h3>
-                      <p>{shortId(selectedProposal.proposal_id)}</p>
+                      <p>
+                        {shortId(selectedProposal.proposal_id)} · {selectedProposal.workspace_id}
+                      </p>
                     </div>
-                    <StatusPill status={selectedProposal.status} />
+                    <StatusPill
+                      status={
+                        selectedProposal.review?.stale === true
+                          ? "stale"
+                          : selectedProposal.status
+                      }
+                    />
                   </div>
+                  {selectedProposal.review ? (
+                    <BindingReviewSummary review={selectedProposal.review as BindingReview} />
+                  ) : null}
                   <pre>{selectedProposal.unified_diff ?? ""}</pre>
                 </>
               ) : selectedPatchFromList ? (
@@ -1158,6 +1199,34 @@ function ApprovalEvidence({ approval }: { approval: Approval }) {
           </div>
         ))}
       </dl>
+    </section>
+  );
+}
+
+function BindingReviewSummary({
+  review,
+}: {
+  review: Partial<BindingReview> & PatchReview;
+}) {
+  const reasons = review.reasons ?? [];
+  const checks = review.checks ?? {};
+  const valid = review.valid ?? !review.stale;
+  const failureText = reasons.join("; ") || review.stale_reason || "";
+
+  return (
+    <section className="evidence-block" aria-label="Binding review">
+      <h4>{valid ? "Review Checks Passed" : "Review Attention"}</h4>
+      {failureText ? <p className="preview-argument-error">{failureText}</p> : null}
+      {Object.keys(checks).length > 0 ? (
+        <dl className="evidence-grid">
+          {Object.entries(checks).map(([label, passed]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{passed ? "ok" : "check"}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
     </section>
   );
 }

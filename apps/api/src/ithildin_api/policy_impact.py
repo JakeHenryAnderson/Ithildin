@@ -8,7 +8,12 @@ from typing import cast
 
 from ithildin_schemas import JsonObject
 
-from scripts.policy_test import PolicyCaseResult, PolicyTestError, PolicyTestRun, run_policy_tests
+from ithildin_api.policy_testing import (
+    PolicyCaseResult,
+    PolicyTestError,
+    PolicyTestRun,
+    run_policy_tests,
+)
 
 
 class PolicyImpactError(RuntimeError):

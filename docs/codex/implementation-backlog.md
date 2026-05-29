@@ -44,6 +44,7 @@
 | 046 - Policy test harness | Done | `policies/tests/default.yaml`, `scripts/policy_test.py` |
 | 047 - Named workspace model | Done | `workspaces/local.yaml`, `/workspaces` |
 | 048 - Policy impact preview | Done | `/policy/impact-preview`, `scripts/policy_impact.py` |
+| 049 - Approval review UX v2 | Done | `/approvals/review`, review console evidence checks |
 
 ## Future Candidate Track
 
@@ -61,7 +62,7 @@
 
 Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
 after external public-preview review feedback is collected. The current seed prioritizes signed
-policy evidence, approval review UX, and local admin-auth hardening.
+policy evidence and local admin-auth hardening.
 
 ## Definition of MVP Done
 

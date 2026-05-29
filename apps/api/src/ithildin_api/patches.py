@@ -289,6 +289,156 @@ class PatchProposalService:
     def get_proposal(self, proposal_id: str) -> PatchProposal:
         return self.store.get(proposal_id)
 
+    def proposal_review(self, proposal: PatchProposal) -> JsonObject:
+        review: JsonObject = {
+            "workspace_id": proposal.workspace_id,
+            "target_path": proposal.path,
+            "proposal_status": proposal.status,
+            "current_base_file_hash": None,
+            "base_file_hash_matches": False,
+            "stale": True,
+            "stale_reason": None,
+        }
+        try:
+            filesystem = self._filesystem(proposal.workspace_id)
+            target = filesystem.resolve_existing_path(proposal.path)
+            current_content = filesystem.read_text_file(target)
+            current_hash = sha256_digest(current_content)
+        except (PatchProposalError, ReadToolError) as exc:
+            review["stale_reason"] = str(exc)
+            return review
+
+        review["current_base_file_hash"] = current_hash
+        review["base_file_hash_matches"] = current_hash == proposal.base_file_hash
+        review["stale"] = proposal.status != "proposed" or current_hash != proposal.base_file_hash
+        if proposal.status != "proposed":
+            review["stale_reason"] = f"proposal is {proposal.status}"
+        elif current_hash != proposal.base_file_hash:
+            review["stale_reason"] = "target file changed since proposal"
+        else:
+            review["stale_reason"] = None
+        return review
+
+    def approval_review(
+        self,
+        approval: ApprovalRequest,
+        *,
+        expected_manifest_hash: str,
+        expected_manifest_version: str,
+        expected_tool_input_schema_hash: str,
+        expected_policy_engine: str,
+        expected_policy_hash: str,
+        expected_policy_document_version: str,
+    ) -> JsonObject:
+        checks: dict[str, bool] = {}
+        reasons: list[str] = []
+        proposal_review: JsonObject | None = None
+
+        def check(name: str, passed: bool, reason: str) -> None:
+            checks[name] = passed
+            if not passed:
+                reasons.append(reason)
+
+        scope = approval.one_time_scope
+        check(
+            "tool_name",
+            approval.tool_name == PATCH_APPLY_TOOL,
+            "approval is not for patch apply",
+        )
+        check(
+            "scope_tool_name",
+            _optional_scope_string(scope, "tool_name") == PATCH_APPLY_TOOL,
+            "scope tool mismatch",
+        )
+        check(
+            "request_hash",
+            _optional_scope_string(scope, "request_hash") == approval.request_hash,
+            "request hash mismatch",
+        )
+        check(
+            "expiry",
+            _optional_scope_string(scope, "expires_at") == approval.expires_at.isoformat(),
+            "expiry mismatch",
+        )
+        check(
+            "manifest_hash",
+            _optional_scope_string(scope, "manifest_hash") == expected_manifest_hash,
+            "manifest hash mismatch",
+        )
+        check(
+            "manifest_version",
+            _optional_scope_string(scope, "manifest_version") == expected_manifest_version,
+            "manifest version mismatch",
+        )
+        check(
+            "tool_input_schema_hash",
+            _optional_scope_string(scope, "tool_input_schema_hash")
+            == expected_tool_input_schema_hash,
+            "tool input schema mismatch",
+        )
+        check(
+            "policy_engine",
+            _optional_scope_string(scope, "policy_engine") == expected_policy_engine,
+            "policy engine mismatch",
+        )
+        check(
+            "policy_hash",
+            _optional_scope_string(scope, "policy_hash") == expected_policy_hash,
+            "policy hash mismatch",
+        )
+        check(
+            "policy_document_version",
+            _optional_scope_string(scope, "policy_document_version")
+            == expected_policy_document_version,
+            "policy document version mismatch",
+        )
+
+        proposal_id = _optional_scope_string(scope, "proposal_id")
+        if proposal_id is None:
+            check("proposal", False, "proposal id missing")
+        else:
+            try:
+                proposal = self.get_proposal(proposal_id)
+                proposal_review = self.proposal_review(proposal)
+                check(
+                    "proposal_hash",
+                    proposal.proposal_hash == _optional_scope_string(scope, "proposal_hash"),
+                    "proposal hash mismatch",
+                )
+                check(
+                    "base_file_hash",
+                    proposal.base_file_hash == _optional_scope_string(scope, "base_file_hash"),
+                    "base file hash mismatch",
+                )
+                check(
+                    "workspace_id",
+                    proposal.workspace_id == _optional_scope_string(scope, "workspace_id"),
+                    "workspace mismatch",
+                )
+                check(
+                    "path",
+                    proposal.path == _optional_scope_string(scope, "path"),
+                    "path mismatch",
+                )
+                check(
+                    "current_base",
+                    proposal_review.get("base_file_hash_matches") is True,
+                    str(proposal_review.get("stale_reason") or "base file hash mismatch"),
+                )
+            except PatchProposalError as exc:
+                check("proposal", False, str(exc))
+
+        executable = not reasons and approval.status.value in {"pending", "approved"}
+        return cast(
+            JsonObject,
+            {
+                "valid": executable,
+                "checks": checks,
+                "reasons": reasons,
+                "proposal": proposal_review,
+            },
+        )
+
     def approval_scope(
         self,
         proposal_id: str,
@@ -591,6 +741,11 @@ def _scope_string(scope: JsonObject, key: str) -> str:
     if not isinstance(value, str):
         raise PatchProposalError(f"approval scope missing {key}")
     return value
+
+
+def _optional_scope_string(scope: JsonObject, key: str) -> str | None:
+    value = scope.get(key)
+    return value if isinstance(value, str) else None
 
 
 def _scope_string_list(scope: JsonObject, key: str) -> list[str]:

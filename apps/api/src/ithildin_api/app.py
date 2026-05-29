@@ -17,7 +17,13 @@ from ithildin_audit_core import (
     signed_audit_export_bundle,
 )
 from ithildin_policy_core import PolicyEngine
-from ithildin_schemas import ApprovalDecisionValue, ApprovalRequest, ApprovalStatus, JsonObject
+from ithildin_schemas import (
+    ApprovalDecisionValue,
+    ApprovalRequest,
+    ApprovalStatus,
+    JsonObject,
+    sha256_digest,
+)
 from pydantic import BaseModel
 
 from ithildin_api.approvals import (
@@ -37,7 +43,12 @@ from ithildin_api.identity import (
 )
 from ithildin_api.logging import configure_logging
 from ithildin_api.manifest_lock import manifest_lock_signature_status
-from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
+from ithildin_api.patches import (
+    PATCH_APPLY_TOOL,
+    PatchProposalError,
+    PatchProposalService,
+    PatchProposalStore,
+)
 from ithildin_api.policy import load_policy_engine
 from ithildin_api.policy_impact import PolicyImpactError, PolicyImpactService
 from ithildin_api.policy_preview import (
@@ -295,14 +306,18 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     @api.get("/patch-proposals", dependencies=[Depends(require_admin_token)])
     def list_patch_proposals() -> dict[str, list[JsonObject]]:
         patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
-        proposals = [proposal.summary() for proposal in patch_service.list_proposals()]
+        proposals = [
+            {**proposal.summary(), "review": patch_service.proposal_review(proposal)}
+            for proposal in patch_service.list_proposals()
+        ]
         return {"patch_proposals": proposals}
 
     @api.get("/patch-proposals/{proposal_id}", dependencies=[Depends(require_admin_token)])
     def get_patch_proposal(proposal_id: str) -> JsonObject:
         patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
         try:
-            return patch_service.get_proposal(proposal_id).detail()
+            proposal = patch_service.get_proposal(proposal_id)
+            return {**proposal.detail(), "review": patch_service.proposal_review(proposal)}
         except PatchProposalError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -310,6 +325,33 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     def list_approvals(status: Optional[ApprovalStatus] = None) -> dict[str, list[ApprovalRequest]]:
         approval_service = cast(ApprovalService, api.state.approval_service)
         return {"approvals": approval_service.list(status=status)}
+
+    @api.get("/approvals/review", dependencies=[Depends(require_admin_token)])
+    def list_approval_reviews(status: Optional[ApprovalStatus] = None) -> JsonObject:
+        approval_service = cast(ApprovalService, api.state.approval_service)
+        patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
+        registry = cast(ToolRegistry, api.state.registry)
+        policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
+        tool = registry.get_tool(PATCH_APPLY_TOOL)
+        return {
+            "approvals": [
+                {
+                    "approval": approval.model_dump(mode="json"),
+                    "review": patch_service.approval_review(
+                        approval,
+                        expected_manifest_hash=tool.manifest_hash,
+                        expected_manifest_version=tool.manifest.version,
+                        expected_tool_input_schema_hash=sha256_digest(
+                            tool.manifest.input_schema
+                        ),
+                        expected_policy_engine=policy_evaluator.engine_name,
+                        expected_policy_hash=policy_evaluator.policy_hash,
+                        expected_policy_document_version=policy_evaluator.document_version,
+                    ),
+                }
+                for approval in approval_service.list(status=status)
+            ]
+        }
 
     @api.post("/approvals", dependencies=[Depends(require_admin_token)])
     def create_approval(payload: CreateApprovalPayload) -> ApprovalRequest:

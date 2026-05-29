@@ -62,6 +62,8 @@ The local console shows:
 - policy previews for hypothetical tool calls;
 - policy impact previews for candidate YAML policy changes;
 - pending approvals with approve/deny actions;
+- derived approval review checks for proposal, base hash, manifest, policy, request, expiry, and
+  workspace evidence;
 - patch proposal details with unified diffs;
 - recent audit events, audit verification, and JSONL export.
 - signed audit export when a local signing keypair is configured.

@@ -3,12 +3,14 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
 from ithildin_api.app import create_app
+from ithildin_api.approvals import ApprovalService, CreateApprovalInput
 from ithildin_api.config import Settings
 from ithildin_api.database import initialize_database
 from ithildin_api.manifest_lock import (
@@ -21,7 +23,7 @@ from ithildin_api.patches import PatchProposalService
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
-from ithildin_schemas import AuditEventType
+from ithildin_schemas import AuditEventType, sha256_digest
 from pydantic import ValidationError
 
 
@@ -1191,10 +1193,78 @@ def test_patch_proposal_endpoints_return_metadata(tmp_path: Path) -> None:
     assert list_response.status_code == 200
     assert "unified_diff" not in list_response.json()["patch_proposals"][0]
     assert list_response.json()["patch_proposals"][0]["proposal_id"] == proposal.proposal_id
+    assert list_response.json()["patch_proposals"][0]["workspace_id"] == "default"
+    assert list_response.json()["patch_proposals"][0]["review"]["stale"] is False
     assert get_response.status_code == 200
     assert get_response.json()["proposal_hash"] == proposal.proposal_hash
+    assert get_response.json()["review"]["base_file_hash_matches"] is True
     assert get_response.json()["unified_diff"].startswith("--- a/README.md")
     assert missing_response.status_code == 404
+
+
+def test_approval_review_endpoint_reports_binding_checks(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    write_manifest(
+        settings.manifest_dir,
+        name="fs.patch.apply",
+        risk="write",
+        required=["proposal_id"],
+    )
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        patch_service = cast(PatchProposalService, app.state.patch_proposal_service)
+        approval_service = cast(ApprovalService, app.state.approval_service)
+        registry = cast(ToolRegistry, app.state.registry)
+        policy_evaluator = app.state.policy_evaluator
+        proposal = patch_service.create_proposal(
+            request_id="req_1",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff="--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n",
+        )
+        tool = registry.get_tool("fs.patch.apply")
+        expires_at = datetime.now(UTC) + timedelta(minutes=15)
+        request_hash = sha256_digest({"request_id": "req_2"})
+        scope = patch_service.approval_scope(
+            proposal.proposal_id,
+            manifest_hash=tool.manifest_hash,
+            manifest_version=tool.manifest.version,
+            tool_input_schema_hash=sha256_digest(tool.manifest.input_schema),
+            policy_engine=policy_evaluator.engine_name,
+            policy_hash=policy_evaluator.policy_hash,
+            policy_version=policy_evaluator.policy_hash,
+            policy_document_version=policy_evaluator.document_version,
+            matched_rules=["allow_test_reads"],
+            requesting_principal={"id": "agent:test"},
+            request_hash=request_hash,
+            expires_at=expires_at,
+        )
+        approval = approval_service.create_pending(
+            CreateApprovalInput(
+                request_id="req_2",
+                request_hash=request_hash,
+                principal={"id": "agent:test"},
+                tool_name="fs.patch.apply",
+                resource={"path": "README.md"},
+                summary="Apply patch",
+                one_time_scope=scope,
+                expires_at=expires_at,
+            )
+        )
+        response = client.get(
+            "/approvals/review?status=pending",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 200
+    reviewed = response.json()["approvals"][0]
+    assert reviewed["approval"]["approval_id"] == approval.approval_id
+    assert reviewed["review"]["valid"] is True
+    assert reviewed["review"]["checks"]["proposal_hash"] is True
+    assert reviewed["review"]["proposal"]["base_file_hash_matches"] is True
 
 
 def test_audit_events_endpoint_requires_auth_filters_and_bounds_results(tmp_path: Path) -> None:

@@ -6,8 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
-
-from scripts.policy_test import PolicyTestError, load_policy_tests, run_policy_tests
+from ithildin_api.policy_testing import PolicyTestError, load_policy_tests, run_policy_tests
 
 
 def write_policy(path: Path) -> None:
