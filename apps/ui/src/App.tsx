@@ -184,6 +184,13 @@ type SystemStatus = {
     key_id: string | null;
     error?: string;
   };
+  redaction: {
+    baseline_enabled: boolean;
+    baseline_key_count: number;
+    baseline_pattern_count: number;
+    extra_key_count: number;
+    extra_pattern_count: number;
+  };
   security: {
     preview_label: string;
     production_ready: boolean;
@@ -615,6 +622,14 @@ export function App() {
                     {data.systemStatus.audit_signing.signed_export_available
                       ? shortHash(data.systemStatus.audit_signing.key_id ?? "")
                       : "not configured"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Redaction</dt>
+                  <dd>
+                    {data.systemStatus.redaction.baseline_enabled
+                      ? `${data.systemStatus.redaction.extra_key_count + data.systemStatus.redaction.extra_pattern_count} extra`
+                      : "disabled"}
                   </dd>
                 </div>
                 <div>
@@ -1103,6 +1118,7 @@ export function App() {
                     <th>Event</th>
                     <th>Tool</th>
                     <th>Decision</th>
+                    <th>Redactions</th>
                     <th>Request</th>
                     <th>Hash</th>
                   </tr>
@@ -1114,6 +1130,7 @@ export function App() {
                       <td>{event.event_type}</td>
                       <td>{event.tool_name ?? ""}</td>
                       <td>{event.decision ?? ""}</td>
+                      <td title={redactionTitle(event)}>{redactionCount(event)}</td>
                       <td>{shortId(event.request_id)}</td>
                       <td>{shortHash(event.event_hash)}</td>
                     </tr>
@@ -1308,6 +1325,20 @@ function formatEvidenceValue(value: string) {
     return `${value.slice(0, 24)}...${value.slice(-12)}`;
   }
   return value;
+}
+
+function redactionCount(event: AuditEvent) {
+  const count = event.metadata.redaction_count;
+  return typeof count === "number" ? String(count) : "";
+}
+
+function redactionTitle(event: AuditEvent) {
+  const paths = event.metadata.redaction_paths;
+  if (!Array.isArray(paths) || paths.length === 0) {
+    return "No redaction paths recorded";
+  }
+  const safePaths = paths.filter((path): path is string => typeof path === "string");
+  return safePaths.length > 0 ? safePaths.join(", ") : "No redaction paths recorded";
 }
 
 function errorMessage(caught: unknown) {

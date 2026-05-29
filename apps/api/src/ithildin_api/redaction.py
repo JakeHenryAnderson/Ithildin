@@ -62,9 +62,11 @@ class RedactionService:
         extra_keys: set[str] | None = None,
         extra_patterns: list[str] | None = None,
     ) -> None:
-        self.keys = set(BASELINE_REDACTION_KEYS) | {
+        self.extra_keys = {
             key.strip().lower() for key in (extra_keys or set()) if key.strip()
         }
+        self.extra_pattern_count = len([pattern for pattern in (extra_patterns or []) if pattern])
+        self.keys = set(BASELINE_REDACTION_KEYS) | self.extra_keys
         self.patterns = _baseline_patterns()
         self.patterns.extend(_compile_extra_patterns(extra_patterns or []))
 
@@ -79,6 +81,15 @@ class RedactionService:
             extra_keys={key.strip() for key in extra_keys.split(",") if key.strip()},
             extra_patterns=[pattern for pattern in extra_patterns.splitlines() if pattern.strip()],
         )
+
+    def status(self) -> JsonObject:
+        return {
+            "baseline_enabled": True,
+            "baseline_key_count": len(BASELINE_REDACTION_KEYS),
+            "baseline_pattern_count": len(_baseline_patterns()),
+            "extra_key_count": len(self.extra_keys),
+            "extra_pattern_count": self.extra_pattern_count,
+        }
 
     def redact(
         self,

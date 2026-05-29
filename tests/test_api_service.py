@@ -243,6 +243,13 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "event_count": 0,
         "head_hash": "sha256:" + ("0" * 64),
     }
+    assert payload["redaction"] == {
+        "baseline_enabled": True,
+        "baseline_key_count": 10,
+        "baseline_pattern_count": 7,
+        "extra_key_count": 0,
+        "extra_pattern_count": 0,
+    }
     assert payload["limits"]["max_read_bytes"] == settings.max_read_bytes
     assert payload["limits"]["max_patch_bytes"] == settings.max_patch_bytes
     assert payload["limits"]["http_allowlist_configured"] is True

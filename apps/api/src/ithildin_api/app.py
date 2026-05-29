@@ -187,6 +187,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         telemetry = cast(Telemetry, api.state.telemetry)
+        redaction_service = cast(RedactionService, api.state.redaction_service)
         tools = registry.list_tools()
         verification = audit_writer.verify_chain().as_dict()
         with telemetry.start_span("ithildin.api.system_status"):
@@ -222,6 +223,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     settings_state.audit_signing_private_key_path,
                     settings_state.audit_signing_public_key_path,
                 ),
+                "redaction": redaction_service.status(),
                 "limits": {
                     "approval_expiry_seconds": settings_state.approval_expiry_seconds,
                     "max_read_bytes": settings_state.max_read_bytes,

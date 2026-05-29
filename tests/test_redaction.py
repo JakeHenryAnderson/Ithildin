@@ -63,3 +63,5 @@ def test_redaction_applies_extra_keys_and_patterns() -> None:
     assert result.value["customer_id"] == REDACTED_VALUE
     assert result.value["message"] == f"account {REDACTED_VALUE} is visible"
     assert result.summary.count == 2
+    assert service.status()["extra_key_count"] == 1
+    assert service.status()["extra_pattern_count"] == 1
