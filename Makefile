@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check ollama-smoke policy-test release-check release-context release-evidence release-guardrails test typecheck ui-dev
+.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check ollama-smoke policy-test release-check release-context release-evidence release-guardrails test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -95,6 +95,9 @@ ollama-smoke:
 
 local-model-demo: ollama-smoke
 	uv run python scripts/ollama_demo.py local-demo
+
+mcp-inspector-recipes:
+	uv run python scripts/mcp_inspector_recipes.py
 
 docs-site:
 	uv run python scripts/build_docs_site.py

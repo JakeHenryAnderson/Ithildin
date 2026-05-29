@@ -45,6 +45,9 @@
 | 047 - Named workspace model | Done | `workspaces/local.yaml`, `/workspaces` |
 | 048 - Policy impact preview | Done | `/policy/impact-preview`, `scripts/policy_impact.py` |
 | 049 - Approval review UX v2 | Done | `/approvals/review`, review console evidence checks |
+| 050 - Local admin auth ergonomics | Done | `make admin-token-generate`, `/system/status` token posture |
+| 051 - Audit diagnostics | Done | `/audit-events/diagnostics`, `make audit-diagnostics` |
+| 052 - MCP Inspector recipes | Done | [mcp-inspector-recipes.md](mcp-inspector-recipes.md) |
 
 ## Future Candidate Track
 
@@ -61,8 +64,8 @@
 ## v0.2 Planning Seed
 
 Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
-after external public-preview review feedback is collected. The current seed prioritizes signed
-policy evidence and local admin-auth hardening.
+after external public-preview review feedback is collected. The current seed has completed the
+initial trust-evidence, policy-confidence, workspace/approval UX, and local-operations polish items.
 
 ## Definition of MVP Done
 
@@ -79,4 +82,5 @@ policy evidence and local admin-auth hardening.
 - Named workspace registry is enabled for scoped read, git, and patch proposal tools.
 - Static docs site generation exists for handoff review.
 - Public-preview warning labels, threat model links, MCP examples, and release notes are checked.
+- MCP Inspector recipes document governed list/call, approval-required, denial, and audit flows.
 - `make release-check` passes before local-preview handoff.

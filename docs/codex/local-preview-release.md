@@ -20,10 +20,12 @@ For public-preview wording, also read
 6. Open `http://127.0.0.1:5173` and use the configured admin token.
 7. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
 8. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
-9. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-10. Optional: run `make audit-keygen` to enable signed audit exports.
-11. Optional: run `make audit-diagnostics` to explain local audit verification state.
-12. Run `make docs-site` to build local handoff docs under ignored `site/`.
+9. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
+   approval-required, denial, and audit verification flows.
+10. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
+11. Optional: run `make audit-keygen` to enable signed audit exports.
+12. Optional: run `make audit-diagnostics` to explain local audit verification state.
+13. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 

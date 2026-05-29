@@ -74,6 +74,7 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make docs-site` - build a small local static docs site under ignored `site/`.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
 - `make local-model-demo` - print host-side MCP wiring for an Ollama-backed local model client.
+- `make mcp-inspector-recipes` - validate and print local MCP Inspector recipe prerequisites.
 - `make ui-dev` - start the Vite UI app.
 
 ## Local Demo
@@ -127,7 +128,10 @@ uv run python -m ithildin_mcp_server
 ```
 
 See [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md) for copy-paste stdio
-client snippets and local-permission warnings.
+client snippets and local-permission warnings. Use
+[docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md) and
+`make mcp-inspector-recipes` for reproducible local `tools/list`, `tools/call`, approval-required,
+denial, and audit verification flows.
 
 For local model demos, run `make local-model-demo`; Ollama remains a host-side client companion,
 not an Ithildin-managed service or tool power.
@@ -160,6 +164,7 @@ No agent-originated action reaches the endpoint unless:
 Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md), then read
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
+[docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md),
 [docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md),
 [docs/codex/threat-model-and-non-goals.md](docs/codex/threat-model-and-non-goals.md),

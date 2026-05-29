@@ -57,7 +57,7 @@ def main() -> int:
         return 1
 
     release_check = _release_check(args.check_release)
-    settings = Settings(admin_token="release-evidence-token")
+    settings = Settings(admin_token="ithildin_admin_release_evidence_placeholder_000000000000")
     registry = ToolRegistry.load(
         settings.manifest_dir,
         lock_path=settings.manifest_lock_path,
