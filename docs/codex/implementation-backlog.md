@@ -51,6 +51,9 @@
 | 053 - Redaction evidence UX | Done | `/system/status`, review console audit table |
 | 054 - Policy decision evidence | Done | `decision_evidence.py`, `/policy/preview` |
 | 055 - Evidence contracts | Done | [evidence-contracts.md](evidence-contracts.md) |
+| 056 - Approval drift regressions | Done | `tests/test_governed_tool_calls.py` |
+| 057 - Path ambiguity hardening | Done | `tests/test_read_tools.py`, `tests/test_patch_proposals.py` |
+| 058 - HTTP proxy regression coverage | Done | `tests/test_http_tools.py` |
 
 ## Future Candidate Track
 
@@ -66,10 +69,10 @@
 
 ## v0.2 Planning Seed
 
-Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
-after external public-preview review feedback is collected. The current seed has completed the
-initial trust-evidence, policy-confidence, workspace/approval UX, local-operations polish, and
-evidence-clarity items.
+Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the completed trust-focused v0.2 roadmap and
+starting point for external/code review. The current track has completed trust-evidence,
+policy-confidence, workspace/approval UX, local-operations polish, evidence-clarity, and
+security-matrix closure items.
 
 ## Definition of MVP Done
 
@@ -88,4 +91,6 @@ evidence-clarity items.
 - Public-preview warning labels, threat model links, MCP examples, and release notes are checked.
 - MCP Inspector recipes document governed list/call, approval-required, denial, and audit flows.
 - Evidence contracts document stable audit, policy, approval, redaction, and signed-bundle fields.
+- Security matrix closure tests cover approval drift, path ambiguity, hardlinks, HTTP proxy
+  inheritance, and canonical host behavior.
 - `make release-check` passes before local-preview handoff.
