@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check ollama-smoke policy-test release-check release-context release-evidence release-guardrails test typecheck ui-dev
+.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check ollama-smoke policy-test release-check release-context release-evidence release-guardrails release-packet test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -50,6 +50,9 @@ policy-test:
 
 release-evidence:
 	uv run python scripts/release_evidence.py
+
+release-packet:
+	uv run python scripts/release_packet.py
 
 release-context:
 	@echo "repo_root=$$(pwd)"
