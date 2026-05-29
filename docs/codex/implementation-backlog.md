@@ -68,6 +68,7 @@
 | 070 - Review packet regeneration | Done | refreshed review bundle and consolidated staging |
 | 071 - Release evidence hashes | Done | renamed release-check fields and `artifact-hashes.json` |
 | 072 - Reviewer reproduction map | Done | [reviewer-reproduction-map.md](reviewer-reproduction-map.md) |
+| 073 - Final v0.2 packet regeneration | Done | final bundle and consolidated review staging |
 
 ## Future Candidate Track
 
