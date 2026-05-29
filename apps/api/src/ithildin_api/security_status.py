@@ -46,7 +46,7 @@ def security_status(settings: Settings) -> JsonObject:
         warnings.append("OpenTelemetry preview export is enabled")
 
     return {
-        "preview_label": "v0.1 local-preview",
+        "preview_label": "v0.2 review candidate for v0.1 local-preview runtime boundary",
         "production_ready": False,
         "dev_admin_token": {
             "sample_token_active": dev_token_active,

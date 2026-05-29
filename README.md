@@ -2,12 +2,13 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
-**v0.1 local-preview warning:** Ithildin v0.1 is a local-preview mediation layer for
-AI-agent tool use. It is not a sandbox, EDR/MDM agent, SIEM, production identity system, hosted MCP
-platform, compliance audit system, or immutable evidence store. It assumes the local host, local
-admin, trusted tool manifests, and local policy files are part of the trusted computing base. Audit
-records are tamper-evident local evidence, not notarized or custody-grade logs. Redaction is
-best-effort leak reduction, not a guarantee that secrets cannot be exposed.
+**v0.2 review candidate for the v0.1 local-preview runtime boundary:** Ithildin is a
+local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM agent, SIEM,
+production identity system, hosted MCP platform, compliance audit system, or immutable evidence
+store. It assumes the local host, local admin, trusted tool manifests, and local policy files are
+part of the trusted computing base. Audit records are tamper-evident local evidence, not notarized
+or custody-grade logs. Redaction is best-effort leak reduction, not a guarantee that secrets cannot
+be exposed.
 
 v0.1 supports narrow built-in tools only: workspace reads, git reads, stored patch proposals,
 approval-gated patch apply, and exact-allowlist GET-only HTTP fetch. It deliberately does not
@@ -33,11 +34,14 @@ Agent / local LLM
   -> endpoint workspace / APIs / local services
 ```
 
-The agent never receives direct OS access. Ithildin owns validation, policy, approval, execution, and evidence.
+The agent does not receive OS access through Ithildin's exposed tools. Ithildin owns validation,
+policy, approval, execution, and evidence.
 
 ## MVP Target
 
-A security-conscious developer can run Ithildin locally, connect an MCP-capable agent, expose a few safe file/git/http tools, require approval for writes, and inspect a trustworthy audit log.
+A security-conscious developer can run Ithildin locally, connect an MCP-capable agent, expose a few
+safe file/git/http tools, require approval for writes, and inspect a locally verifiable
+tamper-evident audit log.
 
 ## Repo Map
 
@@ -100,7 +104,7 @@ Tool manifests are hash-pinned by default; run `make manifest-lock` only after i
 manifest changes.
 Named workspaces are trusted local configuration in `workspaces/local.yaml`; read, git, and patch
 proposal tools accept optional `workspace_id` and default to `default`.
-Signed manifest locks are optional v0.2 local evidence. Run `make manifest-lock-keygen` and
+Locally signed manifest locks are optional v0.2 local evidence. Run `make manifest-lock-keygen` and
 `make manifest-lock-sign`, then set `ITHILDIN_REQUIRE_SIGNED_MANIFEST_LOCK=true` only when you want
 startup to fail closed on missing or invalid local signature evidence. See
 [docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md).
@@ -117,8 +121,8 @@ Use `uv run python scripts/policy_impact.py --candidate-path path/to/policy.yaml
 candidate YAML policy against the same fixtures before runtime configuration changes.
 SQLite is the runtime storage backend for v0.1. Postgres settings are readiness/status evidence only.
 OpenTelemetry is opt-in preview instrumentation and is disabled by default.
-Signed audit exports are optional v0.2 local evidence. Run `make audit-keygen`, then use the review
-console or `/audit-events/export/signed`; see
+Locally signed audit exports are optional v0.2 local evidence. Run `make audit-keygen`, then use the
+review console or `/audit-events/export/signed`; see
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md).
 Use `make audit-diagnostics` when audit verification fails; diagnostics are read-only and do not
 repair or rewrite the local evidence chain.

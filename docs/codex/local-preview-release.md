@@ -1,8 +1,8 @@
 # Ithildin Local Preview Release Guide
 
-This guide describes the current v0.1 local-preview workflow. It is intended for a developer
-running Ithildin locally, connecting an MCP-capable client, reviewing approvals, and exporting audit
-evidence.
+This guide describes the v0.2 review candidate for the v0.1 local-preview runtime boundary. It is
+intended for a developer running Ithildin locally, connecting an MCP-capable client, reviewing
+approvals, and exporting audit evidence.
 
 Read [Threat Model and Non-Goals](threat-model-and-non-goals.md) before treating the preview as a
 security boundary. Ithildin is a local mediation layer, not production security software.
@@ -78,7 +78,7 @@ The local console shows:
   workspace evidence;
 - patch proposal details with unified diffs;
 - recent audit events, audit verification, and JSONL export.
-- signed audit export when a local signing keypair is configured.
+- locally signed audit export when a local signing keypair is configured.
 
 ## Safety Boundaries
 
@@ -92,11 +92,11 @@ The local console shows:
 - Redaction evidence surfaces counts and safe paths only; see
   [Evidence Contracts](evidence-contracts.md).
 - Audit events are stored in SQLite and hash-chained JSONL.
-- Signed audit exports use a local Ed25519 keypair when configured; see
+- Locally signed audit exports use a local Ed25519 keypair when configured; see
   [Signed Audit Exports](signed-audit-exports.md).
 - Audit diagnostics are read-only explanations for verification failures. They do not repair,
   truncate, rewrite, or bless local evidence.
-- Signed manifest locks use a separate local Ed25519 keypair when configured; this is local
+- Locally signed manifest locks use a separate local Ed25519 keypair when configured; this is local
   operator evidence, not hosted supply-chain signing.
 - Docker is only used to run the local demo stack.
 - Ollama local-model demos are host-side only; Ithildin does not run or proxy models.

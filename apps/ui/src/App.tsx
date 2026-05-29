@@ -637,7 +637,7 @@ export function App() {
                   <dd>{data.systemStatus.tool_count}</dd>
                 </div>
                 <div>
-                  <dt>Preview</dt>
+                  <dt>Candidate</dt>
                   <dd>{data.systemStatus.security.preview_label}</dd>
                 </div>
                 <div>

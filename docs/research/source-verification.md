@@ -31,6 +31,8 @@ The source strategy text includes market and standards claims that should be ver
 - v0.2 review should start from `docs/codex/v0.2-review-response-and-rc-cleanup.md`,
   `docs/codex/v0.2-review-packet.md`, and fresh `make release-check`, `make release-evidence`, and
   `make release-packet` outputs. `make review-packet-bundle` packages the expected handoff files.
+- Public positioning should call this a v0.2 review candidate for the v0.1 local-preview runtime
+  boundary, not a new production runtime boundary.
 - Postgres is documented as readiness-only; SQLite is the only runtime storage backend in v0.1.
 - OpenTelemetry is opt-in preview instrumentation and should not be described as production
   observability.
