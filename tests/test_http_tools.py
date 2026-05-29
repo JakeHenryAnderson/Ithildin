@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from email.message import Message
 from pathlib import Path
+from typing import Any, cast
 from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
@@ -262,6 +263,50 @@ def test_idna_hosts_match_exact_punycode_allowlist() -> None:
 
     assert result["url"] == "https://xn--bcher-kva.example/path"
     assert seen_hosts == ["xn--bcher-kva.example", "xn--bcher-kva.example"]
+
+
+def test_default_opener_does_not_inherit_proxy_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+    ]:
+        monkeypatch.setenv(name, "http://127.0.0.1:9999")
+
+    executor = HttpFetchExecutor(
+        allowlist=HttpAllowlist.from_csv("https://example.com"),
+        timeout_seconds=1,
+        max_response_bytes=1024,
+        max_redirects=0,
+        resolver=lambda host, port: ["93.184.216.34"],
+    )
+
+    opener = cast(Any, executor.opener)
+    proxy_handlers = [handler for handler in opener.handlers if hasattr(handler, "proxies")]
+    assert all(cast(Any, handler).proxies == {} for handler in proxy_handlers)
+
+
+def test_trailing_dot_and_mixed_case_hosts_are_canonicalized() -> None:
+    seen_hosts: list[str] = []
+
+    def resolver(host: str, port: int) -> Sequence[str]:
+        seen_hosts.append(host)
+        return ["93.184.216.34"]
+
+    executor, _ = make_executor(
+        allowlist="HTTPS://EXAMPLE.COM.",
+        resolver=resolver,
+    )
+
+    result = executor.fetch("https://EXAMPLE.COM./Path")
+
+    assert result["url"] == "https://example.com/Path"
+    assert seen_hosts == ["example.com", "example.com"]
 
 
 def test_extra_headers_are_rejected_by_manifest_schema(tmp_path: Path) -> None:
