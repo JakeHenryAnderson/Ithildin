@@ -61,6 +61,11 @@
 | 063 - v0.2 external review prompt | Done | [v0.2-external-review-prompt.md](v0.2-external-review-prompt.md) |
 | 064 - v0.2 review bundle command | Done | `make review-packet-bundle`, `scripts/review_packet_bundle.py` |
 | 065 - v0.2 handoff polish | Done | README/release packet handoff sequence |
+| 066 - v0.2 label clarity | Done | v0.2 review candidate / v0.1 runtime boundary wording |
+| 067 - Release evidence metadata | Done | review-doc hashes and release-check transcript metadata |
+| 068 - Signed evidence demo fixtures | Done | `make signed-evidence-demo` |
+| 069 - Negative review recipes | Done | [negative-review-recipes.md](negative-review-recipes.md) |
+| 070 - Review packet regeneration | Done | refreshed review bundle and consolidated staging |
 
 ## Future Candidate Track
 
@@ -104,4 +109,5 @@ security-matrix closure items.
   inheritance, and canonical host behavior.
 - v0.2 review packet and `make release-packet` exist for external review handoff.
 - `make review-packet-bundle` packages the review docs and secret-free command outputs.
+- `make signed-evidence-demo` generates non-production locally signed evidence fixtures for review.
 - `make release-check` passes before local-preview handoff.

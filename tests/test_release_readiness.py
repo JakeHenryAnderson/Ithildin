@@ -174,8 +174,15 @@ def test_review_packet_bundle_layout_and_exclusions(
         path = tmp_path / doc
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"# {path.stem}\n", encoding="utf-8")
+    demo_summary = (
+        tmp_path
+        / "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
+    )
+    demo_summary.parent.mkdir(parents=True)
+    demo_summary.write_text("# Signed Evidence Demo\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(review_packet_bundle, "REVIEW_DOCS", docs)
+    monkeypatch.setattr(review_packet_bundle, "BUNDLE_DOCS", docs)
 
     def fake_git(args: list[str]) -> str:
         if args == ["status", "--short"]:
@@ -215,6 +222,7 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert result.path.joinpath("git-summary.txt").exists()
     assert result.path.joinpath("docs/README.md").exists()
     assert result.path.joinpath("docs/docs/codex/v0.2-review-packet.md").exists()
+    assert result.path.joinpath("signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md").exists()
     bundle_paths = [path.as_posix() for path in result.path.rglob("*")]
     assert not any("/.env" in path for path in bundle_paths)
     assert not any("/var/keys/" in path for path in bundle_paths)

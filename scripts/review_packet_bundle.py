@@ -16,12 +16,25 @@ if __package__ in {None, ""}:
 
 from scripts.review_docs import REVIEW_DOCS, ReviewDocMetadata, collect_review_doc_metadata
 
+BUNDLE_DOCS = [
+    *REVIEW_DOCS,
+    "docs/codex/mcp-client-examples.md",
+    "docs/codex/mcp-inspector-recipes.md",
+    "docs/codex/signed-audit-exports.md",
+    "docs/codex/signed-manifest-locks.md",
+    "docs/research/source-verification.md",
+]
+
 PROJECT_MARKERS = (
     "pyproject.toml",
     "Makefile",
     "apps/api",
     "apps/mcp-server",
     "tool-manifests.lock.json",
+)
+
+SIGNED_EVIDENCE_DEMO_SUMMARY = Path(
+    "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
 )
 
 class BundleError(RuntimeError):
@@ -144,7 +157,15 @@ def build_bundle(
     )
     _write_git_summary(bundle_dir / "git-summary.txt", repo_root, commit, dirty_status)
     _copy_review_docs(repo_root, bundle_dir)
-    _write_index(bundle_dir, commit, marker_status, allow_dirty, review_doc_hashes)
+    signed_demo_included = _copy_signed_evidence_demo_summary(repo_root, bundle_dir)
+    _write_index(
+        bundle_dir,
+        commit,
+        marker_status,
+        allow_dirty,
+        review_doc_hashes,
+        signed_demo_included,
+    )
 
     return BundleResult(
         path=bundle_dir,
@@ -230,7 +251,7 @@ def _write_git_summary(
 
 
 def _copy_review_docs(repo_root: Path, bundle_dir: Path) -> None:
-    for doc in REVIEW_DOCS:
+    for doc in BUNDLE_DOCS:
         source = repo_root / doc
         if not source.exists():
             raise BundleError(f"review document is missing: {doc}")
@@ -239,14 +260,25 @@ def _copy_review_docs(repo_root: Path, bundle_dir: Path) -> None:
         shutil.copy2(source, destination)
 
 
+def _copy_signed_evidence_demo_summary(repo_root: Path, bundle_dir: Path) -> bool:
+    source = repo_root / SIGNED_EVIDENCE_DEMO_SUMMARY
+    if not source.exists():
+        return False
+    destination = bundle_dir / "signed-evidence-demo" / "SIGNED_EVIDENCE_DEMO.md"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    return True
+
+
 def _write_index(
     bundle_dir: Path,
     commit: str,
     marker_status: dict[str, bool],
     allow_dirty: bool,
     review_doc_hashes: list[ReviewDocMetadata],
+    signed_demo_included: bool,
 ) -> None:
-    docs_list = "\n".join(f"- `docs/{doc}`" for doc in REVIEW_DOCS)
+    docs_list = "\n".join(f"- `docs/{doc}`" for doc in BUNDLE_DOCS)
     doc_hashes = "\n".join(
         f"- `{doc['path']}` `{doc['sha256']}` `{doc['bytes']} bytes`"
         for doc in review_doc_hashes
@@ -276,6 +308,7 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 - `release-packet.md`
 - `release-packet.json`
 - `review-doc-hashes.json`
+- `signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md` if `make signed-evidence-demo` was run first
 - `git-summary.txt`
 
 ## Included Review Documents
@@ -285,6 +318,13 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 ## Review Document Hashes
 
 {doc_hashes}
+
+## Locally Signed Evidence Demo
+
+included: `{str(signed_demo_included).lower()}`
+
+Run `make signed-evidence-demo` before `make review-packet-bundle` to include the non-production
+demo summary.
 
 ## Project Markers
 
