@@ -86,6 +86,27 @@ def test_release_packet_review_docs_exist() -> None:
     assert missing == []
 
 
+def test_negative_review_recipes_reference_existing_tools_and_commands() -> None:
+    recipes = Path("docs/codex/negative-review-recipes.md").read_text(encoding="utf-8")
+    manifest_names = {
+        line.removeprefix("name: ").strip()
+        for path in Path("tool-manifests").glob("*.yaml")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("name: ")
+    }
+    for tool_name in [
+        "fs.read",
+        "fs.list",
+        "fs.patch.propose",
+        "fs.patch.apply",
+        "http.fetch",
+    ]:
+        assert tool_name in manifest_names
+        assert tool_name in recipes
+    for command in ["make demo-seed", "make mcp-inspector-recipes"]:
+        assert command in recipes
+
+
 def test_review_doc_metadata_is_deterministic(tmp_path: Path) -> None:
     doc = tmp_path / "README.md"
     doc.write_text("hello\n", encoding="utf-8")

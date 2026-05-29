@@ -22,6 +22,7 @@ DEFAULT_DOCS = [
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",
+    "docs/codex/negative-review-recipes.md",
     "docs/codex/signed-audit-exports.md",
     "docs/codex/signed-manifest-locks.md",
     "docs/codex/v0.1-public-preview-release-notes.md",

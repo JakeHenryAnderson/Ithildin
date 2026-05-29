@@ -14,6 +14,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.2-planning-seed.md",
     "docs/codex/v0.1-security-test-matrix.md",
     "docs/codex/evidence-contracts.md",
+    "docs/codex/negative-review-recipes.md",
     "docs/codex/threat-model-and-non-goals.md",
     "docs/codex/local-preview-release.md",
 ]
