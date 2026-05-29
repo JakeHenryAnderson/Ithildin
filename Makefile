@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check release-context release-evidence release-guardrails test typecheck ui-dev
+.PHONY: audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site lint local-model-demo manifest-lock manifest-lock-check ollama-smoke release-check release-context release-evidence release-guardrails test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -15,6 +15,13 @@ manifest-lock:
 
 manifest-lock-check:
 	uv run python scripts/manifest_lock.py --check
+
+audit-keygen:
+	uv run python scripts/audit_signing.py keygen
+
+audit-export-verify:
+	@test -n "$(FILE)" || (echo "FILE is required, e.g. make audit-export-verify FILE=ithildin-audit-export-signed.json" >&2; exit 1)
+	uv run python scripts/audit_signing.py verify "$(FILE)" $(if $(PUBLIC_KEY),--public-key "$(PUBLIC_KEY)",)
 
 typecheck:
 	uv run mypy

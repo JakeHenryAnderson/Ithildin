@@ -55,8 +55,12 @@ def test_audit_public_exports() -> None:
     for exported_name in [
         "AuditVerificationFailure",
         "AuditVerificationResult",
+        "AuditSigningError",
         "AuditWriteError",
         "AuditWriter",
+        "generate_audit_signing_keypair",
+        "signed_audit_export_bundle",
+        "verify_signed_audit_export_bundle",
     ]:
         assert hasattr(audit_package, exported_name)
 

@@ -17,6 +17,7 @@ DEFAULT_DOCS = [
     "docs/codex/local-preview-release.md",
     "docs/codex/threat-model-and-non-goals.md",
     "docs/codex/mcp-client-examples.md",
+    "docs/codex/signed-audit-exports.md",
     "docs/codex/v0.1-public-preview-release-notes.md",
     "docs/codex/local-model-demo.md",
     "docs/codex/v0.1-local-preview-checklist.md",

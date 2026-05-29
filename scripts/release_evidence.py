@@ -18,7 +18,7 @@ from ithildin_api.registry import ToolRegistry
 from ithildin_api.security_status import security_status
 from ithildin_api.storage import storage_status
 from ithildin_api.telemetry import configure_telemetry
-from ithildin_audit_core import AuditWriter
+from ithildin_audit_core import AuditWriter, audit_signing_status
 
 PROJECT_MARKERS = (
     "pyproject.toml",
@@ -102,6 +102,10 @@ def main() -> int:
         "telemetry": configure_telemetry(settings).status(),
         "security": security_status(settings),
         "audit": _audit_snapshot(audit_writer),
+        "audit_signing": audit_signing_status(
+            settings.audit_signing_private_key_path,
+            settings.audit_signing_public_key_path,
+        ),
         "deferred_boundaries": [
             "production identity",
             "runtime Postgres",
@@ -114,7 +118,7 @@ def main() -> int:
             "arbitrary HTTP methods, headers, or bodies",
             "broad filesystem writes",
             "plugin SDK and marketplace",
-            "cryptographic signing or external notarization",
+            "signed manifest locks and external audit anchoring",
         ],
     }
     json.dump(snapshot, sys.stdout, indent=2, sort_keys=True)

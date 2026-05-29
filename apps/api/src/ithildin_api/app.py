@@ -10,7 +10,12 @@ from typing import Optional, cast
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from ithildin_audit_core import AuditWriter
+from ithildin_audit_core import (
+    AuditSigningError,
+    AuditWriter,
+    audit_signing_status,
+    signed_audit_export_bundle,
+)
 from ithildin_policy_core import PolicyEngine
 from ithildin_schemas import ApprovalDecisionValue, ApprovalRequest, ApprovalStatus, JsonObject
 from pydantic import BaseModel
@@ -174,6 +179,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     "event_count": verification["event_count"],
                     "head_hash": verification["head_hash"],
                 },
+                "audit_signing": audit_signing_status(
+                    settings_state.audit_signing_private_key_path,
+                    settings_state.audit_signing_public_key_path,
+                ),
                 "limits": {
                     "approval_expiry_seconds": settings_state.approval_expiry_seconds,
                     "max_read_bytes": settings_state.max_read_bytes,
@@ -331,6 +340,19 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             media_type="application/x-ndjson",
             headers={"Content-Disposition": 'attachment; filename="ithildin-audit-export.jsonl"'},
         )
+
+    @api.get("/audit-events/export/signed", dependencies=[Depends(require_admin_token)])
+    def export_signed_audit_events() -> JsonObject:
+        settings_state = cast(Settings, api.state.settings)
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        try:
+            return signed_audit_export_bundle(
+                jsonl_bundle=audit_writer.export_jsonl_bundle(),
+                private_key_path=settings_state.audit_signing_private_key_path,
+                public_key_path=settings_state.audit_signing_public_key_path,
+            )
+        except AuditSigningError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     return api
 

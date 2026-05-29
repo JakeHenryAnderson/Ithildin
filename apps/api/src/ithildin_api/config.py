@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     admin_token: str = Field(min_length=1)
     allow_dev_admin_token: bool = False
     audit_log_path: Path = Path("var/logs/audit.jsonl")
+    audit_signing_private_key_path: Path = Path("var/keys/audit-ed25519-private.pem")
+    audit_signing_public_key_path: Path = Path("var/keys/audit-ed25519-public.pem")
     db_path: Path = Path("var/db/ithildin.sqlite3")
     storage_backend: str = "sqlite"
     postgres_dsn: str = ""

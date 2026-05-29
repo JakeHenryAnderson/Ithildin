@@ -4,9 +4,17 @@ import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
-from ithildin_audit_core import AuditWriteError, AuditWriter
+from ithildin_audit_core import (
+    AuditSigningError,
+    AuditWriteError,
+    AuditWriter,
+    generate_audit_signing_keypair,
+    signed_audit_export_bundle,
+    verify_signed_audit_export_bundle,
+)
 from ithildin_schemas import AuditEventType, PolicyDecisionValue
 
 VALID_HASH = "sha256:" + ("a" * 64)
@@ -199,6 +207,166 @@ def test_audit_writer_export_includes_metadata_and_jsonl_events(tmp_path: Path) 
     assert metadata["head_hash"] == event.event_hash
     assert metadata["verification"]["valid"] is True
     assert event_payload["event_id"] == "evt_1"
+
+
+def test_audit_signing_key_generation_and_signed_export_verification(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    event = writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+        tool_name="fs.read",
+    )
+    private_key_path = tmp_path / "keys" / "audit-private.pem"
+    public_key_path = tmp_path / "keys" / "audit-public.pem"
+
+    key_id = generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = cast(
+        dict[str, Any],
+        signed_audit_export_bundle(
+            jsonl_bundle=writer.export_jsonl_bundle(),
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+        ),
+    )
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert private_key_path.exists()
+    assert public_key_path.exists()
+    assert bundle["bundle_type"] == "ithildin.audit.signed_export"
+    assert bundle["format_version"] == "1"
+    assert bundle["events_sha256"].startswith("sha256:")
+    assert bundle["metadata"]["head_hash"] == event.event_hash
+    assert bundle["signature"]["algorithm"] == "ed25519"
+    assert bundle["signature"]["key_id"] == key_id
+    assert result.valid is True
+    assert result.audit_verification.event_count == 1
+
+
+def test_signed_audit_export_verifies_empty_chain(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+
+    bundle = signed_audit_export_bundle(
+        jsonl_bundle=writer.export_jsonl_bundle(),
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert result.valid is True
+    assert result.audit_verification.event_count == 0
+    assert result.audit_verification.head_hash == "sha256:" + ("0" * 64)
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    ["metadata", "events", "events_sha256", "signature", "public_key"],
+)
+def test_signed_audit_export_detects_tampering(tmp_path: Path, tamper: str) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+        tool_name="fs.read",
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = cast(
+        dict[str, Any],
+        signed_audit_export_bundle(
+            jsonl_bundle=writer.export_jsonl_bundle(),
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+        ),
+    )
+
+    if tamper == "metadata":
+        bundle["metadata"]["event_count"] = 99
+    elif tamper == "events":
+        bundle["events_jsonl"] = str(bundle["events_jsonl"]).replace("fs.read", "fs.stat")
+    elif tamper == "events_sha256":
+        bundle["events_sha256"] = "sha256:" + ("b" * 64)
+    elif tamper == "signature":
+        bundle["signature"]["signature"] = "AA" + str(bundle["signature"]["signature"])[2:]
+    else:
+        bundle["signature"]["public_key"] = "AA" + str(bundle["signature"]["public_key"])[2:]
+
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert result.valid is False
+    assert result.failure is not None
+
+
+def test_signed_audit_export_reflects_failed_chain_verification(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+        tool_name="fs.read",
+    )
+    with sqlite3.connect(writer.db_path) as connection:
+        payload_json = connection.execute(
+            "SELECT payload_json FROM audit_events WHERE event_id = 'evt_1'"
+        ).fetchone()[0]
+        payload = json.loads(str(payload_json))
+        payload["tool_name"] = "fs.changed"
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_1'",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
+        )
+        connection.commit()
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+
+    bundle = cast(
+        dict[str, Any],
+        signed_audit_export_bundle(
+            jsonl_bundle=writer.export_jsonl_bundle(),
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+        ),
+    )
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert bundle["metadata"]["verification"]["valid"] is False
+    assert result.valid is True
+    assert result.audit_verification.valid is False
+
+
+def test_signed_audit_export_fails_for_missing_keys(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+
+    with pytest.raises(AuditSigningError):
+        signed_audit_export_bundle(
+            jsonl_bundle=writer.export_jsonl_bundle(),
+            private_key_path=tmp_path / "missing-private.pem",
+            public_key_path=tmp_path / "missing-public.pem",
+        )
 
 
 def test_audit_writer_redacts_configured_fields(tmp_path: Path) -> None:

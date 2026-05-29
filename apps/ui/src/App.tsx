@@ -126,6 +126,14 @@ type SystemStatus = {
     event_count: number;
     head_hash: string;
   };
+  audit_signing: {
+    algorithm: string;
+    private_key_configured: boolean;
+    public_key_configured: boolean;
+    signed_export_available: boolean;
+    key_id: string | null;
+    error?: string;
+  };
   security: {
     preview_label: string;
     production_ready: boolean;
@@ -341,21 +349,24 @@ export function App() {
     }
   }
 
-  async function exportAuditBundle() {
+  async function exportAuditBundle(signed = false) {
     setExportLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/audit-events/export`, {
+      const response = await fetch(`${API_BASE}/audit-events/export${signed ? "/signed" : ""}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
-        throw new ApiError(response.status, response.statusText);
+        const detail = await response.text();
+        throw new ApiError(response.status, detail || response.statusText);
       }
       const bundle = await response.blob();
       const objectUrl = URL.createObjectURL(bundle);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
-      anchor.download = "ithildin-audit-export.jsonl";
+      anchor.download = signed
+        ? "ithildin-audit-export-signed.json"
+        : "ithildin-audit-export.jsonl";
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
@@ -501,6 +512,14 @@ export function App() {
                 <div>
                   <dt>Audit Head</dt>
                   <dd>{shortHash(data.systemStatus.audit.head_hash)}</dd>
+                </div>
+                <div>
+                  <dt>Audit Signing</dt>
+                  <dd>
+                    {data.systemStatus.audit_signing.signed_export_available
+                      ? shortHash(data.systemStatus.audit_signing.key_id ?? "")
+                      : "not configured"}
+                  </dd>
                 </div>
                 <div>
                   <dt>Tools</dt>
@@ -733,15 +752,30 @@ export function App() {
                 <EmptyState text={token ? "Verification unavailable." : "Locked."} />
               )}
             </div>
-            <button
-              className="export-button"
-              type="button"
-              disabled={!token || exportLoading}
-              onClick={() => void exportAuditBundle()}
-            >
-              <Download aria-hidden="true" size={18} />
-              {exportLoading ? "Exporting" : "Export JSONL"}
-            </button>
+            <div className="export-actions">
+              <button
+                className="export-button"
+                type="button"
+                disabled={!token || exportLoading}
+                onClick={() => void exportAuditBundle()}
+              >
+                <Download aria-hidden="true" size={18} />
+                {exportLoading ? "Exporting" : "Export JSONL"}
+              </button>
+              <button
+                className="export-button"
+                type="button"
+                disabled={
+                  !token ||
+                  exportLoading ||
+                  !data.systemStatus?.audit_signing.signed_export_available
+                }
+                onClick={() => void exportAuditBundle(true)}
+              >
+                <KeyRound aria-hidden="true" size={18} />
+                {exportLoading ? "Exporting" : "Export Signed"}
+              </button>
+            </div>
           </div>
         </Panel>
       </section>

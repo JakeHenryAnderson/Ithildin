@@ -39,6 +39,7 @@
 | 033 - Approval and evidence binding | Done | Sprint checkpoint |
 | 034 - Executor security edge cases | Done | Sprint checkpoint |
 | 035 - Public v0.1 release candidate polish | Done | [v0.1-public-preview-release-notes.md](v0.1-public-preview-release-notes.md) |
+| 044 - Signed audit exports | Done | [signed-audit-exports.md](signed-audit-exports.md) |
 
 ## Future Candidate Track
 
@@ -48,7 +49,7 @@
 | Runtime Postgres | Deferred | Real Postgres stores and migrations; current support is readiness-only. |
 | Hosted observability | Deferred | Production collectors and dashboards; current OpenTelemetry is opt-in preview. |
 | Kubernetes and executor hardening | Deferred | Kubernetes assets and containerized execution remain outside v0.1. |
-| Signatures/notarization | Deferred | Cryptographic signing for manifests and audit exports. |
+| Signed manifest locks and external anchoring | Deferred | Audit export signing exists locally; manifest signing and external anchoring remain future work. |
 | Remote MCP hosting | Deferred | Stdio-only local MCP remains the v0.1 boundary. |
 | Plugin SDK and marketplace | Deferred | Requires stronger signing, review UX, executor contracts, and policy tests. |
 
@@ -56,7 +57,7 @@
 
 Use [v0.2-planning-seed.md](v0.2-planning-seed.md) as the provisional trust-focused v0.2 plan
 after external public-preview review feedback is collected. The current seed prioritizes signed
-audit exports, signed manifest locks, policy tests, workspace modeling, approval review UX, policy
+manifest locks, policy tests, workspace modeling, approval review UX, policy
 diff/impact preview, and local admin-auth hardening.
 
 ## Definition of MVP Done

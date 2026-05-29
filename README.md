@@ -63,6 +63,8 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 - `make release-check` - run manifest lock verification, tests, lint, typecheck, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
+- `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
+- `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
 - `make docs-site` - build a small local static docs site under ignored `site/`.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
 - `make local-model-demo` - print host-side MCP wiring for an Ollama-backed local model client.
@@ -94,6 +96,9 @@ OPA is optional. When `ITHILDIN_POLICY_ENGINE=opa`, Ithildin verifies
 `policies/opa/bundle.lock.json` before startup and reports bundle evidence in policy/system status.
 SQLite is the runtime storage backend for v0.1. Postgres settings are readiness/status evidence only.
 OpenTelemetry is opt-in preview instrumentation and is disabled by default.
+Signed audit exports are optional v0.2 local evidence. Run `make audit-keygen`, then use the review
+console or `/audit-events/export/signed`; see
+[docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md).
 
 MCP is launched by an MCP client rather than as a persistent Compose service:
 
@@ -135,6 +140,7 @@ No agent-originated action reaches the endpoint unless:
 Begin with [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md), then read
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
+[docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md),
 [docs/codex/threat-model-and-non-goals.md](docs/codex/threat-model-and-non-goals.md),
 [docs/obsidian/00-index.md](docs/obsidian/00-index.md) and
 [docs/codex/project-brief.md](docs/codex/project-brief.md) when starting implementation work.

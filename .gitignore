@@ -20,8 +20,10 @@ site/
 .env.*
 !.env.example
 var/db/*
+var/keys/*
 var/logs/*
 !var/db/.gitkeep
+!var/keys/.gitkeep
 !var/logs/.gitkeep
 workspaces/*
 !workspaces/.gitkeep

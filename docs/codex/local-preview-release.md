@@ -19,7 +19,8 @@ For public-preview wording, also read
 6. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
 7. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
 8. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-9. Run `make docs-site` to build local handoff docs under ignored `site/`.
+9. Optional: run `make audit-keygen` to enable signed audit exports.
+10. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 
@@ -51,6 +52,7 @@ The local console shows:
 - pending approvals with approve/deny actions;
 - patch proposal details with unified diffs;
 - recent audit events, audit verification, and JSONL export.
+- signed audit export when a local signing keypair is configured.
 
 ## Safety Boundaries
 
@@ -61,6 +63,8 @@ The local console shows:
   text encodings, and stale patch bases.
 - Tool outputs are redacted before returning to agents.
 - Audit events are stored in SQLite and hash-chained JSONL.
+- Signed audit exports use a local Ed25519 keypair when configured; see
+  [Signed Audit Exports](signed-audit-exports.md).
 - Docker is only used to run the local demo stack.
 - Ollama local-model demos are host-side only; Ithildin does not run or proxy models.
 - The generated docs site is local-only build output under `site/`.
@@ -70,5 +74,5 @@ The local console shows:
 - Production authentication, OIDC, SAML, and SCIM.
 - Runtime Postgres storage, hosted telemetry collectors, and hosted control-plane workflows.
 - Kubernetes, Docker socket access, shell execution, and broad filesystem writes.
-- Cryptographic signing/notarization for manifests and audit exports.
+- Signed manifest locks and external audit anchoring.
 - Managed model serving or hosted LLM control-plane workflows.

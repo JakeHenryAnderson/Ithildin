@@ -14,7 +14,7 @@ from ithildin_api.database import initialize_database
 from ithildin_api.manifest_lock import ManifestLockRecord, write_manifest_lock
 from ithildin_api.patches import PatchProposalService
 from ithildin_api.registry import ToolRegistry
-from ithildin_audit_core import AuditWriter
+from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType
 from pydantic import ValidationError
@@ -45,6 +45,8 @@ rules:
     return Settings(
         admin_token=token,
         audit_log_path=tmp_path / "audit.jsonl",
+        audit_signing_private_key_path=tmp_path / "keys" / "audit-private.pem",
+        audit_signing_public_key_path=tmp_path / "keys" / "audit-public.pem",
         db_path=tmp_path / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
         require_manifest_lock=False,
@@ -1041,6 +1043,54 @@ def test_audit_verification_and_export_endpoints(tmp_path: Path) -> None:
     lines = export_response.text.splitlines()
     assert json.loads(lines[0])["metadata"]["verification"]["valid"] is True
     assert json.loads(lines[1])["event_id"] == "evt_1"
+
+
+def test_signed_audit_export_endpoint_requires_auth_and_keys(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        unauthenticated = client.get("/audit-events/export/signed")
+        missing_keys = client.get(
+            "/audit-events/export/signed",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert missing_keys.status_code == 409
+    assert "private key" in missing_keys.json()["detail"]
+
+
+def test_signed_audit_export_endpoint_returns_signed_bundle(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    generate_audit_signing_keypair(
+        private_key_path=settings.audit_signing_private_key_path,
+        public_key_path=settings.audit_signing_public_key_path,
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        event = audit_writer.write_event(
+            event_id="evt_1",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_1",
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.read",
+        )
+        response = client.get(
+            "/audit-events/export/signed",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 200
+    bundle = response.json()
+    assert bundle["bundle_type"] == "ithildin.audit.signed_export"
+    assert bundle["metadata"]["head_hash"] == event.event_hash
+    assert bundle["events_sha256"].startswith("sha256:")
+    assert bundle["signature"]["algorithm"] == "ed25519"
+    assert bundle["signature"]["key_id"].startswith("sha256:")
+    assert json.loads(bundle["events_jsonl"].splitlines()[0])["event_id"] == "evt_1"
 
 
 def test_audit_export_reflects_failed_verification(tmp_path: Path) -> None:
