@@ -72,6 +72,7 @@
 | 074 - Consolidated attachment hashes | Done | `make review-packet-consolidated` |
 | 075 - Source review closure matrix | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md) |
 | 076 - Reviewer finding template | Done | [reviewer-finding-template.md](reviewer-finding-template.md) |
+| 077 - Negative review transcripts | Done | `make negative-review-transcripts` |
 
 ## Future Candidate Track
 

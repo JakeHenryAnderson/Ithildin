@@ -177,6 +177,12 @@ def test_consolidated_review_packet_generation(
     )
     demo_summary.parent.mkdir(parents=True)
     demo_summary.write_text("# demo\n", encoding="utf-8")
+    negative_transcripts = (
+        repo_root
+        / "var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
+    )
+    negative_transcripts.parent.mkdir(parents=True)
+    negative_transcripts.write_text("# negative transcripts\n", encoding="utf-8")
     monkeypatch.chdir(repo_root)
 
     output_dir = consolidate_review_packet.build_consolidated_packet(
@@ -195,6 +201,9 @@ def test_consolidated_review_packet_generation(
     hash_paths = {entry["path"] for entry in hashes}
     assert hash_paths == set(consolidate_review_packet.ATTACHMENT_FILES)
     assert all(str(entry["sha256"]).startswith("sha256:") for entry in hashes)
+    assert "Negative Review Transcripts" in output_dir.joinpath(
+        "04_REPRODUCTION_SECURITY_AND_NEGATIVE_RECIPES.md"
+    ).read_text(encoding="utf-8")
     all_output_paths = [path.as_posix() for path in output_dir.rglob("*")]
     assert not any("/.env" in path for path in all_output_paths)
     assert not any("/var/keys/" in path for path in all_output_paths)
@@ -346,6 +355,12 @@ def test_review_packet_bundle_layout_and_exclusions(
     )
     demo_summary.parent.mkdir(parents=True)
     demo_summary.write_text("# Signed Evidence Demo\n", encoding="utf-8")
+    negative_transcripts = (
+        tmp_path
+        / "var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
+    )
+    negative_transcripts.parent.mkdir(parents=True)
+    negative_transcripts.write_text("# Negative Review Transcripts\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(review_packet_bundle, "REVIEW_DOCS", docs)
     monkeypatch.setattr(review_packet_bundle, "BUNDLE_DOCS", docs)
@@ -390,6 +405,9 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert result.path.joinpath("docs/README.md").exists()
     assert result.path.joinpath("docs/docs/codex/v0.2-review-packet.md").exists()
     assert result.path.joinpath("signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md").exists()
+    assert result.path.joinpath(
+        "negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
+    ).exists()
     artifact_hashes = json.loads(
         result.path.joinpath("artifact-hashes.json").read_text(encoding="utf-8")
     )
@@ -402,6 +420,7 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert "review-doc-hashes.json" in artifact_paths
     assert "docs/README.md" in artifact_paths
     assert "signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md" in artifact_paths
+    assert "negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md" in artifact_paths
     bundle_paths = [path.as_posix() for path in result.path.rglob("*")]
     assert not any("/.env" in path for path in bundle_paths)
     assert not any("/var/keys/" in path for path in bundle_paths)

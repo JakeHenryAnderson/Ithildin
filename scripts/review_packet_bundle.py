@@ -37,6 +37,9 @@ PROJECT_MARKERS = (
 SIGNED_EVIDENCE_DEMO_SUMMARY = Path(
     "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
 )
+NEGATIVE_TRANSCRIPTS_SUMMARY = Path(
+    "var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
+)
 
 class BundleError(RuntimeError):
     """Raised for release-bundle failures that should be shown to the operator."""
@@ -159,6 +162,7 @@ def build_bundle(
     _write_git_summary(bundle_dir / "git-summary.txt", repo_root, commit, dirty_status)
     _copy_review_docs(repo_root, bundle_dir)
     signed_demo_included = _copy_signed_evidence_demo_summary(repo_root, bundle_dir)
+    negative_transcripts_included = _copy_negative_transcripts_summary(repo_root, bundle_dir)
     _write_index(
         bundle_dir,
         commit,
@@ -166,11 +170,13 @@ def build_bundle(
         allow_dirty,
         review_doc_hashes,
         signed_demo_included,
+        negative_transcripts_included,
     )
     artifact_hashes = _collect_artifact_hashes(
         bundle_dir=bundle_dir,
         review_docs=BUNDLE_DOCS,
         signed_demo_included=signed_demo_included,
+        negative_transcripts_included=negative_transcripts_included,
     )
     _write_json(bundle_dir / "artifact-hashes.json", artifact_hashes)
 
@@ -277,11 +283,22 @@ def _copy_signed_evidence_demo_summary(repo_root: Path, bundle_dir: Path) -> boo
     return True
 
 
+def _copy_negative_transcripts_summary(repo_root: Path, bundle_dir: Path) -> bool:
+    source = repo_root / NEGATIVE_TRANSCRIPTS_SUMMARY
+    if not source.exists():
+        return False
+    destination = bundle_dir / "negative-review-transcripts" / "NEGATIVE_REVIEW_TRANSCRIPTS.md"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    return True
+
+
 def _collect_artifact_hashes(
     *,
     bundle_dir: Path,
     review_docs: list[str],
     signed_demo_included: bool,
+    negative_transcripts_included: bool,
 ) -> list[dict[str, Any]]:
     paths = [
         Path("INDEX.md"),
@@ -295,6 +312,8 @@ def _collect_artifact_hashes(
     paths.extend(Path("docs") / doc for doc in review_docs)
     if signed_demo_included:
         paths.append(Path("signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"))
+    if negative_transcripts_included:
+        paths.append(Path("negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"))
 
     artifacts: list[dict[str, Any]] = []
     for relative_path in paths:
@@ -319,6 +338,7 @@ def _write_index(
     allow_dirty: bool,
     review_doc_hashes: list[ReviewDocMetadata],
     signed_demo_included: bool,
+    negative_transcripts_included: bool,
 ) -> None:
     docs_list = "\n".join(f"- `docs/{doc}`" for doc in BUNDLE_DOCS)
     doc_hashes = "\n".join(
@@ -352,6 +372,8 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 - `review-doc-hashes.json`
 - `artifact-hashes.json`
 - `signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md` if `make signed-evidence-demo` was run first
+- `negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md` if
+  `make negative-review-transcripts` was run first
 - `git-summary.txt`
 
 ## Included Review Documents
@@ -375,6 +397,13 @@ not external notarization, hosted custody, or official supply-chain signing.
 
 See `artifact-hashes.json` for SHA-256 digests of the generated bundle outputs, copied review
 documents, and copied signed-evidence demo summary when present.
+
+## Negative Review Transcripts
+
+included: `{str(negative_transcripts_included).lower()}`
+
+Run `make negative-review-transcripts` before `make review-packet-bundle` to include observed local
+fixture denials for the negative review recipes.
 
 ## Project Markers
 

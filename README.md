@@ -78,6 +78,7 @@ tamper-evident audit log.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
+- `make negative-review-transcripts` - generate ignored observed denial transcripts for review.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification state without mutating evidence.
@@ -158,8 +159,8 @@ make docs-site
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
 `make release-check`, `make release-evidence`, `make release-packet`, `make signed-evidence-demo`,
-`make review-packet-bundle`, and `make review-packet-consolidated` before tagging or external
-review handoff. Use
+`make negative-review-transcripts`, `make review-packet-bundle`, and
+`make review-packet-consolidated` before tagging or external review handoff. Use
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
 the full evidence sequence and locate generated hashes/transcripts.
 

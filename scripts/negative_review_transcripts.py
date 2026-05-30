@@ -1,0 +1,379 @@
+"""Generate observed negative-review denial transcripts from local fixtures."""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import tempfile
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from email.message import Message
+from pathlib import Path
+from urllib.error import HTTPError
+from urllib.request import Request
+
+from ithildin_api.approvals import (
+    ApprovalError,
+    ApprovalService,
+    ApprovalStore,
+    CreateApprovalInput,
+)
+from ithildin_api.http_tools import HttpAllowlist, HttpFetchError, HttpFetchExecutor
+from ithildin_api.identity import (
+    DisabledPrincipalError,
+    PrincipalRegistry,
+    UnknownPrincipalError,
+    resolve_trusted_principal,
+)
+from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
+from ithildin_api.read_tools import FilesystemReadTools, ReadToolError
+from ithildin_audit_core import AuditWriter
+from ithildin_schemas import JsonObject, sha256_digest
+
+DEFAULT_OUTPUT_DIR = Path("var/review-packets/v0.2/negative-review-transcripts")
+TRANSCRIPT_NAME = "NEGATIVE_REVIEW_TRANSCRIPTS.md"
+
+
+@dataclass(frozen=True)
+class ScenarioResult:
+    name: str
+    command_or_setup: str
+    expected: str
+    observed_status: str
+    observed_reason: str
+    evidence_pointer: str
+
+
+class FakeOpener:
+    def __init__(self, responses: list[object]) -> None:
+        self.responses = responses
+        self.requests: list[Request] = []
+
+    def open(self, fullurl: Request, timeout: float = 0) -> object:
+        self.requests.append(fullurl)
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    args = parser.parse_args()
+
+    output_path = build_transcripts(args.output_dir)
+    print(f"Built negative review transcripts at {output_path}")
+    return 0
+
+
+def build_transcripts(output_dir: Path) -> Path:
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
+    with tempfile.TemporaryDirectory(prefix="ithildin-negative-review-") as temp_dir:
+        root = Path(temp_dir)
+        results = [
+            _path_traversal(root / "path-traversal"),
+            _symlink_escape(root / "symlink-escape"),
+            _stale_base_patch_apply(root / "stale-base"),
+            _http_private_redirect(),
+            _unknown_principal(root / "unknown-principal"),
+            _disabled_principal(root / "disabled-principal"),
+            _replayed_approval(root / "replayed-approval"),
+        ]
+    transcript_path = output_dir / TRANSCRIPT_NAME
+    transcript_path.write_text(_render_transcript(results), encoding="utf-8")
+    return transcript_path
+
+
+def _path_traversal(root: Path) -> ScenarioResult:
+    filesystem = _filesystem(root)
+    root.joinpath("outside.txt").write_text("do-not-leak-path-traversal", encoding="utf-8")
+    try:
+        filesystem.read_file("../outside.txt")
+    except ReadToolError as exc:
+        return _denied(
+            name="Path Traversal Denial",
+            command_or_setup='fs.read {"path":"../outside.txt","workspace_id":"default"}',
+            expected="deny before file content is returned",
+            reason=exc.reason,
+            evidence="ReadToolError raised before executor returned content",
+        )
+    raise AssertionError("path traversal was not denied")
+
+
+def _symlink_escape(root: Path) -> ScenarioResult:
+    filesystem = _filesystem(root)
+    outside = root / "outside.txt"
+    outside.write_text("do-not-leak-symlink", encoding="utf-8")
+    filesystem.workspace_root.joinpath("link.txt").symlink_to(outside)
+    try:
+        filesystem.read_file("link.txt")
+    except ReadToolError as exc:
+        return _denied(
+            name="Symlink Escape Denial",
+            command_or_setup='fs.read {"path":"link.txt","workspace_id":"default"}',
+            expected="deny symlink/path escape before target content is returned",
+            reason=exc.reason,
+            evidence="ReadToolError raised during workspace path resolution",
+        )
+    raise AssertionError("symlink escape was not denied")
+
+
+def _stale_base_patch_apply(root: Path) -> ScenarioResult:
+    workspace = root / "workspace"
+    workspace.mkdir(parents=True)
+    target = workspace / "README.md"
+    target.write_text("old\n", encoding="utf-8")
+    db_path = root / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, root / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    patch_store = PatchProposalStore(db_path)
+    patch_store.initialize()
+    filesystem = FilesystemReadTools(workspace, max_read_bytes=4096, search_result_limit=10)
+    patch_service = PatchProposalService(patch_store, filesystem, max_patch_bytes=4096)
+    principal: JsonObject = {"id": "agent:mcp-local", "roles": ["AgentDeveloper"]}
+    proposal = patch_service.create_proposal(
+        request_id="req_negative_stale_base",
+        principal=principal,
+        path="README.md",
+        unified_diff="--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n",
+    )
+    request_hash = sha256_digest({"scenario": "stale-base-patch-apply"})
+    expires_at = datetime.now(UTC) + timedelta(minutes=15)
+    manifest_hash = "sha256:" + ("a" * 64)
+    policy_hash = "sha256:" + ("b" * 64)
+    schema_hash = "sha256:" + ("c" * 64)
+    scope = patch_service.approval_scope(
+        proposal.proposal_id,
+        manifest_hash=manifest_hash,
+        manifest_version="1.0.0",
+        tool_input_schema_hash=schema_hash,
+        policy_engine="yaml",
+        policy_hash=policy_hash,
+        policy_version="policy-v1",
+        policy_document_version="default-v1",
+        matched_rules=["require_write_approval"],
+        requesting_principal=principal,
+        request_hash=request_hash,
+        expires_at=expires_at,
+    )
+    approval = approval_service.create_pending(
+        CreateApprovalInput(
+            principal=principal,
+            tool_name="fs.patch.apply",
+            resource={"path": "README.md", "workspace_id": "default"},
+            summary="Apply stale-base negative review patch",
+            one_time_scope=scope,
+            request_hash=request_hash,
+            expires_at=expires_at,
+        )
+    )
+    approval_service.approve(approval.approval_id, decided_by="admin:negative-review")
+    target.write_text("changed before apply\n", encoding="utf-8")
+    try:
+        patch_service.apply_approved(
+            approval_service=approval_service,
+            approval_id=approval.approval_id,
+            expected_manifest_hash=manifest_hash,
+            expected_manifest_version="1.0.0",
+            expected_tool_input_schema_hash=schema_hash,
+            expected_policy_engine="yaml",
+            expected_policy_hash=policy_hash,
+            expected_policy_version="policy-v1",
+            expected_policy_document_version="default-v1",
+            expected_matched_rules=["require_write_approval"],
+            expected_principal=principal,
+        )
+    except PatchProposalError as exc:
+        return _denied(
+            name="Stale-Base Patch Apply Denial",
+            command_or_setup="fs.patch.apply with an approved approval_id after target mutation",
+            expected="deny stale base and avoid partial writes",
+            reason=exc.reason,
+            evidence="PatchProposalError raised before atomic replace",
+        )
+    raise AssertionError("stale-base patch apply was not denied")
+
+
+def _http_private_redirect() -> ScenarioResult:
+    redirect = HTTPError(
+        "https://example.com/",
+        302,
+        "Found",
+        _headers(location="https://metadata.example/"),
+        None,
+    )
+
+    def resolver(host: str, port: int) -> Sequence[str]:
+        return ["169.254.169.254"] if host == "metadata.example" else ["93.184.216.34"]
+
+    executor = HttpFetchExecutor(
+        allowlist=HttpAllowlist.from_csv("https://example.com,https://metadata.example"),
+        timeout_seconds=1,
+        max_response_bytes=1024,
+        max_redirects=3,
+        resolver=resolver,
+        opener=FakeOpener([redirect]),
+    )
+    try:
+        executor.fetch("https://example.com/")
+    except HttpFetchError as exc:
+        return _denied(
+            name="HTTP Private Redirect Denial",
+            command_or_setup='http.fetch {"url":"https://example.com/"} with redirect fixture',
+            expected="deny redirect destination after DNS/IP revalidation",
+            reason=str(exc),
+            evidence="HttpFetchError raised before blocked destination body was read",
+        )
+    raise AssertionError("private redirect was not denied")
+
+
+def _unknown_principal(root: Path) -> ScenarioResult:
+    registry_path = root / "principals.yaml"
+    registry_path.parent.mkdir(parents=True)
+    registry_path.write_text("principals: []\n", encoding="utf-8")
+    registry = PrincipalRegistry.load(registry_path)
+    try:
+        resolve_trusted_principal(registry, {"id": "agent:not-registered", "roles": ["Admin"]})
+    except UnknownPrincipalError as exc:
+        return _denied(
+            name="Unknown Principal Denial",
+            command_or_setup='principal {"id":"agent:not-registered","roles":["Admin"]}',
+            expected="deny unknown principal and ignore spoofed roles",
+            reason=str(exc),
+            evidence="UnknownPrincipalError raised during trusted principal resolution",
+        )
+    raise AssertionError("unknown principal was not denied")
+
+
+def _disabled_principal(root: Path) -> ScenarioResult:
+    registry_path = root / "principals.yaml"
+    registry_path.parent.mkdir(parents=True)
+    registry_path.write_text(
+        """
+principals:
+  - id: agent:disabled-review
+    type: agent
+    display_name: Disabled Review Agent
+    roles: [AgentDeveloper]
+    enabled: false
+""",
+        encoding="utf-8",
+    )
+    registry = PrincipalRegistry.load(registry_path)
+    try:
+        resolve_trusted_principal(registry, {"id": "agent:disabled-review"})
+    except DisabledPrincipalError as exc:
+        return _denied(
+            name="Disabled Principal Denial",
+            command_or_setup='principal {"id":"agent:disabled-review"}',
+            expected="deny disabled principal before policy or execution",
+            reason=str(exc),
+            evidence="DisabledPrincipalError raised during trusted principal resolution",
+        )
+    raise AssertionError("disabled principal was not denied")
+
+
+def _replayed_approval(root: Path) -> ScenarioResult:
+    db_path = root / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, root / "audit.jsonl")
+    audit_writer.initialize()
+    store = ApprovalStore(db_path)
+    store.initialize()
+    service = ApprovalService(store, audit_writer, timedelta(minutes=15))
+    approval = service.create_pending(
+        CreateApprovalInput(
+            principal={"id": "agent:mcp-local"},
+            tool_name="fs.patch.apply",
+            resource={"path": "README.md"},
+            summary="Replay negative review approval",
+            one_time_scope={"scenario": "replay-denial"},
+        )
+    )
+    approved = service.approve(approval.approval_id, decided_by="admin:negative-review")
+    executing = service.begin_execution(approved.approval_id, approved.request_hash)
+    service.complete_execution(executing.approval_id, success=True)
+    try:
+        service.begin_execution(approved.approval_id, approved.request_hash)
+    except ApprovalError as exc:
+        return _denied(
+            name="Replayed Approval Denial",
+            command_or_setup="approval begin_execution after successful completion",
+            expected="deny replay after one-time approval consumption",
+            reason=str(exc),
+            evidence="ApprovalError raised after approval reached executed state",
+        )
+    raise AssertionError("replayed approval was not denied")
+
+
+def _filesystem(root: Path) -> FilesystemReadTools:
+    workspace = root / "workspace"
+    workspace.mkdir(parents=True)
+    return FilesystemReadTools(
+        workspace_root=workspace,
+        max_read_bytes=4096,
+        search_result_limit=10,
+    )
+
+
+def _denied(
+    *,
+    name: str,
+    command_or_setup: str,
+    expected: str,
+    reason: str,
+    evidence: str,
+) -> ScenarioResult:
+    return ScenarioResult(
+        name=name,
+        command_or_setup=command_or_setup,
+        expected=expected,
+        observed_status="denied",
+        observed_reason=_safe_reason(reason),
+        evidence_pointer=evidence,
+    )
+
+
+def _safe_reason(reason: str) -> str:
+    return " ".join(reason.split())
+
+
+def _headers(*, location: str) -> Message:
+    headers = Message()
+    headers["Location"] = location
+    return headers
+
+
+def _render_transcript(results: list[ScenarioResult]) -> str:
+    sections = [
+        "# Negative Review Transcripts",
+        "",
+        "These are observed local fixture denials for reviewer convenience. They are not a",
+        "replacement for external source review and do not add tools, endpoints, or execution",
+        "powers.",
+        "",
+    ]
+    for result in results:
+        sections.extend(
+            [
+                f"## {result.name}",
+                "",
+                f"- command/setup: `{result.command_or_setup}`",
+                f"- expected: {result.expected}",
+                f"- observed status: `{result.observed_status}`",
+                f"- observed safe reason: `{result.observed_reason}`",
+                f"- evidence pointer: {result.evidence_pointer}",
+                "",
+            ]
+        )
+    return "\n".join(sections)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -9,10 +9,13 @@ Use these after running:
 ```sh
 make demo-seed
 make mcp-inspector-recipes
+make negative-review-transcripts
 ```
 
 The exact command syntax depends on the MCP Inspector or local client being used. The important
 review target is the requested tool, arguments, and expected safe denial behavior.
+`make negative-review-transcripts` records local fixture observations for the same denial classes
+under `var/review-packets/v0.2/negative-review-transcripts/`.
 
 ## Path Traversal Denial
 
