@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
+from typing import cast
 from urllib.request import Request
 
 import pytest
@@ -24,6 +26,7 @@ from ithildin_audit_core import AuditWriter
 from ithildin_mcp_server import IthildinMcpAdapter, create_mcp_server
 from ithildin_mcp_server.server import create_adapter
 from ithildin_policy_core import PolicyEvaluator
+from ithildin_schemas import AuditEventType
 from mcp import types
 
 
@@ -189,7 +192,17 @@ input_schema:
     )
 
 
+@dataclass(frozen=True)
+class McpAdapterHarness:
+    adapter: IthildinMcpAdapter
+    audit_writer: AuditWriter
+
+
 def make_adapter(tmp_path: Path, *, http_body: bytes = b"mcp network") -> IthildinMcpAdapter:
+    return make_adapter_harness(tmp_path, http_body=http_body).adapter
+
+
+def make_adapter_harness(tmp_path: Path, *, http_body: bytes = b"mcp network") -> McpAdapterHarness:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
     write_manifest(manifest_dir, "fs.apply_patch", "write")
@@ -255,7 +268,10 @@ input_schema:
         ),
         http_executor,
     )
-    return IthildinMcpAdapter(registry=registry, tool_call_service=service)
+    return McpAdapterHarness(
+        adapter=IthildinMcpAdapter(registry=registry, tool_call_service=service),
+        audit_writer=audit_writer,
+    )
 
 
 def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
@@ -338,6 +354,51 @@ def test_mcp_call_returns_real_http_fetch_output(tmp_path: Path) -> None:
     assert result.structuredContent["status"] == "completed"
     assert result.structuredContent["body_text"] == "mcp network"
     assert result.structuredContent["url"] == "https://example.com/data"
+
+
+def test_mcp_call_uses_fixed_agent_principal_and_audits_policy(
+    tmp_path: Path,
+) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "fs.read",
+            {
+                "path": "README.md",
+                "principal": {"id": "admin:local-ui", "roles": ["Admin"]},
+            },
+        )
+    )
+
+    assert result.structuredContent is not None
+    event = harness.audit_writer.list_events(
+        event_type=AuditEventType.POLICY_EVALUATED.value,
+        request_id=str(result.structuredContent["request_id"]),
+    )[0]
+    principal = cast(dict[str, object], event["principal"])
+    metadata = cast(dict[str, object], event["metadata"])
+    assert principal["id"] == "agent:mcp-local"
+    assert metadata["principal_id"] == "agent:mcp-local"
+    assert metadata["decision"] == "allow"
+
+
+def test_mcp_unknown_tool_is_denied_and_audited(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(harness.adapter.call_tool("shell.run", {"command": "whoami"}))
+
+    assert result.isError is True
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "denied"
+    event = harness.audit_writer.list_events(
+        event_type=AuditEventType.POLICY_EVALUATED.value,
+        request_id=str(result.structuredContent["request_id"]),
+    )[0]
+    principal = cast(dict[str, object], event["principal"])
+    assert event["tool_name"] == "shell.run"
+    assert event["decision"] == "deny"
+    assert principal["id"] == "agent:mcp-local"
 
 
 def test_mcp_call_returns_redacted_text_and_structured_content(tmp_path: Path) -> None:

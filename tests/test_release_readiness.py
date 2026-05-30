@@ -505,6 +505,28 @@ def test_opa_parity_decision_keeps_yaml_canonical_for_gates() -> None:
     assert "docs/codex/opa-parity-decision.md" in review_docs.REVIEW_DOCS
 
 
+def test_mcp_ingress_bypass_audit_is_documented() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/mcp-ingress-bypass-audit.md").read_text(encoding="utf-8")
+
+    for required in [
+        "fixed local MCP principal",
+        "MCP callers cannot spoof an admin principal",
+        "Unknown tools called through MCP are denied",
+        "policy.evaluated",
+        "remote MCP remains deferred",
+    ]:
+        assert required in doc
+    assert "mcp-ingress-bypass-audit.md" in readme
+    assert "098 - MCP ingress bypass audit | Done" in backlog
+    assert "Task 098 tests fixed-principal audit evidence" in matrix
+    assert "docs/codex/mcp-ingress-bypass-audit.md" in review_docs.REVIEW_DOCS
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"

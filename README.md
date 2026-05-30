@@ -221,6 +221,7 @@ operator setup. Then read
 [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md),
 [docs/codex/policy-parity-harness.md](docs/codex/policy-parity-harness.md),
 [docs/codex/opa-parity-decision.md](docs/codex/opa-parity-decision.md),
+[docs/codex/mcp-ingress-bypass-audit.md](docs/codex/mcp-ingress-bypass-audit.md),
 [docs/codex/patch-apply-state-machine.md](docs/codex/patch-apply-state-machine.md),
 [docs/codex/http-executor-contract.md](docs/codex/http-executor-contract.md),
 [docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md),
