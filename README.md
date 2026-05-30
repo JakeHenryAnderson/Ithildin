@@ -188,6 +188,8 @@ The release-evidence schema and validation command are documented in
 [docs/codex/release-evidence-schema.md](docs/codex/release-evidence-schema.md).
 Packet-to-packet handoff comparisons are documented in
 [docs/codex/review-packet-diff.md](docs/codex/review-packet-diff.md).
+The executor contract set for external/source review is indexed in
+[docs/codex/executor-contract-set.md](docs/codex/executor-contract-set.md).
 The v0.3-prep assurance roadmap is recorded in
 [docs/codex/v0.3-milestone-manifest.md](docs/codex/v0.3-milestone-manifest.md). It keeps Tasks
 085-112 scoped to review automation, adversarial assurance, and external handoff preparation rather

@@ -444,6 +444,43 @@ def test_http_executor_contract_is_linked_and_validated() -> None:
     assert "Task 093 HTTP executor contract" in matrix
 
 
+def test_executor_contract_set_indexes_review_surfaces() -> None:
+    contract = Path("docs/codex/executor-contract-set.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "Filesystem read",
+        "Git read",
+        "Patch proposal",
+        "Patch apply",
+        "HTTP fetch",
+        "Audit export/signing",
+        "Manifest lock verification",
+        "Policy preview/parity",
+        "MCP ingress",
+        "Review console evidence",
+        "git status --porcelain=v1",
+        "no executor introduces shell execution",
+    ]:
+        assert required in contract
+    assert "executor-contract-set.md" in readme
+    assert "executor-contract-set.md" in review_packet
+    assert "executor-contract-set.md" in reproduction_map
+    assert "104 - Executor contract set | Done" in backlog
+    assert "Task 104 adds" in matrix
+    assert "docs/codex/executor-contract-set.md" in review_docs.REVIEW_DOCS
+
+
 def test_evidence_contracts_define_versioning_policy() -> None:
     contracts = Path("docs/codex/evidence-contracts.md").read_text(encoding="utf-8")
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(

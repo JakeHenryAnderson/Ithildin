@@ -14,6 +14,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.2-planning-seed.md",
     "docs/codex/v0.3-milestone-manifest.md",
     "docs/codex/patch-apply-state-machine.md",
+    "docs/codex/executor-contract-set.md",
     "docs/codex/http-executor-contract.md",
     "docs/codex/v0.1-security-test-matrix.md",
     "docs/codex/filesystem-executor-contract.md",

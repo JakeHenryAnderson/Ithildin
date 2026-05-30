@@ -40,6 +40,7 @@ so later automation can update internal findings without overstating external cl
 | Negative review evidence | Packet recipes complete; Task 101 transcript expansion added | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 101 expands observed transcripts to manifest-lock tamper, policy parity mismatch, and patch-apply ambiguous diagnostics in addition to path, symlink, stale-base, HTTP redirect, principal, and replay denials |
 | Release evidence schema | v0.3-prep evidence snapshot now has schema/version validation | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 102 adds `release-evidence-schema.md`, `make release-evidence-validate`, stable top-level key checks, review-doc digest validation, and secret-marker rejection |
 | Review packet diff evidence | v0.3-prep bundle comparison command added | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 103 adds `review-packet-diff.md` and `make review-packet-diff` to compare generated packets by artifact hash before external handoff |
+| Executor contract set | v0.3-prep executor contracts indexed for source review | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 104 adds `executor-contract-set.md` mapping tools/endpoints to contract docs, implementation pointers, test evidence, and cross-cutting invariants |
 
 ## v2 Update Rules
 
