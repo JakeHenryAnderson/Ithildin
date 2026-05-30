@@ -16,7 +16,7 @@ from ithildin_audit_core import (
     signed_audit_export_bundle,
     verify_signed_audit_export_bundle,
 )
-from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue
+from ithildin_schemas import AuditEventType, PolicyDecisionValue
 
 VALID_HASH = "sha256:" + ("a" * 64)
 NOW = datetime(2026, 5, 25, 12, 0, tzinfo=UTC)
@@ -338,13 +338,10 @@ def test_signed_audit_export_rejects_wrong_trusted_public_key(tmp_path: Path) ->
         private_key_path=wrong_private_key_path,
         public_key_path=wrong_public_key_path,
     )
-    bundle = cast(
-        JsonObject,
-        signed_audit_export_bundle(
-            jsonl_bundle=writer.export_jsonl_bundle(),
-            private_key_path=private_key_path,
-            public_key_path=public_key_path,
-        ),
+    bundle = signed_audit_export_bundle(
+        jsonl_bundle=writer.export_jsonl_bundle(),
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
     )
 
     result = verify_signed_audit_export_bundle(bundle, public_key_path=wrong_public_key_path)
@@ -377,13 +374,10 @@ def test_signed_audit_export_rejects_reordered_events_with_recomputed_digest(
         private_key_path=private_key_path,
         public_key_path=public_key_path,
     )
-    bundle = cast(
-        JsonObject,
-        signed_audit_export_bundle(
-            jsonl_bundle=writer.export_jsonl_bundle(),
-            private_key_path=private_key_path,
-            public_key_path=public_key_path,
-        ),
+    bundle = signed_audit_export_bundle(
+        jsonl_bundle=writer.export_jsonl_bundle(),
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
     )
     event_lines = str(bundle["events_jsonl"]).splitlines()
     reordered_events = "\n".join(reversed(event_lines)) + "\n"
