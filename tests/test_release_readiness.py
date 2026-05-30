@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -160,6 +161,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/threat-model-and-non-goals.md",
         "docs/codex/negative-review-recipes.md",
         "docs/codex/source-review-closure-matrix.md",
+        "docs/codex/internal-source-review-pass-1.md",
         "docs/codex/reviewer-finding-template.md",
         "docs/codex/signed-audit-exports.md",
         "docs/codex/signed-manifest-locks.md",
@@ -251,6 +253,34 @@ def test_source_review_closure_matrix_covers_required_areas() -> None:
         assert column in matrix
     assert "source-review-closure-matrix.md" in review_packet
     assert "source-review-closure-matrix.md" in prompt
+
+
+def test_internal_source_review_pass_is_linked_and_validated() -> None:
+    review_path = Path("docs/codex/internal-source-review-pass-1.md")
+    review = review_path.read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    for area in [
+        "`fs.patch.apply` Approval Binding And Atomic Apply",
+        "Filesystem Read/Path Handling And Race-Sensitive Behavior",
+        "`http.fetch` SSRF/Redirect/DNS/IP Behavior",
+        "Signed Audit Export Verification And Manifest-Lock Signature Verification",
+        "Policy Preview/Runtime Parity",
+        "MCP Ingress Thinness",
+        "Review-Console Approval Evidence Flow",
+    ]:
+        assert area in review
+    for finding_id in ["ISR-001", "ISR-002"]:
+        assert finding_id in review
+    assert set(re.findall(r"\bISR-\d{3}\b", review)) == {"ISR-001", "ISR-002"}
+    assert "Codex internal source review pass 1" in matrix
+    assert "internal reviewed; pending external review" in matrix
+    assert "internal-source-review-pass-1.md" in review_packet
+    assert "internal-source-review-pass-1.md" in reproduction_map
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

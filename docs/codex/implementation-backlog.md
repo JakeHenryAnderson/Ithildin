@@ -73,6 +73,7 @@
 | 075 - Source review closure matrix | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md) |
 | 076 - Reviewer finding template | Done | [reviewer-finding-template.md](reviewer-finding-template.md) |
 | 077 - Negative review transcripts | Done | `make negative-review-transcripts` |
+| 078 - Internal source review pass 1 | Done | [internal-source-review-pass-1.md](internal-source-review-pass-1.md) |
 
 ## Future Candidate Track
 
@@ -92,8 +93,8 @@ Use [v0.2-review-response-and-rc-cleanup.md](v0.2-review-response-and-rc-cleanup
 [v0.2-review-packet.md](v0.2-review-packet.md) as the external/code review handoff, with
 [v0.2-planning-seed.md](v0.2-planning-seed.md) as the completed trust-focused v0.2 roadmap. The
 current track has completed trust-evidence,
-policy-confidence, workspace/approval UX, local-operations polish, evidence-clarity, and
-security-matrix closure items.
+policy-confidence, workspace/approval UX, local-operations polish, evidence-clarity,
+security-matrix closure items, and the first internal source review gate.
 
 ## Definition of MVP Done
 
@@ -117,4 +118,5 @@ security-matrix closure items.
 - v0.2 review packet and `make release-packet` exist for external review handoff.
 - `make review-packet-bundle` packages the review docs and secret-free command outputs.
 - `make signed-evidence-demo` generates non-production locally signed evidence fixtures for review.
+- Internal source review pass 1 is recorded before external/source review handoff.
 - `make release-check` passes before local-preview handoff.

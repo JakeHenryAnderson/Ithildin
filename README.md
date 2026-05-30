@@ -186,6 +186,7 @@ operator setup. Then read
 [docs/codex/v0.2-external-review-prompt.md](docs/codex/v0.2-external-review-prompt.md),
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md),
 [docs/codex/source-review-closure-matrix.md](docs/codex/source-review-closure-matrix.md),
+[docs/codex/internal-source-review-pass-1.md](docs/codex/internal-source-review-pass-1.md),
 [docs/codex/reviewer-finding-template.md](docs/codex/reviewer-finding-template.md),
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and

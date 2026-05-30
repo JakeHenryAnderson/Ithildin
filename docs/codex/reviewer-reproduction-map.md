@@ -73,6 +73,7 @@ cd /Users/jake/Documents/Codex/Ithildin
 - Negative review transcripts: `var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md`
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
 - Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
+- Internal source review pass 1: [internal-source-review-pass-1.md](internal-source-review-pass-1.md)
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 
