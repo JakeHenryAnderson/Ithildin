@@ -279,7 +279,7 @@ def parse_http_url(url: str) -> ParsedHttpUrl:
         raise HttpFetchError("URL host is required")
 
     host = _normalize_host(split.hostname)
-    port = split.port or _default_port(split.scheme)
+    port = _port_from_split(split) or _default_port(split.scheme)
     normalized = SplitResult(
         scheme=split.scheme,
         netloc=_netloc(host, port, split.scheme),
@@ -330,7 +330,7 @@ def _parse_allowlist_entry(raw_entry: str) -> HttpAllowlistEntry:
         return HttpAllowlistEntry(
             scheme=split.scheme,
             host=_normalize_host(split.hostname),
-            port=split.port or _default_port(split.scheme),
+            port=_port_from_split(split) or _default_port(split.scheme),
         )
 
     if "/" in entry or "?" in entry or "#" in entry:
@@ -435,6 +435,13 @@ def _default_port(scheme: str) -> int:
     if scheme == "https":
         return 443
     return 80
+
+
+def _port_from_split(split: SplitResult) -> int | None:
+    try:
+        return split.port
+    except ValueError as exc:
+        raise HttpFetchError("URL port is invalid") from exc
 
 
 def _netloc(host: str, port: int, scheme: str) -> str:

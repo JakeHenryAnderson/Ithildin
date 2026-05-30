@@ -92,7 +92,7 @@
 | 089 - Patch-apply state-machine contract | Done | [patch-apply-state-machine.md](patch-apply-state-machine.md) |
 | 090 - Filesystem adversarial race harness | Done | `tests/test_read_tools.py`, `tests/test_security_regressions.py` |
 | 091 - Filesystem contract enforcement | Done | `make release-check`, `make filesystem-contract-check` |
-| 092 - HTTP canonicalization adversarial suite | Planned | v0.3 milestone manifest |
+| 092 - HTTP canonicalization adversarial suite | Done | `tests/test_http_tools.py` |
 | 093 - HTTP executor contract | Planned | v0.3 milestone manifest |
 | 094 - Signed-evidence replay/substitution tests | Planned | v0.3 milestone manifest |
 | 095 - Evidence contract versioning | Planned | v0.3 milestone manifest |

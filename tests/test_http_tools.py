@@ -124,6 +124,25 @@ def test_invalid_urls_are_denied(url: str) -> None:
     assert opener.requests == []
 
 
+def test_invalid_port_is_denied_safely_without_opening_request() -> None:
+    executor, opener = make_executor()
+
+    with pytest.raises(HttpFetchError, match="port"):
+        executor.fetch("https://example.com:99999/")
+
+    assert opener.requests == []
+
+
+@pytest.mark.parametrize("host", ["2130706433", "0177.0.0.1", "0x7f.0.0.1"])
+def test_obfuscated_ipv4_url_hosts_are_rejected(host: str) -> None:
+    executor, opener = make_executor()
+
+    with pytest.raises(HttpFetchError, match="unsupported IP notation"):
+        executor.fetch(f"https://{host}/")
+
+    assert opener.requests == []
+
+
 def test_scheme_mismatch_is_denied() -> None:
     executor, opener = make_executor(allowlist="https://example.com")
 
@@ -155,6 +174,15 @@ def test_blocked_ip_ranges_are_denied(resolved_ip: str) -> None:
     assert opener.requests == []
 
 
+def test_ipv4_mapped_ipv6_loopback_is_denied() -> None:
+    executor, opener = make_executor(resolved_ips=["::ffff:127.0.0.1"])
+
+    with pytest.raises(HttpFetchError, match="blocked IP"):
+        executor.fetch("https://example.com/")
+
+    assert opener.requests == []
+
+
 def test_redirect_destination_is_revalidated() -> None:
     redirect = HTTPError(
         "https://example.com/",
@@ -176,6 +204,22 @@ def test_redirect_destination_is_revalidated() -> None:
     )
 
     with pytest.raises(HttpFetchError, match="blocked IP"):
+        executor.fetch("https://example.com/")
+
+    assert len(opener.requests) == 1
+
+
+def test_redirect_to_unallowlisted_destination_is_denied_before_second_request() -> None:
+    redirect = HTTPError(
+        "https://example.com/",
+        302,
+        "Found",
+        _headers(location="https://other.example/"),
+        None,
+    )
+    executor, opener = make_executor(responses=[redirect])
+
+    with pytest.raises(HttpFetchError, match="allowlist"):
         executor.fetch("https://example.com/")
 
     assert len(opener.requests) == 1
