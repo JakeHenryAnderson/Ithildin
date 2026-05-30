@@ -38,6 +38,7 @@ so later automation can update internal findings without overstating external cl
 | MCP ingress | Pass 1 complete; Task 098 bypass audit added | Pending Wave 4 | Pending external review | None | No blocking finding open | Task 098 tests fixed-principal audit evidence, unknown-tool denial audit, MCP-exposed listing, and role-filtered visibility; remote MCP remains deferred |
 | Review-console approval flow | Pass 1 complete; Tasks 099-100 UI assurance added | Pending Wave 4 | Pending external review | None | No blocking finding open | Tasks 099-100 expose copyable approval binding evidence, approval scope hash, policy reason, patch-apply diagnostics, and trust warning banners without adding repair or mutation behavior |
 | Negative review evidence | Packet recipes complete; Task 101 transcript expansion added | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 101 expands observed transcripts to manifest-lock tamper, policy parity mismatch, and patch-apply ambiguous diagnostics in addition to path, symlink, stale-base, HTTP redirect, principal, and replay denials |
+| Release evidence schema | v0.3-prep evidence snapshot now has schema/version validation | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 102 adds `release-evidence-schema.md`, `make release-evidence-validate`, stable top-level key checks, review-doc digest validation, and secret-marker rejection |
 
 ## v2 Update Rules
 

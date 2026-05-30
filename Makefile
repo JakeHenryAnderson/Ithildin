@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke policy-parity policy-test release-check release-context release-evidence release-guardrails release-packet review-candidate review-packet-bundle review-packet-consolidated reviewer-findings-check signed-evidence-demo test typecheck ui-dev
+.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke policy-parity policy-test release-check release-context release-evidence release-evidence-validate release-guardrails release-packet review-candidate review-packet-bundle review-packet-consolidated reviewer-findings-check signed-evidence-demo test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -59,6 +59,10 @@ policy-parity:
 
 release-evidence:
 	uv run python scripts/release_evidence.py
+
+release-evidence-validate:
+	@test -n "$(FILE)" || (echo "FILE is required, e.g. make release-evidence-validate FILE=release-evidence.json" >&2; exit 1)
+	uv run python scripts/release_evidence.py --validate-file "$(FILE)"
 
 release-packet:
 	uv run python scripts/release_packet.py

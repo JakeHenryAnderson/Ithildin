@@ -74,6 +74,7 @@ tamper-evident audit log.
 - `make policy-test` - run committed offline fixtures against `policies/default.yaml`.
 - `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
+- `make release-evidence-validate FILE=...` - validate a saved release evidence JSON snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
 - `make review-candidate` - run the full local handoff gate and regenerate review artifacts.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
@@ -182,6 +183,8 @@ filesystem contract check, signed evidence demo, negative transcripts, review bu
 consolidated packet, and docs site. Use
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
 the full evidence sequence and locate generated hashes/transcripts.
+The release-evidence schema and validation command are documented in
+[docs/codex/release-evidence-schema.md](docs/codex/release-evidence-schema.md).
 The v0.3-prep assurance roadmap is recorded in
 [docs/codex/v0.3-milestone-manifest.md](docs/codex/v0.3-milestone-manifest.md). It keeps Tasks
 085-112 scoped to review automation, adversarial assurance, and external handoff preparation rather

@@ -1021,6 +1021,122 @@ def test_release_evidence_records_attached_release_check_metadata(
     assert '"attached_transcript_exists": true' in output
     assert '"attached_transcript_status": "passed"' in output
     assert '"attached_transcript_commit": "abc123"' in output
+    assert '"schema_version": "v0.3-prep-release-evidence-v1"' in output
+
+
+def test_release_evidence_schema_validator_accepts_minimal_snapshot() -> None:
+    payload = _minimal_release_evidence_payload()
+
+    release_evidence.validate_release_evidence_snapshot(payload)
+
+
+def test_release_evidence_schema_validator_rejects_missing_key() -> None:
+    payload = _minimal_release_evidence_payload()
+    del payload["tools"]
+
+    with pytest.raises(
+        release_evidence.ReleaseEvidenceSchemaError,
+        match="missing required top-level key: tools",
+    ):
+        release_evidence.validate_release_evidence_snapshot(payload)
+
+
+def test_release_evidence_schema_validator_rejects_secret_marker() -> None:
+    payload = _minimal_release_evidence_payload()
+    payload["deferred_boundaries"] = ["contains dev-admin-token-change-me marker"]
+
+    with pytest.raises(
+        release_evidence.ReleaseEvidenceSchemaError,
+        match="secret-like marker",
+    ):
+        release_evidence.validate_release_evidence_snapshot(payload)
+
+
+def test_release_evidence_validate_file_cli(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    evidence_path = tmp_path / "release-evidence.json"
+    evidence_path.write_text(
+        json.dumps(_minimal_release_evidence_payload()),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["release_evidence.py", "--validate-file", evidence_path.as_posix()],
+    )
+
+    result = release_evidence.main()
+
+    assert result == 0
+    assert "Release evidence schema validation passed." in capsys.readouterr().out
+
+
+def test_release_evidence_schema_doc_and_target_are_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/release-evidence-schema.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "release-evidence-validate:" in makefile
+    assert "make release-evidence-validate FILE=..." in readme
+    assert "v0.3-prep-release-evidence-v1" in doc
+    assert "make release-evidence-validate FILE=release-evidence.json" in review_packet
+    assert "Task 102 adds" in matrix
+    assert "docs/codex/release-evidence-schema.md" in review_docs.REVIEW_DOCS
+
+
+def _minimal_release_evidence_payload() -> dict[str, object]:
+    return {
+        "schema": {
+            "schema_version": release_evidence.RELEASE_EVIDENCE_SCHEMA_VERSION,
+            "stable_top_level_keys": list(
+                release_evidence.RELEASE_EVIDENCE_REQUIRED_TOP_LEVEL_KEYS
+            ),
+            "secret_free": True,
+        },
+        "generated_at": "2026-05-30T00:00:00+00:00",
+        "repo": {
+            "repo_root": "/tmp/ithildin",
+            "current_working_directory": "/tmp/ithildin",
+            "project_markers": {},
+        },
+        "git": {"commit": "abc123", "branch": "main", "dirty": False},
+        "release_check": {
+            "gate_executed_by_release_packet": False,
+            "gate_status": "not_run",
+            "attached_transcript_exists": True,
+            "attached_transcript_status": "passed",
+            "attached_transcript_commit": "abc123",
+            "attached_transcript_path": "release-check.txt",
+        },
+        "review_docs": [
+            {
+                "path": "README.md",
+                "sha256": "sha256:" + ("0" * 64),
+                "bytes": 1,
+            }
+        ],
+        "manifest_lock": {},
+        "docs_site": {},
+        "tools": {"count": 0, "names": []},
+        "policy": {},
+        "principals": {},
+        "workspaces": {},
+        "storage": {},
+        "telemetry": {},
+        "security": {},
+        "audit": {},
+        "audit_signing": {},
+        "deferred_boundaries": [],
+    }
 
 
 def _write_project_markers(root: Path) -> None:

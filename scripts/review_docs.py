@@ -23,6 +23,7 @@ REVIEW_DOCS = [
     "docs/codex/mcp-ingress-bypass-audit.md",
     "docs/codex/review-console-assurance.md",
     "docs/codex/negative-review-recipes.md",
+    "docs/codex/release-evidence-schema.md",
     "docs/codex/reviewer-reproduction-map.md",
     "docs/codex/source-review-closure-matrix.md",
     "docs/codex/internal-source-review-pass-1.md",

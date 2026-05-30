@@ -20,18 +20,20 @@ For v0.2 external/code review handoff, start with
    `ITHILDIN_ADMIN_TOKEN=...` line into your local `.env`.
 3. Run `make policy-test` for a fast YAML policy confidence check.
 4. Run `make release-check` before demoing or handing off a build.
-5. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
-6. Open `http://127.0.0.1:5173` and use the configured admin token.
-7. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
-8. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
-9. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
+5. Optional: run `make release-evidence` and validate saved evidence with
+   `make release-evidence-validate FILE=release-evidence.json`.
+6. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
+7. Open `http://127.0.0.1:5173` and use the configured admin token.
+8. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
+9. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
+10. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
    approval-required, denial, and audit verification flows.
-10. Optional: run `make review-candidate` before external review handoff.
-11. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-12. Optional: run `make audit-keygen` to enable signed audit exports.
-13. Optional: run `make audit-diagnostics` to explain local audit verification state.
-14. Optional: run `make filesystem-contract-check` to record local filesystem capability evidence.
-15. Run `make docs-site` to build local handoff docs under ignored `site/`.
+11. Optional: run `make review-candidate` before external review handoff.
+12. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
+13. Optional: run `make audit-keygen` to enable signed audit exports.
+14. Optional: run `make audit-diagnostics` to explain local audit verification state.
+15. Optional: run `make filesystem-contract-check` to record local filesystem capability evidence.
+16. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 
@@ -51,6 +53,8 @@ For v0.2 external/code review handoff, start with
   console policy impact panel. This is read-only and fixture-driven.
 - Runtime and preview policy evidence fields are summarized in
   [Evidence Contracts](evidence-contracts.md).
+- Release handoff evidence schema and validation are summarized in
+  [Release Evidence Schema](release-evidence-schema.md).
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.

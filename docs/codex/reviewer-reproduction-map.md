@@ -38,13 +38,18 @@ work must stop for status, reassessment, or external consultation.
    current manifest lock, tool count, policy/principal/workspace status, audit verification state,
    local-only security posture, review-doc hashes, and release-check transcript fields.
 
-3. `make release-packet`
+3. `make release-evidence-validate FILE=release-evidence.json`
+
+   Expected outcome: validates a saved evidence snapshot against the v0.3-prep release-evidence
+   schema contract. This is normally exercised on bundle-generated evidence.
+
+4. `make release-packet`
 
    Expected outcome: prints a markdown review summary with repo root, commit, dirty state, trust
    evidence, deferred boundaries, review-doc hashes, and the note that the packet command does not
    itself run `make release-check`.
 
-4. `make signed-evidence-demo`
+5. `make signed-evidence-demo`
 
    Expected outcome: creates ignored non-production fixture evidence under
    `var/review-packets/v0.2/signed-evidence-demo/`. The demo summary reports verified local audit
@@ -101,6 +106,7 @@ work must stop for status, reassessment, or external consultation.
 - Autonomous sprint guardrails: [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md)
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
 - Reviewer finding intake: [reviewer-finding-intake.md](reviewer-finding-intake.md)
+- Release evidence schema: [release-evidence-schema.md](release-evidence-schema.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
 
