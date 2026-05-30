@@ -19,6 +19,8 @@ For the current v0.3-prep external handoff, use
 [v0.3 External Review Prompt](v0.3-external-review-prompt.md).
 After review, process findings through
 [External Review Intake and Closure](external-review-intake-and-closure.md).
+The current go/no-go posture is recorded in
+[v0.3 Boundary Decision](v0.3-boundary-decision.md).
 
 ## Quick Start
 

@@ -48,6 +48,7 @@ so later automation can update internal findings without overstating external cl
 | Internal AI review packet v2 | v0.3-prep internal pressure-test prompts expanded | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 109 updates `make internal-review-packet` to produce v2 prompts for registry fail-closed, audit integrity, evidence automation, guardrails, and existing high-risk executor surfaces |
 | External review packet v3 | v0.3-prep external handoff packet added | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 110 adds `v0.3-review-packet.md`, `v0.3-external-review-prompt.md`, and consolidated packet references for the current external/source review handoff |
 | External review intake | v0.3-prep external finding intake and closure workflow added | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 111 adds `external-review-intake-and-closure.md` with EXT finding IDs, reviewer finding validation, closure matrix update rules, and post-intake gates |
+| v0.3 boundary decision | v0.3-prep handoff decision recorded | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 112 adds `v0.3-boundary-decision.md`: ready for external/source review handoff, not ready for new tool powers, production positioning, or boundary expansion |
 
 ## v2 Update Rules
 

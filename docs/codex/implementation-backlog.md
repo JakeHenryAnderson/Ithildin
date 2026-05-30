@@ -112,7 +112,7 @@
 | 109 - Internal AI review packet v2 | Done | [internal-review-packet-v2.md](internal-review-packet-v2.md), `make internal-review-packet` |
 | 110 - External review packet v3 | Done | [v0.3-review-packet.md](v0.3-review-packet.md), [v0.3-external-review-prompt.md](v0.3-external-review-prompt.md) |
 | 111 - External review intake and closure | Done | [external-review-intake-and-closure.md](external-review-intake-and-closure.md), `make reviewer-findings-check` |
-| 112 - v0.3 boundary decision memo | Planned | v0.3 milestone manifest |
+| 112 - v0.3 boundary decision memo | Done | [v0.3-boundary-decision.md](v0.3-boundary-decision.md) |
 
 ## Future Candidate Track
 

@@ -193,6 +193,8 @@ The current external review handoff starts with
 [docs/codex/v0.3-external-review-prompt.md](docs/codex/v0.3-external-review-prompt.md).
 External review findings should be processed through
 [docs/codex/external-review-intake-and-closure.md](docs/codex/external-review-intake-and-closure.md).
+The current boundary decision is recorded in
+[docs/codex/v0.3-boundary-decision.md](docs/codex/v0.3-boundary-decision.md).
 The executor contract set for external/source review is indexed in
 [docs/codex/executor-contract-set.md](docs/codex/executor-contract-set.md).
 Manifest and manifest-lock fail-closed validation coverage is summarized in

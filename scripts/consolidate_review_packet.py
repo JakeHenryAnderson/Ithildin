@@ -121,6 +121,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         )
         + _section(
+            "v0.3 Boundary Decision",
+            repo_root / "docs/codex/v0.3-boundary-decision.md",
+            repo_root,
+        )
+        + _section(
             "v0.2 Review Packet",
             repo_root / "docs/codex/v0.2-review-packet.md",
             repo_root,

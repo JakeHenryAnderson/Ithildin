@@ -209,6 +209,7 @@ def test_consolidated_review_packet_generation(
         "README.md",
         "docs/codex/v0.3-external-review-prompt.md",
         "docs/codex/v0.3-review-packet.md",
+        "docs/codex/v0.3-boundary-decision.md",
         "docs/codex/v0.2-external-review-prompt.md",
         "docs/codex/reviewer-reproduction-map.md",
         "docs/codex/v0.2-review-packet.md",
@@ -596,7 +597,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "release-check",
         "review-candidate",
         "deferred shell, Docker, Kubernetes, or browser tool",
-        "Tasks 101-108 are marked done",
+        "Tasks 101-112 are marked done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -1084,6 +1085,35 @@ def test_external_review_intake_and_closure_is_documented() -> None:
     assert "111 - External review intake and closure | Done" in backlog
     assert "Task 111 adds" in matrix
     assert "docs/codex/external-review-intake-and-closure.md" in review_docs.REVIEW_DOCS
+
+
+def test_v03_boundary_decision_is_documented() -> None:
+    decision = Path("docs/codex/v0.3-boundary-decision.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
+    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "ready for external/source review handoff",
+        "not a decision to broaden tool powers",
+        "Required Before Any Boundary Expansion",
+        "not a sandbox",
+    ]:
+        assert required in decision
+    for linked in [readme, packet, prompt, reproduction_map]:
+        assert "v0.3-boundary-decision.md" in linked
+    assert "112 - v0.3 boundary decision memo | Done" in backlog
+    assert "Task 112 adds" in matrix
+    assert "docs/codex/v0.3-boundary-decision.md" in review_docs.REVIEW_DOCS
 
 
 def test_autonomous_sprint_guardrails_are_linked_and_validated() -> None:

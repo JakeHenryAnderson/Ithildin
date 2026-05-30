@@ -71,7 +71,7 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) review-packet-consolidated",
     "$(MAKE) docs-site",
 ]
-REQUIRED_V03_DONE_TASKS = [f"{task:03d}" for task in range(101, 109)]
+REQUIRED_V03_DONE_TASKS = [f"{task:03d}" for task in range(101, 113)]
 DEFERRED_TOOL_POWER_MARKERS = [
     "shell",
     "docker",

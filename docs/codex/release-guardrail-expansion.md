@@ -19,7 +19,7 @@ review and release envelope before a packet is handed to an external reviewer.
   remain wired;
 - committed tool manifests do not introduce deferred shell, Docker, Kubernetes, or browser tool
   powers;
-- Tasks 101-108 are marked done before the Wave 5 handoff claim.
+- Tasks 101-112 are marked done before the final v0.3-prep handoff claim.
 
 These checks are intentionally conservative. If a future task intentionally changes the release
 workflow or adds a new governed tool-power class after external review, the guardrail should be
