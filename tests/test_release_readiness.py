@@ -207,6 +207,8 @@ def test_consolidated_review_packet_generation(
         bundle_dir.joinpath(path).write_text(f"# {path}\n", encoding="utf-8")
     for path in [
         "README.md",
+        "docs/codex/v0.3-external-review-prompt.md",
+        "docs/codex/v0.3-review-packet.md",
         "docs/codex/v0.2-external-review-prompt.md",
         "docs/codex/reviewer-reproduction-map.md",
         "docs/codex/v0.2-review-packet.md",
@@ -1013,6 +1015,44 @@ def test_internal_review_packet_v2_is_documented() -> None:
     assert "109 - Internal AI review packet v2 | Done" in backlog
     assert "Task 109 updates" in matrix
     assert "docs/codex/internal-review-packet-v2.md" in review_docs.REVIEW_DOCS
+
+
+def test_v03_external_review_packet_is_documented() -> None:
+    packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
+    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "v0.3-prep external/source-review packet",
+        "make review-candidate",
+        "What This Packet Does Not Prove",
+        "Do Not Add Yet",
+    ]:
+        assert required in packet
+    for required in [
+        "v0.3-prep source",
+        "SUB-001",
+        "Release automation",
+        "Do-not-add-yet list",
+    ]:
+        assert required in prompt
+    assert "v0.3-review-packet.md" in readme
+    assert "v0.3-external-review-prompt.md" in readme
+    assert "v0.3-review-packet.md" in reproduction_map
+    assert "v0.3-external-review-prompt.md" in reproduction_map
+    assert "110 - External review packet v3 | Done" in backlog
+    assert "Task 110 adds" in matrix
+    assert "docs/codex/v0.3-review-packet.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.3-external-review-prompt.md" in review_docs.REVIEW_DOCS
 
 
 def test_autonomous_sprint_guardrails_are_linked_and_validated() -> None:

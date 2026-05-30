@@ -106,6 +106,8 @@ work must stop for status, reassessment, or external consultation.
 - Signed evidence demo summary: `var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md`
 - Negative review transcripts: `var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md`
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
+- v0.3 review packet: [v0.3-review-packet.md](v0.3-review-packet.md)
+- v0.3 external review prompt: [v0.3-external-review-prompt.md](v0.3-external-review-prompt.md)
 - Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
 - Internal source review pass 1: [internal-source-review-pass-1.md](internal-source-review-pass-1.md)
 - Internal review packet v2: [internal-review-packet-v2.md](internal-review-packet-v2.md)

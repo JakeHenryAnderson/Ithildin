@@ -46,6 +46,7 @@ so later automation can update internal findings without overstating external cl
 | Audit integrity adversarial suite | v0.3-prep audit chain/export/signing negative validation expanded | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 107 adds `audit-integrity-adversarial-suite.md` and tests invalid audit JSON/schema rows, missing middle rows, diagnostics categories, duplicate/missing exported events, and malformed signed-export fields |
 | Release guardrails | v0.3-prep release guardrails expanded for handoff drift | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 108 adds `release-guardrail-expansion.md` and checks required review docs, release-check/review-candidate wiring, deferred tool-power absence from manifests, and Wave 5 task status |
 | Internal AI review packet v2 | v0.3-prep internal pressure-test prompts expanded | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 109 updates `make internal-review-packet` to produce v2 prompts for registry fail-closed, audit integrity, evidence automation, guardrails, and existing high-risk executor surfaces |
+| External review packet v3 | v0.3-prep external handoff packet added | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 110 adds `v0.3-review-packet.md`, `v0.3-external-review-prompt.md`, and consolidated packet references for the current external/source review handoff |
 
 ## v2 Update Rules
 

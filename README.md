@@ -188,6 +188,9 @@ The release-evidence schema and validation command are documented in
 [docs/codex/release-evidence-schema.md](docs/codex/release-evidence-schema.md).
 Packet-to-packet handoff comparisons are documented in
 [docs/codex/review-packet-diff.md](docs/codex/review-packet-diff.md).
+The current external review handoff starts with
+[docs/codex/v0.3-review-packet.md](docs/codex/v0.3-review-packet.md) and
+[docs/codex/v0.3-external-review-prompt.md](docs/codex/v0.3-external-review-prompt.md).
 The executor contract set for external/source review is indexed in
 [docs/codex/executor-contract-set.md](docs/codex/executor-contract-set.md).
 Manifest and manifest-lock fail-closed validation coverage is summarized in

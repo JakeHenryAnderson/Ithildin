@@ -14,6 +14,9 @@ For v0.2 external/code review handoff, start with
 [Reviewer Reproduction Map](reviewer-reproduction-map.md).
 For internal AI/subagent pressure testing, use
 [Internal Review Packet v2](internal-review-packet-v2.md).
+For the current v0.3-prep external handoff, use
+[v0.3 Review Packet](v0.3-review-packet.md) and
+[v0.3 External Review Prompt](v0.3-external-review-prompt.md).
 
 ## Quick Start
 

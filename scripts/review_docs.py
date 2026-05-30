@@ -12,6 +12,8 @@ REVIEW_DOCS = [
     "docs/codex/v0.2-review-packet.md",
     "docs/codex/v0.2-external-review-prompt.md",
     "docs/codex/v0.2-planning-seed.md",
+    "docs/codex/v0.3-review-packet.md",
+    "docs/codex/v0.3-external-review-prompt.md",
     "docs/codex/v0.3-milestone-manifest.md",
     "docs/codex/patch-apply-state-machine.md",
     "docs/codex/executor-contract-set.md",

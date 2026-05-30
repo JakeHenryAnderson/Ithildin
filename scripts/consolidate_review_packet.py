@@ -101,7 +101,12 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
     negative_transcripts = repo_root / NEGATIVE_TRANSCRIPTS_SUMMARY
     attachments = {
         "01_START_HERE_AND_REVIEW_PROMPT.md": _section(
-            "External Review Prompt",
+            "v0.3 External Review Prompt",
+            repo_root / "docs/codex/v0.3-external-review-prompt.md",
+            repo_root,
+        )
+        + _section(
+            "v0.2 External Review Prompt",
             repo_root / "docs/codex/v0.2-external-review-prompt.md",
             repo_root,
         )
@@ -111,6 +116,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         ),
         "02_REVIEW_PACKET_AND_RESPONSE.md": _section(
+            "v0.3 Review Packet",
+            repo_root / "docs/codex/v0.3-review-packet.md",
+            repo_root,
+        )
+        + _section(
             "v0.2 Review Packet",
             repo_root / "docs/codex/v0.2-review-packet.md",
             repo_root,
@@ -231,13 +241,13 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
         ),
         "07_PROJECT_README.md": _section("README", repo_root / "README.md", repo_root),
     }
-    index = f"""# Ithildin v0.2 Review Packet: Consolidated Attachments
+    index = f"""# Ithildin v0.3-Prep Review Packet: Consolidated Attachments
 
 This folder is the 10-attachment-friendly packet for GPT 5.5 Pro / Very High or a human expert
-reviewer. It consolidates the final v0.2 review bundle generated from commit `{short_commit}`.
+reviewer. It consolidates the v0.3-prep review bundle generated from commit `{short_commit}`.
 
-In practice, v0.2 is a trust-evidence review wave over the same narrow v0.1 local-preview runtime
-boundary.
+In practice, v0.3-prep is an assurance/review-automation wave over the same narrow v0.1
+local-preview runtime boundary.
 
 Send these files in order:
 
