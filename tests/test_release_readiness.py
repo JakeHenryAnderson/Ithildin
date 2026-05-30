@@ -951,6 +951,8 @@ def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) ->
         "make internal-review-packet",
         "Patch apply approval binding",
         "HTTP fetch SSRF",
+        "Manifest, principal, and workspace registry fail-closed behavior",
+        "Release evidence automation and guardrails",
         "reviewer-finding-template.md",
         "source-review-closure-matrix.md",
     ]:
@@ -965,6 +967,8 @@ def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) ->
         "http-fetch.md",
         "signed-evidence.md",
         "policy-parity.md",
+        "registry-fail-closed.md",
+        "evidence-automation.md",
         "mcp-ingress.md",
         "review-console.md",
     }
@@ -976,6 +980,39 @@ def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) ->
     assert "docs/codex/reviewer-finding-template.md" in prompt_text
     assert "apps/api/src/ithildin_api/patches.py" in prompt_text
     assert "Do not propose new powerful tool classes" in prompt_text
+    index_text = output_dir.joinpath("INTERNAL_REVIEW_INDEX.md").read_text(encoding="utf-8")
+    assert "Internal AI Review Packet v2" in index_text
+    assert "v0.3-prep evidence automation" in index_text
+
+
+def test_internal_review_packet_v2_is_documented() -> None:
+    doc = Path("docs/codex/internal-review-packet-v2.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "var/review-packets/v0.3/internal-ai-review-packet/",
+        "signed evidence and audit integrity",
+        "manifest, principal, and workspace fail-closed registries",
+        "release evidence automation and guardrails",
+        "not independent external validation",
+    ]:
+        assert required in doc
+    assert "v2 local prompts" in readme
+    assert "internal-review-packet-v2.md" in review_packet
+    assert "internal-review-packet-v2.md" in reproduction_map
+    assert "109 - Internal AI review packet v2 | Done" in backlog
+    assert "Task 109 updates" in matrix
+    assert "docs/codex/internal-review-packet-v2.md" in review_docs.REVIEW_DOCS
 
 
 def test_autonomous_sprint_guardrails_are_linked_and_validated() -> None:

@@ -80,7 +80,7 @@ tamper-evident audit log.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
 - `make review-packet-diff OLD=... NEW=...` - compare two review packet bundles by artifact hash.
-- `make internal-review-packet` - build local prompts for internal AI/subagent source review.
+- `make internal-review-packet` - build v2 local prompts for internal AI/subagent source review.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.

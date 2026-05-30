@@ -11,7 +11,7 @@ make internal-review-packet
 ```
 
 The command writes ignored prompt files under
-`var/review-packets/v0.2/internal-ai-review-packet/`. It does not call an external model, mutate
+`var/review-packets/v0.3/internal-ai-review-packet/`. It does not call an external model, mutate
 runtime state, create approvals, write audit events, or add tool powers.
 
 ## Review Areas
@@ -21,6 +21,8 @@ runtime state, create approvals, write audit events, or add tool powers.
 - HTTP fetch SSRF and canonicalization.
 - Signed audit export and manifest-lock evidence.
 - Policy preview/runtime parity.
+- Manifest, principal, and workspace registry fail-closed behavior.
+- Release evidence automation and guardrails.
 - MCP ingress thinness.
 - Review console approval evidence.
 

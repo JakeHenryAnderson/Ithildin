@@ -7,7 +7,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_OUTPUT_DIR = Path("var/review-packets/v0.2/internal-ai-review-packet")
+DEFAULT_OUTPUT_DIR = Path("var/review-packets/v0.3/internal-ai-review-packet")
 
 
 @dataclass(frozen=True)
@@ -66,13 +66,16 @@ REVIEW_AREAS = (
     ),
     ReviewArea(
         slug="signed-evidence",
-        title="Signed Evidence Replay And Substitution",
+        title="Signed Evidence And Audit Integrity",
         files=(
+            "packages/audit-core/src/ithildin_audit_core/writer.py",
             "packages/audit-core/src/ithildin_audit_core/signing.py",
             "apps/api/src/ithildin_api/manifest_lock.py",
             "scripts/signed_evidence_demo.py",
+            "tests/test_audit_writer.py",
         ),
         claims=(
+            "hash-chain verification rejects invalid, missing, duplicate, and reordered events",
             "local Ed25519 signature verification",
             "digest binding for exported events and manifest lock",
             "key ID and public key consistency",
@@ -92,6 +95,44 @@ REVIEW_AREAS = (
             "side-effect-free previews",
             "comparable decision evidence",
             "OPA/YAML boundary clarity",
+        ),
+    ),
+    ReviewArea(
+        slug="registry-fail-closed",
+        title="Manifest Principal And Workspace Fail-Closed Registries",
+        files=(
+            "apps/api/src/ithildin_api/registry.py",
+            "apps/api/src/ithildin_api/manifest_lock.py",
+            "apps/api/src/ithildin_api/identity.py",
+            "apps/api/src/ithildin_api/workspaces.py",
+            "tests/test_tool_registry.py",
+            "tests/test_identity.py",
+            "tests/test_workspaces.py",
+        ),
+        claims=(
+            "malformed trusted config fails closed",
+            "duplicate IDs/names/paths are rejected",
+            "disabled or unknown principals/workspaces cannot execute",
+            "signed manifest lock enforcement is explicit and fail-closed",
+        ),
+    ),
+    ReviewArea(
+        slug="evidence-automation",
+        title="Release Evidence Automation And Guardrails",
+        files=(
+            "scripts/release_evidence.py",
+            "scripts/release_guardrails.py",
+            "scripts/review_packet_bundle.py",
+            "scripts/consolidate_review_packet.py",
+            "scripts/review_packet_diff.py",
+            "docs/codex/release-evidence-schema.md",
+            "docs/codex/release-guardrail-expansion.md",
+        ),
+        claims=(
+            "release evidence has a validated schema and no secret-like markers",
+            "review bundles hash generated docs and artifacts",
+            "packet diffs compare handoff artifacts without runtime state",
+            "release guardrails catch warning, workflow, and deferred-power drift",
         ),
     ),
     ReviewArea(
@@ -155,11 +196,15 @@ def build_internal_review_packet(output_dir: Path) -> Path:
 
 def _index_document() -> str:
     prompt_list = "\n".join(f"- `{area.slug}.md` - {area.title}" for area in REVIEW_AREAS)
-    return f"""# Internal AI Review Packet
+    return f"""# Internal AI Review Packet v2
 
 This ignored packet prepares prompts for high-intelligence internal AI/subagent review. It is a
 continuous pressure test, not an independent external audit and not permission to add new tool
 powers.
+
+This v2 packet includes v0.3-prep evidence automation, manifest/principal/workspace fail-closed
+suites, audit integrity adversarial coverage, and release guardrail prompts in addition to the
+original high-risk executor areas.
 
 Use findings with `docs/codex/reviewer-finding-template.md` and update
 `docs/codex/source-review-closure-matrix.md` only with clearly labeled internal-review status.

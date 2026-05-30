@@ -109,7 +109,7 @@
 | 106 - Principal/workspace registry fail-closed suite | Done | [registry-fail-closed-suite.md](registry-fail-closed-suite.md), `tests/test_identity.py`, `tests/test_workspaces.py` |
 | 107 - Audit integrity adversarial suite | Done | [audit-integrity-adversarial-suite.md](audit-integrity-adversarial-suite.md), `tests/test_audit_writer.py` |
 | 108 - Release guardrail expansion | Done | [release-guardrail-expansion.md](release-guardrail-expansion.md), `scripts/release_guardrails.py` |
-| 109 - Internal AI review packet v2 | Planned | v0.3 milestone manifest |
+| 109 - Internal AI review packet v2 | Done | [internal-review-packet-v2.md](internal-review-packet-v2.md), `make internal-review-packet` |
 | 110 - External review packet v3 | Planned | v0.3 milestone manifest |
 | 111 - External review intake and closure | Planned | v0.3 milestone manifest |
 | 112 - v0.3 boundary decision memo | Planned | v0.3 milestone manifest |

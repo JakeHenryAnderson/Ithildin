@@ -17,8 +17,9 @@ Run `make review-candidate` to execute the full local handoff sequence. It runs 
 `review-packet-bundle`, `review-packet-consolidated`, and `docs-site`, then prints the consolidated
 packet path.
 
-Run `make internal-review-packet` when you want local AI/subagent source-review prompts. That packet
-is internal pressure-test material only and does not replace external/source review.
+Run `make internal-review-packet` when you want v2 local AI/subagent source-review prompts under
+`var/review-packets/v0.3/internal-ai-review-packet/`. That packet is internal pressure-test
+material only and does not replace external/source review.
 Run `make reviewer-findings-check` after converting any internal AI/subagent, GPT 5.5 Pro, or human
 review note into a structured finding file. The check validates
 [reviewer-finding-intake.md](reviewer-finding-intake.md) records before the closure matrix changes.
@@ -107,6 +108,7 @@ work must stop for status, reassessment, or external consultation.
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
 - Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
 - Internal source review pass 1: [internal-source-review-pass-1.md](internal-source-review-pass-1.md)
+- Internal review packet v2: [internal-review-packet-v2.md](internal-review-packet-v2.md)
 - Internal AI review workflow: [internal-ai-review-workflow.md](internal-ai-review-workflow.md)
 - Autonomous sprint guardrails: [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md)
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
