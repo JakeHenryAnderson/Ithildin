@@ -1,0 +1,59 @@
+version: policy-parity-v1
+cases:
+  - id: read_preview_matches_runtime
+    description: In-scope read preview and runtime policy evidence agree.
+    tool_name: fs.list
+    arguments:
+      path: "."
+    principal:
+      id: agent:mcp-local
+      roles:
+        - Owner
+    session_id: parity-read
+    expect_decision: allow
+
+  - id: write_preview_matches_runtime
+    description: Write preview and runtime policy evidence agree on approval requirement.
+    tool_name: fs.patch.apply
+    arguments:
+      proposal_id: patch_abc
+    principal:
+      id: agent:mcp-local
+    session_id: parity-write
+    expect_decision: require_approval
+
+  - id: proposal_preview_matches_runtime
+    description: Patch proposal preview and runtime policy evidence agree.
+    tool_name: fs.patch.propose
+    arguments:
+      path: README.md
+      unified_diff: |
+        --- a/README.md
+        +++ b/README.md
+        @@ -1 +1 @@
+        -Ithildin
+        +Ithildin
+    principal:
+      id: agent:mcp-local
+    session_id: parity-proposal
+    expect_decision: allow
+
+  - id: network_preview_matches_runtime
+    description: Allowlisted network preview and runtime policy evidence agree.
+    tool_name: http.fetch
+    arguments:
+      url: https://example.com/data
+    principal:
+      id: agent:mcp-local
+    session_id: parity-network
+    expect_decision: allow
+
+  - id: out_of_scope_network_preview_matches_runtime
+    description: Unallowlisted network preview and runtime policy evidence agree on deny.
+    tool_name: http.fetch
+    arguments:
+      url: https://blocked.example/data
+    principal:
+      id: agent:mcp-local
+    session_id: parity-network-deny
+    expect_decision: deny

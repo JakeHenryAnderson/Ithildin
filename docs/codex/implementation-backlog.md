@@ -96,7 +96,7 @@
 | 093 - HTTP executor contract | Done | [http-executor-contract.md](http-executor-contract.md) |
 | 094 - Signed-evidence replay/substitution tests | Done | `tests/test_audit_writer.py`, `tests/test_tool_registry.py` |
 | 095 - Evidence contract versioning | Done | [evidence-contracts.md](evidence-contracts.md) |
-| 096 - Policy preview/runtime parity harness | Planned | v0.3 milestone manifest |
+| 096 - Policy preview/runtime parity harness | Done | [policy-parity-harness.md](policy-parity-harness.md), `make policy-parity` |
 | 097 - OPA parity decision point | Planned | v0.3 milestone manifest |
 | 098 - MCP ingress bypass audit | Planned | v0.3 milestone manifest |
 | 099 - Review-console approval evidence clarity | Planned | v0.3 milestone manifest |

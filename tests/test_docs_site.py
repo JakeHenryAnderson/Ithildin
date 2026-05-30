@@ -55,3 +55,4 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/reviewer-finding-template.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-finding-intake.md" in DEFAULT_DOCS
     assert "docs/codex/filesystem-executor-contract.md" in DEFAULT_DOCS
+    assert "docs/codex/policy-parity-harness.md" in DEFAULT_DOCS

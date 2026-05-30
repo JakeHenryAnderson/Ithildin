@@ -18,6 +18,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.1-security-test-matrix.md",
     "docs/codex/filesystem-executor-contract.md",
     "docs/codex/evidence-contracts.md",
+    "docs/codex/policy-parity-harness.md",
     "docs/codex/negative-review-recipes.md",
     "docs/codex/reviewer-reproduction-map.md",
     "docs/codex/source-review-closure-matrix.md",

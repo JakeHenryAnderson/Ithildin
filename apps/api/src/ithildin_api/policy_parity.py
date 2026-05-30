@@ -1,0 +1,303 @@
+"""Policy preview/runtime parity harness."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import timedelta
+from pathlib import Path
+from typing import Any, cast
+from urllib.request import Request
+
+import yaml
+from ithildin_audit_core import AuditWriter
+from ithildin_policy_core import PolicyEvaluator
+from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue
+from ithildin_schemas.models import StrictBaseModel
+from pydantic import Field, ValidationError
+
+from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.http_tools import HttpAllowlist, HttpFetchExecutor, ParsedHttpUrl
+from ithildin_api.identity import PrincipalRegistry
+from ithildin_api.policy_preview import PolicyPreviewService
+from ithildin_api.registry import ToolRegistry
+from ithildin_api.tool_calls import GovernedToolCallService
+
+DEFAULT_POLICY_PARITY_TESTS_PATH = Path("policies/tests/parity.yaml")
+PARITY_EVIDENCE_KEYS = (
+    "decision",
+    "reason",
+    "policy_engine",
+    "policy_hash",
+    "policy_version",
+    "policy_document_version",
+    "matched_rules",
+    "obligation_keys",
+    "tool_name",
+    "tool_version",
+    "tool_risk",
+    "manifest_hash",
+    "resource_type",
+    "resource_in_scope",
+    "principal_id",
+    "principal_roles",
+    "session_id",
+)
+
+
+class PolicyParityError(RuntimeError):
+    """Raised when policy parity fixtures cannot be loaded or evaluated."""
+
+
+class PolicyParityCase(StrictBaseModel):
+    id: str
+    description: str | None = None
+    tool_name: str
+    arguments: JsonObject = Field(default_factory=dict)
+    principal: JsonObject
+    session_id: str
+    expect_decision: PolicyDecisionValue | None = None
+
+
+class PolicyParityDocument(StrictBaseModel):
+    version: str
+    cases: list[PolicyParityCase]
+
+
+@dataclass(frozen=True)
+class PolicyParityCaseResult:
+    id: str
+    passed: bool
+    failures: list[str]
+    preview_decision: str | None
+    runtime_decision: str | None
+    request_id: str | None
+
+    def as_dict(self) -> JsonObject:
+        return cast(
+            JsonObject,
+            {
+                "id": self.id,
+                "passed": self.passed,
+                "failures": self.failures,
+                "preview_decision": self.preview_decision,
+                "runtime_decision": self.runtime_decision,
+                "request_id": self.request_id,
+            },
+        )
+
+
+@dataclass(frozen=True)
+class PolicyParityRun:
+    version: str
+    tests_path: Path
+    cases: list[PolicyParityCaseResult]
+
+    @property
+    def passed(self) -> int:
+        return sum(1 for result in self.cases if result.passed)
+
+    @property
+    def failed(self) -> int:
+        return len(self.cases) - self.passed
+
+    def as_dict(self) -> JsonObject:
+        return {
+            "version": self.version,
+            "tests_path": self.tests_path.as_posix(),
+            "passed": self.passed,
+            "failed": self.failed,
+            "cases": [result.as_dict() for result in self.cases],
+        }
+
+
+def run_policy_parity(
+    *,
+    repo_root: Path,
+    work_dir: Path,
+    tests_path: Path = DEFAULT_POLICY_PARITY_TESTS_PATH,
+    http_allowlist: str = "https://example.com",
+) -> PolicyParityRun:
+    document = load_policy_parity_tests(repo_root / tests_path)
+    harness = _PolicyParityHarness(
+        repo_root=repo_root,
+        work_dir=work_dir,
+        http_allowlist=http_allowlist,
+    )
+    return PolicyParityRun(
+        version=document.version,
+        tests_path=tests_path,
+        cases=[harness.run_case(case) for case in document.cases],
+    )
+
+
+def load_policy_parity_tests(tests_path: Path) -> PolicyParityDocument:
+    try:
+        raw_tests = yaml.safe_load(tests_path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise PolicyParityError(f"policy parity tests file not found: {tests_path}") from exc
+    except yaml.YAMLError as exc:
+        raise PolicyParityError(f"invalid policy parity YAML: {tests_path}") from exc
+
+    if not isinstance(raw_tests, dict):
+        raise PolicyParityError(f"policy parity tests must be a mapping: {tests_path}")
+    try:
+        document = PolicyParityDocument.model_validate(_json_object(raw_tests))
+    except ValidationError as exc:
+        raise PolicyParityError(f"invalid policy parity fixture schema: {tests_path}") from exc
+
+    seen: set[str] = set()
+    for case in document.cases:
+        if case.id in seen:
+            raise PolicyParityError(f"duplicate policy parity case id: {case.id}")
+        seen.add(case.id)
+    return document
+
+
+class _PolicyParityHarness:
+    def __init__(self, *, repo_root: Path, work_dir: Path, http_allowlist: str) -> None:
+        work_dir.mkdir(parents=True, exist_ok=True)
+        registry = ToolRegistry.load(repo_root / "tool-manifests")
+        policy_evaluator = PolicyEvaluator.load(repo_root / "policies/default.yaml")
+        principal_registry = PrincipalRegistry.load(repo_root / "principals/local.yaml")
+        audit_writer = AuditWriter(
+            db_path=work_dir / "policy-parity.sqlite3",
+            jsonl_path=work_dir / "policy-parity-audit.jsonl",
+        )
+        audit_writer.initialize()
+        approval_store = ApprovalStore(work_dir / "policy-parity.sqlite3")
+        approval_store.initialize()
+        approval_service = ApprovalService(
+            approval_store,
+            audit_writer,
+            default_expiry=timedelta(minutes=15),
+        )
+        http_fetch_executor = HttpFetchExecutor(
+            allowlist=HttpAllowlist.from_csv(http_allowlist),
+            timeout_seconds=1.0,
+            max_response_bytes=1024,
+            max_redirects=1,
+            resolver=lambda host, port: ["93.184.216.34"],
+            opener=_FixtureHttpOpener(),
+        )
+
+        self.audit_writer = audit_writer
+        self.preview_service = PolicyPreviewService(
+            registry=registry,
+            policy_evaluator=policy_evaluator,
+            http_allowlist=http_fetch_executor.allowlist,
+            principal_registry=principal_registry,
+        )
+        self.tool_call_service = GovernedToolCallService(
+            registry=registry,
+            policy_evaluator=policy_evaluator,
+            approval_service=approval_service,
+            audit_writer=audit_writer,
+            http_fetch_executor=http_fetch_executor,
+            principal_registry=principal_registry,
+        )
+
+    def run_case(self, case: PolicyParityCase) -> PolicyParityCaseResult:
+        failures: list[str] = []
+        preview = self.preview_service.preview(
+            tool_name=case.tool_name,
+            arguments=case.arguments,
+            principal=case.principal,
+            session_id=case.session_id,
+        )
+        runtime = self.tool_call_service.call_tool(
+            tool_name=case.tool_name,
+            arguments=case.arguments,
+            principal=case.principal,
+            session_id=case.session_id,
+        )
+        policy_event = self._policy_event(runtime.request_id)
+        runtime_decision = _optional_string(policy_event.get("decision"))
+        preview_decision = _optional_string(preview.get("decision"))
+
+        if preview_decision != runtime_decision:
+            failures.append(
+                f"decision mismatch: preview={preview_decision}, runtime={runtime_decision}"
+            )
+        if case.expect_decision is not None and preview_decision != case.expect_decision.value:
+            failures.append(
+                f"expected {case.expect_decision.value}, got preview={preview_decision}"
+            )
+
+        preview_evidence = _json_object_or_none(preview.get("decision_evidence"))
+        runtime_evidence = _json_object_or_none(policy_event.get("metadata"))
+        if preview_evidence is None:
+            failures.append("preview did not include decision_evidence")
+        if runtime_evidence is None:
+            failures.append("runtime audit event did not include decision evidence metadata")
+        if preview_evidence is not None and runtime_evidence is not None:
+            for key in PARITY_EVIDENCE_KEYS:
+                if preview_evidence.get(key) != runtime_evidence.get(key):
+                    failures.append(
+                        "evidence mismatch for "
+                        f"{key}: preview={preview_evidence.get(key)!r}, "
+                        f"runtime={runtime_evidence.get(key)!r}"
+                    )
+
+        return PolicyParityCaseResult(
+            id=case.id,
+            passed=not failures,
+            failures=failures,
+            preview_decision=preview_decision,
+            runtime_decision=runtime_decision,
+            request_id=runtime.request_id,
+        )
+
+    def _policy_event(self, request_id: str) -> JsonObject:
+        events = self.audit_writer.list_events(
+            limit=10,
+            event_type=AuditEventType.POLICY_EVALUATED.value,
+            request_id=request_id,
+        )
+        if len(events) != 1:
+            raise PolicyParityError(
+                f"expected exactly one policy.evaluated event for {request_id}, got {len(events)}"
+            )
+        return events[0]
+
+
+class _FixtureHttpResponse:
+    code = 200
+    headers = {"Content-Type": "text/plain; charset=utf-8"}
+
+    def read(self, size: int) -> bytes:
+        return b"policy parity fixture"[:size]
+
+    def getcode(self) -> int:
+        return self.code
+
+
+class _FixtureHttpOpener:
+    def open_pinned(
+        self,
+        fullurl: Request,
+        *,
+        parsed_url: ParsedHttpUrl,
+        resolved_ips: list[str] | tuple[str, ...],
+        timeout: float,
+    ) -> _FixtureHttpResponse:
+        return _FixtureHttpResponse()
+
+    def open(self, fullurl: Request, timeout: float = 0) -> _FixtureHttpResponse:
+        return _FixtureHttpResponse()
+
+
+def _json_object(value: dict[Any, Any]) -> JsonObject:
+    result: JsonObject = {}
+    for key, item in value.items():
+        if not isinstance(key, str):
+            raise PolicyParityError("policy parity keys must be strings")
+        result[key] = item
+    return result
+
+
+def _json_object_or_none(value: object) -> JsonObject | None:
+    return cast(JsonObject, value) if isinstance(value, dict) else None
+
+
+def _optional_string(value: object) -> str | None:
+    return value if isinstance(value, str) else None

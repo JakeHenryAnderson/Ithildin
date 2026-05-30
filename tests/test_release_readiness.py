@@ -462,6 +462,25 @@ def test_evidence_contracts_define_versioning_policy() -> None:
     assert "SUB-001" in matrix
 
 
+def test_policy_parity_harness_is_documented_and_gated() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/policy-parity-harness.md").read_text(encoding="utf-8")
+
+    assert "policy-parity:" in makefile
+    assert "policy-parity" in makefile.partition("release-check:")[2]
+    assert "make policy-parity" in readme
+    assert "make policy-parity" in doc
+    assert "policies/tests/parity.yaml" in doc
+    assert "096 - Policy preview/runtime parity harness | Done" in backlog
+    assert "Task 096 preview/runtime parity fixtures" in matrix
+    assert "docs/codex/policy-parity-harness.md" in review_docs.REVIEW_DOCS
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"
