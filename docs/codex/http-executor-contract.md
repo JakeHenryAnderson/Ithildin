@@ -23,8 +23,9 @@ Before opening a request, the executor:
 3. normalizes hostnames to lowercase ASCII IDNA/punycode form and strips a trailing dot;
 4. normalizes default ports out of the URL representation;
 5. checks the exact allowlist against the normalized destination. Allowlist entries may be
-   scheme-qualified (`https://example.com`), host-only (`example.com`), or host+port
-   (`example.com:443`); scheme-qualified entries are the narrowest form;
+   scheme-qualified (`https://example.com`), host-only (`example.com`, interpreted as
+   `https://example.com:443`), or default-port host+port (`example.com:443` for HTTPS or
+   `example.com:80` for HTTP). Non-default ports must be scheme-qualified;
 6. resolves the destination twice and denies DNS changes during validation;
 7. rejects loopback, private, link-local, multicast, reserved, unspecified, non-global, and
    IPv4-mapped blocked destinations;
@@ -34,8 +35,8 @@ Before opening a request, the executor:
 
 Redirects repeat the same parse, allowlist, DNS, and IP validation before the next request. A
 redirect to an unallowlisted or private destination fails before the redirected request is opened.
-Injected test transports must preserve equivalent semantics when used in integration tests. Runtime
-network claims apply to the default pinned transport, not arbitrary caller-supplied opener objects.
+Injected test transports must implement the same pinned-destination interface used by the runtime
+transport. Fetches fail closed if a custom transport cannot accept validated destination IPs.
 
 ## Response Bounds
 

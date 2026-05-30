@@ -48,6 +48,16 @@ class FakeOpener:
             raise response
         return response
 
+    def open_pinned(
+        self,
+        fullurl: Request,
+        *,
+        parsed_url: object,
+        resolved_ips: object,
+        timeout: float = 0,
+    ) -> object:
+        return self.open(fullurl, timeout=timeout)
+
 
 def test_security_regression_filesystem_scope_and_secret_paths(
     tmp_path: Path,

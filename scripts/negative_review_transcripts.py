@@ -60,6 +60,16 @@ class FakeOpener:
             raise response
         return response
 
+    def open_pinned(
+        self,
+        fullurl: Request,
+        *,
+        parsed_url: object,
+        resolved_ips: Sequence[str],
+        timeout: float = 0,
+    ) -> object:
+        return self.open(fullurl, timeout=timeout)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)

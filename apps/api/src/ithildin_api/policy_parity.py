@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -277,7 +278,7 @@ class _FixtureHttpOpener:
         fullurl: Request,
         *,
         parsed_url: ParsedHttpUrl,
-        resolved_ips: list[str] | tuple[str, ...],
+        resolved_ips: Sequence[str],
         timeout: float,
     ) -> _FixtureHttpResponse:
         return _FixtureHttpResponse()

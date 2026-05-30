@@ -43,6 +43,16 @@ class IntegrationHttpOpener:
         self.requests.append(fullurl)
         return IntegrationHttpResponse()
 
+    def open_pinned(
+        self,
+        fullurl: Request,
+        *,
+        parsed_url: object,
+        resolved_ips: object,
+        timeout: float = 0,
+    ) -> IntegrationHttpResponse:
+        return self.open(fullurl, timeout=timeout)
+
 
 @dataclass(frozen=True)
 class IntegrationHarness:

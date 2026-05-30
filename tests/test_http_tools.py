@@ -77,8 +77,8 @@ def make_executor(
     resolver: Callable[[str, int], Sequence[str]] | None = None,
     max_response_bytes: int = 1024,
     max_redirects: int = 3,
-) -> tuple[HttpFetchExecutor, FakeOpener]:
-    opener = FakeOpener(responses or [FakeResponse(body=b"ok")])
+) -> tuple[HttpFetchExecutor, PinnedFakeOpener]:
+    opener = PinnedFakeOpener(responses or [FakeResponse(body=b"ok")])
 
     def default_resolver(host: str, port: int) -> Sequence[str]:
         return resolved_ips or ["93.184.216.34"]
@@ -134,6 +134,23 @@ def test_pinned_opener_receives_validated_destination_ips() -> None:
     ]
 
 
+def test_unpinned_custom_opener_is_rejected_after_validation() -> None:
+    opener = FakeOpener([FakeResponse(body=b"ok")])
+    executor = HttpFetchExecutor(
+        allowlist=HttpAllowlist.from_csv("https://example.com"),
+        timeout_seconds=1,
+        max_response_bytes=1024,
+        max_redirects=0,
+        resolver=lambda host, port: ["93.184.216.34"],
+        opener=cast(Any, opener),
+    )
+
+    with pytest.raises(HttpFetchError, match="pinned destinations"):
+        executor.fetch("https://example.com/")
+
+    assert opener.requests == []
+
+
 def test_empty_allowlist_denies_without_opening_request() -> None:
     executor, opener = make_executor(allowlist="")
 
@@ -187,6 +204,35 @@ def test_scheme_mismatch_is_denied() -> None:
         executor.fetch("http://example.com/")
 
     assert opener.requests == []
+
+
+def test_scheme_less_allowlist_host_defaults_to_https_only() -> None:
+    executor, opener = make_executor(allowlist="example.com")
+
+    result = executor.fetch("https://example.com/")
+
+    assert result["status_code"] == 200
+    with pytest.raises(HttpFetchError, match="allowlist"):
+        executor.fetch("http://example.com/")
+    assert len(opener.requests) == 1
+
+
+def test_scheme_less_allowlist_default_ports_are_exact() -> None:
+    https_executor, _ = make_executor(allowlist="example.com:443")
+    http_executor, _ = make_executor(allowlist="example.com:80")
+
+    assert https_executor.fetch("https://example.com/")["status_code"] == 200
+    with pytest.raises(HttpFetchError, match="allowlist"):
+        https_executor.fetch("http://example.com:443/")
+
+    assert http_executor.fetch("http://example.com/")["status_code"] == 200
+    with pytest.raises(HttpFetchError, match="allowlist"):
+        http_executor.fetch("https://example.com:80/")
+
+
+def test_scheme_less_allowlist_non_default_port_requires_scheme() -> None:
+    with pytest.raises(ValueError, match="scheme is required"):
+        HttpAllowlist.from_csv("example.com:8443")
 
 
 def test_private_ip_resolution_is_denied() -> None:

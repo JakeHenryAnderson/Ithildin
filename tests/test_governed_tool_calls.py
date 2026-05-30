@@ -49,6 +49,16 @@ class FakeHttpOpener:
         self.requests.append(fullurl)
         return self.response
 
+    def open_pinned(
+        self,
+        fullurl: Request,
+        *,
+        parsed_url: object,
+        resolved_ips: object,
+        timeout: float = 0,
+    ) -> FakeHttpResponse:
+        return self.open(fullurl, timeout=timeout)
+
 
 def write_policy(path: Path) -> None:
     path.write_text(

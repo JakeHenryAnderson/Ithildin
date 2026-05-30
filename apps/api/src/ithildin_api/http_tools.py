@@ -46,17 +46,15 @@ class ParsedHttpUrl:
 
 @dataclass(frozen=True)
 class HttpAllowlistEntry:
-    scheme: str | None
+    scheme: str
     host: str
-    port: int | None
+    port: int
 
     def matches(self, parsed_url: ParsedHttpUrl) -> bool:
-        if self.scheme is not None and self.scheme != parsed_url.scheme:
+        if self.scheme != parsed_url.scheme:
             return False
         if self.host != parsed_url.host:
             return False
-        if self.port is None:
-            return parsed_url.port == _default_port(parsed_url.scheme)
         return self.port == parsed_url.port
 
 
@@ -79,8 +77,15 @@ class HttpAllowlist:
 
 
 class HttpOpener(Protocol):
-    def open(self, fullurl: Request, timeout: float = ...) -> Any:
-        """Open a request and return a response-like object."""
+    def open_pinned(
+        self,
+        fullurl: Request,
+        *,
+        parsed_url: ParsedHttpUrl,
+        resolved_ips: Sequence[str],
+        timeout: float,
+    ) -> Any:
+        """Open a request against a validated destination IP."""
 
 
 Resolver = Callable[[str, int], Sequence[str]]
@@ -294,17 +299,17 @@ class HttpFetchExecutor:
         resolved_ips: Sequence[str],
     ) -> HttpResponse:
         pinned_open = getattr(self.opener, "open_pinned", None)
-        if callable(pinned_open):
-            return cast(
-                HttpResponse,
-                pinned_open(
-                    request,
-                    parsed_url=parsed_url,
-                    resolved_ips=resolved_ips,
-                    timeout=self.timeout_seconds,
-                ),
+        if not callable(pinned_open):
+            raise HttpFetchError("HTTP transport does not support pinned destinations")
+        return cast(
+            HttpResponse,
+            pinned_open(
+                request,
+                parsed_url=parsed_url,
+                resolved_ips=resolved_ips,
+                timeout=self.timeout_seconds,
             )
-        return cast(HttpResponse, self.opener.open(request, timeout=self.timeout_seconds))
+        )
 
     def _validated_resolution(self, parsed_url: ParsedHttpUrl) -> frozenset[str]:
         resolved_ips = self.resolver(parsed_url.host, parsed_url.port)
@@ -437,7 +442,16 @@ def _parse_allowlist_entry(raw_entry: str) -> HttpAllowlistEntry:
         if maybe_port.isdigit():
             host = maybe_host
             port = int(maybe_port)
-    return HttpAllowlistEntry(scheme=None, host=_normalize_host(host), port=port)
+    if port is None:
+        return HttpAllowlistEntry(scheme="https", host=_normalize_host(host), port=443)
+    if port == 443:
+        return HttpAllowlistEntry(scheme="https", host=_normalize_host(host), port=443)
+    if port == 80:
+        return HttpAllowlistEntry(scheme="http", host=_normalize_host(host), port=80)
+    raise ValueError(
+        f"invalid HTTP allowlist entry: {raw_entry}; "
+        "scheme is required for non-default ports"
+    )
 
 
 def _normalize_host(host: str) -> str:
