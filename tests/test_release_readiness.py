@@ -494,6 +494,64 @@ def test_reviewer_finding_intake_rejects_duplicates(tmp_path: Path) -> None:
         )
 
 
+def test_reviewer_finding_intake_rejects_open_high_findings(tmp_path: Path) -> None:
+    findings_dir = tmp_path / "findings"
+    findings_dir.mkdir()
+    findings_dir.joinpath("high.md").write_text(
+        """# High
+
+- Finding ID: EXT-002
+- Severity: high
+- Area: patch apply
+- Affected files/functions: apps/api/src/ithildin_api/patches.py
+- Claim being tested: crash states are diagnosed
+- Observed behavior: fixture
+- Risk: fixture risk
+- Recommended fix: fixture fix
+- Blocking status: should-fix
+- Disposition: open
+- Verification notes: fixture finding
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(reviewer_findings.FindingValidationError, match="open high"):
+        reviewer_findings.validate_findings(
+            findings_dir=findings_dir,
+            repo_root=tmp_path,
+        )
+
+
+def test_reviewer_finding_summary_handles_paths_outside_repo(tmp_path: Path) -> None:
+    outside_root = tmp_path / "outside"
+    findings_dir = outside_root / "findings"
+    findings_dir.mkdir(parents=True)
+    findings_dir.joinpath("low.md").write_text(
+        """# Low
+
+- Finding ID: SUB-001
+- Severity: low
+- Area: release packet
+- Affected files/functions: docs/codex/v0.2-review-packet.md
+- Claim being tested: summaries are printable
+- Observed behavior: fixture
+- Risk: fixture risk
+- Recommended fix: fixture fix
+- Blocking status: later
+- Disposition: open
+- Verification notes: fixture finding
+""",
+        encoding="utf-8",
+    )
+
+    records = reviewer_findings.validate_findings(
+        findings_dir=findings_dir,
+        repo_root=Path("/not/the/root"),
+    )
+
+    assert records[0].summary(Path("/not/the/root"))["path"].endswith("low.md")
+
+
 def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
     intake = Path("docs/codex/reviewer-finding-intake.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
@@ -508,6 +566,7 @@ def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
         "release-check: release-context manifest-lock-check release-guardrails "
         "reviewer-findings-check"
     ) in makefile
+    assert "open critical/high findings" in intake
     assert "reviewer-finding-intake.md" in review_packet
     assert "reviewer-finding-intake.md" in reproduction_map
     assert "docs/codex/reviewer-finding-intake.md" in review_docs.REVIEW_DOCS

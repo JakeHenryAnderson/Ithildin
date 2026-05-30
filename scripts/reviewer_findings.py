@@ -59,7 +59,7 @@ class FindingRecord:
 
     def summary(self, root: Path) -> FindingSummary:
         return {
-            "path": self.path.relative_to(root).as_posix(),
+            "path": _display_path(self.path, root),
             "finding_id": self.finding_id,
             "severity": self.fields["Severity"],
             "blocking_status": self.fields["Blocking status"],
@@ -156,6 +156,15 @@ def _validate_record(record: FindingRecord, repo_root: Path) -> None:
     if disposition not in VALID_DISPOSITIONS:
         raise FindingValidationError(
             f"{record.finding_id} has invalid disposition: {record.fields['Disposition']}"
+        )
+    if severity in {"critical", "high"} and disposition == "open":
+        raise FindingValidationError(
+            f"{record.finding_id} is an open {severity} finding; stop and resolve, "
+            "defer, reject, or accept the risk before release gates pass"
+        )
+    if blocking_status == "blocking" and disposition == "open":
+        raise FindingValidationError(
+            f"{record.finding_id} is an open blocking finding; release gates cannot pass"
         )
     record.fields["Severity"] = severity
     record.fields["Blocking status"] = blocking_status

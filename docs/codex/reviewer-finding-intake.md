@@ -36,4 +36,5 @@ number. Allowed severities are `critical`, `high`, `medium`, `low`, and `informa
    product boundary.
 
 The check rejects duplicate IDs, missing required fields, invalid severities/statuses/dispositions,
-and obvious secret-like markers. It is a structure gate, not a substitute for source review.
+open critical/high findings, open blocking findings, and obvious secret-like markers. It is a
+structure and stop-condition gate, not a substitute for source review.
