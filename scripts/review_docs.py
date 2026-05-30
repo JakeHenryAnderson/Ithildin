@@ -17,6 +17,7 @@ REVIEW_DOCS = [
     "docs/codex/negative-review-recipes.md",
     "docs/codex/reviewer-reproduction-map.md",
     "docs/codex/source-review-closure-matrix.md",
+    "docs/codex/reviewer-finding-template.md",
     "docs/codex/threat-model-and-non-goals.md",
     "docs/codex/local-preview-release.md",
 ]

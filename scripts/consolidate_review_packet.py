@@ -163,6 +163,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root / "docs/codex/source-review-closure-matrix.md",
             repo_root,
         )
+        + _section(
+            "Reviewer Finding Template",
+            repo_root / "docs/codex/reviewer-finding-template.md",
+            repo_root,
+        )
         + _optional_section("Negative Review Transcripts", negative_transcripts, repo_root),
         "05_SIGNED_EVIDENCE_DEMO_AND_GUIDES.md": _section(
             "Signed Evidence Demo Summary",

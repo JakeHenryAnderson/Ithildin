@@ -160,6 +160,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/threat-model-and-non-goals.md",
         "docs/codex/negative-review-recipes.md",
         "docs/codex/source-review-closure-matrix.md",
+        "docs/codex/reviewer-finding-template.md",
         "docs/codex/signed-audit-exports.md",
         "docs/codex/signed-manifest-locks.md",
         "docs/codex/local-preview-release.md",
@@ -241,6 +242,35 @@ def test_source_review_closure_matrix_covers_required_areas() -> None:
         assert column in matrix
     assert "source-review-closure-matrix.md" in review_packet
     assert "source-review-closure-matrix.md" in prompt
+
+
+def test_reviewer_finding_template_has_required_fields() -> None:
+    template = Path("docs/codex/reviewer-finding-template.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    for field in [
+        "Finding ID",
+        "Severity",
+        "Affected files/functions",
+        "Claim being tested",
+        "Observed behavior",
+        "Recommended fix",
+        "Blocking status",
+        "Disposition",
+        "Verification notes",
+        "Overall judgment",
+        "Brutal short version",
+    ]:
+        assert field in template
+    assert "reviewer-finding-template.md" in prompt
+    assert "reviewer-finding-template.md" in reproduction_map
 
 
 def test_review_doc_metadata_is_deterministic(tmp_path: Path) -> None:

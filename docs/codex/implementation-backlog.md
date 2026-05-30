@@ -71,6 +71,7 @@
 | 073 - Final v0.2 packet regeneration | Done | final bundle and consolidated review staging |
 | 074 - Consolidated attachment hashes | Done | `make review-packet-consolidated` |
 | 075 - Source review closure matrix | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md) |
+| 076 - Reviewer finding template | Done | [reviewer-finding-template.md](reviewer-finding-template.md) |
 
 ## Future Candidate Track
 

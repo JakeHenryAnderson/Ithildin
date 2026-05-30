@@ -65,6 +65,7 @@ cd /Users/jake/Documents/Codex/Ithildin
 - Signed evidence demo summary: `var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md`
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
 - Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
+- Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 
 ## Reproduction Notes
