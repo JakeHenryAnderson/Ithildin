@@ -950,6 +950,34 @@ def test_patch_apply_failure_before_replace_records_failed_attempt(
     assert harness.approval_service.get(str(approval["approval_id"])).status.value == "failed"
 
 
+def test_patch_apply_attempt_creation_failure_leaves_file_unchanged(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    def fail_create_attempt(attempt: object) -> NoReturn:
+        raise sqlite3.Error("simulated attempt insert failure")
+
+    monkeypatch.setattr(harness.patch_service.store, "create_apply_attempt", fail_create_attempt)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "failed to apply patch safely" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
+    assert harness.patch_service.list_apply_attempts() == []
+    assert harness.approval_service.get(str(approval["approval_id"])).status.value == "failed"
+
+
 def test_patch_apply_failure_after_replace_records_recovery_required(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -988,6 +1016,57 @@ def test_patch_apply_failure_after_replace_records_recovery_required(
     assert diagnostic_attempts[0]["current_matches_expected_post_apply_hash"] is True
     assert diagnostic_attempts[0]["diagnostic_status"] == "recovery_required"
     assert stuck_approvals[0]["approval_id"] == approval["approval_id"]
+
+
+def test_patch_apply_file_replaced_status_failure_is_diagnosable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    original_set_apply_attempt_status = harness.patch_service.store.set_apply_attempt_status
+
+    def fail_file_replaced(
+        attempt_id: str,
+        status: str,
+        failure_reason: str | None = None,
+    ) -> NoReturn:
+        if status == "file_replaced":
+            raise sqlite3.Error("simulated file_replaced update failure")
+        raise sqlite3.Error("simulated recovery update failure")
+
+    monkeypatch.setattr(
+        harness.patch_service.store,
+        "set_apply_attempt_status",
+        fail_file_replaced,
+    )
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+    monkeypatch.setattr(
+        harness.patch_service.store,
+        "set_apply_attempt_status",
+        original_set_apply_attempt_status,
+    )
+
+    attempts = harness.patch_service.list_apply_attempts()
+    diagnostics = harness.patch_service.patch_apply_diagnostics(harness.approval_service)
+    diagnostic_attempts = cast(list[JsonObject], diagnostics["attempts"])
+
+    assert result.status == "denied"
+    assert "recovery diagnostics required" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "new\n"
+    assert harness.approval_service.get(str(approval["approval_id"])).status.value == "executing"
+    assert attempts[0].status == "prepared"
+    assert diagnostics["status"] == "recovery_required"
+    assert diagnostic_attempts[0]["current_matches_expected_post_apply_hash"] is True
+    assert diagnostic_attempts[0]["diagnostic_status"] == "recovery_required"
 
 
 def test_patch_apply_diagnostics_reports_executing_approval_without_attempt_as_ambiguous(

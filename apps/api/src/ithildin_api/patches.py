@@ -927,7 +927,7 @@ class PatchProposalService:
                     "recovery_required" if file_replaced else "failed",
                     failure_reason=reason,
                 )
-            except PatchProposalError:
+            except (PatchProposalError, OSError, sqlite3.Error):
                 pass
         if file_replaced:
             raise PatchProposalError("patch apply recovery diagnostics required")
