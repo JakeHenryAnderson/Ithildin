@@ -15,6 +15,7 @@ from scripts import (
     release_packet,
     review_docs,
     review_packet_bundle,
+    reviewer_findings,
 )
 
 
@@ -151,6 +152,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "internal-review-packet",
         "signed-evidence-demo",
         "filesystem-contract-check",
+        "reviewer-findings-check",
         "review-packet-bundle",
         "review-packet-consolidated",
         "docs-site",
@@ -414,6 +416,101 @@ def test_reviewer_finding_template_has_required_fields() -> None:
         assert field in template
     assert "reviewer-finding-template.md" in prompt
     assert "reviewer-finding-template.md" in reproduction_map
+
+
+def test_reviewer_finding_intake_validates_records(tmp_path: Path) -> None:
+    findings_dir = tmp_path / "findings"
+    findings_dir.mkdir()
+    findings_dir.joinpath("isr-003.md").write_text(
+        """# ISR-003 Example
+
+- Finding ID: ISR-003
+- Severity: medium
+- Area: patch apply
+- Affected files/functions: apps/api/src/ithildin_api/patches.py
+- Claim being tested: one-time approval cannot replay
+- Observed behavior: replay is rejected
+- Risk: regression would permit duplicate writes
+- Recommended fix: keep replay tests
+- Blocking status: should-fix
+- Disposition: open
+- Verification notes: fixture finding
+""",
+        encoding="utf-8",
+    )
+
+    records = reviewer_findings.validate_findings(
+        findings_dir=findings_dir,
+        repo_root=tmp_path,
+    )
+
+    assert [record.finding_id for record in records] == ["ISR-003"]
+    assert records[0].fields["Severity"] == "medium"
+
+
+def test_reviewer_finding_intake_rejects_invalid_records(tmp_path: Path) -> None:
+    findings_dir = tmp_path / "findings"
+    findings_dir.mkdir()
+    findings_dir.joinpath("bad.md").write_text(
+        """# Bad
+
+- Finding ID: BAD-1
+- Severity: urgent
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(reviewer_findings.FindingValidationError):
+        reviewer_findings.validate_findings(
+            findings_dir=findings_dir,
+            repo_root=tmp_path,
+        )
+
+
+def test_reviewer_finding_intake_rejects_duplicates(tmp_path: Path) -> None:
+    findings_dir = tmp_path / "findings"
+    findings_dir.mkdir()
+    body = """# Duplicate
+
+- Finding ID: EXT-001
+- Severity: low
+- Area: review packet
+- Affected files/functions: docs/codex/v0.2-review-packet.md
+- Claim being tested: finding IDs are unique
+- Observed behavior: duplicate fixture
+- Risk: closure ambiguity
+- Recommended fix: assign unique ID
+- Blocking status: later
+- Disposition: open
+- Verification notes: fixture finding
+"""
+    findings_dir.joinpath("one.md").write_text(body, encoding="utf-8")
+    findings_dir.joinpath("two.md").write_text(body, encoding="utf-8")
+
+    with pytest.raises(reviewer_findings.FindingValidationError, match="duplicate"):
+        reviewer_findings.validate_findings(
+            findings_dir=findings_dir,
+            repo_root=tmp_path,
+        )
+
+
+def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
+    intake = Path("docs/codex/reviewer-finding-intake.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "make reviewer-findings-check" in intake
+    assert "reviewer-findings-check:" in makefile
+    assert (
+        "release-check: release-context manifest-lock-check release-guardrails "
+        "reviewer-findings-check"
+    ) in makefile
+    assert "reviewer-finding-intake.md" in review_packet
+    assert "reviewer-finding-intake.md" in reproduction_map
+    assert "docs/codex/reviewer-finding-intake.md" in review_docs.REVIEW_DOCS
 
 
 def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) -> None:

@@ -19,6 +19,9 @@ packet path.
 
 Run `make internal-review-packet` when you want local AI/subagent source-review prompts. That packet
 is internal pressure-test material only and does not replace external/source review.
+Run `make reviewer-findings-check` after converting any internal AI/subagent, GPT 5.5 Pro, or human
+review note into a structured finding file. The check validates
+[reviewer-finding-intake.md](reviewer-finding-intake.md) records before the closure matrix changes.
 Use [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md) to decide when autonomous
 work must stop for status, reassessment, or external consultation.
 
@@ -97,6 +100,7 @@ work must stop for status, reassessment, or external consultation.
 - Internal AI review workflow: [internal-ai-review-workflow.md](internal-ai-review-workflow.md)
 - Autonomous sprint guardrails: [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md)
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
+- Reviewer finding intake: [reviewer-finding-intake.md](reviewer-finding-intake.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
 

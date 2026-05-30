@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke policy-test release-check release-context release-evidence release-guardrails release-packet review-candidate review-packet-bundle review-packet-consolidated signed-evidence-demo test typecheck ui-dev
+.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke policy-test release-check release-context release-evidence release-guardrails release-packet review-candidate review-packet-bundle review-packet-consolidated reviewer-findings-check signed-evidence-demo test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -48,6 +48,9 @@ typecheck:
 release-guardrails:
 	uv run python scripts/release_guardrails.py
 
+reviewer-findings-check:
+	uv run python scripts/reviewer_findings.py
+
 policy-test:
 	uv run python scripts/policy_test.py
 
@@ -87,7 +90,7 @@ release-context:
 	@echo "git_commit=$$(git rev-parse HEAD)"
 	@echo "git_dirty=$$(test -z "$$(git status --short)" && echo false || echo true)"
 
-release-check: release-context manifest-lock-check release-guardrails policy-test test lint typecheck docs-site
+release-check: release-context manifest-lock-check release-guardrails reviewer-findings-check policy-test test lint typecheck docs-site
 	npm run build --prefix apps/ui
 
 ui-dev:

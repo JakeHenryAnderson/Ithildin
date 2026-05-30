@@ -87,7 +87,7 @@
 | --- | --- | --- |
 | 085 - External-review readiness freeze | Done | [v0.3-milestone-manifest.md](v0.3-milestone-manifest.md) |
 | 086 - Source-review closure matrix v2 | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md) |
-| 087 - Reviewer finding intake automation | Planned | Reviewer finding intake check |
+| 087 - Reviewer finding intake automation | Done | [reviewer-finding-intake.md](reviewer-finding-intake.md), `make reviewer-findings-check` |
 | 088 - Patch-apply crash/failure simulation | Planned | v0.3 milestone manifest |
 | 089 - Patch-apply state-machine contract | Planned | v0.3 milestone manifest |
 | 090 - Filesystem adversarial race harness | Planned | v0.3 milestone manifest |
