@@ -143,6 +143,8 @@ Filesystem and patch executor platform assumptions are documented in
 [docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md). Run
 `make filesystem-contract-check` to record local OS and filesystem capability evidence before
 relying on local-preview workspace/race claims.
+Patch apply approval and recovery states are documented in
+[docs/codex/patch-apply-state-machine.md](docs/codex/patch-apply-state-machine.md).
 Evidence fields for audit events, policy decisions, approvals, redaction summaries, and signed
 bundles are summarized in [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md).
 
@@ -211,6 +213,7 @@ operator setup. Then read
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
 [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md),
+[docs/codex/patch-apply-state-machine.md](docs/codex/patch-apply-state-machine.md),
 [docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md),
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md),
 [docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md),

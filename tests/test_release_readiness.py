@@ -389,6 +389,33 @@ def test_filesystem_executor_contract_is_linked_and_validated() -> None:
         assert "filesystem-executor-contract.md" in linked
 
 
+def test_patch_apply_state_machine_contract_is_linked_and_validated() -> None:
+    contract = Path("docs/codex/patch-apply-state-machine.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "approved",
+        "executing",
+        "executed",
+        "prepared",
+        "file_replaced",
+        "completed",
+        "failed",
+        "recovery_required",
+        "one attempt per approval ID",
+        "does not add repair",
+    ]:
+        assert required in contract
+    assert "patch-apply-state-machine.md" in readme
+    assert "docs/codex/patch-apply-state-machine.md" in review_docs.REVIEW_DOCS
+    assert "Task 089 state-machine contract" in matrix
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"

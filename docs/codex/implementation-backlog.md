@@ -89,7 +89,7 @@
 | 086 - Source-review closure matrix v2 | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md) |
 | 087 - Reviewer finding intake automation | Done | [reviewer-finding-intake.md](reviewer-finding-intake.md), `make reviewer-findings-check` |
 | 088 - Patch-apply crash/failure simulation | Done | `tests/test_governed_tool_calls.py` |
-| 089 - Patch-apply state-machine contract | Planned | v0.3 milestone manifest |
+| 089 - Patch-apply state-machine contract | Done | [patch-apply-state-machine.md](patch-apply-state-machine.md) |
 | 090 - Filesystem adversarial race harness | Planned | v0.3 milestone manifest |
 | 091 - Filesystem contract enforcement | Planned | v0.3 milestone manifest |
 | 092 - HTTP canonicalization adversarial suite | Planned | v0.3 milestone manifest |
