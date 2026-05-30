@@ -22,7 +22,9 @@ Before opening a request, the executor:
    obfuscated IP notation;
 3. normalizes hostnames to lowercase ASCII IDNA/punycode form and strips a trailing dot;
 4. normalizes default ports out of the URL representation;
-5. checks the exact allowlist against the normalized scheme, host, and port;
+5. checks the exact allowlist against the normalized destination. Allowlist entries may be
+   scheme-qualified (`https://example.com`), host-only (`example.com`), or host+port
+   (`example.com:443`); scheme-qualified entries are the narrowest form;
 6. resolves the destination twice and denies DNS changes during validation;
 7. rejects loopback, private, link-local, multicast, reserved, unspecified, non-global, and
    IPv4-mapped blocked destinations;
@@ -30,6 +32,8 @@ Before opening a request, the executor:
 
 Redirects repeat the same parse, allowlist, DNS, and IP validation before the next request. A
 redirect to an unallowlisted or private destination fails before the redirected request is opened.
+The current stdlib transport performs DNS/IP validation before opening the request; it does not yet pin the validated IP through socket connect. See the source-review closure matrix for this explicit
+v0.3-prep follow-up.
 
 ## Response Bounds
 

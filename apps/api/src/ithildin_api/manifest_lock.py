@@ -220,10 +220,11 @@ def verify_manifest_lock_signature(
         embedded_public_key = _public_key_from_b64(public_key_b64)
         if manifest_lock_public_key_id(embedded_public_key) != key_id:
             raise ManifestLockSignatureError("manifest lock signature key id mismatch")
-        if public_key_path is not None:
-            trusted_public_key = _load_public_key(public_key_path)
-            if _public_key_raw(trusted_public_key) != _public_key_raw(embedded_public_key):
-                raise ManifestLockSignatureError("manifest lock signature public key mismatch")
+        if public_key_path is None:
+            raise ManifestLockSignatureError("trusted manifest lock public key is required")
+        trusted_public_key = _load_public_key(public_key_path)
+        if _public_key_raw(trusted_public_key) != _public_key_raw(embedded_public_key):
+            raise ManifestLockSignatureError("manifest lock signature public key mismatch")
 
         signature_metadata: JsonObject = {
             "algorithm": algorithm,

@@ -350,6 +350,33 @@ def test_signed_audit_export_rejects_wrong_trusted_public_key(tmp_path: Path) ->
     assert result.failure == "signed bundle public key does not match trusted key"
 
 
+def test_signed_audit_export_requires_trusted_public_key(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = signed_audit_export_bundle(
+        jsonl_bundle=writer.export_jsonl_bundle(),
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+
+    result = verify_signed_audit_export_bundle(bundle)
+
+    assert result.valid is False
+    assert result.failure == "trusted public key is required"
+
+
 def test_signed_audit_export_rejects_reordered_events_with_recomputed_digest(
     tmp_path: Path,
 ) -> None:

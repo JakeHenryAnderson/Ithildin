@@ -154,10 +154,11 @@ def verify_signed_audit_export_bundle(
         embedded_public_key = _public_key_from_b64(public_key_b64)
         if audit_public_key_id(embedded_public_key) != key_id:
             raise AuditSigningError("signature key id mismatch")
-        if public_key_path is not None:
-            trusted_public_key = _load_public_key(public_key_path)
-            if _public_key_raw(trusted_public_key) != _public_key_raw(embedded_public_key):
-                raise AuditSigningError("signed bundle public key does not match trusted key")
+        if public_key_path is None:
+            raise AuditSigningError("trusted public key is required")
+        trusted_public_key = _load_public_key(public_key_path)
+        if _public_key_raw(trusted_public_key) != _public_key_raw(embedded_public_key):
+            raise AuditSigningError("signed bundle public key does not match trusted key")
 
         signature_metadata: JsonObject = {
             "algorithm": algorithm,

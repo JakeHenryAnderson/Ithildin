@@ -431,6 +431,7 @@ def test_http_executor_contract_is_linked_and_validated() -> None:
         "IDNA",
         "resolves the destination twice",
         "Redirects repeat",
+        "does not yet pin the validated IP",
         "proxy",
         "response bodies",
         "not a network sandbox",
@@ -453,10 +454,12 @@ def test_evidence_contracts_define_versioning_policy() -> None:
         'version: "1"',
         "Stable v0.3-prep evidence fields",
         "Preview-only evidence fields",
+        "requires a trusted local public key file",
         "new format version",
     ]:
         assert required in contracts
     assert "Task 095 evidence-contract versioning" in matrix
+    assert "SUB-001" in matrix
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

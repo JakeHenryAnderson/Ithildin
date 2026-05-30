@@ -60,7 +60,9 @@ without exposing the configured patterns or secrets.
 
 ## Signed Evidence
 
-Signed audit exports and signed manifest locks use local Ed25519 keys when configured.
+Signed audit exports and signed manifest locks use local Ed25519 keys when configured. Verification
+requires a trusted local public key file; embedded public keys are evidence payload fields, not trust
+roots.
 
 - Signed audit export bundles bind export metadata, event JSONL digest, public key metadata, key ID,
   algorithm, and signature.
