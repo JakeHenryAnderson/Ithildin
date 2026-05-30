@@ -1,0 +1,107 @@
+{
+  "manifest_version": "1",
+  "program": "v0.3-prep implementation assurance",
+  "runtime_boundary": "v0.1 local-preview",
+  "review_candidate_label": "v0.3-prep review candidate for the v0.1 local-preview runtime boundary",
+  "purpose": "Automate implementation assurance, evidence generation, and review handoff before any new governed tool-power class is considered.",
+  "deferred_boundaries": [
+    "shell execution",
+    "Docker socket access",
+    "Kubernetes tools",
+    "browser automation",
+    "arbitrary HTTP methods, caller-supplied headers, request bodies, cookies, or broad network access",
+    "broad filesystem writes, deletes, moves, chmod, archive extraction, or secrets-manager tools",
+    "plugin SDK or marketplace",
+    "remote hosted MCP gateway",
+    "production identity integrations",
+    "runtime Postgres",
+    "hosted telemetry collectors",
+    "managed model serving or LLM proxy workflows"
+  ],
+  "stop_conditions": [
+    "same blocking failure repeats three times",
+    "trust-boundary regression",
+    "critical or high internal finding",
+    "need to change the product boundary",
+    "ambiguous release, audit, manifest, signing, or review evidence",
+    "inability to return to a clean checkpoint",
+    "need for external secrets, privileged host state, or production credentials"
+  ],
+  "subagent_policy": {
+    "role": "internal adversarial reviewer and evidence checker",
+    "not_authorized_for": [
+      "external source-review closure",
+      "production readiness claims",
+      "accepting critical or high findings without user/external review"
+    ],
+    "cadence": "Run at wave gates and convert useful findings into reviewer finding records."
+  },
+  "waves": [
+    {
+      "id": "wave-1",
+      "name": "Review Control Plane",
+      "tasks": ["085", "086", "087"],
+      "gate": "Focused release-readiness tests, release-check, and internal subagent review of manifest/matrix/intake workflow."
+    },
+    {
+      "id": "wave-2",
+      "name": "Patch and Filesystem Assurance",
+      "tasks": ["088", "089", "090", "091"],
+      "gate": "Patch/filesystem focused suites, filesystem-contract-check, release-check, and patch/filesystem adversarial subagent review."
+    },
+    {
+      "id": "wave-3",
+      "name": "HTTP and Signed Evidence Assurance",
+      "tasks": ["092", "093", "094", "095"],
+      "gate": "HTTP/signing focused suites, signed-evidence-demo, release-check, and HTTP/signed-evidence subagent review."
+    },
+    {
+      "id": "wave-4",
+      "name": "Policy, MCP, and Review Console Assurance",
+      "tasks": ["096", "097", "098", "099", "100"],
+      "gate": "Policy/MCP/API tests, UI typecheck/build, release-check, and policy/MCP/UI subagent review."
+    },
+    {
+      "id": "wave-5",
+      "name": "Evidence Automation and Fail-Closed Suites",
+      "tasks": ["101", "102", "103", "104", "105", "106", "107", "108"],
+      "gate": "Focused suites, release-check after evidence milestones, internal-review-packet, and evidence/registry/audit/guardrail subagent review."
+    },
+    {
+      "id": "wave-6",
+      "name": "Review Packet, External Intake, and Boundary Decision",
+      "tasks": ["109", "110", "111", "112"],
+      "gate": "review-candidate, release-check, docs-site, clean tree, and GPT 5.5 Pro or human expert handoff."
+    }
+  ],
+  "milestones": [
+    {"id": "085", "title": "External-review readiness freeze", "commit": "Add v0.3 milestone manifest"},
+    {"id": "086", "title": "Source-review closure matrix v2", "commit": "Update source review closure matrix"},
+    {"id": "087", "title": "Reviewer finding intake automation", "commit": "Add reviewer finding intake"},
+    {"id": "088", "title": "Patch-apply crash/failure simulation", "commit": "Add patch apply failure simulations"},
+    {"id": "089", "title": "Patch-apply state-machine contract", "commit": "Add patch apply state contract"},
+    {"id": "090", "title": "Filesystem adversarial race harness", "commit": "Add filesystem adversarial race harness"},
+    {"id": "091", "title": "Filesystem contract enforcement", "commit": "Enforce filesystem contract evidence"},
+    {"id": "092", "title": "HTTP canonicalization adversarial suite", "commit": "Add HTTP canonicalization tests"},
+    {"id": "093", "title": "HTTP executor contract", "commit": "Add HTTP executor contract"},
+    {"id": "094", "title": "Signed-evidence replay/substitution tests", "commit": "Add signed evidence substitution tests"},
+    {"id": "095", "title": "Evidence contract versioning", "commit": "Add evidence contract versioning"},
+    {"id": "096", "title": "Policy preview/runtime parity harness", "commit": "Add policy parity harness"},
+    {"id": "097", "title": "OPA parity decision point", "commit": "Document OPA parity decision"},
+    {"id": "098", "title": "MCP ingress bypass audit", "commit": "Add MCP ingress bypass audit"},
+    {"id": "099", "title": "Review-console approval evidence clarity", "commit": "Polish approval evidence display"},
+    {"id": "100", "title": "Review-console failure-state and trust-status UX", "commit": "Polish review console trust states"},
+    {"id": "101", "title": "Negative transcript expansion", "commit": "Expand negative review transcripts"},
+    {"id": "102", "title": "Release evidence schema hardening", "commit": "Harden release evidence schema"},
+    {"id": "103", "title": "Review packet diff command", "commit": "Add review packet diff"},
+    {"id": "104", "title": "Executor contract set", "commit": "Add executor contract set"},
+    {"id": "105", "title": "Tool manifest negative validation suite", "commit": "Expand manifest validation tests"},
+    {"id": "106", "title": "Principal/workspace registry fail-closed suite", "commit": "Expand registry fail-closed tests"},
+    {"id": "107", "title": "Audit integrity adversarial suite", "commit": "Expand audit integrity tests"},
+    {"id": "108", "title": "Release guardrail expansion", "commit": "Expand release guardrails"},
+    {"id": "109", "title": "Internal AI review packet v2", "commit": "Add internal review packet v2"},
+    {"id": "110", "title": "External review packet v3", "commit": "Add external review packet v3"},
+    {"id": "111", "title": "External review intake and closure", "commit": "Add external review intake"},
+    {"id": "112", "title": "v0.3 boundary decision memo", "commit": "Add v0.3 boundary decision"}
+  ]
+}

@@ -90,6 +90,33 @@ def test_release_packet_review_docs_exist() -> None:
     assert missing == []
 
 
+def test_v03_milestone_manifest_is_linked_and_complete() -> None:
+    manifest_doc = Path("docs/codex/v0.3-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    manifest = json.loads(
+        Path("docs/codex/v0.3-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    planning_seed = Path("docs/codex/v0.2-planning-seed.md").read_text(
+        encoding="utf-8"
+    )
+
+    task_ids = [milestone["id"] for milestone in manifest["milestones"]]
+    assert task_ids == [f"{index:03d}" for index in range(85, 113)]
+    assert manifest["runtime_boundary"] == "v0.1 local-preview"
+    assert "shell execution" in manifest["deferred_boundaries"]
+    assert "trust-boundary regression" in manifest["stop_conditions"]
+    assert (
+        "external source-review closure"
+        in manifest["subagent_policy"]["not_authorized_for"]
+    )
+    assert "v0.3-milestone-manifest.json" in manifest_doc
+    assert "v0.3-milestone-manifest.md" in readme
+    assert "v0.3-milestone-manifest.md" in planning_seed
+    assert "docs/codex/v0.3-milestone-manifest.md" in review_docs.REVIEW_DOCS
+
+
 def test_negative_review_recipes_reference_existing_tools_and_commands() -> None:
     recipes = Path("docs/codex/negative-review-recipes.md").read_text(encoding="utf-8")
     manifest_names = {

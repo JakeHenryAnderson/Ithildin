@@ -81,6 +81,39 @@
 | 083 - Internal AI review workflow | Done | [internal-ai-review-workflow.md](internal-ai-review-workflow.md), `make internal-review-packet` |
 | 084 - Autonomous sprint guardrails | Done | [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md) |
 
+## v0.3-Prep Assurance Track
+
+| Task | Status | Spec |
+| --- | --- | --- |
+| 085 - External-review readiness freeze | Planned | [v0.3-milestone-manifest.md](v0.3-milestone-manifest.md) |
+| 086 - Source-review closure matrix v2 | Planned | [source-review-closure-matrix.md](source-review-closure-matrix.md) |
+| 087 - Reviewer finding intake automation | Planned | Reviewer finding intake check |
+| 088 - Patch-apply crash/failure simulation | Planned | v0.3 milestone manifest |
+| 089 - Patch-apply state-machine contract | Planned | v0.3 milestone manifest |
+| 090 - Filesystem adversarial race harness | Planned | v0.3 milestone manifest |
+| 091 - Filesystem contract enforcement | Planned | v0.3 milestone manifest |
+| 092 - HTTP canonicalization adversarial suite | Planned | v0.3 milestone manifest |
+| 093 - HTTP executor contract | Planned | v0.3 milestone manifest |
+| 094 - Signed-evidence replay/substitution tests | Planned | v0.3 milestone manifest |
+| 095 - Evidence contract versioning | Planned | v0.3 milestone manifest |
+| 096 - Policy preview/runtime parity harness | Planned | v0.3 milestone manifest |
+| 097 - OPA parity decision point | Planned | v0.3 milestone manifest |
+| 098 - MCP ingress bypass audit | Planned | v0.3 milestone manifest |
+| 099 - Review-console approval evidence clarity | Planned | v0.3 milestone manifest |
+| 100 - Review-console failure-state and trust-status UX | Planned | v0.3 milestone manifest |
+| 101 - Negative transcript expansion | Planned | v0.3 milestone manifest |
+| 102 - Release evidence schema hardening | Planned | v0.3 milestone manifest |
+| 103 - Review packet diff command | Planned | v0.3 milestone manifest |
+| 104 - Executor contract set | Planned | v0.3 milestone manifest |
+| 105 - Tool manifest negative validation suite | Planned | v0.3 milestone manifest |
+| 106 - Principal/workspace registry fail-closed suite | Planned | v0.3 milestone manifest |
+| 107 - Audit integrity adversarial suite | Planned | v0.3 milestone manifest |
+| 108 - Release guardrail expansion | Planned | v0.3 milestone manifest |
+| 109 - Internal AI review packet v2 | Planned | v0.3 milestone manifest |
+| 110 - External review packet v3 | Planned | v0.3 milestone manifest |
+| 111 - External review intake and closure | Planned | v0.3 milestone manifest |
+| 112 - v0.3 boundary decision memo | Planned | v0.3 milestone manifest |
+
 ## Future Candidate Track
 
 | Area | Status | Notes |

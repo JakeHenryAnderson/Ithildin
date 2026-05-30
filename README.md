@@ -173,6 +173,10 @@ filesystem contract check, signed evidence demo, negative transcripts, review bu
 consolidated packet, and docs site. Use
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
 the full evidence sequence and locate generated hashes/transcripts.
+The v0.3-prep assurance roadmap is recorded in
+[docs/codex/v0.3-milestone-manifest.md](docs/codex/v0.3-milestone-manifest.md). It keeps Tasks
+085-112 scoped to review automation, adversarial assurance, and external handoff preparation rather
+than new governed tool powers.
 
 ## Core Invariant
 
@@ -194,6 +198,7 @@ and [docs/codex/v0.2-review-packet.md](docs/codex/v0.2-review-packet.md) for ext
 handoff, or [docs/codex/local-preview-release.md](docs/codex/local-preview-release.md) for local
 operator setup. Then read
 [docs/codex/v0.2-external-review-prompt.md](docs/codex/v0.2-external-review-prompt.md),
+[docs/codex/v0.3-milestone-manifest.md](docs/codex/v0.3-milestone-manifest.md),
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md),
 [docs/codex/source-review-closure-matrix.md](docs/codex/source-review-closure-matrix.md),
 [docs/codex/internal-source-review-pass-1.md](docs/codex/internal-source-review-pass-1.md),
