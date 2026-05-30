@@ -131,6 +131,10 @@ def build_bundle(
     _write_command_output(bundle_dir / "release-check.txt", release_check)
     if release_check.returncode != 0:
         raise BundleError("make release-check failed; see release-check.txt")
+    _write_command_output(
+        bundle_dir / "filesystem-contract-check.txt",
+        _required_command(["make", "filesystem-contract-check"]),
+    )
 
     review_doc_hashes = collect_review_doc_metadata(repo_root, REVIEW_DOCS)
     _write_json(bundle_dir / "review-doc-hashes.json", review_doc_hashes)
@@ -303,6 +307,7 @@ def _collect_artifact_hashes(
     paths = [
         Path("INDEX.md"),
         Path("release-check.txt"),
+        Path("filesystem-contract-check.txt"),
         Path("release-evidence.json"),
         Path("release-packet.md"),
         Path("release-packet.json"),
@@ -366,6 +371,7 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 - `docs/docs/codex/v0.2-review-packet.md`
 - `docs/docs/codex/v0.2-external-review-prompt.md`
 - `release-check.txt`
+- `filesystem-contract-check.txt`
 - `release-evidence.json`
 - `release-packet.md`
 - `release-packet.json`
@@ -397,6 +403,12 @@ not external notarization, hosted custody, or official supply-chain signing.
 
 See `artifact-hashes.json` for SHA-256 digests of the generated bundle outputs, copied review
 documents, and copied signed-evidence demo summary when present.
+
+## Filesystem Contract Evidence
+
+`filesystem-contract-check.txt` records secret-free local OS and filesystem capability evidence for
+the documented filesystem executor contract. It is generated during bundle creation and hashed with
+the other bundle artifacts.
 
 ## Negative Review Transcripts
 

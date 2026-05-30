@@ -131,6 +131,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         )
         + _section("Release Check Transcript", bundle_dir / "release-check.txt", repo_root)
+        + _section(
+            "Filesystem Contract Check",
+            bundle_dir / "filesystem-contract-check.txt",
+            repo_root,
+        )
         + _section("Release Evidence JSON", bundle_dir / "release-evidence.json", repo_root)
         + _section("Release Packet Markdown", bundle_dir / "release-packet.md", repo_root)
         + _section("Release Packet JSON", bundle_dir / "release-packet.json", repo_root)

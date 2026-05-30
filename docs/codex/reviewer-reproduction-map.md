@@ -45,8 +45,9 @@ cd /Users/jake/Documents/Codex/Ithildin
 6. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
-   command outputs, copied review docs, `review-doc-hashes.json`, `artifact-hashes.json`, and the
-   signed-evidence demo summary when step 4 was run first.
+   command outputs, `filesystem-contract-check.txt`, copied review docs,
+   `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
+   step 4 was run first.
 
 7. `make negative-review-transcripts`
 
@@ -69,6 +70,7 @@ cd /Users/jake/Documents/Codex/Ithildin
 ## Where To Inspect Evidence
 
 - Release-check transcript: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-check.txt`
+- Filesystem contract check transcript: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/filesystem-contract-check.txt`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

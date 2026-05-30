@@ -142,6 +142,7 @@ def test_consolidated_review_packet_generation(
     for path in [
         "INDEX.md",
         "release-check.txt",
+        "filesystem-contract-check.txt",
         "release-evidence.json",
         "release-packet.md",
         "release-packet.json",
@@ -455,6 +456,7 @@ def test_review_packet_bundle_layout_and_exclusions(
 
     assert result.path.joinpath("INDEX.md").exists()
     assert result.path.joinpath("release-check.txt").exists()
+    assert result.path.joinpath("filesystem-contract-check.txt").exists()
     assert result.path.joinpath("release-evidence.json").exists()
     assert result.path.joinpath("release-packet.md").exists()
     assert result.path.joinpath("release-packet.json").exists()
@@ -473,6 +475,7 @@ def test_review_packet_bundle_layout_and_exclusions(
     artifact_paths = {artifact["path"] for artifact in artifact_hashes}
     assert "INDEX.md" in artifact_paths
     assert "release-check.txt" in artifact_paths
+    assert "filesystem-contract-check.txt" in artifact_paths
     assert "release-evidence.json" in artifact_paths
     assert "release-packet.md" in artifact_paths
     assert "release-packet.json" in artifact_paths
@@ -487,6 +490,9 @@ def test_review_packet_bundle_layout_and_exclusions(
         encoding="utf-8"
     )
     assert "artifact-hashes.json" in result.path.joinpath("INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    assert "filesystem-contract-check.txt" in result.path.joinpath("INDEX.md").read_text(
         encoding="utf-8"
     )
 
