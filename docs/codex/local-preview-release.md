@@ -65,6 +65,8 @@ For v0.2 external/code review handoff, start with
   [Manifest Validation Suite](manifest-validation-suite.md).
 - Principal/workspace registry fail-closed coverage is summarized in
   [Registry Fail-Closed Suite](registry-fail-closed-suite.md).
+- Release guardrail coverage is summarized in
+  [Release Guardrail Expansion](release-guardrail-expansion.md).
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.

@@ -7,6 +7,12 @@ from pathlib import Path
 
 import yaml
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.build_docs_site import DEFAULT_DOCS
+from scripts.review_docs import REVIEW_DOCS
+
 ROOT = Path(__file__).resolve().parents[1]
 
 WARNING_PHRASES = [
@@ -44,6 +50,34 @@ THREAT_MODEL_LINKED_DOCS = [
     ROOT / "docs/codex/v0.1-local-preview-checklist.md",
     ROOT / "docs/codex/v0.1-public-preview-release-notes.md",
 ]
+REQUIRED_RELEASE_CHECK_FRAGMENTS = [
+    "manifest-lock-check",
+    "release-guardrails",
+    "reviewer-findings-check",
+    "filesystem-contract-check",
+    "policy-test",
+    "policy-parity",
+    "test",
+    "lint",
+    "typecheck",
+    "docs-site",
+]
+REQUIRED_REVIEW_CANDIDATE_STEPS = [
+    "$(MAKE) release-check",
+    "$(MAKE) filesystem-contract-check",
+    "$(MAKE) signed-evidence-demo",
+    "$(MAKE) negative-review-transcripts",
+    "$(MAKE) review-packet-bundle",
+    "$(MAKE) review-packet-consolidated",
+    "$(MAKE) docs-site",
+]
+REQUIRED_V03_DONE_TASKS = [f"{task:03d}" for task in range(101, 109)]
+DEFERRED_TOOL_POWER_MARKERS = [
+    "shell",
+    "docker",
+    "kubernetes",
+    "browser",
+]
 
 
 def main() -> None:
@@ -52,6 +86,10 @@ def main() -> None:
     failures.extend(_check_forbidden_claims())
     failures.extend(_check_threat_model_links())
     failures.extend(_check_compose_boundaries())
+    failures.extend(_check_review_docs_present())
+    failures.extend(_check_release_targets())
+    failures.extend(_check_deferred_tool_powers_absent_from_manifests())
+    failures.extend(_check_v03_wave5_status())
 
     if failures:
         for failure in failures:
@@ -141,6 +179,69 @@ def _check_compose_boundaries() -> list[str]:
                 failures.append(f"{service_name} exposes non-loopback port {port}")
         if service.get("privileged"):
             failures.append(f"{service_name} must not run privileged")
+    return failures
+
+
+def _check_review_docs_present() -> list[str]:
+    failures: list[str] = []
+    for doc in sorted(set(REVIEW_DOCS + DEFAULT_DOCS)):
+        path = ROOT / doc
+        if not path.exists():
+            failures.append(f"required review/doc-site document is missing: {doc}")
+    return failures
+
+
+def _check_release_targets() -> list[str]:
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    failures: list[str] = []
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    for fragment in REQUIRED_RELEASE_CHECK_FRAGMENTS:
+        if fragment not in release_check_body:
+            failures.append(f"release-check does not include {fragment}")
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    previous_index = -1
+    for step in REQUIRED_REVIEW_CANDIDATE_STEPS:
+        index = review_candidate_body.find(step)
+        if index == -1:
+            failures.append(f"review-candidate does not include {step}")
+            continue
+        if index < previous_index:
+            failures.append(f"review-candidate step is out of order: {step}")
+        previous_index = index
+    for target in [
+        "release-evidence-validate:",
+        "review-packet-diff:",
+        "reviewer-findings-check:",
+    ]:
+        if target not in makefile:
+            failures.append(f"Makefile is missing {target}")
+    return failures
+
+
+def _check_deferred_tool_powers_absent_from_manifests() -> list[str]:
+    failures: list[str] = []
+    for manifest_path in sorted((ROOT / "tool-manifests").glob("*.y*ml")):
+        text = manifest_path.read_text(encoding="utf-8").lower()
+        for marker in DEFERRED_TOOL_POWER_MARKERS:
+            if marker in text:
+                failures.append(
+                    f"{manifest_path.relative_to(ROOT)} appears to reference deferred "
+                    f"tool power {marker!r}"
+                )
+    return failures
+
+
+def _check_v03_wave5_status() -> list[str]:
+    backlog = (ROOT / "docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    failures: list[str] = []
+    for task_id in REQUIRED_V03_DONE_TASKS:
+        marker = f"| {task_id} - "
+        matching_lines = [line for line in backlog.splitlines() if line.startswith(marker)]
+        if not matching_lines:
+            failures.append(f"implementation backlog missing Task {task_id}")
+            continue
+        if "| Done |" not in matching_lines[0]:
+            failures.append(f"Task {task_id} is not marked Done in implementation backlog")
     return failures
 
 

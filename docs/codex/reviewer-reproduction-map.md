@@ -119,6 +119,7 @@ work must stop for status, reassessment, or external consultation.
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
 - Manifest validation suite: [manifest-validation-suite.md](manifest-validation-suite.md)
 - Registry fail-closed suite: [registry-fail-closed-suite.md](registry-fail-closed-suite.md)
+- Release guardrail expansion: [release-guardrail-expansion.md](release-guardrail-expansion.md)
 
 ## Reproduction Notes
 

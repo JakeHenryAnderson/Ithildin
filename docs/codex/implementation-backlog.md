@@ -108,7 +108,7 @@
 | 105 - Tool manifest negative validation suite | Done | [manifest-validation-suite.md](manifest-validation-suite.md), `tests/test_tool_registry.py` |
 | 106 - Principal/workspace registry fail-closed suite | Done | [registry-fail-closed-suite.md](registry-fail-closed-suite.md), `tests/test_identity.py`, `tests/test_workspaces.py` |
 | 107 - Audit integrity adversarial suite | Done | [audit-integrity-adversarial-suite.md](audit-integrity-adversarial-suite.md), `tests/test_audit_writer.py` |
-| 108 - Release guardrail expansion | Planned | v0.3 milestone manifest |
+| 108 - Release guardrail expansion | Done | [release-guardrail-expansion.md](release-guardrail-expansion.md), `scripts/release_guardrails.py` |
 | 109 - Internal AI review packet v2 | Planned | v0.3 milestone manifest |
 | 110 - External review packet v3 | Planned | v0.3 milestone manifest |
 | 111 - External review intake and closure | Planned | v0.3 milestone manifest |

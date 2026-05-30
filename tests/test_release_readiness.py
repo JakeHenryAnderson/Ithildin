@@ -575,6 +575,40 @@ def test_audit_integrity_adversarial_suite_is_documented() -> None:
     assert "docs/codex/audit-integrity-adversarial-suite.md" in review_docs.REVIEW_DOCS
 
 
+def test_release_guardrail_expansion_is_documented_and_wired() -> None:
+    doc = Path("docs/codex/release-guardrail-expansion.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "required review/docs-site documents",
+        "release-check",
+        "review-candidate",
+        "deferred shell, Docker, Kubernetes, or browser tool",
+        "Tasks 101-108 are marked done",
+    ]:
+        assert required in doc
+    assert release_guardrails._check_review_docs_present() == []
+    assert release_guardrails._check_release_targets() == []
+    assert release_guardrails._check_deferred_tool_powers_absent_from_manifests() == []
+    assert release_guardrails._check_v03_wave5_status() == []
+    assert "release-guardrail-expansion.md" in readme
+    assert "release-guardrail-expansion.md" in review_packet
+    assert "release-guardrail-expansion.md" in reproduction_map
+    assert "108 - Release guardrail expansion | Done" in backlog
+    assert "Task 108 adds" in matrix
+    assert "docs/codex/release-guardrail-expansion.md" in review_docs.REVIEW_DOCS
+
+
 def test_evidence_contracts_define_versioning_policy() -> None:
     contracts = Path("docs/codex/evidence-contracts.md").read_text(encoding="utf-8")
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
