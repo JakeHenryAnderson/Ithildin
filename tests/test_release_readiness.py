@@ -313,6 +313,28 @@ def test_source_review_closure_matrix_covers_required_areas() -> None:
     assert "source-review-closure-matrix.md" in prompt
 
 
+def test_source_review_closure_matrix_v2_separates_review_layers() -> None:
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for column in [
+        "Internal review",
+        "Subagent review",
+        "External review",
+        "Finding records",
+        "Blocking status",
+        "Closure evidence",
+    ]:
+        assert column in matrix
+    assert "v0.3-milestone-manifest.md" in matrix
+    assert "Pending Wave 2" in matrix
+    assert "Pending Wave 3" in matrix
+    assert "Pending Wave 4" in matrix
+    assert "cannot mark an external/source-review row closed" in matrix
+    assert "No blocking finding open" in matrix
+
+
 def test_internal_source_review_pass_is_linked_and_validated() -> None:
     review_path = Path("docs/codex/internal-source-review-pass-1.md")
     review = review_path.read_text(encoding="utf-8")

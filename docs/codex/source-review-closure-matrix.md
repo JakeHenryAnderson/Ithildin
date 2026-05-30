@@ -4,6 +4,11 @@ This matrix tracks external/source review closure for the v0.2 review candidate 
 local-preview runtime boundary. Initial status is `pending external review` until a reviewer records
 findings and disposition.
 
+For v0.3-prep, this matrix now separates internal review, internal AI/subagent pressure testing,
+external review, finding records, and closure evidence. The task band is recorded in
+[v0.3-milestone-manifest.md](v0.3-milestone-manifest.md). Internal review can increase confidence
+and create findings, but it cannot mark an external/source-review row closed.
+
 | Area | Files/functions to inspect | Reviewer | Date | Findings count | Blocking findings | Disposition | Closure notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `fs.read` | `apps/api/src/ithildin_api/read_tools.py`; `FilesystemReadTools.read_file`; `ReadToolExecutor.execute`; `docs/codex/filesystem-executor-contract.md` | Codex internal source review pass 1 | 2026-05-30 | 1 | 0 | internal reviewed; pending external review | ISR-002 is addressed by Task 080 filesystem contract and capability check; external review remains pending. Path normalization, hidden/sensitive denial, symlink/hardlink behavior, read limits, and redaction handoff inspected. |
@@ -15,6 +20,34 @@ findings and disposition.
 | Policy preview/impact | `apps/api/src/ithildin_api/policy_preview.py`; `scripts/policy_impact.py`; policy evaluator | Codex internal source review pass 1 | 2026-05-30 | 0 | 0 | internal reviewed; pending external review | Principal/resource normalization parity with runtime, fixture consistency, and OPA/YAML evidence boundaries inspected. |
 | MCP ingress | `apps/mcp-server/src/ithildin_mcp_server/`; adapter list/call handlers | Codex internal source review pass 1 | 2026-05-30 | 0 | 0 | internal reviewed; pending external review | Adapter thinness, schema/policy/approval/audit delegation, principal handling, and no-bypass path inspected. |
 | Review-console approval flow | `apps/ui/src/App.tsx`; approval review API consumers | Codex internal source review pass 1 | 2026-05-30 | 0 | 0 | internal reviewed; pending external review | Binding evidence visibility, approve/deny payloads, stale/replay/expiry state clarity, and lack of direct execution controls inspected. |
+
+## v2 Closure State
+
+This v2 overlay is the working table for Tasks 085-112. It records each assurance layer separately
+so later automation can update internal findings without overstating external closure.
+
+| Area | Internal review | Subagent review | External review | Finding records | Blocking status | Closure evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `fs.read` | Pass 1 complete; pending v0.3 filesystem wave | Pending Wave 2 | Pending external review | ISR-002 | No blocking finding open | Task 080 contract/check evidence; future Task 090-091 race/contract evidence |
+| `fs.patch.propose` | Pass 1 complete; pending v0.3 filesystem wave | Pending Wave 2 | Pending external review | ISR-002 | No blocking finding open | Task 080 contract/check evidence; future Task 090-091 race/contract evidence |
+| `fs.patch.apply` | Pass 1 complete; pending v0.3 patch wave | Pending Wave 2 | Pending external review | ISR-001, ISR-002 | No blocking finding open | Task 079 recovery evidence; future Task 088-089 failure/state-machine evidence |
+| `http.fetch` | Pass 1 complete; pending v0.3 HTTP wave | Pending Wave 3 | Pending external review | None | No blocking finding open | Future Task 092-093 canonicalization and executor-contract evidence |
+| Audit export/signing | Pass 1 complete; pending v0.3 evidence wave | Pending Wave 3 | Pending external review | None | No blocking finding open | Future Task 094-095 substitution/replay and evidence-contract evidence |
+| Manifest-lock verification | Pass 1 complete; pending v0.3 evidence wave | Pending Wave 3 and Wave 5 | Pending external review | None | No blocking finding open | Future Task 094-095 signed-evidence evidence and Task 105 validation suite |
+| Policy preview/impact | Pass 1 complete; pending v0.3 policy wave | Pending Wave 4 | Pending external review | None | No blocking finding open | Future Task 096-097 parity and OPA-positioning evidence |
+| MCP ingress | Pass 1 complete; pending v0.3 MCP wave | Pending Wave 4 | Pending external review | None | No blocking finding open | Future Task 098 ingress bypass-audit evidence |
+| Review-console approval flow | Pass 1 complete; pending v0.3 UI wave | Pending Wave 4 | Pending external review | None | No blocking finding open | Future Task 099-100 approval evidence and trust-state evidence |
+
+## v2 Update Rules
+
+- `Internal review` records Codex/manual implementation-assurance passes only.
+- `Subagent review` records internal high-intelligence pressure tests only.
+- `External review` remains `pending external review` until GPT 5.5 Pro / Very High or a human
+  expert reviews the relevant source and evidence.
+- `Finding records` must point to structured finding IDs from the reviewer finding template or the
+  Task 087 intake directory once available.
+- `Blocking status` must say whether any critical/high finding is open.
+- `Closure evidence` must cite concrete tasks, tests, command outputs, docs, or accepted deferrals.
 
 ## Closure Rule
 
