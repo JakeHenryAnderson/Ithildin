@@ -139,6 +139,34 @@ def test_filesystem_denies_hardlink_swap_between_resolution_and_open(
     assert outside.read_text(encoding="utf-8") == "outside\n"
 
 
+def test_filesystem_search_denies_symlink_swap_between_resolution_and_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not hasattr(os, "O_NOFOLLOW"):
+        pytest.skip("O_NOFOLLOW unavailable on this platform")
+    filesystem = make_filesystem(tmp_path)
+    target = filesystem.workspace_root / "race.txt"
+    target.write_text("safe needle\n", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside needle\n", encoding="utf-8")
+    original_resolver = filesystem.resolve_existing_path
+
+    def swap_to_symlink(path: str) -> Path:
+        resolved = original_resolver(path)
+        if path == "race.txt":
+            resolved.unlink()
+            resolved.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(filesystem, "resolve_existing_path", swap_to_symlink)
+
+    result = filesystem.search(path=".", query="needle")
+
+    assert result["matches"] == []
+    assert outside.read_text(encoding="utf-8") == "outside needle\n"
+
+
 def test_filesystem_denies_oversized_reads(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4)
     filesystem.workspace_root.joinpath("large.txt").write_text("too large", encoding="utf-8")

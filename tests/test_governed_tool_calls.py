@@ -1155,6 +1155,57 @@ def test_patch_apply_denies_symlink_swap_during_apply_preparation(
     assert harness.approval_service.get(str(approval["approval_id"])).status.value == "failed"
 
 
+def test_patch_apply_denies_parent_directory_symlink_swap_before_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    nested = harness.workspace_root / "docs"
+    nested.mkdir()
+    nested.joinpath("README.md").write_text("old\n", encoding="utf-8")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    proposal_result = harness.service.call_tool(
+        tool_name="fs.patch.propose",
+        arguments={
+            "path": "docs/README.md",
+            "unified_diff": "--- a/docs/README.md\n+++ b/docs/README.md\n@@ -1 +1 @@\n-old\n+new\n",
+        },
+        principal=principal(),
+        session_id="sess_1",
+    )
+    assert proposal_result.status == "completed"
+    proposal = proposal_result.content
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    import ithildin_api.patches as patches_module
+
+    original_atomic_write = patches_module._atomic_write_text
+
+    def swap_parent_to_symlink(target: Path, content: str) -> None:
+        if target.parent.name == "docs":
+            target.parent.rename(harness.workspace_root / "docs-original")
+            target.parent.symlink_to(outside)
+        original_atomic_write(target, content)
+
+    monkeypatch.setattr(patches_module, "_atomic_write_text", swap_parent_to_symlink)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "failed to apply patch safely" in str(result.content["reason"])
+    assert outside.joinpath("README.md").exists() is False
+    assert (harness.workspace_root / "docs-original/README.md").read_text(
+        encoding="utf-8"
+    ) == "old\n"
+
+
 def test_direct_patch_payload_cannot_be_applied(tmp_path: Path) -> None:
     harness = make_patch_harness(tmp_path)
 

@@ -1159,6 +1159,8 @@ def _scope_object(scope: JsonObject, key: str) -> JsonObject:
 
 
 def _atomic_write_text(target: Path, content: str) -> None:
+    if target.parent.is_symlink() or not target.parent.is_dir():
+        raise OSError("patch target parent is not a safe directory")
     mode = target.stat().st_mode
     temp_path: Path | None = None
     try:

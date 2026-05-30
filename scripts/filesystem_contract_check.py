@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(status, indent=2, sort_keys=True))
     else:
         print(_format_human(status))
-    return 0
+    return 0 if status["support"]["local_preview_security_supported"] is True else 1
 
 
 def collect_filesystem_contract_status(

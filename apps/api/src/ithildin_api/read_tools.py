@@ -309,18 +309,18 @@ class FilesystemReadTools:
         query: str,
         matches: list[JsonValue],
     ) -> None:
-        with path.open("r", encoding="utf-8", errors="replace") as candidate_file:
-            for line_number, line in enumerate(candidate_file, start=1):
-                if len(matches) >= self.search_result_limit:
-                    return
-                if query in line:
-                    matches.append(
-                        {
-                            "path": self.relative_path(path),
-                            "line_number": line_number,
-                            "preview": line.rstrip("\n")[:240],
-                        }
-                    )
+        content = self.read_text_file(path)
+        for line_number, line in enumerate(content.splitlines(), start=1):
+            if len(matches) >= self.search_result_limit:
+                return
+            if query in line:
+                matches.append(
+                    {
+                        "path": self.relative_path(path),
+                        "line_number": line_number,
+                        "preview": line[:240],
+                    }
+                )
 
     def _ensure_under_workspace(self, path: Path) -> None:
         try:

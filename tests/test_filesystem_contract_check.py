@@ -24,6 +24,38 @@ def test_filesystem_contract_check_json_contains_required_fields(
     assert payload["support"]["status"] in {"supported", "degraded", "unsupported"}
 
 
+def test_filesystem_contract_check_fails_when_support_profile_is_unsupported(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        filesystem_contract_check,
+        "collect_filesystem_contract_status",
+        lambda: {
+            "platform": {"system": "Windows", "profile": "windows"},
+            "python": {"version": "3.12"},
+            "capabilities": {
+                "o_no_follow_available": False,
+                "symlink_supported": True,
+                "hardlink_supported": True,
+                "case_sensitive": False,
+            },
+            "support": {
+                "status": "unsupported",
+                "local_preview_security_supported": False,
+                "reason": "fixture unsupported",
+            },
+            "probe": {"uses_temporary_directory": True, "touches_workspace": False},
+        },
+    )
+
+    result = filesystem_contract_check.main(["--json"])
+
+    assert result == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["support"]["status"] == "unsupported"
+
+
 def test_platform_profiles_report_supported_for_macos_and_linux(tmp_path: Path) -> None:
     macos = filesystem_contract_check.collect_filesystem_contract_status(
         system="Darwin",
