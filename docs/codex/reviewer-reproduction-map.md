@@ -64,6 +64,7 @@ cd /Users/jake/Documents/Codex/Ithildin
 - Consolidated attachment hashes: `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/consolidated-attachment-hashes.json`
 - Signed evidence demo summary: `var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md`
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
+- Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 
 ## Reproduction Notes

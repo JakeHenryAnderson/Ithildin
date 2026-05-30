@@ -24,6 +24,7 @@ DEFAULT_DOCS = [
     "docs/codex/evidence-contracts.md",
     "docs/codex/negative-review-recipes.md",
     "docs/codex/reviewer-reproduction-map.md",
+    "docs/codex/source-review-closure-matrix.md",
     "docs/codex/signed-audit-exports.md",
     "docs/codex/signed-manifest-locks.md",
     "docs/codex/v0.1-public-preview-release-notes.md",

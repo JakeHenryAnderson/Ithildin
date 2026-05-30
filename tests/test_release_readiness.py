@@ -159,6 +159,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/evidence-contracts.md",
         "docs/codex/threat-model-and-non-goals.md",
         "docs/codex/negative-review-recipes.md",
+        "docs/codex/source-review-closure-matrix.md",
         "docs/codex/signed-audit-exports.md",
         "docs/codex/signed-manifest-locks.md",
         "docs/codex/local-preview-release.md",
@@ -207,6 +208,39 @@ def test_security_matrix_splits_link_race_coverage() -> None:
     assert "Broader TOCTOU/race proofs" in matrix
     assert "Covered after v0.2" not in matrix
     assert "Covered by v0.2 tests; pending external review" in matrix
+
+
+def test_source_review_closure_matrix_covers_required_areas() -> None:
+    matrix_path = Path("docs/codex/source-review-closure-matrix.md")
+    matrix = matrix_path.read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(
+        encoding="utf-8"
+    )
+
+    for area in [
+        "fs.read",
+        "fs.patch.propose",
+        "fs.patch.apply",
+        "http.fetch",
+        "Audit export/signing",
+        "Manifest-lock verification",
+        "Policy preview/impact",
+        "MCP ingress",
+        "Review-console approval flow",
+    ]:
+        assert area in matrix
+    for column in [
+        "Reviewer",
+        "Date",
+        "Findings count",
+        "Blocking findings",
+        "Disposition",
+        "Closure notes",
+    ]:
+        assert column in matrix
+    assert "source-review-closure-matrix.md" in review_packet
+    assert "source-review-closure-matrix.md" in prompt
 
 
 def test_review_doc_metadata_is_deterministic(tmp_path: Path) -> None:

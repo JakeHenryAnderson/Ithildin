@@ -69,6 +69,8 @@
 | 071 - Release evidence hashes | Done | renamed release-check fields and `artifact-hashes.json` |
 | 072 - Reviewer reproduction map | Done | [reviewer-reproduction-map.md](reviewer-reproduction-map.md) |
 | 073 - Final v0.2 packet regeneration | Done | final bundle and consolidated review staging |
+| 074 - Consolidated attachment hashes | Done | `make review-packet-consolidated` |
+| 075 - Source review closure matrix | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md) |
 
 ## Future Candidate Track
 
