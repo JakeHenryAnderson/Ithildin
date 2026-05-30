@@ -74,6 +74,7 @@
 | 076 - Reviewer finding template | Done | [reviewer-finding-template.md](reviewer-finding-template.md) |
 | 077 - Negative review transcripts | Done | `make negative-review-transcripts` |
 | 078 - Internal source review pass 1 | Done | [internal-source-review-pass-1.md](internal-source-review-pass-1.md) |
+| 079 - Patch apply recovery evidence | Done | `/patch-apply-diagnostics`, patch apply attempt records |
 
 ## Future Candidate Track
 

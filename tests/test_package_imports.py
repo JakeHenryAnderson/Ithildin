@@ -77,6 +77,7 @@ def test_api_public_exports() -> None:
 
     for exported_name in [
         "HttpFetchExecutor",
+        "PatchApplyAttempt",
         "PatchProposalService",
         "PatchProposalStore",
         "PolicyImpactService",

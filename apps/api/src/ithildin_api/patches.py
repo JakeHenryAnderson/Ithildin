@@ -7,6 +7,7 @@ import os
 import re
 import sqlite3
 import tempfile
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,7 +16,7 @@ from uuid import uuid4
 
 from ithildin_schemas import ApprovalRequest, JsonObject, canonical_json, sha256_digest
 
-from ithildin_api.approvals import ApprovalService
+from ithildin_api.approvals import ApprovalError, ApprovalService
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError
 
 PATCH_PROPOSE_TOOL = "fs.patch.propose"
@@ -70,6 +71,42 @@ class PatchProposal:
         return result
 
 
+@dataclass(frozen=True)
+class PatchApplyAttempt:
+    attempt_id: str
+    approval_id: str
+    proposal_id: str
+    request_id: str
+    workspace_id: str
+    path: str
+    proposal_hash: str
+    base_file_hash: str
+    expected_post_apply_hash: str
+    status: str
+    failure_reason: str | None
+    created_at: datetime
+    updated_at: datetime
+    metadata: JsonObject
+
+    def summary(self) -> JsonObject:
+        return {
+            "attempt_id": self.attempt_id,
+            "approval_id": self.approval_id,
+            "proposal_id": self.proposal_id,
+            "request_id": self.request_id,
+            "workspace_id": self.workspace_id,
+            "path": self.path,
+            "proposal_hash": self.proposal_hash,
+            "base_file_hash": self.base_file_hash,
+            "expected_post_apply_hash": self.expected_post_apply_hash,
+            "status": self.status,
+            "failure_reason": self.failure_reason,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "metadata": self.metadata,
+        }
+
+
 class PatchProposalStore:
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
@@ -104,6 +141,26 @@ class PatchProposalStore:
                     "ALTER TABLE patch_proposals "
                     "ADD COLUMN workspace_id TEXT NOT NULL DEFAULT 'default'"
                 )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patch_apply_attempts (
+                    attempt_id TEXT PRIMARY KEY,
+                    approval_id TEXT NOT NULL UNIQUE,
+                    proposal_id TEXT NOT NULL,
+                    request_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    path TEXT NOT NULL,
+                    proposal_hash TEXT NOT NULL,
+                    base_file_hash TEXT NOT NULL,
+                    expected_post_apply_hash TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    failure_reason TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL
+                )
+                """
+            )
             connection.commit()
 
     def create(self, proposal: PatchProposal) -> PatchProposal:
@@ -209,6 +266,127 @@ class PatchProposalStore:
             raise PatchProposalError(f"patch proposal not found: {proposal_id}")
         return self.get(proposal_id)
 
+    def create_apply_attempt(self, attempt: PatchApplyAttempt) -> PatchApplyAttempt:
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                connection.execute(
+                    """
+                    INSERT INTO patch_apply_attempts (
+                        attempt_id,
+                        approval_id,
+                        proposal_id,
+                        request_id,
+                        workspace_id,
+                        path,
+                        proposal_hash,
+                        base_file_hash,
+                        expected_post_apply_hash,
+                        status,
+                        failure_reason,
+                        created_at,
+                        updated_at,
+                        metadata_json
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        attempt.attempt_id,
+                        attempt.approval_id,
+                        attempt.proposal_id,
+                        attempt.request_id,
+                        attempt.workspace_id,
+                        attempt.path,
+                        attempt.proposal_hash,
+                        attempt.base_file_hash,
+                        attempt.expected_post_apply_hash,
+                        attempt.status,
+                        attempt.failure_reason,
+                        attempt.created_at.isoformat(),
+                        attempt.updated_at.isoformat(),
+                        canonical_json(attempt.metadata),
+                    ),
+                )
+                connection.commit()
+        except sqlite3.IntegrityError as exc:
+            raise PatchProposalError("patch apply attempt already exists for approval") from exc
+        return attempt
+
+    def list_apply_attempts(self) -> Sequence[PatchApplyAttempt]:
+        with sqlite3.connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    attempt_id,
+                    approval_id,
+                    proposal_id,
+                    request_id,
+                    workspace_id,
+                    path,
+                    proposal_hash,
+                    base_file_hash,
+                    expected_post_apply_hash,
+                    status,
+                    failure_reason,
+                    created_at,
+                    updated_at,
+                    metadata_json
+                FROM patch_apply_attempts
+                ORDER BY created_at ASC
+                """
+            ).fetchall()
+        return [_apply_attempt_from_row(row) for row in rows]
+
+    def set_apply_attempt_status(
+        self,
+        attempt_id: str,
+        status: str,
+        *,
+        failure_reason: str | None = None,
+    ) -> PatchApplyAttempt:
+        with sqlite3.connect(self.db_path) as connection:
+            updated = connection.execute(
+                """
+                UPDATE patch_apply_attempts
+                SET status = ?,
+                    failure_reason = COALESCE(?, failure_reason),
+                    updated_at = ?
+                WHERE attempt_id = ?
+                """,
+                (status, failure_reason, datetime.now(UTC).isoformat(), attempt_id),
+            ).rowcount
+            connection.commit()
+        if updated != 1:
+            raise PatchProposalError(f"patch apply attempt not found: {attempt_id}")
+        return self.get_apply_attempt(attempt_id)
+
+    def get_apply_attempt(self, attempt_id: str) -> PatchApplyAttempt:
+        with sqlite3.connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    attempt_id,
+                    approval_id,
+                    proposal_id,
+                    request_id,
+                    workspace_id,
+                    path,
+                    proposal_hash,
+                    base_file_hash,
+                    expected_post_apply_hash,
+                    status,
+                    failure_reason,
+                    created_at,
+                    updated_at,
+                    metadata_json
+                FROM patch_apply_attempts
+                WHERE attempt_id = ?
+                """,
+                (attempt_id,),
+            ).fetchone()
+        if row is None:
+            raise PatchProposalError(f"patch apply attempt not found: {attempt_id}")
+        return _apply_attempt_from_row(row)
+
 
 class PatchProposalService:
     def __init__(
@@ -288,6 +466,9 @@ class PatchProposalService:
 
     def get_proposal(self, proposal_id: str) -> PatchProposal:
         return self.store.get(proposal_id)
+
+    def list_apply_attempts(self) -> Sequence[PatchApplyAttempt]:
+        return self.store.list_apply_attempts()
 
     def proposal_review(self, proposal: PatchProposal) -> JsonObject:
         review: JsonObject = {
@@ -481,6 +662,90 @@ class PatchProposalService:
             },
         )
 
+    def patch_apply_diagnostics(self, approval_service: ApprovalService) -> JsonObject:
+        attempts = [
+            self._attempt_diagnostics(attempt)
+            for attempt in self.store.list_apply_attempts()
+            if attempt.status not in {"completed", "failed"}
+        ]
+        stuck_approvals: list[JsonObject] = []
+        attempt_approval_ids = {
+            str(attempt["approval_id"])
+            for attempt in attempts
+            if isinstance(attempt.get("approval_id"), str)
+        }
+        for approval in approval_service.list():
+            if approval.tool_name != PATCH_APPLY_TOOL or approval.status.value != "executing":
+                continue
+            stuck_approvals.append(
+                {
+                    "approval_id": approval.approval_id,
+                    "request_id": approval.request_id,
+                    "tool_name": approval.tool_name,
+                    "has_apply_attempt": approval.approval_id in attempt_approval_ids,
+                    "proposal_id": _optional_scope_string(
+                        approval.one_time_scope,
+                        "proposal_id",
+                    ),
+                    "workspace_id": _optional_scope_string(
+                        approval.one_time_scope,
+                        "workspace_id",
+                    ),
+                    "path": _optional_scope_string(approval.one_time_scope, "path"),
+                }
+            )
+
+        ambiguous = any(
+            attempt.get("diagnostic_status") == "ambiguous" for attempt in attempts
+        ) or any(not approval["has_apply_attempt"] for approval in stuck_approvals)
+        recovery_required = any(
+            attempt.get("diagnostic_status") == "recovery_required" for attempt in attempts
+        )
+        if ambiguous:
+            status = "ambiguous"
+        elif recovery_required:
+            status = "recovery_required"
+        else:
+            status = "clean"
+
+        recommendations: list[JsonObject] = []
+        if recovery_required:
+            recommendations.append(
+                {
+                    "type": "manual_review",
+                    "message": (
+                        "A patch apply appears to have replaced the target file but did not "
+                        "complete all database/audit state transitions. Review the attempt "
+                        "metadata and audit chain before deciding on manual cleanup."
+                    ),
+                }
+            )
+        if ambiguous:
+            recommendations.append(
+                {
+                    "type": "external_review",
+                    "message": (
+                        "One or more patch apply states are ambiguous. Do not retry or repair "
+                        "automatically; inspect the workspace, approval, proposal, and audit "
+                        "evidence manually."
+                    ),
+                }
+            )
+        if status == "clean":
+            recommendations.append(
+                {"type": "none", "message": "No incomplete patch apply attempts were detected."}
+            )
+
+        return cast(
+            JsonObject,
+            {
+                "status": status,
+                "attempts": attempts,
+                "stuck_approvals": stuck_approvals,
+                "recommendations": recommendations,
+            },
+        )
+
     def apply_approved(
         self,
         *,
@@ -510,17 +775,60 @@ class PatchProposalService:
             expected_principal=expected_principal,
         )
         approval_service.begin_execution(approval_id, approval.request_hash)
+        attempt: PatchApplyAttempt | None = None
+        file_replaced = False
         try:
-            self._apply_proposal(proposal)
+            target, patched_content = self._prepare_apply(proposal)
+            expected_post_apply_hash = sha256_digest(patched_content)
+            now = datetime.now(UTC)
+            attempt = self.store.create_apply_attempt(
+                PatchApplyAttempt(
+                    attempt_id=_new_id("pa"),
+                    approval_id=approval.approval_id,
+                    proposal_id=proposal.proposal_id,
+                    request_id=approval.request_id,
+                    workspace_id=proposal.workspace_id,
+                    path=proposal.path,
+                    proposal_hash=proposal.proposal_hash,
+                    base_file_hash=proposal.base_file_hash,
+                    expected_post_apply_hash=expected_post_apply_hash,
+                    status="prepared",
+                    failure_reason=None,
+                    created_at=now,
+                    updated_at=now,
+                    metadata={"tool_name": PATCH_APPLY_TOOL},
+                )
+            )
+            _atomic_write_text(target, patched_content)
+            file_replaced = True
+            self.store.set_apply_attempt_status(attempt.attempt_id, "file_replaced")
             applied = self.store.set_status(proposal.proposal_id, "applied")
-        except PatchProposalError:
-            approval_service.complete_execution(approval_id, success=False)
+            approval_service.complete_execution(approval_id, success=True)
+            self.store.set_apply_attempt_status(attempt.attempt_id, "completed")
+        except PatchProposalError as exc:
+            self._record_apply_failure(
+                approval_service,
+                approval_id,
+                attempt,
+                file_replaced=file_replaced,
+                reason=exc.reason,
+            )
             raise
-        except OSError as exc:
-            approval_service.complete_execution(approval_id, success=False)
-            raise PatchProposalError("failed to apply patch safely") from exc
+        except (OSError, ApprovalError, sqlite3.Error) as exc:
+            reason = (
+                "patch apply recovery diagnostics required"
+                if file_replaced
+                else "failed to apply patch safely"
+            )
+            self._record_apply_failure(
+                approval_service,
+                approval_id,
+                attempt,
+                file_replaced=file_replaced,
+                reason=reason,
+            )
+            raise PatchProposalError(reason) from exc
 
-        approval_service.complete_execution(approval_id, success=True)
         return applied
 
     def _proposal_for_approval(
@@ -585,7 +893,7 @@ class PatchProposalService:
             raise PatchProposalError("patch proposal path mismatch")
         return proposal
 
-    def _apply_proposal(self, proposal: PatchProposal) -> None:
+    def _prepare_apply(self, proposal: PatchProposal) -> tuple[Path, str]:
         filesystem = self._filesystem(proposal.workspace_id)
         try:
             target = filesystem.resolve_existing_path(proposal.path)
@@ -601,7 +909,73 @@ class PatchProposalService:
         if current_hash != proposal.base_file_hash:
             raise PatchProposalError("patch target has changed since proposal")
         patched_content = apply_unified_diff(current_content, proposal.unified_diff)
-        _atomic_write_text(target, patched_content)
+        return target, patched_content
+
+    def _record_apply_failure(
+        self,
+        approval_service: ApprovalService,
+        approval_id: str,
+        attempt: PatchApplyAttempt | None,
+        *,
+        file_replaced: bool,
+        reason: str,
+    ) -> None:
+        if attempt is not None:
+            try:
+                self.store.set_apply_attempt_status(
+                    attempt.attempt_id,
+                    "recovery_required" if file_replaced else "failed",
+                    failure_reason=reason,
+                )
+            except PatchProposalError:
+                pass
+        if file_replaced:
+            raise PatchProposalError("patch apply recovery diagnostics required")
+        try:
+            approval_service.complete_execution(approval_id, success=False)
+        except ApprovalError:
+            pass
+
+    def _attempt_diagnostics(self, attempt: PatchApplyAttempt) -> JsonObject:
+        current_target_hash: str | None = None
+        current_matches_expected = False
+        current_matches_base = False
+        diagnostic_status = "ambiguous"
+        reason: str | None = None
+        try:
+            filesystem = self._filesystem(attempt.workspace_id)
+            target = filesystem.resolve_existing_path(attempt.path)
+            current_content = filesystem.read_text_file(target)
+            current_target_hash = sha256_digest(current_content)
+            current_matches_expected = (
+                current_target_hash == attempt.expected_post_apply_hash
+            )
+            current_matches_base = current_target_hash == attempt.base_file_hash
+        except (PatchProposalError, ReadToolError) as exc:
+            reason = str(exc)
+
+        if (
+            attempt.status in {"prepared", "file_replaced", "recovery_required"}
+            and current_matches_expected
+        ):
+            diagnostic_status = "recovery_required"
+        elif attempt.status == "prepared" and current_matches_base:
+            diagnostic_status = "ambiguous"
+            reason = "apply was prepared but replacement completion is unknown"
+        elif reason is None:
+            reason = "target hash does not match expected apply or base state"
+
+        result = attempt.summary()
+        result.update(
+            {
+                "current_target_hash": current_target_hash,
+                "current_matches_expected_post_apply_hash": current_matches_expected,
+                "current_matches_base_file_hash": current_matches_base,
+                "diagnostic_status": diagnostic_status,
+                "diagnostic_reason": reason,
+            }
+        )
+        return result
 
     def _filesystem(self, workspace_id: str | None) -> FilesystemReadTools:
         resolved_id = workspace_id or self.default_workspace_id
@@ -695,6 +1069,25 @@ def _proposal_from_row(row: tuple[object, ...]) -> PatchProposal:
         created_at=datetime.fromisoformat(str(row[9])),
         updated_at=datetime.fromisoformat(str(row[10])),
         metadata=json.loads(str(row[11])),
+    )
+
+
+def _apply_attempt_from_row(row: tuple[object, ...]) -> PatchApplyAttempt:
+    return PatchApplyAttempt(
+        attempt_id=str(row[0]),
+        approval_id=str(row[1]),
+        proposal_id=str(row[2]),
+        request_id=str(row[3]),
+        workspace_id=str(row[4]),
+        path=str(row[5]),
+        proposal_hash=str(row[6]),
+        base_file_hash=str(row[7]),
+        expected_post_apply_hash=str(row[8]),
+        status=str(row[9]),
+        failure_reason=str(row[10]) if row[10] is not None else None,
+        created_at=datetime.fromisoformat(str(row[11])),
+        updated_at=datetime.fromisoformat(str(row[12])),
+        metadata=json.loads(str(row[13])),
     )
 
 

@@ -19,7 +19,7 @@ from ithildin_api.manifest_lock import (
     write_manifest_lock,
     write_manifest_lock_signature,
 )
-from ithildin_api.patches import PatchProposalService
+from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
@@ -1241,6 +1241,82 @@ def test_patch_proposal_endpoints_return_metadata(tmp_path: Path) -> None:
     assert get_response.json()["review"]["base_file_hash_matches"] is True
     assert get_response.json()["unified_diff"].startswith("--- a/README.md")
     assert missing_response.status_code == 404
+
+
+def test_patch_apply_diagnostics_requires_auth_and_reports_clean_state(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        unauthenticated = client.get("/patch-apply-diagnostics")
+        authenticated = client.get(
+            "/patch-apply-diagnostics",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert authenticated.status_code == 200
+    payload = authenticated.json()
+    assert payload["status"] == "clean"
+    assert payload["attempts"] == []
+    assert payload["stuck_approvals"] == []
+
+
+def test_patch_apply_diagnostics_reports_recovery_required_without_sensitive_content(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("README.md").write_text("new\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        patch_service = cast(PatchProposalService, app.state.patch_proposal_service)
+        approval_service = cast(ApprovalService, app.state.approval_service)
+        approval = approval_service.create_pending(
+            CreateApprovalInput(
+                principal={"id": "agent:test"},
+                tool_name="fs.patch.apply",
+                resource={"path": "README.md"},
+                summary="Apply patch",
+                one_time_scope={"proposal_id": "patch_1"},
+            )
+        )
+        approval_service.approve(approval.approval_id, decided_by="admin:test")
+        approval_service.begin_execution(approval.approval_id, approval.request_hash)
+        now = datetime.now(UTC)
+        patch_service.store.create_apply_attempt(
+            PatchApplyAttempt(
+                attempt_id="pa_test",
+                approval_id=approval.approval_id,
+                proposal_id="patch_1",
+                request_id=approval.request_id,
+                workspace_id="default",
+                path="README.md",
+                proposal_hash="sha256:" + ("1" * 64),
+                base_file_hash=sha256_digest("old\n"),
+                expected_post_apply_hash=sha256_digest("new\n"),
+                status="recovery_required",
+                failure_reason="simulated state completion failure",
+                created_at=now,
+                updated_at=now,
+                metadata={"tool_name": "fs.patch.apply"},
+            )
+        )
+
+        response = client.get(
+            "/patch-apply-diagnostics",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 200
+    body = response.text
+    payload = response.json()
+    assert payload["status"] == "recovery_required"
+    assert payload["attempts"][0]["attempt_id"] == "pa_test"
+    assert payload["attempts"][0]["current_matches_expected_post_apply_hash"] is True
+    assert payload["stuck_approvals"][0]["approval_id"] == approval.approval_id
+    assert "new\n" not in body
+    assert "--- a/README.md" not in body
 
 
 def test_approval_review_endpoint_reports_binding_checks(tmp_path: Path) -> None:

@@ -323,6 +323,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         except PatchProposalError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
+    @api.get("/patch-apply-diagnostics", dependencies=[Depends(require_admin_token)])
+    def patch_apply_diagnostics() -> JsonObject:
+        patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
+        approval_service = cast(ApprovalService, api.state.approval_service)
+        return patch_service.patch_apply_diagnostics(approval_service)
+
     @api.get("/approvals", dependencies=[Depends(require_admin_token)])
     def list_approvals(status: Optional[ApprovalStatus] = None) -> dict[str, list[ApprovalRequest]]:
         approval_service = cast(ApprovalService, api.state.approval_service)

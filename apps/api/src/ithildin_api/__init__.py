@@ -5,7 +5,7 @@ from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings
 from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.identity import PrincipalRegistry
-from ithildin_api.patches import PatchProposalService, PatchProposalStore
+from ithildin_api.patches import PatchApplyAttempt, PatchProposalService, PatchProposalStore
 from ithildin_api.policy_impact import PolicyImpactService
 from ithildin_api.policy_preview import PolicyPreviewService
 from ithildin_api.read_tools import ReadToolExecutor
@@ -19,6 +19,7 @@ __all__ = [
     "ApprovalService",
     "ApprovalStore",
     "HttpFetchExecutor",
+    "PatchApplyAttempt",
     "PatchProposalService",
     "PatchProposalStore",
     "PolicyPreviewService",

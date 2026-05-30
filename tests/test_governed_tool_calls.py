@@ -6,14 +6,14 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import cast
+from typing import NoReturn, cast
 from urllib.request import Request
 
 import pytest
-from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.approvals import ApprovalService, ApprovalStore, CreateApprovalInput
 from ithildin_api.http_tools import HTTP_FETCH_TOOL, HttpAllowlist, HttpFetchExecutor
 from ithildin_api.identity import PrincipalRegistry
-from ithildin_api.patches import PatchProposalService, PatchProposalStore
+from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
@@ -313,6 +313,7 @@ def make_http_service(
 class PatchHarness:
     service: GovernedToolCallService
     approval_service: ApprovalService
+    patch_service: PatchProposalService
     db_path: Path
     workspace_root: Path
 
@@ -340,15 +341,20 @@ def make_patch_harness(tmp_path: Path) -> PatchHarness:
     )
     patch_store = PatchProposalStore(db_path)
     patch_store.initialize()
+    patch_service = PatchProposalService(
+        patch_store,
+        read_executor.filesystem,
+        max_patch_bytes=1024,
+    )
     service = GovernedToolCallService(
         ToolRegistry.load(manifest_dir),
         PolicyEvaluator.load(policy_path),
         approval_service,
         audit_writer,
         read_executor,
-        PatchProposalService(patch_store, read_executor.filesystem, max_patch_bytes=1024),
+        patch_service,
     )
-    return PatchHarness(service, approval_service, db_path, workspace_root)
+    return PatchHarness(service, approval_service, patch_service, db_path, workspace_root)
 
 
 def make_patch_service(tmp_path: Path) -> GovernedToolCallService:
@@ -766,6 +772,14 @@ def test_approved_patch_apply_writes_file_and_replay_is_rejected(tmp_path: Path)
 
     assert result.status == "completed"
     assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "new\n"
+    attempts = harness.patch_service.list_apply_attempts()
+    assert len(attempts) == 1
+    assert attempts[0].attempt_id.startswith("pa_")
+    assert attempts[0].approval_id == approval["approval_id"]
+    assert attempts[0].proposal_id == proposal["proposal_id"]
+    assert attempts[0].status == "completed"
+    assert attempts[0].base_file_hash == proposal["base_file_hash"]
+    assert attempts[0].expected_post_apply_hash == sha256_digest("new\n")
     assert replay.status == "denied"
     assert "not proposed" in str(replay.content["reason"])
     event_types = [payload["event_type"] for payload in audit_payloads(tmp_path)]
@@ -902,6 +916,103 @@ def test_patch_apply_rejects_stale_base_without_partial_write(tmp_path: Path) ->
         harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8")
         == "changed elsewhere\n"
     )
+
+
+def test_patch_apply_failure_before_replace_records_failed_attempt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ithildin_api.patches as patches
+
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    def fail_before_replace(target: Path, content: str) -> None:
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(patches, "_atomic_write_text", fail_before_replace)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    attempts = harness.patch_service.list_apply_attempts()
+    assert result.status == "denied"
+    assert "failed to apply patch safely" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
+    assert attempts[0].status == "failed"
+    assert attempts[0].failure_reason == "failed to apply patch safely"
+    assert harness.approval_service.get(str(approval["approval_id"])).status.value == "failed"
+
+
+def test_patch_apply_failure_after_replace_records_recovery_required(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    original_set_status = harness.patch_service.store.set_status
+
+    def fail_after_replace(proposal_id: str, status: str) -> NoReturn:
+        raise PatchProposalError("simulated database failure after replace")
+
+    monkeypatch.setattr(harness.patch_service.store, "set_status", fail_after_replace)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+    monkeypatch.setattr(harness.patch_service.store, "set_status", original_set_status)
+
+    attempts = harness.patch_service.list_apply_attempts()
+    diagnostics = harness.patch_service.patch_apply_diagnostics(harness.approval_service)
+    diagnostic_attempts = cast(list[JsonObject], diagnostics["attempts"])
+    stuck_approvals = cast(list[JsonObject], diagnostics["stuck_approvals"])
+
+    assert result.status == "denied"
+    assert "recovery diagnostics required" in str(result.content["reason"])
+    assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "new\n"
+    assert harness.approval_service.get(str(approval["approval_id"])).status.value == "executing"
+    assert attempts[0].status == "recovery_required"
+    assert attempts[0].failure_reason == "simulated database failure after replace"
+    assert diagnostics["status"] == "recovery_required"
+    assert diagnostic_attempts[0]["current_matches_expected_post_apply_hash"] is True
+    assert diagnostic_attempts[0]["diagnostic_status"] == "recovery_required"
+    assert stuck_approvals[0]["approval_id"] == approval["approval_id"]
+
+
+def test_patch_apply_diagnostics_reports_executing_approval_without_attempt_as_ambiguous(
+    tmp_path: Path,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    approval = harness.approval_service.create_pending(
+        CreateApprovalInput(
+            principal=principal(),
+            tool_name="fs.patch.apply",
+            resource={"path": "README.md"},
+            summary="Apply patch",
+            one_time_scope={"proposal_id": "patch_missing"},
+        )
+    )
+    harness.approval_service.approve(approval.approval_id, decided_by="user:alice")
+    harness.approval_service.begin_execution(approval.approval_id, approval.request_hash)
+
+    diagnostics = harness.patch_service.patch_apply_diagnostics(harness.approval_service)
+    stuck_approvals = cast(list[JsonObject], diagnostics["stuck_approvals"])
+
+    assert diagnostics["status"] == "ambiguous"
+    assert diagnostics["attempts"] == []
+    assert stuck_approvals[0]["approval_id"] == approval.approval_id
+    assert stuck_approvals[0]["has_apply_attempt"] is False
 
 
 def test_patch_apply_rejects_hardlinked_target_without_partial_write(tmp_path: Path) -> None:

@@ -97,6 +97,8 @@ The local console shows:
   [Signed Audit Exports](signed-audit-exports.md).
 - Audit diagnostics are read-only explanations for verification failures. They do not repair,
   truncate, rewrite, or bless local evidence.
+- Patch apply diagnostics are read-only explanations for incomplete stored patch apply attempts.
+  They do not repair approvals, roll back files, or rewrite workspace state.
 - Locally signed manifest locks use a separate local Ed25519 keypair when configured; this is local
   operator evidence, not hosted supply-chain signing.
 - Docker is only used to run the local demo stack.

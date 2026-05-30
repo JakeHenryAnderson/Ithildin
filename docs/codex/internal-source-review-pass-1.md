@@ -29,7 +29,7 @@ Targeted tests were run while reviewing source:
 
 | Finding | Severity | Area | Blocking status | Disposition |
 | --- | --- | --- | --- | --- |
-| ISR-001 | medium | Patch apply crash consistency | Not blocking external review; should fix before broader write powers or broader distribution | Open follow-up |
+| ISR-001 | medium | Patch apply crash consistency | Not blocking external review; read-only evidence added in Task 079 | Addressed by Task 079; pending external review |
 | ISR-002 | medium | Cross-platform filesystem semantics | Not blocking external review; should verify before broader distribution or claimed platform support | Open follow-up |
 
 Blocking findings: 0.
@@ -336,10 +336,8 @@ produce ambiguous recovery/evidence state.
 
 Recommended fix:
 
-Create a follow-up recovery/consistency task that records a durable pre-apply operation, applies the
-patch, records post-apply file hash/status, and provides an idempotent recovery or diagnostics path
-for approvals stuck in `executing` after a successful file replacement. Keep stored-proposal-only
-semantics and avoid broad write expansion.
+Task 079 added durable patch apply attempt evidence and read-only diagnostics for approvals stuck
+after a file replacement. Mutating reconciliation remains deferred until after external review.
 
 Blocking status:
 
@@ -348,7 +346,7 @@ distribution, or stronger evidence claims.
 
 Disposition:
 
-Open follow-up.
+Addressed by Task 079; pending external review.
 
 Verification notes:
 
@@ -411,12 +409,10 @@ The current tests cover the intended local-preview cases on this development env
 finding is about portability and adversarial race confidence, not an observed bypass in the current
 test run.
 
-## Task 079+ Follow-Up Queue
+## Task 080+ Follow-Up Queue
 
 Immediate follow-up candidates:
 
-- Task 079: Patch apply recovery and crash-consistency evidence for approvals stuck after a file
-  replacement.
 - Task 080: Filesystem platform/race contract covering macOS, Linux, and explicit Windows/WSL
   support status.
 

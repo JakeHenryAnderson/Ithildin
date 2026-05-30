@@ -132,6 +132,9 @@ review console or `/audit-events/export/signed`; see
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md).
 Use `make audit-diagnostics` when audit verification fails; diagnostics are read-only and do not
 repair or rewrite the local evidence chain.
+Patch apply recovery diagnostics are also read-only: `/patch-apply-diagnostics` reports incomplete
+stored patch apply attempts and approvals stuck in execution, but does not repair, roll back, or
+rewrite workspace files.
 Evidence fields for audit events, policy decisions, approvals, redaction summaries, and signed
 bundles are summarized in [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md).
 
