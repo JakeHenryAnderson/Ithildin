@@ -14,6 +14,7 @@ from ithildin_audit_core import (
     AuditWriter,
     generate_audit_signing_keypair,
     signed_audit_export_bundle,
+    verify_exported_events_jsonl,
     verify_signed_audit_export_bundle,
 )
 from ithildin_schemas import AuditEventType, PolicyDecisionValue
@@ -186,6 +187,140 @@ def test_audit_writer_detects_broken_previous_hash(tmp_path: Path) -> None:
     assert result.failure is not None
     assert result.failure.reason == "previous event hash mismatch"
     assert result.failure.event_id == "evt_2"
+
+
+def test_audit_writer_detects_invalid_payload_json(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    with sqlite3.connect(writer.db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO audit_events (
+                event_id, timestamp, event_type, request_id,
+                prev_event_hash, event_hash, payload_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "evt_bad",
+                NOW.isoformat(),
+                AuditEventType.POLICY_EVALUATED.value,
+                "req_bad",
+                "sha256:" + ("0" * 64),
+                VALID_HASH,
+                "{",
+            ),
+        )
+        connection.commit()
+
+    result = writer.verify_chain()
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "invalid audit payload JSON"
+    assert result.failure.row_number == 1
+
+
+def test_audit_writer_detects_invalid_event_schema(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    payload = {
+        "event_id": "evt_bad",
+        "timestamp": NOW.isoformat(),
+        "event_type": AuditEventType.POLICY_EVALUATED.value,
+        "request_id": "req_bad",
+        "principal": {"id": "agent:local-dev"},
+        "prev_event_hash": "sha256:" + ("0" * 64),
+    }
+    with sqlite3.connect(writer.db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO audit_events (
+                event_id, timestamp, event_type, request_id,
+                prev_event_hash, event_hash, payload_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "evt_bad",
+                NOW.isoformat(),
+                AuditEventType.POLICY_EVALUATED.value,
+                "req_bad",
+                "sha256:" + ("0" * 64),
+                VALID_HASH,
+                json.dumps(payload, sort_keys=True, separators=(",", ":")),
+            ),
+        )
+        connection.commit()
+
+    result = writer.verify_chain()
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "invalid audit event schema"
+    assert result.failure.event_id == "evt_bad"
+
+
+def test_audit_writer_detects_missing_middle_row(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_CALL_PROPOSED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.write_event(
+        event_id="evt_2",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_2",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.write_event(
+        event_id="evt_3",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+        request_id="req_3",
+        principal={"id": "agent:local-dev"},
+    )
+    with sqlite3.connect(writer.db_path) as connection:
+        connection.execute("DELETE FROM audit_events WHERE event_id = 'evt_2'")
+        connection.commit()
+
+    result = writer.verify_chain()
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "previous event hash mismatch"
+    assert result.failure.event_id == "evt_3"
+    assert result.event_count == 2
+
+
+def test_audit_diagnostics_categorize_corruption(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    with sqlite3.connect(writer.db_path) as connection:
+        payload_json = connection.execute(
+            "SELECT payload_json FROM audit_events WHERE event_id = 'evt_1'"
+        ).fetchone()[0]
+        payload = json.loads(str(payload_json))
+        payload["principal"] = {"id": "agent:tampered"}
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_1'",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
+        )
+        connection.commit()
+
+    diagnostics = writer.diagnostics()
+    verification = cast(dict[str, Any], diagnostics["verification"])
+
+    assert diagnostics["category"] == "event_hash_mismatch"
+    assert verification["valid"] is False
 
 
 def test_audit_writer_export_includes_metadata_and_jsonl_events(tmp_path: Path) -> None:
@@ -417,6 +552,127 @@ def test_signed_audit_export_rejects_reordered_events_with_recomputed_digest(
 
     assert result.valid is False
     assert result.failure == "signature verification failed"
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "failure"),
+    [
+        ("bundle_type", "wrong.bundle", "bundle_type has unsupported value"),
+        ("format_version", "999", "format_version has unsupported value"),
+        ("events_sha256", "sha256:bad", "events_sha256 must be a sha256 digest"),
+    ],
+)
+def test_signed_audit_export_rejects_malformed_top_level_fields(
+    tmp_path: Path,
+    field: str,
+    value: str,
+    failure: str,
+) -> None:
+    writer = make_writer(tmp_path)
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = signed_audit_export_bundle(
+        jsonl_bundle=writer.export_jsonl_bundle(),
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle[field] = value
+
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert result.valid is False
+    assert result.failure == failure
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "failure"),
+    [
+        ("algorithm", "ed448", "unsupported signature algorithm"),
+        ("key_id", "sha256:bad", "signature.key_id must be a sha256 digest"),
+        ("signature", "not base64!", "Only base64 data is allowed"),
+    ],
+)
+def test_signed_audit_export_rejects_malformed_signature_fields(
+    tmp_path: Path,
+    field: str,
+    value: str,
+    failure: str,
+) -> None:
+    writer = make_writer(tmp_path)
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = signed_audit_export_bundle(
+        jsonl_bundle=writer.export_jsonl_bundle(),
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    signature = cast(dict[str, Any], bundle["signature"])
+    signature[field] = value
+
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert result.valid is False
+    assert result.failure == failure
+
+
+def test_exported_events_jsonl_rejects_duplicate_event_lines(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    event_line = writer.export_jsonl_bundle().splitlines()[1]
+
+    result = verify_exported_events_jsonl(f"{event_line}\n{event_line}\n")
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "previous event hash mismatch"
+    assert result.failure.event_id == "evt_1"
+
+
+def test_exported_events_jsonl_rejects_missing_middle_event(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_CALL_PROPOSED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.write_event(
+        event_id="evt_2",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_2",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.write_event(
+        event_id="evt_3",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+        request_id="req_3",
+        principal={"id": "agent:local-dev"},
+    )
+    event_lines = writer.export_jsonl_bundle().splitlines()[1:]
+
+    result = verify_exported_events_jsonl("\n".join([event_lines[0], event_lines[2]]) + "\n")
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "previous event hash mismatch"
+    assert result.failure.event_id == "evt_3"
 
 
 def test_signed_audit_export_reflects_failed_chain_verification(tmp_path: Path) -> None:

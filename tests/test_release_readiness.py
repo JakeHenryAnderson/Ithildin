@@ -543,6 +543,38 @@ def test_registry_fail_closed_suite_is_documented() -> None:
     assert "docs/codex/registry-fail-closed-suite.md" in review_docs.REVIEW_DOCS
 
 
+def test_audit_integrity_adversarial_suite_is_documented() -> None:
+    doc = Path("docs/codex/audit-integrity-adversarial-suite.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "invalid payload JSON rows",
+        "missing middle rows",
+        "duplicate event lines",
+        "malformed signature fields",
+        "not immutable storage",
+    ]:
+        assert required in doc
+    assert "audit-integrity-adversarial-suite.md" in readme
+    assert "audit-integrity-adversarial-suite.md" in review_packet
+    assert "audit-integrity-adversarial-suite.md" in reproduction_map
+    assert "107 - Audit integrity adversarial suite | Done" in backlog
+    assert "Task 107 adds" in matrix
+    assert "docs/codex/audit-integrity-adversarial-suite.md" in review_docs.REVIEW_DOCS
+
+
 def test_evidence_contracts_define_versioning_policy() -> None:
     contracts = Path("docs/codex/evidence-contracts.md").read_text(encoding="utf-8")
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(

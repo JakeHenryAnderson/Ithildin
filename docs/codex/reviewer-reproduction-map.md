@@ -115,6 +115,7 @@ work must stop for status, reassessment, or external consultation.
 - Review packet diff: [review-packet-diff.md](review-packet-diff.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 - Executor contract set: [executor-contract-set.md](executor-contract-set.md)
+- Audit integrity adversarial suite: [audit-integrity-adversarial-suite.md](audit-integrity-adversarial-suite.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
 - Manifest validation suite: [manifest-validation-suite.md](manifest-validation-suite.md)
 - Registry fail-closed suite: [registry-fail-closed-suite.md](registry-fail-closed-suite.md)

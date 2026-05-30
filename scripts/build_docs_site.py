@@ -26,6 +26,7 @@ DEFAULT_DOCS = [
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",
+    "docs/codex/audit-integrity-adversarial-suite.md",
     "docs/codex/manifest-validation-suite.md",
     "docs/codex/policy-parity-harness.md",
     "docs/codex/opa-parity-decision.md",

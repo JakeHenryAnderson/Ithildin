@@ -194,6 +194,8 @@ Manifest and manifest-lock fail-closed validation coverage is summarized in
 [docs/codex/manifest-validation-suite.md](docs/codex/manifest-validation-suite.md).
 Principal/workspace registry fail-closed coverage is summarized in
 [docs/codex/registry-fail-closed-suite.md](docs/codex/registry-fail-closed-suite.md).
+Audit integrity adversarial coverage is summarized in
+[docs/codex/audit-integrity-adversarial-suite.md](docs/codex/audit-integrity-adversarial-suite.md).
 The v0.3-prep assurance roadmap is recorded in
 [docs/codex/v0.3-milestone-manifest.md](docs/codex/v0.3-milestone-manifest.md). It keeps Tasks
 085-112 scoped to review automation, adversarial assurance, and external handoff preparation rather

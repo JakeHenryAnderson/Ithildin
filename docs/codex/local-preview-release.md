@@ -59,6 +59,8 @@ For v0.2 external/code review handoff, start with
   [Review Packet Diff](review-packet-diff.md).
 - Executor contracts for review are indexed in
   [Executor Contract Set](executor-contract-set.md).
+- Audit integrity adversarial coverage is summarized in
+  [Audit Integrity Adversarial Suite](audit-integrity-adversarial-suite.md).
 - Manifest and manifest-lock fail-closed coverage is summarized in
   [Manifest Validation Suite](manifest-validation-suite.md).
 - Principal/workspace registry fail-closed coverage is summarized in
