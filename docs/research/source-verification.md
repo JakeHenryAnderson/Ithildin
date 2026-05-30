@@ -29,8 +29,10 @@ The source strategy text includes market and standards claims that should be ver
 - v0.1 should be described as a local-first governed MCP/tool gateway, not a production security
   product or enterprise control plane.
 - v0.2 review should start from `docs/codex/v0.2-review-response-and-rc-cleanup.md`,
-  `docs/codex/v0.2-review-packet.md`, `docs/codex/reviewer-reproduction-map.md`, and fresh
-  `make release-check`, `make release-evidence`, and `make release-packet` outputs.
+  `docs/codex/v0.2-review-packet.md`, `docs/codex/reviewer-reproduction-map.md`,
+  `docs/codex/filesystem-executor-contract.md`, and fresh
+  `make release-check`, `make release-evidence`, `make release-packet`, and
+  `make filesystem-contract-check` outputs.
   `make signed-evidence-demo` and `make review-packet-bundle` package the expected handoff files,
   generated hashes, and non-production local signing demo summary.
 - Public positioning should call this a v0.2 review candidate for the v0.1 local-preview runtime

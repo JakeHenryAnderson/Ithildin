@@ -31,7 +31,8 @@ For v0.2 external/code review handoff, start with
 11. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
 12. Optional: run `make audit-keygen` to enable signed audit exports.
 13. Optional: run `make audit-diagnostics` to explain local audit verification state.
-14. Run `make docs-site` to build local handoff docs under ignored `site/`.
+14. Optional: run `make filesystem-contract-check` to record local filesystem capability evidence.
+15. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 
@@ -89,6 +90,10 @@ The local console shows:
 - HTTP fetch is GET-only, allowlisted, and blocks non-global/private destinations.
 - Filesystem and patch executors reject symlinks, hidden/sensitive paths, binary targets, ambiguous
   text encodings, and stale patch bases.
+- Filesystem and patch executor platform assumptions are documented in
+  [Filesystem Executor Contract](filesystem-executor-contract.md); macOS and Linux are the
+  local-preview security-supported profiles, while Windows/WSL remain unsupported/untested for
+  workspace/race claims.
 - Tool outputs are redacted before returning to agents.
 - Redaction evidence surfaces counts and safe paths only; see
   [Evidence Contracts](evidence-contracts.md).

@@ -30,7 +30,7 @@ Targeted tests were run while reviewing source:
 | Finding | Severity | Area | Blocking status | Disposition |
 | --- | --- | --- | --- | --- |
 | ISR-001 | medium | Patch apply crash consistency | Not blocking external review; read-only evidence added in Task 079 | Addressed by Task 079; pending external review |
-| ISR-002 | medium | Cross-platform filesystem semantics | Not blocking external review; should verify before broader distribution or claimed platform support | Open follow-up |
+| ISR-002 | medium | Cross-platform filesystem semantics | Not blocking external review; Task 080 documents platform support and capability evidence | Addressed by Task 080; pending external review |
 
 Blocking findings: 0.
 
@@ -107,9 +107,10 @@ Implementation evidence found:
 
 Residual risk:
 
-The local-preview implementation has good same-host safeguards, but broader OS race proofs and
-cross-platform filesystem semantics remain external-review topics before broader distribution or
-claimed platform support.
+The local-preview implementation has good same-host safeguards. Task 080 added a filesystem
+executor contract, a temporary-file-only capability check, and additional proposal/apply symlink
+swap regressions. Broader OS race proofs remain external-review topics before broader distribution
+or stronger platform claims.
 
 Findings:
 
@@ -390,9 +391,10 @@ platform coverage.
 
 Recommended fix:
 
-Add a platform/filesystem contract task that documents supported platforms, tests path controls on
-macOS and Linux at minimum, explicitly marks Windows/WSL support status, and adds deeper
-race-oriented tests or source review notes for open/revalidate/write sequences.
+Task 080 added [filesystem-executor-contract.md](filesystem-executor-contract.md), the
+`make filesystem-contract-check` capability report, explicit macOS/Linux support status, explicit
+Windows/WSL unsupported status for workspace/race claims, and additional race-like regression
+coverage around proposal/apply symlink replacement.
 
 Blocking status:
 
@@ -401,20 +403,21 @@ capability, or explicit multi-platform support claims.
 
 Disposition:
 
-Open follow-up.
+Addressed by Task 080; pending external review.
 
 Verification notes:
 
-The current tests cover the intended local-preview cases on this development environment. This
-finding is about portability and adversarial race confidence, not an observed bypass in the current
-test run.
+The current tests cover the intended local-preview cases on this development environment, and Task
+080 makes the supported platform/race contract explicit. This finding remains pending external
+review because it is about portability and adversarial race confidence, not an observed bypass in
+the current test run.
 
 ## Task 080+ Follow-Up Queue
 
 Immediate follow-up candidates:
 
-- Task 080: Filesystem platform/race contract covering macOS, Linux, and explicit Windows/WSL
-  support status.
+- None from this internal pass after Task 079 and Task 080. External/source review remains the next
+  gate before new governed tool powers.
 
 Hardening backlog candidates:
 

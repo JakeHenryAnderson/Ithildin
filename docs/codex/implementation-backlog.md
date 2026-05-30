@@ -75,6 +75,7 @@
 | 077 - Negative review transcripts | Done | `make negative-review-transcripts` |
 | 078 - Internal source review pass 1 | Done | [internal-source-review-pass-1.md](internal-source-review-pass-1.md) |
 | 079 - Patch apply recovery evidence | Done | `/patch-apply-diagnostics`, patch apply attempt records |
+| 080 - Filesystem executor contract | Done | [filesystem-executor-contract.md](filesystem-executor-contract.md), `make filesystem-contract-check` |
 
 ## Future Candidate Track
 
@@ -120,4 +121,6 @@ security-matrix closure items, and the first internal source review gate.
 - `make review-packet-bundle` packages the review docs and secret-free command outputs.
 - `make signed-evidence-demo` generates non-production locally signed evidence fixtures for review.
 - Internal source review pass 1 is recorded before external/source review handoff.
+- Filesystem executor contract and capability check document macOS/Linux support and Windows/WSL
+  unsupported status for workspace/race claims.
 - `make release-check` passes before local-preview handoff.

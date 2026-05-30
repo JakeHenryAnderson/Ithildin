@@ -83,6 +83,7 @@ tamper-evident audit log.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
+- `make filesystem-contract-check` - report local filesystem capability evidence for the executor contract.
 - `make docs-site` - build a small local static docs site under ignored `site/`.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
 - `make local-model-demo` - print host-side MCP wiring for an Ollama-backed local model client.
@@ -135,6 +136,10 @@ repair or rewrite the local evidence chain.
 Patch apply recovery diagnostics are also read-only: `/patch-apply-diagnostics` reports incomplete
 stored patch apply attempts and approvals stuck in execution, but does not repair, roll back, or
 rewrite workspace files.
+Filesystem and patch executor platform assumptions are documented in
+[docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md). Run
+`make filesystem-contract-check` to record local OS and filesystem capability evidence before
+relying on local-preview workspace/race claims.
 Evidence fields for audit events, policy decisions, approvals, redaction summaries, and signed
 bundles are summarized in [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md).
 
@@ -195,6 +200,7 @@ operator setup. Then read
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
 [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md),
+[docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md),
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md),
 [docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md),
 [docs/codex/threat-model-and-non-goals.md](docs/codex/threat-model-and-non-goals.md),

@@ -36,26 +36,32 @@ cd /Users/jake/Documents/Codex/Ithildin
    export signing, verified manifest-lock signing, a tamper-failing audit bundle, and SHA-256
    digests for the generated demo artifacts.
 
-5. `make review-packet-bundle`
+5. `make filesystem-contract-check`
+
+   Expected outcome: prints secret-free local platform and filesystem capability evidence. On
+   macOS/Linux with `O_NOFOLLOW`, the support status should be `supported`; Windows/WSL are reported
+   as unsupported/untested for local-preview workspace/race claims.
+
+6. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, copied review docs, `review-doc-hashes.json`, `artifact-hashes.json`, and the
    signed-evidence demo summary when step 4 was run first.
 
-6. `make negative-review-transcripts`
+7. `make negative-review-transcripts`
 
    Expected outcome: creates ignored observed-denial transcripts under
    `var/review-packets/v0.2/negative-review-transcripts/`, covering traversal, symlink escape,
    stale-base patch apply, private redirect, unknown principal, disabled principal, and replayed
    approval.
 
-7. `make review-packet-consolidated`
+8. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-8. `make docs-site`
+9. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -76,6 +82,7 @@ cd /Users/jake/Documents/Codex/Ithildin
 - Internal source review pass 1: [internal-source-review-pass-1.md](internal-source-review-pass-1.md)
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
+- Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
 
 ## Reproduction Notes
 

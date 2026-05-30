@@ -120,6 +120,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "release-evidence",
         "release-packet",
         "signed-evidence-demo",
+        "filesystem-contract-check",
         "review-packet-bundle",
         "review-packet-consolidated",
         "docs-site",
@@ -157,6 +158,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/v0.2-review-response-and-rc-cleanup.md",
         "docs/codex/v0.2-planning-seed.md",
         "docs/codex/v0.1-security-test-matrix.md",
+        "docs/codex/filesystem-executor-contract.md",
         "docs/codex/evidence-contracts.md",
         "docs/codex/threat-model-and-non-goals.md",
         "docs/codex/negative-review-recipes.md",
@@ -220,6 +222,9 @@ def test_security_matrix_splits_link_race_coverage() -> None:
     assert "Broader TOCTOU/race proofs" in matrix
     assert "Covered after v0.2" not in matrix
     assert "Covered by v0.2 tests; pending external review" in matrix
+    assert "Platform filesystem support profile" in matrix
+    assert "Documented by Task 080; pending external/source review" in matrix
+    assert "filesystem-executor-contract.md" in matrix
 
 
 def test_source_review_closure_matrix_covers_required_areas() -> None:
@@ -279,8 +284,32 @@ def test_internal_source_review_pass_is_linked_and_validated() -> None:
     assert set(re.findall(r"\bISR-\d{3}\b", review)) == {"ISR-001", "ISR-002"}
     assert "Codex internal source review pass 1" in matrix
     assert "internal reviewed; pending external review" in matrix
+    assert "Addressed by Task 080; pending external review" in review
+    assert "filesystem-executor-contract.md" in review
     assert "internal-source-review-pass-1.md" in review_packet
     assert "internal-source-review-pass-1.md" in reproduction_map
+
+
+def test_filesystem_executor_contract_is_linked_and_validated() -> None:
+    contract = Path("docs/codex/filesystem-executor-contract.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    local_preview = Path("docs/codex/local-preview-release.md").read_text(encoding="utf-8")
+
+    for required in [
+        "macOS",
+        "Linux",
+        "Windows and WSL are not security-supported",
+        "make filesystem-contract-check",
+        "O_NOFOLLOW",
+        "not a sandbox contract",
+    ]:
+        assert required in contract
+    for linked in [readme, review_packet, reproduction_map, local_preview]:
+        assert "filesystem-executor-contract.md" in linked
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

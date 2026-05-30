@@ -157,6 +157,40 @@ def test_invalid_patch_paths_are_denied(tmp_path: Path) -> None:
         )
 
 
+def test_patch_proposal_denies_symlink_swap_before_file_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not hasattr(os, "O_NOFOLLOW"):
+        pytest.skip("O_NOFOLLOW unavailable on this platform")
+    service = make_service(tmp_path)
+    target = service.filesystem.workspace_root / "README.md"
+    target.write_text("old\n", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside\n", encoding="utf-8")
+    diff = unified_diff("README.md", "old\n", "new\n")
+    original_resolver = service.filesystem.resolve_existing_path
+
+    def swap_to_symlink(path: str) -> Path:
+        resolved = original_resolver(path)
+        if path == "README.md":
+            resolved.unlink()
+            resolved.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(service.filesystem, "resolve_existing_path", swap_to_symlink)
+
+    with pytest.raises(PatchProposalError, match="safe regular file"):
+        service.create_proposal(
+            request_id="req_1",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff=diff,
+        )
+
+    assert outside.read_text(encoding="utf-8") == "outside\n"
+
+
 def test_invalid_diff_shapes_are_denied(tmp_path: Path) -> None:
     service = make_service(tmp_path, max_patch_bytes=200)
     service.filesystem.workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")

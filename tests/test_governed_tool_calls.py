@@ -1037,6 +1037,45 @@ def test_patch_apply_rejects_hardlinked_target_without_partial_write(tmp_path: P
     assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
 
 
+def test_patch_apply_denies_symlink_swap_during_apply_preparation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not hasattr(os, "O_NOFOLLOW"):
+        pytest.skip("O_NOFOLLOW unavailable on this platform")
+    harness = make_patch_harness(tmp_path)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside\n", encoding="utf-8")
+    original_resolver = harness.patch_service.filesystem.resolve_existing_path
+    did_swap = False
+
+    def swap_to_symlink(path: str) -> Path:
+        nonlocal did_swap
+        resolved = original_resolver(path)
+        if path == "README.md" and not did_swap:
+            did_swap = True
+            resolved.unlink()
+            resolved.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(harness.patch_service.filesystem, "resolve_existing_path", swap_to_symlink)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "safe regular file" in str(result.content["reason"])
+    assert outside.read_text(encoding="utf-8") == "outside\n"
+    assert harness.approval_service.get(str(approval["approval_id"])).status.value == "failed"
+
+
 def test_direct_patch_payload_cannot_be_applied(tmp_path: Path) -> None:
     harness = make_patch_harness(tmp_path)
 

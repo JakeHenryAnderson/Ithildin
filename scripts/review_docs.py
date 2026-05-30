@@ -13,6 +13,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.2-external-review-prompt.md",
     "docs/codex/v0.2-planning-seed.md",
     "docs/codex/v0.1-security-test-matrix.md",
+    "docs/codex/filesystem-executor-contract.md",
     "docs/codex/evidence-contracts.md",
     "docs/codex/negative-review-recipes.md",
     "docs/codex/reviewer-reproduction-map.md",

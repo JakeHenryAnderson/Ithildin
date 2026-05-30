@@ -22,6 +22,7 @@ DEFAULT_DOCS = [
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",
+    "docs/codex/filesystem-executor-contract.md",
     "docs/codex/negative-review-recipes.md",
     "docs/codex/reviewer-reproduction-map.md",
     "docs/codex/source-review-closure-matrix.md",

@@ -149,6 +149,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
         )
         + _section("Evidence Contracts", repo_root / "docs/codex/evidence-contracts.md", repo_root)
         + _section(
+            "Filesystem Executor Contract",
+            repo_root / "docs/codex/filesystem-executor-contract.md",
+            repo_root,
+        )
+        + _section(
             "Threat Model and Non-Goals",
             repo_root / "docs/codex/threat-model-and-non-goals.md",
             repo_root,
