@@ -110,6 +110,35 @@ def test_filesystem_denies_hardlinked_file_targets(tmp_path: Path) -> None:
         filesystem.read_file("README.md")
 
 
+def test_filesystem_denies_hardlink_swap_between_resolution_and_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    filesystem = make_filesystem(tmp_path)
+    target = filesystem.workspace_root / "README.md"
+    target.write_text("safe\n", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside\n", encoding="utf-8")
+    original_resolver = filesystem.resolve_existing_path
+
+    def swap_to_hardlink(path: str) -> Path:
+        resolved = original_resolver(path)
+        if path == "README.md":
+            resolved.unlink()
+            try:
+                os.link(outside, resolved)
+            except OSError as exc:
+                pytest.skip(f"hardlinks unavailable: {exc}")
+        return resolved
+
+    monkeypatch.setattr(filesystem, "resolve_existing_path", swap_to_hardlink)
+
+    with pytest.raises(ReadToolError, match="hardlinked"):
+        filesystem.read_file("README.md")
+
+    assert outside.read_text(encoding="utf-8") == "outside\n"
+
+
 def test_filesystem_denies_oversized_reads(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4)
     filesystem.workspace_root.joinpath("large.txt").write_text("too large", encoding="utf-8")

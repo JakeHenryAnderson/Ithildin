@@ -90,7 +90,7 @@
 | 087 - Reviewer finding intake automation | Done | [reviewer-finding-intake.md](reviewer-finding-intake.md), `make reviewer-findings-check` |
 | 088 - Patch-apply crash/failure simulation | Done | `tests/test_governed_tool_calls.py` |
 | 089 - Patch-apply state-machine contract | Done | [patch-apply-state-machine.md](patch-apply-state-machine.md) |
-| 090 - Filesystem adversarial race harness | Planned | v0.3 milestone manifest |
+| 090 - Filesystem adversarial race harness | Done | `tests/test_read_tools.py`, `tests/test_security_regressions.py` |
 | 091 - Filesystem contract enforcement | Planned | v0.3 milestone manifest |
 | 092 - HTTP canonicalization adversarial suite | Planned | v0.3 milestone manifest |
 | 093 - HTTP executor contract | Planned | v0.3 milestone manifest |

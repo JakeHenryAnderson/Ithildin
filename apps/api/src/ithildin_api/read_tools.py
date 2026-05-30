@@ -273,6 +273,8 @@ class FilesystemReadTools:
             stat_result = os.fstat(fd)
             if not stat.S_ISREG(stat_result.st_mode):
                 raise ReadToolError("path is not a file")
+            if stat_result.st_nlink > 1:
+                raise ReadToolError("hardlinked files are not allowed")
             if stat_result.st_size > self.max_read_bytes:
                 raise ReadToolError("file exceeds configured read limit")
             data = os.read(fd, self.max_read_bytes + 1)
