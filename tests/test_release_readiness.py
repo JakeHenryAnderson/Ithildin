@@ -1055,6 +1055,37 @@ def test_v03_external_review_packet_is_documented() -> None:
     assert "docs/codex/v0.3-external-review-prompt.md" in review_docs.REVIEW_DOCS
 
 
+def test_external_review_intake_and_closure_is_documented() -> None:
+    doc = Path("docs/codex/external-review-intake-and-closure.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
+    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "EXT-###",
+        "make reviewer-findings-check",
+        "Critical/high open findings stop autonomous implementation",
+        "pending external review",
+    ]:
+        assert required in doc
+    for linked in [readme, packet, prompt, reproduction_map]:
+        assert "external-review-intake-and-closure.md" in linked
+    assert "111 - External review intake and closure | Done" in backlog
+    assert "Task 111 adds" in matrix
+    assert "docs/codex/external-review-intake-and-closure.md" in review_docs.REVIEW_DOCS
+
+
 def test_autonomous_sprint_guardrails_are_linked_and_validated() -> None:
     guardrails = Path("docs/codex/autonomous-sprint-guardrails.md").read_text(
         encoding="utf-8"

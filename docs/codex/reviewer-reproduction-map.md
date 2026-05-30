@@ -108,6 +108,7 @@ work must stop for status, reassessment, or external consultation.
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
 - v0.3 review packet: [v0.3-review-packet.md](v0.3-review-packet.md)
 - v0.3 external review prompt: [v0.3-external-review-prompt.md](v0.3-external-review-prompt.md)
+- External review intake and closure: [external-review-intake-and-closure.md](external-review-intake-and-closure.md)
 - Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
 - Internal source review pass 1: [internal-source-review-pass-1.md](internal-source-review-pass-1.md)
 - Internal review packet v2: [internal-review-packet-v2.md](internal-review-packet-v2.md)
