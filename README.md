@@ -198,6 +198,7 @@ operator setup. Then read
 [docs/codex/source-review-closure-matrix.md](docs/codex/source-review-closure-matrix.md),
 [docs/codex/internal-source-review-pass-1.md](docs/codex/internal-source-review-pass-1.md),
 [docs/codex/internal-ai-review-workflow.md](docs/codex/internal-ai-review-workflow.md),
+[docs/codex/autonomous-sprint-guardrails.md](docs/codex/autonomous-sprint-guardrails.md),
 [docs/codex/reviewer-finding-template.md](docs/codex/reviewer-finding-template.md),
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and

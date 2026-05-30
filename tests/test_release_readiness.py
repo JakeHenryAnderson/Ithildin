@@ -189,6 +189,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/source-review-closure-matrix.md",
         "docs/codex/internal-source-review-pass-1.md",
         "docs/codex/internal-ai-review-workflow.md",
+        "docs/codex/autonomous-sprint-guardrails.md",
         "docs/codex/reviewer-finding-template.md",
         "docs/codex/signed-audit-exports.md",
         "docs/codex/signed-manifest-locks.md",
@@ -403,6 +404,31 @@ def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) ->
     assert "docs/codex/reviewer-finding-template.md" in prompt_text
     assert "apps/api/src/ithildin_api/patches.py" in prompt_text
     assert "Do not propose new powerful tool classes" in prompt_text
+
+
+def test_autonomous_sprint_guardrails_are_linked_and_validated() -> None:
+    guardrails = Path("docs/codex/autonomous-sprint-guardrails.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "one formal goal at a time",
+        "same blocking failure repeats three times",
+        "trust-boundary regression",
+        "Wall-Hit Status Format",
+        "current commit and dirty state",
+        "External review is also required after every 3-5 autonomous hardening sprints",
+        "make review-candidate",
+        "make internal-review-packet",
+    ]:
+        assert required in guardrails
+    for linked in [readme, review_packet, reproduction_map]:
+        assert "autonomous-sprint-guardrails.md" in linked
 
 
 def test_review_doc_metadata_is_deterministic(tmp_path: Path) -> None:

@@ -19,6 +19,8 @@ packet path.
 
 Run `make internal-review-packet` when you want local AI/subagent source-review prompts. That packet
 is internal pressure-test material only and does not replace external/source review.
+Use [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md) to decide when autonomous
+work must stop for status, reassessment, or external consultation.
 
 ## Command Sequence
 
@@ -93,6 +95,7 @@ is internal pressure-test material only and does not replace external/source rev
 - Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
 - Internal source review pass 1: [internal-source-review-pass-1.md](internal-source-review-pass-1.md)
 - Internal AI review workflow: [internal-ai-review-workflow.md](internal-ai-review-workflow.md)
+- Autonomous sprint guardrails: [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md)
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)

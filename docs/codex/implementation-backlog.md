@@ -79,6 +79,7 @@
 | 081 - Filesystem evidence artifact | Done | `filesystem-contract-check.txt` in review bundles |
 | 082 - Review candidate command | Done | `make review-candidate` |
 | 083 - Internal AI review workflow | Done | [internal-ai-review-workflow.md](internal-ai-review-workflow.md), `make internal-review-packet` |
+| 084 - Autonomous sprint guardrails | Done | [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md) |
 
 ## Future Candidate Track
 
@@ -127,4 +128,6 @@ security-matrix closure items, and the first internal source review gate.
 - Filesystem executor contract and capability check document macOS/Linux support and Windows/WSL
   unsupported status for workspace/race claims.
 - `make review-candidate` runs the full local handoff gate and regenerates review artifacts.
+- Autonomous sprint guardrails define stop conditions, wall-hit reporting, and external-review
+  cadence.
 - `make release-check` passes before local-preview handoff.

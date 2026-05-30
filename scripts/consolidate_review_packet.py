@@ -184,6 +184,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         )
         + _section(
+            "Autonomous Sprint Guardrails",
+            repo_root / "docs/codex/autonomous-sprint-guardrails.md",
+            repo_root,
+        )
+        + _section(
             "Reviewer Finding Template",
             repo_root / "docs/codex/reviewer-finding-template.md",
             repo_root,

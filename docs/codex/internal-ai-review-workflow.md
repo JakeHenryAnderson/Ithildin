@@ -45,6 +45,10 @@ Internal AI review can run every hardening sprint. External review remains requi
 - accepting or closing any critical/high internal finding;
 - changing identity, storage, telemetry, MCP transport, or executor boundaries.
 
+Use [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md) for the stop conditions and
+wall-hit status format that apply when internal review or test failures expose a possible boundary
+problem.
+
 ## Prompt Template
 
 Use the generated area prompts as the source of truth. Each prompt asks the reviewer to inspect

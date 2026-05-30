@@ -20,6 +20,7 @@ REVIEW_DOCS = [
     "docs/codex/source-review-closure-matrix.md",
     "docs/codex/internal-source-review-pass-1.md",
     "docs/codex/internal-ai-review-workflow.md",
+    "docs/codex/autonomous-sprint-guardrails.md",
     "docs/codex/reviewer-finding-template.md",
     "docs/codex/threat-model-and-non-goals.md",
     "docs/codex/local-preview-release.md",
