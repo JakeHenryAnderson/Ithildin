@@ -42,7 +42,13 @@ cd /Users/jake/Documents/Codex/Ithildin
    command outputs, copied review docs, `review-doc-hashes.json`, `artifact-hashes.json`, and the
    signed-evidence demo summary when step 4 was run first.
 
-6. `make docs-site`
+6. `make review-packet-consolidated`
+
+   Expected outcome: creates the 10-attachment-friendly packet under
+   `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
+   `consolidated-attachment-hashes.json` for the eight markdown attachments.
+
+7. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -55,6 +61,7 @@ cd /Users/jake/Documents/Codex/Ithildin
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`
 - Review document hashes: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/review-doc-hashes.json`
 - Generated artifact hashes: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/artifact-hashes.json`
+- Consolidated attachment hashes: `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/consolidated-attachment-hashes.json`
 - Signed evidence demo summary: `var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md`
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)

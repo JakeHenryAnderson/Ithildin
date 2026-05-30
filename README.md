@@ -10,6 +10,9 @@ part of the trusted computing base. Audit records are tamper-evident local evide
 or custody-grade logs. Redaction is best-effort leak reduction, not a guarantee that secrets cannot
 be exposed.
 
+In practice, v0.2 is a trust-evidence review wave over the same narrow v0.1 local-preview runtime
+boundary.
+
 v0.1 supports narrow built-in tools only: workspace reads, git reads, stored patch proposals,
 approval-gated patch apply, and exact-allowlist GET-only HTTP fetch. It deliberately does not
 support shell execution, Docker socket access, Kubernetes tools, browser automation, arbitrary HTTP
@@ -73,6 +76,7 @@ tamper-evident audit log.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
+- `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
@@ -154,7 +158,8 @@ make docs-site
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
 `make release-check`, `make release-evidence`, `make release-packet`, `make signed-evidence-demo`,
-and `make review-packet-bundle` before tagging or external review handoff. Use
+`make review-packet-bundle`, and `make review-packet-consolidated` before tagging or external
+review handoff. Use
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
 the full evidence sequence and locate generated hashes/transcripts.
 

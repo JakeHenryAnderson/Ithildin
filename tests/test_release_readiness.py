@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from scripts import (
+    consolidate_review_packet,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -119,12 +120,83 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "release-packet",
         "signed-evidence-demo",
         "review-packet-bundle",
+        "review-packet-consolidated",
         "docs-site",
     ]:
         assert f"make {target}" in reproduction_map
         assert f"{target}:" in makefile
     assert "artifact-hashes.json" in reproduction_map
+    assert "consolidated-attachment-hashes.json" in reproduction_map
     assert "review-doc-hashes.json" in reproduction_map
+
+
+def test_consolidated_review_packet_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path
+    bundle_dir = repo_root / "var/review-packets/v0.2/ithildin-v0.2-review-packet-abc123"
+    bundle_dir.mkdir(parents=True)
+    for path in [
+        "INDEX.md",
+        "release-check.txt",
+        "release-evidence.json",
+        "release-packet.md",
+        "release-packet.json",
+        "review-doc-hashes.json",
+        "artifact-hashes.json",
+        "git-summary.txt",
+    ]:
+        bundle_dir.joinpath(path).write_text(f"# {path}\n", encoding="utf-8")
+    for path in [
+        "README.md",
+        "docs/codex/v0.2-external-review-prompt.md",
+        "docs/codex/reviewer-reproduction-map.md",
+        "docs/codex/v0.2-review-packet.md",
+        "docs/codex/v0.2-review-response-and-rc-cleanup.md",
+        "docs/codex/v0.2-planning-seed.md",
+        "docs/codex/v0.1-security-test-matrix.md",
+        "docs/codex/evidence-contracts.md",
+        "docs/codex/threat-model-and-non-goals.md",
+        "docs/codex/negative-review-recipes.md",
+        "docs/codex/signed-audit-exports.md",
+        "docs/codex/signed-manifest-locks.md",
+        "docs/codex/local-preview-release.md",
+        "docs/codex/mcp-client-examples.md",
+        "docs/codex/mcp-inspector-recipes.md",
+        "docs/research/source-verification.md",
+    ]:
+        source = repo_root / path
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(f"# {source.stem}\n", encoding="utf-8")
+    demo_summary = (
+        repo_root
+        / "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
+    )
+    demo_summary.parent.mkdir(parents=True)
+    demo_summary.write_text("# demo\n", encoding="utf-8")
+    monkeypatch.chdir(repo_root)
+
+    output_dir = consolidate_review_packet.build_consolidated_packet(
+        repo_root=repo_root,
+        bundle_dir=bundle_dir,
+        output_dir=repo_root / "var/review-packets/v0.2/GPT-5.5-Pro-consolidated",
+    )
+
+    for filename in consolidate_review_packet.ATTACHMENT_FILES:
+        assert output_dir.joinpath(filename).exists()
+    hashes = json.loads(
+        output_dir.joinpath("consolidated-attachment-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hash_paths = {entry["path"] for entry in hashes}
+    assert hash_paths == set(consolidate_review_packet.ATTACHMENT_FILES)
+    assert all(str(entry["sha256"]).startswith("sha256:") for entry in hashes)
+    all_output_paths = [path.as_posix() for path in output_dir.rglob("*")]
+    assert not any("/.env" in path for path in all_output_paths)
+    assert not any("/var/keys/" in path for path in all_output_paths)
+    assert not any(path.endswith(".sqlite3") for path in all_output_paths)
 
 
 def test_security_matrix_splits_link_race_coverage() -> None:
