@@ -331,7 +331,7 @@ def test_source_review_closure_matrix_v2_separates_review_layers() -> None:
         assert column in matrix
     assert "v0.3-milestone-manifest.md" in matrix
     assert "Pending Wave 2" in matrix
-    assert "Pending Wave 3" in matrix
+    assert "Wave 3 subagent review complete" in matrix
     assert "Pending Wave 4" in matrix
     assert "cannot mark an external/source-review row closed" in matrix
     assert "No blocking finding open" in matrix
