@@ -159,7 +159,7 @@ h3 {
 .summary-strip {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   margin-bottom: 16px;
 }
 
@@ -332,8 +332,22 @@ h3 {
 .evidence-block h4 {
   color: #314239;
   font-size: 0.76rem;
-  margin-bottom: 8px;
+  margin: 0;
   text-transform: uppercase;
+}
+
+.evidence-heading {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.copy-button {
+  font-size: 0.74rem;
+  min-height: 28px;
+  padding: 0 8px;
 }
 
 .evidence-grid {
@@ -397,7 +411,8 @@ h3 {
 
 .status-approved,
 .status-executed,
-.status-applied {
+.status-applied,
+.status-clean {
   border-color: #9acdb7;
   background: #e6f7ef;
   color: #23634c;
@@ -405,7 +420,9 @@ h3 {
 
 .status-denied,
 .status-failed,
-.status-expired {
+.status-expired,
+.status-recovery_required,
+.status-ambiguous {
   border-color: #e1aaa5;
   background: #fff0ef;
   color: #7b2f2b;
@@ -541,6 +558,29 @@ h3 {
   overflow: auto;
   padding: 10px;
   white-space: pre;
+}
+
+.diagnostics-block {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.diagnostics-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.recommendation-list {
+  color: #314239;
+  display: grid;
+  font-size: 0.86rem;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
 }
 
 .meta-list {

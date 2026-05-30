@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Check,
   ClipboardList,
+  Copy,
   Download,
   FileDiff,
   KeyRound,
@@ -142,6 +143,13 @@ type AuditVerification = {
   failure: AuditVerificationFailure | null;
 };
 
+type PatchApplyDiagnostics = {
+  status: "clean" | "recovery_required" | "ambiguous" | string;
+  attempts: JsonObject[];
+  stuck_approvals: JsonObject[];
+  recommendations: JsonObject[];
+};
+
 type PolicyStatus = {
   engine: string;
   document_version: string;
@@ -234,6 +242,7 @@ type DashboardData = {
   tools: ToolSummary[];
   approvals: ApprovalReview[];
   patches: PatchProposal[];
+  patchDiagnostics: PatchApplyDiagnostics | null;
   auditEvents: AuditEvent[];
   verification: AuditVerification | null;
 };
@@ -255,6 +264,7 @@ export function App() {
     tools: [],
     approvals: [],
     patches: [],
+    patchDiagnostics: null,
     auditEvents: [],
     verification: null,
   });
@@ -283,7 +293,10 @@ export function App() {
   const pendingCount = data.approvals.length;
   const proposedPatchCount = data.patches.filter((patch) => patch.status === "proposed").length;
   const recentFailures = data.auditEvents.filter((event) => event.event_type.endsWith(".failed"));
-  const securityWarnings = data.systemStatus?.security.warnings ?? [];
+  const trustWarnings = useMemo(
+    () => trustStateWarnings(data.systemStatus, data.verification, data.patchDiagnostics),
+    [data.systemStatus, data.verification, data.patchDiagnostics],
+  );
 
   const selectedPatchFromList = useMemo(
     () => data.patches.find((patch) => patch.proposal_id === selectedProposalId) ?? null,
@@ -301,6 +314,7 @@ export function App() {
         tools: [],
         approvals: [],
         patches: [],
+        patchDiagnostics: null,
         auditEvents: [],
         verification: null,
       });
@@ -319,6 +333,7 @@ export function App() {
         toolsResponse,
         approvalsResponse,
         patchesResponse,
+        patchDiagnostics,
         auditResponse,
         verificationResponse,
       ] = await Promise.all([
@@ -326,6 +341,7 @@ export function App() {
         apiRequest<{ tools: ToolSummary[] }>("/tools", activeToken),
         apiRequest<{ approvals: ApprovalReview[] }>("/approvals/review?status=pending", activeToken),
         apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
+        apiRequest<PatchApplyDiagnostics>("/patch-apply-diagnostics", activeToken),
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
         apiRequest<AuditVerification>("/audit-events/verify", activeToken),
       ]);
@@ -334,6 +350,7 @@ export function App() {
         tools: toolsResponse.tools,
         approvals: approvalsResponse.approvals,
         patches: patchesResponse.patch_proposals,
+        patchDiagnostics,
         auditEvents: auditResponse.audit_events,
         verification: verificationResponse,
       });
@@ -383,6 +400,7 @@ export function App() {
         tools: [],
         approvals: [],
         patches: [],
+        patchDiagnostics: null,
         auditEvents: [],
         verification: null,
       });
@@ -552,10 +570,10 @@ export function App() {
         </section>
       ) : null}
 
-      {securityWarnings.length > 0 ? (
+      {trustWarnings.length > 0 ? (
         <section className="notice warning" role="alert">
           <AlertTriangle aria-hidden="true" size={18} />
-          <span>{securityWarnings.join(" · ")}</span>
+          <span>{trustWarnings.join(" · ")}</span>
         </section>
       ) : null}
 
@@ -563,6 +581,11 @@ export function App() {
         <Metric icon={<ClipboardList size={20} />} label="Pending" value={pendingCount} />
         <Metric icon={<FileDiff size={20} />} label="Proposed patches" value={proposedPatchCount} />
         <Metric icon={<AlertTriangle size={20} />} label="Recent failures" value={recentFailures.length} />
+        <Metric
+          icon={<ShieldCheck size={20} />}
+          label="Patch recovery"
+          value={data.patchDiagnostics?.status === "clean" ? 0 : data.patchDiagnostics ? 1 : 0}
+        />
         <button className="refresh-button" type="button" onClick={() => void loadDashboard()}>
           <RefreshCcw aria-hidden="true" size={18} />
           {loading ? "Refreshing" : "Refresh"}
@@ -675,6 +698,10 @@ export function App() {
                       ? "allowlist set"
                       : "allowlist empty"}
                   </dd>
+                </div>
+                <div>
+                  <dt>Patch Apply</dt>
+                  <dd>{data.patchDiagnostics?.status ?? "unknown"}</dd>
                 </div>
               </dl>
             </div>
@@ -977,6 +1004,9 @@ export function App() {
               </button>
             </div>
           </div>
+          {data.patchDiagnostics ? (
+            <PatchDiagnosticsSummary diagnostics={data.patchDiagnostics} />
+          ) : null}
         </Panel>
       </section>
 
@@ -1194,6 +1224,7 @@ function StatusPill({ status }: { status: string }) {
 function ApprovalEvidence({ approval }: { approval: Approval }) {
   const scope = approval.one_time_scope;
   const evidence = [
+    ["Tool", scopeString(scope, "tool_name") || approval.tool_name],
     ["Proposal", scopeString(scope, "proposal_id")],
     ["Proposal hash", scopeString(scope, "proposal_hash")],
     ["Base hash", scopeString(scope, "base_file_hash")],
@@ -1209,6 +1240,8 @@ function ApprovalEvidence({ approval }: { approval: Approval }) {
     ["Request hash", scopeString(scope, "request_hash") || approval.request_hash],
     ["Expires", scopeString(scope, "expires_at") || approval.expires_at],
     ["Input schema", scopeString(scope, "tool_input_schema_hash")],
+    ["Scope hash", scopeString(approval.metadata, "approval_scope_hash")],
+    ["Policy reason", scopeString(approval.metadata, "policy_reason")],
   ].filter((entry): entry is [string, string] => Boolean(entry[1]));
 
   if (evidence.length === 0) {
@@ -1217,7 +1250,17 @@ function ApprovalEvidence({ approval }: { approval: Approval }) {
 
   return (
     <section className="evidence-block" aria-label={`Approval evidence for ${approval.approval_id}`}>
-      <h4>Binding Evidence</h4>
+      <div className="evidence-heading">
+        <h4>Binding Evidence</h4>
+        <button
+          className="copy-button"
+          type="button"
+          onClick={() => void copyApprovalEvidence(approval)}
+        >
+          <Copy aria-hidden="true" size={14} />
+          Copy
+        </button>
+      </div>
       <dl className="evidence-grid">
         {evidence.map(([label, value]) => (
           <div key={label}>
@@ -1226,6 +1269,41 @@ function ApprovalEvidence({ approval }: { approval: Approval }) {
           </div>
         ))}
       </dl>
+    </section>
+  );
+}
+
+function PatchDiagnosticsSummary({ diagnostics }: { diagnostics: PatchApplyDiagnostics }) {
+  const recommendations = diagnostics.recommendations
+    .map((item) => scopeString(item, "message"))
+    .filter(Boolean);
+  return (
+    <section className="diagnostics-block" aria-label="Patch apply diagnostics">
+      <div className="diagnostics-heading">
+        <h3>Patch Apply Diagnostics</h3>
+        <StatusPill status={diagnostics.status} />
+      </div>
+      <dl className="meta-list preview-meta">
+        <div>
+          <dt>Incomplete Attempts</dt>
+          <dd>{diagnostics.attempts.length}</dd>
+        </div>
+        <div>
+          <dt>Stuck Approvals</dt>
+          <dd>{diagnostics.stuck_approvals.length}</dd>
+        </div>
+        <div>
+          <dt>Recommended Action</dt>
+          <dd>{scopeString(diagnostics.recommendations[0] ?? {}, "type") || "none"}</dd>
+        </div>
+      </dl>
+      {recommendations.length > 0 ? (
+        <ul className="recommendation-list">
+          {recommendations.map((recommendation) => (
+            <li key={recommendation}>{recommendation}</li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   );
 }
@@ -1256,6 +1334,20 @@ function BindingReviewSummary({
       ) : null}
     </section>
   );
+}
+
+async function copyApprovalEvidence(approval: Approval) {
+  const payload = {
+    approval_id: approval.approval_id,
+    request_id: approval.request_id,
+    request_hash: approval.request_hash,
+    tool_name: approval.tool_name,
+    status: approval.status,
+    expires_at: approval.expires_at,
+    one_time_scope: approval.one_time_scope,
+    metadata: approval.metadata,
+  };
+  await navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
 }
 
 async function apiRequest<T>(
@@ -1339,6 +1431,42 @@ function redactionTitle(event: AuditEvent) {
   }
   const safePaths = paths.filter((path): path is string => typeof path === "string");
   return safePaths.length > 0 ? safePaths.join(", ") : "No redaction paths recorded";
+}
+
+function trustStateWarnings(
+  systemStatus: SystemStatus | null,
+  verification: AuditVerification | null,
+  diagnostics: PatchApplyDiagnostics | null,
+) {
+  const warnings = new Set(systemStatus?.security.warnings ?? []);
+  if (systemStatus?.security.dev_admin_token.sample_token_active) {
+    warnings.add("sample admin token is active");
+  }
+  if (systemStatus?.security.admin_token.weak) {
+    warnings.add("admin token should be rotated");
+  }
+  if (systemStatus?.security.cors.wildcard_allowed) {
+    warnings.add("wildcard CORS is enabled");
+  }
+  if (systemStatus?.security.local_only.remote_mcp_enabled) {
+    warnings.add("remote MCP is enabled");
+  }
+  if (systemStatus?.manifest_lock.required === false) {
+    warnings.add("manifest lock enforcement is disabled");
+  }
+  if (
+    systemStatus?.manifest_lock.signature.required &&
+    !systemStatus.manifest_lock.signature.verified
+  ) {
+    warnings.add("required manifest-lock signature is not verified");
+  }
+  if (verification && !verification.valid) {
+    warnings.add("audit chain verification failed");
+  }
+  if (diagnostics && diagnostics.status !== "clean") {
+    warnings.add(`patch apply diagnostics: ${diagnostics.status}`);
+  }
+  return Array.from(warnings);
 }
 
 function errorMessage(caught: unknown) {

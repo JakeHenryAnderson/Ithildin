@@ -99,8 +99,8 @@
 | 096 - Policy preview/runtime parity harness | Done | [policy-parity-harness.md](policy-parity-harness.md), `make policy-parity` |
 | 097 - OPA parity decision point | Done | [opa-parity-decision.md](opa-parity-decision.md) |
 | 098 - MCP ingress bypass audit | Done | [mcp-ingress-bypass-audit.md](mcp-ingress-bypass-audit.md), `tests/test_mcp_adapter.py` |
-| 099 - Review-console approval evidence clarity | Planned | v0.3 milestone manifest |
-| 100 - Review-console failure-state and trust-status UX | Planned | v0.3 milestone manifest |
+| 099 - Review-console approval evidence clarity | Done | [review-console-assurance.md](review-console-assurance.md), `apps/ui/src/App.tsx` |
+| 100 - Review-console failure-state and trust-status UX | Done | [review-console-assurance.md](review-console-assurance.md), `/patch-apply-diagnostics` UI |
 | 101 - Negative transcript expansion | Planned | v0.3 milestone manifest |
 | 102 - Release evidence schema hardening | Planned | v0.3 milestone manifest |
 | 103 - Review packet diff command | Planned | v0.3 milestone manifest |

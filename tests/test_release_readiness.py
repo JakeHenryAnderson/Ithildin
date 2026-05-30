@@ -527,6 +527,38 @@ def test_mcp_ingress_bypass_audit_is_documented() -> None:
     assert "docs/codex/mcp-ingress-bypass-audit.md" in review_docs.REVIEW_DOCS
 
 
+def test_review_console_assurance_is_documented() -> None:
+    app = Path("apps/ui/src/App.tsx").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/review-console-assurance.md").read_text(encoding="utf-8")
+
+    for required in [
+        "approval scope hash",
+        "policy reason",
+        "/patch-apply-diagnostics",
+        "warning banners",
+        "does not add repair",
+    ]:
+        assert required in doc
+    for ui_marker in [
+        "PatchApplyDiagnostics",
+        "/patch-apply-diagnostics",
+        "Patch Apply Diagnostics",
+        "copyApprovalEvidence",
+        "approval_scope_hash",
+    ]:
+        assert ui_marker in app
+    assert "review-console-assurance.md" in readme
+    assert "099 - Review-console approval evidence clarity | Done" in backlog
+    assert "100 - Review-console failure-state and trust-status UX | Done" in backlog
+    assert "Tasks 099-100 expose copyable approval binding evidence" in matrix
+    assert "docs/codex/review-console-assurance.md" in review_docs.REVIEW_DOCS
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"
