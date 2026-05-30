@@ -101,7 +101,7 @@
 | 098 - MCP ingress bypass audit | Done | [mcp-ingress-bypass-audit.md](mcp-ingress-bypass-audit.md), `tests/test_mcp_adapter.py` |
 | 099 - Review-console approval evidence clarity | Done | [review-console-assurance.md](review-console-assurance.md), `apps/ui/src/App.tsx` |
 | 100 - Review-console failure-state and trust-status UX | Done | [review-console-assurance.md](review-console-assurance.md), `/patch-apply-diagnostics` UI |
-| 101 - Negative transcript expansion | Planned | v0.3 milestone manifest |
+| 101 - Negative transcript expansion | Done | `make negative-review-transcripts`, [negative-review-recipes.md](negative-review-recipes.md) |
 | 102 - Release evidence schema hardening | Planned | v0.3 milestone manifest |
 | 103 - Review packet diff command | Planned | v0.3 milestone manifest |
 | 104 - Executor contract set | Planned | v0.3 milestone manifest |

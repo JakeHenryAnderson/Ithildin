@@ -559,6 +559,23 @@ def test_review_console_assurance_is_documented() -> None:
     assert "docs/codex/review-console-assurance.md" in review_docs.REVIEW_DOCS
 
 
+def test_negative_transcript_expansion_is_documented() -> None:
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    recipes = Path("docs/codex/negative-review-recipes.md").read_text(encoding="utf-8")
+
+    for required in [
+        "Manifest Lock Tamper Denial",
+        "Policy Parity Mismatch Detection",
+        "Patch Apply Ambiguous Diagnostics",
+    ]:
+        assert required in recipes
+    assert "101 - Negative transcript expansion | Done" in backlog
+    assert "Task 101 expands observed transcripts" in matrix
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"

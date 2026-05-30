@@ -75,6 +75,27 @@ under `var/review-packets/v0.2/negative-review-transcripts/`.
 - Evidence to inspect: second call does not write, approval status is executed/consumed, and audit
   metadata records replay or invalid approval state safely.
 
+## Manifest Lock Tamper Denial
+
+- Setup: generate a lock for a temporary manifest directory, then mutate one manifest.
+- Expected result: registry startup with `require_lock=true` fails closed on hash mismatch.
+- Evidence to inspect: safe manifest-lock error only; no runtime registry is accepted.
+
+## Policy Parity Mismatch Detection
+
+- Setup: run a parity fixture that intentionally expects `deny` for an in-scope read that policy
+  allows.
+- Expected result: `make policy-parity` style harness reports a failed fixture case.
+- Evidence to inspect: preview/runtime evidence remains comparable; the mismatch is in the
+  expectation, not a runtime policy mutation.
+
+## Patch Apply Ambiguous Diagnostics
+
+- Setup: place a patch-apply approval in `executing` without a corresponding apply-attempt record.
+- Expected result: `/patch-apply-diagnostics` reports `ambiguous` and recommends manual review.
+- Evidence to inspect: diagnostics remain read-only and do not repair, roll back, or complete the
+  approval.
+
 ## Review Notes
 
 - These are negative-path recipes for reviewers, not a replacement for automated tests.

@@ -37,6 +37,7 @@ so later automation can update internal findings without overstating external cl
 | Policy preview/impact | Pass 1 complete; Task 096 parity harness and Task 097 OPA decision added | Pending Wave 4 | Pending external review | None | No blocking finding open | Task 096 preview/runtime parity fixtures compare preview decision evidence with runtime `policy.evaluated` audit metadata; Task 097 keeps YAML canonical for parity gates and OPA as optional verified sidecar evidence pending an OPA fixture runner |
 | MCP ingress | Pass 1 complete; Task 098 bypass audit added | Pending Wave 4 | Pending external review | None | No blocking finding open | Task 098 tests fixed-principal audit evidence, unknown-tool denial audit, MCP-exposed listing, and role-filtered visibility; remote MCP remains deferred |
 | Review-console approval flow | Pass 1 complete; Tasks 099-100 UI assurance added | Pending Wave 4 | Pending external review | None | No blocking finding open | Tasks 099-100 expose copyable approval binding evidence, approval scope hash, policy reason, patch-apply diagnostics, and trust warning banners without adding repair or mutation behavior |
+| Negative review evidence | Packet recipes complete; Task 101 transcript expansion added | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 101 expands observed transcripts to manifest-lock tamper, policy parity mismatch, and patch-apply ambiguous diagnostics in addition to path, symlink, stale-base, HTTP redirect, principal, and replay denials |
 
 ## v2 Update Rules
 

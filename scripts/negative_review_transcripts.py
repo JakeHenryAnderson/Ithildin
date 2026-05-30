@@ -26,8 +26,11 @@ from ithildin_api.identity import (
     UnknownPrincipalError,
     resolve_trusted_principal,
 )
+from ithildin_api.manifest_lock import ManifestLockError, ManifestLockRecord, write_manifest_lock
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
+from ithildin_api.policy_parity import run_policy_parity
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError
+from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter
 from ithildin_schemas import JsonObject, sha256_digest
 
@@ -82,6 +85,9 @@ def build_transcripts(output_dir: Path) -> Path:
             _unknown_principal(root / "unknown-principal"),
             _disabled_principal(root / "disabled-principal"),
             _replayed_approval(root / "replayed-approval"),
+            _manifest_lock_tamper(root / "manifest-lock-tamper"),
+            _policy_parity_mismatch(root / "policy-parity-mismatch"),
+            _patch_apply_ambiguous_diagnostics(root / "patch-apply-ambiguous"),
         ]
     transcript_path = output_dir / TRANSCRIPT_NAME
     transcript_path.write_text(_render_transcript(results), encoding="utf-8")
@@ -312,6 +318,104 @@ def _replayed_approval(root: Path) -> ScenarioResult:
     raise AssertionError("replayed approval was not denied")
 
 
+def _manifest_lock_tamper(root: Path) -> ScenarioResult:
+    manifest_dir = root / "manifests"
+    manifest_dir.mkdir(parents=True)
+    manifest_path = manifest_dir / "fs-read.yaml"
+    _write_simple_manifest(manifest_path, title="Read")
+    registry = ToolRegistry.load(manifest_dir)
+    lock_path = root / "tool-manifests.lock.json"
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    _write_simple_manifest(manifest_path, title="Tampered Read")
+    try:
+        ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+    except ManifestLockError as exc:
+        return _denied(
+            name="Manifest Lock Tamper Denial",
+            command_or_setup="ToolRegistry.load with require_lock=True after manifest mutation",
+            expected="fail closed on manifest hash mismatch",
+            reason=str(exc),
+            evidence="ManifestLockError raised before registry startup completed",
+        )
+    raise AssertionError("manifest lock tamper was not denied")
+
+
+def _policy_parity_mismatch(root: Path) -> ScenarioResult:
+    fixture = root / "parity.yaml"
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text(
+        """
+version: negative-review
+cases:
+  - id: expected-decision-mismatch
+    tool_name: fs.list
+    arguments: {path: "."}
+    principal: {id: agent:mcp-local}
+    session_id: negative-parity
+    expect_decision: deny
+""",
+        encoding="utf-8",
+    )
+    run = run_policy_parity(repo_root=Path.cwd(), work_dir=root / "work", tests_path=fixture)
+    if run.failed > 0:
+        return _denied(
+            name="Policy Parity Mismatch Detection",
+            command_or_setup="policy parity fixture expecting deny for an allowed read",
+            expected="fail the parity case without mutating runtime policy",
+            reason="; ".join(run.cases[0].failures),
+            evidence="Policy parity harness reported a failed fixture case",
+        )
+    raise AssertionError("policy parity mismatch was not detected")
+
+
+def _patch_apply_ambiguous_diagnostics(root: Path) -> ScenarioResult:
+    workspace = root / "workspace"
+    workspace.mkdir(parents=True)
+    db_path = root / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, root / "audit.jsonl")
+    audit_writer.initialize()
+    store = ApprovalStore(db_path)
+    store.initialize()
+    service = ApprovalService(store, audit_writer, timedelta(minutes=15))
+    patch_store = PatchProposalStore(db_path)
+    patch_store.initialize()
+    filesystem = FilesystemReadTools(workspace, max_read_bytes=4096, search_result_limit=10)
+    patch_service = PatchProposalService(patch_store, filesystem, max_patch_bytes=4096)
+    approval = service.create_pending(
+        CreateApprovalInput(
+            principal={"id": "agent:mcp-local"},
+            tool_name="fs.patch.apply",
+            resource={"path": "README.md"},
+            summary="Ambiguous diagnostic negative review approval",
+            one_time_scope={"proposal_id": "patch_missing"},
+        )
+    )
+    approved = service.approve(approval.approval_id, decided_by="admin:negative-review")
+    service.begin_execution(approved.approval_id, approved.request_hash)
+    diagnostics = patch_service.patch_apply_diagnostics(service)
+    if diagnostics["status"] == "ambiguous":
+        return _denied(
+            name="Patch Apply Ambiguous Diagnostics",
+            command_or_setup="executing fs.patch.apply approval with no apply-attempt record",
+            expected="report ambiguous diagnostics and recommend manual review",
+            reason="patch apply diagnostics reported ambiguous state",
+            evidence="patch_apply_diagnostics returned status=ambiguous",
+        )
+    raise AssertionError("ambiguous patch apply diagnostics were not reported")
+
+
 def _filesystem(root: Path) -> FilesystemReadTools:
     workspace = root / "workspace"
     workspace.mkdir(parents=True)
@@ -319,6 +423,28 @@ def _filesystem(root: Path) -> FilesystemReadTools:
         workspace_root=workspace,
         max_read_bytes=4096,
         search_result_limit=10,
+    )
+
+
+def _write_simple_manifest(path: Path, *, title: str) -> None:
+    path.write_text(
+        f"""
+name: fs.read
+version: 1.0.0
+title: {title}
+risk: read
+category: test
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["path"]
+  properties:
+    path:
+      type: string
+""",
+        encoding="utf-8",
     )
 
 

@@ -17,9 +17,12 @@ def test_negative_review_transcripts_cover_denial_scenarios(tmp_path: Path) -> N
         "Unknown Principal Denial",
         "Disabled Principal Denial",
         "Replayed Approval Denial",
+        "Manifest Lock Tamper Denial",
+        "Policy Parity Mismatch Detection",
+        "Patch Apply Ambiguous Diagnostics",
     ]:
         assert heading in transcript
-    assert transcript.count("observed status: `denied`") == 7
+    assert transcript.count("observed status: `denied`") == 10
 
 
 def test_negative_review_transcripts_are_secret_free(tmp_path: Path) -> None:
