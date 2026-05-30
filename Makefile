@@ -90,7 +90,7 @@ release-context:
 	@echo "git_commit=$$(git rev-parse HEAD)"
 	@echo "git_dirty=$$(test -z "$$(git status --short)" && echo false || echo true)"
 
-release-check: release-context manifest-lock-check release-guardrails reviewer-findings-check policy-test test lint typecheck docs-site
+release-check: release-context manifest-lock-check release-guardrails reviewer-findings-check filesystem-contract-check policy-test test lint typecheck docs-site
 	npm run build --prefix apps/ui
 
 ui-dev:

@@ -591,12 +591,25 @@ def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
     assert "reviewer-findings-check:" in makefile
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
-        "reviewer-findings-check"
+        "reviewer-findings-check filesystem-contract-check"
     ) in makefile
     assert "open critical/high findings" in intake
     assert "reviewer-finding-intake.md" in review_packet
     assert "reviewer-finding-intake.md" in reproduction_map
     assert "docs/codex/reviewer-finding-intake.md" in review_docs.REVIEW_DOCS
+
+
+def test_release_check_enforces_filesystem_contract_check() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert (
+        "release-check: release-context manifest-lock-check release-guardrails "
+        "reviewer-findings-check filesystem-contract-check"
+    ) in makefile
+    assert "Task 091 release-check filesystem-contract-check gate" in matrix
 
 
 def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) -> None:
