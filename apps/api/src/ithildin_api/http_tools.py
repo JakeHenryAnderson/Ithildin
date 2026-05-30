@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import http.client
 import ipaddress
 import json
 import socket
+import ssl
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import SplitResult, urljoin, urlsplit, urlunsplit
-from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
+from urllib.request import Request
 
 from ithildin_schemas import JsonObject, JsonValue
 
@@ -100,17 +102,73 @@ class HttpResponse(Protocol):
         """Return the HTTP status code."""
 
 
-class _NoRedirectHandler(HTTPRedirectHandler):
-    def redirect_request(
+class _HttpClientResponse:
+    def __init__(self, response: http.client.HTTPResponse) -> None:
+        self._response = response
+        self.headers: HttpHeaders = cast(HttpHeaders, response.headers)
+        self.code: int | None = response.status
+
+    def read(self, size: int) -> bytes:
+        return self._response.read(size)
+
+    def getcode(self) -> int:
+        return self.code or 0
+
+    def close(self) -> None:
+        self._response.close()
+
+
+class _PinnedHttpOpener:
+    def open(self, fullurl: Request, timeout: float = 0) -> Any:
+        raise URLError("pinned HTTP transport requires a validated destination")
+
+    def open_pinned(
         self,
-        req: Request,
-        fp: object,
-        code: int,
-        msg: str,
-        headers: object,
-        newurl: str,
-    ) -> None:
-        return None
+        fullurl: Request,
+        *,
+        parsed_url: ParsedHttpUrl,
+        resolved_ips: Sequence[str],
+        timeout: float,
+    ) -> HttpResponse:
+        if not resolved_ips:
+            raise URLError("validated destination is missing")
+
+        connect_host = resolved_ips[0]
+        split = urlsplit(parsed_url.normalized_url)
+        target = urlunsplit(("", "", split.path or "/", split.query, ""))
+        headers = {name: value for name, value in fullurl.header_items()}
+        headers["Host"] = _netloc(parsed_url.host, parsed_url.port, parsed_url.scheme)
+
+        try:
+            if parsed_url.scheme == "https":
+                raw_sock = socket.create_connection(
+                    (connect_host, parsed_url.port),
+                    timeout,
+                )
+                try:
+                    tls_sock = ssl.create_default_context().wrap_socket(
+                        raw_sock,
+                        server_hostname=parsed_url.host,
+                    )
+                except Exception:
+                    raw_sock.close()
+                    raise
+                connection: http.client.HTTPConnection = http.client.HTTPSConnection(
+                    parsed_url.host,
+                    port=parsed_url.port,
+                    timeout=timeout,
+                )
+                connection.sock = tls_sock
+            else:
+                connection = http.client.HTTPConnection(
+                    connect_host,
+                    port=parsed_url.port,
+                    timeout=timeout,
+                )
+            connection.request("GET", target, headers=headers)
+            return _HttpClientResponse(connection.getresponse())
+        except (http.client.HTTPException, OSError, ssl.SSLError) as exc:
+            raise URLError("pinned HTTP request failed") from exc
 
 
 class HttpFetchExecutor:
@@ -129,7 +187,7 @@ class HttpFetchExecutor:
         self.max_response_bytes = max_response_bytes
         self.max_redirects = max_redirects
         self.resolver = resolver or _resolve_host
-        self.opener = opener or build_opener(ProxyHandler({}), _NoRedirectHandler)
+        self.opener = opener or _PinnedHttpOpener()
 
     @classmethod
     def from_settings(
@@ -161,7 +219,7 @@ class HttpFetchExecutor:
         redirect_chain: list[JsonValue] = []
 
         for _ in range(self.max_redirects + 1):
-            self._ensure_allowed_destination(current)
+            resolved_ips = self._ensure_allowed_destination(current)
             request = Request(
                 current.normalized_url,
                 headers={
@@ -174,10 +232,7 @@ class HttpFetchExecutor:
                 method="GET",
             )
             try:
-                response = cast(
-                    HttpResponse,
-                    self.opener.open(request, timeout=self.timeout_seconds),
-                )
+                response = self._open_response(request, current, resolved_ips)
             except HTTPError as exc:
                 if _is_redirect(exc.code):
                     location = exc.headers.get("Location")
@@ -199,11 +254,30 @@ class HttpFetchExecutor:
             except (TimeoutError, OSError, URLError) as exc:
                 raise HttpFetchError("HTTP fetch failed safely") from exc
 
+            status_code = response.code or _call_no_arg(response, "getcode")
+            if _is_redirect(status_code):
+                location = response.headers.get("Location")
+                _close_response(response)
+                if not location:
+                    raise HttpFetchError("redirect response is missing a location")
+                next_url = parse_http_url(urljoin(current.normalized_url, location))
+                redirect_chain.append(
+                    {
+                        "from": current.normalized_url,
+                        "to": next_url.normalized_url,
+                        "status_code": status_code,
+                    }
+                )
+                if len(redirect_chain) > self.max_redirects:
+                    raise HttpFetchError("redirect limit exceeded")
+                current = next_url
+                continue
+
             return self._result_from_response(response, current, redirect_chain)
 
         raise HttpFetchError("redirect limit exceeded")
 
-    def _ensure_allowed_destination(self, parsed_url: ParsedHttpUrl) -> None:
+    def _ensure_allowed_destination(self, parsed_url: ParsedHttpUrl) -> tuple[str, ...]:
         if not self.allowlist.allows(parsed_url):
             raise HttpFetchError("URL is not in the HTTP allowlist")
 
@@ -211,6 +285,26 @@ class HttpFetchExecutor:
         second_resolution = self._validated_resolution(parsed_url)
         if first_resolution != second_resolution:
             raise HttpFetchError("destination DNS resolution changed during validation")
+        return tuple(sorted(first_resolution))
+
+    def _open_response(
+        self,
+        request: Request,
+        parsed_url: ParsedHttpUrl,
+        resolved_ips: Sequence[str],
+    ) -> HttpResponse:
+        pinned_open = getattr(self.opener, "open_pinned", None)
+        if callable(pinned_open):
+            return cast(
+                HttpResponse,
+                pinned_open(
+                    request,
+                    parsed_url=parsed_url,
+                    resolved_ips=resolved_ips,
+                    timeout=self.timeout_seconds,
+                ),
+            )
+        return cast(HttpResponse, self.opener.open(request, timeout=self.timeout_seconds))
 
     def _validated_resolution(self, parsed_url: ParsedHttpUrl) -> frozenset[str]:
         resolved_ips = self.resolver(parsed_url.host, parsed_url.port)
@@ -422,6 +516,12 @@ def _call_no_arg(response: HttpResponse, method_name: str) -> int:
     if value is None:
         raise HttpFetchError("HTTP response status was invalid")
     return value
+
+
+def _close_response(response: HttpResponse) -> None:
+    close = getattr(response, "close", None)
+    if callable(close):
+        close()
 
 
 def _string_arg(arguments: JsonObject, name: str) -> str:

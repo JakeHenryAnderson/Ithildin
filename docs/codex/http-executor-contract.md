@@ -28,12 +28,14 @@ Before opening a request, the executor:
 6. resolves the destination twice and denies DNS changes during validation;
 7. rejects loopback, private, link-local, multicast, reserved, unspecified, non-global, and
    IPv4-mapped blocked destinations;
-8. opens a fixed GET request with Ithildin-controlled headers only.
+8. opens a fixed GET request with Ithildin-controlled headers only, using the default pinned
+   stdlib transport to connect to one of the validated IPs while preserving the normalized Host
+   header and HTTPS SNI/check-hostname semantics.
 
 Redirects repeat the same parse, allowlist, DNS, and IP validation before the next request. A
 redirect to an unallowlisted or private destination fails before the redirected request is opened.
-The current stdlib transport performs DNS/IP validation before opening the request; it does not yet pin the validated IP through socket connect. See the source-review closure matrix for this explicit
-v0.3-prep follow-up.
+Injected test transports must preserve equivalent semantics when used in integration tests. Runtime
+network claims apply to the default pinned transport, not arbitrary caller-supplied opener objects.
 
 ## Response Bounds
 

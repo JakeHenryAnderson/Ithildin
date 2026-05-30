@@ -24,10 +24,11 @@ class FakeResponse:
         status_code: int = 200,
         content_type: str = "text/plain; charset=utf-8",
         content_length: str | None = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         self.body = body
         self.code = status_code
-        self.headers = {"Content-Type": content_type}
+        self.headers = {"Content-Type": content_type, **(headers or {})}
         if content_length is not None:
             self.headers["Content-Length"] = content_length
 
@@ -49,6 +50,23 @@ class FakeOpener:
         if isinstance(response, Exception):
             raise response
         return response
+
+
+class PinnedFakeOpener(FakeOpener):
+    def __init__(self, responses: list[object]) -> None:
+        super().__init__(responses)
+        self.pinned_calls: list[tuple[str, tuple[str, ...]]] = []
+
+    def open_pinned(
+        self,
+        fullurl: Request,
+        *,
+        parsed_url: Any,
+        resolved_ips: Sequence[str],
+        timeout: float = 0,
+    ) -> object:
+        self.pinned_calls.append((parsed_url.host, tuple(resolved_ips)))
+        return self.open(fullurl, timeout=timeout)
 
 
 def make_executor(
@@ -95,6 +113,25 @@ def test_allowed_exact_host_fetch_returns_text_and_json() -> None:
     assert result["body_json"] == {"ok": True}
     assert result["byte_count"] == 12
     assert opener.requests[0].headers["User-agent"] == "Ithildin/0.1 http.fetch"
+
+
+def test_pinned_opener_receives_validated_destination_ips() -> None:
+    opener = PinnedFakeOpener([FakeResponse(body=b"ok")])
+    executor = HttpFetchExecutor(
+        allowlist=HttpAllowlist.from_csv("https://example.com"),
+        timeout_seconds=1,
+        max_response_bytes=1024,
+        max_redirects=0,
+        resolver=lambda host, port: ["93.184.216.34", "93.184.216.35"],
+        opener=opener,
+    )
+
+    result = executor.fetch("https://example.com/data")
+
+    assert result["status_code"] == 200
+    assert opener.pinned_calls == [
+        ("example.com", ("93.184.216.34", "93.184.216.35"))
+    ]
 
 
 def test_empty_allowlist_denies_without_opening_request() -> None:
@@ -207,6 +244,38 @@ def test_redirect_destination_is_revalidated() -> None:
         executor.fetch("https://example.com/")
 
     assert len(opener.requests) == 1
+
+
+def test_response_redirect_from_pinned_transport_is_revalidated() -> None:
+    opener = PinnedFakeOpener(
+        [
+            FakeResponse(
+                body=b"",
+                status_code=302,
+                headers={"Location": "https://private.example/"},
+            )
+        ]
+    )
+
+    def redirect_resolver(host: str, port: int) -> Sequence[str]:
+        if host == "private.example":
+            return ["127.0.0.1"]
+        return ["93.184.216.34"]
+
+    executor = HttpFetchExecutor(
+        allowlist=HttpAllowlist.from_csv("https://example.com,https://private.example"),
+        timeout_seconds=1,
+        max_response_bytes=1024,
+        max_redirects=3,
+        resolver=redirect_resolver,
+        opener=opener,
+    )
+
+    with pytest.raises(HttpFetchError, match="blocked IP"):
+        executor.fetch("https://example.com/")
+
+    assert len(opener.requests) == 1
+    assert opener.pinned_calls == [("example.com", ("93.184.216.34",))]
 
 
 def test_redirect_to_unallowlisted_destination_is_denied_before_second_request() -> None:
@@ -331,8 +400,8 @@ def test_default_opener_does_not_inherit_proxy_environment(
     )
 
     opener = cast(Any, executor.opener)
-    proxy_handlers = [handler for handler in opener.handlers if hasattr(handler, "proxies")]
-    assert all(cast(Any, handler).proxies == {} for handler in proxy_handlers)
+    assert callable(getattr(opener, "open_pinned", None))
+    assert not hasattr(opener, "handlers")
 
 
 def test_trailing_dot_and_mixed_case_hosts_are_canonicalized() -> None:

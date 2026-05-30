@@ -431,7 +431,7 @@ def test_http_executor_contract_is_linked_and_validated() -> None:
         "IDNA",
         "resolves the destination twice",
         "Redirects repeat",
-        "does not yet pin the validated IP",
+        "connect to one of the validated IPs",
         "proxy",
         "response bodies",
         "not a network sandbox",
