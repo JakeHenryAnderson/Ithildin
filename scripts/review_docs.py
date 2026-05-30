@@ -19,6 +19,7 @@ REVIEW_DOCS = [
     "docs/codex/filesystem-executor-contract.md",
     "docs/codex/evidence-contracts.md",
     "docs/codex/policy-parity-harness.md",
+    "docs/codex/opa-parity-decision.md",
     "docs/codex/negative-review-recipes.md",
     "docs/codex/reviewer-reproduction-map.md",
     "docs/codex/source-review-closure-matrix.md",

@@ -54,7 +54,8 @@ For v0.2 external/code review handoff, start with
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.
-  OPA fixture execution is deferred until an explicit OPA test server or mocking layer exists.
+  OPA fixture/parity execution is deferred until an explicit OPA test server or mocking layer exists;
+  see [OPA Parity Decision](opa-parity-decision.md).
 - Principal identities are loaded from `principals/local.yaml`; unknown or disabled principals fail
   closed in governed flows.
 - The sample admin token works only when `ITHILDIN_ALLOW_DEV_ADMIN_TOKEN=true`, and the API/UI report

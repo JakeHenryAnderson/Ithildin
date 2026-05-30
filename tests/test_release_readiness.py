@@ -481,6 +481,30 @@ def test_policy_parity_harness_is_documented_and_gated() -> None:
     assert "docs/codex/policy-parity-harness.md" in review_docs.REVIEW_DOCS
 
 
+def test_opa_parity_decision_keeps_yaml_canonical_for_gates() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    release = Path("docs/codex/local-preview-release.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/opa-parity-decision.md").read_text(encoding="utf-8")
+
+    for required in [
+        "YAML remains the canonical local-preview policy engine",
+        "OPA remains an optional sidecar/evidence prototype",
+        "make policy-test",
+        "make policy-parity",
+        "not a semantic parity claim",
+    ]:
+        assert required in doc
+    assert "opa-parity-decision.md" in readme
+    assert "OPA Parity Decision" in release
+    assert "097 - OPA parity decision point | Done" in backlog
+    assert "Task 097 keeps YAML canonical" in matrix
+    assert "docs/codex/opa-parity-decision.md" in review_docs.REVIEW_DOCS
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"

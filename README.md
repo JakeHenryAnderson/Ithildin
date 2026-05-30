@@ -133,6 +133,8 @@ Run `make policy-parity` to compare policy preview decisions with governed runti
 `policy.evaluated` audit evidence using the committed parity fixtures.
 Use `uv run python scripts/policy_impact.py --candidate-path path/to/policy.yaml` to compare a
 candidate YAML policy against the same fixtures before runtime configuration changes.
+OPA remains optional verified sidecar evidence, not the canonical parity engine; see
+[docs/codex/opa-parity-decision.md](docs/codex/opa-parity-decision.md).
 SQLite is the runtime storage backend for v0.1. Postgres settings are readiness/status evidence only.
 OpenTelemetry is opt-in preview instrumentation and is disabled by default.
 Locally signed audit exports are optional v0.2 local evidence. Run `make audit-keygen`, then use the
@@ -218,6 +220,7 @@ operator setup. Then read
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
 [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md),
 [docs/codex/policy-parity-harness.md](docs/codex/policy-parity-harness.md),
+[docs/codex/opa-parity-decision.md](docs/codex/opa-parity-decision.md),
 [docs/codex/patch-apply-state-machine.md](docs/codex/patch-apply-state-machine.md),
 [docs/codex/http-executor-contract.md](docs/codex/http-executor-contract.md),
 [docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md),
