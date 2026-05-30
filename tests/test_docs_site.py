@@ -47,5 +47,6 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS
     assert "docs/codex/source-review-closure-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/internal-source-review-pass-1.md" in DEFAULT_DOCS
+    assert "docs/codex/internal-ai-review-workflow.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-finding-template.md" in DEFAULT_DOCS
     assert "docs/codex/filesystem-executor-contract.md" in DEFAULT_DOCS

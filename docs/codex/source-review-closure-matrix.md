@@ -21,3 +21,7 @@ findings and disposition.
 A row is closed only when blocking findings are resolved or explicitly accepted as deferred with a
 documented rationale. Closing this matrix does not make Ithildin production software; it only records
 source-review disposition for the local-preview boundary.
+
+Internal AI/subagent reviews may add findings and notes, but those rows must remain labeled as
+internal review. External review closure requires GPT 5.5 Pro / Very High or human expert review of
+the relevant source and evidence.

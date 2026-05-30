@@ -78,6 +78,7 @@
 | 080 - Filesystem executor contract | Done | [filesystem-executor-contract.md](filesystem-executor-contract.md), `make filesystem-contract-check` |
 | 081 - Filesystem evidence artifact | Done | `filesystem-contract-check.txt` in review bundles |
 | 082 - Review candidate command | Done | `make review-candidate` |
+| 083 - Internal AI review workflow | Done | [internal-ai-review-workflow.md](internal-ai-review-workflow.md), `make internal-review-packet` |
 
 ## Future Candidate Track
 

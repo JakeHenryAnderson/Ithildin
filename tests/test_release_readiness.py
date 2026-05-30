@@ -9,6 +9,7 @@ import pytest
 
 from scripts import (
     consolidate_review_packet,
+    internal_review_packet,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -120,6 +121,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "release-evidence",
         "release-packet",
         "review-candidate",
+        "internal-review-packet",
         "signed-evidence-demo",
         "filesystem-contract-check",
         "review-packet-bundle",
@@ -186,6 +188,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/negative-review-recipes.md",
         "docs/codex/source-review-closure-matrix.md",
         "docs/codex/internal-source-review-pass-1.md",
+        "docs/codex/internal-ai-review-workflow.md",
         "docs/codex/reviewer-finding-template.md",
         "docs/codex/signed-audit-exports.md",
         "docs/codex/signed-manifest-locks.md",
@@ -361,6 +364,45 @@ def test_reviewer_finding_template_has_required_fields() -> None:
         assert field in template
     assert "reviewer-finding-template.md" in prompt
     assert "reviewer-finding-template.md" in reproduction_map
+
+
+def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) -> None:
+    workflow = Path("docs/codex/internal-ai-review-workflow.md").read_text(encoding="utf-8")
+    prompt = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "not an independent external audit",
+        "make internal-review-packet",
+        "Patch apply approval binding",
+        "HTTP fetch SSRF",
+        "reviewer-finding-template.md",
+        "source-review-closure-matrix.md",
+    ]:
+        assert required in workflow
+    assert "internal-ai-review-workflow.md" in prompt
+    assert "internal-ai-review-workflow.md" in reproduction_map
+
+    output_dir = internal_review_packet.build_internal_review_packet(tmp_path / "packet")
+    expected_prompts = {
+        "patch-apply.md",
+        "filesystem.md",
+        "http-fetch.md",
+        "signed-evidence.md",
+        "policy-parity.md",
+        "mcp-ingress.md",
+        "review-console.md",
+    }
+    assert {path.name for path in output_dir.glob("*.md")} == {
+        *expected_prompts,
+        "INTERNAL_REVIEW_INDEX.md",
+    }
+    prompt_text = output_dir.joinpath("patch-apply.md").read_text(encoding="utf-8")
+    assert "docs/codex/reviewer-finding-template.md" in prompt_text
+    assert "apps/api/src/ithildin_api/patches.py" in prompt_text
+    assert "Do not propose new powerful tool classes" in prompt_text
 
 
 def test_review_doc_metadata_is_deterministic(tmp_path: Path) -> None:

@@ -17,6 +17,9 @@ Run `make review-candidate` to execute the full local handoff sequence. It runs 
 `review-packet-bundle`, `review-packet-consolidated`, and `docs-site`, then prints the consolidated
 packet path.
 
+Run `make internal-review-packet` when you want local AI/subagent source-review prompts. That packet
+is internal pressure-test material only and does not replace external/source review.
+
 ## Command Sequence
 
 1. `make release-check`
@@ -89,6 +92,7 @@ packet path.
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)
 - Source review closure matrix: [source-review-closure-matrix.md](source-review-closure-matrix.md)
 - Internal source review pass 1: [internal-source-review-pass-1.md](internal-source-review-pass-1.md)
+- Internal AI review workflow: [internal-ai-review-workflow.md](internal-ai-review-workflow.md)
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)

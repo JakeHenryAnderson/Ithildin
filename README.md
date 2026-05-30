@@ -78,6 +78,7 @@ tamper-evident audit log.
 - `make review-candidate` - run the full local handoff gate and regenerate review artifacts.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
+- `make internal-review-packet` - build local prompts for internal AI/subagent source review.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
@@ -196,6 +197,7 @@ operator setup. Then read
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md),
 [docs/codex/source-review-closure-matrix.md](docs/codex/source-review-closure-matrix.md),
 [docs/codex/internal-source-review-pass-1.md](docs/codex/internal-source-review-pass-1.md),
+[docs/codex/internal-ai-review-workflow.md](docs/codex/internal-ai-review-workflow.md),
 [docs/codex/reviewer-finding-template.md](docs/codex/reviewer-finding-template.md),
 [docs/codex/v0.1-public-preview-release-notes.md](docs/codex/v0.1-public-preview-release-notes.md),
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and

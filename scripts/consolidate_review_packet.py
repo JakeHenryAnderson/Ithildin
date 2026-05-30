@@ -179,6 +179,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         )
         + _section(
+            "Internal AI Review Workflow",
+            repo_root / "docs/codex/internal-ai-review-workflow.md",
+            repo_root,
+        )
+        + _section(
             "Reviewer Finding Template",
             repo_root / "docs/codex/reviewer-finding-template.md",
             repo_root,
