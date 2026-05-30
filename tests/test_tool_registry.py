@@ -18,6 +18,7 @@ from ithildin_api.registry import (
     DuplicateToolManifest,
     InvalidToolManifest,
     ToolRegistry,
+    ToolRegistryError,
     UnknownToolDenied,
 )
 
@@ -83,6 +84,77 @@ def test_invalid_manifest_schema_fails_closed(tmp_path: Path) -> None:
     (tmp_path / "invalid.yaml").write_text("name: fs.read\n", encoding="utf-8")
 
     with pytest.raises(InvalidToolManifest):
+        ToolRegistry.load(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        ("null\n", "manifest must be a mapping"),
+        ("- fs.read\n", "manifest must be a mapping"),
+        ("1: bad\n", "manifest keys must be strings"),
+        (
+            """
+name: fs.read
+version: 1.0.0
+title: Read file
+risk: read
+category: filesystem
+input_schema:
+  type: object
+unexpected: true
+""",
+            "invalid tool manifest schema",
+        ),
+        (
+            """
+name: fs.read
+version: 1.0.0
+title: Read file
+risk: shell
+category: filesystem
+input_schema:
+  type: object
+""",
+            "invalid tool manifest schema",
+        ),
+        (
+            """
+name: fs.read
+version: 1.0.0
+title: Read file
+risk: read
+category: filesystem
+input_schema:
+  - not
+  - an
+  - object
+""",
+            "invalid tool manifest schema",
+        ),
+        (
+            """
+name: fs.read
+version: 1.0.0
+title: Read file
+risk: read
+category: filesystem
+mcp: true
+input_schema:
+  type: object
+""",
+            "invalid tool manifest schema",
+        ),
+    ],
+)
+def test_manifest_negative_shapes_fail_closed(
+    tmp_path: Path,
+    body: str,
+    message: str,
+) -> None:
+    (tmp_path / "invalid.yaml").write_text(body, encoding="utf-8")
+
+    with pytest.raises(InvalidToolManifest, match=message):
         ToolRegistry.load(tmp_path)
 
 
@@ -491,6 +563,105 @@ def test_manifest_lock_hash_mismatch_fails_closed(tmp_path: Path) -> None:
 
     with pytest.raises(ManifestLockError, match="hash mismatch"):
         ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+
+@pytest.mark.parametrize(
+    ("mutator", "message"),
+    [
+        (lambda payload: payload.update({"lockfile_version": 999}), "unsupported"),
+        (lambda payload: payload.update({"manifests": {}}), "manifests list"),
+        (lambda payload: payload.update({"manifest_dir": "../manifests"}), "lock root"),
+        (
+            lambda payload: payload["manifests"].append("not-object"),
+            "entry must be an object",
+        ),
+        (
+            lambda payload: payload["manifests"].append(dict(payload["manifests"][0])),
+            "duplicate manifest lock path",
+        ),
+        (
+            lambda payload: payload["manifests"].append(
+                {
+                    **dict(payload["manifests"][0]),
+                    "path": "manifests/other.yaml",
+                }
+            ),
+            "duplicate manifest lock name",
+        ),
+        (
+            lambda payload: payload["manifests"][0].update({"path": "../outside.yaml"}),
+            "lock root",
+        ),
+        (
+            lambda payload: payload["manifests"][0].update({"manifest_hash": "sha256:bad"}),
+            "invalid manifest hash",
+        ),
+        (
+            lambda payload: payload["manifests"][0].pop("version"),
+            "missing version",
+        ),
+    ],
+)
+def test_manifest_lock_negative_shapes_fail_closed(
+    tmp_path: Path,
+    mutator: Any,
+    message: str,
+) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    mutator(payload)
+    lock_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ManifestLockError, match=message):
+        ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+
+def test_manifest_lock_invalid_json_and_non_object_fail_closed(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    invalid_json = tmp_path / "invalid-json.lock"
+    invalid_json.write_text("{", encoding="utf-8")
+    non_object = tmp_path / "non-object.lock"
+    non_object.write_text("[]", encoding="utf-8")
+
+    with pytest.raises(ManifestLockError, match="invalid JSON"):
+        ToolRegistry.load(manifest_dir, lock_path=invalid_json, require_lock=True)
+    with pytest.raises(ManifestLockError, match="JSON object"):
+        ToolRegistry.load(manifest_dir, lock_path=non_object, require_lock=True)
+
+
+def test_signed_lock_requirement_requires_lock_enforcement(tmp_path: Path) -> None:
+    with pytest.raises(ToolRegistryError, match="requires manifest lock enforcement"):
+        ToolRegistry.load(tmp_path, require_signed_lock=True)
+
+
+def test_signed_lock_requirement_rejects_incomplete_signature_config(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(tmp_path)
+    write_manifest_lock(
+        manifest_dir=tmp_path,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+
+    with pytest.raises(ToolRegistryError, match="signature config is incomplete"):
+        ToolRegistry.load(
+            tmp_path,
+            lock_path=lock_path,
+            require_lock=True,
+            require_signed_lock=True,
+        )
 
 
 def _lock_records(registry: ToolRegistry) -> list[ManifestLockRecord]:

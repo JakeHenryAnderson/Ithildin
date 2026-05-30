@@ -19,6 +19,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.1-security-test-matrix.md",
     "docs/codex/filesystem-executor-contract.md",
     "docs/codex/evidence-contracts.md",
+    "docs/codex/manifest-validation-suite.md",
     "docs/codex/policy-parity-harness.md",
     "docs/codex/opa-parity-decision.md",
     "docs/codex/mcp-ingress-bypass-audit.md",

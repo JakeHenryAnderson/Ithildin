@@ -116,6 +116,7 @@ work must stop for status, reassessment, or external consultation.
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 - Executor contract set: [executor-contract-set.md](executor-contract-set.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
+- Manifest validation suite: [manifest-validation-suite.md](manifest-validation-suite.md)
 
 ## Reproduction Notes
 

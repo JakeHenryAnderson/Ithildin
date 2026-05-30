@@ -481,6 +481,37 @@ def test_executor_contract_set_indexes_review_surfaces() -> None:
     assert "docs/codex/executor-contract-set.md" in review_docs.REVIEW_DOCS
 
 
+def test_manifest_validation_suite_is_documented() -> None:
+    doc = Path("docs/codex/manifest-validation-suite.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "invalid YAML",
+        "non-string manifest keys",
+        "invalid risk enum values",
+        "duplicate lock paths",
+        "path escape",
+        "signature configuration is incomplete",
+    ]:
+        assert required in doc
+    assert "manifest-validation-suite.md" in readme
+    assert "manifest-validation-suite.md" in review_packet
+    assert "manifest-validation-suite.md" in reproduction_map
+    assert "105 - Tool manifest negative validation suite | Done" in backlog
+    assert "Task 105 adds" in matrix
+    assert "docs/codex/manifest-validation-suite.md" in review_docs.REVIEW_DOCS
+
+
 def test_evidence_contracts_define_versioning_policy() -> None:
     contracts = Path("docs/codex/evidence-contracts.md").read_text(encoding="utf-8")
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
