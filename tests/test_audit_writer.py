@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from datetime import UTC, datetime
@@ -15,7 +16,7 @@ from ithildin_audit_core import (
     signed_audit_export_bundle,
     verify_signed_audit_export_bundle,
 )
-from ithildin_schemas import AuditEventType, PolicyDecisionValue
+from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue
 
 VALID_HASH = "sha256:" + ("a" * 64)
 NOW = datetime(2026, 5, 25, 12, 0, tzinfo=UTC)
@@ -313,6 +314,88 @@ def test_signed_audit_export_detects_tampering(tmp_path: Path, tamper: str) -> N
 
     assert result.valid is False
     assert result.failure is not None
+
+
+def test_signed_audit_export_rejects_wrong_trusted_public_key(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+        tool_name="fs.read",
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    wrong_private_key_path = tmp_path / "wrong-private.pem"
+    wrong_public_key_path = tmp_path / "wrong-public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    generate_audit_signing_keypair(
+        private_key_path=wrong_private_key_path,
+        public_key_path=wrong_public_key_path,
+    )
+    bundle = cast(
+        JsonObject,
+        signed_audit_export_bundle(
+            jsonl_bundle=writer.export_jsonl_bundle(),
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+        ),
+    )
+
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=wrong_public_key_path)
+
+    assert result.valid is False
+    assert result.failure == "signed bundle public key does not match trusted key"
+
+
+def test_signed_audit_export_rejects_reordered_events_with_recomputed_digest(
+    tmp_path: Path,
+) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_CALL_PROPOSED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.write_event(
+        event_id="evt_2",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_2",
+        principal={"id": "agent:local-dev"},
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = cast(
+        JsonObject,
+        signed_audit_export_bundle(
+            jsonl_bundle=writer.export_jsonl_bundle(),
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+        ),
+    )
+    event_lines = str(bundle["events_jsonl"]).splitlines()
+    reordered_events = "\n".join(reversed(event_lines)) + "\n"
+    bundle["events_jsonl"] = reordered_events
+    bundle["events_sha256"] = "sha256:" + hashlib.sha256(
+        reordered_events.encode("utf-8")
+    ).hexdigest()
+
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert result.valid is False
+    assert result.failure == "signature verification failed"
 
 
 def test_signed_audit_export_reflects_failed_chain_verification(tmp_path: Path) -> None:

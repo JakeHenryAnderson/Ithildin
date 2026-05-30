@@ -325,6 +325,46 @@ def test_manifest_lock_signature_tampering_fails_closed(tmp_path: Path, tamper: 
         )
 
 
+def test_manifest_lock_signature_cannot_be_replayed_for_different_lock_path(
+    tmp_path: Path,
+) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    replay_lock_path = tmp_path / "copy" / "tool-manifests.lock.json"
+    replay_lock_path.parent.mkdir()
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    replay_lock_path.write_text(lock_path.read_text(encoding="utf-8"), encoding="utf-8")
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    signature_path = tmp_path / "tool-manifests.lock.sig.json"
+    generate_manifest_lock_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    write_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+
+    result = verify_manifest_lock_signature(
+        lock_path=replay_lock_path,
+        signature_path=signature_path,
+        public_key_path=public_key_path,
+    )
+
+    assert result.valid is False
+    assert result.failure == "manifest lock signature targets a different lock path"
+
+
 def test_manifest_lock_signature_status_reports_optional_and_verified(tmp_path: Path) -> None:
     lock_path = tmp_path / "tool-manifests.lock.json"
     write_manifest_lock(
