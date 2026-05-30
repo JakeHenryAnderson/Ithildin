@@ -15,6 +15,7 @@ from scripts import (
     release_packet,
     review_docs,
     review_packet_bundle,
+    review_packet_diff,
     reviewer_findings,
 )
 
@@ -155,6 +156,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "reviewer-findings-check",
         "review-packet-bundle",
         "review-packet-consolidated",
+        "review-packet-diff",
         "docs-site",
     ]:
         assert f"make {target}" in reproduction_map
@@ -989,6 +991,87 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert "filesystem-contract-check.txt" in result.path.joinpath("INDEX.md").read_text(
         encoding="utf-8"
     )
+
+
+def test_review_packet_diff_compares_artifact_hashes(tmp_path: Path) -> None:
+    old_packet = tmp_path / "old"
+    new_packet = tmp_path / "new"
+    old_packet.mkdir()
+    new_packet.mkdir()
+    old_packet.joinpath("artifact-hashes.json").write_text(
+        json.dumps(
+            [
+                {"path": "INDEX.md", "sha256": "sha256:" + ("1" * 64), "bytes": 10},
+                {"path": "old-only.txt", "sha256": "sha256:" + ("2" * 64), "bytes": 20},
+                {"path": "changed.txt", "sha256": "sha256:" + ("3" * 64), "bytes": 30},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    new_packet.joinpath("artifact-hashes.json").write_text(
+        json.dumps(
+            [
+                {"path": "INDEX.md", "sha256": "sha256:" + ("1" * 64), "bytes": 10},
+                {"path": "new-only.txt", "sha256": "sha256:" + ("4" * 64), "bytes": 40},
+                {"path": "changed.txt", "sha256": "sha256:" + ("5" * 64), "bytes": 50},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    diff = review_packet_diff.compare_packets(old_packet, new_packet)
+
+    assert [artifact.path for artifact in diff.added] == ["new-only.txt"]
+    assert [artifact.path for artifact in diff.removed] == ["old-only.txt"]
+    assert [entry["old"].path for entry in diff.changed] == ["changed.txt"]
+    assert diff.unchanged_count == 1
+    rendered = review_packet_diff.render_diff(diff)
+    assert "added: `1`" in rendered
+    assert "changed: `1`" in rendered
+
+
+def test_review_packet_diff_rejects_unsafe_artifact_paths(tmp_path: Path) -> None:
+    old_packet = tmp_path / "old"
+    new_packet = tmp_path / "new"
+    old_packet.mkdir()
+    new_packet.mkdir()
+    for packet in [old_packet, new_packet]:
+        packet.joinpath("artifact-hashes.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "path": "../escape.txt",
+                        "sha256": "sha256:" + ("1" * 64),
+                        "bytes": 10,
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+    with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="unsafe"):
+        review_packet_diff.compare_packets(old_packet, new_packet)
+
+
+def test_review_packet_diff_doc_and_target_are_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/review-packet-diff.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert "review-packet-diff:" in makefile
+    assert "make review-packet-diff OLD=... NEW=..." in readme
+    assert "artifact-hashes.json" in doc
+    assert "make review-packet-diff OLD=old-packet NEW=new-packet" in review_packet
+    assert "make review-packet-diff OLD=old-packet NEW=new-packet" in reproduction_map
+    assert "103 - Review packet diff command | Done" in backlog
+    assert "docs/codex/review-packet-diff.md" in review_docs.REVIEW_DOCS
 
 
 def test_release_evidence_records_attached_release_check_metadata(

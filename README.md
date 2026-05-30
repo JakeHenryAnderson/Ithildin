@@ -79,6 +79,7 @@ tamper-evident audit log.
 - `make review-candidate` - run the full local handoff gate and regenerate review artifacts.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
+- `make review-packet-diff OLD=... NEW=...` - compare two review packet bundles by artifact hash.
 - `make internal-review-packet` - build local prompts for internal AI/subagent source review.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
@@ -185,6 +186,8 @@ consolidated packet, and docs site. Use
 the full evidence sequence and locate generated hashes/transcripts.
 The release-evidence schema and validation command are documented in
 [docs/codex/release-evidence-schema.md](docs/codex/release-evidence-schema.md).
+Packet-to-packet handoff comparisons are documented in
+[docs/codex/review-packet-diff.md](docs/codex/review-packet-diff.md).
 The v0.3-prep assurance roadmap is recorded in
 [docs/codex/v0.3-milestone-manifest.md](docs/codex/v0.3-milestone-manifest.md). It keeps Tasks
 085-112 scoped to review automation, adversarial assurance, and external handoff preparation rather

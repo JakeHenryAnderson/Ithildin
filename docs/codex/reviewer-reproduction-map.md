@@ -56,6 +56,11 @@ work must stop for status, reassessment, or external consultation.
    export signing, verified manifest-lock signing, a tamper-failing audit bundle, and SHA-256
    digests for the generated demo artifacts.
 
+6. `make review-packet-diff OLD=old-packet NEW=new-packet`
+
+   Expected outcome: prints added, removed, changed, and unchanged artifact counts for two generated
+   packets using `artifact-hashes.json` when available.
+
 5. `make filesystem-contract-check`
 
    Expected outcome: prints secret-free local platform and filesystem capability evidence. On
@@ -107,6 +112,7 @@ work must stop for status, reassessment, or external consultation.
 - Reviewer finding template: [reviewer-finding-template.md](reviewer-finding-template.md)
 - Reviewer finding intake: [reviewer-finding-intake.md](reviewer-finding-intake.md)
 - Release evidence schema: [release-evidence-schema.md](release-evidence-schema.md)
+- Review packet diff: [review-packet-diff.md](review-packet-diff.md)
 - Local preview security matrix: [v0.1-security-test-matrix.md](v0.1-security-test-matrix.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
 

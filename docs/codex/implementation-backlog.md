@@ -103,7 +103,7 @@
 | 100 - Review-console failure-state and trust-status UX | Done | [review-console-assurance.md](review-console-assurance.md), `/patch-apply-diagnostics` UI |
 | 101 - Negative transcript expansion | Done | `make negative-review-transcripts`, [negative-review-recipes.md](negative-review-recipes.md) |
 | 102 - Release evidence schema hardening | Done | [release-evidence-schema.md](release-evidence-schema.md), `make release-evidence-validate` |
-| 103 - Review packet diff command | Planned | v0.3 milestone manifest |
+| 103 - Review packet diff command | Done | [review-packet-diff.md](review-packet-diff.md), `make review-packet-diff` |
 | 104 - Executor contract set | Planned | v0.3 milestone manifest |
 | 105 - Tool manifest negative validation suite | Planned | v0.3 milestone manifest |
 | 106 - Principal/workspace registry fail-closed suite | Planned | v0.3 milestone manifest |

@@ -55,6 +55,8 @@ For v0.2 external/code review handoff, start with
   [Evidence Contracts](evidence-contracts.md).
 - Release handoff evidence schema and validation are summarized in
   [Release Evidence Schema](release-evidence-schema.md).
+- Review packet artifact comparisons are summarized in
+  [Review Packet Diff](review-packet-diff.md).
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.
