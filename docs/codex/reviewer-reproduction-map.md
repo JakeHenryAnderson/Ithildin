@@ -10,6 +10,13 @@ Run all commands from the Ithildin repo root:
 cd /Users/jake/Documents/Codex/Ithildin
 ```
 
+## One-Command Handoff
+
+Run `make review-candidate` to execute the full local handoff sequence. It runs `release-check`,
+`filesystem-contract-check`, `signed-evidence-demo`, `negative-review-transcripts`,
+`review-packet-bundle`, `review-packet-consolidated`, and `docs-site`, then prints the consolidated
+packet path.
+
 ## Command Sequence
 
 1. `make release-check`

@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site filesystem-contract-check lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke policy-test release-check release-context release-evidence release-guardrails release-packet review-packet-bundle review-packet-consolidated signed-evidence-demo test typecheck ui-dev
+.PHONY: admin-token-generate audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-seed docs-site filesystem-contract-check lint local-model-demo mcp-inspector-recipes manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke policy-test release-check release-context release-evidence release-guardrails release-packet review-candidate review-packet-bundle review-packet-consolidated signed-evidence-demo test typecheck ui-dev
 
 test:
 	uv run pytest
@@ -62,6 +62,16 @@ review-packet-bundle:
 
 review-packet-consolidated:
 	uv run python scripts/consolidate_review_packet.py
+
+review-candidate:
+	$(MAKE) release-check
+	$(MAKE) filesystem-contract-check
+	$(MAKE) signed-evidence-demo
+	$(MAKE) negative-review-transcripts
+	$(MAKE) review-packet-bundle
+	$(MAKE) review-packet-consolidated
+	$(MAKE) docs-site
+	@echo "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated"
 
 signed-evidence-demo:
 	uv run python scripts/signed_evidence_demo.py

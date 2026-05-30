@@ -76,6 +76,8 @@
 | 078 - Internal source review pass 1 | Done | [internal-source-review-pass-1.md](internal-source-review-pass-1.md) |
 | 079 - Patch apply recovery evidence | Done | `/patch-apply-diagnostics`, patch apply attempt records |
 | 080 - Filesystem executor contract | Done | [filesystem-executor-contract.md](filesystem-executor-contract.md), `make filesystem-contract-check` |
+| 081 - Filesystem evidence artifact | Done | `filesystem-contract-check.txt` in review bundles |
+| 082 - Review candidate command | Done | `make review-candidate` |
 
 ## Future Candidate Track
 
@@ -123,4 +125,5 @@ security-matrix closure items, and the first internal source review gate.
 - Internal source review pass 1 is recorded before external/source review handoff.
 - Filesystem executor contract and capability check document macOS/Linux support and Windows/WSL
   unsupported status for workspace/race claims.
+- `make review-candidate` runs the full local handoff gate and regenerates review artifacts.
 - `make release-check` passes before local-preview handoff.

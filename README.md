@@ -75,6 +75,7 @@ tamper-evident audit log.
 - `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
+- `make review-candidate` - run the full local handoff gate and regenerate review artifacts.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
@@ -166,9 +167,9 @@ make docs-site
 
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
-`make release-check`, `make release-evidence`, `make release-packet`, `make signed-evidence-demo`,
-`make negative-review-transcripts`, `make review-packet-bundle`, and
-`make review-packet-consolidated` before tagging or external review handoff. Use
+`make review-candidate` before tagging or external review handoff. It runs the release gate,
+filesystem contract check, signed evidence demo, negative transcripts, review bundle,
+consolidated packet, and docs site. Use
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
 the full evidence sequence and locate generated hashes/transcripts.
 

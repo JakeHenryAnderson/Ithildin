@@ -119,6 +119,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "release-check",
         "release-evidence",
         "release-packet",
+        "review-candidate",
         "signed-evidence-demo",
         "filesystem-contract-check",
         "review-packet-bundle",
@@ -130,6 +131,26 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "artifact-hashes.json" in reproduction_map
     assert "consolidated-attachment-hashes.json" in reproduction_map
     assert "review-doc-hashes.json" in reproduction_map
+
+
+def test_review_candidate_target_sequences_handoff_commands() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    target = re.search(r"^review-candidate:\n(?P<body>(?:\t.*\n)+)", makefile, re.MULTILINE)
+
+    assert target is not None
+    body = target.group("body")
+    expected_commands = [
+        "$(MAKE) release-check",
+        "$(MAKE) filesystem-contract-check",
+        "$(MAKE) signed-evidence-demo",
+        "$(MAKE) negative-review-transcripts",
+        "$(MAKE) review-packet-bundle",
+        "$(MAKE) review-packet-consolidated",
+        "$(MAKE) docs-site",
+    ]
+    positions = [body.index(command) for command in expected_commands]
+    assert positions == sorted(positions)
+    assert "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated" in body
 
 
 def test_consolidated_review_packet_generation(
