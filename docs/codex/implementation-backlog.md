@@ -106,7 +106,7 @@
 | 103 - Review packet diff command | Done | [review-packet-diff.md](review-packet-diff.md), `make review-packet-diff` |
 | 104 - Executor contract set | Done | [executor-contract-set.md](executor-contract-set.md) |
 | 105 - Tool manifest negative validation suite | Done | [manifest-validation-suite.md](manifest-validation-suite.md), `tests/test_tool_registry.py` |
-| 106 - Principal/workspace registry fail-closed suite | Planned | v0.3 milestone manifest |
+| 106 - Principal/workspace registry fail-closed suite | Done | [registry-fail-closed-suite.md](registry-fail-closed-suite.md), `tests/test_identity.py`, `tests/test_workspaces.py` |
 | 107 - Audit integrity adversarial suite | Planned | v0.3 milestone manifest |
 | 108 - Release guardrail expansion | Planned | v0.3 milestone manifest |
 | 109 - Internal AI review packet v2 | Planned | v0.3 milestone manifest |

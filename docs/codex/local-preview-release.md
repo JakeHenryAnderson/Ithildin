@@ -61,6 +61,8 @@ For v0.2 external/code review handoff, start with
   [Executor Contract Set](executor-contract-set.md).
 - Manifest and manifest-lock fail-closed coverage is summarized in
   [Manifest Validation Suite](manifest-validation-suite.md).
+- Principal/workspace registry fail-closed coverage is summarized in
+  [Registry Fail-Closed Suite](registry-fail-closed-suite.md).
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.

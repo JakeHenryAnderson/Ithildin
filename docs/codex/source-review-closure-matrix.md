@@ -42,6 +42,7 @@ so later automation can update internal findings without overstating external cl
 | Review packet diff evidence | v0.3-prep bundle comparison command added | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 103 adds `review-packet-diff.md` and `make review-packet-diff` to compare generated packets by artifact hash before external handoff |
 | Executor contract set | v0.3-prep executor contracts indexed for source review | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 104 adds `executor-contract-set.md` mapping tools/endpoints to contract docs, implementation pointers, test evidence, and cross-cutting invariants |
 | Manifest validation suite | v0.3-prep trusted manifest/lock negative validation expanded | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 105 adds `manifest-validation-suite.md` and tests malformed manifests, invalid lock payloads, path escapes, duplicate lock entries, invalid hashes, and signed-lock configuration failures |
+| Principal/workspace registries | v0.3-prep trusted registry negative validation expanded | Pending Wave 5 | Pending external review | None | No blocking finding open | Task 106 adds `registry-fail-closed-suite.md` and tests malformed principal/workspace registries, ID/type mismatch, disabled principals/workspaces, missing defaults, traversal roots, duplicate IDs, and strict missing-registry failures |
 
 ## v2 Update Rules
 

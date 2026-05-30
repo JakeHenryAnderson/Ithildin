@@ -45,6 +45,49 @@ def test_principal_registry_can_opt_out_of_missing_file(tmp_path: Path) -> None:
     assert registry.count == 0
 
 
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        ("principals: [", "invalid YAML principal registry"),
+        ("null\n", "principal registry must be a mapping"),
+        ("- agent:test\n", "principal registry must be a mapping"),
+        ("1: bad\n", "principal registry keys must be strings"),
+        (
+            """
+principals:
+  - id: agent:test
+    type: agent
+    display_name: Test
+    roles: [AgentDeveloper]
+    unexpected: true
+""",
+            "invalid principal registry schema",
+        ),
+        (
+            """
+principals:
+  - id: agent:test
+    type: agent
+    display_name: Test
+    roles: [AgentDeveloper]
+    metadata: not-an-object
+""",
+            "invalid principal registry schema",
+        ),
+    ],
+)
+def test_principal_registry_negative_shapes_fail_closed(
+    tmp_path: Path,
+    body: str,
+    message: str,
+) -> None:
+    registry_path = tmp_path / "principals.yaml"
+    write_registry(registry_path, body)
+
+    with pytest.raises(PrincipalRegistryError, match=message):
+        PrincipalRegistry.load(registry_path)
+
+
 def test_principal_registry_rejects_duplicate_ids(tmp_path: Path) -> None:
     registry_path = tmp_path / "principals.yaml"
     write_registry(
@@ -97,6 +140,23 @@ principals:
     )
 
     with pytest.raises(PrincipalRegistryError, match="invalid principal registry schema"):
+        PrincipalRegistry.load(registry_path)
+
+
+def test_principal_registry_rejects_id_type_mismatch(tmp_path: Path) -> None:
+    registry_path = tmp_path / "principals.yaml"
+    write_registry(
+        registry_path,
+        """
+principals:
+  - id: agent:test
+    type: user
+    display_name: Test
+    roles: [AgentDeveloper]
+""",
+    )
+
+    with pytest.raises(PrincipalRegistryError, match="principal id/type mismatch"):
         PrincipalRegistry.load(registry_path)
 
 

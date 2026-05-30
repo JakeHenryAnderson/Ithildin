@@ -117,6 +117,7 @@ work must stop for status, reassessment, or external consultation.
 - Executor contract set: [executor-contract-set.md](executor-contract-set.md)
 - Filesystem executor contract: [filesystem-executor-contract.md](filesystem-executor-contract.md)
 - Manifest validation suite: [manifest-validation-suite.md](manifest-validation-suite.md)
+- Registry fail-closed suite: [registry-fail-closed-suite.md](registry-fail-closed-suite.md)
 
 ## Reproduction Notes
 

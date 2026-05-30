@@ -35,6 +35,7 @@ DEFAULT_DOCS = [
     "docs/codex/negative-review-recipes.md",
     "docs/codex/release-evidence-schema.md",
     "docs/codex/review-packet-diff.md",
+    "docs/codex/registry-fail-closed-suite.md",
     "docs/codex/reviewer-reproduction-map.md",
     "docs/codex/source-review-closure-matrix.md",
     "docs/codex/internal-source-review-pass-1.md",
