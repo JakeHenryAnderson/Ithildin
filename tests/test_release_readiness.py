@@ -416,6 +416,31 @@ def test_patch_apply_state_machine_contract_is_linked_and_validated() -> None:
     assert "Task 089 state-machine contract" in matrix
 
 
+def test_http_executor_contract_is_linked_and_validated() -> None:
+    contract = Path("docs/codex/http-executor-contract.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "GET only",
+        "exact allowlist",
+        "no caller-supplied headers",
+        "malformed ports",
+        "IDNA",
+        "resolves the destination twice",
+        "Redirects repeat",
+        "proxy",
+        "response bodies",
+        "not a network sandbox",
+    ]:
+        assert required in contract
+    assert "http-executor-contract.md" in readme
+    assert "docs/codex/http-executor-contract.md" in review_docs.REVIEW_DOCS
+    assert "Task 093 HTTP executor contract" in matrix
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"

@@ -120,6 +120,8 @@ startup to fail closed on missing or invalid local signature evidence. See
 [docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md).
 `http.fetch` is disabled until `ITHILDIN_HTTP_ALLOWLIST` names exact destinations such as
 `example.com`, `example.com:443`, or `https://example.com`.
+Its canonicalization, redirect, DNS/IP, proxy, and response-bound behavior is documented in
+[docs/codex/http-executor-contract.md](docs/codex/http-executor-contract.md).
 Governed tool outputs are redacted before they are returned to agents using an always-on
 baseline for common tokens, secrets, passwords, cookies, and private keys; add local patterns
 with `ITHILDIN_REDACTION_EXTRA_KEYS` and `ITHILDIN_REDACTION_EXTRA_PATTERNS`.
@@ -214,6 +216,7 @@ operator setup. Then read
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
 [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md),
 [docs/codex/patch-apply-state-machine.md](docs/codex/patch-apply-state-machine.md),
+[docs/codex/http-executor-contract.md](docs/codex/http-executor-contract.md),
 [docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md),
 [docs/codex/signed-audit-exports.md](docs/codex/signed-audit-exports.md),
 [docs/codex/signed-manifest-locks.md](docs/codex/signed-manifest-locks.md),

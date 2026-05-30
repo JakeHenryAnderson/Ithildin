@@ -93,7 +93,7 @@
 | 090 - Filesystem adversarial race harness | Done | `tests/test_read_tools.py`, `tests/test_security_regressions.py` |
 | 091 - Filesystem contract enforcement | Done | `make release-check`, `make filesystem-contract-check` |
 | 092 - HTTP canonicalization adversarial suite | Done | `tests/test_http_tools.py` |
-| 093 - HTTP executor contract | Planned | v0.3 milestone manifest |
+| 093 - HTTP executor contract | Done | [http-executor-contract.md](http-executor-contract.md) |
 | 094 - Signed-evidence replay/substitution tests | Planned | v0.3 milestone manifest |
 | 095 - Evidence contract versioning | Planned | v0.3 milestone manifest |
 | 096 - Policy preview/runtime parity harness | Planned | v0.3 milestone manifest |
