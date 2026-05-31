@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-143"
-    assert manifest["planned_range"] == "144-151"
+    assert manifest["completed_range"] == "113-144"
+    assert manifest["planned_range"] == "145-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 144-151 are planned" in readme
+    assert "Tasks 145-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -724,7 +724,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-143 done",
+        "Tasks 113-144 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -998,6 +998,29 @@ def test_resource_limit_sanity_is_documented() -> None:
     assert "resource-limit-check:" in makefile
     assert "adversarial-corpus-check resource-limit-check evidence-contracts-check" in makefile
     assert "docs/codex/resource-limit-sanity.md" in review_docs.REVIEW_DOCS
+
+
+def test_ci_platform_plan_is_documented_without_broad_claims() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/ci-platform-plan.md").read_text(encoding="utf-8")
+
+    for required in [
+        "macOS and Linux local filesystems",
+        "Windows and WSL remain unsupported/untested",
+        "make release-check",
+        "make filesystem-contract-check",
+        "CI passing would mean",
+        "not prove production security",
+    ]:
+        assert required in doc
+    assert "ci-platform-plan.md" in readme
+    assert "144 - CI and platform planning without broad claims | Done" in backlog
+    assert "Task 144 CI/platform plan added without broad claims" in matrix
+    assert "docs/codex/ci-platform-plan.md" in review_docs.REVIEW_DOCS
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

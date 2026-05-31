@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-143",
-  "planned_range": "144-151",
+  "completed_range": "113-144",
+  "planned_range": "145-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -697,7 +697,7 @@
     {
       "id": "144",
       "title": "CI and platform planning without broad claims",
-      "status": "planned",
+      "status": "done",
       "commit": "Add CI platform planning",
       "blocks_capability_expansion": "conditional",
       "blocks_broader_distribution": "yes",

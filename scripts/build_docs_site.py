@@ -38,6 +38,7 @@ DEFAULT_DOCS = [
     "docs/codex/audit-integrity-adversarial-suite.md",
     "docs/codex/adversarial-corpus-framework.md",
     "docs/codex/resource-limit-sanity.md",
+    "docs/codex/ci-platform-plan.md",
     "docs/codex/manifest-validation-suite.md",
     "docs/codex/policy-parity-harness.md",
     "docs/codex/opa-parity-decision.md",

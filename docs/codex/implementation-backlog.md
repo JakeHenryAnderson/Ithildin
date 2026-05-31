@@ -152,7 +152,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 141 - Negative transcript expansion v2 | Done | [negative-review-recipes.md](negative-review-recipes.md), `make negative-review-transcripts` |
 | 142 - Adversarial corpus framework | Done | [adversarial-corpus-framework.md](adversarial-corpus-framework.md), `make adversarial-corpus-check` |
 | 143 - Performance and resource-limit sanity | Done | [resource-limit-sanity.md](resource-limit-sanity.md), `make resource-limit-check` |
-| 144 - CI and platform planning without broad claims | Planned | Platform/CI claims |
+| 144 - CI and platform planning without broad claims | Done | [ci-platform-plan.md](ci-platform-plan.md), platform claim boundaries |
 | 145 - Redaction evidence and leak-boundary clarity | Planned | Redaction boundary |
 | 146 - Demo scenario pack v2 | Planned | Demo scenario evidence |
 | 147 - Documentation information architecture cleanup | Planned | Documentation structure |
