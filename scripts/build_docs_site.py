@@ -45,6 +45,7 @@ DEFAULT_DOCS = [
     "docs/codex/tool-surface-invariant-gate.md",
     "docs/codex/evidence-confusion-gate.md",
     "docs/codex/external-review-closure-gate.md",
+    "docs/codex/source-review-runbook-v2.md",
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",

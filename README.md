@@ -232,8 +232,10 @@ The v0.4 milestone roadmap is recorded in
 complete and should be externally reviewed before implementation drift or capability expansion.
 The v0.5 source-review and capability-decision roadmap is recorded in
 [docs/codex/v0.5-roadmap-from-v0.4-review.md](docs/codex/v0.5-roadmap-from-v0.4-review.md) and
-[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Task 152 is
-complete; Tasks 153-180 are planned and do not add new governed tool powers.
+[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-157 are
+complete; Tasks 158-180 are planned and do not add new governed tool powers.
+The current source-review workflow is in
+[docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release
 evidence/schema validation, packet diffing, guardrails, packet redaction scanning, test

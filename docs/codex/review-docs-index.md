@@ -60,6 +60,7 @@ externally closed.
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [Evidence-Confusion Gate v2](evidence-confusion-gate.md)
 - [External-Review Closure Gate v2](external-review-closure-gate.md)
+- [Source Review Runbook v2](source-review-runbook-v2.md)
 
 ## Reading Rule
 

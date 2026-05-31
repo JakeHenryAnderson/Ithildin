@@ -1269,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-156"
-    assert manifest["planned_range"] == "157-180"
+    assert manifest["completed_range"] == "152-157"
+    assert manifest["planned_range"] == "158-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1397,6 +1397,36 @@ def test_external_review_closure_gate_is_wired_and_blocked_honestly() -> None:
     )
     assert "docs/codex/external-review-closure-gate.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/external-review-closure-gate.md" in docs_site
+
+
+def test_source_review_runbook_v2_is_documented() -> None:
+    runbook = Path("docs/codex/source-review-runbook-v2.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "make release-check",
+        "make review-candidate",
+        "make internal-review-packet",
+        "make capability-expansion-gate",
+        "make tool-surface-invariant-gate",
+        "make evidence-confusion-gate",
+        "make external-review-closure-gate",
+        "Critical/high open findings stop autonomous implementation",
+        "External rows may not be closed by internal review",
+    ]:
+        assert required in runbook
+    assert "source-review-runbook-v2.md" in readme
+    assert "157 - Source review runbook v2 | Done" in backlog
+    assert "Task 157 documents the repeatable source-review workflow" in matrix
+    assert "docs/codex/source-review-runbook-v2.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/source-review-runbook-v2.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
