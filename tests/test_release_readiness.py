@@ -2264,7 +2264,7 @@ def test_v06_patch_apply_external_review_packet_is_wired(
     assert "make v06-patch-apply-review-packet" in readme
     assert "v06-patch-apply-review-packet:" in makefile
     assert "185 - Patch apply external review execution packet" in backlog
-    assert "Packet ready; external response pending" in manifest
+    assert "Source review received; EXT-PA findings remediated" in manifest
     assert "v0.6 Patch Apply External Review Execution" in index
     assert (
         "docs/codex/v0.6-patch-apply-external-review-execution.md"
@@ -2391,6 +2391,31 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
     )
 
     assert normalized["findings"][0]["finding_id"] == "EXT-PA-001"
+
+    tab_response = "\n".join(
+        [
+            "# Patch Review",
+            "",
+            "Finding ID\tSeverity\tArea\tAffected files/functions\t"
+            "Blocking status\tDisposition\tRecommended fix",
+            "EXT-PA-002\tmedium\tpatch-apply\tapps/api/src/ithildin_api/patches.py\t"
+            "should-fix\topen\tadd proposal reservation",
+            "EXT-PA-004\tlow/informational\tpatch-apply\tapps/api/src/ithildin_api/patches.py\t"
+            "later/advisory\topen\tdocument or enforce hunk counts",
+        ]
+    )
+    tab_normalized = external_response_normalize.normalize_response(
+        tab_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="source-level",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="patch-apply",
+    )
+    assert tab_normalized["findings"][0]["finding_id"] == "EXT-PA-002"
+    assert tab_normalized["findings"][1]["severity"] == "low"
+    assert tab_normalized["findings"][1]["blocking_status"] == "later"
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

@@ -33,6 +33,7 @@ from ithildin_api.identity import (
 from ithildin_api.patches import (
     PATCH_APPLY_TOOL,
     PATCH_PROPOSE_TOOL,
+    PatchProposal,
     PatchProposalError,
     PatchProposalService,
 )
@@ -664,6 +665,53 @@ class GovernedToolCallService:
             input_hash=input_hash,
             metadata={"executor": "patch_apply", "approval_id": approval_id},
         )
+        completed_redacted: RedactionResult | None = None
+
+        def write_completion_audit(proposal: PatchProposal) -> None:
+            nonlocal completed_redacted
+            proposal_id = proposal.proposal_id
+            proposal_hash = proposal.proposal_hash
+            base_file_hash = proposal.base_file_hash
+            workspace_id = proposal.workspace_id
+            path = proposal.path
+            proposal_status = proposal.status
+            completed_content: JsonObject = {
+                "approval_id": approval_id,
+                "proposal_id": proposal_id,
+                "proposal_hash": proposal_hash,
+                "workspace_id": workspace_id,
+                "path": path,
+                "proposal_status": proposal_status,
+            }
+            completed_redacted = self._redact_content(
+                completed_content,
+                extra_keys=redaction_keys,
+            )
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=input_hash,
+                metadata=_with_redaction_summary(
+                    {
+                        "executor": "patch_apply",
+                        "approval_id": approval_id,
+                        "approval_binding_verified": True,
+                        "proposal_id": proposal_id,
+                        "proposal_hash": proposal_hash,
+                        "base_file_hash": base_file_hash,
+                        "workspace_id": workspace_id,
+                        "manifest_hash": manifest_hash,
+                        "manifest_version": manifest_version,
+                        "policy_hash": policy_hash,
+                        "policy_version": policy_version,
+                    },
+                    completed_redacted.summary,
+                ),
+            )
+
         try:
             with self.telemetry.start_span(
                 "ithildin.tool.execute",
@@ -681,6 +729,7 @@ class GovernedToolCallService:
                     expected_policy_document_version=policy_document_version,
                     expected_matched_rules=matched_rules,
                     expected_principal=principal,
+                    completion_hook=write_completion_audit,
                 )
         except (ApprovalError, PatchProposalError) as exc:
             redacted = self._redact_content(
@@ -712,44 +761,23 @@ class GovernedToolCallService:
                 is_error=True,
             )
 
-        content: JsonObject = {
-            "approval_id": approval_id,
-            "proposal_id": proposal.proposal_id,
-            "proposal_hash": proposal.proposal_hash,
-            "workspace_id": proposal.workspace_id,
-            "path": proposal.path,
-            "proposal_status": proposal.status,
-        }
-        redacted = self._redact_content(content, extra_keys=redaction_keys)
-        self._audit_execution(
-            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
-            request_id=request_id,
-            principal=principal,
-            tool_name=tool_name,
-            resource=resource,
-            input_hash=input_hash,
-            metadata=_with_redaction_summary(
+        if completed_redacted is None:
+            completed_redacted = self._redact_content(
                 {
-                    "executor": "patch_apply",
                     "approval_id": approval_id,
-                    "approval_binding_verified": True,
                     "proposal_id": proposal.proposal_id,
                     "proposal_hash": proposal.proposal_hash,
-                    "base_file_hash": proposal.base_file_hash,
                     "workspace_id": proposal.workspace_id,
-                    "manifest_hash": manifest_hash,
-                    "manifest_version": manifest_version,
-                    "policy_hash": policy_hash,
-                    "policy_version": policy_version,
+                    "path": proposal.path,
+                    "proposal_status": proposal.status,
                 },
-                redacted.summary,
-            ),
-        )
+                extra_keys=redaction_keys,
+            )
         return GovernedToolCallResult(
             status="completed",
             request_id=request_id,
             tool_name=tool_name,
-            content=redacted.value,
+            content=completed_redacted.value,
         )
 
     def _redact_content(

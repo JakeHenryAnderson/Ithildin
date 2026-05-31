@@ -5,6 +5,11 @@ the only write path in the v0.1 local-preview runtime boundary. It applies only 
 proposals, only after one-time approval, and only after proposal, manifest, schema, policy,
 principal, request, base-file, and target-path evidence still match.
 
+Stored proposals also have a reservation state during application: `proposed` proposals are moved
+to `applying` with compare-and-set semantics before filesystem mutation, then to `applied` after
+successful replacement. This proposal-level reservation prevents two separately approved approvals
+from applying the same stored proposal concurrently.
+
 ## Approval States
 
 Patch apply consumes an approval only when the approval is `approved`, unexpired, for
@@ -25,7 +30,7 @@ manifest, policy, schema, principal, proposal, or target evidence.
 | --- | --- | --- |
 | `prepared` | Approval was consumed and expected post-apply hash was computed before replacement completed. | Diagnose before retrying; target may still be base or may have been replaced if later state recording failed. |
 | `file_replaced` | Atomic same-directory replacement completed before later state transitions completed. | Recovery diagnostics required; do not replay or repair automatically. |
-| `completed` | File replacement, proposal status, approval completion, and attempt completion all succeeded. | Clean terminal state. |
+| `completed` | File replacement, proposal status, approval completion, successful execution audit, and attempt completion all succeeded. | Clean terminal state. |
 | `failed` | Failure happened before replacement or before an apply attempt could become side-effectful. | Terminal failed state; no partial workspace write is expected. |
 | `recovery_required` | Replacement appears to have happened but later database/audit/proposal/approval transitions did not all complete. | Read-only diagnostics only; manual operator review required. |
 
@@ -61,8 +66,8 @@ valid and invalid transitions.
 - Replacement succeeded but state recording failed: attempt remains `prepared` or becomes
   `recovery_required`; approval remains non-replayable; diagnostics compare current target hash to
   expected post-apply hash.
-- Proposal, approval, or final attempt completion failure after replacement: diagnostics require
-  manual review and the API returns a safe recovery-required denial.
+- Proposal, approval, successful execution audit, or final attempt completion failure after
+  replacement: diagnostics require manual review and the API returns a safe recovery-required denial.
 
 ## Non-Goals
 

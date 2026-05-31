@@ -256,6 +256,8 @@ def test_invalid_diff_shapes_are_denied(tmp_path: Path) -> None:
         "--- /dev/null\n+++ b/README.md\n@@ -0,0 +1 @@\n+new\n",
         "rename from README.md\nrename to OTHER.md\n--- a/README.md\n+++ b/README.md\n",
         "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-stale\n+new\n",
+        "--- a/README.md\n+++ b/README.md\n@@ -1,2 +1 @@\n-old\n+new\n",
+        "--- a/README.md\n+++ b/README.md\n@@ -1 +1,2 @@\n-old\n+new\n",
         unified_diff("README.md", "old\n", "new\n") + ("x" * 300),
     ]
 

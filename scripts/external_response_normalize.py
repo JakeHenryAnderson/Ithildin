@@ -111,9 +111,9 @@ def _extract_findings(text: str, *, source_access: str) -> list[dict[str, str]]:
     header: list[str] | None = None
     for raw_line in text.splitlines():
         line = raw_line.strip()
-        if not (line.startswith("|") and line.endswith("|")):
+        cells = _table_cells(line)
+        if cells is None:
             continue
-        cells = [cell.strip() for cell in line.strip("|").split("|")]
         if all(set(cell) <= {"-", ":"} for cell in cells):
             continue
         normalized = [_normalize_header(cell) for cell in cells]
@@ -127,6 +127,14 @@ def _extract_findings(text: str, *, source_access: str) -> list[dict[str, str]]:
             continue
         findings.append(_validate_finding_row(row, source_access=source_access))
     return findings
+
+
+def _table_cells(line: str) -> list[str] | None:
+    if line.startswith("|") and line.endswith("|"):
+        return [cell.strip() for cell in line.strip("|").split("|")]
+    if "\t" in line:
+        return [cell.strip() for cell in line.split("\t")]
+    return None
 
 
 def _validate_finding_row(row: dict[str, str], *, source_access: str) -> dict[str, str]:
@@ -145,15 +153,15 @@ def _validate_finding_row(row: dict[str, str], *, source_access: str) -> dict[st
     finding_id = row["finding id"]
     if not FINDING_PATTERN.match(finding_id):
         raise ExternalResponseNormalizationError(f"invalid finding ID: {finding_id}")
-    severity = row["severity"].lower()
+    severity = _normalize_severity(row["severity"])
     if severity not in VALID_SEVERITIES:
         raise ExternalResponseNormalizationError(f"{finding_id} invalid severity: {severity}")
-    blocking_status = row["blocking status"].lower()
+    blocking_status = _normalize_blocking_status(row["blocking status"])
     if blocking_status not in VALID_BLOCKING_STATUSES:
         raise ExternalResponseNormalizationError(
             f"{finding_id} invalid blocking status: {blocking_status}"
         )
-    disposition = row["disposition"].lower()
+    disposition = _normalize_disposition(row["disposition"])
     if disposition not in VALID_DISPOSITIONS:
         raise ExternalResponseNormalizationError(
             f"{finding_id} invalid disposition: {disposition}"
@@ -181,6 +189,37 @@ def _validate_finding_row(row: dict[str, str], *, source_access: str) -> dict[st
 
 def _normalize_header(value: str) -> str:
     return re.sub(r"\s+", " ", value.strip().lower())
+
+
+def _normalize_severity(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized == "low/informational":
+        return "low"
+    if "/" in normalized:
+        normalized = normalized.split("/", maxsplit=1)[0].strip()
+    return normalized
+
+
+def _normalize_blocking_status(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in VALID_BLOCKING_STATUSES:
+        return normalized
+    if "blocking" in normalized:
+        return "blocking"
+    if "should-fix" in normalized or "should fix" in normalized:
+        return "should-fix"
+    if "accepted" in normalized:
+        return "accepted risk"
+    if "later" in normalized or "advisory" in normalized:
+        return "later"
+    return normalized
+
+
+def _normalize_disposition(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized == "accepted-deferred":
+        return "deferred"
+    return normalized
 
 
 def _reject_secret_markers(text: str) -> None:

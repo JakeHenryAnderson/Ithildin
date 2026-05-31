@@ -75,6 +75,31 @@ def test_request_hash_mismatch_is_rejected(tmp_path: Path) -> None:
         service.begin_execution(approved.approval_id, "sha256:" + ("f" * 64))
 
 
+def test_begin_execution_uses_expiry_guard_in_atomic_transition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = make_service(tmp_path)
+    approval = service.create_pending(create_input())
+    approved = service.approve(approval.approval_id, decided_by="user:alice")
+    original_compare_and_set = service.store.compare_and_set_status
+    observed_expiry_guards: list[datetime | None] = []
+
+    def record_expiry_guard(*args: object, **kwargs: object) -> object:
+        if kwargs.get("next_status") == ApprovalStatus.EXECUTING:
+            guard = kwargs.get("expires_after")
+            assert guard is None or isinstance(guard, datetime)
+            observed_expiry_guards.append(guard)
+        return original_compare_and_set(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(service.store, "compare_and_set_status", record_expiry_guard)
+
+    service.begin_execution(approved.approval_id, approved.request_hash)
+
+    assert observed_expiry_guards
+    assert observed_expiry_guards[0] is not None
+
+
 def test_denied_approval_cannot_execute(tmp_path: Path) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())

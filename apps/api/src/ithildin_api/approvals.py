@@ -195,23 +195,26 @@ class ApprovalStore:
         *,
         expected_status: ApprovalStatus,
         next_status: ApprovalStatus,
+        expires_after: Optional[datetime] = None,
     ) -> ApprovalRequest:
+        query = """
+            UPDATE approvals
+            SET status = ?,
+                updated_at = ?
+            WHERE approval_id = ?
+              AND status = ?
+        """
+        parameters: list[str] = [
+            next_status.value,
+            datetime.now(UTC).isoformat(),
+            approval_id,
+            expected_status.value,
+        ]
+        if expires_after is not None:
+            query += " AND expires_at > ?"
+            parameters.append(expires_after.isoformat())
         with sqlite3.connect(self.db_path) as connection:
-            updated = connection.execute(
-                """
-                UPDATE approvals
-                SET status = ?,
-                    updated_at = ?
-                WHERE approval_id = ?
-                  AND status = ?
-                """,
-                (
-                    next_status.value,
-                    datetime.now(UTC).isoformat(),
-                    approval_id,
-                    expected_status.value,
-                ),
-            ).rowcount
+            updated = connection.execute(query, parameters).rowcount
             connection.commit()
 
         if updated != 1:
@@ -302,7 +305,8 @@ class ApprovalService:
         approval = self.get(approval_id)
         if approval.status != ApprovalStatus.APPROVED:
             raise ApprovalError(f"approval is not approved: {approval.status.value}")
-        if _is_expired(approval):
+        now = datetime.now(UTC)
+        if _is_expired(approval, now=now):
             self.store.compare_and_set_status(
                 approval_id,
                 expected_status=ApprovalStatus.APPROVED,
@@ -315,6 +319,7 @@ class ApprovalService:
             approval_id,
             expected_status=ApprovalStatus.APPROVED,
             next_status=ApprovalStatus.EXECUTING,
+            expires_after=now,
         )
 
     def complete_execution(self, approval_id: str, success: bool) -> ApprovalRequest:
@@ -385,5 +390,5 @@ def _request_hash(
     )
 
 
-def _is_expired(approval: ApprovalRequest) -> bool:
-    return approval.expires_at <= datetime.now(UTC)
+def _is_expired(approval: ApprovalRequest, *, now: Optional[datetime] = None) -> bool:
+    return approval.expires_at <= (now or datetime.now(UTC))

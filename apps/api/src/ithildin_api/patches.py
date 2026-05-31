@@ -108,6 +108,7 @@ class PatchApplyAttempt:
 
 
 PatchApplyFaultHook = Callable[[str], None]
+PatchApplyCompletionHook = Callable[[PatchProposal], None]
 
 
 class PatchProposalStore:
@@ -267,6 +268,32 @@ class PatchProposalStore:
             connection.commit()
         if updated != 1:
             raise PatchProposalError(f"patch proposal not found: {proposal_id}")
+        return self.get(proposal_id)
+
+    def compare_and_set_status(
+        self,
+        proposal_id: str,
+        *,
+        expected_status: str,
+        next_status: str,
+    ) -> PatchProposal:
+        with sqlite3.connect(self.db_path) as connection:
+            updated = connection.execute(
+                """
+                UPDATE patch_proposals
+                SET status = ?,
+                    updated_at = ?
+                WHERE proposal_id = ?
+                  AND status = ?
+                """,
+                (next_status, datetime.now(UTC).isoformat(), proposal_id, expected_status),
+            ).rowcount
+            connection.commit()
+        if updated != 1:
+            current = self.get(proposal_id)
+            raise PatchProposalError(
+                f"patch proposal is not {expected_status}: {current.status}"
+            )
         return self.get(proposal_id)
 
     def create_apply_attempt(self, attempt: PatchApplyAttempt) -> PatchApplyAttempt:
@@ -802,6 +829,7 @@ class PatchProposalService:
         expected_policy_document_version: str,
         expected_matched_rules: list[str],
         expected_principal: JsonObject,
+        completion_hook: PatchApplyCompletionHook | None = None,
     ) -> PatchProposal:
         approval = approval_service.get(approval_id)
         proposal = self._proposal_for_approval(
@@ -819,12 +847,20 @@ class PatchProposalService:
         attempt: PatchApplyAttempt | None = None
         file_replaced = False
         applied: PatchProposal | None = None
+        proposal_reserved = False
         try:
             self._inject_apply_fault("after_proposal_validation")
             approval_service.begin_execution(approval_id, approval.request_hash)
             self._inject_apply_fault("after_begin_execution")
             target, patched_content = self._prepare_apply(proposal)
             self._inject_apply_fault("after_prepare_apply")
+            proposal = self.store.compare_and_set_status(
+                proposal.proposal_id,
+                expected_status="proposed",
+                next_status="applying",
+            )
+            proposal_reserved = True
+            self._inject_apply_fault("after_proposal_reserved")
             expected_post_apply_hash = sha256_digest(patched_content)
             now = datetime.now(UTC)
             attempt = self.store.create_apply_attempt(
@@ -854,10 +890,20 @@ class PatchProposalService:
             self.store.set_apply_attempt_status(attempt.attempt_id, "file_replaced")
             self._inject_apply_fault("after_file_replaced_status")
             self._inject_apply_fault("before_proposal_completion")
-            applied = self.store.set_status(proposal.proposal_id, "applied")
+            applied = self.store.compare_and_set_status(
+                proposal.proposal_id,
+                expected_status="applying",
+                next_status="applied",
+            )
             self._inject_apply_fault("before_approval_completion")
             approval_service.complete_execution(approval_id, success=True)
             self._inject_apply_fault("after_approval_completion")
+            if completion_hook is not None:
+                try:
+                    completion_hook(applied)
+                except Exception as exc:
+                    raise PatchProposalError("patch apply completion audit failed") from exc
+            self._inject_apply_fault("after_completion_hook")
             self.store.set_apply_attempt_status(attempt.attempt_id, "completed")
             self._inject_apply_fault("after_apply_attempt_completion")
         except PatchProposalError as exc:
@@ -865,6 +911,8 @@ class PatchProposalService:
                 approval_service,
                 approval_id,
                 attempt,
+                proposal_id=proposal.proposal_id,
+                proposal_reserved=proposal_reserved,
                 file_replaced=file_replaced,
                 reason=exc.reason,
             )
@@ -879,6 +927,8 @@ class PatchProposalService:
                 approval_service,
                 approval_id,
                 attempt,
+                proposal_id=proposal.proposal_id,
+                proposal_reserved=proposal_reserved,
                 file_replaced=file_replaced,
                 reason=reason,
             )
@@ -978,6 +1028,8 @@ class PatchProposalService:
         approval_id: str,
         attempt: PatchApplyAttempt | None,
         *,
+        proposal_id: str,
+        proposal_reserved: bool,
         file_replaced: bool,
         reason: str,
     ) -> None:
@@ -992,6 +1044,15 @@ class PatchProposalService:
                 pass
         if file_replaced:
             raise PatchProposalError("patch apply recovery diagnostics required")
+        if proposal_reserved:
+            try:
+                self.store.compare_and_set_status(
+                    proposal_id,
+                    expected_status="applying",
+                    next_status="proposed",
+                )
+            except (PatchProposalError, OSError, sqlite3.Error):
+                pass
         try:
             approval_service.complete_execution(approval_id, success=False)
         except ApprovalError:
@@ -1083,6 +1144,10 @@ def apply_unified_diff(current_content: str, unified_diff: str) -> str:
         if hunk_match is None:
             raise PatchProposalError("patch contains malformed hunk")
         old_start = int(hunk_match.group("old_start")) - 1
+        expected_old_count = _hunk_count(hunk_match.group("old_count"))
+        expected_new_count = _hunk_count(hunk_match.group("new_count"))
+        actual_old_count = 0
+        actual_new_count = 0
         if old_start < original_index:
             raise PatchProposalError("patch hunks overlap or move backwards")
         output_lines.extend(original_lines[original_index:old_start])
@@ -1102,14 +1167,20 @@ def apply_unified_diff(current_content: str, unified_diff: str) -> str:
                 _require_original_line(original_lines, original_index, value)
                 output_lines.append(value)
                 original_index += 1
+                actual_old_count += 1
+                actual_new_count += 1
             elif prefix == "-":
                 _require_original_line(original_lines, original_index, value)
                 original_index += 1
+                actual_old_count += 1
             elif prefix == "+":
                 output_lines.append(value)
+                actual_new_count += 1
             else:
                 raise PatchProposalError("patch contains malformed hunk line")
             index += 1
+        if actual_old_count != expected_old_count or actual_new_count != expected_new_count:
+            raise PatchProposalError("patch hunk line count does not match header")
 
     output_lines.extend(original_lines[original_index:])
     trailing_newline = "\n" if current_content.endswith("\n") else ""
@@ -1204,6 +1275,10 @@ def _clean_diff_path(path: str) -> str:
 def _require_original_line(lines: list[str], index: int, expected: str) -> None:
     if index >= len(lines) or lines[index] != expected:
         raise PatchProposalError("patch hunk context does not match target file")
+
+
+def _hunk_count(raw_count: str | None) -> int:
+    return int(raw_count) if raw_count is not None else 1
 
 
 def _scope_string(scope: JsonObject, key: str) -> str:
