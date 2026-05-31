@@ -23,10 +23,12 @@ var/db/*
 var/keys/*
 var/logs/*
 var/review-packets/*
+var/review-runs/*
 var/signatures/*
 !var/db/.gitkeep
 !var/keys/.gitkeep
 !var/logs/.gitkeep
+!var/review-runs/.gitkeep
 !var/signatures/.gitkeep
 workspaces/*
 !workspaces/.gitkeep

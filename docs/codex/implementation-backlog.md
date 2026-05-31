@@ -114,6 +114,7 @@
 | 111 - External review intake and closure | Done | [external-review-intake-and-closure.md](external-review-intake-and-closure.md), `make reviewer-findings-check` |
 | 112 - v0.3 boundary decision memo | Done | [v0.3-boundary-decision.md](v0.3-boundary-decision.md) |
 | 113 - v0.4 boundary charter | Done | [v0.4-boundary-charter.md](v0.4-boundary-charter.md) |
+| 114 - Review run manifest | Done | [review-run-manifest-schema.md](review-run-manifest-schema.md), `make review-run-manifest-check` |
 
 ## Future Candidate Track
 

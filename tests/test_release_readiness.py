@@ -16,6 +16,7 @@ from scripts import (
     review_docs,
     review_packet_bundle,
     review_packet_diff,
+    review_run_manifest,
     reviewer_findings,
 )
 
@@ -921,12 +922,124 @@ def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
     assert "reviewer-findings-check:" in makefile
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
-        "reviewer-findings-check filesystem-contract-check"
+        "reviewer-findings-check review-run-manifest-check filesystem-contract-check"
     ) in makefile
     assert "open critical/high findings" in intake
     assert "reviewer-finding-intake.md" in review_packet
     assert "reviewer-finding-intake.md" in reproduction_map
     assert "docs/codex/reviewer-finding-intake.md" in review_docs.REVIEW_DOCS
+
+
+def test_review_run_manifest_validator_accepts_valid_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    prompt = tmp_path / "prompt.md"
+    output = tmp_path / "output.md"
+    prompt.write_text("prompt\n", encoding="utf-8")
+    output.write_text("output\n", encoding="utf-8")
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir()
+    commit = "abc1234"
+    runs_dir.joinpath("run.json").write_text(
+        json.dumps(
+            {
+                "review_id": "review-1",
+                "prompt_file": "prompt.md",
+                "reviewer_type": "internal_ai",
+                "reviewer_name": "fixture",
+                "date": "2026-05-31",
+                "commit": commit,
+                "dirty": False,
+                "files_inspected": ["apps/api/src/ithildin_api/http_tools.py"],
+                "tests_run": ["uv run pytest tests/test_http_tools.py"],
+                "output_file": "output.md",
+                "finding_count": 1,
+                "severity_counts": {
+                    "critical": 0,
+                    "high": 0,
+                    "medium": 1,
+                    "low": 0,
+                    "informational": 0,
+                },
+                "closure_matrix_rows_touched": ["http.fetch"],
+                "findings": [
+                    {
+                        "finding_id": "V03-INT-HTTP-001",
+                        "severity": "medium",
+                        "kind": "implementation",
+                        "files_functions": ["http_tools.py:HttpFetchExecutor.fetch"],
+                        "disposition": "open",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        review_run_manifest,
+        "_git",
+        lambda repo_root, args: commit if args == ["rev-parse", "HEAD"] else "",
+    )
+
+    summaries = review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+    assert summaries[0]["review_id"] == "review-1"
+    assert summaries[0]["finding_count"] == 1
+
+
+def test_review_run_manifest_validator_rejects_missing_and_mismatched_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir()
+    runs_dir.joinpath("bad.json").write_text(
+        json.dumps(
+            {
+                "review_id": "review-1",
+                "prompt_file": "missing.md",
+                "reviewer_type": "internal_ai",
+                "reviewer_name": "fixture",
+                "date": "2026-05-31",
+                "commit": "abc1234",
+                "dirty": True,
+                "files_inspected": [],
+                "tests_run": [],
+                "output_file": "missing-output.md",
+                "finding_count": 0,
+                "severity_counts": {
+                    "critical": 0,
+                    "high": 0,
+                    "medium": 0,
+                    "low": 0,
+                    "informational": 0,
+                },
+                "closure_matrix_rows_touched": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        review_run_manifest,
+        "_git",
+        lambda repo_root, args: "abc1234" if args == ["rev-parse", "HEAD"] else "",
+    )
+
+    with pytest.raises(review_run_manifest.ReviewRunManifestError, match="dirty state"):
+        review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+
+def test_review_run_manifest_doc_and_release_check_are_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    schema = Path("docs/codex/review-run-manifest-schema.md").read_text(encoding="utf-8")
+
+    assert "review-run-manifest-check:" in makefile
+    assert "review-run-manifest-check" in makefile.partition("release-check:")[2]
+    assert "make review-run-manifest-check" in readme
+    assert "V03-INT-PATCH-001" in schema
+    assert "docs/codex/review-run-manifest-schema.md" in review_docs.REVIEW_DOCS
 
 
 def test_release_check_enforces_filesystem_contract_check() -> None:
@@ -937,7 +1050,7 @@ def test_release_check_enforces_filesystem_contract_check() -> None:
 
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
-        "reviewer-findings-check filesystem-contract-check"
+        "reviewer-findings-check review-run-manifest-check filesystem-contract-check"
     ) in makefile
     assert "Task 091 release-check filesystem-contract-check gate" in matrix
 

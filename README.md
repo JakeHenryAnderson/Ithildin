@@ -82,6 +82,7 @@ tamper-evident audit log.
 - `make review-packet-diff OLD=... NEW=...` - compare two review packet bundles by artifact hash.
 - `make internal-review-packet` - build v2 local prompts for internal AI/subagent source review.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
+- `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
@@ -200,6 +201,9 @@ The v0.4 work charter is recorded in
 [docs/codex/v0.4-boundary-charter.md](docs/codex/v0.4-boundary-charter.md); it keeps the next wave
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
+Executed review-run manifests are documented in
+[docs/codex/review-run-manifest-schema.md](docs/codex/review-run-manifest-schema.md) and validated
+with `make review-run-manifest-check`.
 The executor contract set for external/source review is indexed in
 [docs/codex/executor-contract-set.md](docs/codex/executor-contract-set.md).
 Manifest and manifest-lock fail-closed validation coverage is summarized in
