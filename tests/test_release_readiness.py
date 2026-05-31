@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from scripts import (
+    accepted_risk_register,
     capability_expansion_gate,
     closure_matrix_evidence_sync,
     consolidate_review_packet,
@@ -1271,8 +1272,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-167"
-    assert manifest["planned_range"] == "168-180"
+    assert manifest["completed_range"] == "152-168"
+    assert manifest["planned_range"] == "169-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1733,6 +1734,44 @@ def test_closure_matrix_evidence_sync_is_wired() -> None:
     assert "closure-matrix-evidence-sync" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/closure-matrix-evidence-sync.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/closure-matrix-evidence-sync.md" in docs_site
+
+
+def test_accepted_risk_register_is_wired_and_scoped() -> None:
+    report = accepted_risk_register.build_report(Path.cwd())
+    doc = Path("docs/codex/accepted-risk-register.md").read_text(encoding="utf-8")
+    register = json.loads(
+        Path("docs/codex/accepted-risk-register.json").read_text(encoding="utf-8")
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["risk_count"] == 10
+    assert report["capability_expansion_approved"] is False
+    assert report["external_source_review_closed"] is False
+    assert {risk["id"] for risk in register["risks"]} == {
+        f"AR-{index:03d}" for index in range(1, 11)
+    }
+    assert all(
+        risk["external_review_required_before_closure"] is True
+        for risk in register["risks"]
+    )
+    assert "does not approve capability expansion" in doc
+    assert "not production authorization" in doc
+    assert "make accepted-risk-register-check" in readme
+    assert "168 - Accepted risk register | Done" in backlog
+    assert "Task 168 records accepted local-preview risks" in matrix
+    assert "accepted-risk-register-check" in makefile.partition("release-check:")[2]
+    assert "accepted-risk-register-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/accepted-risk-register.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/accepted-risk-register.json" in review_docs.REVIEW_DOCS
+    assert "docs/codex/accepted-risk-register.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

@@ -101,6 +101,7 @@ tamper-evident audit log.
 - `make external-review-closure-gate` - verify source-review closure is not overstated.
 - `make external-findings-intake-dry-run` - exercise EXT finding intake without mutating findings.
 - `make closure-matrix-evidence-sync` - verify completed v0.5 tasks are represented in the matrix.
+- `make accepted-risk-register-check` - validate accepted local-preview risks stay scoped and review-pending.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
@@ -234,8 +235,8 @@ The v0.4 milestone roadmap is recorded in
 complete and should be externally reviewed before implementation drift or capability expansion.
 The v0.5 source-review and capability-decision roadmap is recorded in
 [docs/codex/v0.5-roadmap-from-v0.4-review.md](docs/codex/v0.5-roadmap-from-v0.4-review.md) and
-[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-167 are
-complete; Tasks 168-180 are planned and do not add new governed tool powers.
+[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-168 are
+complete; Tasks 169-180 are planned and do not add new governed tool powers.
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in

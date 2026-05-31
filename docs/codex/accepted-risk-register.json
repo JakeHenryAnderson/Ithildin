@@ -1,0 +1,127 @@
+{
+  "schema_version": "1",
+  "program": "v0.5 source review closure and capability decision preparation",
+  "scope": "v0.1 local-preview runtime boundary",
+  "risks": [
+    {
+      "id": "AR-001",
+      "title": "Local host is part of the trusted computing base",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "A compromised host, local admin, or Ithildin process can undermine local evidence and workspace controls.",
+      "rationale": "The product is a local mediation layer, not a kernel sandbox or endpoint security product.",
+      "mitigations": ["Blunt threat model wording", "Loopback-only local demo posture", "No shell, Docker socket, Kubernetes, browser automation, or broad filesystem write tools"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before broader public/security-product positioning or any remote/production deployment claim"
+    },
+    {
+      "id": "AR-002",
+      "title": "Local principals are attribution labels",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "The local principal registry supports policy and review UX but is not proof of a real human, device, or enterprise identity.",
+      "rationale": "Production identity integrations are intentionally deferred.",
+      "mitigations": ["Docs call principals local labels", "Admin bearer token remains local-only", "External review closure remains required before production identity claims"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before OIDC/SAML/SCIM, remote MCP, multi-user deployments, or production authorization claims"
+    },
+    {
+      "id": "AR-003",
+      "title": "Audit is local tamper-evident evidence",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "SQLite, JSONL, and local signed exports do not provide immutable custody, external notarization, or independent retention.",
+      "rationale": "The current audit model is for local debugging, review, and evidence handoff.",
+      "mitigations": ["Hash-chain verification", "Offline signed export verification", "Evidence-confusion gate"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before compliance, custody-grade audit, hosted evidence, or notarization claims"
+    },
+    {
+      "id": "AR-004",
+      "title": "Patch apply remains the only write path",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "Approval-gated stored patch apply is inherently higher risk than read tools because it mutates workspace files.",
+      "rationale": "The write surface is intentionally narrow and reviewable while broader writes stay deferred.",
+      "mitigations": ["Stored proposal only", "Approval binding evidence", "Apply-attempt recovery diagnostics", "Patch state machine tests"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before adding any new write, delete, move, chmod, archive, shell, or plugin execution path"
+    },
+    {
+      "id": "AR-005",
+      "title": "Filesystem race claims are platform scoped",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "Path handling and race behavior are documented for macOS and Linux local-preview profiles only.",
+      "rationale": "Windows and WSL semantics require separate review before security support claims.",
+      "mitigations": ["Filesystem contract", "Capability check", "Adversarial race corpus", "Unsupported-platform warnings"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before Windows/WSL support claims or broader filesystem mutation features"
+    },
+    {
+      "id": "AR-006",
+      "title": "HTTP fetch is narrow but SSRF-sensitive",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "URL normalization, DNS behavior, redirects, and private-network detection are subtle security boundaries.",
+      "rationale": "The tool is exact-allowlist, GET-only, and body-bounded, but still needs external/source review.",
+      "mitigations": ["Canonicalization corpus", "Redirect revalidation", "DNS pinning checks", "Proxy suppression tests"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before arbitrary HTTP methods, headers, request bodies, cookies, broad network access, or remote deployment"
+    },
+    {
+      "id": "AR-007",
+      "title": "Policy engine remains local-preview scoped",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "YAML policy is canonical for local preview while OPA remains optional evidence/prototype support.",
+      "rationale": "Maintaining two policy paths without parity discipline could confuse decisions.",
+      "mitigations": ["Policy fixtures", "Policy parity harness", "OPA boundary decision docs"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before making OPA canonical or adding policy editing/distribution features"
+    },
+    {
+      "id": "AR-008",
+      "title": "Signed evidence uses local operator keys",
+      "severity": "low",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "Local Ed25519 signatures prove local key possession, not external trust, hosted custody, or maintainer supply-chain signing.",
+      "rationale": "The trust root is intentionally local until a later evidence trust-root decision.",
+      "mitigations": ["Signed-evidence guides", "Fixture-only signed evidence demo", "Evidence-confusion gate"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before release signing, external anchoring, key rotation policy, or notarization claims"
+    },
+    {
+      "id": "AR-009",
+      "title": "SQLite is the only runtime storage backend",
+      "severity": "low",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "SQLite is suitable for local preview but not multi-user hosted durability, retention, or concurrency guarantees.",
+      "rationale": "Postgres remains readiness/status evidence only.",
+      "mitigations": ["System status storage evidence", "Release evidence storage fields", "Docs explicitly defer runtime Postgres"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before runtime Postgres, multi-user deployments, or production retention claims"
+    },
+    {
+      "id": "AR-010",
+      "title": "Redaction is best-effort leak reduction",
+      "severity": "medium",
+      "status": "accepted_local_preview",
+      "accepted_scope": "v0.1 local-preview only",
+      "risk": "Redaction can miss secrets and must not be treated as a guarantee that sensitive content cannot appear.",
+      "rationale": "The safest boundary is preventing exposure paths, with redaction as a secondary control.",
+      "mitigations": ["Packet redaction scanner", "Safe-error tests", "Docs warn redaction is best-effort"],
+      "external_review_required_before_closure": true,
+      "revisit_trigger": "Before handling real secrets, secrets-manager tools, or production telemetry/export claims"
+    }
+  ]
+}

@@ -56,6 +56,7 @@ DEFAULT_DOCS = [
     "docs/codex/review-console-source-review-checklist.md",
     "docs/codex/external-findings-intake-dry-run.md",
     "docs/codex/closure-matrix-evidence-sync.md",
+    "docs/codex/accepted-risk-register.md",
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",
