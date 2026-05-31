@@ -110,6 +110,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | v0.5 review candidate command | Task 176 adds a one-command v0.5 review-candidate handoff wrapper | pending external review | none | pending | `make v05-review-candidate`; `make release-check` | command prepares handoff artifacts but does not close review | external_pending |
 | v0.5 consolidated packet update | Task 177 adds v0.5 review-closure artifacts to the consolidated packet | pending external review | none | pending | `make review-packet-consolidated`; `make release-check` | packet update changes handoff packaging only | external_pending |
 | v0.5 external review prompt | Task 178 adds the v0.5 external review prompt and requested response shape | pending external review | none | pending | `make docs-site`; `make release-check` | prompt requests review but does not close it | external_pending |
+| v0.5 boundary decision draft | Task 179 records go for external handoff and no-go for capability expansion | pending external review | none | pending | `make v05-boundary-decision-draft-check`; `make release-check` | draft does not approve capability expansion or broader distribution | external_pending |
 
 ## v2 Update Rules
 

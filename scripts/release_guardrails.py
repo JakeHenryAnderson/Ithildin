@@ -67,6 +67,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "accepted-risk-register-check",
     "capability-decision-report",
     "v05-threat-model-delta-check",
+    "v05-boundary-decision-draft-check",
     "determinism-check",
     "adversarial-corpus-check",
     "resource-limit-check",
