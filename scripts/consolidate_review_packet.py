@@ -101,6 +101,21 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
     negative_transcripts = repo_root / NEGATIVE_TRANSCRIPTS_SUMMARY
     attachments = {
         "01_START_HERE_AND_REVIEW_PROMPT.md": _section(
+            "v0.6 GPT 5.5 Pro Handoff Prompt",
+            repo_root / "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md",
+            repo_root,
+        )
+        + _section(
+            "v0.6 Closure Handoff",
+            repo_root / "docs/codex/v0.6-closure-handoff.md",
+            repo_root,
+        )
+        + _section(
+            "v0.6 Boundary Charter",
+            repo_root / "docs/codex/v0.6-boundary-charter.md",
+            repo_root,
+        )
+        + _section(
             "v0.5 External Review Prompt",
             repo_root / "docs/codex/v0.5-external-review-prompt.md",
             repo_root,
@@ -126,6 +141,21 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         ),
         "02_REVIEW_PACKET_AND_RESPONSE.md": _section(
+            "v0.6 Closure Handoff",
+            repo_root / "docs/codex/v0.6-closure-handoff.md",
+            repo_root,
+        )
+        + _section(
+            "v0.6 Internal Review Execution Wave 2",
+            repo_root / "docs/codex/v0.6-internal-review-execution-wave-2.md",
+            repo_root,
+        )
+        + _section(
+            "v0.6 Milestone Manifest",
+            repo_root / "docs/codex/v0.6-milestone-manifest.md",
+            repo_root,
+        )
+        + _section(
             "v0.5 Roadmap From v0.4 Review",
             repo_root / "docs/codex/v0.5-roadmap-from-v0.4-review.md",
             repo_root,
@@ -316,13 +346,14 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
         ),
         "07_PROJECT_README.md": _section("README", repo_root / "README.md", repo_root),
     }
-    index = f"""# Ithildin v0.5 Review-Closure Packet: Consolidated Attachments
+    index = f"""# Ithildin v0.6 Review-Closure Packet: Consolidated Attachments
 
 This folder is the 10-attachment-friendly packet for GPT 5.5 Pro / Very High or a human expert
 reviewer. It consolidates the review bundle generated from commit `{short_commit}`.
 
-In practice, v0.5 is a source-review closure and capability-decision wave over the same narrow v0.1
-local-preview runtime boundary.
+In practice, v0.6 is an external/source-review execution and closure wave over the same narrow v0.1
+local-preview runtime boundary. The generated bundle path still uses the historical `v0.2`
+directory because the packet tooling predates later review waves.
 
 Send these files in order:
 

@@ -328,6 +328,11 @@ def test_consolidated_review_packet_generation(
         bundle_dir.joinpath(path).write_text(f"# {path}\n", encoding="utf-8")
     for path in [
         "README.md",
+        "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md",
+        "docs/codex/v0.6-closure-handoff.md",
+        "docs/codex/v0.6-boundary-charter.md",
+        "docs/codex/v0.6-internal-review-execution-wave-2.md",
+        "docs/codex/v0.6-milestone-manifest.md",
         "docs/codex/v0.3-external-review-prompt.md",
         "docs/codex/v0.5-external-review-prompt.md",
         "docs/codex/v0.3-review-packet.md",
@@ -399,9 +404,15 @@ def test_consolidated_review_packet_generation(
     assert "Negative Review Transcripts" in output_dir.joinpath(
         "04_REPRODUCTION_SECURITY_AND_NEGATIVE_RECIPES.md"
     ).read_text(encoding="utf-8")
-    assert "v0.5 Review-Closure Packet" in output_dir.joinpath("00_ATTACHMENT_INDEX.md").read_text(
+    assert "v0.6 Review-Closure Packet" in output_dir.joinpath("00_ATTACHMENT_INDEX.md").read_text(
         encoding="utf-8"
     )
+    assert "v0.6 GPT 5.5 Pro Handoff Prompt" in output_dir.joinpath(
+        "01_START_HERE_AND_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    assert "v0.6 Closure Handoff" in output_dir.joinpath(
+        "02_REVIEW_PACKET_AND_RESPONSE.md"
+    ).read_text(encoding="utf-8")
     assert "v0.5 Roadmap From v0.4 Review" in output_dir.joinpath(
         "02_REVIEW_PACKET_AND_RESPONSE.md"
     ).read_text(encoding="utf-8")
@@ -1851,7 +1862,7 @@ def test_v05_consolidated_packet_update_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
     consolidated = Path("scripts/consolidate_review_packet.py").read_text(encoding="utf-8")
 
-    assert "v0.5 Review-Closure Packet" in consolidated
+    assert "v0.6 Review-Closure Packet" in consolidated
     assert "v0.5 Roadmap From v0.4 Review" in consolidated
     assert "Review Packet Source Pointers" in consolidated
     assert "does not close external review" in doc
@@ -1860,6 +1871,36 @@ def test_v05_consolidated_packet_update_is_wired() -> None:
     assert "Task 177 adds v0.5 review-closure artifacts" in matrix
     assert "docs/codex/v0.5-consolidated-packet-update.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.5-consolidated-packet-update.md" in docs_site
+
+
+def test_v06_closure_handoff_docs_are_wired() -> None:
+    handoff = Path("docs/codex/v0.6-closure-handoff.md").read_text(encoding="utf-8")
+    prompt = Path("docs/codex/v0.6-gpt-55-pro-handoff-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    manifest = Path("docs/codex/v0.6-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    consolidated = Path("scripts/consolidate_review_packet.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "SUB-001" in handoff
+    assert "SUB-026" in handoff
+    assert "v0.6 external/source-review handoff" in prompt
+    assert "v0.6-closure-handoff.md" in readme
+    assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
+    assert "Internally remediated" in backlog
+    assert "Internal proxy remediated; external pending" in manifest
+    assert "v0.6 Closure Handoff" in review_index
+    assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-closure-handoff.md" in docs_site
+    assert "v0.6 GPT 5.5 Pro Handoff Prompt" in consolidated
 
 
 def test_v05_external_review_prompt_is_wired() -> None:
@@ -1971,8 +2012,8 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184"
-    assert manifest["planned_range"] == "185-215"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-026"
+    assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
     for required in [

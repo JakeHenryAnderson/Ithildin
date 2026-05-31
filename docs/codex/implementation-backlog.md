@@ -210,8 +210,8 @@ expansion tasks.
 | 182 - External reviewer assignment matrix | Done | [v0.6-external-review-assignment-matrix.md](v0.6-external-review-assignment-matrix.md) |
 | 183 - External review packet dispatch set | Done | [v0.6-external-review-dispatch-packets.md](v0.6-external-review-dispatch-packets.md), `make v06-review-dispatch-packets` |
 | 184 - External response normalization | Done | [v0.6-external-response-normalization.md](v0.6-external-response-normalization.md), `make external-response-normalize FILE=...` |
-| 185-192 - Wave 2 internal proxy review execution | Blocked by findings | [v0.6-internal-review-execution-wave-2.md](v0.6-internal-review-execution-wave-2.md); external review remains pending. |
-| 193-215 - v0.6 triage, closure, decisions, and handoff | Planned | See [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md). |
+| 185-192 - Wave 2 internal proxy review execution | Internally remediated | [v0.6-internal-review-execution-wave-2.md](v0.6-internal-review-execution-wave-2.md); `SUB-010` through `SUB-026` are fixed; external review remains pending. |
+| 193-215 - v0.6 triage, closure, decisions, and handoff | Handoff started | [v0.6-closure-handoff.md](v0.6-closure-handoff.md), [v0.6-gpt-55-pro-handoff-prompt.md](v0.6-gpt-55-pro-handoff-prompt.md); external review remains pending. |
 
 ## Future Candidate Track
 

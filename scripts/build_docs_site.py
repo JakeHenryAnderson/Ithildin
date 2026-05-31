@@ -56,6 +56,8 @@ DEFAULT_DOCS = [
     "docs/codex/v0.6-external-response-normalization.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",
+    "docs/codex/v0.6-closure-handoff.md",
+    "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md",
     "docs/codex/capability-expansion-gate.md",
     "docs/codex/tool-surface-invariant-gate.md",
     "docs/codex/no-new-powers-guardrail.md",

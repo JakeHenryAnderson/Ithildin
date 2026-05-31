@@ -261,6 +261,10 @@ documented in
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).
+The v0.6 internal proxy-review remediation handoff is summarized in
+[docs/codex/v0.6-closure-handoff.md](docs/codex/v0.6-closure-handoff.md), with a ready-to-paste
+GPT 5.5 Pro prompt in
+[docs/codex/v0.6-gpt-55-pro-handoff-prompt.md](docs/codex/v0.6-gpt-55-pro-handoff-prompt.md).
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in
