@@ -28,6 +28,7 @@ from scripts import (
     review_findings_collect,
     review_packet_bundle,
     review_packet_diff,
+    review_packet_source_pointers,
     review_run_manifest,
     reviewer_artifact_manifest,
     reviewer_findings,
@@ -1277,8 +1278,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-173"
-    assert manifest["planned_range"] == "174-180"
+    assert manifest["completed_range"] == "152-174"
+    assert manifest["planned_range"] == "175-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1794,8 +1795,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
     assert report["tool_count"] == 10
-    assert report["completed_range"] == "152-173"
-    assert report["planned_range"] == "174-180"
+    assert report["completed_range"] == "152-174"
+    assert report["planned_range"] == "175-180"
     assert report["open_accepted_risks"] == 10
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
@@ -1930,6 +1931,34 @@ def test_external_response_template_v2_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/external-review-response-intake-template-v2.md" in docs_site
+
+
+def test_review_packet_source_pointers_are_wired() -> None:
+    report = review_packet_source_pointers.build_report(Path.cwd())
+    doc = Path("docs/codex/review-packet-source-pointers.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["area_count"] == 7
+    assert report["pointer_count"] >= 12
+    assert report["runtime_behavior_changed"] is False
+    assert "apps/api/src/ithildin_api/patches.py" in doc
+    assert "apps/api/src/ithildin_api/http_tools.py" in doc
+    assert "make review-packet-source-pointers" in readme
+    assert "174 - Review packet source pointers | Done" in backlog
+    assert "Task 174 maps review packet claims" in matrix
+    assert "review-packet-source-pointers:" in makefile
+    assert "docs/codex/review-packet-source-pointers.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/review-packet-source-pointers.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

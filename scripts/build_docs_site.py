@@ -51,6 +51,7 @@ DEFAULT_DOCS = [
     "docs/codex/source-review-transcript-packet.md",
     "docs/codex/reviewer-artifact-manifest-v2.md",
     "docs/codex/source-file-inspection-packet.md",
+    "docs/codex/review-packet-source-pointers.md",
     "docs/codex/patch-apply-source-review-checklist.md",
     "docs/codex/filesystem-source-review-checklist.md",
     "docs/codex/http-fetch-source-review-checklist.md",

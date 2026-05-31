@@ -105,6 +105,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Source review transcript packet | Task 171 generates transcript skeletons and doc hashes for source reviewers | pending external review | none | pending | `make source-review-transcript-packet`; `make docs-site` | transcript packet collects review notes but does not close rows | external_pending |
 | Reviewer artifact manifest | Task 172 generates a v0.5 artifact inventory for reviewer handoff | pending external review | none | pending | `make reviewer-artifact-manifest`; `make docs-site` | artifact manifest inventories evidence but does not prove source-review closure | external_pending |
 | External response intake template | Task 173 adds a v2 template for turning external review responses into EXT findings | pending external review | none | pending | `make external-response-template-check`; `make docs-site` | template guides intake but does not mutate findings or close review | external_pending |
+| Review packet source pointers | Task 174 maps review packet claims to source files for external reviewers | pending external review | none | pending | `make review-packet-source-pointers`; `make docs-site` | source pointers improve review navigation but do not close review | external_pending |
 
 ## v2 Update Rules
 

@@ -66,6 +66,7 @@ externally closed.
 - [Source Review Transcript Packet](source-review-transcript-packet.md)
 - [Reviewer Artifact Manifest v2](reviewer-artifact-manifest-v2.md)
 - [Source File Inspection Packet](source-file-inspection-packet.md)
+- [Review Packet Source Pointers](review-packet-source-pointers.md)
 - [Patch Apply Source Review Checklist](patch-apply-source-review-checklist.md)
 - [Filesystem Source Review Checklist](filesystem-source-review-checklist.md)
 - [HTTP Fetch Source Review Checklist](http-fetch-source-review-checklist.md)
