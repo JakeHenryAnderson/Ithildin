@@ -183,7 +183,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 164 - MCP ingress source review checklist | Done | [mcp-ingress-source-review-checklist.md](mcp-ingress-source-review-checklist.md) |
 | 165 - Review console source review checklist | Done | [review-console-source-review-checklist.md](review-console-source-review-checklist.md) |
 | 166 - External findings intake dry run | Done | [external-findings-intake-dry-run.md](external-findings-intake-dry-run.md), `make external-findings-intake-dry-run` |
-| 167 - Closure matrix evidence sync | Planned | Closure sync |
+| 167 - Closure matrix evidence sync | Done | [closure-matrix-evidence-sync.md](closure-matrix-evidence-sync.md), `make closure-matrix-evidence-sync` |
 | 168 - Accepted risk register | Planned | Risk register |
 | 169 - Capability decision report generator | Planned | Decision report |
 | 170 - No-new-powers release guardrail v2 | Planned | No-new-powers guardrail |

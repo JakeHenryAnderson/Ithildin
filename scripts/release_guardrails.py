@@ -62,6 +62,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "tool-surface-invariant-gate",
     "evidence-confusion-gate",
     "external-review-closure-gate",
+    "closure-matrix-evidence-sync",
     "determinism-check",
     "adversarial-corpus-check",
     "resource-limit-check",

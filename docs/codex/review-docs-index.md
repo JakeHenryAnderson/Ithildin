@@ -70,6 +70,7 @@ externally closed.
 - [MCP Ingress Source Review Checklist](mcp-ingress-source-review-checklist.md)
 - [Review Console Source Review Checklist](review-console-source-review-checklist.md)
 - [External Findings Intake Dry Run](external-findings-intake-dry-run.md)
+- [Closure Matrix Evidence Sync](closure-matrix-evidence-sync.md)
 
 ## Reading Rule
 

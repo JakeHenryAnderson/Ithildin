@@ -9,6 +9,7 @@ import pytest
 
 from scripts import (
     capability_expansion_gate,
+    closure_matrix_evidence_sync,
     consolidate_review_packet,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -1270,8 +1271,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-166"
-    assert manifest["planned_range"] == "167-180"
+    assert manifest["completed_range"] == "152-167"
+    assert manifest["planned_range"] == "168-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1707,6 +1708,31 @@ def test_external_findings_intake_dry_run_is_wired() -> None:
     )
     assert "docs/codex/external-findings-intake-dry-run.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/external-findings-intake-dry-run.md" in docs_site
+
+
+def test_closure_matrix_evidence_sync_is_wired() -> None:
+    report = closure_matrix_evidence_sync.build_report(Path.cwd())
+    doc = Path("docs/codex/closure-matrix-evidence-sync.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["missing_done_task_refs"] == []
+    assert "167" in report["done_task_ids"]
+    assert "make closure-matrix-evidence-sync" in readme
+    assert "every completed v0.5 task" in doc
+    assert "167 - Closure matrix evidence sync | Done" in backlog
+    assert "Task 167 verifies done v0.5 tasks" in matrix
+    assert "closure-matrix-evidence-sync" in makefile.partition("release-check:")[2]
+    assert "closure-matrix-evidence-sync" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/closure-matrix-evidence-sync.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/closure-matrix-evidence-sync.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
