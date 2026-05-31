@@ -60,6 +60,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "filesystem-contract-check",
     "tool-surface-invariant-gate",
     "evidence-confusion-gate",
+    "external-review-closure-gate",
     "determinism-check",
     "adversarial-corpus-check",
     "resource-limit-check",

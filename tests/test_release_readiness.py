@@ -12,6 +12,7 @@ from scripts import (
     consolidate_review_packet,
     evidence_confusion_gate,
     evidence_contracts_check,
+    external_review_closure_gate,
     internal_review_packet,
     packet_redaction_scan,
     release_evidence,
@@ -1268,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-155"
-    assert manifest["planned_range"] == "156-180"
+    assert manifest["completed_range"] == "152-156"
+    assert manifest["planned_range"] == "157-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1365,6 +1366,37 @@ def test_evidence_confusion_gate_is_wired_and_valid() -> None:
     assert "evidence-confusion-gate" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/evidence-confusion-gate.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/evidence-confusion-gate.md" in docs_site
+
+
+def test_external_review_closure_gate_is_wired_and_blocked_honestly() -> None:
+    report = external_review_closure_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/external-review-closure-gate.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["hard_failures"] == []
+    assert report["external_closure_complete"] is False
+    assert report["pending_external_review_rows"]
+    assert "external review rows still pending" in " ".join(report["blockers"])
+    assert "make external-review-closure-gate" in readme
+    assert "external_closure_complete" in doc
+    assert "156 - External-review closure gate v2 | Done" in backlog
+    assert "Task 156 verifies source-review closure" in matrix
+    assert "external-review-closure-gate" in makefile.partition("release-check:")[2]
+    assert (
+        "external-review-closure-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/external-review-closure-gate.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/external-review-closure-gate.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

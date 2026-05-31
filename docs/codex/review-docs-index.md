@@ -59,6 +59,7 @@ externally closed.
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [Evidence-Confusion Gate v2](evidence-confusion-gate.md)
+- [External-Review Closure Gate v2](external-review-closure-gate.md)
 
 ## Reading Rule
 

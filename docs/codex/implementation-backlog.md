@@ -172,7 +172,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 153 - Capability expansion gate v2 | Done | [capability-expansion-gate.md](capability-expansion-gate.md), `make capability-expansion-gate` |
 | 154 - Tool-surface invariant gate v2 | Done | [tool-surface-invariant-gate.md](tool-surface-invariant-gate.md), `make tool-surface-invariant-gate` |
 | 155 - Evidence-confusion gate v2 | Done | [evidence-confusion-gate.md](evidence-confusion-gate.md), `make evidence-confusion-gate` |
-| 156 - External-review closure gate v2 | Planned | External closure gate |
+| 156 - External-review closure gate v2 | Done | [external-review-closure-gate.md](external-review-closure-gate.md), `make external-review-closure-gate` |
 | 157 - Source review runbook v2 | Planned | Source review runbook |
 | 158 - Source file inspection packet | Planned | Source pointers |
 | 159 - Patch apply source review checklist | Planned | Patch apply source review |
