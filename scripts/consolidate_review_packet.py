@@ -101,6 +101,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
     negative_transcripts = repo_root / NEGATIVE_TRANSCRIPTS_SUMMARY
     attachments = {
         "01_START_HERE_AND_REVIEW_PROMPT.md": _section(
+            "v0.5 External Review Prompt",
+            repo_root / "docs/codex/v0.5-external-review-prompt.md",
+            repo_root,
+        )
+        + _section(
             "v0.3 External Review Prompt",
             repo_root / "docs/codex/v0.3-external-review-prompt.md",
             repo_root,

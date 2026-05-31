@@ -341,6 +341,7 @@ def test_consolidated_review_packet_generation(
     for path in [
         "README.md",
         "docs/codex/v0.3-external-review-prompt.md",
+        "docs/codex/v0.5-external-review-prompt.md",
         "docs/codex/v0.3-review-packet.md",
         "docs/codex/v0.3-boundary-decision.md",
         "docs/codex/v0.2-external-review-prompt.md",
@@ -1300,8 +1301,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-177"
-    assert manifest["planned_range"] == "178-180"
+    assert manifest["completed_range"] == "152-178"
+    assert manifest["planned_range"] == "179-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1817,8 +1818,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
     assert report["tool_count"] == 10
-    assert report["completed_range"] == "152-177"
-    assert report["planned_range"] == "178-180"
+    assert report["completed_range"] == "152-178"
+    assert report["planned_range"] == "179-180"
     assert report["open_accepted_risks"] == 10
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
@@ -2065,6 +2066,35 @@ def test_v05_consolidated_packet_update_is_wired() -> None:
     assert "Task 177 adds v0.5 review-closure artifacts" in matrix
     assert "docs/codex/v0.5-consolidated-packet-update.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.5-consolidated-packet-update.md" in docs_site
+
+
+def test_v05_external_review_prompt_is_wired() -> None:
+    prompt = Path("docs/codex/v0.5-external-review-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    consolidated = Path("scripts/consolidate_review_packet.py").read_text(
+        encoding="utf-8"
+    )
+
+    for required in [
+        "Overall judgment",
+        "Capability expansion go/no-go opinion",
+        "Do-not-add-yet list",
+        "distinguish packet/documentation risk from implementation risk",
+    ]:
+        assert required in prompt
+    assert "v0.5-external-review-prompt.md" in readme or "v0.5-milestone-manifest.md" in readme
+    assert "178 - v0.5 external review prompt | Done" in backlog
+    assert "Task 178 adds the v0.5 external review prompt" in matrix
+    assert "docs/codex/v0.5-external-review-prompt.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.5-external-review-prompt.md" in docs_site
+    assert "v0.5 External Review Prompt" in consolidated
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

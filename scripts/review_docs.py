@@ -73,6 +73,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.5-threat-model-delta.md",
     "docs/codex/v0.5-review-candidate-command.md",
     "docs/codex/v0.5-consolidated-packet-update.md",
+    "docs/codex/v0.5-external-review-prompt.md",
     "docs/codex/capability-expansion-gate.md",
     "docs/codex/tool-surface-invariant-gate.md",
     "docs/codex/no-new-powers-guardrail.md",
