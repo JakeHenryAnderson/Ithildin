@@ -78,6 +78,7 @@ REVIEW_DOCS = [
     "docs/codex/patch-apply-source-review-checklist.md",
     "docs/codex/filesystem-source-review-checklist.md",
     "docs/codex/http-fetch-source-review-checklist.md",
+    "docs/codex/signed-evidence-source-review-checklist.md",
     "docs/codex/local-preview-release.md",
 ]
 

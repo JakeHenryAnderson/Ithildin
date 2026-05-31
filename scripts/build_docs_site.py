@@ -50,6 +50,7 @@ DEFAULT_DOCS = [
     "docs/codex/patch-apply-source-review-checklist.md",
     "docs/codex/filesystem-source-review-checklist.md",
     "docs/codex/http-fetch-source-review-checklist.md",
+    "docs/codex/signed-evidence-source-review-checklist.md",
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",
