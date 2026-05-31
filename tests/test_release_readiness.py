@@ -1269,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-158"
-    assert manifest["planned_range"] == "159-180"
+    assert manifest["completed_range"] == "152-159"
+    assert manifest["planned_range"] == "160-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1469,6 +1469,38 @@ def test_source_file_inspection_packet_maps_review_surfaces() -> None:
     assert "Task 158 maps high-risk source files/functions" in matrix
     assert "docs/codex/source-file-inspection-packet.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/source-file-inspection-packet.md" in docs_site
+
+
+def test_patch_apply_source_review_checklist_is_documented() -> None:
+    checklist = Path("docs/codex/patch-apply-source-review-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "PatchProposalService.apply_approved",
+        "ApprovalService.begin_execution",
+        "GovernedToolCallService._execute_approved_patch",
+        "stored-proposal-only",
+        "Failure after replacement records",
+        "uv run pytest tests/test_governed_tool_calls.py",
+        "make release-check",
+        "No shell/broad-write behavior",
+    ]:
+        if required == "No shell/broad-write behavior":
+            assert "shell execution" in checklist and "broad writes" in checklist
+        else:
+            assert required in checklist
+    assert "patch-apply-source-review-checklist.md" in readme
+    assert "159 - Patch apply source review checklist | Done" in backlog
+    assert "Task 159 adds a source checklist" in matrix
+    assert "docs/codex/patch-apply-source-review-checklist.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/patch-apply-source-review-checklist.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

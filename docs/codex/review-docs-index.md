@@ -62,6 +62,7 @@ externally closed.
 - [External-Review Closure Gate v2](external-review-closure-gate.md)
 - [Source Review Runbook v2](source-review-runbook-v2.md)
 - [Source File Inspection Packet](source-file-inspection-packet.md)
+- [Patch Apply Source Review Checklist](patch-apply-source-review-checklist.md)
 
 ## Reading Rule
 
