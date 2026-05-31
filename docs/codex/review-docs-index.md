@@ -67,6 +67,7 @@ externally closed.
 - [HTTP Fetch Source Review Checklist](http-fetch-source-review-checklist.md)
 - [Signed Evidence Source Review Checklist](signed-evidence-source-review-checklist.md)
 - [Policy Parity Source Review Checklist](policy-parity-source-review-checklist.md)
+- [MCP Ingress Source Review Checklist](mcp-ingress-source-review-checklist.md)
 
 ## Reading Rule
 

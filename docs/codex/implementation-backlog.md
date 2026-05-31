@@ -180,7 +180,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 161 - HTTP fetch source review checklist | Done | [http-fetch-source-review-checklist.md](http-fetch-source-review-checklist.md) |
 | 162 - Signed evidence source review checklist | Done | [signed-evidence-source-review-checklist.md](signed-evidence-source-review-checklist.md) |
 | 163 - Policy parity source review checklist | Done | [policy-parity-source-review-checklist.md](policy-parity-source-review-checklist.md) |
-| 164 - MCP ingress source review checklist | Planned | MCP ingress source review |
+| 164 - MCP ingress source review checklist | Done | [mcp-ingress-source-review-checklist.md](mcp-ingress-source-review-checklist.md) |
 | 165 - Review console source review checklist | Planned | Review console source review |
 | 166 - External findings intake dry run | Planned | Findings dry run |
 | 167 - Closure matrix evidence sync | Planned | Closure sync |
