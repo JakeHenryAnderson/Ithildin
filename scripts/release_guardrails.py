@@ -81,9 +81,9 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) docs-site",
 ]
 REQUIRED_V03_DONE_TASKS = [f"{task:03d}" for task in range(101, 113)]
-REQUIRED_V04_DONE_TASKS = [f"{task:03d}" for task in range(113, 148)]
-REQUIRED_V04_METADATA_TASKS = [f"{task:03d}" for task in range(123, 148)]
-V04_PLANNED_RANGE = "148-151"
+REQUIRED_V04_DONE_TASKS = [f"{task:03d}" for task in range(113, 149)]
+REQUIRED_V04_METADATA_TASKS = [f"{task:03d}" for task in range(123, 149)]
+V04_PLANNED_RANGE = "149-151"
 DEFERRED_TOOL_POWER_MARKERS = [
     "shell",
     "docker",
@@ -243,8 +243,8 @@ def _check_v04_horizontal_gate_status() -> list[str]:
         (ROOT / "docs/codex/v0.4-milestone-manifest.json").read_text(encoding="utf-8")
     )
     backlog = (ROOT / "docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    if manifest.get("completed_range") != "113-147":
-        failures.append("v0.4 manifest completed_range is not 113-147")
+    if manifest.get("completed_range") != "113-148":
+        failures.append("v0.4 manifest completed_range is not 113-148")
     if manifest.get("planned_range") != V04_PLANNED_RANGE:
         failures.append(f"v0.4 manifest planned_range is not {V04_PLANNED_RANGE}")
     if "make release-evidence-gate" not in manifest.get("after_each_wave_required_commands", []):

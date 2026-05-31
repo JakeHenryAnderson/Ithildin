@@ -60,6 +60,7 @@ REVIEW_DOCS = [
     "docs/codex/reviewer-finding-template.md",
     "docs/codex/reviewer-finding-intake.md",
     "docs/codex/threat-model-and-non-goals.md",
+    "docs/codex/v0.4-threat-model-refresh.md",
     "docs/codex/local-preview-release.md",
 ]
 

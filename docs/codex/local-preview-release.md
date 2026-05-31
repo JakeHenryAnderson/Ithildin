@@ -6,6 +6,7 @@ approvals, and exporting audit evidence.
 
 Read [Threat Model and Non-Goals](threat-model-and-non-goals.md) before treating the preview as a
 security boundary. Ithildin is a local mediation layer, not production security software.
+The v0.4 refresh is [v0.4 Threat Model Refresh](v0.4-threat-model-refresh.md).
 For public-preview wording, also read
 [v0.1 Public Preview Release Notes](v0.1-public-preview-release-notes.md).
 For v0.2 external/code review handoff, start with

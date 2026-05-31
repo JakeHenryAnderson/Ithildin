@@ -215,9 +215,11 @@ focused on review closure, evidence maturity, diagnostics, and local-preview har
 new governed tool powers.
 The review-document map is in
 [docs/codex/review-docs-index.md](docs/codex/review-docs-index.md).
+The v0.4 threat-model refresh is in
+[docs/codex/v0.4-threat-model-refresh.md](docs/codex/v0.4-threat-model-refresh.md).
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-147 are
-complete; Tasks 148-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-148 are
+complete; Tasks 149-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

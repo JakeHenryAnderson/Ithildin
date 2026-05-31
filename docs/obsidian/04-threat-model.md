@@ -52,3 +52,13 @@ tags: [ithildin, security, threat-model]
 - oversized inputs.
 - log injection using newlines/control characters.
 
+## v0.4 Local-Preview Refresh
+
+- v0.4 remains review closure, evidence maturity, diagnostics, and hardening over the same v0.1
+  local-preview runtime boundary.
+- macOS and Linux are the only filesystem security-supported local-preview profiles.
+- Windows/WSL, external notarization, production identity, remote MCP, runtime Postgres, hosted
+  telemetry, shell, Docker socket, Kubernetes, browser automation, arbitrary HTTP, broad writes, and
+  plugin SDKs remain out of scope.
+- The current reviewer handoff should include the v0.4 threat refresh, source-review closure matrix,
+  executor contracts, negative transcripts, and review-candidate evidence.

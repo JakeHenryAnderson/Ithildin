@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-147",
-  "planned_range": "148-151",
+  "completed_range": "113-148",
+  "planned_range": "149-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -770,7 +770,7 @@
     {
       "id": "148",
       "title": "v0.4 threat model refresh",
-      "status": "planned",
+      "status": "done",
       "commit": "Refresh v0.4 threat model",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "yes",

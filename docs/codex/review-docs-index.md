@@ -16,6 +16,7 @@ externally closed.
 ## Threat and Boundary
 
 - [Threat Model and Non-Goals](threat-model-and-non-goals.md)
+- [v0.4 Threat Model Refresh](v0.4-threat-model-refresh.md)
 - [Filesystem Executor Contract](filesystem-executor-contract.md)
 - [HTTP Executor Contract](http-executor-contract.md)
 - [Executor Contract Set](executor-contract-set.md)

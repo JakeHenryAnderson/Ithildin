@@ -1,8 +1,10 @@
 # Threat Model and Non-Goals
 
-Ithildin v0.1 is a local-preview governed MCP gateway. It is designed to reduce the blast radius of
-local AI tool use by mediating tool calls through manifests, schema validation, trusted local
-principal labels, policy, approval, scoped executors, redaction, and tamper-evident audit logs.
+Ithildin v0.1 is a local-preview governed MCP gateway. The current v0.4 work is a review-closure
+and evidence-maturity wave over that same runtime boundary. Ithildin is designed to reduce the blast
+radius of local AI tool use by mediating tool calls through manifests, schema validation, trusted
+local principal labels, policy, approval, scoped executors, redaction, and tamper-evident audit
+logs.
 
 ## Trust Model
 
@@ -13,6 +15,7 @@ principal labels, policy, approval, scoped executors, redaction, and tamper-evid
 - The MCP stdio adapter is an ingress adapter; it must stay thin and delegate governance to the
   shared pipeline.
 - SQLite and JSONL audit files are local evidence, not independent durable custody.
+- Local signing keys, when generated, are local operator evidence roots and not external trust roots.
 
 ## In Scope
 
@@ -32,6 +35,13 @@ principal labels, policy, approval, scoped executors, redaction, and tamper-evid
 - Redaction is best-effort leak reduction, not a guarantee that secrets cannot be exposed.
 - Hash-chained audit is tamper-evident local evidence, not external notarization.
 - Postgres settings are readiness evidence only; SQLite is the only v0.1 runtime backend.
+- Windows and WSL are not security-supported for filesystem/race claims in the local preview.
+
+## v0.4 Refresh
+
+The v0.4 refresh is tracked in [v0.4-threat-model-refresh.md](v0.4-threat-model-refresh.md). It
+records accepted local-preview risks after the patch apply, filesystem, HTTP, redaction, demo, and
+review-closure evidence work.
 
 ## Deferred Security Work
 
