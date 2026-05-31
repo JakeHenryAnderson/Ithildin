@@ -1476,8 +1476,14 @@ def test_audit_verification_and_export_endpoints(tmp_path: Path) -> None:
     assert export_response.status_code == 200
     assert export_response.headers["content-type"].startswith("application/x-ndjson")
     lines = export_response.text.splitlines()
-    assert json.loads(lines[0])["metadata"]["verification"]["valid"] is True
+    metadata = json.loads(lines[0])["metadata"]
+    assert metadata["verification"]["valid"] is True
+    assert metadata["event_count"] == 2
+    assert metadata["diagnostics"]["lifecycle"]["status"] == "clean"
     assert json.loads(lines[1])["event_id"] == "evt_1"
+    export_event = json.loads(lines[2])
+    assert export_event["event_type"] == "audit.exported"
+    assert export_event["metadata"]["export_format"] == "jsonl"
 
 
 def test_audit_diagnostics_endpoint_requires_auth_and_reports_state(tmp_path: Path) -> None:
@@ -1549,11 +1555,43 @@ def test_signed_audit_export_endpoint_returns_signed_bundle(tmp_path: Path) -> N
     assert response.status_code == 200
     bundle = response.json()
     assert bundle["bundle_type"] == "ithildin.audit.signed_export"
-    assert bundle["metadata"]["head_hash"] == event.event_hash
+    assert bundle["metadata"]["head_hash"] != event.event_hash
+    assert bundle["metadata"]["event_count"] == 2
+    assert bundle["metadata"]["diagnostics"]["lifecycle"]["status"] == "clean"
     assert bundle["events_sha256"].startswith("sha256:")
     assert bundle["signature"]["algorithm"] == "ed25519"
     assert bundle["signature"]["key_id"].startswith("sha256:")
     assert json.loads(bundle["events_jsonl"].splitlines()[0])["event_id"] == "evt_1"
+    export_event = json.loads(bundle["events_jsonl"].splitlines()[1])
+    assert export_event["event_type"] == "audit.exported"
+    assert export_event["metadata"]["export_format"] == "signed_json"
+
+
+def test_signed_audit_export_endpoint_rejects_unclean_lifecycle(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    generate_audit_signing_keypair(
+        private_key_path=settings.audit_signing_private_key_path,
+        public_key_path=settings.audit_signing_public_key_path,
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        audit_writer.write_event(
+            event_id="evt_1",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_1",
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.read",
+        )
+        settings.audit_log_path.write_text("", encoding="utf-8")
+        response = client.get(
+            "/audit-events/export/signed",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 409
+    assert "audit lifecycle is not clean" in response.json()["detail"]
 
 
 def test_audit_export_reflects_failed_verification(tmp_path: Path) -> None:

@@ -96,5 +96,21 @@ def test_signed_evidence_demo_verifier_rejects_summary_confusion(tmp_path: Path)
         verify_demo(tmp_path / "demo")
 
 
+def test_signed_evidence_demo_verifier_rejects_artifact_digest_mismatch(
+    tmp_path: Path,
+) -> None:
+    lock_path = Path("tool-manifests.lock.json")
+    build_demo(output_dir=tmp_path / "demo", lock_path=lock_path)
+    summary_path = tmp_path / "demo/summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary["artifacts"]["signed_audit_export_demo_bundle"]["sha256"] = (
+        "sha256:" + ("f" * 64)
+    )
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+    with pytest.raises(SignedEvidenceDemoVerificationError, match="digest mismatch"):
+        verify_demo(tmp_path / "demo")
+
+
 def _sha256_file(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()

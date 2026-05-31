@@ -7,11 +7,13 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Optional, cast
+from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from ithildin_audit_core import (
     AuditSigningError,
+    AuditWriteError,
     AuditWriter,
     audit_signing_status,
     signed_audit_export_bundle,
@@ -21,6 +23,7 @@ from ithildin_schemas import (
     ApprovalDecisionValue,
     ApprovalRequest,
     ApprovalStatus,
+    AuditEventType,
     JsonObject,
     sha256_digest,
 )
@@ -444,26 +447,47 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     @api.get("/audit-events/export", dependencies=[Depends(require_admin_token)])
     def export_audit_events() -> Response:
         audit_writer = cast(AuditWriter, api.state.audit_writer)
-        return Response(
-            content=audit_writer.export_jsonl_bundle(),
-            media_type="application/x-ndjson",
-            headers={"Content-Disposition": 'attachment; filename="ithildin-audit-export.jsonl"'},
-        )
+        try:
+            _write_audit_export_event(audit_writer, signed=False)
+            return Response(
+                content=audit_writer.export_jsonl_bundle(),
+                media_type="application/x-ndjson",
+                headers={
+                    "Content-Disposition": 'attachment; filename="ithildin-audit-export.jsonl"'
+                },
+            )
+        except AuditWriteError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     @api.get("/audit-events/export/signed", dependencies=[Depends(require_admin_token)])
     def export_signed_audit_events() -> JsonObject:
         settings_state = cast(Settings, api.state.settings)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         try:
+            _write_audit_export_event(audit_writer, signed=True)
             return signed_audit_export_bundle(
-                jsonl_bundle=audit_writer.export_jsonl_bundle(),
+                jsonl_bundle=audit_writer.export_jsonl_bundle(require_clean_lifecycle=True),
                 private_key_path=settings_state.audit_signing_private_key_path,
                 public_key_path=settings_state.audit_signing_public_key_path,
             )
-        except AuditSigningError as exc:
+        except (AuditSigningError, AuditWriteError) as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     return api
+
+
+def _write_audit_export_event(audit_writer: AuditWriter, *, signed: bool) -> None:
+    audit_writer.write_event(
+        event_id=f"evt_{uuid4().hex}",
+        event_type=AuditEventType.AUDIT_EXPORTED,
+        request_id=f"req_{uuid4().hex}",
+        principal={"id": "admin:local-api", "roles": ["Admin"]},
+        metadata={
+            "export_format": "signed_json" if signed else "jsonl",
+            "signed": signed,
+            "contents": "audit export metadata and events",
+        },
+    )
 
 
 class CreateApprovalPayload(BaseModel):

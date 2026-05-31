@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -41,6 +42,8 @@ def verify_demo(demo_root: Path) -> JsonObject:
         raise SignedEvidenceDemoVerificationError("unexpected demo_type")
     if summary.get("non_production") is not True:
         raise SignedEvidenceDemoVerificationError("demo must be marked non_production")
+
+    _verify_artifacts(demo_root, cast(JsonObject, summary.get("artifacts", {})))
 
     audit = cast(JsonObject, summary["audit"])
     manifest_lock = cast(JsonObject, summary["manifest_lock"])
@@ -92,6 +95,40 @@ def verify_demo(demo_root: Path) -> JsonObject:
             },
         },
     )
+
+
+def _verify_artifacts(demo_root: Path, artifacts: JsonObject) -> None:
+    if not artifacts:
+        raise SignedEvidenceDemoVerificationError("summary artifact hashes are missing")
+    demo_root_resolved = demo_root.resolve(strict=True)
+    for name, value in artifacts.items():
+        if not isinstance(value, dict):
+            raise SignedEvidenceDemoVerificationError(
+                f"artifact metadata must be an object: {name}"
+            )
+        raw_path = value.get("path")
+        expected_sha256 = value.get("sha256")
+        expected_bytes = value.get("bytes")
+        if not isinstance(raw_path, str) or not isinstance(expected_sha256, str):
+            raise SignedEvidenceDemoVerificationError(f"artifact metadata is incomplete: {name}")
+        if not isinstance(expected_bytes, int):
+            raise SignedEvidenceDemoVerificationError(f"artifact byte count is missing: {name}")
+        artifact_path = Path(raw_path)
+        if not artifact_path.is_absolute():
+            artifact_path = Path.cwd() / artifact_path
+        artifact_path = artifact_path.resolve(strict=True)
+        try:
+            artifact_path.relative_to(demo_root_resolved)
+        except ValueError as exc:
+            raise SignedEvidenceDemoVerificationError(
+                f"artifact path escapes demo root: {name}"
+            ) from exc
+        actual_bytes = artifact_path.stat().st_size
+        if actual_bytes != expected_bytes:
+            raise SignedEvidenceDemoVerificationError(f"artifact byte count mismatch: {name}")
+        actual_sha256 = "sha256:" + hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+        if actual_sha256 != expected_sha256:
+            raise SignedEvidenceDemoVerificationError(f"artifact digest mismatch: {name}")
 
 
 def _read_json_object(path: Path) -> JsonObject:

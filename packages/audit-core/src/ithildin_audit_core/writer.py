@@ -212,6 +212,13 @@ class AuditWriter:
                     head_hash=head_hash,
                     reason="invalid audit payload JSON",
                 )
+            if not isinstance(payload, dict):
+                return _failed_verification(
+                    rows=rows,
+                    row_number=index,
+                    head_hash=head_hash,
+                    reason="invalid audit event schema",
+                )
 
             event_id = _optional_string(payload.get("event_id"))
             try:
@@ -267,8 +274,13 @@ class AuditWriter:
             head_hash=head_hash,
         )
 
-    def export_jsonl_bundle(self) -> str:
+    def export_jsonl_bundle(self, *, require_clean_lifecycle: bool = False) -> str:
         verification = self.verify_chain()
+        diagnostics = self.diagnostics()
+        lifecycle = diagnostics.get("lifecycle")
+        lifecycle_status = lifecycle.get("status") if isinstance(lifecycle, dict) else None
+        if require_clean_lifecycle and lifecycle_status != "clean":
+            raise AuditWriteError("audit lifecycle is not clean for export")
         metadata = {
             "bundle_type": "ithildin.audit.export",
             "format_version": "1",
@@ -276,6 +288,13 @@ class AuditWriter:
             "event_count": verification.event_count,
             "head_hash": verification.head_hash,
             "verification": verification.as_dict(),
+            "diagnostics": {
+                "category": diagnostics.get("category"),
+                "lifecycle": lifecycle,
+                "sqlite_event_count": diagnostics.get("sqlite_event_count"),
+                "jsonl_line_count": diagnostics.get("jsonl_line_count"),
+                "jsonl_head_hash": diagnostics.get("jsonl_head_hash"),
+            },
         }
         lines = [
             json.dumps({"metadata": metadata}, sort_keys=True, separators=(",", ":")),

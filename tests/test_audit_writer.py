@@ -253,6 +253,37 @@ def test_audit_writer_detects_invalid_payload_json(tmp_path: Path) -> None:
     assert result.failure.row_number == 1
 
 
+def test_audit_writer_detects_non_object_payload_json(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    with sqlite3.connect(writer.db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO audit_events (
+                event_id, timestamp, event_type, request_id,
+                prev_event_hash, event_hash, payload_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "evt_bad",
+                NOW.isoformat(),
+                AuditEventType.POLICY_EVALUATED.value,
+                "req_bad",
+                "sha256:" + ("0" * 64),
+                VALID_HASH,
+                "[]",
+            ),
+        )
+        connection.commit()
+
+    result = writer.verify_chain()
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "invalid audit event schema"
+    assert result.failure.row_number == 1
+
+
 def test_audit_writer_detects_invalid_event_schema(tmp_path: Path) -> None:
     writer = make_writer(tmp_path)
     payload = {
@@ -400,7 +431,27 @@ def test_audit_writer_export_includes_metadata_and_jsonl_events(tmp_path: Path) 
     assert metadata["event_count"] == 1
     assert metadata["head_hash"] == event.event_hash
     assert metadata["verification"]["valid"] is True
+    assert metadata["diagnostics"]["lifecycle"]["status"] == "clean"
     assert event_payload["event_id"] == "evt_1"
+
+
+def test_audit_writer_export_can_require_clean_lifecycle(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.jsonl_path.write_text("", encoding="utf-8")
+
+    bundle_lines = writer.export_jsonl_bundle().splitlines()
+    metadata = json.loads(bundle_lines[0])["metadata"]
+
+    assert metadata["diagnostics"]["lifecycle"]["status"] == "recovery_required"
+    with pytest.raises(AuditWriteError, match="audit lifecycle is not clean"):
+        writer.export_jsonl_bundle(require_clean_lifecycle=True)
 
 
 def test_audit_signing_key_generation_and_signed_export_verification(tmp_path: Path) -> None:
@@ -757,6 +808,14 @@ def test_exported_events_jsonl_rejects_duplicate_event_ids_with_valid_hash(
     assert result.failure.event_id == "evt_1"
 
 
+def test_exported_events_jsonl_rejects_non_object_payload() -> None:
+    result = verify_exported_events_jsonl("[]\n")
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "invalid audit event schema"
+
+
 def test_exported_events_jsonl_rejects_missing_middle_event(tmp_path: Path) -> None:
     writer = make_writer(tmp_path)
     writer.write_event(
@@ -829,7 +888,8 @@ def test_signed_audit_export_reflects_failed_chain_verification(tmp_path: Path) 
     result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
 
     assert bundle["metadata"]["verification"]["valid"] is False
-    assert result.valid is True
+    assert result.valid is False
+    assert result.failure == "audit verification failed"
     assert result.audit_verification.valid is False
 
 

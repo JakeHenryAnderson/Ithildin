@@ -177,6 +177,8 @@ def verify_signed_audit_export_bundle(
             canonical_json(cast(JsonValue, payload)).encode("utf-8"),
         )
         audit_verification = verify_exported_events_jsonl(events_jsonl)
+        if not audit_verification.valid:
+            raise AuditSigningError("audit verification failed")
         if not _metadata_matches_verification(metadata, audit_verification):
             raise AuditSigningError("metadata verification does not match exported events")
     except (AuditSigningError, InvalidSignature, ValueError) as exc:
@@ -261,6 +263,13 @@ def verify_exported_events_jsonl(events_jsonl: str) -> AuditVerificationResult:
                 row_number=row_number,
                 head_hash=head_hash,
                 reason="invalid audit payload JSON",
+            )
+        if not isinstance(payload, dict):
+            return _failed_jsonl_verification(
+                rows=parsed_rows,
+                row_number=row_number,
+                head_hash=head_hash,
+                reason="invalid audit event schema",
             )
         raw_event_id = payload.get("event_id")
         event_id = raw_event_id if isinstance(raw_event_id, str) else None
