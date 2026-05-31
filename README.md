@@ -97,6 +97,7 @@ tamper-evident audit log.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make capability-expansion-gate` - report whether future powerful-tool planning is allowed.
 - `make tool-surface-invariant-gate` - verify the governed tool manifest surface has not drifted.
+- `make evidence-confusion-gate` - verify locally signed evidence wording does not overclaim trust.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.

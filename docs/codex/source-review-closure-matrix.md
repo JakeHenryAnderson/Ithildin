@@ -86,6 +86,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | v0.5 roadmap | Task 152 records GPT 5.5 Pro v0.4 feedback as Tasks 152-180 | pending external review | none | pending | `make release-check` | roadmap does not approve capability expansion | external_pending |
 | Capability expansion gate | Task 153 adds an explicit blocked/allowed capability-expansion report | pending external review | none | pending | `make capability-expansion-gate`; `make release-check` | blocked status is expected until source-review closure | external_pending |
 | Tool-surface invariant gate | Task 154 verifies the current ten-tool manifest surface | pending external review | none | pending | `make tool-surface-invariant-gate`; `make release-check` | any future tool-surface drift requires boundary decision | external_pending |
+| Evidence-confusion gate | Task 155 verifies local signing evidence is not confused with notarization, custody, or immutability | pending external review | none | pending | `make evidence-confusion-gate`; `make release-check` | runtime/demo signing remains local evidence only | external_pending |
 
 ## v2 Update Rules
 

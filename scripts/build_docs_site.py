@@ -43,6 +43,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.5-milestone-manifest.md",
     "docs/codex/capability-expansion-gate.md",
     "docs/codex/tool-surface-invariant-gate.md",
+    "docs/codex/evidence-confusion-gate.md",
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",

@@ -179,8 +179,8 @@ work must stop for status, reassessment, or external consultation.
 
 ## Reproduction Notes
 
-- Runtime audit signing and manifest-lock signing may be unconfigured by default. The signed
-  evidence demo is separate fixture evidence using generated local demo keys.
+- Runtime signing may be unconfigured by default. The signed-evidence demo is separate fixture
+  evidence using generated local demo keys.
 - The generated review bundle and demo directories are intentionally ignored and may be regenerated.
 - Artifact hashes are for handoff integrity and reviewer convenience. They are not external
   notarization, custody-grade evidence, or official hosted supply-chain signing.

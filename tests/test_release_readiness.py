@@ -10,6 +10,7 @@ import pytest
 from scripts import (
     capability_expansion_gate,
     consolidate_review_packet,
+    evidence_confusion_gate,
     evidence_contracts_check,
     internal_review_packet,
     packet_redaction_scan,
@@ -1267,8 +1268,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-154"
-    assert manifest["planned_range"] == "155-180"
+    assert manifest["completed_range"] == "152-155"
+    assert manifest["planned_range"] == "156-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1338,6 +1339,32 @@ def test_tool_surface_invariant_gate_is_wired_and_valid() -> None:
     assert "tool-surface-invariant-gate" in makefile.partition("release-check:")[2]
     assert "docs/codex/tool-surface-invariant-gate.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/tool-surface-invariant-gate.md" in docs_site
+
+
+def test_evidence_confusion_gate_is_wired_and_valid() -> None:
+    report = evidence_confusion_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/evidence-confusion-gate.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["overclaim_hits"] == []
+    assert report["runtime_signing_required_by_default"] is False
+    assert report["demo_evidence_is_non_production"] is True
+    assert "make evidence-confusion-gate" in readme
+    assert "not external notarization" in doc
+    assert "155 - Evidence-confusion gate v2 | Done" in backlog
+    assert "Task 155 verifies local signing evidence" in matrix
+    assert "evidence-confusion-gate" in makefile.partition("release-check:")[2]
+    assert "evidence-confusion-gate" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/evidence-confusion-gate.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/evidence-confusion-gate.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

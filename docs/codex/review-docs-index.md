@@ -58,6 +58,7 @@ externally closed.
 - [v0.5 Milestone Manifest](v0.5-milestone-manifest.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
+- [Evidence-Confusion Gate v2](evidence-confusion-gate.md)
 
 ## Reading Rule
 
