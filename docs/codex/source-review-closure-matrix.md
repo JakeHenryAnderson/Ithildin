@@ -92,6 +92,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Source file inspection packet | Task 158 maps high-risk source files/functions to contracts and tests | pending external review | none | pending | `make docs-site`; `make release-check` | pointer packet accelerates review but does not prove implementation correctness | external_pending |
 | Patch apply source review checklist | Task 159 adds a source checklist for the only local-preview write path | pending external review | none | pending | patch/approval focused tests; `make release-check` | checklist guides review but does not close patch apply externally | external_pending |
 | Filesystem source review checklist | Task 160 adds a source checklist for workspace path/race semantics | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | checklist guides review but does not close filesystem externally | external_pending |
+| HTTP fetch source review checklist | Task 161 adds a source checklist for SSRF, allowlist, redirect, and DNS behavior | pending external review | none | pending | HTTP focused tests; `make release-check` | checklist guides review but does not close http.fetch externally | external_pending |
 
 ## v2 Update Rules
 

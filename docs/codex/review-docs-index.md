@@ -64,6 +64,7 @@ externally closed.
 - [Source File Inspection Packet](source-file-inspection-packet.md)
 - [Patch Apply Source Review Checklist](patch-apply-source-review-checklist.md)
 - [Filesystem Source Review Checklist](filesystem-source-review-checklist.md)
+- [HTTP Fetch Source Review Checklist](http-fetch-source-review-checklist.md)
 
 ## Reading Rule
 

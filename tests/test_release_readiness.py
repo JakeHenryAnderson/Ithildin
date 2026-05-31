@@ -1269,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-160"
-    assert manifest["planned_range"] == "161-180"
+    assert manifest["completed_range"] == "152-161"
+    assert manifest["planned_range"] == "162-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1530,6 +1530,35 @@ def test_filesystem_source_review_checklist_is_documented() -> None:
     assert "Task 160 adds a source checklist" in matrix
     assert "docs/codex/filesystem-source-review-checklist.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/filesystem-source-review-checklist.md" in docs_site
+
+
+def test_http_fetch_source_review_checklist_is_documented() -> None:
+    checklist = Path("docs/codex/http-fetch-source-review-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "HttpFetchExecutor.fetch",
+        "_ensure_allowed_destination",
+        "_validated_resolution",
+        "parse_http_url",
+        "_is_blocked_ip",
+        "tests/fixtures/http_canonicalization_corpus.json",
+        "Proxy environment variables are not inherited",
+        "GET-only boundary",
+    ]:
+        assert required in checklist
+    assert "http-fetch-source-review-checklist.md" in readme
+    assert "161 - HTTP fetch source review checklist | Done" in backlog
+    assert "Task 161 adds a source checklist" in matrix
+    assert "docs/codex/http-fetch-source-review-checklist.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/http-fetch-source-review-checklist.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
