@@ -78,6 +78,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | CI/platform claims | v0.4 Task 144 CI/platform plan added without broad claims | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | macOS/Linux local-preview only; Windows/WSL unsupported | external_pending |
 | Redaction evidence | v0.4 Task 145 redaction evidence boundary clarified | pending external review | none | pending | `make packet-redaction-scan`; `make release-check` | redaction is best-effort leak reduction, not a security boundary | external_pending |
 | Demo scenarios | v0.4 Task 146 scenario pack maps positive, negative, signing, filesystem, and packet demos | pending external review | none | pending | `make demo-scenario-pack`; `make review-candidate` | demo scenarios are local observations, not implementation proof | external_pending |
+| Documentation IA | v0.4 Task 147 review docs index added | pending external review | none | pending | `make docs-site`; `make release-check` | document navigation is not evidence closure | external_pending |
 
 ## v2 Update Rules
 

@@ -17,6 +17,8 @@ For internal AI/subagent pressure testing, use
 For the current v0.3-prep external handoff, use
 [v0.3 Review Packet](v0.3-review-packet.md) and
 [v0.3 External Review Prompt](v0.3-external-review-prompt.md).
+Use [Review Docs Index](review-docs-index.md) when you need the current reviewer-facing document
+map.
 After review, process findings through
 [External Review Intake and Closure](external-review-intake-and-closure.md).
 The current go/no-go posture is recorded in

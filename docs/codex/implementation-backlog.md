@@ -155,7 +155,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 144 - CI and platform planning without broad claims | Done | [ci-platform-plan.md](ci-platform-plan.md), platform claim boundaries |
 | 145 - Redaction evidence and leak-boundary clarity | Done | [redaction-evidence-boundary.md](redaction-evidence-boundary.md), leak-boundary wording |
 | 146 - Demo scenario pack v2 | Done | [demo-scenario-pack-v2.md](demo-scenario-pack-v2.md), `make demo-scenario-pack` |
-| 147 - Documentation information architecture cleanup | Planned | Documentation structure |
+| 147 - Documentation information architecture cleanup | Done | [review-docs-index.md](review-docs-index.md), docs navigation |
 | 148 - v0.4 threat model refresh | Planned | Threat model refresh |
 | 149 - v0.4 review packet generator | Planned | Review packet generator |
 | 150 - External review intake and closure workflow v2 | Planned | External intake |

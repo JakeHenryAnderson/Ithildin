@@ -19,6 +19,7 @@ prints the consolidated packet path. `release-check` includes `make adversarial-
 `make resource-limit-check`, and `make demo-scenario-pack`. Use
 [demo-scenario-pack-v2.md](demo-scenario-pack-v2.md) as the concise scenario map for positive,
 negative, signing, filesystem, and review-packet demos.
+Use [review-docs-index.md](review-docs-index.md) to orient reviewers before attaching the packet.
 
 Run `make internal-review-packet` when you want v2 local AI/subagent source-review prompts under
 `var/review-packets/v0.3/internal-ai-review-packet/`. That packet is internal pressure-test

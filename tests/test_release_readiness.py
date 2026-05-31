@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-146"
-    assert manifest["planned_range"] == "147-151"
+    assert manifest["completed_range"] == "113-147"
+    assert manifest["planned_range"] == "148-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 147-151 are planned" in readme
+    assert "Tasks 148-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -724,7 +724,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-146 done",
+        "Tasks 113-147 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -1082,6 +1082,39 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
     assert "Task 146 scenario pack maps" in matrix
     assert "docs/codex/demo-scenario-pack-v2.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/demo-scenario-pack-v2.md" in docs_site
+
+
+def test_review_docs_index_is_documented_and_wired() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    local_preview = Path("docs/codex/local-preview-release.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "Start Here",
+        "Threat and Boundary",
+        "Evidence and Gates",
+        "Review Closure",
+        "Reproduction and Packet Handoff",
+        "Do not infer production readiness",
+    ]:
+        assert required in doc
+    assert "review-docs-index.md" in readme
+    assert "review-docs-index.md" in local_preview
+    assert "review-docs-index.md" in reproduction_map
+    assert "147 - Documentation information architecture cleanup | Done" in backlog
+    assert "Task 147 review docs index added" in matrix
+    assert "docs/codex/review-docs-index.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/review-docs-index.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
