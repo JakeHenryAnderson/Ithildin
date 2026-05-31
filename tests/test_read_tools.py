@@ -167,6 +167,53 @@ def test_filesystem_search_denies_symlink_swap_between_resolution_and_open(
     assert outside.read_text(encoding="utf-8") == "outside needle\n"
 
 
+@pytest.mark.parametrize(
+    ("swap_kind", "expected_reason"),
+    [
+        ("missing", "safe regular file"),
+        ("directory", "path is not a file"),
+        ("binary", "binary"),
+        ("oversized", "read limit"),
+        ("symlink", "safe regular file"),
+    ],
+)
+def test_filesystem_read_denies_bounded_target_swaps_between_resolution_and_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    swap_kind: str,
+    expected_reason: str,
+) -> None:
+    if swap_kind == "symlink" and not hasattr(os, "O_NOFOLLOW"):
+        pytest.skip("O_NOFOLLOW unavailable on this platform")
+    filesystem = make_filesystem(tmp_path, max_read_bytes=8)
+    target = filesystem.workspace_root / "race.txt"
+    target.write_text("safe\n", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside\n", encoding="utf-8")
+    original_resolver = filesystem.resolve_existing_path
+
+    def swap_target(path: str) -> Path:
+        resolved = original_resolver(path)
+        if path == "race.txt":
+            resolved.unlink()
+            if swap_kind == "directory":
+                resolved.mkdir()
+            elif swap_kind == "binary":
+                resolved.write_bytes(b"safe\x00")
+            elif swap_kind == "oversized":
+                resolved.write_text("too large\n", encoding="utf-8")
+            elif swap_kind == "symlink":
+                resolved.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(filesystem, "resolve_existing_path", swap_target)
+
+    with pytest.raises(ReadToolError, match=expected_reason):
+        filesystem.read_file("race.txt")
+
+    assert outside.read_text(encoding="utf-8") == "outside\n"
+
+
 def test_filesystem_denies_oversized_reads(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4)
     filesystem.workspace_root.joinpath("large.txt").write_text("too large", encoding="utf-8")

@@ -191,6 +191,60 @@ def test_patch_proposal_denies_symlink_swap_before_file_read(
     assert outside.read_text(encoding="utf-8") == "outside\n"
 
 
+@pytest.mark.parametrize(
+    ("swap_kind", "expected_reason"),
+    [
+        ("missing", "patch target is not a file"),
+        ("directory", "patch target is not a file"),
+        ("binary", "binary"),
+        ("oversized", "read limit"),
+        ("symlink", "safe regular file"),
+    ],
+)
+def test_patch_proposal_denies_bounded_target_swaps_before_file_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    swap_kind: str,
+    expected_reason: str,
+) -> None:
+    if swap_kind == "symlink" and not hasattr(os, "O_NOFOLLOW"):
+        pytest.skip("O_NOFOLLOW unavailable on this platform")
+    service = make_service(tmp_path)
+    service.filesystem.max_read_bytes = 8
+    target = service.filesystem.workspace_root / "README.md"
+    target.write_text("old\n", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside\n", encoding="utf-8")
+    diff = unified_diff("README.md", "old\n", "new\n")
+    original_resolver = service.filesystem.resolve_existing_path
+
+    def swap_target(path: str) -> Path:
+        resolved = original_resolver(path)
+        if path == "README.md":
+            resolved.unlink()
+            if swap_kind == "directory":
+                resolved.mkdir()
+            elif swap_kind == "binary":
+                resolved.write_bytes(b"old\x00")
+            elif swap_kind == "oversized":
+                resolved.write_text("too large\n", encoding="utf-8")
+            elif swap_kind == "symlink":
+                resolved.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(service.filesystem, "resolve_existing_path", swap_target)
+
+    with pytest.raises(PatchProposalError, match=expected_reason):
+        service.create_proposal(
+            request_id="req_1",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff=diff,
+        )
+
+    assert outside.read_text(encoding="utf-8") == "outside\n"
+
+
 def test_invalid_diff_shapes_are_denied(tmp_path: Path) -> None:
     service = make_service(tmp_path, max_patch_bytes=200)
     service.filesystem.workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")

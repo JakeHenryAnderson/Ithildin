@@ -72,6 +72,18 @@ a proof against every possible race across all filesystems, mount options, netwo
 host compromise scenarios. Broader race proofs remain an external/source review item before
 Ithildin expands write capabilities or claims stronger platform coverage.
 
+## v0.4 Adversarial Harness
+
+Task 119 adds bounded, deterministic regression coverage for target replacement windows that can be
+exercised without threads, privileged operations, or workspace mutation outside temporary test
+directories. The harness swaps a previously resolved target among missing path, directory, symlink,
+binary/NUL content, oversized file, and hardlink-sensitive cases before read/proposal/apply
+preparation.
+
+The expected behavior is fail-closed with safe errors and no file, diff, or outside-target content in
+the result. This harness is evidence for the local-preview contract only; it is not a formal proof
+against every operating-system race.
+
 ## Non-Guarantees
 
 This contract does not claim:
