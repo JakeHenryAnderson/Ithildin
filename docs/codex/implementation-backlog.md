@@ -193,7 +193,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 174 - Review packet source pointers | Done | [review-packet-source-pointers.md](review-packet-source-pointers.md), `make review-packet-source-pointers` |
 | 175 - v0.5 threat model delta | Done | [v0.5-threat-model-delta.md](v0.5-threat-model-delta.md), `make v05-threat-model-delta-check` |
 | 176 - v0.5 review candidate command | Done | [v0.5-review-candidate-command.md](v0.5-review-candidate-command.md), `make v05-review-candidate` |
-| 177 - v0.5 consolidated packet update | Planned | Consolidated packet |
+| 177 - v0.5 consolidated packet update | Done | [v0.5-consolidated-packet-update.md](v0.5-consolidated-packet-update.md), `make review-packet-consolidated` |
 | 178 - v0.5 external review prompt | Planned | External prompt |
 | 179 - v0.5 boundary decision draft | Planned | Boundary decision |
 | 180 - v0.5 handoff packet and go/no-go seed | Planned | Handoff packet |

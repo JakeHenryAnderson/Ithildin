@@ -1,4 +1,4 @@
-"""Build a 10-attachment-friendly consolidated v0.2 review packet."""
+"""Build a 10-attachment-friendly consolidated review packet."""
 
 from __future__ import annotations
 
@@ -114,8 +114,28 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             "Reviewer Reproduction Map",
             repo_root / "docs/codex/reviewer-reproduction-map.md",
             repo_root,
+        )
+        + _section(
+            "v0.5 Review Candidate Command",
+            repo_root / "docs/codex/v0.5-review-candidate-command.md",
+            repo_root,
         ),
         "02_REVIEW_PACKET_AND_RESPONSE.md": _section(
+            "v0.5 Roadmap From v0.4 Review",
+            repo_root / "docs/codex/v0.5-roadmap-from-v0.4-review.md",
+            repo_root,
+        )
+        + _section(
+            "v0.5 Milestone Manifest",
+            repo_root / "docs/codex/v0.5-milestone-manifest.md",
+            repo_root,
+        )
+        + _section(
+            "v0.5 Threat Model Delta",
+            repo_root / "docs/codex/v0.5-threat-model-delta.md",
+            repo_root,
+        )
+        + _section(
             "v0.3 Review Packet",
             repo_root / "docs/codex/v0.3-review-packet.md",
             repo_root,
@@ -194,6 +214,46 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         )
         + _section(
+            "Accepted Risk Register",
+            repo_root / "docs/codex/accepted-risk-register.md",
+            repo_root,
+        )
+        + _section(
+            "Capability Decision Report",
+            repo_root / "docs/codex/capability-decision-report.md",
+            repo_root,
+        )
+        + _section(
+            "No-New-Powers Guardrail",
+            repo_root / "docs/codex/no-new-powers-guardrail.md",
+            repo_root,
+        )
+        + _section(
+            "Source Review Runbook v2",
+            repo_root / "docs/codex/source-review-runbook-v2.md",
+            repo_root,
+        )
+        + _section(
+            "Source Review Transcript Packet",
+            repo_root / "docs/codex/source-review-transcript-packet.md",
+            repo_root,
+        )
+        + _section(
+            "Reviewer Artifact Manifest v2",
+            repo_root / "docs/codex/reviewer-artifact-manifest-v2.md",
+            repo_root,
+        )
+        + _section(
+            "External Review Response Intake Template v2",
+            repo_root / "docs/codex/external-review-response-intake-template-v2.md",
+            repo_root,
+        )
+        + _section(
+            "Review Packet Source Pointers",
+            repo_root / "docs/codex/review-packet-source-pointers.md",
+            repo_root,
+        )
+        + _section(
             "Internal Source Review Pass 1",
             repo_root / "docs/codex/internal-source-review-pass-1.md",
             repo_root,
@@ -251,12 +311,12 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
         ),
         "07_PROJECT_README.md": _section("README", repo_root / "README.md", repo_root),
     }
-    index = f"""# Ithildin v0.3-Prep Review Packet: Consolidated Attachments
+    index = f"""# Ithildin v0.5 Review-Closure Packet: Consolidated Attachments
 
 This folder is the 10-attachment-friendly packet for GPT 5.5 Pro / Very High or a human expert
-reviewer. It consolidates the v0.3-prep review bundle generated from commit `{short_commit}`.
+reviewer. It consolidates the review bundle generated from commit `{short_commit}`.
 
-In practice, v0.3-prep is an assurance/review-automation wave over the same narrow v0.1
+In practice, v0.5 is a source-review closure and capability-decision wave over the same narrow v0.1
 local-preview runtime boundary.
 
 Send these files in order:

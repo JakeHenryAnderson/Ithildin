@@ -345,6 +345,10 @@ def test_consolidated_review_packet_generation(
         "docs/codex/v0.3-boundary-decision.md",
         "docs/codex/v0.2-external-review-prompt.md",
         "docs/codex/reviewer-reproduction-map.md",
+        "docs/codex/v0.5-review-candidate-command.md",
+        "docs/codex/v0.5-roadmap-from-v0.4-review.md",
+        "docs/codex/v0.5-milestone-manifest.md",
+        "docs/codex/v0.5-threat-model-delta.md",
         "docs/codex/v0.2-review-packet.md",
         "docs/codex/v0.2-review-response-and-rc-cleanup.md",
         "docs/codex/v0.2-planning-seed.md",
@@ -354,6 +358,14 @@ def test_consolidated_review_packet_generation(
         "docs/codex/threat-model-and-non-goals.md",
         "docs/codex/negative-review-recipes.md",
         "docs/codex/source-review-closure-matrix.md",
+        "docs/codex/accepted-risk-register.md",
+        "docs/codex/capability-decision-report.md",
+        "docs/codex/no-new-powers-guardrail.md",
+        "docs/codex/source-review-runbook-v2.md",
+        "docs/codex/source-review-transcript-packet.md",
+        "docs/codex/reviewer-artifact-manifest-v2.md",
+        "docs/codex/external-review-response-intake-template-v2.md",
+        "docs/codex/review-packet-source-pointers.md",
         "docs/codex/internal-source-review-pass-1.md",
         "docs/codex/internal-ai-review-workflow.md",
         "docs/codex/autonomous-sprint-guardrails.md",
@@ -399,6 +411,15 @@ def test_consolidated_review_packet_generation(
     assert hash_paths == set(consolidate_review_packet.ATTACHMENT_FILES)
     assert all(str(entry["sha256"]).startswith("sha256:") for entry in hashes)
     assert "Negative Review Transcripts" in output_dir.joinpath(
+        "04_REPRODUCTION_SECURITY_AND_NEGATIVE_RECIPES.md"
+    ).read_text(encoding="utf-8")
+    assert "v0.5 Review-Closure Packet" in output_dir.joinpath(
+        "00_ATTACHMENT_INDEX.md"
+    ).read_text(encoding="utf-8")
+    assert "v0.5 Roadmap From v0.4 Review" in output_dir.joinpath(
+        "02_REVIEW_PACKET_AND_RESPONSE.md"
+    ).read_text(encoding="utf-8")
+    assert "Review Packet Source Pointers" in output_dir.joinpath(
         "04_REPRODUCTION_SECURITY_AND_NEGATIVE_RECIPES.md"
     ).read_text(encoding="utf-8")
     all_output_paths = [path.as_posix() for path in output_dir.rglob("*")]
@@ -1279,8 +1300,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-176"
-    assert manifest["planned_range"] == "177-180"
+    assert manifest["completed_range"] == "152-177"
+    assert manifest["planned_range"] == "178-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1796,8 +1817,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
     assert report["tool_count"] == 10
-    assert report["completed_range"] == "152-176"
-    assert report["planned_range"] == "177-180"
+    assert report["completed_range"] == "152-177"
+    assert report["planned_range"] == "178-180"
     assert report["open_accepted_risks"] == 10
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
@@ -2019,6 +2040,31 @@ def test_v05_review_candidate_command_is_wired() -> None:
     assert "Task 176 adds a one-command" in matrix
     assert "docs/codex/v0.5-review-candidate-command.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.5-review-candidate-command.md" in docs_site
+
+
+def test_v05_consolidated_packet_update_is_wired() -> None:
+    doc = Path("docs/codex/v0.5-consolidated-packet-update.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    consolidated = Path("scripts/consolidate_review_packet.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "v0.5 Review-Closure Packet" in consolidated
+    assert "v0.5 Roadmap From v0.4 Review" in consolidated
+    assert "Review Packet Source Pointers" in consolidated
+    assert "does not close external review" in doc
+    assert "v0.5-milestone-manifest.md" in readme
+    assert "177 - v0.5 consolidated packet update | Done" in backlog
+    assert "Task 177 adds v0.5 review-closure artifacts" in matrix
+    assert "docs/codex/v0.5-consolidated-packet-update.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.5-consolidated-packet-update.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
