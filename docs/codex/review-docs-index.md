@@ -70,6 +70,7 @@ externally closed.
 - [v0.6 External Review Dispatch Packets](v0.6-external-review-dispatch-packets.md)
 - [v0.6 External Response Normalization](v0.6-external-response-normalization.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
+- [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [No-New-Powers Guardrail v2](no-new-powers-guardrail.md)
