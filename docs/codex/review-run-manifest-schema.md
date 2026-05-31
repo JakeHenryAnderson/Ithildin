@@ -11,7 +11,7 @@ The directory may be empty; an empty directory means no review runs have been ex
 
 ## Required Fields
 
-Each manifest is a JSON object with:
+Each manifest file is named `review-run-*.json` and contains a JSON object with:
 
 - `review_id`: stable run ID.
 - `prompt_file`: repo-relative prompt or review packet path.

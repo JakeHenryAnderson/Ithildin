@@ -50,6 +50,28 @@ so later automation can update internal findings without overstating external cl
 | External review intake | v0.3-prep external finding intake and closure workflow added | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 111 adds `external-review-intake-and-closure.md` with EXT finding IDs, reviewer finding validation, closure matrix update rules, and post-intake gates |
 | v0.3 boundary decision | v0.3-prep handoff decision recorded | Pending Wave 6 | Pending external review | None | No blocking finding open | Task 112 adds `v0.3-boundary-decision.md`: ready for external/source review handoff, not ready for new tool powers, production positioning, or boundary expansion |
 
+## v3 Closure State
+
+This v3 table is the controlling gate for v0.4 review-closure work. Internal status can advance from
+tests, Codex review, and internal AI pressure testing. External status remains pending until GPT 5.5
+Pro / Very High or a human expert reviews the relevant source and evidence.
+
+Closure states are `not_started`, `internal_reviewed`, `external_pending`, `external_reviewed`,
+`blocked`, `fixed_pending_verify`, `closed_local_preview`, and `accepted_deferred`.
+
+| Area | Internal status | External status | Highest open severity | Fixed commit | Verification command | Accepted/deferred risk link | Closure state |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Patch apply | v0.3 internal reviewed; v0.4 Tasks 117-118 pending | pending external review | none | pending | `make release-check` | none | external_pending |
+| Filesystem | v0.3 internal reviewed; v0.4 Tasks 119-120 pending | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | Windows/WSL unsupported per filesystem contract | external_pending |
+| HTTP fetch | v0.3 internal/subagent reviewed; SUB-001 fixed internally | pending external review | none | 927334e | `make release-check`; HTTP focused tests | none | external_pending |
+| Signed evidence | v0.3 internal reviewed; adversarial tests expanded | pending external review | none | pending | `make signed-evidence-demo`; `make release-check` | local signatures only, no notarization | external_pending |
+| Audit integrity | v0.3 internal reviewed; adversarial suite expanded | pending external review | none | pending | `make audit-diagnostics`; `make release-check` | local tamper-evident evidence only | external_pending |
+| Policy parity | v0.3 parity harness complete | pending external review | none | pending | `make policy-parity`; `make release-check` | OPA remains optional evidence, YAML canonical for gates | external_pending |
+| Registry fail-closed | v0.3 manifest/principal/workspace suites expanded | pending external review | none | pending | `make manifest-lock-check`; `make release-check` | trusted local config remains TCB | external_pending |
+| Release evidence | v0.3 schema, packet diff, and guardrails complete | pending external review | none | pending | `make release-evidence`; `make review-candidate` | review packets are not external audits | external_pending |
+| MCP ingress | v0.3 thin-adapter audit complete | pending external review | none | pending | MCP adapter focused tests; `make release-check` | stdio-only local MCP remains boundary | external_pending |
+| Review console evidence | v0.3 approval evidence/failure UX improved | pending external review | none | pending | UI typecheck/build; `make release-check` | local admin UI is not production auth | external_pending |
+
 ## v2 Update Rules
 
 - `Internal review` records Codex/manual implementation-assurance passes only.

@@ -116,6 +116,7 @@
 | 113 - v0.4 boundary charter | Done | [v0.4-boundary-charter.md](v0.4-boundary-charter.md) |
 | 114 - Review run manifest | Done | [review-run-manifest-schema.md](review-run-manifest-schema.md), `make review-run-manifest-check` |
 | 115 - Review findings aggregator | Done | [v0.3-review-findings-summary.md](v0.3-review-findings-summary.md), `make review-findings-summary` |
+| 116 - Source-review closure matrix v3 | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md), `make release-guardrails` |
 
 ## Future Candidate Track
 

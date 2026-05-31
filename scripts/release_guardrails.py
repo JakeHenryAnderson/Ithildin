@@ -92,6 +92,7 @@ def main() -> None:
     failures.extend(_check_release_targets())
     failures.extend(_check_deferred_tool_powers_absent_from_manifests())
     failures.extend(_check_v03_wave5_status())
+    failures.extend(_check_closure_matrix_v3())
 
     if failures:
         for failure in failures:
@@ -246,6 +247,33 @@ def _check_v03_wave5_status() -> list[str]:
             continue
         if "| Done |" not in matching_lines[0]:
             failures.append(f"Task {task_id} is not marked Done in implementation backlog")
+    return failures
+
+
+def _check_closure_matrix_v3() -> list[str]:
+    text = (ROOT / "docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
+    failures: list[str] = []
+    required_states = [
+        "not_started",
+        "internal_reviewed",
+        "external_pending",
+        "external_reviewed",
+        "blocked",
+        "fixed_pending_verify",
+        "closed_local_preview",
+        "accepted_deferred",
+    ]
+    if "## v3 Closure State" not in text:
+        failures.append("source review closure matrix is missing v3 closure state")
+    for state in required_states:
+        if state not in text:
+            failures.append(f"source review closure matrix is missing state: {state}")
+    for line in text.splitlines():
+        if not line.startswith("|") or "closed_local_preview" not in line:
+            continue
+        columns = [column.strip().lower() for column in line.strip("|").split("|")]
+        if any(column in {"critical", "high"} for column in columns):
+            failures.append("closed_local_preview row has open critical/high severity")
     return failures
 
 

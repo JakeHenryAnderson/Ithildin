@@ -943,7 +943,7 @@ def test_review_run_manifest_validator_accepts_valid_run(
     runs_dir = tmp_path / "runs"
     runs_dir.mkdir()
     commit = "abc1234"
-    runs_dir.joinpath("run.json").write_text(
+    runs_dir.joinpath("review-run-fixture.json").write_text(
         json.dumps(
             {
                 "review_id": "review-1",
@@ -996,7 +996,7 @@ def test_review_run_manifest_validator_rejects_missing_and_mismatched_fields(
 ) -> None:
     runs_dir = tmp_path / "runs"
     runs_dir.mkdir()
-    runs_dir.joinpath("bad.json").write_text(
+    runs_dir.joinpath("review-run-bad.json").write_text(
         json.dumps(
             {
                 "review_id": "review-1",
@@ -1067,6 +1067,28 @@ def test_review_findings_summary_doc_and_release_check_are_wired() -> None:
     assert "make review-findings-summary" in readme
     assert "SUB-001" in summary
     assert "docs/codex/v0.3-review-findings-summary.md" in review_docs.REVIEW_DOCS
+
+
+def test_source_review_closure_matrix_v3_is_guarded() -> None:
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "## v3 Closure State" in matrix
+    for state in [
+        "not_started",
+        "internal_reviewed",
+        "external_pending",
+        "external_reviewed",
+        "blocked",
+        "fixed_pending_verify",
+        "closed_local_preview",
+        "accepted_deferred",
+    ]:
+        assert state in matrix
+    assert "Patch apply" in matrix
+    assert "Review console evidence" in matrix
+    assert release_guardrails._check_closure_matrix_v3() == []
 
 
 def test_release_check_enforces_filesystem_contract_check() -> None:

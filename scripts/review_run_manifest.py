@@ -79,7 +79,7 @@ def validate_review_runs(runs_dir: Path, repo_root: Path) -> list[ReviewRunSumma
         raise ReviewRunManifestError(f"review-runs path is not a directory: {runs_dir}")
 
     summaries: list[ReviewRunSummary] = []
-    for path in sorted(runs_dir.rglob("*.json")):
+    for path in sorted(runs_dir.rglob("review-run-*.json")):
         manifest = _read_manifest(path)
         summaries.append(_validate_manifest(path, manifest, repo_root))
     return summaries
