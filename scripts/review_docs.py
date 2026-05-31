@@ -76,6 +76,7 @@ REVIEW_DOCS = [
     "docs/codex/source-review-runbook-v2.md",
     "docs/codex/source-file-inspection-packet.md",
     "docs/codex/patch-apply-source-review-checklist.md",
+    "docs/codex/filesystem-source-review-checklist.md",
     "docs/codex/local-preview-release.md",
 ]
 

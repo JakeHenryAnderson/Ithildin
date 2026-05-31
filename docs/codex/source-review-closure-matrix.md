@@ -91,6 +91,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Source review runbook v2 | Task 157 documents the repeatable source-review workflow for v0.5 | pending external review | none | pending | `make docs-site`; `make release-check` | runbook guides review but does not close external rows | external_pending |
 | Source file inspection packet | Task 158 maps high-risk source files/functions to contracts and tests | pending external review | none | pending | `make docs-site`; `make release-check` | pointer packet accelerates review but does not prove implementation correctness | external_pending |
 | Patch apply source review checklist | Task 159 adds a source checklist for the only local-preview write path | pending external review | none | pending | patch/approval focused tests; `make release-check` | checklist guides review but does not close patch apply externally | external_pending |
+| Filesystem source review checklist | Task 160 adds a source checklist for workspace path/race semantics | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | checklist guides review but does not close filesystem externally | external_pending |
 
 ## v2 Update Rules
 

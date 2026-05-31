@@ -1269,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-159"
-    assert manifest["planned_range"] == "160-180"
+    assert manifest["completed_range"] == "152-160"
+    assert manifest["planned_range"] == "161-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1501,6 +1501,35 @@ def test_patch_apply_source_review_checklist_is_documented() -> None:
     assert "Task 159 adds a source checklist" in matrix
     assert "docs/codex/patch-apply-source-review-checklist.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/patch-apply-source-review-checklist.md" in docs_site
+
+
+def test_filesystem_source_review_checklist_is_documented() -> None:
+    checklist = Path("docs/codex/filesystem-source-review-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "FilesystemReadTools.resolve_existing_path",
+        "FilesystemReadTools._ensure_under_workspace",
+        "FilesystemReadTools._ensure_not_sensitive",
+        "FilesystemReadTools._ensure_not_hardlinked_file",
+        "_reject_ambiguous_path_input",
+        "PatchProposalService.create_proposal",
+        "make filesystem-contract-check",
+        "Windows/WSL remain unsupported/untested",
+    ]:
+        assert required in checklist
+    assert "filesystem-source-review-checklist.md" in readme
+    assert "160 - Filesystem source review checklist | Done" in backlog
+    assert "Task 160 adds a source checklist" in matrix
+    assert "docs/codex/filesystem-source-review-checklist.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/filesystem-source-review-checklist.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

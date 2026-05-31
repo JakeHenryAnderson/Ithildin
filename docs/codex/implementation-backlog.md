@@ -176,7 +176,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 157 - Source review runbook v2 | Done | [source-review-runbook-v2.md](source-review-runbook-v2.md) |
 | 158 - Source file inspection packet | Done | [source-file-inspection-packet.md](source-file-inspection-packet.md) |
 | 159 - Patch apply source review checklist | Done | [patch-apply-source-review-checklist.md](patch-apply-source-review-checklist.md) |
-| 160 - Filesystem source review checklist | Planned | Filesystem source review |
+| 160 - Filesystem source review checklist | Done | [filesystem-source-review-checklist.md](filesystem-source-review-checklist.md) |
 | 161 - HTTP fetch source review checklist | Planned | HTTP source review |
 | 162 - Signed evidence source review checklist | Planned | Signed evidence source review |
 | 163 - Policy parity source review checklist | Planned | Policy parity source review |
