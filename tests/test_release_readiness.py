@@ -37,6 +37,7 @@ from scripts import (
     tool_surface_invariant_gate,
     v04_review_packet,
     v05_boundary_decision_draft_check,
+    v05_handoff_packet_check,
     v05_threat_model_delta_check,
 )
 
@@ -1302,8 +1303,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-179"
-    assert manifest["planned_range"] == "180"
+    assert manifest["completed_range"] == "152-180"
+    assert manifest["planned_range"] == "none"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1819,8 +1820,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
     assert report["tool_count"] == 10
-    assert report["completed_range"] == "152-179"
-    assert report["planned_range"] == "180"
+    assert report["completed_range"] == "152-180"
+    assert report["planned_range"] == "none"
     assert report["open_accepted_risks"] == 10
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
@@ -2127,6 +2128,34 @@ def test_v05_boundary_decision_draft_is_wired_and_blocked() -> None:
     )
     assert "docs/codex/v0.5-boundary-decision-draft.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.5-boundary-decision-draft.md" in docs_site
+
+
+def test_v05_handoff_packet_is_wired_and_blocked() -> None:
+    report = v05_handoff_packet_check.build_report(Path.cwd())
+    doc = Path("docs/codex/v0.5-handoff-packet.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["external_handoff_go"] is True
+    assert report["capability_expansion_go"] is False
+    assert report["broader_distribution_go"] is False
+    assert report["tasks_complete"] is True
+    assert "Tasks 152-180 are complete" in doc
+    assert "make v05-review-candidate" in doc
+    assert "v0.5-handoff-packet.md" in readme
+    assert "180 - v0.5 handoff packet and go/no-go seed | Done" in backlog
+    assert "Task 180 records go/no-go seed" in matrix
+    assert "v05-handoff-packet-check" in makefile.partition("release-check:")[2]
+    assert "v05-handoff-packet-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/v0.5-handoff-packet.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.5-handoff-packet.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

@@ -62,6 +62,7 @@ externally closed.
 - [v0.5 Consolidated Packet Update](v0.5-consolidated-packet-update.md)
 - [v0.5 External Review Prompt](v0.5-external-review-prompt.md)
 - [v0.5 Boundary Decision Draft](v0.5-boundary-decision-draft.md)
+- [v0.5 Handoff Packet](v0.5-handoff-packet.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [No-New-Powers Guardrail v2](no-new-powers-guardrail.md)

@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.5 review-closure candidate for deciding whether capability expansion is safe to plan",
   "purpose": "Convert v0.4 review feedback into source-review closure machinery and capability-decision evidence without adding new governed tool powers.",
-  "completed_range": "152-179",
-  "planned_range": "180",
+  "completed_range": "152-180",
+  "planned_range": "none",
   "deferred_boundaries": [
     "shell execution",
     "Docker socket access",
@@ -58,6 +58,6 @@
     {"id": "177", "title": "v0.5 consolidated packet update", "status": "done", "commit": "Update consolidated packet for v0.5", "blocks_capability_expansion": "conditional", "blocks_broader_distribution": "conditional", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make review-packet-consolidated", "make review-candidate"], "risk_surface": ["review packet"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "178", "title": "v0.5 external review prompt", "status": "done", "commit": "Add v0.5 external review prompt", "blocks_capability_expansion": "conditional", "blocks_broader_distribution": "conditional", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make docs-site"], "risk_surface": ["external prompt"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "179", "title": "v0.5 boundary decision draft", "status": "done", "commit": "Add v0.5 boundary decision draft", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "conditional", "requires_external_review_before_closure": true, "required_commands": ["make v05-boundary-decision-draft-check", "make release-check"], "risk_surface": ["boundary decision"], "deferred_boundary_must_remain_unchanged": true},
-    {"id": "180", "title": "v0.5 handoff packet and go/no-go seed", "status": "planned", "commit": "Add v0.5 handoff packet", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": true, "required_commands": ["make release-check", "make review-candidate", "git status --short"], "risk_surface": ["external handoff", "go/no-go"], "deferred_boundary_must_remain_unchanged": true}
+    {"id": "180", "title": "v0.5 handoff packet and go/no-go seed", "status": "done", "commit": "Add v0.5 handoff packet", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": true, "required_commands": ["make v05-handoff-packet-check", "make release-check", "make v05-review-candidate", "git status --short"], "risk_surface": ["external handoff", "go/no-go"], "deferred_boundary_must_remain_unchanged": true}
   ]
 }

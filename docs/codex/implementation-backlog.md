@@ -196,7 +196,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 177 - v0.5 consolidated packet update | Done | [v0.5-consolidated-packet-update.md](v0.5-consolidated-packet-update.md), `make review-packet-consolidated` |
 | 178 - v0.5 external review prompt | Done | [v0.5-external-review-prompt.md](v0.5-external-review-prompt.md) |
 | 179 - v0.5 boundary decision draft | Done | [v0.5-boundary-decision-draft.md](v0.5-boundary-decision-draft.md), `make v05-boundary-decision-draft-check` |
-| 180 - v0.5 handoff packet and go/no-go seed | Planned | Handoff packet |
+| 180 - v0.5 handoff packet and go/no-go seed | Done | [v0.5-handoff-packet.md](v0.5-handoff-packet.md), `make v05-handoff-packet-check` |
 
 ## Future Candidate Track
 

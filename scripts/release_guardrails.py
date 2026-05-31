@@ -68,6 +68,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "capability-decision-report",
     "v05-threat-model-delta-check",
     "v05-boundary-decision-draft-check",
+    "v05-handoff-packet-check",
     "determinism-check",
     "adversarial-corpus-check",
     "resource-limit-check",

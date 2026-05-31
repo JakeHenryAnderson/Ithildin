@@ -242,10 +242,12 @@ The v0.4 milestone roadmap is recorded in
 complete and should be externally reviewed before implementation drift or capability expansion.
 The v0.5 source-review and capability-decision roadmap is recorded in
 [docs/codex/v0.5-roadmap-from-v0.4-review.md](docs/codex/v0.5-roadmap-from-v0.4-review.md) and
-[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-179 are
-complete; Task 180 is planned and does not add new governed tool powers.
+[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-180 are
+complete and do not add new governed tool powers.
 The v0.5 threat-model delta is in
 [docs/codex/v0.5-threat-model-delta.md](docs/codex/v0.5-threat-model-delta.md).
+The v0.5 handoff packet is in
+[docs/codex/v0.5-handoff-packet.md](docs/codex/v0.5-handoff-packet.md).
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in
