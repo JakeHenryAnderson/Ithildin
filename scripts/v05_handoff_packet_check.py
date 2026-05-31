@@ -17,7 +17,7 @@ REQUIRED_PHRASES = [
     "make v05-review-candidate",
     "make release-check",
     "Tasks 152-180 are complete",
-    "external/source review remains pending",
+    "External/source review remains pending",
     "does not add governed tool powers",
 ]
 

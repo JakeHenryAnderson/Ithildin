@@ -76,6 +76,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.5-external-review-prompt.md",
     "docs/codex/v0.5-boundary-decision-draft.md",
     "docs/codex/v0.5-handoff-packet.md",
+    "docs/codex/v0.6-preflight-transition.md",
     "docs/codex/capability-expansion-gate.md",
     "docs/codex/tool-surface-invariant-gate.md",
     "docs/codex/no-new-powers-guardrail.md",

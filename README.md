@@ -248,6 +248,8 @@ The v0.5 threat-model delta is in
 [docs/codex/v0.5-threat-model-delta.md](docs/codex/v0.5-threat-model-delta.md).
 The v0.5 handoff packet is in
 [docs/codex/v0.5-handoff-packet.md](docs/codex/v0.5-handoff-packet.md).
+The v0.6 preflight transition note is in
+[docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in

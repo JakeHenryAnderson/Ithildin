@@ -1144,6 +1144,7 @@ def test_review_docs_index_is_documented_and_wired() -> None:
         "Evidence and Gates",
         "Review Closure",
         "Reproduction and Packet Handoff",
+        "v0.6 Preflight Transition Note",
         "Do not infer production readiness",
     ]:
         assert required in doc
@@ -2156,6 +2157,25 @@ def test_v05_handoff_packet_is_wired_and_blocked() -> None:
     assert "v05-handoff-packet-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/v0.5-handoff-packet.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.5-handoff-packet.md" in docs_site
+
+
+def test_v06_preflight_transition_note_is_wired() -> None:
+    doc = Path("docs/codex/v0.6-preflight-transition.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "2b6911715bffe0e2f967a25a70c742dc0ee5346d",
+        "Go for v0.6 Wave 1 external-review setup and dispatch work",
+        "No-go for capability expansion",
+        "Task 181 should turn this transition note into a formal v0.6 boundary charter",
+    ]:
+        assert required in doc
+    assert "v0.6-preflight-transition.md" in readme
+    assert "v0.6-preflight-transition.md" in index
+    assert "docs/codex/v0.6-preflight-transition.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-preflight-transition.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
