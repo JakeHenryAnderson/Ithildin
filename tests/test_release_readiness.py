@@ -431,14 +431,20 @@ def test_http_executor_contract_is_linked_and_validated() -> None:
     )
 
     for required in [
+        "HTTP Fetch Executor Contract v2",
         "GET only",
         "exact allowlist",
         "no caller-supplied headers",
+        "Parse-Normalize-Allowlist-Resolve-Pin-Open Order",
+        "whitespace/control characters",
+        "percent-encoded host",
         "malformed ports",
         "IDNA",
         "resolves the destination twice",
         "Redirects repeat",
         "connect to one of the validated IPs",
+        "tests/fixtures/http_canonicalization_corpus.json",
+        "Audit Fields",
         "proxy",
         "response bodies",
         "not a network sandbox",
@@ -447,6 +453,7 @@ def test_http_executor_contract_is_linked_and_validated() -> None:
     assert "http-executor-contract.md" in readme
     assert "docs/codex/http-executor-contract.md" in review_docs.REVIEW_DOCS
     assert "Task 093 HTTP executor contract" in matrix
+    assert "Tasks 121-122 corpus and contract v2" in matrix
 
 
 def test_executor_contract_set_indexes_review_surfaces() -> None:

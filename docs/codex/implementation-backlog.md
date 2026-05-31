@@ -122,6 +122,7 @@
 | 119 - Filesystem adversarial race harness v2 | Done | bounded read/proposal target-swap tests in `tests/test_read_tools.py` and `tests/test_patch_proposals.py` |
 | 120 - Filesystem platform support gate v2 | Done | `/system/status`, release evidence, UI warning surface, `make filesystem-contract-check` |
 | 121 - HTTP canonicalization corpus v2 | Done | `tests/fixtures/http_canonicalization_corpus.json`, `tests/test_http_tools.py` |
+| 122 - HTTP fetch executor contract v2 | Done | [http-executor-contract.md](http-executor-contract.md), corpus-linked review pointers |
 
 ## Future Candidate Track
 

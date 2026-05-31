@@ -1,4 +1,4 @@
-# HTTP Executor Contract
+# HTTP Fetch Executor Contract v2
 
 This contract documents the local-preview guarantees for `http.fetch`. The tool is network-read-only:
 GET only, exact allowlist only, no caller-supplied headers, no request body, no cookies, no browser
@@ -13,7 +13,7 @@ automation, no proxy inheritance, and no broad network access.
 The manifest schema rejects additional caller-supplied fields such as headers, method, body, cookie,
 proxy, or timeout overrides.
 
-## Canonicalization Sequence
+## Parse-Normalize-Allowlist-Resolve-Pin-Open Order
 
 Before opening a request, the executor:
 
@@ -45,6 +45,21 @@ explicit ports, whitespace/control characters, credentials, fragments, percent-e
 trailing/repeated dots, IDNA/punycode, IPv6, obfuscated IPv4 forms, redirect-to-private denial,
 DNS-change denial, timeout errors, size limits, and safe error behavior.
 
+## Audit Fields
+
+Runtime audit events should record only safe network evidence:
+
+- tool name, principal, request ID, session ID, decision, and policy evidence;
+- normalized URL, scheme, host, and allowlist scope;
+- redirect count and redirect metadata without response bodies or wholesale headers;
+- status code, content type, byte count, truncation/limit status, and safe failure reason;
+- no response body, caller secrets, cookies, credentials, proxy details, stack traces, or raw
+  resolver internals.
+
+Policy preview and runtime resource construction use the same URL parsing and allowlist scope
+convention. Preview may report malformed or out-of-scope URLs, but it must not execute a network
+request or write audit events.
+
 ## Response Bounds
 
 The executor enforces configured timeout, redirect count, declared `Content-Length`, and actual body
@@ -62,3 +77,11 @@ secrets.
 `http.fetch` is not a network sandbox and does not support arbitrary HTTP methods, request bodies,
 custom headers, cookies, authentication, browser automation, arbitrary proxy use, URL path-prefix
 allowlists, wildcards, or broad internet access.
+
+## Review Pointers
+
+- Implementation: `apps/api/src/ithildin_api/http_tools.py`.
+- Corpus: `tests/fixtures/http_canonicalization_corpus.json`.
+- Regression coverage: `tests/test_http_tools.py`, `tests/test_security_regressions.py`, and
+  governed/MCP integration tests that route `http.fetch` through the shared pipeline.
+- Review status: [source-review-closure-matrix.md](source-review-closure-matrix.md).

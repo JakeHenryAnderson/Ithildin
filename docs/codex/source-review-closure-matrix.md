@@ -63,7 +63,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Patch apply | v0.3 internal reviewed; Tasks 117-118 fault hooks and transition enforcement added | pending external review | none | pending | `make release-check` | none | external_pending |
 | Filesystem | v0.3 internal reviewed; Tasks 119-120 bounded race harness and runtime support evidence added | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | Windows/WSL unsupported per filesystem contract | external_pending |
-| HTTP fetch | v0.3 internal/subagent reviewed; SUB-001 fixed internally; Task 121 canonicalization corpus added | pending external review | none | 927334e | `make release-check`; HTTP focused tests | none | external_pending |
+| HTTP fetch | v0.3 internal/subagent reviewed; SUB-001 fixed internally; Tasks 121-122 corpus and contract v2 added | pending external review | none | 927334e | `make release-check`; HTTP focused tests | none | external_pending |
 | Signed evidence | v0.3 internal reviewed; adversarial tests expanded | pending external review | none | pending | `make signed-evidence-demo`; `make release-check` | local signatures only, no notarization | external_pending |
 | Audit integrity | v0.3 internal reviewed; adversarial suite expanded | pending external review | none | pending | `make audit-diagnostics`; `make release-check` | local tamper-evident evidence only | external_pending |
 | Policy parity | v0.3 parity harness complete | pending external review | none | pending | `make policy-parity`; `make release-check` | OPA remains optional evidence, YAML canonical for gates | external_pending |

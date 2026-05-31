@@ -125,7 +125,7 @@ startup to fail closed on missing or invalid local signature evidence. See
 `http.fetch` is disabled until `ITHILDIN_HTTP_ALLOWLIST` names exact destinations such as
 `example.com` (HTTPS default), `example.com:443`, `example.com:80`, or
 `https://example.com`. Use a scheme-qualified entry for non-default ports.
-Its canonicalization, redirect, DNS/IP, proxy, and response-bound behavior is documented in
+Its v2 canonicalization, redirect, DNS/IP, proxy, and response-bound behavior is documented in
 [docs/codex/http-executor-contract.md](docs/codex/http-executor-contract.md).
 Governed tool outputs are redacted before they are returned to agents using an always-on
 baseline for common tokens, secrets, passwords, cookies, and private keys; add local patterns
