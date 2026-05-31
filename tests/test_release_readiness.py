@@ -2211,6 +2211,11 @@ def test_v06_patch_apply_external_review_packet_is_wired(
     assert output_dir.joinpath("01_PATCH_APPLY_EXTERNAL_REVIEW_PROMPT.md").exists()
     assert output_dir.joinpath("03_PATCH_APPLY_SOURCE_BUNDLE.md").exists()
     assert output_dir.joinpath("patch-apply-review-artifact-hashes.json").exists()
+    index = output_dir.joinpath("00_PATCH_APPLY_EXTERNAL_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    assert "supersedes the earlier generic v0.6 dispatch entry" in index
+    assert "intentionally excludes itself" in index
     prompt = output_dir.joinpath("01_PATCH_APPLY_EXTERNAL_REVIEW_PROMPT.md").read_text(
         encoding="utf-8"
     )
@@ -2221,6 +2226,10 @@ def test_v06_patch_apply_external_review_packet_is_wired(
     )
     assert "--area \"patch-apply\"" in intake
     assert "normalized-response.json" in intake
+    assert "make reviewer-findings-check" in intake
+    assert "make review-findings-summary" in intake
+    assert "make external-review-closure-gate" in intake
+    assert "make release-check" in intake
     hashes = json.loads(
         output_dir.joinpath("patch-apply-review-artifact-hashes.json").read_text(
             encoding="utf-8"
@@ -2234,6 +2243,9 @@ def test_v06_patch_apply_external_review_packet_is_wired(
         "04_PATCH_APPLY_TESTS_BUNDLE.md",
         "05_PATCH_APPLY_CONTRACTS_BUNDLE.md",
         "06_PATCH_APPLY_INTAKE_COMMANDS.md",
+    }
+    assert "patch-apply-review-artifact-hashes.json" not in {
+        entry["path"] for entry in hashes
     }
 
     doc = Path("docs/codex/v0.6-patch-apply-external-review-execution.md").read_text(
@@ -2259,6 +2271,17 @@ def test_v06_patch_apply_external_review_packet_is_wired(
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/v0.6-patch-apply-external-review-execution.md" in docs_site
+
+    dispatch_area = next(
+        area
+        for area in external_review_dispatch_packets.DISPATCH_AREAS
+        if area.slug == "patch-apply"
+    )
+    assert any(
+        "tests/test_security_regressions.py" in command
+        for command in dispatch_area.commands
+    )
+    assert dispatch_area.finding_namespace == "EXT-PA-###"
 
 
 def test_v06_external_response_normalization_is_wired() -> None:

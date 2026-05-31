@@ -135,6 +135,12 @@ This packet is the first v0.6 external/source-review execution lane. It is scope
 - Dispatch packet whole-file SHA-256: `{context["patch_packet_sha256"]}`.
 - Dispatch packet payload SHA-256: `{context["patch_packet_payload_sha256"]}`.
 
+## Lineage Note
+
+This patch-apply lane packet supersedes the earlier generic v0.6 dispatch entry for patch apply.
+Review findings for this lane should reference reviewed commit `{context["commit"]}` and dispatch
+hash `{context["patch_packet_sha256"]}`.
+
 ## Send These Files
 
 1. `00_PATCH_APPLY_EXTERNAL_REVIEW_INDEX.md`
@@ -145,6 +151,9 @@ This packet is the first v0.6 external/source-review execution lane. It is scope
 6. `05_PATCH_APPLY_CONTRACTS_BUNDLE.md`
 7. `06_PATCH_APPLY_INTAKE_COMMANDS.md`
 8. `patch-apply-review-artifact-hashes.json`
+
+`patch-apply-review-artifact-hashes.json` records SHA-256 and byte counts for the seven markdown
+handoff files above. It intentionally excludes itself to avoid a self-referential hash.
 
 ## What This Does Not Prove
 
@@ -241,6 +250,18 @@ finding records and does not close external review rows.
 
 If critical/high findings are present, stop unrelated work and create structured finding records
 before remediation.
+
+After normalization and any finding-record updates, run:
+
+```bash
+make reviewer-findings-check
+make review-findings-summary
+make external-review-closure-gate
+make release-check
+```
+
+These gates validate finding structure, summary consistency, external-closure state, and the full
+local release posture. They do not close external review rows by themselves.
 """
 
 

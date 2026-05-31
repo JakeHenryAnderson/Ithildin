@@ -24,6 +24,7 @@ PROJECT_MARKERS = (
 class DispatchArea:
     slug: str
     title: str
+    finding_namespace: str
     closure_rows: tuple[str, ...]
     source_files: tuple[str, ...]
     review_docs: tuple[str, ...]
@@ -35,6 +36,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="patch-apply",
         title="Patch Apply External Review Packet",
+        finding_namespace="EXT-PA-###",
         closure_rows=("Patch apply", "Patch apply source review checklist"),
         source_files=(
             "apps/api/src/ithildin_api/patches.py",
@@ -49,7 +51,8 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
         ),
         commands=(
             "uv run pytest tests/test_patch_proposals.py "
-            "tests/test_approval_workflow.py tests/test_governed_tool_calls.py",
+            "tests/test_approval_workflow.py tests/test_governed_tool_calls.py "
+            "tests/test_security_regressions.py",
             "make release-check",
         ),
         prompt=(
@@ -60,6 +63,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="filesystem",
         title="Filesystem and Platform External Review Packet",
+        finding_namespace="EXT-FS-###",
         closure_rows=("Filesystem", "CI/platform claims", "Filesystem source review checklist"),
         source_files=(
             "apps/api/src/ithildin_api/read_tools.py",
@@ -85,6 +89,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="http-fetch",
         title="HTTP Fetch External Review Packet",
+        finding_namespace="EXT-HTTP-###",
         closure_rows=("HTTP fetch", "HTTP fetch source review checklist"),
         source_files=("apps/api/src/ithildin_api/http_tools.py",),
         review_docs=(
@@ -104,6 +109,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="signed-evidence",
         title="Audit and Signed Evidence External Review Packet",
+        finding_namespace="EXT-SE-###",
         closure_rows=(
             "Signed evidence",
             "Audit integrity",
@@ -135,6 +141,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="policy-registry",
         title="Policy and Registry External Review Packet",
+        finding_namespace="EXT-PR-###",
         closure_rows=(
             "Policy parity",
             "Registry fail-closed",
@@ -162,6 +169,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="mcp-ingress",
         title="MCP Ingress External Review Packet",
+        finding_namespace="EXT-MCP-###",
         closure_rows=("MCP ingress", "MCP ingress source review checklist"),
         source_files=("apps/mcp-server/src/ithildin_mcp_server/",),
         review_docs=(
@@ -181,6 +189,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="review-console",
         title="Review Console External Review Packet",
+        finding_namespace="EXT-UI-###",
         closure_rows=(
             "Local admin auth",
             "Review console evidence",
@@ -205,6 +214,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
     DispatchArea(
         slug="release-automation",
         title="Release and Evidence Automation External Review Packet",
+        finding_namespace="EXT-REL-###",
         closure_rows=(
             "Release evidence",
             "Negative denial evidence",
@@ -402,7 +412,7 @@ def _render_packet_payload(area: DispatchArea, commit: str, dirty: bool) -> str:
             "- reviewer identity and reviewer type;",
             "- source access level: source-level, packet-and-source, packet-only, or docs-only;",
             "- reviewed commit and dispatch packet hash;",
-            "- findings using the `EXT-###` convention;",
+            f"- findings using the `{area.finding_namespace}` convention;",
             "- explicit blocker status for critical/high findings;",
             "- clear distinction between documentation risk and implementation risk.",
             "",
