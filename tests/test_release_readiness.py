@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-142"
-    assert manifest["planned_range"] == "143-151"
+    assert manifest["completed_range"] == "113-143"
+    assert manifest["planned_range"] == "144-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 143-151 are planned" in readme
+    assert "Tasks 144-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -265,6 +265,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "internal-review-packet",
         "evidence-contracts-check",
         "adversarial-corpus-check",
+        "resource-limit-check",
         "signed-evidence-demo",
         "signed-evidence-demo-verify",
         "filesystem-contract-check",
@@ -723,7 +724,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-142 done",
+        "Tasks 113-143 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -972,6 +973,31 @@ def test_adversarial_corpus_framework_is_documented() -> None:
     assert "Task 142 manifest-backed corpus index added" in matrix
     assert "docs/codex/adversarial-corpus-framework.md" in review_docs.REVIEW_DOCS
     assert "tests/fixtures/http_canonicalization_corpus.json" in manifest
+
+
+def test_resource_limit_sanity_is_documented() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/resource-limit-sanity.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+
+    for required in [
+        "make resource-limit-check",
+        "read byte limit",
+        "patch byte limit",
+        "HTTP response byte limit",
+        "not production capacity planning",
+    ]:
+        assert required in doc
+    assert "resource-limit-sanity.md" in readme
+    assert "143 - Performance and resource-limit sanity | Done" in backlog
+    assert "Task 143 local-preview resource-limit sanity gate added" in matrix
+    assert "resource-limit-check:" in makefile
+    assert "adversarial-corpus-check resource-limit-check evidence-contracts-check" in makefile
+    assert "docs/codex/resource-limit-sanity.md" in review_docs.REVIEW_DOCS
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
@@ -1925,7 +1951,8 @@ def test_determinism_gate_doc_and_target_are_wired() -> None:
     assert "determinism-check:" in makefile
     assert "release-check: release-context manifest-lock-check release-guardrails" in makefile
     assert (
-        "determinism-check adversarial-corpus-check evidence-contracts-check policy-test"
+        "determinism-check adversarial-corpus-check resource-limit-check "
+        "evidence-contracts-check policy-test"
         in makefile
     )
     assert "make determinism-check" in readme
