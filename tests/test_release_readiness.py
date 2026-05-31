@@ -10,6 +10,7 @@ import pytest
 from scripts import (
     consolidate_review_packet,
     internal_review_packet,
+    packet_redaction_scan,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -136,8 +137,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-126"
-    assert manifest["planned_range"] == "127-151"
+    assert manifest["completed_range"] == "113-127"
+    assert manifest["planned_range"] == "128-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -157,11 +158,12 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 127-151 are planned" in readme
+    assert "Tasks 128-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
     assert "126 - Release guardrail expansion v2 | Done" in backlog
+    assert "127 - Secrets hygiene and packet redaction scanner | Done" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
     assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
@@ -298,10 +300,11 @@ def test_consolidated_review_packet_generation(
         "filesystem-contract-check.txt",
         "release-evidence.json",
         "release-packet.md",
-        "release-packet.json",
-        "review-doc-hashes.json",
-        "artifact-hashes.json",
-        "git-summary.txt",
+            "release-packet.json",
+            "review-doc-hashes.json",
+            "packet-redaction-scan.txt",
+            "artifact-hashes.json",
+            "git-summary.txt",
     ]:
         bundle_dir.joinpath(path).write_text(f"# {path}\n", encoding="utf-8")
     for path in [
@@ -705,7 +708,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-126 done",
+        "Tasks 113-127 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -1705,6 +1708,72 @@ def test_review_packet_diff_doc_and_target_are_wired() -> None:
     assert "103 - Review packet diff command | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
     assert "docs/codex/review-packet-diff.md" in review_docs.REVIEW_DOCS
+
+
+def test_packet_redaction_scan_passes_clean_packet(tmp_path: Path) -> None:
+    packet = tmp_path / "packet"
+    packet.mkdir()
+    packet.joinpath("INDEX.md").write_text("# clean\n", encoding="utf-8")
+    packet.joinpath("release-evidence.json").write_text(
+        '{"schema":{"secret_free":true}}\n',
+        encoding="utf-8",
+    )
+
+    result = packet_redaction_scan.scan_packet_paths([packet])
+
+    assert result.scanned_files == 2
+    assert result.findings == []
+    assert "Packet redaction scan passed." in packet_redaction_scan.render_scan_result(result)
+
+
+@pytest.mark.parametrize(
+    ("filename", "content", "reason"),
+    [
+        ("private.pem", "not actually read\n", "forbidden runtime file"),
+        ("INDEX.md", "-----BEGIN PRIVATE KEY-----\nabc\n", "private_key"),
+        ("INDEX.md", "ITHILDIN_ADMIN_TOKEN=ithildin_admin_real_token\n", "admin_token"),
+        ("INDEX.md", "dev-admin-token-change-me\n", "sample_admin_token"),
+    ],
+)
+def test_packet_redaction_scan_rejects_secret_material(
+    tmp_path: Path, filename: str, content: str, reason: str
+) -> None:
+    packet = tmp_path / "packet"
+    packet.mkdir()
+    packet.joinpath(filename).write_text(content, encoding="utf-8")
+
+    result = packet_redaction_scan.scan_packet_paths([packet])
+
+    assert result.findings
+    assert any(reason in finding.reason for finding in result.findings)
+
+
+def test_packet_redaction_scan_doc_target_and_bundle_are_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/packet-redaction-scanner.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    bundle_script = Path("scripts/review_packet_bundle.py").read_text(encoding="utf-8")
+    consolidated_script = Path("scripts/consolidate_review_packet.py").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert "packet-redaction-scan:" in makefile
+    assert "$(MAKE) packet-redaction-scan" in makefile
+    assert "make packet-redaction-scan" in readme
+    assert "make packet-redaction-scan" in doc
+    assert "make packet-redaction-scan" in review_packet
+    assert "packet-redaction-scan.txt" in reproduction_map
+    assert "packet-redaction-scan.txt" in bundle_script
+    assert "Packet Redaction Scan" in consolidated_script
+    assert "127 - Secrets hygiene and packet redaction scanner | Done" in backlog
+    assert "docs/codex/packet-redaction-scanner.md" in review_docs.REVIEW_DOCS
 
 
 def test_release_evidence_records_attached_release_check_metadata(

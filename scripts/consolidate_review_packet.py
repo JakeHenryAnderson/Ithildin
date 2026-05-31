@@ -155,6 +155,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
         + _section("Release Packet Markdown", bundle_dir / "release-packet.md", repo_root)
         + _section("Release Packet JSON", bundle_dir / "release-packet.json", repo_root)
         + _section("Review Doc Hashes", bundle_dir / "review-doc-hashes.json", repo_root)
+        + _section(
+            "Packet Redaction Scan",
+            bundle_dir / "packet-redaction-scan.txt",
+            repo_root,
+        )
         + _section("Artifact Hashes", bundle_dir / "artifact-hashes.json", repo_root)
         + _section("Git Summary", bundle_dir / "git-summary.txt", repo_root),
         "04_REPRODUCTION_SECURITY_AND_NEGATIVE_RECIPES.md": _section(

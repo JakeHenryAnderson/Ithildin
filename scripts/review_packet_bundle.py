@@ -15,6 +15,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from scripts.packet_redaction_scan import render_scan_result, scan_packet_paths
 from scripts.review_docs import REVIEW_DOCS, ReviewDocMetadata, collect_review_doc_metadata
 
 BUNDLE_DOCS = [
@@ -176,6 +177,7 @@ def build_bundle(
         signed_demo_included,
         negative_transcripts_included,
     )
+    _write_packet_redaction_scan(bundle_dir)
     artifact_hashes = _collect_artifact_hashes(
         bundle_dir=bundle_dir,
         review_docs=BUNDLE_DOCS,
@@ -312,6 +314,7 @@ def _collect_artifact_hashes(
         Path("release-packet.md"),
         Path("release-packet.json"),
         Path("review-doc-hashes.json"),
+        Path("packet-redaction-scan.txt"),
         Path("git-summary.txt"),
     ]
     paths.extend(Path("docs") / doc for doc in review_docs)
@@ -334,6 +337,16 @@ def _collect_artifact_hashes(
             }
         )
     return artifacts
+
+
+def _write_packet_redaction_scan(bundle_dir: Path) -> None:
+    scan_result = scan_packet_paths([bundle_dir])
+    bundle_dir.joinpath("packet-redaction-scan.txt").write_text(
+        render_scan_result(scan_result) + "\n",
+        encoding="utf-8",
+    )
+    if scan_result.findings:
+        raise BundleError("packet redaction scan found unsafe bundle artifacts")
 
 
 def _write_index(
@@ -376,6 +389,7 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 - `release-packet.md`
 - `release-packet.json`
 - `review-doc-hashes.json`
+- `packet-redaction-scan.txt`
 - `artifact-hashes.json`
 - `signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md` if `make signed-evidence-demo` was run first
 - `negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md` if
@@ -403,6 +417,12 @@ not external notarization, hosted custody, or official supply-chain signing.
 
 See `artifact-hashes.json` for SHA-256 digests of the generated bundle outputs, copied review
 documents, and copied signed-evidence demo summary when present.
+
+## Packet Redaction Scan
+
+`packet-redaction-scan.txt` records the Task 127 handoff hygiene scan for obvious private-key
+material, concrete admin-token assignments, sample development tokens, forbidden runtime files, and
+non-text packet artifacts. It is a narrow review-packet scan, not a complete secrets scanner.
 
 ## Filesystem Contract Evidence
 

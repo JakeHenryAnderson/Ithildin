@@ -56,6 +56,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/negative-review-recipes.md" in DEFAULT_DOCS
     assert "docs/codex/release-evidence-schema.md" in DEFAULT_DOCS
     assert "docs/codex/review-packet-diff.md" in DEFAULT_DOCS
+    assert "docs/codex/packet-redaction-scanner.md" in DEFAULT_DOCS
     assert "docs/codex/registry-fail-closed-suite.md" in DEFAULT_DOCS
     assert "docs/codex/release-guardrail-expansion.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS

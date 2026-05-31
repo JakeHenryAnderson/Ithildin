@@ -72,12 +72,13 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) negative-review-transcripts",
     "$(MAKE) review-packet-bundle",
     "$(MAKE) review-packet-consolidated",
+    "$(MAKE) packet-redaction-scan",
     "$(MAKE) docs-site",
 ]
 REQUIRED_V03_DONE_TASKS = [f"{task:03d}" for task in range(101, 113)]
-REQUIRED_V04_DONE_TASKS = [f"{task:03d}" for task in range(113, 127)]
-REQUIRED_V04_METADATA_TASKS = [f"{task:03d}" for task in range(123, 127)]
-V04_PLANNED_RANGE = "127-151"
+REQUIRED_V04_DONE_TASKS = [f"{task:03d}" for task in range(113, 128)]
+REQUIRED_V04_METADATA_TASKS = [f"{task:03d}" for task in range(123, 128)]
+V04_PLANNED_RANGE = "128-151"
 DEFERRED_TOOL_POWER_MARKERS = [
     "shell",
     "docker",
@@ -221,6 +222,7 @@ def _check_release_targets() -> list[str]:
         "release-evidence-gate:",
         "review-packet-diff:",
         "review-packet-diff-gate:",
+        "packet-redaction-scan:",
         "reviewer-findings-check:",
         "review-findings-summary:",
         "review-run-manifest-check:",
@@ -236,8 +238,8 @@ def _check_v04_horizontal_gate_status() -> list[str]:
         (ROOT / "docs/codex/v0.4-milestone-manifest.json").read_text(encoding="utf-8")
     )
     backlog = (ROOT / "docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    if manifest.get("completed_range") != "113-126":
-        failures.append("v0.4 manifest completed_range is not 113-126")
+    if manifest.get("completed_range") != "113-127":
+        failures.append("v0.4 manifest completed_range is not 113-127")
     if manifest.get("planned_range") != V04_PLANNED_RANGE:
         failures.append(f"v0.4 manifest planned_range is not {V04_PLANNED_RANGE}")
     if "make release-evidence-gate" not in manifest.get("after_each_wave_required_commands", []):

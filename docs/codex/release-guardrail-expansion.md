@@ -25,7 +25,8 @@ Task 126 extends the same guardrail into the v0.4 horizontal gate:
 
 - `release-check` must include `release-evidence-gate`;
 - `review-packet-diff-gate` must remain wired as a Make target;
-- the v0.4 milestone manifest must mark Tasks 113-126 done and Tasks 127-151 planned;
+- `packet-redaction-scan` must remain wired and run during `make review-candidate`;
+- the v0.4 milestone manifest must mark Tasks 113-127 done and Tasks 128-151 planned;
 - the v0.4 after-wave command list must include both `release-evidence-gate` and
   `review-packet-diff-gate`;
 - every completed v0.4 checkpoint must preserve the deferred-boundary metadata.

@@ -93,7 +93,13 @@ work must stop for status, reassessment, or external consultation.
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-12. `make docs-site`
+12. `make packet-redaction-scan`
+
+   Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
+   private-key material, concrete admin-token assignments, sample development tokens, forbidden
+   runtime file types, and non-text packet artifacts.
+
+13. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -106,6 +112,7 @@ work must stop for status, reassessment, or external consultation.
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`
 - Review document hashes: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/review-doc-hashes.json`
+- Packet redaction scan: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/packet-redaction-scan.txt`
 - Generated artifact hashes: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/artifact-hashes.json`
 - Consolidated attachment hashes: `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/consolidated-attachment-hashes.json`
 - Signed evidence demo summary: `var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md`
@@ -133,6 +140,7 @@ work must stop for status, reassessment, or external consultation.
 - Manifest validation suite: [manifest-validation-suite.md](manifest-validation-suite.md)
 - Registry fail-closed suite: [registry-fail-closed-suite.md](registry-fail-closed-suite.md)
 - Release guardrail expansion: [release-guardrail-expansion.md](release-guardrail-expansion.md)
+- Packet redaction scanner: [packet-redaction-scanner.md](packet-redaction-scanner.md)
 
 ## Reproduction Notes
 
