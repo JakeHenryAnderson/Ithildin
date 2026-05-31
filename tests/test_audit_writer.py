@@ -17,7 +17,7 @@ from ithildin_audit_core import (
     verify_exported_events_jsonl,
     verify_signed_audit_export_bundle,
 )
-from ithildin_schemas import AuditEventType, PolicyDecisionValue
+from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue
 
 VALID_HASH = "sha256:" + ("a" * 64)
 NOW = datetime(2026, 5, 25, 12, 0, tzinfo=UTC)
@@ -586,6 +586,26 @@ def test_signed_audit_export_rejects_malformed_top_level_fields(
 
     assert result.valid is False
     assert result.failure == failure
+
+
+def test_signed_audit_export_rejects_manifest_signature_bundle_confusion(
+    tmp_path: Path,
+) -> None:
+    bundle = cast(
+        JsonObject,
+        {
+            "signature_type": "ithildin.manifest_lock.signature",
+            "format_version": "1",
+        },
+    )
+
+    result = verify_signed_audit_export_bundle(
+        bundle,
+        public_key_path=tmp_path / "missing-public.pem",
+    )
+
+    assert result.valid is False
+    assert result.failure == "bundle_type must be a string"
 
 
 @pytest.mark.parametrize(

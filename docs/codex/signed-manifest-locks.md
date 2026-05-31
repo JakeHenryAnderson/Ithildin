@@ -49,3 +49,13 @@ ITHILDIN_REQUIRE_SIGNED_MANIFEST_LOCK=true
 When enabled, API and MCP startup fail closed if the signature bundle, public key, current lock
 digest, key ID, or Ed25519 signature does not verify. When disabled, `/system/status` and
 `make release-evidence` report unsigned or unverifiable status without blocking startup.
+
+The non-production signed-evidence demo also exercises manifest-lock signature verification:
+
+```sh
+make signed-evidence-demo
+make signed-evidence-demo-verify
+```
+
+That verifier is review evidence for local signing mechanics, not hosted supply-chain signing or
+external notarization.

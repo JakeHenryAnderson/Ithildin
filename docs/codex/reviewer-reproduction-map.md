@@ -63,49 +63,54 @@ work must stop for status, reassessment, or external consultation.
    export signing, verified manifest-lock signing, a tamper-failing audit bundle, and SHA-256
    digests for the generated demo artifacts.
 
-7. `make review-packet-diff OLD=old-packet NEW=new-packet`
+7. `make signed-evidence-demo-verify`
+
+   Expected outcome: verifies the signed audit demo bundle, confirms the tampered audit bundle does
+   not verify, and verifies the demo manifest-lock signature using the generated demo public keys.
+
+8. `make review-packet-diff OLD=old-packet NEW=new-packet`
 
    Expected outcome: prints added, removed, changed, and unchanged artifact counts for two generated
    packets using `artifact-hashes.json` when available.
 
-8. `make review-packet-diff-gate OLD=old-packet NEW=new-packet`
+9. `make review-packet-diff-gate OLD=old-packet NEW=new-packet`
 
    Expected outcome: requires `artifact-hashes.json` in both packets and fails if a previously
    comparable artifact was removed. Added or changed artifacts are reported for reviewer attention.
 
-9. `make filesystem-contract-check`
+10. `make filesystem-contract-check`
 
    Expected outcome: prints secret-free local platform and filesystem capability evidence. On
    macOS/Linux with `O_NOFOLLOW`, the support status should be `supported`; Windows/WSL are reported
    as unsupported/untested for local-preview workspace/race claims.
 
-10. `make review-packet-bundle`
+11. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 6 was run first.
 
-11. `make negative-review-transcripts`
+12. `make negative-review-transcripts`
 
    Expected outcome: creates ignored observed-denial transcripts under
    `var/review-packets/v0.2/negative-review-transcripts/`, covering traversal, symlink escape,
    stale-base patch apply, private redirect, unknown principal, disabled principal, and replayed
    approval.
 
-12. `make review-packet-consolidated`
+13. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-13. `make packet-redaction-scan`
+14. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-14. `make docs-site`
+15. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.

@@ -138,8 +138,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-128"
-    assert manifest["planned_range"] == "129-151"
+    assert manifest["completed_range"] == "113-129"
+    assert manifest["planned_range"] == "130-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -159,13 +159,14 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 129-151 are planned" in readme
+    assert "Tasks 130-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
     assert "126 - Release guardrail expansion v2 | Done" in backlog
     assert "127 - Secrets hygiene and packet redaction scanner | Done" in backlog
     assert "128 - Test isolation and determinism gate | Done" in backlog
+    assert "129 - Signed-evidence verifier hardening | Done" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
     assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
@@ -255,6 +256,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "review-candidate",
         "internal-review-packet",
         "signed-evidence-demo",
+        "signed-evidence-demo-verify",
         "filesystem-contract-check",
         "reviewer-findings-check",
         "review-packet-bundle",
@@ -279,6 +281,7 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) release-check",
         "$(MAKE) filesystem-contract-check",
         "$(MAKE) signed-evidence-demo",
+        "$(MAKE) signed-evidence-demo-verify",
         "$(MAKE) negative-review-transcripts",
         "$(MAKE) review-packet-bundle",
         "$(MAKE) review-packet-consolidated",
@@ -710,7 +713,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-128 done",
+        "Tasks 113-129 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []

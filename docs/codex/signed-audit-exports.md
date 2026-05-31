@@ -60,3 +60,16 @@ make audit-export-verify FILE=ithildin-audit-export-signed.json \
 Verification checks the Ed25519 signature, the event JSONL digest, and the embedded audit hash chain.
 The signed bundle records audit verification status at export time, including failed verification if
 the local audit chain was already tampered or truncated.
+
+## Demo Verification
+
+For review packets, generate and verify the non-production signed-evidence demo:
+
+```sh
+make signed-evidence-demo
+make signed-evidence-demo-verify
+```
+
+The verifier re-checks the signed audit demo bundle with the demo public key, confirms the tampered
+audit demo bundle fails verification, and verifies the demo manifest-lock signature. This is local
+fixture evidence only; runtime signing may still be unconfigured by default.

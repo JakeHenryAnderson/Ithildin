@@ -397,6 +397,25 @@ def test_manifest_lock_signature_tampering_fails_closed(tmp_path: Path, tamper: 
         )
 
 
+def test_manifest_lock_signature_rejects_audit_bundle_confusion(tmp_path: Path) -> None:
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    lock_path.write_text("{}", encoding="utf-8")
+    signature_path = tmp_path / "tool-manifests.lock.sig.json"
+    signature_path.write_text(
+        json.dumps({"bundle_type": "ithildin.audit.export.signed"}),
+        encoding="utf-8",
+    )
+
+    result = verify_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        public_key_path=tmp_path / "missing-public.pem",
+    )
+
+    assert result.valid is False
+    assert result.failure == "signature_type must be a string"
+
+
 def test_manifest_lock_signature_cannot_be_replayed_for_different_lock_path(
     tmp_path: Path,
 ) -> None:

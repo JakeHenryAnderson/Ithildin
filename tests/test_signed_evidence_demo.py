@@ -5,11 +5,16 @@ import json
 from pathlib import Path
 from typing import cast
 
+import pytest
 from ithildin_api.manifest_lock import verify_manifest_lock_signature
 from ithildin_audit_core import verify_signed_audit_export_bundle
 from ithildin_schemas import JsonObject
 
 from scripts.signed_evidence_demo import build_demo
+from scripts.signed_evidence_demo_verify import (
+    SignedEvidenceDemoVerificationError,
+    verify_demo,
+)
 
 
 def test_signed_evidence_demo_generates_and_verifies(tmp_path: Path) -> None:
@@ -64,6 +69,31 @@ def test_signed_evidence_demo_keeps_key_material_in_ignored_demo_path(tmp_path: 
     private_keys = sorted(output_dir.rglob("*private.pem"))
     assert private_keys
     assert all("var/review-packets/v0.2" in path.as_posix() for path in private_keys)
+
+
+def test_signed_evidence_demo_standalone_verifier(tmp_path: Path) -> None:
+    lock_path = Path("tool-manifests.lock.json")
+    build_demo(output_dir=tmp_path / "demo", lock_path=lock_path)
+
+    result = verify_demo(tmp_path / "demo")
+    audit = cast(JsonObject, result["audit"])
+    manifest_lock = cast(JsonObject, result["manifest_lock"])
+
+    assert audit["verified"] is True
+    assert audit["tampered_verified"] is False
+    assert manifest_lock["verified"] is True
+
+
+def test_signed_evidence_demo_verifier_rejects_summary_confusion(tmp_path: Path) -> None:
+    lock_path = Path("tool-manifests.lock.json")
+    build_demo(output_dir=tmp_path / "demo", lock_path=lock_path)
+    summary_path = tmp_path / "demo/summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary["non_production"] = False
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+    with pytest.raises(SignedEvidenceDemoVerificationError, match="non_production"):
+        verify_demo(tmp_path / "demo")
 
 
 def _sha256_file(path: Path) -> str:

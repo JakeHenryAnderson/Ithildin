@@ -137,7 +137,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 126 - Release guardrail expansion v2 | Done | `make release-guardrails` validates v0.4 horizontal gate status, release targets, packet diff gate, and deferred-power guardrails. |
 | 127 - Secrets hygiene and packet redaction scanner | Done | [packet-redaction-scanner.md](packet-redaction-scanner.md), `make packet-redaction-scan` |
 | 128 - Test isolation and determinism gate | Done | [test-determinism-gate.md](test-determinism-gate.md), `make determinism-check` |
-| 129 - Signed-evidence verifier hardening | Planned | Signed evidence verification |
+| 129 - Signed-evidence verifier hardening | Done | `make signed-evidence-demo-verify` verifies demo audit and manifest-lock signatures. |
 | 130 - Audit integrity adversarial suite v2 | Planned | Audit adversarial tests |
 | 131 - Evidence contract versioning v2 | Planned | Evidence contract versioning |
 | 132 - Local audit retention and export lifecycle diagnostics | Planned | Audit lifecycle diagnostics |
