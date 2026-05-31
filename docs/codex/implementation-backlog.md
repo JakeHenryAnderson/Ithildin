@@ -207,7 +207,7 @@ expansion tasks.
 | Task | Status | Spec |
 | --- | --- | --- |
 | 181 - v0.6 boundary charter and freeze | Done | [v0.6-boundary-charter.md](v0.6-boundary-charter.md), [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md) |
-| 182 - External reviewer assignment matrix | Planned | Assign all external-pending closure rows to review paths. |
+| 182 - External reviewer assignment matrix | Done | [v0.6-external-review-assignment-matrix.md](v0.6-external-review-assignment-matrix.md) |
 | 183 - External review packet dispatch set | Planned | Generate focused source-review packets for each review area. |
 | 184 - External response normalization | Planned | Normalize external responses into structured finding drafts. |
 | 185-215 - v0.6 review execution, closure, decisions, and handoff | Planned | See [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md). |
