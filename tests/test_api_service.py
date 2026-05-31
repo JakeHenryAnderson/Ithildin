@@ -217,6 +217,15 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "count": 1,
         "enabled_count": 1,
     }
+    assert payload["filesystem"]["support"]["status"] in {
+        "supported",
+        "degraded",
+        "unsupported",
+    }
+    assert payload["filesystem"]["probe"] == {
+        "uses_temporary_directory": True,
+        "touches_workspace": False,
+    }
     assert payload["storage"]["runtime_backend"] == "sqlite"
     assert payload["storage"]["sqlite"]["runtime_enabled"] is True
     assert payload["storage"]["postgres"]["runtime_enabled"] is False

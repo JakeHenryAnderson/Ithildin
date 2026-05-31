@@ -35,6 +35,7 @@ from ithildin_api.approvals import (
 from ithildin_api.auth import require_admin_token
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
+from ithildin_api.filesystem_contract import collect_filesystem_contract_status
 from ithildin_api.http_tools import HttpFetchExecutor
 from ithildin_api.identity import (
     PrincipalRegistry,
@@ -210,6 +211,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     "required": settings_state.require_known_principals,
                 },
                 "workspaces": workspace_registry.status(),
+                "filesystem": collect_filesystem_contract_status(),
                 "storage": storage_status(settings_state),
                 "security": security_status(settings_state),
                 "telemetry": telemetry.status(),

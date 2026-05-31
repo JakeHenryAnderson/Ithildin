@@ -14,6 +14,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ithildin_api.config import Settings
+from ithildin_api.filesystem_contract import collect_filesystem_contract_status
 from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.manifest_lock import (
     ManifestLockRecord,
@@ -51,6 +52,7 @@ RELEASE_EVIDENCE_REQUIRED_TOP_LEVEL_KEYS = (
     "policy",
     "principals",
     "workspaces",
+    "filesystem",
     "storage",
     "telemetry",
     "security",
@@ -191,6 +193,7 @@ def main() -> int:
             "required": settings.require_known_principals,
         },
         "workspaces": workspace_registry.status(),
+        "filesystem": collect_filesystem_contract_status(),
         "storage": storage_status(settings),
         "telemetry": configure_telemetry(settings).status(),
         "security": security_status(settings),
@@ -262,6 +265,19 @@ def validate_release_evidence_snapshot(payload: object) -> None:
     tools = _required_object(evidence, "tools")
     if not isinstance(tools.get("count"), int) or not isinstance(tools.get("names"), list):
         raise ReleaseEvidenceSchemaError("tools must include count and names")
+    filesystem = _required_object(evidence, "filesystem")
+    support = filesystem.get("support")
+    if not isinstance(support, dict):
+        raise ReleaseEvidenceSchemaError("filesystem must include support evidence")
+    if support.get("status") not in {"supported", "degraded", "unsupported"}:
+        raise ReleaseEvidenceSchemaError("filesystem support status is invalid")
+    if not isinstance(support.get("local_preview_security_supported"), bool):
+        raise ReleaseEvidenceSchemaError(
+            "filesystem support must include local_preview_security_supported"
+        )
+    probe = filesystem.get("probe")
+    if not isinstance(probe, dict) or probe.get("touches_workspace") is not False:
+        raise ReleaseEvidenceSchemaError("filesystem probe must not touch workspace files")
     review_docs = evidence.get("review_docs")
     if not isinstance(review_docs, list):
         raise ReleaseEvidenceSchemaError("review_docs must be a list")

@@ -1679,6 +1679,16 @@ def _minimal_release_evidence_payload() -> dict[str, object]:
         "policy": {},
         "principals": {},
         "workspaces": {},
+        "filesystem": {
+            "support": {
+                "status": "supported",
+                "local_preview_security_supported": True,
+            },
+            "probe": {
+                "uses_temporary_directory": True,
+                "touches_workspace": False,
+            },
+        },
         "storage": {},
         "telemetry": {},
         "security": {},

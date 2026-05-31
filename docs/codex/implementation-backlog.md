@@ -120,6 +120,7 @@
 | 117 - Patch apply failure evidence v2 | Done | `PatchApplyFaultHook`, `tests/test_governed_tool_calls.py` |
 | 118 - Patch apply state-machine formalization v2 | Done | [patch-apply-state-machine.md](patch-apply-state-machine.md), transition tests |
 | 119 - Filesystem adversarial race harness v2 | Done | bounded read/proposal target-swap tests in `tests/test_read_tools.py` and `tests/test_patch_proposals.py` |
+| 120 - Filesystem platform support gate v2 | Done | `/system/status`, release evidence, UI warning surface, `make filesystem-contract-check` |
 
 ## Future Candidate Track
 

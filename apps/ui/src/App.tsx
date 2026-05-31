@@ -192,6 +192,32 @@ type SystemStatus = {
     key_id: string | null;
     error?: string;
   };
+  filesystem: {
+    platform: {
+      system: string;
+      profile: string;
+      release: string;
+      machine: string;
+    };
+    python: {
+      version: string;
+    };
+    capabilities: {
+      o_no_follow_available: boolean;
+      symlink_supported: boolean;
+      hardlink_supported: boolean;
+      case_sensitive: boolean;
+    };
+    support: {
+      status: "supported" | "degraded" | "unsupported" | string;
+      local_preview_security_supported: boolean;
+      reason: string;
+    };
+    probe: {
+      uses_temporary_directory: boolean;
+      touches_workspace: boolean;
+    };
+  };
   redaction: {
     baseline_enabled: boolean;
     baseline_key_count: number;
@@ -653,6 +679,13 @@ export function App() {
                     {data.systemStatus.redaction.baseline_enabled
                       ? `${data.systemStatus.redaction.extra_key_count + data.systemStatus.redaction.extra_pattern_count} extra`
                       : "disabled"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Filesystem</dt>
+                  <dd title={data.systemStatus.filesystem.support.reason}>
+                    {data.systemStatus.filesystem.platform.profile} ·{" "}
+                    {data.systemStatus.filesystem.support.status}
                   </dd>
                 </div>
                 <div>
@@ -1459,6 +1492,12 @@ function trustStateWarnings(
     !systemStatus.manifest_lock.signature.verified
   ) {
     warnings.add("required manifest-lock signature is not verified");
+  }
+  if (
+    systemStatus?.filesystem &&
+    !systemStatus.filesystem.support.local_preview_security_supported
+  ) {
+    warnings.add(`filesystem support: ${systemStatus.filesystem.support.status}`);
   }
   if (verification && !verification.valid) {
     warnings.add("audit chain verification failed");

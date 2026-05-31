@@ -153,7 +153,8 @@ rewrite workspace files.
 Filesystem and patch executor platform assumptions are documented in
 [docs/codex/filesystem-executor-contract.md](docs/codex/filesystem-executor-contract.md). Run
 `make filesystem-contract-check` to record local OS and filesystem capability evidence before
-relying on local-preview workspace/race claims.
+relying on local-preview workspace/race claims; `/system/status`, release evidence, and the review
+console also surface unsupported or degraded filesystem profiles.
 Patch apply approval and recovery states are documented in
 [docs/codex/patch-apply-state-machine.md](docs/codex/patch-apply-state-machine.md).
 Evidence fields for audit events, policy decisions, approvals, redaction summaries, and signed

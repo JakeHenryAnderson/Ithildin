@@ -43,6 +43,7 @@ The v0.3-prep schema requires these top-level keys:
 - `policy`
 - `principals`
 - `workspaces`
+- `filesystem`
 - `storage`
 - `telemetry`
 - `security`
@@ -53,7 +54,7 @@ The v0.3-prep schema requires these top-level keys:
 Nested fields may still evolve during preview work, but the release-evidence
 validator checks the schema version, stable key set, release-check transcript
 metadata, git dirty state shape, tool count/name shape, review-document digests,
-and obvious secret-like markers.
+filesystem support/probe shape, and obvious secret-like markers.
 
 ## Release-Check Semantics
 

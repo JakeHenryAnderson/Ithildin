@@ -62,7 +62,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Area | Internal status | External status | Highest open severity | Fixed commit | Verification command | Accepted/deferred risk link | Closure state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Patch apply | v0.3 internal reviewed; Tasks 117-118 fault hooks and transition enforcement added | pending external review | none | pending | `make release-check` | none | external_pending |
-| Filesystem | v0.3 internal reviewed; Task 119 bounded target-swap harness added; Task 120 pending | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | Windows/WSL unsupported per filesystem contract | external_pending |
+| Filesystem | v0.3 internal reviewed; Tasks 119-120 bounded race harness and runtime support evidence added | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | Windows/WSL unsupported per filesystem contract | external_pending |
 | HTTP fetch | v0.3 internal/subagent reviewed; SUB-001 fixed internally | pending external review | none | 927334e | `make release-check`; HTTP focused tests | none | external_pending |
 | Signed evidence | v0.3 internal reviewed; adversarial tests expanded | pending external review | none | pending | `make signed-evidence-demo`; `make release-check` | local signatures only, no notarization | external_pending |
 | Audit integrity | v0.3 internal reviewed; adversarial suite expanded | pending external review | none | pending | `make audit-diagnostics`; `make release-check` | local tamper-evident evidence only | external_pending |

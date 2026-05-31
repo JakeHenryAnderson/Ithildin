@@ -31,6 +31,10 @@ The check uses only temporary files. It reports platform profile, Python version
 availability, symlink and hardlink capability, temporary-filesystem case sensitivity, and whether
 the host matches this documented local-preview support profile.
 
+Task 120 also surfaces the same support evidence in admin `/system/status`, release evidence, and
+the review console warning banner so unsupported or degraded profiles are visible during review and
+operator handoff.
+
 ## Guarantees
 
 For supported local-preview platforms, the filesystem executors are designed and tested to provide
