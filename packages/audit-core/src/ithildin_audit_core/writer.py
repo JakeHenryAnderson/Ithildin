@@ -286,12 +286,16 @@ class AuditWriter:
     def diagnostics(self) -> JsonObject:
         db_exists = self.db_path.exists()
         jsonl_exists = self.jsonl_path.exists()
+        sqlite_event_count: Optional[int] = None
         jsonl_line_count: Optional[int] = None
+        jsonl_head_hash: Optional[str] = None
         jsonl_error: Optional[str] = None
         if jsonl_exists:
             try:
                 with self.jsonl_path.open("r", encoding="utf-8") as jsonl_file:
-                    jsonl_line_count = sum(1 for _line in jsonl_file)
+                    jsonl_lines = [line for line in jsonl_file if line.strip()]
+                jsonl_line_count = len(jsonl_lines)
+                jsonl_head_hash = _jsonl_head_hash(jsonl_lines)
             except OSError as exc:
                 jsonl_error = str(exc)
 
@@ -307,6 +311,7 @@ class AuditWriter:
             category = "not_initialized"
         else:
             try:
+                sqlite_event_count = self._event_count()
                 result = self.verify_chain()
             except AuditWriteError as exc:
                 verification = {
@@ -326,14 +331,30 @@ class AuditWriter:
                 verification = result.as_dict()
                 category = _diagnostic_category(result)
 
+        lifecycle = _lifecycle_diagnostics(
+            category=category,
+            db_exists=db_exists,
+            jsonl_exists=jsonl_exists,
+            sqlite_event_count=sqlite_event_count,
+            jsonl_line_count=jsonl_line_count,
+            jsonl_head_hash=jsonl_head_hash,
+            verification=verification,
+            jsonl_error=jsonl_error,
+        )
+
         return {
             "db_path": self.db_path.as_posix(),
             "log_path": self.jsonl_path.as_posix(),
             "db_exists": db_exists,
             "jsonl_exists": jsonl_exists,
+            "db_size_bytes": _path_size(self.db_path),
+            "jsonl_size_bytes": _path_size(self.jsonl_path),
+            "sqlite_event_count": sqlite_event_count,
             "jsonl_line_count": jsonl_line_count,
+            "jsonl_head_hash": jsonl_head_hash,
             "jsonl_error": jsonl_error,
             "category": category,
+            "lifecycle": lifecycle,
             "verification": verification,
         }
 
@@ -356,6 +377,13 @@ class AuditWriter:
                 ).fetchall()
         except sqlite3.Error as exc:
             raise AuditWriteError("failed to read audit events") from exc
+
+    def _event_count(self) -> int:
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                return int(connection.execute("SELECT COUNT(*) FROM audit_events").fetchone()[0])
+        except sqlite3.Error as exc:
+            raise AuditWriteError("failed to count audit events") from exc
 
     def _persist_event(self, event: AuditEvent) -> None:
         payload = event.model_dump(mode="json")
@@ -460,6 +488,94 @@ def _indexed_columns_match_event(row: tuple[object, ...], event: AuditEvent) -> 
         and str(row[4]) == event.prev_event_hash
         and str(row[5]) == event.event_hash
     )
+
+
+def _jsonl_head_hash(lines: list[str]) -> Optional[str]:
+    if not lines:
+        return GENESIS_HASH
+    try:
+        payload = json.loads(lines[-1])
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    event_hash = payload.get("event_hash")
+    return event_hash if isinstance(event_hash, str) else None
+
+
+def _path_size(path: Path) -> Optional[int]:
+    try:
+        return path.stat().st_size if path.exists() else None
+    except OSError:
+        return None
+
+
+def _lifecycle_diagnostics(
+    *,
+    category: str,
+    db_exists: bool,
+    jsonl_exists: bool,
+    sqlite_event_count: Optional[int],
+    jsonl_line_count: Optional[int],
+    jsonl_head_hash: Optional[str],
+    verification: JsonObject,
+    jsonl_error: Optional[str],
+) -> JsonObject:
+    verification_valid = verification.get("valid") is True
+    verification_head_hash = _optional_string(verification.get("head_hash"))
+    count_matches = (
+        sqlite_event_count is not None
+        and jsonl_line_count is not None
+        and sqlite_event_count == jsonl_line_count
+    )
+    head_matches = (
+        verification_head_hash is not None
+        and jsonl_head_hash is not None
+        and verification_head_hash == jsonl_head_hash
+    )
+
+    if not db_exists:
+        lifecycle_status = "not_initialized"
+    elif (
+        verification_valid
+        and verification.get("event_count") == 0
+        and sqlite_event_count == 0
+        and not jsonl_exists
+    ):
+        lifecycle_status = "clean"
+    elif jsonl_error is not None or not jsonl_exists:
+        lifecycle_status = "ambiguous"
+    elif verification_valid and count_matches and head_matches:
+        lifecycle_status = "clean"
+    elif not verification_valid:
+        lifecycle_status = "verification_failed"
+    else:
+        lifecycle_status = "recovery_required"
+
+    recommendations = {
+        "clean": "No audit lifecycle action is required.",
+        "not_initialized": "Initialize the API or audit writer before expecting audit evidence.",
+        "verification_failed": "Inspect the first verification failure before exporting evidence.",
+        "recovery_required": (
+            "Compare SQLite and JSONL evidence before using exports; do not rewrite evidence "
+            "without a separate review task."
+        ),
+        "ambiguous": (
+            "Inspect local audit file availability and permissions before relying on exports."
+        ),
+    }
+
+    return {
+        "status": lifecycle_status,
+        "retention_mode": "local_manual",
+        "retention_mutation_supported": False,
+        "repair_supported": False,
+        "export_jsonl_available": db_exists,
+        "sqlite_jsonl_event_count_match": count_matches if jsonl_line_count is not None else None,
+        "sqlite_jsonl_head_hash_match": head_matches if jsonl_head_hash is not None else None,
+        "recommendation": recommendations[lifecycle_status],
+        "category": category,
+    }
 
 
 def _failed_verification(

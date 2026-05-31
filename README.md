@@ -94,7 +94,7 @@ tamper-evident audit log.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
-- `make audit-diagnostics` - explain local audit verification state without mutating evidence.
+- `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
 - `make filesystem-contract-check` - report local filesystem capability evidence for the executor contract.
 - `make docs-site` - build a small local static docs site under ignored `site/`.
@@ -210,8 +210,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-131 are
-complete; Tasks 132-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-132 are
+complete; Tasks 133-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

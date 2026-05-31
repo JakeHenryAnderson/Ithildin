@@ -62,9 +62,16 @@ def _print_human(diagnostics: dict[str, Any]) -> None:
     print(f"Audit DB: {diagnostics['db_path']}")
     print(f"Audit JSONL: {diagnostics['log_path']}")
     print(f"Category: {diagnostics['category']}")
+    lifecycle = diagnostics.get("lifecycle")
+    if isinstance(lifecycle, dict):
+        print(f"Lifecycle: {lifecycle.get('status')}")
+        print(f"Retention mode: {lifecycle.get('retention_mode')}")
     print(f"Valid: {verification.get('valid')}")
     print(f"Events: {verification.get('event_count')}")
+    print(f"SQLite events: {diagnostics.get('sqlite_event_count')}")
+    print(f"JSONL lines: {diagnostics.get('jsonl_line_count')}")
     print(f"Head hash: {verification.get('head_hash')}")
+    print(f"JSONL head hash: {diagnostics.get('jsonl_head_hash')}")
     failure = verification.get("failure")
     if isinstance(failure, dict) and failure:
         print(

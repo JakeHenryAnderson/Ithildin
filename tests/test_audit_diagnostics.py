@@ -18,6 +18,9 @@ def test_audit_diagnostics_reports_empty_and_valid_chains(tmp_path: Path) -> Non
     assert empty["category"] == "empty_valid"
     assert empty["verification"]["valid"] is True
     assert empty["verification"]["event_count"] == 0
+    assert empty["lifecycle"]["status"] == "clean"
+    assert empty["lifecycle"]["retention_mode"] == "local_manual"
+    assert empty["lifecycle"]["repair_supported"] is False
 
     writer.write_event(
         event_id="evt_1",
@@ -30,7 +33,12 @@ def test_audit_diagnostics_reports_empty_and_valid_chains(tmp_path: Path) -> Non
     assert populated["category"] == "valid"
     assert populated["verification"]["valid"] is True
     assert populated["verification"]["event_count"] == 1
+    assert populated["sqlite_event_count"] == 1
     assert populated["jsonl_line_count"] == 1
+    assert populated["jsonl_head_hash"] == populated["verification"]["head_hash"]
+    assert populated["lifecycle"]["status"] == "clean"
+    assert populated["lifecycle"]["sqlite_jsonl_event_count_match"] is True
+    assert populated["lifecycle"]["sqlite_jsonl_head_hash_match"] is True
 
 
 def test_audit_diagnostics_classifies_tampered_payload(tmp_path: Path) -> None:
@@ -57,6 +65,7 @@ def test_audit_diagnostics_classifies_tampered_payload(tmp_path: Path) -> None:
 
     diagnostics = cast(dict[str, Any], writer.diagnostics())
     assert diagnostics["category"] == "event_hash_mismatch"
+    assert diagnostics["lifecycle"]["status"] == "verification_failed"
     assert diagnostics["verification"]["valid"] is False
     assert diagnostics["verification"]["failure"]["event_id"] == "evt_1"
 
@@ -80,8 +89,31 @@ def test_audit_diagnostics_classifies_invalid_json(tmp_path: Path) -> None:
 
     diagnostics = cast(dict[str, Any], writer.diagnostics())
     assert diagnostics["category"] == "invalid_json"
+    assert diagnostics["lifecycle"]["status"] == "verification_failed"
     assert diagnostics["verification"]["valid"] is False
     assert diagnostics["verification"]["failure"]["reason"] == "invalid audit payload JSON"
+
+
+def test_audit_diagnostics_reports_jsonl_lifecycle_drift(tmp_path: Path) -> None:
+    writer = AuditWriter(tmp_path / "audit.sqlite3", tmp_path / "audit.jsonl")
+    writer.initialize()
+    writer.write_event(
+        event_id="evt_1",
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:test"},
+    )
+    writer.jsonl_path.write_text("", encoding="utf-8")
+
+    diagnostics = cast(dict[str, Any], writer.diagnostics())
+
+    assert diagnostics["category"] == "valid"
+    assert diagnostics["verification"]["valid"] is True
+    assert diagnostics["sqlite_event_count"] == 1
+    assert diagnostics["jsonl_line_count"] == 0
+    assert diagnostics["lifecycle"]["status"] == "recovery_required"
+    assert diagnostics["lifecycle"]["sqlite_jsonl_event_count_match"] is False
+    assert diagnostics["lifecycle"]["sqlite_jsonl_head_hash_match"] is False
 
 
 def test_audit_diagnostics_cli_json_and_fail_on_invalid(tmp_path: Path) -> None:

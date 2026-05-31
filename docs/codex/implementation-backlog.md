@@ -140,7 +140,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 129 - Signed-evidence verifier hardening | Done | `make signed-evidence-demo-verify` verifies demo audit and manifest-lock signatures. |
 | 130 - Audit integrity adversarial suite v2 | Done | SQLite index/payload drift and duplicate exported event IDs fail verification. |
 | 131 - Evidence contract versioning v2 | Done | `make evidence-contracts-check` validates stable evidence contracts. |
-| 132 - Local audit retention and export lifecycle diagnostics | Planned | Audit lifecycle diagnostics |
+| 132 - Local audit retention and export lifecycle diagnostics | Done | [audit-export-lifecycle-diagnostics.md](audit-export-lifecycle-diagnostics.md), `make audit-diagnostics` |
 | 133 - Policy preview/runtime parity harness v2 | Planned | Policy parity harness |
 | 134 - OPA boundary decision | Planned | OPA boundary update |
 | 135 - Registry fail-closed exhaustive suite | Planned | Registry fail-closed coverage |
