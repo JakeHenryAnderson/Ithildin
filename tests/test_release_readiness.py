@@ -1246,6 +1246,45 @@ def test_v04_external_packet_and_capability_seed_are_documented() -> None:
         assert doc in docs_site
 
 
+def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
+    manifest_doc = Path("docs/codex/v0.5-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    manifest = json.loads(
+        Path("docs/codex/v0.5-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    roadmap = Path("docs/codex/v0.5-roadmap-from-v0.4-review.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    task_ids = [milestone["id"] for milestone in manifest["milestones"]]
+    assert task_ids == [f"{index:03d}" for index in range(152, 181)]
+    assert manifest["completed_range"] == "152"
+    assert manifest["planned_range"] == "153-180"
+    assert manifest["runtime_boundary"] == "v0.1 local-preview"
+    assert "shell execution" in manifest["deferred_boundaries"]
+    assert "No task in this manifest may add new governed tool powers" in manifest_doc
+    assert "Tasks 152-180" in roadmap
+    assert "Task 151 as a review packet only" in roadmap
+    assert "v0.5-milestone-manifest.md" in readme
+    assert "152 - v0.5 roadmap from v0.4 review | Done" in backlog
+    assert "Task 152 records GPT 5.5 Pro v0.4 feedback" in matrix
+    for doc in [
+        "docs/codex/v0.5-roadmap-from-v0.4-review.md",
+        "docs/codex/v0.5-milestone-manifest.md",
+        "docs/codex/v0.5-milestone-manifest.json",
+    ]:
+        assert doc in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.5-roadmap-from-v0.4-review.md" in docs_site
+    assert "docs/codex/v0.5-milestone-manifest.md" in docs_site
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"

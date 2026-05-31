@@ -161,6 +161,43 @@ implemented until each receives its own checkpoint commit and gate output.
 | 150 - External review intake and closure workflow v2 | Done | [external-review-intake-v2.md](external-review-intake-v2.md), closure guardrails |
 | 151 - v0.4 external review packet and capability decision seed | Done | [v0.4-review-packet.md](v0.4-review-packet.md), [v0.4-capability-decision-seed.md](v0.4-capability-decision-seed.md) |
 
+## v0.5 Source Review and Capability Decision Track
+
+These tasks are planned in [v0.5-milestone-manifest.md](v0.5-milestone-manifest.md). They are source-review
+closure and decision-preparation tasks, not new governed tool powers.
+
+| Task | Status | Spec |
+| --- | --- | --- |
+| 152 - v0.5 roadmap from v0.4 review | Done | [v0.5-roadmap-from-v0.4-review.md](v0.5-roadmap-from-v0.4-review.md), [v0.5-milestone-manifest.md](v0.5-milestone-manifest.md) |
+| 153 - Capability expansion gate v2 | Planned | Capability expansion gate |
+| 154 - Tool-surface invariant gate v2 | Planned | Tool-surface invariant gate |
+| 155 - Evidence-confusion gate v2 | Planned | Evidence-confusion gate |
+| 156 - External-review closure gate v2 | Planned | External closure gate |
+| 157 - Source review runbook v2 | Planned | Source review runbook |
+| 158 - Source file inspection packet | Planned | Source pointers |
+| 159 - Patch apply source review checklist | Planned | Patch apply source review |
+| 160 - Filesystem source review checklist | Planned | Filesystem source review |
+| 161 - HTTP fetch source review checklist | Planned | HTTP source review |
+| 162 - Signed evidence source review checklist | Planned | Signed evidence source review |
+| 163 - Policy parity source review checklist | Planned | Policy parity source review |
+| 164 - MCP ingress source review checklist | Planned | MCP ingress source review |
+| 165 - Review console source review checklist | Planned | Review console source review |
+| 166 - External findings intake dry run | Planned | Findings dry run |
+| 167 - Closure matrix evidence sync | Planned | Closure sync |
+| 168 - Accepted risk register | Planned | Risk register |
+| 169 - Capability decision report generator | Planned | Decision report |
+| 170 - No-new-powers release guardrail v2 | Planned | No-new-powers guardrail |
+| 171 - Source review transcript packet | Planned | Review transcripts |
+| 172 - Reviewer artifact manifest v2 | Planned | Artifact manifest |
+| 173 - External review response intake template v2 | Planned | External response template |
+| 174 - Review packet source pointers | Planned | Source pointers |
+| 175 - v0.5 threat model delta | Planned | Threat delta |
+| 176 - v0.5 review candidate command | Planned | Candidate command |
+| 177 - v0.5 consolidated packet update | Planned | Consolidated packet |
+| 178 - v0.5 external review prompt | Planned | External prompt |
+| 179 - v0.5 boundary decision draft | Planned | Boundary decision |
+| 180 - v0.5 handoff packet and go/no-go seed | Planned | Handoff packet |
+
 ## Future Candidate Track
 
 | Area | Status | Notes |
