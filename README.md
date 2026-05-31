@@ -255,6 +255,9 @@ The v0.6 external-review execution charter is in
 manifest in [docs/codex/v0.6-milestone-manifest.md](docs/codex/v0.6-milestone-manifest.md).
 The v0.6 external reviewer assignment matrix is in
 [docs/codex/v0.6-external-review-assignment-matrix.md](docs/codex/v0.6-external-review-assignment-matrix.md).
+Focused v0.6 review dispatch packets are generated with `make v06-review-dispatch-packets` and
+documented in
+[docs/codex/v0.6-external-review-dispatch-packets.md](docs/codex/v0.6-external-review-dispatch-packets.md).
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in

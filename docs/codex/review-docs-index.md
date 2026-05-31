@@ -67,6 +67,7 @@ externally closed.
 - [v0.6 Boundary Charter](v0.6-boundary-charter.md)
 - [v0.6 Milestone Manifest](v0.6-milestone-manifest.md)
 - [v0.6 External Review Assignment Matrix](v0.6-external-review-assignment-matrix.md)
+- [v0.6 External Review Dispatch Packets](v0.6-external-review-dispatch-packets.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [No-New-Powers Guardrail v2](no-new-powers-guardrail.md)

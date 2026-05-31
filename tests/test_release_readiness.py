@@ -18,6 +18,7 @@ from scripts import (
     external_findings_intake_dry_run,
     external_response_template_check,
     external_review_closure_gate,
+    external_review_dispatch_packets,
     internal_review_packet,
     no_new_powers_guardrail,
     packet_redaction_scan,
@@ -2197,8 +2198,8 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-182"
-    assert manifest["planned_range"] == "183-215"
+    assert manifest["completed_range"] == "181-183"
+    assert manifest["planned_range"] == "184-215"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
     for required in [
@@ -2259,6 +2260,60 @@ def test_v06_external_review_assignment_matrix_is_wired() -> None:
     assert "v0.6 External Review Assignment Matrix" in index
     assert "docs/codex/v0.6-external-review-assignment-matrix.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-external-review-assignment-matrix.md" in docs_site
+
+
+def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
+    summary = external_review_dispatch_packets.build_dispatch_packets(
+        Path.cwd(),
+        tmp_path / "dispatch",
+    )
+    doc = Path("docs/codex/v0.6-external-review-dispatch-packets.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert summary["packet_count"] == 8
+    paths = {artifact["path"] for artifact in summary["packets"]}
+    for expected in [
+        "INDEX.md",
+        "patch-apply.md",
+        "filesystem.md",
+        "http-fetch.md",
+        "signed-evidence.md",
+        "policy-registry.md",
+        "mcp-ingress.md",
+        "review-console.md",
+        "release-automation.md",
+    ]:
+        assert expected in paths
+    assert all(
+        str(artifact["sha256"]).startswith("sha256:")
+        for artifact in summary["packets"]
+    )
+    manifest = json.loads(Path(summary["manifest_path"]).read_text(encoding="utf-8"))
+    assert manifest["packet_type"] == "ithildin.v0.6.external_review_dispatch_packets"
+    assert "production readiness" in manifest["does_not_prove"]
+    for required in [
+        "make v06-review-dispatch-packets",
+        "dispatch-packet-hashes.json",
+        "does not close external review rows",
+        "EXT-###",
+    ]:
+        assert required in doc
+    assert "make v06-review-dispatch-packets" in readme
+    assert "v06-review-dispatch-packets:" in makefile
+    assert "183 - External review packet dispatch set | Done" in backlog
+    assert "Task 183 generates focused packet slices" in matrix
+    assert "v0.6 External Review Dispatch Packets" in index
+    assert "docs/codex/v0.6-external-review-dispatch-packets.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-external-review-dispatch-packets.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

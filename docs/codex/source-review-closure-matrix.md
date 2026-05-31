@@ -114,6 +114,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | v0.5 handoff packet | Task 180 records go/no-go seed and final v0.5 handoff commands | pending external review | none | pending | `make v05-handoff-packet-check`; `make v05-review-candidate` | packet is ready for external review but does not close it | external_pending |
 | v0.6 boundary charter | Task 181 freezes v0.6 as external-review execution and closure without capability expansion | pending external review | none | pending | `make release-check`; `make v05-review-candidate`; `make capability-decision-report` | charter starts review execution but does not close external rows or approve new powers | external_pending |
 | v0.6 external reviewer assignment matrix | Task 182 maps external-pending rows to source-level, packet-and-source, or packet-only review lanes | pending external review | none | pending | docs-site and release-readiness tests | assignment matrix plans review work but does not close external rows | external_pending |
+| v0.6 external review dispatch packets | Task 183 generates focused packet slices and hashes for patch, filesystem, HTTP, signed evidence, policy/registry, MCP, review console, and release automation review | pending external review | none | pending | `make v06-review-dispatch-packets`; docs-site and release-readiness tests | dispatch packets help reviewers inspect source areas but do not close rows | external_pending |
 
 ## v2 Update Rules
 
