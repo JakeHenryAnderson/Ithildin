@@ -28,6 +28,7 @@ from scripts import (
     review_packet_bundle,
     review_packet_diff,
     review_run_manifest,
+    reviewer_artifact_manifest,
     reviewer_findings,
     source_review_transcript_packet,
     test_determinism_gate,
@@ -1275,8 +1276,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-171"
-    assert manifest["planned_range"] == "172-180"
+    assert manifest["completed_range"] == "152-172"
+    assert manifest["planned_range"] == "173-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1792,8 +1793,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
     assert report["tool_count"] == 10
-    assert report["completed_range"] == "152-171"
-    assert report["planned_range"] == "172-180"
+    assert report["completed_range"] == "152-172"
+    assert report["planned_range"] == "173-180"
     assert report["open_accepted_risks"] == 10
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
@@ -1870,6 +1871,34 @@ def test_source_review_transcript_packet_is_wired() -> None:
     assert "source-review-transcript-packet:" in makefile
     assert "docs/codex/source-review-transcript-packet.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/source-review-transcript-packet.md" in docs_site
+
+
+def test_reviewer_artifact_manifest_is_wired() -> None:
+    report = reviewer_artifact_manifest.build_manifest(Path.cwd())
+    doc = Path("docs/codex/reviewer-artifact-manifest-v2.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["runtime_boundary"] == "v0.1 local-preview"
+    assert report["committed_review_doc_count"] == len(review_docs.REVIEW_DOCS)
+    assert "make review-candidate" not in report["does_not_prove"]
+    assert "external/source review closure" in report["does_not_prove"]
+    assert "make reviewer-artifact-manifest" in readme
+    assert "172 - Reviewer artifact manifest v2 | Done" in backlog
+    assert "Task 172 generates a v0.5 artifact inventory" in matrix
+    assert "reviewer-artifact-manifest:" in makefile
+    assert "does not close external/source review" in doc
+    assert "docs/codex/reviewer-artifact-manifest-v2.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/reviewer-artifact-manifest-v2.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

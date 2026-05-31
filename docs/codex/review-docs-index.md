@@ -63,6 +63,7 @@ externally closed.
 - [External-Review Closure Gate v2](external-review-closure-gate.md)
 - [Source Review Runbook v2](source-review-runbook-v2.md)
 - [Source Review Transcript Packet](source-review-transcript-packet.md)
+- [Reviewer Artifact Manifest v2](reviewer-artifact-manifest-v2.md)
 - [Source File Inspection Packet](source-file-inspection-packet.md)
 - [Patch Apply Source Review Checklist](patch-apply-source-review-checklist.md)
 - [Filesystem Source Review Checklist](filesystem-source-review-checklist.md)
