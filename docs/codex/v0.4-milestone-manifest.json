@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-132",
-  "planned_range": "133-151",
+  "completed_range": "113-133",
+  "planned_range": "134-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -483,7 +483,7 @@
     {
       "id": "133",
       "title": "Policy preview/runtime parity harness v2",
-      "status": "planned",
+      "status": "done",
       "commit": "Expand policy parity harness",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "yes",
@@ -491,7 +491,7 @@
       "requires_external_review_before_closure": true,
       "required_commands": [
         "make policy-parity",
-        "make policy-test",
+        "uv run pytest tests/test_policy_parity.py",
         "make release-check"
       ],
       "risk_surface": [

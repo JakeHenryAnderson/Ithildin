@@ -57,3 +57,28 @@ cases:
       id: agent:mcp-local
     session_id: parity-network-deny
     expect_decision: deny
+
+  - id: invalid_arguments_preview_matches_runtime
+    description: Schema-invalid tool arguments are denied before policy evidence is produced.
+    tool_name: fs.read
+    arguments: {}
+    principal:
+      id: agent:mcp-local
+    session_id: parity-invalid-arguments
+    expect_decision: deny
+    expect_valid_arguments: false
+    expect_runtime_status: denied
+    expect_policy_evidence: false
+
+  - id: readonly_network_visibility_matches_runtime
+    description: Read-only principals are denied for network tools before policy evidence is produced.
+    tool_name: http.fetch
+    arguments:
+      url: https://example.com/data
+    principal:
+      id: agent:readonly
+    session_id: parity-readonly-network
+    expect_decision: deny
+    expect_valid_arguments: false
+    expect_runtime_status: denied
+    expect_policy_evidence: false

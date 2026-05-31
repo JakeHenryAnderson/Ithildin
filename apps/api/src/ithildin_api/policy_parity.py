@@ -57,6 +57,9 @@ class PolicyParityCase(StrictBaseModel):
     principal: JsonObject
     session_id: str
     expect_decision: PolicyDecisionValue | None = None
+    expect_policy_evidence: bool = True
+    expect_valid_arguments: bool | None = None
+    expect_runtime_status: str | None = None
 
 
 class PolicyParityDocument(StrictBaseModel):
@@ -223,14 +226,36 @@ class _PolicyParityHarness:
             failures.append(
                 f"expected {case.expect_decision.value}, got preview={preview_decision}"
             )
+        if (
+            case.expect_valid_arguments is not None
+            and preview.get("valid_arguments") is not case.expect_valid_arguments
+        ):
+            failures.append(
+                "valid_arguments mismatch: "
+                f"expected={case.expect_valid_arguments}, "
+                f"preview={preview.get('valid_arguments')!r}"
+            )
+        if case.expect_runtime_status is not None and runtime.status != case.expect_runtime_status:
+            failures.append(
+                f"runtime status mismatch: expected={case.expect_runtime_status}, "
+                f"runtime={runtime.status}"
+            )
 
         preview_evidence = _json_object_or_none(preview.get("decision_evidence"))
         runtime_evidence = _json_object_or_none(policy_event.get("metadata"))
-        if preview_evidence is None:
-            failures.append("preview did not include decision_evidence")
-        if runtime_evidence is None:
-            failures.append("runtime audit event did not include decision evidence metadata")
-        if preview_evidence is not None and runtime_evidence is not None:
+        if case.expect_policy_evidence:
+            if preview_evidence is None:
+                failures.append("preview did not include decision_evidence")
+            if runtime_evidence is None:
+                failures.append("runtime audit event did not include decision evidence metadata")
+        elif preview_evidence is not None:
+            failures.append("preview unexpectedly included decision_evidence")
+
+        if (
+            case.expect_policy_evidence
+            and preview_evidence is not None
+            and runtime_evidence is not None
+        ):
             for key in PARITY_EVIDENCE_KEYS:
                 if preview_evidence.get(key) != runtime_evidence.get(key):
                     failures.append(
