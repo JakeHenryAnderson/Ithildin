@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-144"
-    assert manifest["planned_range"] == "145-151"
+    assert manifest["completed_range"] == "113-145"
+    assert manifest["planned_range"] == "146-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 145-151 are planned" in readme
+    assert "Tasks 146-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -724,7 +724,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-144 done",
+        "Tasks 113-145 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -1021,6 +1021,31 @@ def test_ci_platform_plan_is_documented_without_broad_claims() -> None:
     assert "144 - CI and platform planning without broad claims | Done" in backlog
     assert "Task 144 CI/platform plan added without broad claims" in matrix
     assert "docs/codex/ci-platform-plan.md" in review_docs.REVIEW_DOCS
+
+
+def test_redaction_evidence_boundary_is_documented() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/redaction-evidence-boundary.md").read_text(encoding="utf-8")
+    evidence = Path("docs/codex/evidence-contracts.md").read_text(encoding="utf-8")
+
+    for required in [
+        "best-effort leak reduction",
+        "not a security boundary",
+        "make packet-redaction-scan",
+        "redaction_applied",
+        "redaction_count",
+        "redaction_paths",
+    ]:
+        assert required in doc
+    assert "redaction-evidence-boundary.md" in readme
+    assert "redaction-evidence-boundary.md" in evidence
+    assert "145 - Redaction evidence and leak-boundary clarity | Done" in backlog
+    assert "Task 145 redaction evidence boundary clarified" in matrix
+    assert "docs/codex/redaction-evidence-boundary.md" in review_docs.REVIEW_DOCS
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

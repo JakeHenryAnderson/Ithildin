@@ -76,6 +76,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Adversarial corpora | v0.4 Task 142 manifest-backed corpus index added | pending external review | none | pending | `make adversarial-corpus-check`; `make release-check` | corpus index is evidence tracking, not fuzzing proof | external_pending |
 | Resource limits | v0.4 Task 143 local-preview resource-limit sanity gate added | pending external review | none | pending | `make resource-limit-check`; `make release-check` | sanity gate is not production capacity planning | external_pending |
 | CI/platform claims | v0.4 Task 144 CI/platform plan added without broad claims | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | macOS/Linux local-preview only; Windows/WSL unsupported | external_pending |
+| Redaction evidence | v0.4 Task 145 redaction evidence boundary clarified | pending external review | none | pending | `make packet-redaction-scan`; `make release-check` | redaction is best-effort leak reduction, not a security boundary | external_pending |
 
 ## v2 Update Rules
 

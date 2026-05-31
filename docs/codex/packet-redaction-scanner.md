@@ -29,3 +29,7 @@ contain obvious secret material or forbidden runtime files.
 The scanner is intentionally narrow. It scans generated packet artifacts, not the entire repository
 or user workstation. It complements release evidence validation, bundle exclusion rules, redaction
 tests, and external/source review; it is not a substitute for any of them.
+
+The broader runtime redaction evidence boundary is documented in
+[redaction-evidence-boundary.md](redaction-evidence-boundary.md). Both checks are leak-reduction
+controls, not proof that arbitrary output is safe to publish.

@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-144",
-  "planned_range": "145-151",
+  "completed_range": "113-145",
+  "planned_range": "146-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -168,7 +168,7 @@
         "131",
         "132"
       ],
-      "status": "planned",
+      "status": "done",
       "gate": "signed-evidence, audit diagnostics, evidence-contract, release-evidence schema, evidence-confusion, and release-check gates."
     },
     {
@@ -716,7 +716,7 @@
     {
       "id": "145",
       "title": "Redaction evidence and leak-boundary clarity",
-      "status": "planned",
+      "status": "done",
       "commit": "Clarify redaction evidence boundary",
       "blocks_capability_expansion": "conditional",
       "blocks_broader_distribution": "yes",

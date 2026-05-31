@@ -166,6 +166,8 @@ Patch apply approval and recovery states are documented in
 [docs/codex/patch-apply-state-machine.md](docs/codex/patch-apply-state-machine.md).
 Evidence fields for audit events, policy decisions, approvals, redaction summaries, and signed
 bundles are summarized in [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md).
+Redaction remains best-effort leak reduction; its runtime and review-packet limits are documented in
+[docs/codex/redaction-evidence-boundary.md](docs/codex/redaction-evidence-boundary.md).
 
 MCP is launched by an MCP client rather than as a persistent Compose service:
 
@@ -211,8 +213,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-144 are
-complete; Tasks 145-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-145 are
+complete; Tasks 146-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

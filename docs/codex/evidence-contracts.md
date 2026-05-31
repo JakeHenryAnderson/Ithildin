@@ -58,6 +58,11 @@ The review console shows counts and safe JSON paths only. It must not expose ori
 values. `/system/status` reports baseline redaction enablement and extra local redaction counts
 without exposing the configured patterns or secrets.
 
+The review boundary is documented in
+[redaction-evidence-boundary.md](redaction-evidence-boundary.md). Redaction evidence says where
+known key/pattern redaction happened; it does not prove that no secret-like value remains in every
+possible output, screenshot, runtime database, or manually assembled review artifact.
+
 ## Signed Evidence
 
 Signed audit exports and signed manifest locks use local Ed25519 keys when configured. Verification
