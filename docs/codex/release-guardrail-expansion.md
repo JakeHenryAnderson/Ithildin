@@ -21,6 +21,15 @@ review and release envelope before a packet is handed to an external reviewer.
   powers;
 - Tasks 101-112 are marked done before the final v0.3-prep handoff claim.
 
+Task 126 extends the same guardrail into the v0.4 horizontal gate:
+
+- `release-check` must include `release-evidence-gate`;
+- `review-packet-diff-gate` must remain wired as a Make target;
+- the v0.4 milestone manifest must mark Tasks 113-126 done and Tasks 127-151 planned;
+- the v0.4 after-wave command list must include both `release-evidence-gate` and
+  `review-packet-diff-gate`;
+- every completed v0.4 checkpoint must preserve the deferred-boundary metadata.
+
 These checks are intentionally conservative. If a future task intentionally changes the release
 workflow or adds a new governed tool-power class after external review, the guardrail should be
 updated in the same checkpoint as the boundary decision.

@@ -53,6 +53,7 @@ THREAT_MODEL_LINKED_DOCS = [
 REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "manifest-lock-check",
     "release-guardrails",
+    "release-evidence-gate",
     "reviewer-findings-check",
     "review-findings-summary",
     "review-run-manifest-check",
@@ -74,6 +75,9 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) docs-site",
 ]
 REQUIRED_V03_DONE_TASKS = [f"{task:03d}" for task in range(101, 113)]
+REQUIRED_V04_DONE_TASKS = [f"{task:03d}" for task in range(113, 127)]
+REQUIRED_V04_METADATA_TASKS = [f"{task:03d}" for task in range(123, 127)]
+V04_PLANNED_RANGE = "127-151"
 DEFERRED_TOOL_POWER_MARKERS = [
     "shell",
     "docker",
@@ -92,6 +96,7 @@ def main() -> None:
     failures.extend(_check_release_targets())
     failures.extend(_check_deferred_tool_powers_absent_from_manifests())
     failures.extend(_check_v03_wave5_status())
+    failures.extend(_check_v04_horizontal_gate_status())
     failures.extend(_check_closure_matrix_v3())
 
     if failures:
@@ -213,13 +218,59 @@ def _check_release_targets() -> list[str]:
         previous_index = index
     for target in [
         "release-evidence-validate:",
+        "release-evidence-gate:",
         "review-packet-diff:",
+        "review-packet-diff-gate:",
         "reviewer-findings-check:",
         "review-findings-summary:",
         "review-run-manifest-check:",
     ]:
         if target not in makefile:
             failures.append(f"Makefile is missing {target}")
+    return failures
+
+
+def _check_v04_horizontal_gate_status() -> list[str]:
+    failures: list[str] = []
+    manifest = yaml.safe_load(
+        (ROOT / "docs/codex/v0.4-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    backlog = (ROOT / "docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    if manifest.get("completed_range") != "113-126":
+        failures.append("v0.4 manifest completed_range is not 113-126")
+    if manifest.get("planned_range") != V04_PLANNED_RANGE:
+        failures.append(f"v0.4 manifest planned_range is not {V04_PLANNED_RANGE}")
+    if "make release-evidence-gate" not in manifest.get("after_each_wave_required_commands", []):
+        failures.append("v0.4 manifest does not require release-evidence-gate after each wave")
+    diff_gate_command = (
+        "make review-packet-diff-gate OLD=<prior checkpoint> NEW=<current checkpoint>"
+    )
+    if diff_gate_command not in manifest.get("after_each_wave_required_commands", []):
+        failures.append("v0.4 manifest does not require review-packet-diff-gate after each wave")
+    milestones = {
+        str(milestone.get("id")): milestone
+        for milestone in manifest.get("milestones", [])
+        if isinstance(milestone, dict)
+    }
+    for task_id in REQUIRED_V04_DONE_TASKS:
+        milestone = milestones.get(task_id)
+        if milestone is None:
+            failures.append(f"v0.4 manifest missing Task {task_id}")
+            continue
+        if milestone.get("status") != "done":
+            failures.append(f"Task {task_id} is not marked done in v0.4 manifest")
+        marker = f"| {task_id} - "
+        matching_lines = [line for line in backlog.splitlines() if line.startswith(marker)]
+        if not matching_lines:
+            failures.append(f"implementation backlog missing Task {task_id}")
+        elif "| Done |" not in matching_lines[0]:
+            failures.append(f"Task {task_id} is not marked Done in implementation backlog")
+    for task_id in REQUIRED_V04_METADATA_TASKS:
+        milestone = milestones.get(task_id)
+        if milestone is None:
+            continue
+        if milestone.get("deferred_boundary_must_remain_unchanged") is not True:
+            failures.append(f"Task {task_id} does not preserve deferred boundary metadata")
     return failures
 
 

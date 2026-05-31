@@ -206,8 +206,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-125 are
-complete; Tasks 126-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-126 are
+complete; Tasks 127-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

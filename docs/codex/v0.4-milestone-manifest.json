@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-125",
-  "planned_range": "126-151",
+  "completed_range": "113-126",
+  "planned_range": "127-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -43,6 +43,7 @@
   "after_each_wave_required_commands": [
     "focused tests for touched surfaces",
     "make release-check",
+    "make release-evidence-gate",
     "make review-candidate",
     "make reviewer-findings-check",
     "make review-run-manifest-check",
@@ -190,7 +191,7 @@
     {"id": "123", "title": "v0.4 gating overlay", "status": "done", "commit": "Add v0.4 gating overlay", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make release-check", "make review-candidate"], "risk_surface": ["review process", "boundary control"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "124", "title": "Release evidence schema gate v2", "status": "done", "commit": "Harden release evidence gate", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make release-evidence", "make release-evidence-gate", "make release-evidence-validate FILE=<snapshot>", "make release-check"], "risk_surface": ["release evidence", "schema stability"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "125", "title": "Review packet diff gate v2", "status": "done", "commit": "Harden review packet diff gate", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "conditional", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make review-packet-diff-gate OLD=<prior checkpoint> NEW=<current checkpoint>", "make review-candidate"], "risk_surface": ["review packet", "artifact drift"], "deferred_boundary_must_remain_unchanged": true},
-    {"id": "126", "title": "Release guardrail expansion v2", "status": "planned", "commit": "Expand release guardrails v2", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make release-guardrails", "make release-check"], "risk_surface": ["docs claims", "deferred powers"], "deferred_boundary_must_remain_unchanged": true},
+    {"id": "126", "title": "Release guardrail expansion v2", "status": "done", "commit": "Expand release guardrails v2", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make release-guardrails", "make release-check"], "risk_surface": ["docs claims", "deferred powers"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "127", "title": "Secrets hygiene and packet redaction scanner", "status": "planned", "commit": "Add packet redaction scanner", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make review-candidate", "make release-check"], "risk_surface": ["review packets", "secret hygiene"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "128", "title": "Test isolation and determinism gate", "status": "planned", "commit": "Add deterministic test gate", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "conditional", "requires_external_review_before_closure": false, "required_commands": ["make test", "make release-check"], "risk_surface": ["test reliability", "adversarial suites"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "129", "title": "Signed-evidence verifier hardening", "status": "planned", "commit": "Harden signed evidence verification", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": true, "required_commands": ["make signed-evidence-demo", "make release-check"], "risk_surface": ["signed audit exports", "manifest lock signatures"], "deferred_boundary_must_remain_unchanged": true},
