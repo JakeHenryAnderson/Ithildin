@@ -1269,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-157"
-    assert manifest["planned_range"] == "158-180"
+    assert manifest["completed_range"] == "152-158"
+    assert manifest["planned_range"] == "159-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1427,6 +1427,48 @@ def test_source_review_runbook_v2_is_documented() -> None:
     assert "Task 157 documents the repeatable source-review workflow" in matrix
     assert "docs/codex/source-review-runbook-v2.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/source-review-runbook-v2.md" in docs_site
+
+
+def test_source_file_inspection_packet_maps_review_surfaces() -> None:
+    packet = Path("docs/codex/source-file-inspection-packet.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "Patch apply",
+        "Filesystem reads",
+        "HTTP fetch",
+        "Signed audit export",
+        "Manifest-lock signatures",
+        "Policy preview/runtime parity",
+        "MCP ingress",
+        "Review console evidence",
+        "Release/evidence automation",
+        "PatchProposalService.apply_approved",
+        "HttpFetchExecutor.fetch",
+        "IthildinMcpAdapter.call_tool",
+    ]:
+        assert required in packet
+    for path in [
+        "apps/api/src/ithildin_api/patches.py",
+        "apps/api/src/ithildin_api/read_tools.py",
+        "apps/api/src/ithildin_api/http_tools.py",
+        "apps/mcp-server/src/ithildin_mcp_server/server.py",
+        "apps/ui/src/App.tsx",
+    ]:
+        assert path in packet
+        assert Path(path).exists()
+    assert "source-file-inspection-packet.md" in readme
+    assert "158 - Source file inspection packet | Done" in backlog
+    assert "Task 158 maps high-risk source files/functions" in matrix
+    assert "docs/codex/source-file-inspection-packet.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/source-file-inspection-packet.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

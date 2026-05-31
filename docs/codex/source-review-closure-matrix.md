@@ -89,6 +89,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Evidence-confusion gate | Task 155 verifies local signing evidence is not confused with notarization, custody, or immutability | pending external review | none | pending | `make evidence-confusion-gate`; `make release-check` | runtime/demo signing remains local evidence only | external_pending |
 | External-review closure gate | Task 156 verifies source-review closure is not overstated while external rows remain pending | pending external review | none | pending | `make external-review-closure-gate`; `make release-check` | valid blocked status is expected until external review closure | external_pending |
 | Source review runbook v2 | Task 157 documents the repeatable source-review workflow for v0.5 | pending external review | none | pending | `make docs-site`; `make release-check` | runbook guides review but does not close external rows | external_pending |
+| Source file inspection packet | Task 158 maps high-risk source files/functions to contracts and tests | pending external review | none | pending | `make docs-site`; `make release-check` | pointer packet accelerates review but does not prove implementation correctness | external_pending |
 
 ## v2 Update Rules
 

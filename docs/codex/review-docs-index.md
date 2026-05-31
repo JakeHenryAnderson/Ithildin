@@ -61,6 +61,7 @@ externally closed.
 - [Evidence-Confusion Gate v2](evidence-confusion-gate.md)
 - [External-Review Closure Gate v2](external-review-closure-gate.md)
 - [Source Review Runbook v2](source-review-runbook-v2.md)
+- [Source File Inspection Packet](source-file-inspection-packet.md)
 
 ## Reading Rule
 
