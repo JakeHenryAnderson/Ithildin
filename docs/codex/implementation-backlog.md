@@ -131,8 +131,8 @@ implemented until each receives its own checkpoint commit and gate output.
 
 | Task | Status | Spec |
 | --- | --- | --- |
-| 123 - v0.4 gating overlay | Planned | [v0.4-gating-overlay.md](v0.4-gating-overlay.md), [v0.4-milestone-manifest.md](v0.4-milestone-manifest.md) |
-| 124 - Release evidence schema gate v2 | Planned | Release evidence/schema gate |
+| 123 - v0.4 gating overlay | Done | [v0.4-gating-overlay.md](v0.4-gating-overlay.md), [v0.4-milestone-manifest.md](v0.4-milestone-manifest.md) |
+| 124 - Release evidence schema gate v2 | Done | `make release-evidence-gate` is included in `make release-check`. |
 | 125 - Review packet diff gate v2 | Planned | Packet diff gate |
 | 126 - Release guardrail expansion v2 | Planned | Release/documentation guardrails |
 | 127 - Secrets hygiene and packet redaction scanner | Planned | Packet redaction scanner |

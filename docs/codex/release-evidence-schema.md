@@ -21,6 +21,12 @@ Validate a saved evidence file:
 make release-evidence-validate FILE=release-evidence.json
 ```
 
+Run the release-evidence schema gate used by `make release-check`:
+
+```sh
+make release-evidence-gate
+```
+
 Direct CLI form:
 
 ```sh
@@ -55,6 +61,11 @@ Nested fields may still evolve during preview work, but the release-evidence
 validator checks the schema version, stable key set, release-check transcript
 metadata, git dirty state shape, tool count/name shape, review-document digests,
 filesystem support/probe shape, and obvious secret-like markers.
+
+Task 124 promotes this validation from an optional reviewer command into an
+explicit release gate. `make release-evidence-gate` generates a temporary
+snapshot, validates it with the same saved-file validator reviewers use, and is
+included in `make release-check`.
 
 ## Release-Check Semantics
 

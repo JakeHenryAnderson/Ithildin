@@ -136,8 +136,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-122"
-    assert manifest["planned_range"] == "123-151"
+    assert manifest["completed_range"] == "113-124"
+    assert manifest["planned_range"] == "125-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -157,8 +157,9 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 123-151 are planned" in readme
-    assert "123 - v0.4 gating overlay | Planned" in backlog
+    assert "Tasks 125-151 are planned" in readme
+    assert "123 - v0.4 gating overlay | Done" in backlog
+    assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
     assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
@@ -1024,7 +1025,7 @@ def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
     assert "reviewer-findings-check:" in makefile
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
-        "reviewer-findings-check review-findings-summary "
+        "release-evidence-gate reviewer-findings-check review-findings-summary "
         "review-run-manifest-check filesystem-contract-check"
     ) in makefile
     assert "open critical/high findings" in intake
@@ -1200,7 +1201,7 @@ def test_release_check_enforces_filesystem_contract_check() -> None:
 
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
-        "reviewer-findings-check review-findings-summary "
+        "release-evidence-gate reviewer-findings-check review-findings-summary "
         "review-run-manifest-check filesystem-contract-check"
     ) in makefile
     assert "Task 091 release-check filesystem-contract-check gate" in matrix
@@ -1736,8 +1737,15 @@ def test_release_evidence_schema_doc_and_target_are_wired() -> None:
     )
 
     assert "release-evidence-validate:" in makefile
+    assert "release-evidence-gate:" in makefile
+    assert (
+        "release-check: release-context manifest-lock-check release-guardrails "
+        "release-evidence-gate"
+    ) in makefile
+    assert "make release-evidence-gate" in readme
     assert "make release-evidence-validate FILE=..." in readme
     assert "v0.3-prep-release-evidence-v1" in doc
+    assert "Task 124 promotes this validation" in doc
     assert "make release-evidence-validate FILE=release-evidence.json" in review_packet
     assert "Task 102 adds" in matrix
     assert "docs/codex/release-evidence-schema.md" in review_docs.REVIEW_DOCS
