@@ -72,6 +72,7 @@ externally closed.
 - [External Findings Intake Dry Run](external-findings-intake-dry-run.md)
 - [Closure Matrix Evidence Sync](closure-matrix-evidence-sync.md)
 - [Accepted Risk Register](accepted-risk-register.md)
+- [Capability Decision Report Generator](capability-decision-report.md)
 
 ## Reading Rule
 

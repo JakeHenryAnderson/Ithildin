@@ -9,6 +9,7 @@ import pytest
 
 from scripts import (
     accepted_risk_register,
+    capability_decision_report,
     capability_expansion_gate,
     closure_matrix_evidence_sync,
     consolidate_review_packet,
@@ -1272,8 +1273,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-168"
-    assert manifest["planned_range"] == "169-180"
+    assert manifest["completed_range"] == "152-169"
+    assert manifest["planned_range"] == "170-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1772,6 +1773,35 @@ def test_accepted_risk_register_is_wired_and_scoped() -> None:
     assert "docs/codex/accepted-risk-register.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/accepted-risk-register.json" in review_docs.REVIEW_DOCS
     assert "docs/codex/accepted-risk-register.md" in docs_site
+
+
+def test_capability_decision_report_is_wired_and_blocked() -> None:
+    report = capability_decision_report.build_report(Path.cwd())
+    doc = Path("docs/codex/capability-decision-report.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["decision"] == "blocked"
+    assert report["capability_expansion_allowed"] is False
+    assert report["tool_count"] == 10
+    assert report["completed_range"] == "152-169"
+    assert report["planned_range"] == "170-180"
+    assert report["open_accepted_risks"] == 10
+    assert report["external_closure_complete"] is False
+    assert "does not approve new governed tool powers" in doc
+    assert "make capability-decision-report" in readme
+    assert "169 - Capability decision report generator | Done" in backlog
+    assert "Task 169 summarizes capability go/no-go evidence" in matrix
+    assert "capability-decision-report" in makefile.partition("release-check:")[2]
+    assert "capability-decision-report" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/capability-decision-report.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-decision-report.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

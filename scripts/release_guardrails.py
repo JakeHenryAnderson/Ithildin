@@ -64,6 +64,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",
     "accepted-risk-register-check",
+    "capability-decision-report",
     "determinism-check",
     "adversarial-corpus-check",
     "resource-limit-check",

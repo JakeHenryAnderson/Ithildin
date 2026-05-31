@@ -100,6 +100,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | External findings intake dry run | Task 166 validates EXT finding intake rails with temporary fixtures | pending external review | none | pending | `make external-findings-intake-dry-run`; `make release-check` | dry run does not create real external findings or close rows | external_pending |
 | Closure matrix evidence sync | Task 167 verifies done v0.5 tasks and closure rows stay aligned | pending external review | none | pending | `make closure-matrix-evidence-sync`; `make release-check` | sync gate prevents drift but does not close external rows | external_pending |
 | Accepted risk register | Task 168 records accepted local-preview risks and keeps them external-review-pending | pending external review | none | pending | `make accepted-risk-register-check`; `make release-check` | accepted risks do not approve capability expansion or close external review | external_pending |
+| Capability decision report | Task 169 summarizes capability go/no-go evidence without approving new powers | pending external review | none | pending | `make capability-decision-report`; `make release-check` | decision report remains blocked while external rows and v0.5 tasks are pending | external_pending |
 
 ## v2 Update Rules
 

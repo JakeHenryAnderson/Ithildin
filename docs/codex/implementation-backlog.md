@@ -185,7 +185,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 166 - External findings intake dry run | Done | [external-findings-intake-dry-run.md](external-findings-intake-dry-run.md), `make external-findings-intake-dry-run` |
 | 167 - Closure matrix evidence sync | Done | [closure-matrix-evidence-sync.md](closure-matrix-evidence-sync.md), `make closure-matrix-evidence-sync` |
 | 168 - Accepted risk register | Done | [accepted-risk-register.md](accepted-risk-register.md), `make accepted-risk-register-check` |
-| 169 - Capability decision report generator | Planned | Decision report |
+| 169 - Capability decision report generator | Done | [capability-decision-report.md](capability-decision-report.md), `make capability-decision-report` |
 | 170 - No-new-powers release guardrail v2 | Planned | No-new-powers guardrail |
 | 171 - Source review transcript packet | Planned | Review transcripts |
 | 172 - Reviewer artifact manifest v2 | Planned | Artifact manifest |

@@ -86,6 +86,7 @@ REVIEW_DOCS = [
     "docs/codex/closure-matrix-evidence-sync.md",
     "docs/codex/accepted-risk-register.md",
     "docs/codex/accepted-risk-register.json",
+    "docs/codex/capability-decision-report.md",
     "docs/codex/local-preview-release.md",
 ]
 
