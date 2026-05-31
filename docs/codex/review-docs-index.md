@@ -42,6 +42,7 @@ externally closed.
 - [Reviewer Finding Intake](reviewer-finding-intake.md)
 - [External Review Intake and Closure](external-review-intake-and-closure.md)
 - [External Review Intake v2](external-review-intake-v2.md)
+- [External Review Response Intake Template v2](external-review-response-intake-template-v2.md)
 - [v0.3 Boundary Decision](v0.3-boundary-decision.md)
 
 ## Reproduction and Packet Handoff

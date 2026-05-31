@@ -16,6 +16,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.3-external-review-prompt.md",
     "docs/codex/external-review-intake-and-closure.md",
     "docs/codex/external-review-intake-v2.md",
+    "docs/codex/external-review-response-intake-template-v2.md",
     "docs/codex/v0.3-boundary-decision.md",
     "docs/codex/v0.4-boundary-charter.md",
     "docs/codex/review-docs-index.md",
