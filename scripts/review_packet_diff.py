@@ -5,18 +5,21 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-SECRET_MARKERS = (
-    "BEGIN PRIVATE KEY",
-    "ITHILDIN_ADMIN_TOKEN=",
-    "dev-admin-token-change-me",
-    "password=",
-    "secret=",
-)
+SECRET_MARKERS = ("BEGIN PRIVATE KEY", "dev-admin-token-change-me")
+SECRET_CONTENT_PATTERNS = {
+    "private key material": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    "concrete admin token assignment": re.compile(
+        r"(?m)^ITHILDIN_ADMIN_TOKEN=(?!\.\.\.)\S+"
+    ),
+    "sample admin token": re.compile(r"dev-admin-token-change-me"),
+    "credential assignment": re.compile(r"(?im)^(?:password|secret|api[_-]?key)=\S{8,}"),
+}
 
 
 class ReviewPacketDiffError(RuntimeError):
@@ -289,10 +292,10 @@ def _assert_artifact_contents_secret_free(packet_dir: Path, artifacts: dict[str,
             raise ReviewPacketDiffError(
                 f"packet artifact is not UTF-8 text: {artifact.path}"
             ) from exc
-        for marker in SECRET_MARKERS:
-            if marker.lower() in text.lower():
+        for label, pattern in SECRET_CONTENT_PATTERNS.items():
+            if pattern.search(text):
                 raise ReviewPacketDiffError(
-                    f"secret-like marker present in artifact: {artifact.path}"
+                    f"secret-like marker present in artifact: {artifact.path} ({label})"
                 )
 
 

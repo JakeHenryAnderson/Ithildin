@@ -2999,6 +2999,17 @@ def test_review_packet_diff_gate_recomputes_hashes_and_detects_unlisted(
     with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="unlisted"):
         review_packet_diff.collect_packet_artifacts(packet, require_hashes=True)
 
+    benign_packet = tmp_path / "benign-packet"
+    benign_packet.mkdir()
+    _write_packet_artifacts(benign_packet, {"README.md": "`ITHILDIN_ADMIN_TOKEN=...`\n"})
+    review_packet_diff.collect_packet_artifacts(benign_packet, require_hashes=True)
+
+    leak_packet = tmp_path / "leak-packet"
+    leak_packet.mkdir()
+    _write_packet_artifacts(leak_packet, {"leak.md": "ITHILDIN_ADMIN_TOKEN=real-token\n"})
+    with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="secret-like"):
+        review_packet_diff.collect_packet_artifacts(leak_packet, require_hashes=True)
+
 
 def test_review_packet_diff_rejects_malformed_sha256(tmp_path: Path) -> None:
     packet = tmp_path / "packet"
