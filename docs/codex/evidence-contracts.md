@@ -74,6 +74,17 @@ notarization, external timestamping, custody-grade retention, or official supply
 
 ## Contract Versioning
 
+Task 131 promotes the local-preview evidence contract to the machine-checkable index
+[`evidence-contracts-v2.json`](evidence-contracts-v2.json), with contract version
+`v0.4-local-preview-evidence-contract-v2`. Run:
+
+```sh
+make evidence-contracts-check
+```
+
+The check verifies that required contract IDs, stable fields, format versions, runtime-boundary
+claims, and compatibility rules remain present before release evidence is handed off.
+
 Evidence contracts use explicit local-preview format versions where a bundle or API payload may be
 consumed offline:
 
@@ -83,11 +94,12 @@ consumed offline:
 - manifest locks use `version: "1"`;
 - review packet artifacts include schema-like metadata through release evidence and artifact hashes.
 
-Stable v0.3-prep evidence fields are fields documented in this file and used by release-readiness
-tests, policy fixtures, signed evidence verification, or review packet generation. Additive fields
-may be introduced when they are secret-free and do not weaken an existing check. Renaming, removing,
-or changing the meaning of a stable field requires a new format version or an explicit compatibility
-note in the relevant review packet.
+Stable v0.4 evidence fields are fields documented in this file, listed in
+`evidence-contracts-v2.json`, and used by release-readiness tests, policy fixtures, signed evidence
+verification, release evidence validation, or review packet generation. Additive fields may be
+introduced when they are secret-free and do not weaken an existing check. Renaming, removing, or
+changing the meaning of a stable field requires a new contract version, a new format version for the
+affected payload, or an explicit compatibility note in the relevant review packet.
 
 Preview-only evidence fields may appear in UI summaries, diagnostics, and review helper outputs.
 They should remain secret-free, but downstream tools must not treat them as durable contract fields

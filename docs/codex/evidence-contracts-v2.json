@@ -1,0 +1,156 @@
+{
+  "contract_version": "v0.4-local-preview-evidence-contract-v2",
+  "runtime_boundary": "v0.1 local-preview",
+  "status": "local-preview-stable",
+  "not_guarantees": [
+    "external notarization",
+    "hosted custody",
+    "tamper-proof storage",
+    "production identity",
+    "implementation correctness proof"
+  ],
+  "compatibility_policy": {
+    "additive_secret_free_fields": "allowed",
+    "rename_remove_or_meaning_change": "requires_new_contract_version_or_explicit_compatibility_note",
+    "preview_only_fields": "not_stable_until_documented_and_tested"
+  },
+  "contracts": [
+    {
+      "id": "audit_event",
+      "format_version_field": null,
+      "stable_fields": [
+        "event_id",
+        "timestamp",
+        "event_type",
+        "request_id",
+        "principal",
+        "tool_name",
+        "resource",
+        "decision",
+        "policy_version",
+        "matched_rules",
+        "input_hash",
+        "redactions",
+        "metadata",
+        "prev_event_hash",
+        "event_hash"
+      ]
+    },
+    {
+      "id": "audit_jsonl_export",
+      "format_version_field": "format_version",
+      "format_version": "1",
+      "stable_fields": [
+        "bundle_type",
+        "format_version",
+        "generated_at",
+        "event_count",
+        "head_hash",
+        "verification"
+      ]
+    },
+    {
+      "id": "signed_audit_export",
+      "format_version_field": "format_version",
+      "format_version": "1",
+      "stable_fields": [
+        "bundle_type",
+        "format_version",
+        "metadata",
+        "events_jsonl",
+        "events_sha256",
+        "signature.algorithm",
+        "signature.key_id",
+        "signature.public_key",
+        "signature.created_at",
+        "signature.signature"
+      ]
+    },
+    {
+      "id": "signed_manifest_lock",
+      "format_version_field": "format_version",
+      "format_version": "1",
+      "stable_fields": [
+        "signature_type",
+        "format_version",
+        "lock_path",
+        "lock_sha256",
+        "signature.algorithm",
+        "signature.key_id",
+        "signature.public_key",
+        "signature.created_at",
+        "signature.signature"
+      ]
+    },
+    {
+      "id": "release_evidence",
+      "format_version_field": "schema.schema_version",
+      "format_version": "v0.3-prep-release-evidence-v1",
+      "stable_fields": [
+        "schema",
+        "generated_at",
+        "repo",
+        "git",
+        "release_check",
+        "review_docs",
+        "manifest_lock",
+        "tools",
+        "policy",
+        "principals",
+        "filesystem",
+        "storage",
+        "telemetry",
+        "security",
+        "audit",
+        "audit_signing",
+        "deferred_boundaries"
+      ]
+    },
+    {
+      "id": "policy_decision_evidence",
+      "format_version_field": null,
+      "stable_fields": [
+        "decision",
+        "reason",
+        "matched_rules",
+        "obligation_keys",
+        "policy_engine",
+        "policy_hash",
+        "policy_version",
+        "policy_document_version",
+        "tool_name",
+        "tool_version",
+        "tool_risk",
+        "manifest_hash",
+        "resource_type",
+        "resource_in_scope",
+        "principal_id",
+        "principal_roles",
+        "session_id"
+      ]
+    },
+    {
+      "id": "approval_binding_evidence",
+      "format_version_field": null,
+      "stable_fields": [
+        "proposal_id",
+        "proposal_hash",
+        "target_path",
+        "workspace_id",
+        "base_file_hash",
+        "manifest_hash",
+        "manifest_version",
+        "tool_input_schema_hash",
+        "policy_engine",
+        "policy_hash",
+        "policy_version",
+        "policy_document_version",
+        "matched_rules",
+        "requesting_principal",
+        "request_hash",
+        "expires_at",
+        "approval_scope_hash"
+      ]
+    }
+  ]
+}

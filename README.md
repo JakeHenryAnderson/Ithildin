@@ -72,6 +72,7 @@ tamper-evident audit log.
 - `make manifest-lock-signature-check` - verify the local manifest lock signature.
 - `make admin-token-generate` - print a strong local `ITHILDIN_ADMIN_TOKEN=...` line.
 - `make determinism-check` - check pytest collection stability and obvious nondeterministic patterns.
+- `make evidence-contracts-check` - validate the machine-readable local-preview evidence contract index.
 - `make policy-test` - run committed offline fixtures against `policies/default.yaml`.
 - `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
@@ -209,8 +210,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-130 are
-complete; Tasks 131-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-131 are
+complete; Tasks 132-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

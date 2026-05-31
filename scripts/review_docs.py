@@ -28,6 +28,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.1-security-test-matrix.md",
     "docs/codex/filesystem-executor-contract.md",
     "docs/codex/evidence-contracts.md",
+    "docs/codex/evidence-contracts-v2.json",
     "docs/codex/audit-integrity-adversarial-suite.md",
     "docs/codex/manifest-validation-suite.md",
     "docs/codex/policy-parity-harness.md",

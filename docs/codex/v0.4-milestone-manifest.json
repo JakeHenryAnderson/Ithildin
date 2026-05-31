@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-130",
-  "planned_range": "131-151",
+  "completed_range": "113-131",
+  "planned_range": "132-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -445,13 +445,14 @@
     {
       "id": "131",
       "title": "Evidence contract versioning v2",
-      "status": "planned",
+      "status": "done",
       "commit": "Add evidence contract versioning v2",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "yes",
       "blocks_external_handoff": "yes",
       "requires_external_review_before_closure": true,
       "required_commands": [
+        "make evidence-contracts-check",
         "make release-check"
       ],
       "risk_surface": [

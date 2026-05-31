@@ -9,6 +9,7 @@ import pytest
 
 from scripts import (
     consolidate_review_packet,
+    evidence_contracts_check,
     internal_review_packet,
     packet_redaction_scan,
     release_evidence,
@@ -138,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-130"
-    assert manifest["planned_range"] == "131-151"
+    assert manifest["completed_range"] == "113-131"
+    assert manifest["planned_range"] == "132-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -159,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 131-151 are planned" in readme
+    assert "Tasks 132-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -168,6 +169,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "128 - Test isolation and determinism gate | Done" in backlog
     assert "129 - Signed-evidence verifier hardening | Done" in backlog
     assert "130 - Audit integrity adversarial suite v2 | Done" in backlog
+    assert "131 - Evidence contract versioning v2 | Done" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
     assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
@@ -256,6 +258,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "release-packet",
         "review-candidate",
         "internal-review-packet",
+        "evidence-contracts-check",
         "signed-evidence-demo",
         "signed-evidence-demo-verify",
         "filesystem-contract-check",
@@ -714,7 +717,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-130 done",
+        "Tasks 113-131 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -733,22 +736,41 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
 
 def test_evidence_contracts_define_versioning_policy() -> None:
     contracts = Path("docs/codex/evidence-contracts.md").read_text(encoding="utf-8")
+    contract_index = json.loads(
+        Path("docs/codex/evidence-contracts-v2.json").read_text(encoding="utf-8")
+    )
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
         encoding="utf-8"
     )
 
     for required in [
         "Contract Versioning",
+        "v0.4-local-preview-evidence-contract-v2",
+        "evidence-contracts-v2.json",
         'format_version: "1"',
         'version: "1"',
-        "Stable v0.3-prep evidence fields",
+        "Stable v0.4 evidence fields",
         "Preview-only evidence fields",
         "requires a trusted local public key file",
         "new format version",
     ]:
         assert required in contracts
+    assert contract_index["contract_version"] == "v0.4-local-preview-evidence-contract-v2"
+    assert {contract["id"] for contract in contract_index["contracts"]} >= {
+        "audit_event",
+        "audit_jsonl_export",
+        "signed_audit_export",
+        "signed_manifest_lock",
+        "release_evidence",
+        "policy_decision_evidence",
+        "approval_binding_evidence",
+    }
     assert "Task 095 evidence-contract versioning" in matrix
     assert "SUB-001" in matrix
+    assert "docs/codex/evidence-contracts-v2.json" in review_docs.REVIEW_DOCS
+    assert evidence_contracts_check.validate_contract_index()["contract_version"] == (
+        "v0.4-local-preview-evidence-contract-v2"
+    )
 
 
 def test_policy_parity_harness_is_documented_and_gated() -> None:
@@ -1815,7 +1837,7 @@ def test_determinism_gate_doc_and_target_are_wired() -> None:
 
     assert "determinism-check:" in makefile
     assert "release-check: release-context manifest-lock-check release-guardrails" in makefile
-    assert "determinism-check policy-test" in makefile
+    assert "determinism-check evidence-contracts-check policy-test" in makefile
     assert "make determinism-check" in readme
     assert "make determinism-check" in doc
     assert "make determinism-check" in review_packet
