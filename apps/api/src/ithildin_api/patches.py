@@ -7,7 +7,7 @@ import os
 import re
 import sqlite3
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -105,6 +105,9 @@ class PatchApplyAttempt:
             "updated_at": self.updated_at.isoformat(),
             "metadata": self.metadata,
         }
+
+
+PatchApplyFaultHook = Callable[[str], None]
 
 
 class PatchProposalStore:
@@ -396,12 +399,14 @@ class PatchProposalService:
         max_patch_bytes: int,
         filesystems: dict[str, FilesystemReadTools] | None = None,
         default_workspace_id: str | None = None,
+        apply_fault_hook: PatchApplyFaultHook | None = None,
     ) -> None:
         self.store = store
         self.filesystem = filesystem
         self.filesystems = filesystems or {filesystem.workspace_id: filesystem}
         self.default_workspace_id = default_workspace_id or filesystem.workspace_id
         self.max_patch_bytes = max_patch_bytes
+        self.apply_fault_hook = apply_fault_hook
 
     def create_proposal(
         self,
@@ -774,11 +779,15 @@ class PatchProposalService:
             expected_matched_rules=expected_matched_rules,
             expected_principal=expected_principal,
         )
-        approval_service.begin_execution(approval_id, approval.request_hash)
         attempt: PatchApplyAttempt | None = None
         file_replaced = False
+        applied: PatchProposal | None = None
         try:
+            self._inject_apply_fault("after_proposal_validation")
+            approval_service.begin_execution(approval_id, approval.request_hash)
+            self._inject_apply_fault("after_begin_execution")
             target, patched_content = self._prepare_apply(proposal)
+            self._inject_apply_fault("after_prepare_apply")
             expected_post_apply_hash = sha256_digest(patched_content)
             now = datetime.now(UTC)
             attempt = self.store.create_apply_attempt(
@@ -799,12 +808,20 @@ class PatchProposalService:
                     metadata={"tool_name": PATCH_APPLY_TOOL},
                 )
             )
+            self._inject_apply_fault("after_create_apply_attempt")
+            self._inject_apply_fault("before_atomic_replace")
             _atomic_write_text(target, patched_content)
             file_replaced = True
+            self._inject_apply_fault("after_atomic_replace")
             self.store.set_apply_attempt_status(attempt.attempt_id, "file_replaced")
+            self._inject_apply_fault("after_file_replaced_status")
+            self._inject_apply_fault("before_proposal_completion")
             applied = self.store.set_status(proposal.proposal_id, "applied")
+            self._inject_apply_fault("before_approval_completion")
             approval_service.complete_execution(approval_id, success=True)
+            self._inject_apply_fault("after_approval_completion")
             self.store.set_apply_attempt_status(attempt.attempt_id, "completed")
+            self._inject_apply_fault("after_apply_attempt_completion")
         except PatchProposalError as exc:
             self._record_apply_failure(
                 approval_service,
@@ -829,7 +846,13 @@ class PatchProposalService:
             )
             raise PatchProposalError(reason) from exc
 
+        if applied is None:
+            raise PatchProposalError("patch apply did not complete")
         return applied
+
+    def _inject_apply_fault(self, phase: str) -> None:
+        if self.apply_fault_hook is not None:
+            self.apply_fault_hook(phase)
 
     def _proposal_for_approval(
         self,

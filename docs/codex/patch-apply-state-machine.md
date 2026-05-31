@@ -32,6 +32,14 @@ manifest, policy, schema, principal, proposal, or target evidence.
 The diagnostics endpoint reports `clean`, `ambiguous`, or `recovery_required`. It never repairs,
 rolls back, completes approvals, or exposes file contents or diff contents.
 
+## Fault Injection Evidence
+
+Task 117 adds named test-only fault-injection phases around proposal validation, approval execution,
+apply preparation, attempt creation, atomic replacement, proposal completion, approval completion,
+and final attempt completion. These hooks are not exposed through API or MCP; they exist so review
+tests can deterministically prove pre-replacement failures leave files unchanged and
+post-replacement failures require read-only recovery diagnostics.
+
 ## Failure Classes
 
 - Attempt creation failure: approval is marked failed, no attempt is stored, and the target remains
@@ -46,6 +54,6 @@ rolls back, completes approvals, or exposes file contents or diff contents.
 
 ## Non-Goals
 
-Task 089 does not add repair, rollback, retry, broad filesystem writes, shell execution, or
+This contract does not add repair, rollback, retry, broad filesystem writes, shell execution, or
 production custody. Recovery remains read-only until external/source review determines whether a
 mutating reconciliation flow is appropriate.
