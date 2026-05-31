@@ -38,6 +38,7 @@ REVIEW_DOCS = [
     "docs/codex/release-evidence-schema.md",
     "docs/codex/review-packet-diff.md",
     "docs/codex/packet-redaction-scanner.md",
+    "docs/codex/test-determinism-gate.md",
     "docs/codex/registry-fail-closed-suite.md",
     "docs/codex/release-guardrail-expansion.md",
     "docs/codex/reviewer-reproduction-map.md",

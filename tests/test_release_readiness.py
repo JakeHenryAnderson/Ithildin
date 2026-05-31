@@ -20,6 +20,7 @@ from scripts import (
     review_packet_diff,
     review_run_manifest,
     reviewer_findings,
+    test_determinism_gate,
 )
 
 
@@ -137,8 +138,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-127"
-    assert manifest["planned_range"] == "128-151"
+    assert manifest["completed_range"] == "113-128"
+    assert manifest["planned_range"] == "129-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -158,12 +159,13 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 128-151 are planned" in readme
+    assert "Tasks 129-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
     assert "126 - Release guardrail expansion v2 | Done" in backlog
     assert "127 - Secrets hygiene and packet redaction scanner | Done" in backlog
+    assert "128 - Test isolation and determinism gate | Done" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
     assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
@@ -708,7 +710,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-127 done",
+        "Tasks 113-128 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -1774,6 +1776,48 @@ def test_packet_redaction_scan_doc_target_and_bundle_are_wired() -> None:
     assert "Packet Redaction Scan" in consolidated_script
     assert "127 - Secrets hygiene and packet redaction scanner | Done" in backlog
     assert "docs/codex/packet-redaction-scanner.md" in review_docs.REVIEW_DOCS
+
+
+def test_determinism_gate_detects_forbidden_patterns(tmp_path: Path) -> None:
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    sleep_call = "time." + "sleep(1)"
+    random_call = "random." + "random()"
+    tests_dir.joinpath("test_bad.py").write_text(
+        "import time\n"
+        "import random\n"
+        "def test_bad():\n"
+        f"    {sleep_call}\n"
+        f"    {random_call}\n",
+        encoding="utf-8",
+    )
+
+    findings = test_determinism_gate._scan_test_patterns(tests_dir)
+
+    assert {finding.reason for finding in findings} == {"sleep_call", "unseeded_random"}
+
+
+def test_determinism_gate_doc_and_target_are_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/test-determinism-gate.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert "determinism-check:" in makefile
+    assert "release-check: release-context manifest-lock-check release-guardrails" in makefile
+    assert "determinism-check policy-test" in makefile
+    assert "make determinism-check" in readme
+    assert "make determinism-check" in doc
+    assert "make determinism-check" in review_packet
+    assert "make determinism-check" in reproduction_map
+    assert "128 - Test isolation and determinism gate | Done" in backlog
+    assert "docs/codex/test-determinism-gate.md" in review_docs.REVIEW_DOCS
 
 
 def test_release_evidence_records_attached_release_check_metadata(

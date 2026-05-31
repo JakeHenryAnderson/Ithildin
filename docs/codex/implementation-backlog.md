@@ -136,7 +136,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 125 - Review packet diff gate v2 | Done | `make review-packet-diff-gate OLD=... NEW=...` requires artifact hashes and fails on removed artifacts. |
 | 126 - Release guardrail expansion v2 | Done | `make release-guardrails` validates v0.4 horizontal gate status, release targets, packet diff gate, and deferred-power guardrails. |
 | 127 - Secrets hygiene and packet redaction scanner | Done | [packet-redaction-scanner.md](packet-redaction-scanner.md), `make packet-redaction-scan` |
-| 128 - Test isolation and determinism gate | Planned | Deterministic test gate |
+| 128 - Test isolation and determinism gate | Done | [test-determinism-gate.md](test-determinism-gate.md), `make determinism-check` |
 | 129 - Signed-evidence verifier hardening | Planned | Signed evidence verification |
 | 130 - Audit integrity adversarial suite v2 | Planned | Audit adversarial tests |
 | 131 - Evidence contract versioning v2 | Planned | Evidence contract versioning |
