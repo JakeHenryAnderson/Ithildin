@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-137",
-  "planned_range": "138-151",
+  "completed_range": "113-138",
+  "planned_range": "139-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -582,7 +582,7 @@
     {
       "id": "138",
       "title": "Local auth/session hardening within current boundary",
-      "status": "planned",
+      "status": "done",
       "commit": "Harden local auth status",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "yes",

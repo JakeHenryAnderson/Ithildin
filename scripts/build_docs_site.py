@@ -40,6 +40,7 @@ DEFAULT_DOCS = [
     "docs/codex/policy-parity-harness.md",
     "docs/codex/opa-parity-decision.md",
     "docs/codex/mcp-ingress-bypass-audit.md",
+    "docs/codex/local-auth-boundary.md",
     "docs/codex/review-console-assurance.md",
     "docs/codex/filesystem-executor-contract.md",
     "docs/codex/negative-review-recipes.md",

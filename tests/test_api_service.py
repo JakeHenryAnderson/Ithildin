@@ -158,6 +158,18 @@ def test_admin_status_rejects_wrong_bearer_token(tmp_path: Path) -> None:
 
     assert response.status_code == 403
     assert response.json()["detail"] == "invalid bearer token"
+    assert "wrong-token" not in response.text
+
+
+def test_admin_status_ignores_cookie_tokens(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        client.cookies.set("ithildin_admin_token", "correct-token")
+        response = client.get("/admin/status")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "missing bearer token"
 
 
 def test_admin_status_accepts_correct_bearer_token(tmp_path: Path) -> None:
@@ -244,6 +256,14 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "length_ok": False,
         "contains_whitespace": False,
         "weak": True,
+    }
+    assert payload["security"]["admin_api_auth"] == {
+        "scheme": "bearer_token",
+        "credential_source": "Authorization header",
+        "cookie_auth_enabled": False,
+        "server_sessions_enabled": False,
+        "production_identity": False,
+        "scope": "single local admin token",
     }
     assert payload["policy"]["engine"] == "yaml"
     assert payload["policy"]["policy_hash"].startswith("sha256:")

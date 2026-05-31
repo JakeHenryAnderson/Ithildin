@@ -74,4 +74,5 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/manifest-validation-suite.md" in DEFAULT_DOCS
     assert "docs/codex/opa-parity-decision.md" in DEFAULT_DOCS
     assert "docs/codex/mcp-ingress-bypass-audit.md" in DEFAULT_DOCS
+    assert "docs/codex/local-auth-boundary.md" in DEFAULT_DOCS
     assert "docs/codex/review-console-assurance.md" in DEFAULT_DOCS

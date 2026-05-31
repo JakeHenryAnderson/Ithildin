@@ -58,6 +58,14 @@ def security_status(settings: Settings) -> JsonObject:
             "contains_whitespace": token_has_whitespace,
             "weak": token_has_whitespace or (not dev_token_active and not token_length_ok),
         },
+        "admin_api_auth": {
+            "scheme": "bearer_token",
+            "credential_source": "Authorization header",
+            "cookie_auth_enabled": False,
+            "server_sessions_enabled": False,
+            "production_identity": False,
+            "scope": "single local admin token",
+        },
         "local_only": {
             "api_host_publish": "127.0.0.1:8000 in Compose",
             "ui_host_publish": "127.0.0.1:5173 in Compose",
