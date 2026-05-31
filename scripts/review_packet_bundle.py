@@ -140,6 +140,10 @@ def build_bundle(
     review_doc_hashes = collect_review_doc_metadata(repo_root, REVIEW_DOCS)
     _write_json(bundle_dir / "review-doc-hashes.json", review_doc_hashes)
     _write_command_output(
+        bundle_dir / "release-packet.md",
+        _required_command(["uv", "run", "python", "scripts/release_packet.py"]),
+    )
+    _write_command_json(
         bundle_dir / "release-evidence.json",
         _required_command(
             [
@@ -156,11 +160,7 @@ def build_bundle(
             ]
         ),
     )
-    _write_command_output(
-        bundle_dir / "release-packet.md",
-        _required_command(["uv", "run", "python", "scripts/release_packet.py"]),
-    )
-    _write_command_output(
+    _write_command_json(
         bundle_dir / "release-packet.json",
         _required_command(["uv", "run", "python", "scripts/release_packet.py", "--json"]),
     )
@@ -238,6 +238,17 @@ def _write_command_output(path: Path, output: CommandOutput) -> None:
     )
 
 
+def _write_command_json(path: Path, output: CommandOutput) -> None:
+    import json
+
+    try:
+        payload = json.loads(output.stdout)
+    except json.JSONDecodeError as exc:
+        raise BundleError(f"{' '.join(output.command)} did not emit valid JSON") from exc
+    _write_json(path, payload)
+    _write_command_output(path.with_suffix(path.suffix + ".transcript.txt"), output)
+
+
 def _write_json(path: Path, value: Any) -> None:
     import json
 
@@ -311,8 +322,10 @@ def _collect_artifact_hashes(
         Path("release-check.txt"),
         Path("filesystem-contract-check.txt"),
         Path("release-evidence.json"),
+        Path("release-evidence.json.transcript.txt"),
         Path("release-packet.md"),
         Path("release-packet.json"),
+        Path("release-packet.json.transcript.txt"),
         Path("review-doc-hashes.json"),
         Path("packet-redaction-scan.txt"),
         Path("git-summary.txt"),

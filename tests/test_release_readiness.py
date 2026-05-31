@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -2785,10 +2786,16 @@ def test_review_packet_bundle_layout_and_exclusions(
         raise AssertionError(args)
 
     def fake_capture(command: list[str]) -> review_packet_bundle.CommandOutput:
+        if "scripts/release_evidence.py" in command:
+            stdout = '{"secret_free": true}\n'
+        elif "scripts/release_packet.py" in command and "--json" in command:
+            stdout = '{"packet": "ok"}\n'
+        else:
+            stdout = "ok\n"
         return review_packet_bundle.CommandOutput(
             command=command,
             returncode=0,
-            stdout='{"secret_free": true}\n' if "release_evidence.py" in command else "ok\n",
+            stdout=stdout,
             stderr="",
         )
 
@@ -2806,8 +2813,10 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert result.path.joinpath("release-check.txt").exists()
     assert result.path.joinpath("filesystem-contract-check.txt").exists()
     assert result.path.joinpath("release-evidence.json").exists()
+    assert result.path.joinpath("release-evidence.json.transcript.txt").exists()
     assert result.path.joinpath("release-packet.md").exists()
     assert result.path.joinpath("release-packet.json").exists()
+    assert result.path.joinpath("release-packet.json.transcript.txt").exists()
     assert result.path.joinpath("review-doc-hashes.json").exists()
     assert result.path.joinpath("artifact-hashes.json").exists()
     assert result.path.joinpath("git-summary.txt").exists()
@@ -2825,8 +2834,10 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert "release-check.txt" in artifact_paths
     assert "filesystem-contract-check.txt" in artifact_paths
     assert "release-evidence.json" in artifact_paths
+    assert "release-evidence.json.transcript.txt" in artifact_paths
     assert "release-packet.md" in artifact_paths
     assert "release-packet.json" in artifact_paths
+    assert "release-packet.json.transcript.txt" in artifact_paths
     assert "review-doc-hashes.json" in artifact_paths
     assert "docs/README.md" in artifact_paths
     assert "signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md" in artifact_paths
@@ -2906,23 +2917,11 @@ def test_review_packet_diff_gate_rejects_removed_artifacts(tmp_path: Path) -> No
     new_packet = tmp_path / "new"
     old_packet.mkdir()
     new_packet.mkdir()
-    old_packet.joinpath("artifact-hashes.json").write_text(
-        json.dumps(
-            [
-                {"path": "INDEX.md", "sha256": "sha256:" + ("1" * 64), "bytes": 10},
-                {"path": "removed.txt", "sha256": "sha256:" + ("2" * 64), "bytes": 20},
-            ]
-        ),
-        encoding="utf-8",
+    _write_packet_artifacts(
+        old_packet,
+        {"INDEX.md": "# packet\n", "removed.txt": "removed\n"},
     )
-    new_packet.joinpath("artifact-hashes.json").write_text(
-        json.dumps(
-            [
-                {"path": "INDEX.md", "sha256": "sha256:" + ("1" * 64), "bytes": 10},
-            ]
-        ),
-        encoding="utf-8",
-    )
+    _write_packet_artifacts(new_packet, {"INDEX.md": "# packet\n"})
 
     diff = review_packet_diff.compare_packets(old_packet, new_packet, require_hashes=True)
 
@@ -2942,6 +2941,24 @@ def test_review_packet_diff_gate_requires_artifact_hashes(tmp_path: Path) -> Non
         review_packet_diff.compare_packets(old_packet, new_packet, require_hashes=True)
 
 
+def test_review_packet_diff_gate_recomputes_hashes_and_detects_unlisted(
+    tmp_path: Path,
+) -> None:
+    packet = tmp_path / "packet"
+    packet.mkdir()
+    _write_packet_artifacts(packet, {"INDEX.md": "# packet\n"})
+    packet.joinpath("INDEX.md").write_text("# tampered\n", encoding="utf-8")
+
+    with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="hash mismatch"):
+        review_packet_diff.collect_packet_artifacts(packet, require_hashes=True)
+
+    _write_packet_artifacts(packet, {"INDEX.md": "# packet\n"})
+    packet.joinpath("unlisted.txt").write_text("surprise\n", encoding="utf-8")
+
+    with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="unlisted"):
+        review_packet_diff.collect_packet_artifacts(packet, require_hashes=True)
+
+
 def test_review_packet_diff_rejects_malformed_sha256(tmp_path: Path) -> None:
     packet = tmp_path / "packet"
     packet.mkdir()
@@ -2952,6 +2969,26 @@ def test_review_packet_diff_rejects_malformed_sha256(tmp_path: Path) -> None:
 
     with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="sha256"):
         review_packet_diff.collect_packet_artifacts(packet)
+
+
+def _write_packet_artifacts(packet: Path, files: dict[str, str]) -> None:
+    artifacts = []
+    for relative, content in files.items():
+        path = packet / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        encoded = content.encode("utf-8")
+        artifacts.append(
+            {
+                "path": relative,
+                "sha256": "sha256:" + hashlib.sha256(encoded).hexdigest(),
+                "bytes": len(encoded),
+            }
+        )
+    packet.joinpath("artifact-hashes.json").write_text(
+        json.dumps(artifacts),
+        encoding="utf-8",
+    )
 
 
 def test_review_packet_diff_doc_and_target_are_wired() -> None:
@@ -3081,6 +3118,7 @@ def test_release_evidence_records_attached_release_check_metadata(
 ) -> None:
     transcript = tmp_path / "release-check.txt"
     transcript.write_text("passed\n", encoding="utf-8")
+    current_commit = release_evidence._git(["rev-parse", "HEAD"])
     monkeypatch.setattr(
         sys,
         "argv",
@@ -3091,7 +3129,7 @@ def test_release_evidence_records_attached_release_check_metadata(
             "--release-check-observed-status",
             "passed",
             "--release-check-commit",
-            "abc123",
+            current_commit,
         ],
     )
 
@@ -3103,7 +3141,7 @@ def test_release_evidence_records_attached_release_check_metadata(
     assert '"gate_status": "not_run"' in output
     assert '"attached_transcript_exists": true' in output
     assert '"attached_transcript_status": "passed"' in output
-    assert '"attached_transcript_commit": "abc123"' in output
+    assert f'"attached_transcript_commit": "{current_commit}"' in output
     assert '"schema_version": "v0.3-prep-release-evidence-v1"' in output
 
 
@@ -3198,10 +3236,10 @@ def _minimal_release_evidence_payload() -> dict[str, object]:
         "release_check": {
             "gate_executed_by_release_packet": False,
             "gate_status": "not_run",
-            "attached_transcript_exists": True,
-            "attached_transcript_status": "passed",
-            "attached_transcript_commit": "abc123",
-            "attached_transcript_path": "release-check.txt",
+            "attached_transcript_exists": False,
+            "attached_transcript_status": "not_run",
+            "attached_transcript_commit": None,
+            "attached_transcript_path": None,
         },
         "review_docs": [
             {

@@ -35,7 +35,13 @@ def main() -> int:
 
     try:
         summary = collect_findings_summary(Path(args.findings_dir), ROOT)
-        if not args.check:
+        if args.check:
+            check_summary_outputs(
+                summary,
+                output_doc=Path(args.output_doc),
+                output_json=Path(args.output_json),
+            )
+        else:
             write_summary_outputs(
                 summary,
                 output_doc=Path(args.output_doc),
@@ -110,6 +116,29 @@ def write_summary_outputs(
     output_doc.write_text(_summary_markdown(summary), encoding="utf-8")
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_json.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def check_summary_outputs(
+    summary: dict[str, Any],
+    *,
+    output_doc: Path,
+    output_json: Path,
+) -> None:
+    expected_doc = _summary_markdown(summary)
+    try:
+        actual_doc = output_doc.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ReviewFindingSummaryError(f"finding summary doc is missing: {output_doc}") from exc
+    if actual_doc != expected_doc:
+        raise ReviewFindingSummaryError(
+            f"finding summary doc is stale; regenerate with {Path(__file__).as_posix()}"
+        )
+    if output_json.exists():
+        expected_json = json.dumps(summary, indent=2, sort_keys=True) + "\n"
+        if output_json.read_text(encoding="utf-8") != expected_json:
+            raise ReviewFindingSummaryError(
+                f"finding summary JSON is stale; regenerate with {Path(__file__).as_posix()}"
+            )
 
 
 def _summary_markdown(summary: dict[str, Any]) -> str:

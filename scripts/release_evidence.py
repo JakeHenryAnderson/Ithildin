@@ -260,6 +260,7 @@ def validate_release_evidence_snapshot(payload: object) -> None:
         if key not in release_check:
             raise ReleaseEvidenceSchemaError(f"release_check missing {key}")
     git = _required_object(evidence, "git")
+    _validate_release_check_transcript(release_check, git)
     if not isinstance(git.get("dirty"), bool):
         raise ReleaseEvidenceSchemaError("git.dirty must be a boolean")
     tools = _required_object(evidence, "tools")
@@ -299,6 +300,31 @@ def validate_release_evidence_snapshot(payload: object) -> None:
 
 def _project_marker_status(repo_root: Path) -> dict[str, bool]:
     return {marker: repo_root.joinpath(marker).exists() for marker in PROJECT_MARKERS}
+
+
+def _validate_release_check_transcript(
+    release_check: dict[str, Any],
+    git: dict[str, Any],
+) -> None:
+    transcript_status = release_check.get("attached_transcript_status")
+    transcript_commit = release_check.get("attached_transcript_commit")
+    transcript_path = release_check.get("attached_transcript_path")
+    transcript_exists = release_check.get("attached_transcript_exists")
+    if transcript_status == "passed":
+        if transcript_exists is not True:
+            raise ReleaseEvidenceSchemaError("passing release-check transcript must exist")
+        if transcript_commit != git.get("commit"):
+            raise ReleaseEvidenceSchemaError("release-check transcript commit mismatch")
+        if not isinstance(transcript_path, str) or not transcript_path:
+            raise ReleaseEvidenceSchemaError("passing release-check transcript requires path")
+        try:
+            transcript_text = Path(transcript_path).read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ReleaseEvidenceSchemaError(
+                "passing release-check transcript path cannot be read"
+            ) from exc
+        if "returncode=" in transcript_text and "returncode=0" not in transcript_text:
+            raise ReleaseEvidenceSchemaError("release-check transcript did not pass")
 
 
 def _release_check(

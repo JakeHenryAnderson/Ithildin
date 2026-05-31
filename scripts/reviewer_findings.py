@@ -29,7 +29,9 @@ REQUIRED_FIELDS = [
 VALID_SEVERITIES = {"critical", "high", "medium", "low", "informational"}
 VALID_BLOCKING_STATUSES = {"blocking", "should-fix", "later", "accepted risk"}
 VALID_DISPOSITIONS = {"open", "fixed", "deferred", "rejected"}
-FINDING_ID_PATTERN = re.compile(r"^(ISR|EXT|SUB|AI|V03)-\d{3}$")
+FINDING_ID_PATTERN = re.compile(
+    r"^((ISR|EXT|SUB|AI)-\d{3}|V03-(INT|EXT|DOCS)-[A-Z0-9]+-\d{3})$"
+)
 FIELD_PATTERN = re.compile(r"^-\s+(?P<field>[^:]+):\s*(?P<value>.*)$")
 SECRET_MARKERS = (
     "BEGIN PRIVATE KEY",

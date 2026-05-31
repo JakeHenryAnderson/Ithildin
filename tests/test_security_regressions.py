@@ -252,11 +252,12 @@ def test_security_regression_redaction_and_denied_audit_chain(tmp_path: Path) ->
         json.loads(line)
         for line in (tmp_path / "audit.jsonl").read_text(encoding="utf-8").splitlines()
     ]
-    assert [payload["event_type"] for payload in payloads] == [
-        "policy.evaluated",
-        "tool.execution.started",
-        "tool.execution.failed",
-    ]
+    assert [payload["event_type"] for payload in payloads] == ["policy.evaluated"]
+    assert payloads[0]["decision"] == "deny"
+    assert (
+        payloads[0]["metadata"]["reason"]
+        == "path traversal is outside the workspace scope"
+    )
 
 
 def test_deployment_security_boundaries_are_loopback_and_no_docker_socket() -> None:

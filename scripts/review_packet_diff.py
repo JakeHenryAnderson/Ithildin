@@ -137,6 +137,8 @@ def collect_packet_artifacts(
         if not isinstance(raw, list):
             raise ReviewPacketDiffError("artifact-hashes.json must contain a list")
         artifacts = [_artifact_from_json(item) for item in raw]
+        if require_hashes:
+            _verify_listed_artifacts(packet_dir, artifacts)
     else:
         if require_hashes:
             raise ReviewPacketDiffError(
@@ -150,6 +152,8 @@ def collect_packet_artifacts(
             raise ReviewPacketDiffError(f"duplicate artifact path: {artifact.path}")
         result[artifact.path] = artifact
     _assert_secret_free(result)
+    if require_hashes:
+        _assert_artifact_contents_secret_free(packet_dir, result)
     return result
 
 
@@ -232,6 +236,20 @@ def _hash_directory(packet_dir: Path) -> list[Artifact]:
     return artifacts
 
 
+def _verify_listed_artifacts(packet_dir: Path, artifacts: list[Artifact]) -> None:
+    actual_artifacts = {artifact.path: artifact for artifact in _hash_directory(packet_dir)}
+    listed_paths = {artifact.path for artifact in artifacts}
+    for artifact in artifacts:
+        actual = actual_artifacts.get(artifact.path)
+        if actual is None:
+            raise ReviewPacketDiffError(f"listed artifact is missing: {artifact.path}")
+        if actual.sha256 != artifact.sha256 or actual.bytes != artifact.bytes:
+            raise ReviewPacketDiffError(f"listed artifact hash mismatch: {artifact.path}")
+    unlisted = sorted(set(actual_artifacts) - listed_paths)
+    if unlisted:
+        raise ReviewPacketDiffError(f"unlisted packet artifacts: {', '.join(unlisted)}")
+
+
 def _artifact_lines(artifacts: list[Artifact]) -> list[str]:
     return [
         f"- `{artifact.path}` `{artifact.sha256}` `{artifact.bytes} bytes`"
@@ -240,6 +258,8 @@ def _artifact_lines(artifacts: list[Artifact]) -> list[str]:
 
 
 def _should_skip(relative: Path) -> bool:
+    if relative.as_posix() == "artifact-hashes.json":
+        return True
     parts = set(relative.parts)
     return bool(
         parts
@@ -258,6 +278,22 @@ def _assert_secret_free(artifacts: dict[str, Artifact]) -> None:
     for marker in SECRET_MARKERS:
         if marker.lower() in text.lower():
             raise ReviewPacketDiffError(f"secret-like marker present: {marker}")
+
+
+def _assert_artifact_contents_secret_free(packet_dir: Path, artifacts: dict[str, Artifact]) -> None:
+    for artifact in artifacts.values():
+        path = packet_dir / artifact.path
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise ReviewPacketDiffError(
+                f"packet artifact is not UTF-8 text: {artifact.path}"
+            ) from exc
+        for marker in SECRET_MARKERS:
+            if marker.lower() in text.lower():
+                raise ReviewPacketDiffError(
+                    f"secret-like marker present in artifact: {artifact.path}"
+                )
 
 
 if __name__ == "__main__":
