@@ -20,6 +20,7 @@ from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.http_tools import HttpAllowlist, HttpFetchExecutor, ParsedHttpUrl
 from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.policy_preview import PolicyPreviewService
+from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 
@@ -60,6 +61,8 @@ class PolicyParityCase(StrictBaseModel):
     expect_policy_evidence: bool = True
     expect_valid_arguments: bool | None = None
     expect_runtime_status: str | None = None
+    expect_resource_type: str | None = None
+    expect_resource_in_scope: bool | None = None
 
 
 class PolicyParityDocument(StrictBaseModel):
@@ -183,6 +186,18 @@ class _PolicyParityHarness:
             resolver=lambda host, port: ["93.184.216.34"],
             opener=_FixtureHttpOpener(),
         )
+        workspace_root = work_dir / "workspace"
+        workspace_root.mkdir(parents=True, exist_ok=True)
+        workspace_root.joinpath("README.md").write_text(
+            "policy parity fixture\n",
+            encoding="utf-8",
+        )
+        read_tool_executor = ReadToolExecutor.from_settings(
+            workspace_root=workspace_root,
+            max_read_bytes=1024,
+            search_result_limit=10,
+            git_log_limit=5,
+        )
 
         self.audit_writer = audit_writer
         self.preview_service = PolicyPreviewService(
@@ -190,6 +205,7 @@ class _PolicyParityHarness:
             policy_evaluator=policy_evaluator,
             http_allowlist=http_fetch_executor.allowlist,
             principal_registry=principal_registry,
+            read_tool_executor=read_tool_executor,
         )
         self.tool_call_service = GovernedToolCallService(
             registry=registry,
@@ -197,6 +213,7 @@ class _PolicyParityHarness:
             approval_service=approval_service,
             audit_writer=audit_writer,
             http_fetch_executor=http_fetch_executor,
+            read_tool_executor=read_tool_executor,
             principal_registry=principal_registry,
         )
 
@@ -240,6 +257,23 @@ class _PolicyParityHarness:
                 f"runtime status mismatch: expected={case.expect_runtime_status}, "
                 f"runtime={runtime.status}"
             )
+        preview_resource = _json_object_or_none(preview.get("resource"))
+        if case.expect_resource_type is not None:
+            observed_type = preview_resource.get("type") if preview_resource is not None else None
+            if observed_type != case.expect_resource_type:
+                failures.append(
+                    f"resource type mismatch: expected={case.expect_resource_type}, "
+                    f"preview={observed_type!r}"
+                )
+        if case.expect_resource_in_scope is not None:
+            observed_scope = (
+                preview_resource.get("in_scope") if preview_resource is not None else None
+            )
+            if observed_scope is not case.expect_resource_in_scope:
+                failures.append(
+                    "resource in_scope mismatch: "
+                    f"expected={case.expect_resource_in_scope}, preview={observed_scope!r}"
+                )
 
         preview_evidence = _json_object_or_none(preview.get("decision_evidence"))
         runtime_evidence = _json_object_or_none(policy_event.get("metadata"))

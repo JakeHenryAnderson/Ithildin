@@ -17,6 +17,7 @@ from ithildin_schemas import (
 )
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
+from jsonschema.exceptions import SchemaError as JsonSchemaSchemaError
 
 from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
 from ithildin_api.decision_evidence import policy_decision_evidence
@@ -160,14 +161,17 @@ class GovernedToolCallService:
 
         try:
             validate_json_schema(instance=arguments, schema=manifest.input_schema)
-        except JsonSchemaValidationError as exc:
+        except (JsonSchemaValidationError, JsonSchemaSchemaError) as exc:
             self._audit_decision(
                 request_id=request_id,
                 principal=principal,
                 tool_name=tool_name,
                 decision=PolicyDecisionValue.DENY,
                 input_hash=request_hash,
-                metadata={"reason": "invalid tool arguments", "validation_error": exc.message},
+                metadata={
+                    "reason": "invalid tool arguments",
+                    "validation_error": getattr(exc, "message", str(exc)),
+                },
             )
             return GovernedToolCallResult(
                 status="denied",
@@ -183,7 +187,25 @@ class GovernedToolCallService:
             http_allowlist=(
                 self.http_fetch_executor.allowlist if self.http_fetch_executor is not None else None
             ),
+            read_tool_executor=self.read_tool_executor,
         )
+        if resource.get("in_scope") is False:
+            reason = _resource_scope_denial_reason(resource)
+            self._audit_decision(
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                decision=PolicyDecisionValue.DENY,
+                input_hash=request_hash,
+                metadata={"reason": reason, "resource": resource},
+            )
+            return GovernedToolCallResult(
+                status="denied",
+                request_id=request_id,
+                tool_name=tool_name,
+                content=self._redact_content({"reason": reason}).value,
+                is_error=True,
+            )
         policy_input = PolicyInput(
             principal=principal,
             tool={
@@ -806,3 +828,10 @@ def _optional_string_argument(arguments: JsonObject, name: str) -> str | None:
     if not isinstance(value, str) or not value:
         raise PatchProposalError(f"{name} must be a non-empty string")
     return value
+
+
+def _resource_scope_denial_reason(resource: JsonObject) -> str:
+    scope_error = resource.get("scope_error")
+    if isinstance(scope_error, str) and scope_error:
+        return scope_error
+    return "resource is outside the configured scope"

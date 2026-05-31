@@ -11,6 +11,9 @@ cases:
         - Owner
     session_id: parity-read
     expect_decision: allow
+    expect_runtime_status: completed
+    expect_resource_type: file
+    expect_resource_in_scope: true
 
   - id: write_preview_matches_runtime
     description: Write preview and runtime policy evidence agree on approval requirement.
@@ -37,6 +40,22 @@ cases:
       id: agent:mcp-local
     session_id: parity-proposal
     expect_decision: allow
+    expect_resource_type: file
+    expect_resource_in_scope: true
+
+  - id: out_of_scope_filesystem_preview_matches_runtime
+    description: Traversal read preview and runtime policy evidence agree on deny before execution.
+    tool_name: fs.read
+    arguments:
+      path: ../README.md
+    principal:
+      id: agent:mcp-local
+    session_id: parity-filesystem-deny
+    expect_decision: deny
+    expect_runtime_status: denied
+    expect_resource_type: file
+    expect_resource_in_scope: false
+    expect_policy_evidence: false
 
   - id: network_preview_matches_runtime
     description: Allowlisted network preview and runtime policy evidence agree.
@@ -57,6 +76,7 @@ cases:
       id: agent:mcp-local
     session_id: parity-network-deny
     expect_decision: deny
+    expect_policy_evidence: false
 
   - id: invalid_arguments_preview_matches_runtime
     description: Schema-invalid tool arguments are denied before policy evidence is produced.

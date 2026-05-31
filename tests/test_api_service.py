@@ -957,6 +957,8 @@ def test_policy_impact_preview_rejects_invalid_candidate_yaml(tmp_path: Path) ->
 
 def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
+    settings.workspace_root.mkdir(parents=True)
+    settings.workspace_root.joinpath("README.md").write_text("hello\n", encoding="utf-8")
     write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
     app = create_app(settings)
 
@@ -977,6 +979,7 @@ def test_policy_preview_allows_known_read_tool(tmp_path: Path) -> None:
         "in_scope": True,
         "risk": "read",
         "path": "README.md",
+        "workspace_id": "default",
     }
     assert payload["policy_input"]["principal"] == {
         "id": "admin:local-ui",
@@ -1056,6 +1059,27 @@ def test_policy_preview_requires_approval_for_write_tool(tmp_path: Path) -> None
     assert payload["decision_evidence"]["decision"] == "require_approval"
     assert payload["decision_evidence"]["session_id"] == "preview-test"
     assert payload["decision_evidence"]["principal_id"] == "agent:test"
+
+
+def test_policy_preview_denies_out_of_scope_filesystem_path(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    settings.workspace_root.mkdir(parents=True)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={"tool_name": "fs.read", "arguments": {"path": "../README.md"}},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is True
+    assert payload["decision"] == "deny"
+    assert payload["resource"]["in_scope"] is False
+    assert payload["resource"]["scope_error"] == "path traversal is outside the workspace scope"
 
 
 def test_policy_preview_denies_unknown_principal_without_side_effects(tmp_path: Path) -> None:

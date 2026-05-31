@@ -575,7 +575,7 @@ rules:
     assert metadata["redaction_paths"] == ["$.content"]
 
 
-def test_denied_read_attempt_is_audited_as_failed_execution(tmp_path: Path) -> None:
+def test_denied_read_attempt_is_audited_before_execution(tmp_path: Path) -> None:
     service = make_read_service(tmp_path)
 
     result = service.call_tool(
@@ -588,11 +588,10 @@ def test_denied_read_attempt_is_audited_as_failed_execution(tmp_path: Path) -> N
     assert result.status == "denied"
     assert result.is_error is True
     payloads = audit_payloads(tmp_path)
-    assert [payload["event_type"] for payload in payloads] == [
-        "policy.evaluated",
-        "tool.execution.started",
-        "tool.execution.failed",
-    ]
+    assert [payload["event_type"] for payload in payloads] == ["policy.evaluated"]
+    assert payloads[0]["decision"] == "deny"
+    metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert metadata["reason"] == "path traversal is outside the workspace scope"
 
 
 def test_http_fetch_executes_after_policy_allow_and_is_audited(tmp_path: Path) -> None:
@@ -703,7 +702,7 @@ def test_patch_proposal_runs_through_policy_and_audit(tmp_path: Path) -> None:
     ]
 
 
-def test_invalid_patch_proposal_is_audited_as_failed_execution(tmp_path: Path) -> None:
+def test_invalid_patch_proposal_path_is_audited_before_execution(tmp_path: Path) -> None:
     service = make_patch_service(tmp_path)
 
     result = service.call_tool(
@@ -716,11 +715,10 @@ def test_invalid_patch_proposal_is_audited_as_failed_execution(tmp_path: Path) -
     assert result.status == "denied"
     assert result.is_error is True
     payloads = audit_payloads(tmp_path)
-    assert [payload["event_type"] for payload in payloads] == [
-        "policy.evaluated",
-        "tool.execution.started",
-        "tool.execution.failed",
-    ]
+    assert [payload["event_type"] for payload in payloads] == ["policy.evaluated"]
+    assert payloads[0]["decision"] == "deny"
+    metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert metadata["reason"] == "path traversal is outside the workspace scope"
 
 
 def test_patch_apply_with_proposal_id_returns_approval_required(tmp_path: Path) -> None:

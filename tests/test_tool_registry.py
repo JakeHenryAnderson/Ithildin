@@ -145,6 +145,19 @@ version: 1.0.0
 title: Read file
 risk: read
 category: filesystem
+input_schema:
+  type: object
+  properties: invalid
+""",
+            "invalid tool manifest input schema",
+        ),
+        (
+            """
+name: fs.read
+version: 1.0.0
+title: Read file
+risk: read
+category: filesystem
 mcp: true
 input_schema:
   type: object

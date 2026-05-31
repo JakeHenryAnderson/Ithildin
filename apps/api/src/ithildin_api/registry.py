@@ -8,6 +8,8 @@ from typing import Any, Optional
 
 import yaml
 from ithildin_schemas import JsonObject, ToolManifest, sha256_digest
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError
 from pydantic import ValidationError
 
 from ithildin_api.manifest_lock import (
@@ -161,6 +163,12 @@ def _load_manifest(manifest_path: Path) -> RegisteredTool:
         manifest = ToolManifest.model_validate(manifest_data)
     except ValidationError as exc:
         raise InvalidToolManifest(f"invalid tool manifest schema: {manifest_path}") from exc
+    try:
+        Draft202012Validator.check_schema(manifest.input_schema)
+    except SchemaError as exc:
+        raise InvalidToolManifest(
+            f"invalid tool manifest input schema: {manifest_path}"
+        ) from exc
 
     return RegisteredTool(
         manifest=manifest,

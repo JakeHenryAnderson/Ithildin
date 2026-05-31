@@ -134,12 +134,6 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 extra_patterns=resolved_settings.redaction_extra_patterns,
             )
             app_instance.state.redaction_service = redaction_service
-            app_instance.state.policy_preview_service = PolicyPreviewService(
-                registry,
-                policy_evaluator,
-                http_fetch_executor.allowlist,
-                principal_registry,
-            )
             app_instance.state.policy_impact_service = PolicyImpactService(
                 current_policy_path=resolved_settings.policy_path,
                 tests_path=resolved_settings.policy_tests_path,
@@ -152,6 +146,13 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 workspace_registry=workspace_registry,
             )
             app_instance.state.read_tool_executor = read_tool_executor
+            app_instance.state.policy_preview_service = PolicyPreviewService(
+                registry,
+                policy_evaluator,
+                http_fetch_executor.allowlist,
+                principal_registry,
+                read_tool_executor,
+            )
             patch_store = PatchProposalStore(resolved_settings.db_path)
             patch_store.initialize()
             app_instance.state.patch_proposal_service = PatchProposalService(

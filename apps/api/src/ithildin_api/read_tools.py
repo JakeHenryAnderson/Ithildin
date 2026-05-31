@@ -114,6 +114,25 @@ class ReadToolExecutor:
     def supports(self, tool_name: str) -> bool:
         return tool_name in READ_TOOL_NAMES
 
+    def resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        path = _string_arg(arguments, "path", default=".")
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        resource: JsonObject = {
+            "type": "file",
+            "path": path,
+            "workspace_id": workspace_id,
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(path)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource["path"] = filesystem.relative_path(target)
+        resource["in_scope"] = True
+        return resource
+
     def execute(self, tool_name: str, arguments: JsonObject) -> JsonObject:
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
         filesystem = self._filesystem(workspace_id)

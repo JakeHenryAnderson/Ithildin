@@ -5,6 +5,7 @@ from __future__ import annotations
 from ithildin_schemas import JsonObject, ToolRisk
 
 from ithildin_api.http_tools import HttpAllowlist, http_resource_from_url
+from ithildin_api.read_tools import ReadToolExecutor
 
 
 def resource_from_arguments(
@@ -12,10 +13,16 @@ def resource_from_arguments(
     risk: ToolRisk,
     *,
     http_allowlist: HttpAllowlist | None = None,
+    read_tool_executor: ReadToolExecutor | None = None,
 ) -> JsonObject:
     url = arguments.get("url")
     if risk == ToolRisk.NETWORK and isinstance(url, str):
         return http_resource_from_url(url, http_allowlist or HttpAllowlist(()))
+
+    if risk in {ToolRisk.READ, ToolRisk.WRITE_PROPOSAL} and read_tool_executor is not None:
+        path_resource = read_tool_executor.resource_from_arguments(arguments)
+        path_resource["risk"] = risk.value
+        return path_resource
 
     resource: JsonObject = {
         "type": "tool_call",

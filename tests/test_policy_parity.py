@@ -17,7 +17,7 @@ def test_committed_policy_parity_fixtures_pass(tmp_path: Path) -> None:
     run = run_policy_parity(repo_root=Path("."), work_dir=tmp_path)
 
     assert run.failed == 0
-    assert run.passed == 7
+    assert run.passed == 8
     decisions = {case.id: case.preview_decision for case in run.cases}
     assert decisions["read_preview_matches_runtime"] == "allow"
     assert decisions["write_preview_matches_runtime"] == "require_approval"
@@ -91,4 +91,4 @@ def test_policy_parity_cli_json_emits_summary(
     output = json.loads(capsys.readouterr().out)
     assert status == 0
     assert output["failed"] == 0
-    assert output["passed"] == 7
+    assert output["passed"] == 8

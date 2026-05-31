@@ -6,6 +6,7 @@ from ithildin_policy_core import PolicyEngine
 from ithildin_schemas import JsonObject, JsonValue, PolicyDecisionValue, PolicyInput
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
+from jsonschema.exceptions import SchemaError as JsonSchemaSchemaError
 
 from ithildin_api.decision_evidence import policy_decision_evidence
 from ithildin_api.http_tools import HttpAllowlist
@@ -16,6 +17,7 @@ from ithildin_api.identity import (
     principal_denial_metadata,
     resolve_trusted_principal,
 )
+from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.resources import resource_from_arguments
 
@@ -30,11 +32,13 @@ class PolicyPreviewService:
         policy_evaluator: PolicyEngine,
         http_allowlist: HttpAllowlist | None = None,
         principal_registry: PrincipalRegistry | None = None,
+        read_tool_executor: ReadToolExecutor | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
         self.http_allowlist = http_allowlist or HttpAllowlist(())
         self.principal_registry = principal_registry
+        self.read_tool_executor = read_tool_executor
 
     def preview(
         self,
@@ -104,11 +108,12 @@ class PolicyPreviewService:
             arguments,
             manifest.risk,
             http_allowlist=self.http_allowlist,
+            read_tool_executor=self.read_tool_executor,
         )
 
         try:
             validate_json_schema(instance=arguments, schema=manifest.input_schema)
-        except JsonSchemaValidationError as exc:
+        except (JsonSchemaValidationError, JsonSchemaSchemaError) as exc:
             return {
                 **self._policy_evidence(),
                 "tool_name": manifest.name,
@@ -116,7 +121,7 @@ class PolicyPreviewService:
                 "manifest_risk": manifest.risk.value,
                 "manifest_version": manifest.version,
                 "valid_arguments": False,
-                "argument_error": exc.message,
+                "argument_error": getattr(exc, "message", str(exc)),
                 "policy_input": None,
                 "resource": resource,
                 "decision": PolicyDecisionValue.DENY.value,
@@ -126,6 +131,19 @@ class PolicyPreviewService:
                 "obligations": {"audit_level": "full"},
                 "decision_evidence": None,
             }
+        if resource.get("in_scope") is False:
+            reason = _resource_scope_denial_reason(resource)
+            return self._deny_preview(
+                tool_name=manifest.name,
+                manifest_hash=registered_tool.manifest_hash,
+                manifest_risk=manifest.risk.value,
+                manifest_version=manifest.version,
+                reason=reason,
+                resource=resource,
+                metadata={"resource_scope": "out_of_scope"},
+                valid_arguments=True,
+                argument_error=None,
+            )
 
         policy_input = PolicyInput(
             principal=preview_principal,
@@ -183,6 +201,8 @@ class PolicyPreviewService:
         reason: str,
         resource: JsonObject,
         metadata: JsonObject | None = None,
+        valid_arguments: bool = False,
+        argument_error: str | None = None,
     ) -> JsonObject:
         return {
             **self._policy_evidence(),
@@ -190,8 +210,8 @@ class PolicyPreviewService:
             "manifest_hash": manifest_hash,
             "manifest_risk": manifest_risk,
             "manifest_version": manifest_version,
-            "valid_arguments": False,
-            "argument_error": reason,
+            "valid_arguments": valid_arguments,
+            "argument_error": argument_error if argument_error is not None else reason,
             "policy_input": None,
             "resource": resource,
             "decision": PolicyDecisionValue.DENY.value,
@@ -201,3 +221,10 @@ class PolicyPreviewService:
             "obligations": {"audit_level": "full", **(metadata or {})},
             "decision_evidence": None,
         }
+
+
+def _resource_scope_denial_reason(resource: JsonObject) -> str:
+    scope_error = resource.get("scope_error")
+    if isinstance(scope_error, str) and scope_error:
+        return scope_error
+    return "resource is outside the configured scope"
