@@ -30,6 +30,7 @@ REVIEW_DOCS = [
     "docs/codex/evidence-contracts.md",
     "docs/codex/evidence-contracts-v2.json",
     "docs/codex/audit-integrity-adversarial-suite.md",
+    "docs/codex/adversarial-corpus-framework.md",
     "docs/codex/audit-export-lifecycle-diagnostics.md",
     "docs/codex/manifest-validation-suite.md",
     "docs/codex/manifest-change-review-workflow.md",

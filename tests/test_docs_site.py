@@ -71,6 +71,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/filesystem-executor-contract.md" in DEFAULT_DOCS
     assert "docs/codex/policy-parity-harness.md" in DEFAULT_DOCS
     assert "docs/codex/audit-integrity-adversarial-suite.md" in DEFAULT_DOCS
+    assert "docs/codex/adversarial-corpus-framework.md" in DEFAULT_DOCS
     assert "docs/codex/manifest-validation-suite.md" in DEFAULT_DOCS
     assert "docs/codex/opa-parity-decision.md" in DEFAULT_DOCS
     assert "docs/codex/mcp-ingress-bypass-audit.md" in DEFAULT_DOCS

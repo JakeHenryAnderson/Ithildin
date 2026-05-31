@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-141",
-  "planned_range": "142-151",
+  "completed_range": "113-142",
+  "planned_range": "143-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -659,7 +659,7 @@
     {
       "id": "142",
       "title": "Adversarial corpus framework",
-      "status": "planned",
+      "status": "done",
       "commit": "Add adversarial corpus framework",
       "blocks_capability_expansion": "conditional",
       "blocks_broader_distribution": "conditional",

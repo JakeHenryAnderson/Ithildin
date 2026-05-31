@@ -1,0 +1,61 @@
+{
+  "version": "1",
+  "corpora": [
+    {
+      "id": "http-canonicalization-v2",
+      "area": "http.fetch",
+      "artifact": "tests/fixtures/http_canonicalization_corpus.json",
+      "command": "uv run pytest tests/test_http_tools.py",
+      "status": "implemented",
+      "categories": [
+        "url_parse",
+        "allowlist",
+        "redirect",
+        "dns",
+        "safe_errors"
+      ]
+    },
+    {
+      "id": "filesystem-race-v2",
+      "area": "filesystem",
+      "artifact": "docs/codex/filesystem-executor-contract.md",
+      "command": "uv run pytest tests/test_read_tools.py tests/test_patch_proposals.py tests/test_security_regressions.py",
+      "status": "implemented",
+      "categories": [
+        "path_resolution",
+        "symlink",
+        "hardlink",
+        "stale_base",
+        "safe_errors"
+      ]
+    },
+    {
+      "id": "audit-integrity-v2",
+      "area": "audit",
+      "artifact": "docs/codex/audit-integrity-adversarial-suite.md",
+      "command": "uv run pytest tests/test_audit_writer.py tests/test_audit_diagnostics.py",
+      "status": "implemented",
+      "categories": [
+        "hash_chain",
+        "sqlite_jsonl_drift",
+        "export_replay",
+        "signed_bundle",
+        "safe_errors"
+      ]
+    },
+    {
+      "id": "negative-review-transcripts-v2",
+      "area": "negative denial evidence",
+      "artifact": "scripts/negative_review_transcripts.py",
+      "command": "make negative-review-transcripts",
+      "status": "implemented",
+      "categories": [
+        "path_denial",
+        "http_denial",
+        "principal_denial",
+        "approval_denial",
+        "evidence_tamper"
+      ]
+    }
+  ]
+}

@@ -150,7 +150,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 139 - Review-console approval UX v3 | Done | [review-console-assurance.md](review-console-assurance.md), grouped binding evidence |
 | 140 - Review-console failure and unauthorized states | Done | [review-console-assurance.md](review-console-assurance.md), locked/unavailable console states |
 | 141 - Negative transcript expansion v2 | Done | [negative-review-recipes.md](negative-review-recipes.md), `make negative-review-transcripts` |
-| 142 - Adversarial corpus framework | Planned | Shared corpus framework |
+| 142 - Adversarial corpus framework | Done | [adversarial-corpus-framework.md](adversarial-corpus-framework.md), `make adversarial-corpus-check` |
 | 143 - Performance and resource-limit sanity | Planned | Resource limits |
 | 144 - CI and platform planning without broad claims | Planned | Platform/CI claims |
 | 145 - Redaction evidence and leak-boundary clarity | Planned | Redaction boundary |

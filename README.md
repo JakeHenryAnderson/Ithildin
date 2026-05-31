@@ -211,8 +211,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-141 are
-complete; Tasks 142-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-142 are
+complete; Tasks 143-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release
@@ -273,6 +273,7 @@ operator setup. Then read
 [docs/codex/mcp-client-examples.md](docs/codex/mcp-client-examples.md), and
 [docs/codex/mcp-inspector-recipes.md](docs/codex/mcp-inspector-recipes.md),
 [docs/codex/evidence-contracts.md](docs/codex/evidence-contracts.md),
+[docs/codex/adversarial-corpus-framework.md](docs/codex/adversarial-corpus-framework.md),
 [docs/codex/policy-parity-harness.md](docs/codex/policy-parity-harness.md),
 [docs/codex/opa-parity-decision.md](docs/codex/opa-parity-decision.md),
 [docs/codex/mcp-ingress-bypass-audit.md](docs/codex/mcp-ingress-bypass-audit.md),

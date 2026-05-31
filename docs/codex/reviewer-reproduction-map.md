@@ -14,8 +14,8 @@ cd /Users/jake/Documents/Codex/Ithildin
 
 Run `make review-candidate` to execute the full local handoff sequence. It runs `release-check`,
 `filesystem-contract-check`, `signed-evidence-demo`, `negative-review-transcripts`,
-`review-packet-bundle`, `review-packet-consolidated`, and `docs-site`, then prints the consolidated
-packet path.
+`review-packet-bundle`, `review-packet-consolidated`, packet redaction scan, and `docs-site`, then
+prints the consolidated packet path. `release-check` includes `make adversarial-corpus-check`.
 
 Run `make internal-review-packet` when you want v2 local AI/subagent source-review prompts under
 `var/review-packets/v0.3/internal-ai-review-packet/`. That packet is internal pressure-test
@@ -62,61 +62,67 @@ work must stop for status, reassessment, or external consultation.
    Expected outcome: validates `docs/codex/evidence-contracts-v2.json` and confirms the prose
    evidence-contract guide names the active local-preview contract version.
 
-7. `make signed-evidence-demo`
+7. `make adversarial-corpus-check`
+
+   Expected outcome: validates `tests/fixtures/adversarial_corpus_manifest.json`, confirms every
+   corpus ID is unique, every referenced artifact exists, and every corpus has command/category
+   metadata.
+
+8. `make signed-evidence-demo`
 
    Expected outcome: creates ignored non-production fixture evidence under
    `var/review-packets/v0.2/signed-evidence-demo/`. The demo summary reports verified local audit
    export signing, verified manifest-lock signing, a tamper-failing audit bundle, and SHA-256
    digests for the generated demo artifacts.
 
-8. `make signed-evidence-demo-verify`
+9. `make signed-evidence-demo-verify`
 
    Expected outcome: verifies the signed audit demo bundle, confirms the tampered audit bundle does
    not verify, and verifies the demo manifest-lock signature using the generated demo public keys.
 
-9. `make review-packet-diff OLD=old-packet NEW=new-packet`
+10. `make review-packet-diff OLD=old-packet NEW=new-packet`
 
    Expected outcome: prints added, removed, changed, and unchanged artifact counts for two generated
    packets using `artifact-hashes.json` when available.
 
-10. `make review-packet-diff-gate OLD=old-packet NEW=new-packet`
+11. `make review-packet-diff-gate OLD=old-packet NEW=new-packet`
 
    Expected outcome: requires `artifact-hashes.json` in both packets and fails if a previously
    comparable artifact was removed. Added or changed artifacts are reported for reviewer attention.
 
-11. `make filesystem-contract-check`
+12. `make filesystem-contract-check`
 
    Expected outcome: prints secret-free local platform and filesystem capability evidence. On
    macOS/Linux with `O_NOFOLLOW`, the support status should be `supported`; Windows/WSL are reported
    as unsupported/untested for local-preview workspace/race claims.
 
-12. `make review-packet-bundle`
+13. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
-   step 7 was run first.
+   step 8 was run first.
 
-13. `make negative-review-transcripts`
+14. `make negative-review-transcripts`
 
    Expected outcome: creates ignored observed-denial transcripts under
    `var/review-packets/v0.2/negative-review-transcripts/`, covering traversal, symlink escape,
    stale-base patch apply, private redirect, unknown principal, disabled principal, and replayed
    approval.
 
-14. `make review-packet-consolidated`
+15. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-15. `make packet-redaction-scan`
+16. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-16. `make docs-site`
+17. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
