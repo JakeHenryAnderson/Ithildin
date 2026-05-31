@@ -98,6 +98,7 @@ tamper-evident audit log.
 - `make capability-expansion-gate` - report whether future powerful-tool planning is allowed.
 - `make capability-decision-report` - summarize current capability go/no-go evidence without approving powers.
 - `make tool-surface-invariant-gate` - verify the governed tool manifest surface has not drifted.
+- `make no-new-powers-guardrail` - fail if review work adds deferred tool-power classes.
 - `make evidence-confusion-gate` - verify locally signed evidence wording does not overclaim trust.
 - `make external-review-closure-gate` - verify source-review closure is not overstated.
 - `make external-findings-intake-dry-run` - exercise EXT finding intake without mutating findings.
@@ -236,8 +237,8 @@ The v0.4 milestone roadmap is recorded in
 complete and should be externally reviewed before implementation drift or capability expansion.
 The v0.5 source-review and capability-decision roadmap is recorded in
 [docs/codex/v0.5-roadmap-from-v0.4-review.md](docs/codex/v0.5-roadmap-from-v0.4-review.md) and
-[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-169 are
-complete; Tasks 170-180 are planned and do not add new governed tool powers.
+[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-170 are
+complete; Tasks 171-180 are planned and do not add new governed tool powers.
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in

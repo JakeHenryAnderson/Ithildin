@@ -58,6 +58,7 @@ externally closed.
 - [v0.5 Milestone Manifest](v0.5-milestone-manifest.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
+- [No-New-Powers Guardrail v2](no-new-powers-guardrail.md)
 - [Evidence-Confusion Gate v2](evidence-confusion-gate.md)
 - [External-Review Closure Gate v2](external-review-closure-gate.md)
 - [Source Review Runbook v2](source-review-runbook-v2.md)

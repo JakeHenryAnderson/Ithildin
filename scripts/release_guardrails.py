@@ -60,6 +60,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "review-run-manifest-check",
     "filesystem-contract-check",
     "tool-surface-invariant-gate",
+    "no-new-powers-guardrail",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",

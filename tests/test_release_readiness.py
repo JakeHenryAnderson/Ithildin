@@ -18,6 +18,7 @@ from scripts import (
     external_findings_intake_dry_run,
     external_review_closure_gate,
     internal_review_packet,
+    no_new_powers_guardrail,
     packet_redaction_scan,
     release_evidence,
     release_guardrails,
@@ -1273,8 +1274,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-169"
-    assert manifest["planned_range"] == "170-180"
+    assert manifest["completed_range"] == "152-170"
+    assert manifest["planned_range"] == "171-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1790,8 +1791,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
     assert report["tool_count"] == 10
-    assert report["completed_range"] == "152-169"
-    assert report["planned_range"] == "170-180"
+    assert report["completed_range"] == "152-170"
+    assert report["planned_range"] == "171-180"
     assert report["open_accepted_risks"] == 10
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
@@ -1802,6 +1803,44 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert "capability-decision-report" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/capability-decision-report.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-decision-report.md" in docs_site
+
+
+def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
+    report = no_new_powers_guardrail.build_report(Path.cwd())
+    doc = Path("docs/codex/no-new-powers-guardrail.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["tool_count"] == 10
+    assert report["new_power_classes_allowed"] is False
+    assert report["deferred_boundaries_unchanged"] is True
+    assert report["tool_names"] == [
+        "fs.list",
+        "fs.patch.apply",
+        "fs.patch.propose",
+        "fs.read",
+        "fs.search",
+        "fs.stat",
+        "git.diff",
+        "git.log",
+        "git.status",
+        "http.fetch",
+    ]
+    assert "does not approve new powers" in doc
+    assert "make no-new-powers-guardrail" in readme
+    assert "170 - No-new-powers release guardrail v2 | Done" in backlog
+    assert "Task 170 validates manifests and boundaries" in matrix
+    assert "no-new-powers-guardrail" in makefile.partition("release-check:")[2]
+    assert "no-new-powers-guardrail" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/no-new-powers-guardrail.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/no-new-powers-guardrail.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

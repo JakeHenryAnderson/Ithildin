@@ -71,6 +71,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.5-milestone-manifest.json",
     "docs/codex/capability-expansion-gate.md",
     "docs/codex/tool-surface-invariant-gate.md",
+    "docs/codex/no-new-powers-guardrail.md",
     "docs/codex/evidence-confusion-gate.md",
     "docs/codex/external-review-closure-gate.md",
     "docs/codex/source-review-runbook-v2.md",
