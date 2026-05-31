@@ -48,9 +48,9 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "docs/codex/source-file-inspection-packet.md",
         ),
         commands=(
-            "make release-check",
             "uv run pytest tests/test_patch_proposals.py "
             "tests/test_approval_workflow.py tests/test_governed_tool_calls.py",
+            "make release-check",
         ),
         prompt=(
             "Review the stored-proposal-only patch apply flow, approval binding, replay "
@@ -75,6 +75,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "make filesystem-contract-check",
             "uv run pytest tests/test_read_tools.py tests/test_patch_proposals.py "
             "tests/test_security_regressions.py",
+            "make release-check",
         ),
         prompt=(
             "Review workspace confinement, path resolution, symlink/hardlink denial, "
@@ -123,6 +124,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "make signed-evidence-demo",
             "make signed-evidence-demo-verify",
             "uv run pytest tests/test_audit_writer.py tests/test_signed_evidence_demo.py",
+            "make release-check",
         ),
         prompt=(
             "Review local hash-chain verification, signed export digest binding, "
@@ -167,7 +169,10 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "docs/codex/mcp-ingress-bypass-audit.md",
             "docs/codex/mcp-inspector-recipes.md",
         ),
-        commands=("uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py",),
+        commands=(
+            "uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py",
+            "make release-check",
+        ),
         prompt=(
             "Review that stdio MCP list/call handlers remain thin adapters into the "
             "governed pipeline with no local policy or executor bypass."
@@ -248,8 +253,8 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
         ),
         commands=(
             "make v05-review-candidate",
-            "make release-check",
             "make packet-redaction-scan",
+            "make release-check",
         ),
         prompt=(
             "Review release evidence, packet hashing, redaction scanning, no-new-powers "
@@ -294,8 +299,15 @@ def build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, Any]
     for area in DISPATCH_AREAS:
         filename = f"{area.slug}.md"
         path = output_root / filename
-        path.write_text(_render_packet(area, commit, dirty), encoding="utf-8")
-        packets.append(_artifact_metadata(path, output_root))
+        payload = _render_packet_payload(area, commit, dirty)
+        payload_sha256 = "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        path.write_text(
+            _render_packet(area, commit, dirty, payload_sha256),
+            encoding="utf-8",
+        )
+        metadata = _artifact_metadata(path, output_root)
+        metadata["payload_sha256"] = payload_sha256
+        packets.append(metadata)
 
     index_path = output_root / "INDEX.md"
     index_path.write_text(_render_index(commit, dirty, packets), encoding="utf-8")
@@ -329,7 +341,22 @@ def build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, Any]
     }
 
 
-def _render_packet(area: DispatchArea, commit: str, dirty: bool) -> str:
+def _render_packet(area: DispatchArea, commit: str, dirty: bool, payload_sha256: str) -> str:
+    payload = _render_packet_payload(area, commit, dirty)
+    hash_section = "\n".join(
+        [
+            "## Hash Evidence",
+            "",
+            f"- Dispatch packet payload SHA-256: `{payload_sha256}`.",
+            "- This digest covers the packet payload without this `Hash Evidence` section.",
+            "- The whole-file artifact SHA-256 is recorded in `dispatch-packet-hashes.json`.",
+            "",
+        ]
+    )
+    return payload.replace("## Review Prompt\n", f"{hash_section}## Review Prompt\n")
+
+
+def _render_packet_payload(area: DispatchArea, commit: str, dirty: bool) -> str:
     return "\n".join(
         [
             f"# {area.title}",
@@ -366,6 +393,8 @@ def _render_packet(area: DispatchArea, commit: str, dirty: bool) -> str:
             "",
             "## Expected Commands",
             "",
+            "Required minimum commands:",
+            "",
             *[f"- `{command}`" for command in area.commands],
             "",
             "## Required Response Shape",
@@ -377,6 +406,14 @@ def _render_packet(area: DispatchArea, commit: str, dirty: bool) -> str:
             "- explicit blocker status for critical/high findings;",
             "- clear distinction between documentation risk and implementation risk.",
             "",
+            "## Source Access Closure Rule",
+            "",
+            "- `source-level` or `packet-and-source` review may support implementation-row",
+            "  closure.",
+            "- `packet-only` review may support packet/documentation rows only.",
+            "- `docs-only` review may support wording/navigation rows only.",
+            "- Any closure based on less than source-level access must record the limitation.",
+            "",
         ]
     )
 
@@ -387,6 +424,9 @@ def _render_index(commit: str, dirty: bool, packets: list[dict[str, Any]]) -> st
         "",
         f"- commit: `{commit}`",
         f"- dirty at generation: `{str(dirty).lower()}`",
+        "- current review layer: v0.6 external-review execution dispatch.",
+        "- historical note: some generated bundle paths still contain v0.2/v0.5 names; those are",
+        "  archival/tooling names, not the current review status.",
         "- packet purpose: focused external/source review dispatch, not review closure.",
         "- what this does not prove: production readiness, external review closure, capability",
         "  expansion approval, broader public/security-product readiness.",

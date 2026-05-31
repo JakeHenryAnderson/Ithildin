@@ -2018,6 +2018,8 @@ def test_v06_external_review_assignment_matrix_is_wired() -> None:
         "Review console/admin boundary",
         "Release automation",
         "packet-only review may comment",
+        "`source-level` or `packet-and-source` review may support implementation-row closure",
+        "`docs-only` review may support wording/navigation rows only",
         "does not close any row",
     ]:
         assert required in doc
@@ -2061,11 +2063,32 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
     manifest = json.loads(Path(summary["manifest_path"]).read_text(encoding="utf-8"))
     assert manifest["packet_type"] == "ithildin.v0.6.external_review_dispatch_packets"
     assert "production readiness" in manifest["does_not_prove"]
+    assert all(
+        str(artifact.get("payload_sha256", "sha256:")).startswith("sha256:")
+        for artifact in manifest["packets"]
+        if artifact["path"] != "INDEX.md"
+    )
+    dispatch_root = Path(summary["output_root"])
+    for packet in manifest["packets"]:
+        if packet["path"] == "INDEX.md":
+            continue
+        packet_text = dispatch_root.joinpath(packet["path"]).read_text(encoding="utf-8")
+        assert "Dispatch packet payload SHA-256" in packet_text
+        assert "The whole-file artifact SHA-256 is recorded" in packet_text
+        assert "Required minimum commands:" in packet_text
+        assert "- `make release-check`" in packet_text
+        assert "## Source Access Closure Rule" in packet_text
+    index_text = dispatch_root.joinpath("INDEX.md").read_text(encoding="utf-8")
+    assert (
+        "historical note: some generated bundle paths still contain v0.2/v0.5 names" in index_text
+    )
     for required in [
         "make v06-review-dispatch-packets",
         "dispatch-packet-hashes.json",
         "does not close external review rows",
         "EXT-###",
+        "source-access closure rule",
+        "Every focused packet ends its expected-command list with `make release-check`",
     ]:
         assert required in doc
     assert "make v06-review-dispatch-packets" in readme
