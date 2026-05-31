@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.5 review-closure candidate for deciding whether capability expansion is safe to plan",
   "purpose": "Convert v0.4 review feedback into source-review closure machinery and capability-decision evidence without adding new governed tool powers.",
-  "completed_range": "152-153",
-  "planned_range": "154-180",
+  "completed_range": "152-154",
+  "planned_range": "155-180",
   "deferred_boundaries": [
     "shell execution",
     "Docker socket access",
@@ -32,7 +32,7 @@
   "milestones": [
     {"id": "152", "title": "v0.5 roadmap from v0.4 review", "status": "done", "commit": "Add v0.5 roadmap from review", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "conditional", "blocks_external_handoff": "conditional", "requires_external_review_before_closure": false, "required_commands": ["make release-check"], "risk_surface": ["roadmap", "boundary claims"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "153", "title": "Capability expansion gate v2", "status": "done", "commit": "Add capability expansion gate v2", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make capability-expansion-gate", "make release-check"], "risk_surface": ["capability decision"], "deferred_boundary_must_remain_unchanged": true},
-    {"id": "154", "title": "Tool-surface invariant gate v2", "status": "planned", "commit": "Add tool surface invariant gate v2", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "conditional", "requires_external_review_before_closure": false, "required_commands": ["make release-check"], "risk_surface": ["tool manifests"], "deferred_boundary_must_remain_unchanged": true},
+    {"id": "154", "title": "Tool-surface invariant gate v2", "status": "done", "commit": "Add tool surface invariant gate v2", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "conditional", "requires_external_review_before_closure": false, "required_commands": ["make tool-surface-invariant-gate", "make release-check"], "risk_surface": ["tool manifests"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "155", "title": "Evidence-confusion gate v2", "status": "planned", "commit": "Add evidence confusion gate v2", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "conditional", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make release-check"], "risk_surface": ["evidence wording"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "156", "title": "External-review closure gate v2", "status": "planned", "commit": "Add external review closure gate v2", "blocks_capability_expansion": "yes", "blocks_broader_distribution": "yes", "blocks_external_handoff": "yes", "requires_external_review_before_closure": true, "required_commands": ["make reviewer-findings-check", "make release-check"], "risk_surface": ["external findings"], "deferred_boundary_must_remain_unchanged": true},
     {"id": "157", "title": "Source review runbook v2", "status": "planned", "commit": "Add source review runbook v2", "blocks_capability_expansion": "conditional", "blocks_broader_distribution": "conditional", "blocks_external_handoff": "yes", "requires_external_review_before_closure": false, "required_commands": ["make docs-site"], "risk_surface": ["source review"], "deferred_boundary_must_remain_unchanged": true},

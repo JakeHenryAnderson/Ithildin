@@ -23,6 +23,7 @@ from scripts import (
     review_run_manifest,
     reviewer_findings,
     test_determinism_gate,
+    tool_surface_invariant_gate,
     v04_review_packet,
 )
 
@@ -1266,8 +1267,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-153"
-    assert manifest["planned_range"] == "154-180"
+    assert manifest["completed_range"] == "152-154"
+    assert manifest["planned_range"] == "155-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1307,6 +1308,36 @@ def test_capability_expansion_gate_reports_blocked_without_tool_drift() -> None:
     assert "Task 153 adds an explicit blocked/allowed" in matrix
     assert "docs/codex/capability-expansion-gate.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-expansion-gate.md" in docs_site
+
+
+def test_tool_surface_invariant_gate_is_wired_and_valid() -> None:
+    report = tool_surface_invariant_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/tool-surface-invariant-gate.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["tool_count"] == 10
+    assert report["manifest_file_count"] == 10
+    assert report["tool_names"] == tool_surface_invariant_gate.EXPECTED_TOOL_NAMES
+    assert report["forbidden_marker_hits"] == []
+    assert any(
+        summary["name"] == "http.fetch" and summary["risk"] == "network"
+        for summary in report["manifest_summaries"]
+    )
+    assert "make tool-surface-invariant-gate" in readme
+    assert "single caller-controlled `url` field" in doc
+    assert "154 - Tool-surface invariant gate v2 | Done" in backlog
+    assert "Task 154 verifies the current ten-tool" in matrix
+    assert "tool-surface-invariant-gate" in makefile.partition("release-check:")[2]
+    assert "docs/codex/tool-surface-invariant-gate.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/tool-surface-invariant-gate.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

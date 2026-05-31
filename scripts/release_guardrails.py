@@ -58,6 +58,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "review-findings-summary",
     "review-run-manifest-check",
     "filesystem-contract-check",
+    "tool-surface-invariant-gate",
     "determinism-check",
     "adversarial-corpus-check",
     "resource-limit-check",

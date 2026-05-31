@@ -85,6 +85,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | v0.4 external packet | v0.4 Task 151 external packet and capability seed added | pending external review | none | pending | `make review-candidate`; `make release-check` | packet completion does not approve capability expansion | external_pending |
 | v0.5 roadmap | Task 152 records GPT 5.5 Pro v0.4 feedback as Tasks 152-180 | pending external review | none | pending | `make release-check` | roadmap does not approve capability expansion | external_pending |
 | Capability expansion gate | Task 153 adds an explicit blocked/allowed capability-expansion report | pending external review | none | pending | `make capability-expansion-gate`; `make release-check` | blocked status is expected until source-review closure | external_pending |
+| Tool-surface invariant gate | Task 154 verifies the current ten-tool manifest surface | pending external review | none | pending | `make tool-surface-invariant-gate`; `make release-check` | any future tool-surface drift requires boundary decision | external_pending |
 
 ## v2 Update Rules
 
