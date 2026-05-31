@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-139",
-  "planned_range": "140-151",
+  "completed_range": "113-140",
+  "planned_range": "141-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -620,7 +620,7 @@
     {
       "id": "140",
       "title": "Review-console failure and unauthorized states",
-      "status": "planned",
+      "status": "done",
       "commit": "Polish console failure states",
       "blocks_capability_expansion": "conditional",
       "blocks_broader_distribution": "yes",

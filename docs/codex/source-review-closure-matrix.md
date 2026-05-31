@@ -71,7 +71,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Release evidence | v0.3 schema, packet diff, and guardrails complete | pending external review | none | pending | `make release-evidence`; `make review-candidate` | review packets are not external audits | external_pending |
 | MCP ingress | v0.4 Task 137 fixed-principal/session bypass audit complete | pending external review | none | pending | MCP adapter focused tests; `make release-check` | stdio-only local MCP remains boundary | external_pending |
 | Local admin auth | v0.4 Task 138 local bearer-token/session boundary documented and tested | pending external review | none | pending | API focused tests; `make release-check` | local bearer token only, not production identity | external_pending |
-| Review console evidence | v0.4 Task 139 grouped approval binding evidence UX complete | pending external review | none | pending | UI typecheck/build; `make release-check` | local admin UI is not production auth | external_pending |
+| Review console evidence | v0.4 Tasks 139-140 grouped approval evidence and failure-state UX complete | pending external review | none | pending | UI typecheck/build; `make release-check` | local admin UI is not production auth | external_pending |
 
 ## v2 Update Rules
 

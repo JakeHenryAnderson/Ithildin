@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-139"
-    assert manifest["planned_range"] == "140-151"
+    assert manifest["completed_range"] == "113-140"
+    assert manifest["planned_range"] == "141-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 140-151 are planned" in readme
+    assert "Tasks 141-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -722,7 +722,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-139 done",
+        "Tasks 113-140 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -886,6 +886,7 @@ def test_review_console_assurance_is_documented() -> None:
     for required in [
         "approval scope hash",
         "Task 139 adds",
+        "Task 140 tightens",
         "patch artifact",
         "tool manifest",
         "policy decision",
@@ -893,6 +894,8 @@ def test_review_console_assurance_is_documented() -> None:
         "policy reason",
         "/patch-apply-diagnostics",
         "warning banners",
+        "rejected admin token shows a locked dashboard state",
+        "failed export responses are parsed",
         "does not add repair",
     ]:
         assert required in doc
@@ -906,14 +909,18 @@ def test_review_console_assurance_is_documented() -> None:
         "Tool Manifest",
         "Policy Decision",
         "Principal and Scope",
+        "apiErrorFromResponse",
+        "Dashboard data is locked",
+        "Console data is unavailable",
     ]:
         assert ui_marker in app
     assert "review-console-assurance.md" in readme
     assert "099 - Review-console approval evidence clarity | Done" in backlog
     assert "100 - Review-console failure-state and trust-status UX | Done" in backlog
     assert "139 - Review-console approval UX v3 | Done" in backlog
+    assert "140 - Review-console failure and unauthorized states | Done" in backlog
     assert "Tasks 099-100 expose copyable approval binding evidence" in matrix
-    assert "Task 139 grouped approval binding evidence UX complete" in matrix
+    assert "Tasks 139-140 grouped approval evidence and failure-state UX complete" in matrix
     assert "docs/codex/review-console-assurance.md" in review_docs.REVIEW_DOCS
 
 

@@ -1,7 +1,8 @@
 # Review Console Assurance
 
 Tasks 099-100 tighten the local review console for v0.3-prep handoff. Task 139 adds the v0.4
-approval-evidence UX pass without changing approval APIs or executor behavior.
+approval-evidence UX pass, and Task 140 tightens unauthorized and request-failure states, without
+changing approval APIs, auth semantics, or executor behavior.
 
 ## Approval Evidence Clarity
 
@@ -31,6 +32,14 @@ The console also exposes a copy action for the safe approval evidence payload so
 compare UI-visible evidence with API/audit evidence without copying raw diffs or file contents.
 
 ## Failure-State and Trust UX
+
+Unauthorized and request-failure states are intentionally plain:
+
+- missing token shows a locked local-console state;
+- rejected admin token shows a locked dashboard state;
+- no loaded system status shows an unavailable console-data state;
+- failed JSON API responses use the safe `detail` field or HTTP status text;
+- failed export responses are parsed the same way rather than showing raw response bodies.
 
 The console fetches `/patch-apply-diagnostics` with the rest of the dashboard data and surfaces:
 

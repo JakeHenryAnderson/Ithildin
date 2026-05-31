@@ -319,6 +319,8 @@ export function App() {
   const pendingCount = data.approvals.length;
   const proposedPatchCount = data.patches.filter((patch) => patch.status === "proposed").length;
   const recentFailures = data.auditEvents.filter((event) => event.event_type.endsWith(".failed"));
+  const authRejected = error === "Admin token rejected.";
+  const dashboardUnavailable = Boolean(token && !loading && !error && !data.systemStatus);
   const trustWarnings = useMemo(
     () => trustStateWarnings(data.systemStatus, data.verification, data.patchDiagnostics),
     [data.systemStatus, data.verification, data.patchDiagnostics],
@@ -494,8 +496,7 @@ export function App() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
-        const detail = await response.text();
-        throw new ApiError(response.status, detail || response.statusText);
+        throw await apiErrorFromResponse(response);
       }
       const bundle = await response.blob();
       const objectUrl = URL.createObjectURL(bundle);
@@ -582,10 +583,24 @@ export function App() {
         </section>
       ) : null}
 
+      {authRejected ? (
+        <section className="notice warning" role="status">
+          <KeyRound aria-hidden="true" size={18} />
+          <span>Dashboard data is locked until a valid local admin token is saved.</span>
+        </section>
+      ) : null}
+
       {!token ? (
         <section className="notice">
           <KeyRound aria-hidden="true" size={18} />
           <span>Admin token required.</span>
+        </section>
+      ) : null}
+
+      {dashboardUnavailable ? (
+        <section className="notice warning" role="status">
+          <AlertTriangle aria-hidden="true" size={18} />
+          <span>Console data is unavailable; no local system status has loaded.</span>
         </section>
       ) : null}
 
@@ -1428,16 +1443,22 @@ async function apiRequest<T>(
     },
   });
   if (!response.ok) {
-    let detail = response.statusText;
-    try {
-      const payload = (await response.json()) as { detail?: string };
-      detail = payload.detail ?? detail;
-    } catch {
-      // Fall back to the HTTP status text.
-    }
-    throw new ApiError(response.status, detail);
+    throw await apiErrorFromResponse(response);
   }
   return (await response.json()) as T;
+}
+
+async function apiErrorFromResponse(response: Response) {
+  let detail = response.statusText;
+  try {
+    const payload = (await response.json()) as { detail?: unknown };
+    if (typeof payload.detail === "string") {
+      detail = payload.detail;
+    }
+  } catch {
+    // Fall back to the HTTP status text.
+  }
+  return new ApiError(response.status, detail);
 }
 
 function parseJsonObject(raw: string, label: string): JsonObject {
