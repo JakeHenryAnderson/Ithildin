@@ -88,6 +88,7 @@ tamper-evident audit log.
 - `make review-packet-diff-gate OLD=... NEW=...` - require packet hashes and fail on removed artifacts.
 - `make packet-redaction-scan` - scan generated review packet artifacts for obvious secret material.
 - `make internal-review-packet` - build v2 local prompts for internal AI/subagent source review.
+- `make source-review-transcript-packet` - generate a source-review transcript skeleton under ignored `var/`.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
 - `make review-findings-summary` - summarize structured findings for v0.4 planning and release gates.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
@@ -237,8 +238,8 @@ The v0.4 milestone roadmap is recorded in
 complete and should be externally reviewed before implementation drift or capability expansion.
 The v0.5 source-review and capability-decision roadmap is recorded in
 [docs/codex/v0.5-roadmap-from-v0.4-review.md](docs/codex/v0.5-roadmap-from-v0.4-review.md) and
-[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-170 are
-complete; Tasks 171-180 are planned and do not add new governed tool powers.
+[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-171 are
+complete; Tasks 172-180 are planned and do not add new governed tool powers.
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in

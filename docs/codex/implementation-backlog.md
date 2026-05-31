@@ -187,7 +187,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 168 - Accepted risk register | Done | [accepted-risk-register.md](accepted-risk-register.md), `make accepted-risk-register-check` |
 | 169 - Capability decision report generator | Done | [capability-decision-report.md](capability-decision-report.md), `make capability-decision-report` |
 | 170 - No-new-powers release guardrail v2 | Done | [no-new-powers-guardrail.md](no-new-powers-guardrail.md), `make no-new-powers-guardrail` |
-| 171 - Source review transcript packet | Planned | Review transcripts |
+| 171 - Source review transcript packet | Done | [source-review-transcript-packet.md](source-review-transcript-packet.md), `make source-review-transcript-packet` |
 | 172 - Reviewer artifact manifest v2 | Planned | Artifact manifest |
 | 173 - External review response intake template v2 | Planned | External response template |
 | 174 - Review packet source pointers | Planned | Source pointers |

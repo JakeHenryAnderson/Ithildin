@@ -102,6 +102,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Accepted risk register | Task 168 records accepted local-preview risks and keeps them external-review-pending | pending external review | none | pending | `make accepted-risk-register-check`; `make release-check` | accepted risks do not approve capability expansion or close external review | external_pending |
 | Capability decision report | Task 169 summarizes capability go/no-go evidence without approving new powers | pending external review | none | pending | `make capability-decision-report`; `make release-check` | decision report remains blocked while external rows and v0.5 tasks are pending | external_pending |
 | No-new-powers guardrail | Task 170 validates manifests and boundaries do not add deferred tool-power classes | pending external review | none | pending | `make no-new-powers-guardrail`; `make release-check` | guardrail preserves current boundary but does not approve expansion | external_pending |
+| Source review transcript packet | Task 171 generates transcript skeletons and doc hashes for source reviewers | pending external review | none | pending | `make source-review-transcript-packet`; `make docs-site` | transcript packet collects review notes but does not close rows | external_pending |
 
 ## v2 Update Rules
 

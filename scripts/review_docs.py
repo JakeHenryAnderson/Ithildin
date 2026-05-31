@@ -75,6 +75,7 @@ REVIEW_DOCS = [
     "docs/codex/evidence-confusion-gate.md",
     "docs/codex/external-review-closure-gate.md",
     "docs/codex/source-review-runbook-v2.md",
+    "docs/codex/source-review-transcript-packet.md",
     "docs/codex/source-file-inspection-packet.md",
     "docs/codex/patch-apply-source-review-checklist.md",
     "docs/codex/filesystem-source-review-checklist.md",
