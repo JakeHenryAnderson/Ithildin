@@ -34,6 +34,7 @@ DEFAULT_DOCS = [
     "docs/codex/local-preview-release.md",
     "docs/codex/threat-model-and-non-goals.md",
     "docs/codex/v0.4-threat-model-refresh.md",
+    "docs/codex/v0.4-review-packet-generator.md",
     "docs/codex/mcp-client-examples.md",
     "docs/codex/mcp-inspector-recipes.md",
     "docs/codex/evidence-contracts.md",

@@ -80,6 +80,7 @@ tamper-evident audit log.
 - `make release-evidence-gate` - generate and validate a temporary release evidence snapshot.
 - `make release-evidence-validate FILE=...` - validate a saved release evidence JSON snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
+- `make v04-review-packet` - print a v0.4 review-candidate packet snapshot.
 - `make review-candidate` - run the full local handoff gate and regenerate review artifacts.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
@@ -218,8 +219,8 @@ The review-document map is in
 The v0.4 threat-model refresh is in
 [docs/codex/v0.4-threat-model-refresh.md](docs/codex/v0.4-threat-model-refresh.md).
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-148 are
-complete; Tasks 149-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-149 are
+complete; Tasks 150-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

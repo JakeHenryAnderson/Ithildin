@@ -157,7 +157,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 146 - Demo scenario pack v2 | Done | [demo-scenario-pack-v2.md](demo-scenario-pack-v2.md), `make demo-scenario-pack` |
 | 147 - Documentation information architecture cleanup | Done | [review-docs-index.md](review-docs-index.md), docs navigation |
 | 148 - v0.4 threat model refresh | Done | [v0.4-threat-model-refresh.md](v0.4-threat-model-refresh.md), accepted local-preview risks |
-| 149 - v0.4 review packet generator | Planned | Review packet generator |
+| 149 - v0.4 review packet generator | Done | [v0.4-review-packet-generator.md](v0.4-review-packet-generator.md), `make v04-review-packet` |
 | 150 - External review intake and closure workflow v2 | Planned | External intake |
 | 151 - v0.4 external review packet and capability decision seed | Planned | External packet and decision seed |
 

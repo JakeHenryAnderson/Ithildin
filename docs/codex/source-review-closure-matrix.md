@@ -80,6 +80,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Demo scenarios | v0.4 Task 146 scenario pack maps positive, negative, signing, filesystem, and packet demos | pending external review | none | pending | `make demo-scenario-pack`; `make review-candidate` | demo scenarios are local observations, not implementation proof | external_pending |
 | Documentation IA | v0.4 Task 147 review docs index added | pending external review | none | pending | `make docs-site`; `make release-check` | document navigation is not evidence closure | external_pending |
 | Threat model refresh | v0.4 Task 148 local-preview accepted risks refreshed | pending external review | none | pending | `make release-guardrails`; `make release-check` | accepted risks do not permit capability expansion | external_pending |
+| v0.4 packet generator | v0.4 Task 149 packet generator added | pending external review | none | pending | `make v04-review-packet`; `make review-candidate` | generated packets are handoff summaries, not external review closure | external_pending |
 
 ## v2 Update Rules
 

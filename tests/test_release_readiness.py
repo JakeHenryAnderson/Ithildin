@@ -22,6 +22,7 @@ from scripts import (
     review_run_manifest,
     reviewer_findings,
     test_determinism_gate,
+    v04_review_packet,
 )
 
 
@@ -139,8 +140,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-148"
-    assert manifest["planned_range"] == "149-151"
+    assert manifest["completed_range"] == "113-149"
+    assert manifest["planned_range"] == "150-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +161,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 149-151 are planned" in readme
+    assert "Tasks 150-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -724,7 +725,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-148 done",
+        "Tasks 113-149 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -1146,6 +1147,39 @@ def test_v04_threat_model_refresh_is_documented_and_wired() -> None:
     assert "Task 148 local-preview accepted risks refreshed" in matrix
     assert "docs/codex/v0.4-threat-model-refresh.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.4-threat-model-refresh.md" in docs_site
+
+
+def test_v04_review_packet_generator_is_documented_and_secret_free(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/v0.4-review-packet-generator.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    monkeypatch.setattr(sys, "argv", ["v04_review_packet.py", "--json"])
+    result = v04_review_packet.main()
+    output = capsys.readouterr().out
+    payload = json.loads(output)
+
+    assert result == 0
+    assert payload["packet_version"] == "v0.4-review-candidate"
+    assert payload["v04_milestone"]["completed_range"] == "113-149"
+    assert "dev-admin-token-change-me" not in output
+    assert "make v04-review-packet" in readme
+    assert "v04-review-packet:" in makefile
+    assert "v0.4-review-packet-generator.md" in doc
+    assert "149 - v0.4 review packet generator | Done" in backlog
+    assert "Task 149 packet generator added" in matrix
+    assert "docs/codex/v0.4-review-packet-generator.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.4-review-packet-generator.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

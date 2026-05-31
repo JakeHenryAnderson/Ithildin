@@ -34,19 +34,20 @@ The current go/no-go posture is recorded in
 4. Run `make release-check` before demoing or handing off a build.
 5. Optional: run `make release-evidence` and validate saved evidence with
    `make release-evidence-validate FILE=release-evidence.json`.
-6. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
-7. Optional: run `make demo-scenario-pack` to validate the reviewer-facing scenario map.
-8. Open `http://127.0.0.1:5173` and use the configured admin token.
-9. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
-10. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
-11. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
+6. Optional: run `make v04-review-packet` for a v0.4-labeled review-candidate summary.
+7. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
+8. Optional: run `make demo-scenario-pack` to validate the reviewer-facing scenario map.
+9. Open `http://127.0.0.1:5173` and use the configured admin token.
+10. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
+11. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
+12. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
    approval-required, denial, and audit verification flows.
-12. Optional: run `make review-candidate` before external review handoff.
-13. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-14. Optional: run `make audit-keygen` to enable signed audit exports.
-15. Optional: run `make audit-diagnostics` to explain local audit verification state.
-16. Optional: run `make filesystem-contract-check` to record local filesystem capability evidence.
-17. Run `make docs-site` to build local handoff docs under ignored `site/`.
+13. Optional: run `make review-candidate` before external review handoff.
+14. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
+15. Optional: run `make audit-keygen` to enable signed audit exports.
+16. Optional: run `make audit-diagnostics` to explain local audit verification state.
+17. Optional: run `make filesystem-contract-check` to record local filesystem capability evidence.
+18. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 

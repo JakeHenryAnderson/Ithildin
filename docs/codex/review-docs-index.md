@@ -28,6 +28,7 @@ externally closed.
 - [Evidence Contracts](evidence-contracts.md)
 - [Release Evidence Schema](release-evidence-schema.md)
 - [Review Packet Diff](review-packet-diff.md)
+- [v0.4 Review Packet Generator](v0.4-review-packet-generator.md)
 - [Packet Redaction Scanner](packet-redaction-scanner.md)
 - [Test Determinism Gate](test-determinism-gate.md)
 - [Resource Limit Sanity](resource-limit-sanity.md)
