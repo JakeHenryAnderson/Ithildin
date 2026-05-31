@@ -118,6 +118,7 @@
 | 115 - Review findings aggregator | Done | [v0.3-review-findings-summary.md](v0.3-review-findings-summary.md), `make review-findings-summary` |
 | 116 - Source-review closure matrix v3 | Done | [source-review-closure-matrix.md](source-review-closure-matrix.md), `make release-guardrails` |
 | 117 - Patch apply failure evidence v2 | Done | `PatchApplyFaultHook`, `tests/test_governed_tool_calls.py` |
+| 118 - Patch apply state-machine formalization v2 | Done | [patch-apply-state-machine.md](patch-apply-state-machine.md), transition tests |
 
 ## Future Candidate Track
 

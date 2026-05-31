@@ -32,6 +32,16 @@ manifest, policy, schema, principal, proposal, or target evidence.
 The diagnostics endpoint reports `clean`, `ambiguous`, or `recovery_required`. It never repairs,
 rolls back, completes approvals, or exposes file contents or diff contents.
 
+The store enforces these apply-attempt transitions:
+
+| Current | Allowed next states |
+| --- | --- |
+| `prepared` | `file_replaced`, `failed`, `recovery_required` |
+| `file_replaced` | `completed`, `recovery_required` |
+| `completed` | terminal |
+| `failed` | terminal |
+| `recovery_required` | terminal |
+
 ## Fault Injection Evidence
 
 Task 117 adds named test-only fault-injection phases around proposal validation, approval execution,
@@ -39,6 +49,8 @@ apply preparation, attempt creation, atomic replacement, proposal completion, ap
 and final attempt completion. These hooks are not exposed through API or MCP; they exist so review
 tests can deterministically prove pre-replacement failures leave files unchanged and
 post-replacement failures require read-only recovery diagnostics.
+Task 118 makes the attempt-state transition table executable in the SQLite store and adds tests for
+valid and invalid transitions.
 
 ## Failure Classes
 

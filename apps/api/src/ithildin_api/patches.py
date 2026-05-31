@@ -347,6 +347,17 @@ class PatchProposalStore:
         failure_reason: str | None = None,
     ) -> PatchApplyAttempt:
         with sqlite3.connect(self.db_path) as connection:
+            current = connection.execute(
+                "SELECT status FROM patch_apply_attempts WHERE attempt_id = ?",
+                (attempt_id,),
+            ).fetchone()
+            if current is None:
+                raise PatchProposalError(f"patch apply attempt not found: {attempt_id}")
+            current_status = str(current[0])
+            if not _apply_attempt_transition_allowed(current_status, status):
+                raise PatchProposalError(
+                    f"invalid patch apply attempt transition: {current_status} -> {status}"
+                )
             updated = connection.execute(
                 """
                 UPDATE patch_apply_attempts
@@ -1112,6 +1123,19 @@ def _apply_attempt_from_row(row: tuple[object, ...]) -> PatchApplyAttempt:
         updated_at=datetime.fromisoformat(str(row[12])),
         metadata=json.loads(str(row[13])),
     )
+
+
+def _apply_attempt_transition_allowed(current: str, target: str) -> bool:
+    if current == target:
+        return True
+    allowed = {
+        "prepared": {"file_replaced", "failed", "recovery_required"},
+        "file_replaced": {"completed", "recovery_required"},
+        "recovery_required": set(),
+        "completed": set(),
+        "failed": set(),
+    }
+    return target in allowed.get(current, set())
 
 
 def _reject_unsupported_diff_features(lines: list[str]) -> None:

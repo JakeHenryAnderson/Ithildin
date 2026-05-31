@@ -4,7 +4,7 @@ import json
 import os
 import sqlite3
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import NoReturn, cast
 from urllib.request import Request
@@ -14,6 +14,7 @@ from ithildin_api.approvals import ApprovalService, ApprovalStore, CreateApprova
 from ithildin_api.http_tools import HTTP_FETCH_TOOL, HttpAllowlist, HttpFetchExecutor
 from ithildin_api.identity import PrincipalRegistry
 from ithildin_api.patches import (
+    PatchApplyAttempt,
     PatchApplyFaultHook,
     PatchProposalError,
     PatchProposalService,
@@ -1100,6 +1101,68 @@ def test_patch_apply_fault_after_atomic_replace_requires_recovery(
     assert attempts[0].status == "recovery_required"
     assert diagnostics["status"] == "recovery_required"
     assert harness.approval_service.get(str(approval["approval_id"])).status.value == "executing"
+
+
+def test_patch_apply_attempt_state_machine_allows_documented_transitions(
+    tmp_path: Path,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    now = datetime.now(UTC)
+    attempt = PatchApplyAttempt(
+        attempt_id="pa_valid",
+        approval_id="appr_valid",
+        proposal_id="patch_valid",
+        request_id="req_valid",
+        workspace_id="default",
+        path="README.md",
+        proposal_hash="sha256:" + ("1" * 64),
+        base_file_hash="sha256:" + ("2" * 64),
+        expected_post_apply_hash="sha256:" + ("3" * 64),
+        status="prepared",
+        failure_reason=None,
+        created_at=now,
+        updated_at=now,
+        metadata={"tool_name": "fs.patch.apply"},
+    )
+
+    harness.patch_service.store.create_apply_attempt(attempt)
+    harness.patch_service.store.set_apply_attempt_status("pa_valid", "file_replaced")
+    completed = harness.patch_service.store.set_apply_attempt_status("pa_valid", "completed")
+
+    assert completed.status == "completed"
+
+
+def test_patch_apply_attempt_state_machine_rejects_invalid_transitions(
+    tmp_path: Path,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    now = datetime.now(UTC)
+    attempt = PatchApplyAttempt(
+        attempt_id="pa_invalid",
+        approval_id="appr_invalid",
+        proposal_id="patch_invalid",
+        request_id="req_invalid",
+        workspace_id="default",
+        path="README.md",
+        proposal_hash="sha256:" + ("1" * 64),
+        base_file_hash="sha256:" + ("2" * 64),
+        expected_post_apply_hash="sha256:" + ("3" * 64),
+        status="prepared",
+        failure_reason=None,
+        created_at=now,
+        updated_at=now,
+        metadata={"tool_name": "fs.patch.apply"},
+    )
+
+    harness.patch_service.store.create_apply_attempt(attempt)
+
+    with pytest.raises(PatchProposalError, match="invalid patch apply attempt transition"):
+        harness.patch_service.store.set_apply_attempt_status("pa_invalid", "completed")
+    failed = harness.patch_service.store.set_apply_attempt_status("pa_invalid", "failed")
+    with pytest.raises(PatchProposalError, match="invalid patch apply attempt transition"):
+        harness.patch_service.store.set_apply_attempt_status("pa_invalid", "recovery_required")
+
+    assert failed.status == "failed"
 
 
 def test_patch_apply_file_replaced_status_failure_is_diagnosable(
