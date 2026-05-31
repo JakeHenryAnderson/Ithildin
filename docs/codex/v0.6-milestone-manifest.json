@@ -28,7 +28,7 @@
     {"id": "182", "title": "External reviewer assignment matrix", "wave": "Wave 1", "status": "Done", "planned_commit": "Add external reviewer assignment matrix"},
     {"id": "183", "title": "External review packet dispatch set", "wave": "Wave 1", "status": "Done", "planned_commit": "Add external review dispatch packets"},
     {"id": "184", "title": "External response normalization", "wave": "Wave 1", "status": "Done", "planned_commit": "Add external response normalization"},
-    {"id": "185", "title": "Patch apply external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},
+    {"id": "185", "title": "Patch apply external review execution", "wave": "Wave 2", "status": "Packet ready; external response pending", "planned_commit": "Prepare patch apply external review"},
     {"id": "186", "title": "Filesystem/platform external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},
     {"id": "187", "title": "HTTP fetch external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},
     {"id": "188", "title": "Audit and signed-evidence external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},

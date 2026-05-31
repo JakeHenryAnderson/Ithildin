@@ -24,6 +24,7 @@ from scripts import (
     internal_review_packet,
     no_new_powers_guardrail,
     packet_redaction_scan,
+    patch_apply_external_review_packet,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -2142,6 +2143,124 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
     assert "docs/codex/v0.6-external-review-dispatch-packets.md" in docs_site
 
 
+def test_v06_patch_apply_external_review_packet_is_wired(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path
+    for marker in [
+        "pyproject.toml",
+        "Makefile",
+        "apps/api",
+        "apps/mcp-server",
+        "tool-manifests.lock.json",
+    ]:
+        path = repo_root / marker
+        if "." in Path(marker).name:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("marker\n", encoding="utf-8")
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+    for relative in (
+        patch_apply_external_review_packet.SOURCE_FILES
+        + patch_apply_external_review_packet.TEST_FILES
+        + patch_apply_external_review_packet.CONTRACT_DOCS
+    ):
+        path = repo_root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {relative.name}\n", encoding="utf-8")
+
+    def fake_build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, object]:
+        output_root.mkdir(parents=True)
+        output_root.joinpath("patch-apply.md").write_text("# Patch Apply\n", encoding="utf-8")
+        manifest: dict[str, object] = {
+            "packets": [
+                {
+                    "path": "patch-apply.md",
+                    "sha256": "sha256:" + ("1" * 64),
+                    "payload_sha256": "sha256:" + ("2" * 64),
+                    "bytes": 14,
+                }
+            ]
+        }
+        output_root.joinpath("dispatch-packet-hashes.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        return manifest
+
+    monkeypatch.setattr(
+        patch_apply_external_review_packet,
+        "_build_dispatch_packets",
+        fake_build_dispatch_packets,
+    )
+    monkeypatch.setattr(
+        patch_apply_external_review_packet,
+        "_git",
+        lambda repo_root, args: "abcdef1234567890"
+        if args == ["rev-parse", "HEAD"]
+        else "",
+    )
+
+    output_dir = patch_apply_external_review_packet.build_packet(
+        repo_root=repo_root,
+        output_dir=repo_root / "var/review-packets/v0.6/patch-apply-external-review",
+    )
+
+    assert output_dir.joinpath("00_PATCH_APPLY_EXTERNAL_REVIEW_INDEX.md").exists()
+    assert output_dir.joinpath("01_PATCH_APPLY_EXTERNAL_REVIEW_PROMPT.md").exists()
+    assert output_dir.joinpath("03_PATCH_APPLY_SOURCE_BUNDLE.md").exists()
+    assert output_dir.joinpath("patch-apply-review-artifact-hashes.json").exists()
+    prompt = output_dir.joinpath("01_PATCH_APPLY_EXTERNAL_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EXT-PA-###" in prompt
+    assert "sha256:" + ("1" * 64) in prompt
+    intake = output_dir.joinpath("06_PATCH_APPLY_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "--area \"patch-apply\"" in intake
+    assert "normalized-response.json" in intake
+    hashes = json.loads(
+        output_dir.joinpath("patch-apply-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert {entry["path"] for entry in hashes} == {
+        "00_PATCH_APPLY_EXTERNAL_REVIEW_INDEX.md",
+        "01_PATCH_APPLY_EXTERNAL_REVIEW_PROMPT.md",
+        "02_PATCH_APPLY_DISPATCH_PACKET.md",
+        "03_PATCH_APPLY_SOURCE_BUNDLE.md",
+        "04_PATCH_APPLY_TESTS_BUNDLE.md",
+        "05_PATCH_APPLY_CONTRACTS_BUNDLE.md",
+        "06_PATCH_APPLY_INTAKE_COMMANDS.md",
+    }
+
+    doc = Path("docs/codex/v0.6-patch-apply-external-review-execution.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    manifest = Path("docs/codex/v0.6-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    assert "make v06-patch-apply-review-packet" in doc
+    assert "EXT-PA-###" in doc
+    assert "make v06-patch-apply-review-packet" in readme
+    assert "v06-patch-apply-review-packet:" in makefile
+    assert "185 - Patch apply external review execution packet" in backlog
+    assert "Packet ready; external response pending" in manifest
+    assert "v0.6 Patch Apply External Review Execution" in index
+    assert (
+        "docs/codex/v0.6-patch-apply-external-review-execution.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/v0.6-patch-apply-external-review-execution.md" in docs_site
+
+
 def test_v06_external_response_normalization_is_wired() -> None:
     finding_header = (
         "| Finding ID | Severity | Area | Affected files/functions | "
@@ -2225,6 +2344,32 @@ def test_external_response_normalization_rejects_ambiguous_source_review() -> No
         )
 
 
+def test_external_response_normalization_accepts_lane_specific_ids() -> None:
+    raw_response = "\n".join(
+        [
+            "# Patch Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-PA-001 | medium | patch-apply | apps/api/src/ithildin_api/patches.py | "
+            "should-fix | open | tighten transition tests |",
+        ]
+    )
+
+    normalized = external_response_normalize.normalize_response(
+        raw_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="source-level",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="patch-apply",
+    )
+
+    assert normalized["findings"][0]["finding_id"] == "EXT-PA-001"
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(encoding="utf-8")
     prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(encoding="utf-8")
@@ -2276,6 +2421,29 @@ def test_reviewer_finding_intake_validates_records(tmp_path: Path) -> None:
 
     assert [record.finding_id for record in records] == ["ISR-003"]
     assert records[0].fields["Severity"] == "medium"
+
+    findings_dir.joinpath("ext-pa-001.md").write_text(
+        """# EXT-PA-001 Example
+
+- Finding ID: EXT-PA-001
+- Severity: medium
+- Area: patch apply
+- Affected files/functions: apps/api/src/ithildin_api/patches.py
+- Claim being tested: external patch finding namespaces validate
+- Observed behavior: fixture
+- Risk: fixture risk
+- Recommended fix: fixture fix
+- Blocking status: should-fix
+- Disposition: fixed
+- Verification notes: fixture verification
+""",
+        encoding="utf-8",
+    )
+    records = reviewer_findings.validate_findings(
+        findings_dir=findings_dir,
+        repo_root=tmp_path,
+    )
+    assert {record.finding_id for record in records} == {"ISR-003", "EXT-PA-001"}
 
 
 def test_reviewer_finding_intake_rejects_invalid_records(tmp_path: Path) -> None:
@@ -2425,11 +2593,11 @@ def test_review_run_manifest_validator_accepts_valid_run(
                 "files_inspected": ["apps/api/src/ithildin_api/http_tools.py"],
                 "tests_run": ["uv run pytest tests/test_http_tools.py"],
                 "output_file": "output.md",
-                "finding_count": 1,
+                "finding_count": 2,
                 "severity_counts": {
                     "critical": 0,
                     "high": 0,
-                    "medium": 1,
+                    "medium": 2,
                     "low": 0,
                     "informational": 0,
                 },
@@ -2440,6 +2608,13 @@ def test_review_run_manifest_validator_accepts_valid_run(
                         "severity": "medium",
                         "kind": "implementation",
                         "files_functions": ["http_tools.py:HttpFetchExecutor.fetch"],
+                        "disposition": "open",
+                    },
+                    {
+                        "finding_id": "EXT-PA-001",
+                        "severity": "medium",
+                        "kind": "implementation",
+                        "files_functions": ["patches.py:PatchProposalService.apply_approved"],
                         "disposition": "open",
                     }
                 ],
@@ -2456,7 +2631,7 @@ def test_review_run_manifest_validator_accepts_valid_run(
     summaries = review_run_manifest.validate_review_runs(runs_dir, tmp_path)
 
     assert summaries[0]["review_id"] == "review-1"
-    assert summaries[0]["finding_count"] == 1
+    assert summaries[0]["finding_count"] == 2
 
 
 def test_review_run_manifest_validator_rejects_missing_and_mismatched_fields(

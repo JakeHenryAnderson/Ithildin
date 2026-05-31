@@ -13,7 +13,9 @@ VALID_SOURCE_ACCESS = {"source-level", "packet-and-source", "packet-only", "docs
 VALID_SEVERITIES = {"critical", "high", "medium", "low", "informational"}
 VALID_BLOCKING_STATUSES = {"blocking", "should-fix", "later", "accepted risk", "advisory"}
 VALID_DISPOSITIONS = {"open", "fixed", "deferred", "rejected", "accepted-deferred"}
-FINDING_PATTERN = re.compile(r"^EXT-(\d{3}|###)$")
+FINDING_PATTERN = re.compile(
+    r"^EXT-((PA|FS|HTTP|SE|PR|MCP|UI|REL)-(\d{3}|###)|(\d{3}|###))$"
+)
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
 SECRET_MARKERS = (
     "BEGIN PRIVATE KEY",
