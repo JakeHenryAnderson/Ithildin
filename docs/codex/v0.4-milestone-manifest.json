@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-140",
-  "planned_range": "141-151",
+  "completed_range": "113-141",
+  "planned_range": "142-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -640,7 +640,7 @@
     {
       "id": "141",
       "title": "Negative transcript expansion v2",
-      "status": "planned",
+      "status": "done",
       "commit": "Expand negative transcripts v2",
       "blocks_capability_expansion": "conditional",
       "blocks_broader_distribution": "conditional",

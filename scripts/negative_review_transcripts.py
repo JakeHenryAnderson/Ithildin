@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import tempfile
 from collections.abc import Sequence
@@ -31,8 +32,13 @@ from ithildin_api.patches import PatchProposalError, PatchProposalService, Patch
 from ithildin_api.policy_parity import run_policy_parity
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError
 from ithildin_api.registry import ToolRegistry
-from ithildin_audit_core import AuditWriter
-from ithildin_schemas import JsonObject, sha256_digest
+from ithildin_audit_core import (
+    AuditWriter,
+    generate_audit_signing_keypair,
+    signed_audit_export_bundle,
+    verify_signed_audit_export_bundle,
+)
+from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue, sha256_digest
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v0.2/negative-review-transcripts")
 TRANSCRIPT_NAME = "NEGATIVE_REVIEW_TRANSCRIPTS.md"
@@ -90,14 +96,17 @@ def build_transcripts(output_dir: Path) -> Path:
         results = [
             _path_traversal(root / "path-traversal"),
             _symlink_escape(root / "symlink-escape"),
+            _hidden_sensitive_path(root / "hidden-sensitive"),
             _stale_base_patch_apply(root / "stale-base"),
             _http_private_redirect(),
+            _http_credentials_url(),
             _unknown_principal(root / "unknown-principal"),
             _disabled_principal(root / "disabled-principal"),
             _replayed_approval(root / "replayed-approval"),
             _manifest_lock_tamper(root / "manifest-lock-tamper"),
             _policy_parity_mismatch(root / "policy-parity-mismatch"),
             _patch_apply_ambiguous_diagnostics(root / "patch-apply-ambiguous"),
+            _signed_audit_export_tamper(root / "signed-audit-tamper"),
         ]
     transcript_path = output_dir / TRANSCRIPT_NAME
     transcript_path.write_text(_render_transcript(results), encoding="utf-8")
@@ -136,6 +145,25 @@ def _symlink_escape(root: Path) -> ScenarioResult:
             evidence="ReadToolError raised during workspace path resolution",
         )
     raise AssertionError("symlink escape was not denied")
+
+
+def _hidden_sensitive_path(root: Path) -> ScenarioResult:
+    filesystem = _filesystem(root)
+    filesystem.workspace_root.joinpath(".env").write_text(
+        "do-not-leak-hidden-path",
+        encoding="utf-8",
+    )
+    try:
+        filesystem.read_file(".env")
+    except ReadToolError as exc:
+        return _denied(
+            name="Hidden Sensitive Path Denial",
+            command_or_setup='fs.read {"path":".env","workspace_id":"default"}',
+            expected="deny hidden/sensitive path before file content is returned",
+            reason=exc.reason,
+            evidence="ReadToolError raised by hidden/sensitive path policy",
+        )
+    raise AssertionError("hidden sensitive path was not denied")
 
 
 def _stale_base_patch_apply(root: Path) -> ScenarioResult:
@@ -248,6 +276,28 @@ def _http_private_redirect() -> ScenarioResult:
             evidence="HttpFetchError raised before blocked destination body was read",
         )
     raise AssertionError("private redirect was not denied")
+
+
+def _http_credentials_url() -> ScenarioResult:
+    executor = HttpFetchExecutor(
+        allowlist=HttpAllowlist.from_csv("https://example.com"),
+        timeout_seconds=1,
+        max_response_bytes=1024,
+        max_redirects=3,
+        resolver=lambda host, port: ["93.184.216.34"],
+        opener=FakeOpener([]),
+    )
+    try:
+        executor.fetch("https://user:pass@example.com/")
+    except HttpFetchError as exc:
+        return _denied(
+            name="HTTP Credential URL Denial",
+            command_or_setup='http.fetch {"url":"https://user:pass@example.com/"}',
+            expected="deny credential-bearing URL before any request is opened",
+            reason=str(exc),
+            evidence="HttpFetchError raised before opener received a request",
+        )
+    raise AssertionError("credential-bearing HTTP URL was not denied")
 
 
 def _unknown_principal(root: Path) -> ScenarioResult:
@@ -424,6 +474,45 @@ def _patch_apply_ambiguous_diagnostics(root: Path) -> ScenarioResult:
             evidence="patch_apply_diagnostics returned status=ambiguous",
         )
     raise AssertionError("ambiguous patch apply diagnostics were not reported")
+
+
+def _signed_audit_export_tamper(root: Path) -> ScenarioResult:
+    db_path = root / "ithildin.sqlite3"
+    audit_log_path = root / "audit.jsonl"
+    private_key_path = root / "audit-ed25519-private.pem"
+    public_key_path = root / "audit-ed25519-public.pem"
+    writer = AuditWriter(db_path, audit_log_path)
+    writer.initialize()
+    writer.write_event(
+        event_id="evt_negative_signed_audit_001",
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_negative_signed_audit_001",
+        principal={"id": "demo:reviewer", "roles": ["Auditor"]},
+        tool_name="fs.read",
+        decision=PolicyDecisionValue.ALLOW,
+        metadata={"scenario": "negative signed audit tamper"},
+    )
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = signed_audit_export_bundle(
+        jsonl_bundle=writer.export_jsonl_bundle(),
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    tampered = json.loads(json.dumps(bundle))
+    tampered["events_sha256"] = "sha256:" + ("f" * 64)
+    result = verify_signed_audit_export_bundle(tampered, public_key_path=public_key_path)
+    if not result.valid:
+        return _denied(
+            name="Signed Audit Export Tamper Denial",
+            command_or_setup="offline signed audit export verification after digest mutation",
+            expected="reject tampered signed bundle during offline verification",
+            reason=result.failure or "signed audit verification failed",
+            evidence="verify_signed_audit_export_bundle returned verified=false",
+        )
+    raise AssertionError("tampered signed audit export was not rejected")
 
 
 def _filesystem(root: Path) -> FilesystemReadTools:

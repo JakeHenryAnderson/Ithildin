@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-140"
-    assert manifest["planned_range"] == "141-151"
+    assert manifest["completed_range"] == "113-141"
+    assert manifest["planned_range"] == "142-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 141-151 are planned" in readme
+    assert "Tasks 142-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -722,7 +722,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-140 done",
+        "Tasks 113-141 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -932,13 +932,18 @@ def test_negative_transcript_expansion_is_documented() -> None:
     recipes = Path("docs/codex/negative-review-recipes.md").read_text(encoding="utf-8")
 
     for required in [
+        "Hidden Sensitive Path Denial",
+        "HTTP Credential URL Denial",
         "Manifest Lock Tamper Denial",
         "Policy Parity Mismatch Detection",
         "Patch Apply Ambiguous Diagnostics",
+        "Signed Audit Export Tamper Denial",
     ]:
         assert required in recipes
     assert "101 - Negative transcript expansion | Done" in backlog
+    assert "141 - Negative transcript expansion v2 | Done" in backlog
     assert "Task 101 expands observed transcripts" in matrix
+    assert "Task 141 expanded observed denial transcripts" in matrix
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

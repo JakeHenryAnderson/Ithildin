@@ -32,6 +32,14 @@ under `var/review-packets/v0.2/negative-review-transcripts/`.
 - Expected result: denied as a symlink/path escape.
 - Evidence to inspect: safe error reason only; no target file content.
 
+## Hidden Sensitive Path Denial
+
+- Tool: `fs.read`
+- Setup: create a throwaway hidden file such as `.env` inside a demo workspace.
+- Arguments: `{"path":".env","workspace_id":"default"}`
+- Expected result: denied as hidden/sensitive path access.
+- Evidence to inspect: safe denial reason only; no file content.
+
 ## Stale-Base Patch Apply Denial
 
 - Tool sequence: `fs.patch.propose`, approve `fs.patch.apply`, then mutate the target file before
@@ -49,6 +57,14 @@ under `var/review-packets/v0.2/negative-review-transcripts/`.
 - Expected result: redirect destination is revalidated and denied.
 - Evidence to inspect: no response body leaked from the blocked destination and safe denial metadata
   is audited.
+
+## HTTP Credential URL Denial
+
+- Tool: `http.fetch`
+- Arguments: `{"url":"https://user:pass@example.com/"}`
+- Expected result: credential-bearing URL is denied before any request is opened.
+- Evidence to inspect: safe URL validation error only; no request body, response body, cookies, or
+  caller-supplied headers.
 
 ## Unknown Principal Denial
 
@@ -95,6 +111,14 @@ under `var/review-packets/v0.2/negative-review-transcripts/`.
 - Expected result: `/patch-apply-diagnostics` reports `ambiguous` and recommends manual review.
 - Evidence to inspect: diagnostics remain read-only and do not repair, roll back, or complete the
   approval.
+
+## Signed Audit Export Tamper Denial
+
+- Setup: generate a local signed audit export fixture, mutate the exported event digest, and run
+  offline verification.
+- Expected result: signed-bundle verification fails closed.
+- Evidence to inspect: verification failure reason and bundle digest metadata; no private key
+  material.
 
 ## Review Notes
 

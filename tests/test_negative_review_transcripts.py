@@ -12,17 +12,20 @@ def test_negative_review_transcripts_cover_denial_scenarios(tmp_path: Path) -> N
     for heading in [
         "Path Traversal Denial",
         "Symlink Escape Denial",
+        "Hidden Sensitive Path Denial",
         "Stale-Base Patch Apply Denial",
         "HTTP Private Redirect Denial",
+        "HTTP Credential URL Denial",
         "Unknown Principal Denial",
         "Disabled Principal Denial",
         "Replayed Approval Denial",
         "Manifest Lock Tamper Denial",
         "Policy Parity Mismatch Detection",
         "Patch Apply Ambiguous Diagnostics",
+        "Signed Audit Export Tamper Denial",
     ]:
         assert heading in transcript
-    assert transcript.count("observed status: `denied`") == 10
+    assert transcript.count("observed status: `denied`") == 13
 
 
 def test_negative_review_transcripts_are_secret_free(tmp_path: Path) -> None:
