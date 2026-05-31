@@ -2,6 +2,8 @@
 
 Use `make reviewer-findings-check` to validate structured internal AI/subagent, external, and human
 review findings before they affect the source-review closure matrix.
+For current v0.4 external-review handoffs, also follow
+[external-review-intake-v2.md](external-review-intake-v2.md).
 
 Finding records live under `docs/codex/findings/` as Markdown files. The directory may be empty. If
 it is empty, the check passes with `0 finding(s)`.

@@ -4,6 +4,10 @@ Task 111 defines how Ithildin handles GPT 5.5 Pro / Very High or human expert re
 the v0.3-prep packet is handed off. It is a closure workflow, not a claim that external review has
 already happened.
 
+Task 150 adds the v0.4 update in
+[external-review-intake-v2.md](external-review-intake-v2.md). Use the v2 guide for current
+review-candidate handoffs.
+
 ## Intake Steps
 
 1. Save the reviewer response alongside the generated review packet evidence.

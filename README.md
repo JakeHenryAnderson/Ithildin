@@ -207,7 +207,8 @@ The current external review handoff starts with
 [docs/codex/v0.3-review-packet.md](docs/codex/v0.3-review-packet.md) and
 [docs/codex/v0.3-external-review-prompt.md](docs/codex/v0.3-external-review-prompt.md).
 External review findings should be processed through
-[docs/codex/external-review-intake-and-closure.md](docs/codex/external-review-intake-and-closure.md).
+[docs/codex/external-review-intake-and-closure.md](docs/codex/external-review-intake-and-closure.md)
+and [docs/codex/external-review-intake-v2.md](docs/codex/external-review-intake-v2.md).
 The current boundary decision is recorded in
 [docs/codex/v0.3-boundary-decision.md](docs/codex/v0.3-boundary-decision.md).
 The v0.4 work charter is recorded in
@@ -219,8 +220,8 @@ The review-document map is in
 The v0.4 threat-model refresh is in
 [docs/codex/v0.4-threat-model-refresh.md](docs/codex/v0.4-threat-model-refresh.md).
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-149 are
-complete; Tasks 150-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-150 are
+complete; Task 151 is planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

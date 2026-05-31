@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-149",
-  "planned_range": "150-151",
+  "completed_range": "113-150",
+  "planned_range": "151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -808,7 +808,7 @@
     {
       "id": "150",
       "title": "External review intake and closure workflow v2",
-      "status": "planned",
+      "status": "done",
       "commit": "Update external review intake v2",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "yes",

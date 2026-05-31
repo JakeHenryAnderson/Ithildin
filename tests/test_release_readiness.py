@@ -140,8 +140,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-149"
-    assert manifest["planned_range"] == "150-151"
+    assert manifest["completed_range"] == "113-150"
+    assert manifest["planned_range"] == "151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -161,7 +161,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 150-151 are planned" in readme
+    assert "Task 151 is planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -725,7 +725,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-149 done",
+        "Tasks 113-150 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -1171,7 +1171,7 @@ def test_v04_review_packet_generator_is_documented_and_secret_free(
 
     assert result == 0
     assert payload["packet_version"] == "v0.4-review-candidate"
-    assert payload["v04_milestone"]["completed_range"] == "113-149"
+    assert payload["v04_milestone"]["completed_range"] == "113-150"
     assert "dev-admin-token-change-me" not in output
     assert "make v04-review-packet" in readme
     assert "v04-review-packet:" in makefile
@@ -1180,6 +1180,34 @@ def test_v04_review_packet_generator_is_documented_and_secret_free(
     assert "Task 149 packet generator added" in matrix
     assert "docs/codex/v0.4-review-packet-generator.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.4-review-packet-generator.md" in docs_site
+
+
+def test_external_review_intake_v2_is_documented_and_wired() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    doc = Path("docs/codex/external-review-intake-v2.md").read_text(encoding="utf-8")
+    original = Path("docs/codex/external-review-intake-and-closure.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "make reviewer-findings-check",
+        "make review-findings-summary",
+        "EXT-###",
+        "Internal AI/subagent review cannot close external rows",
+        "boundary decision",
+    ]:
+        assert required in doc
+    assert "external-review-intake-v2.md" in readme
+    assert "external-review-intake-v2.md" in original
+    assert "150 - External review intake and closure workflow v2 | Done" in backlog
+    assert "Task 150 intake workflow updated" in matrix
+    assert "docs/codex/external-review-intake-v2.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/external-review-intake-v2.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
