@@ -112,6 +112,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | v0.5 external review prompt | Task 178 adds the v0.5 external review prompt and requested response shape | pending external review | none | pending | `make docs-site`; `make release-check` | prompt requests review but does not close it | external_pending |
 | v0.5 boundary decision draft | Task 179 records go for external handoff and no-go for capability expansion | pending external review | none | pending | `make v05-boundary-decision-draft-check`; `make release-check` | draft does not approve capability expansion or broader distribution | external_pending |
 | v0.5 handoff packet | Task 180 records go/no-go seed and final v0.5 handoff commands | pending external review | none | pending | `make v05-handoff-packet-check`; `make v05-review-candidate` | packet is ready for external review but does not close it | external_pending |
+| v0.6 boundary charter | Task 181 freezes v0.6 as external-review execution and closure without capability expansion | pending external review | none | pending | `make release-check`; `make v05-review-candidate`; `make capability-decision-report` | charter starts review execution but does not close external rows or approve new powers | external_pending |
 
 ## v2 Update Rules
 

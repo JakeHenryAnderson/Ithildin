@@ -64,6 +64,8 @@ externally closed.
 - [v0.5 Boundary Decision Draft](v0.5-boundary-decision-draft.md)
 - [v0.5 Handoff Packet](v0.5-handoff-packet.md)
 - [v0.6 Preflight Transition Note](v0.6-preflight-transition.md)
+- [v0.6 Boundary Charter](v0.6-boundary-charter.md)
+- [v0.6 Milestone Manifest](v0.6-milestone-manifest.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [No-New-Powers Guardrail v2](no-new-powers-guardrail.md)
@@ -90,8 +92,8 @@ externally closed.
 
 If documents appear to conflict, use this order:
 
-1. v0.5 handoff packet, v0.6 preflight transition note, and the upcoming v0.6 boundary charter for
-   current handoff scope.
+1. v0.6 boundary charter, v0.6 milestone manifest, v0.5 handoff packet, and v0.6 preflight
+   transition note for current handoff scope.
 2. Threat model and executor contracts for security claims.
 3. Evidence contracts and release-evidence schema for machine-readable fields.
 4. Source-review closure matrix for what is reviewed, pending, accepted, or deferred.

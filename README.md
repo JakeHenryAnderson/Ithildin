@@ -250,6 +250,9 @@ The v0.5 handoff packet is in
 [docs/codex/v0.5-handoff-packet.md](docs/codex/v0.5-handoff-packet.md).
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
+The v0.6 external-review execution charter is in
+[docs/codex/v0.6-boundary-charter.md](docs/codex/v0.6-boundary-charter.md), with the milestone
+manifest in [docs/codex/v0.6-milestone-manifest.md](docs/codex/v0.6-milestone-manifest.md).
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in

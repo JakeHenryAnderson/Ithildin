@@ -2178,6 +2178,54 @@ def test_v06_preflight_transition_note_is_wired() -> None:
     assert "docs/codex/v0.6-preflight-transition.md" in docs_site
 
 
+def test_v06_boundary_charter_and_manifest_are_wired() -> None:
+    charter = Path("docs/codex/v0.6-boundary-charter.md").read_text(encoding="utf-8")
+    manifest_doc = Path("docs/codex/v0.6-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    manifest = json.loads(
+        Path("docs/codex/v0.6-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    task_ids = [milestone["id"] for milestone in manifest["milestones"]]
+    assert task_ids == [f"{index:03d}" for index in range(181, 216)]
+    assert manifest["runtime_boundary"] == "v0.1 local-preview"
+    assert manifest["completed_range"] == "181"
+    assert manifest["planned_range"] == "182-215"
+    assert manifest["capability_expansion_allowed"] is False
+    assert manifest["broader_distribution_allowed"] is False
+    for required in [
+        "v0.6 is an external/source-review execution and closure wave",
+        "No v0.6 task may add or approve",
+        "external handoff: go",
+        "capability expansion: no-go",
+        "broader public/security-product positioning: no-go",
+        "critical/high external finding appears",
+    ]:
+        assert required in charter
+    assert "No task in this manifest may add new governed tool powers" in manifest_doc
+    assert "181 - v0.6 boundary charter and freeze | Done" in backlog
+    assert "Task 181 freezes v0.6" in matrix
+    assert "v0.6-boundary-charter.md" in readme
+    assert "v0.6-milestone-manifest.md" in readme
+    assert "v0.6 Boundary Charter" in index
+    for doc in [
+        "docs/codex/v0.6-boundary-charter.md",
+        "docs/codex/v0.6-milestone-manifest.md",
+        "docs/codex/v0.6-milestone-manifest.json",
+    ]:
+        assert doc in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-boundary-charter.md" in docs_site
+    assert "docs/codex/v0.6-milestone-manifest.md" in docs_site
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(
         encoding="utf-8"

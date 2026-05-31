@@ -198,6 +198,20 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 179 - v0.5 boundary decision draft | Done | [v0.5-boundary-decision-draft.md](v0.5-boundary-decision-draft.md), `make v05-boundary-decision-draft-check` |
 | 180 - v0.5 handoff packet and go/no-go seed | Done | [v0.5-handoff-packet.md](v0.5-handoff-packet.md), `make v05-handoff-packet-check` |
 
+## v0.6 External Review Execution and Closure Track
+
+These tasks are planned in [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md). They execute
+external/source review closure for the current local-preview boundary. They are not capability
+expansion tasks.
+
+| Task | Status | Spec |
+| --- | --- | --- |
+| 181 - v0.6 boundary charter and freeze | Done | [v0.6-boundary-charter.md](v0.6-boundary-charter.md), [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md) |
+| 182 - External reviewer assignment matrix | Planned | Assign all external-pending closure rows to review paths. |
+| 183 - External review packet dispatch set | Planned | Generate focused source-review packets for each review area. |
+| 184 - External response normalization | Planned | Normalize external responses into structured finding drafts. |
+| 185-215 - v0.6 review execution, closure, decisions, and handoff | Planned | See [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md). |
+
 ## Future Candidate Track
 
 | Area | Status | Notes |
