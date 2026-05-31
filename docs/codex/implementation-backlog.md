@@ -159,7 +159,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 148 - v0.4 threat model refresh | Done | [v0.4-threat-model-refresh.md](v0.4-threat-model-refresh.md), accepted local-preview risks |
 | 149 - v0.4 review packet generator | Done | [v0.4-review-packet-generator.md](v0.4-review-packet-generator.md), `make v04-review-packet` |
 | 150 - External review intake and closure workflow v2 | Done | [external-review-intake-v2.md](external-review-intake-v2.md), closure guardrails |
-| 151 - v0.4 external review packet and capability decision seed | Planned | External packet and decision seed |
+| 151 - v0.4 external review packet and capability decision seed | Done | [v0.4-review-packet.md](v0.4-review-packet.md), [v0.4-capability-decision-seed.md](v0.4-capability-decision-seed.md) |
 
 ## Future Candidate Track
 

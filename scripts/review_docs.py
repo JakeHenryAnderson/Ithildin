@@ -63,6 +63,9 @@ REVIEW_DOCS = [
     "docs/codex/threat-model-and-non-goals.md",
     "docs/codex/v0.4-threat-model-refresh.md",
     "docs/codex/v0.4-review-packet-generator.md",
+    "docs/codex/v0.4-review-packet.md",
+    "docs/codex/v0.4-external-review-prompt.md",
+    "docs/codex/v0.4-capability-decision-seed.md",
     "docs/codex/local-preview-release.md",
 ]
 

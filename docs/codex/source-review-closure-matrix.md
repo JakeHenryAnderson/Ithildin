@@ -82,6 +82,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Threat model refresh | v0.4 Task 148 local-preview accepted risks refreshed | pending external review | none | pending | `make release-guardrails`; `make release-check` | accepted risks do not permit capability expansion | external_pending |
 | v0.4 packet generator | v0.4 Task 149 packet generator added | pending external review | none | pending | `make v04-review-packet`; `make review-candidate` | generated packets are handoff summaries, not external review closure | external_pending |
 | External review intake v2 | v0.4 Task 150 intake workflow updated | pending external review | none | pending | `make reviewer-findings-check`; `make release-check` | intake workflow records external findings but does not close them automatically | external_pending |
+| v0.4 external packet | v0.4 Task 151 external packet and capability seed added | pending external review | none | pending | `make review-candidate`; `make release-check` | packet completion does not approve capability expansion | external_pending |
 
 ## v2 Update Rules
 

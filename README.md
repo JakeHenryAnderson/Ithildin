@@ -206,6 +206,10 @@ Packet-to-packet handoff comparisons are documented in
 The current external review handoff starts with
 [docs/codex/v0.3-review-packet.md](docs/codex/v0.3-review-packet.md) and
 [docs/codex/v0.3-external-review-prompt.md](docs/codex/v0.3-external-review-prompt.md).
+The v0.4 review handoff starts with
+[docs/codex/v0.4-review-packet.md](docs/codex/v0.4-review-packet.md),
+[docs/codex/v0.4-external-review-prompt.md](docs/codex/v0.4-external-review-prompt.md), and
+[docs/codex/v0.4-capability-decision-seed.md](docs/codex/v0.4-capability-decision-seed.md).
 External review findings should be processed through
 [docs/codex/external-review-intake-and-closure.md](docs/codex/external-review-intake-and-closure.md)
 and [docs/codex/external-review-intake-v2.md](docs/codex/external-review-intake-v2.md).
@@ -220,9 +224,8 @@ The review-document map is in
 The v0.4 threat-model refresh is in
 [docs/codex/v0.4-threat-model-refresh.md](docs/codex/v0.4-threat-model-refresh.md).
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-150 are
-complete; Task 151 is planned and should be externally reviewed before implementation drift or
-capability expansion.
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-151 are
+complete and should be externally reviewed before implementation drift or capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release
 evidence/schema validation, packet diffing, guardrails, packet redaction scanning, test

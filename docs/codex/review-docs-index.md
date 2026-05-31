@@ -51,6 +51,9 @@ externally closed.
 - [MCP Inspector Recipes](mcp-inspector-recipes.md)
 - [v0.3 Review Packet](v0.3-review-packet.md)
 - [v0.3 External Review Prompt](v0.3-external-review-prompt.md)
+- [v0.4 Review Packet](v0.4-review-packet.md)
+- [v0.4 External Review Prompt](v0.4-external-review-prompt.md)
+- [v0.4 Capability Decision Seed](v0.4-capability-decision-seed.md)
 
 ## Reading Rule
 
