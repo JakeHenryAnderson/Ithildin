@@ -112,6 +112,7 @@ The local Docker Compose demo runs the API and review console with a seeded work
 - `make compose-up` - build and start the local API/UI stack.
 - `make compose-smoke` - check API health, authenticated tool listing, and UI reachability.
 - `make demo-flow` - run governed reads, redaction, patch proposal, approval, apply, and audit checks.
+- `make demo-scenario-pack` - validate the reviewer-facing demo scenario map.
 - `make compose-down` - stop the stack.
 
 Copy `.env.example` to `.env` and set a unique `ITHILDIN_ADMIN_TOKEN` for normal use. Use
@@ -213,8 +214,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-145 are
-complete; Tasks 146-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-146 are
+complete; Tasks 147-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

@@ -15,8 +15,10 @@ cd /Users/jake/Documents/Codex/Ithildin
 Run `make review-candidate` to execute the full local handoff sequence. It runs `release-check`,
 `filesystem-contract-check`, `signed-evidence-demo`, `negative-review-transcripts`,
 `review-packet-bundle`, `review-packet-consolidated`, packet redaction scan, and `docs-site`, then
-prints the consolidated packet path. `release-check` includes `make adversarial-corpus-check` and
-`make resource-limit-check`.
+prints the consolidated packet path. `release-check` includes `make adversarial-corpus-check`,
+`make resource-limit-check`, and `make demo-scenario-pack`. Use
+[demo-scenario-pack-v2.md](demo-scenario-pack-v2.md) as the concise scenario map for positive,
+negative, signing, filesystem, and review-packet demos.
 
 Run `make internal-review-packet` when you want v2 local AI/subagent source-review prompts under
 `var/review-packets/v0.3/internal-ai-review-packet/`. That packet is internal pressure-test

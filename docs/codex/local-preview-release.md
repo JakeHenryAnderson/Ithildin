@@ -32,17 +32,18 @@ The current go/no-go posture is recorded in
 5. Optional: run `make release-evidence` and validate saved evidence with
    `make release-evidence-validate FILE=release-evidence.json`.
 6. Run `make demo-seed`, `make compose-up`, `make compose-smoke`, and `make demo-flow`.
-7. Open `http://127.0.0.1:5173` and use the configured admin token.
-8. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
-9. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
-10. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
+7. Optional: run `make demo-scenario-pack` to validate the reviewer-facing scenario map.
+8. Open `http://127.0.0.1:5173` and use the configured admin token.
+9. Launch MCP from a host MCP client with `uv run python -m ithildin_mcp_server`.
+10. Use [MCP Client Examples](mcp-client-examples.md) for copy-paste stdio client snippets.
+11. Use [MCP Inspector Recipes](mcp-inspector-recipes.md) for local `tools/list`, `tools/call`,
    approval-required, denial, and audit verification flows.
-11. Optional: run `make review-candidate` before external review handoff.
-12. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
-13. Optional: run `make audit-keygen` to enable signed audit exports.
-14. Optional: run `make audit-diagnostics` to explain local audit verification state.
-15. Optional: run `make filesystem-contract-check` to record local filesystem capability evidence.
-16. Run `make docs-site` to build local handoff docs under ignored `site/`.
+12. Optional: run `make review-candidate` before external review handoff.
+13. Optional: run `make ollama-smoke` or `make local-model-demo` for host-side local model wiring.
+14. Optional: run `make audit-keygen` to enable signed audit exports.
+15. Optional: run `make audit-diagnostics` to explain local audit verification state.
+16. Optional: run `make filesystem-contract-check` to record local filesystem capability evidence.
+17. Run `make docs-site` to build local handoff docs under ignored `site/`.
 
 ## Trust Inputs
 
@@ -76,6 +77,8 @@ The current go/no-go posture is recorded in
   [Registry Fail-Closed Suite](registry-fail-closed-suite.md).
 - Release guardrail coverage is summarized in
   [Release Guardrail Expansion](release-guardrail-expansion.md).
+- Reviewer-facing demo scenarios are summarized in
+  [Demo Scenario Pack v2](demo-scenario-pack-v2.md).
 - OPA mode is optional. When `ITHILDIN_POLICY_ENGINE=opa`, startup verifies
   `policies/opa/bundle.lock.json` and reports the verified bundle hash through policy/system
   status.
