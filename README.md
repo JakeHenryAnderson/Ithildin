@@ -196,6 +196,10 @@ External review findings should be processed through
 [docs/codex/external-review-intake-and-closure.md](docs/codex/external-review-intake-and-closure.md).
 The current boundary decision is recorded in
 [docs/codex/v0.3-boundary-decision.md](docs/codex/v0.3-boundary-decision.md).
+The v0.4 work charter is recorded in
+[docs/codex/v0.4-boundary-charter.md](docs/codex/v0.4-boundary-charter.md); it keeps the next wave
+focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
+new governed tool powers.
 The executor contract set for external/source review is indexed in
 [docs/codex/executor-contract-set.md](docs/codex/executor-contract-set.md).
 Manifest and manifest-lock fail-closed validation coverage is summarized in
@@ -232,6 +236,7 @@ handoff, or [docs/codex/local-preview-release.md](docs/codex/local-preview-relea
 operator setup. Then read
 [docs/codex/v0.2-external-review-prompt.md](docs/codex/v0.2-external-review-prompt.md),
 [docs/codex/v0.3-milestone-manifest.md](docs/codex/v0.3-milestone-manifest.md),
+[docs/codex/v0.4-boundary-charter.md](docs/codex/v0.4-boundary-charter.md),
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md),
 [docs/codex/source-review-closure-matrix.md](docs/codex/source-review-closure-matrix.md),
 [docs/codex/internal-source-review-pass-1.md](docs/codex/internal-source-review-pass-1.md),

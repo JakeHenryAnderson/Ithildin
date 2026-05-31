@@ -113,6 +113,7 @@
 | 110 - External review packet v3 | Done | [v0.3-review-packet.md](v0.3-review-packet.md), [v0.3-external-review-prompt.md](v0.3-external-review-prompt.md) |
 | 111 - External review intake and closure | Done | [external-review-intake-and-closure.md](external-review-intake-and-closure.md), `make reviewer-findings-check` |
 | 112 - v0.3 boundary decision memo | Done | [v0.3-boundary-decision.md](v0.3-boundary-decision.md) |
+| 113 - v0.4 boundary charter | Done | [v0.4-boundary-charter.md](v0.4-boundary-charter.md) |
 
 ## Future Candidate Track
 
