@@ -21,6 +21,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.3-review-findings-summary.md",
     "docs/codex/v0.3-milestone-manifest.md",
     "docs/codex/v0.4-milestone-manifest.md",
+    "docs/codex/v0.4-gating-overlay.md",
     "docs/codex/patch-apply-state-machine.md",
     "docs/codex/executor-contract-set.md",
     "docs/codex/http-executor-contract.md",

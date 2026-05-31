@@ -138,16 +138,81 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
     assert manifest["completed_range"] == "113-122"
     assert manifest["planned_range"] == "123-151"
+    assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "new powerful tool class" in manifest["external_review_required_before"]
+    assert "Capability Expansion Gate" in {
+        gate["name"] for gate in manifest["named_gates"]
+    }
+    assert manifest["waves"][1]["tasks"] == [
+        "123",
+        "124",
+        "125",
+        "126",
+        "127",
+        "128",
+    ]
     assert "Tasks 123-151" in manifest_doc
     assert "planned only" in manifest_doc
+    assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
     assert "Tasks 123-151 are planned" in readme
-    assert "123 - v0.4 roadmap freeze | Planned" in backlog
+    assert "123 - v0.4 gating overlay | Planned" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
+    assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.4-gating-overlay.md" in review_docs.REVIEW_DOCS
+
+
+def test_v04_planned_milestones_have_blocker_metadata() -> None:
+    manifest = json.loads(
+        Path("docs/codex/v0.4-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    required_keys = {
+        "blocks_capability_expansion",
+        "blocks_broader_distribution",
+        "blocks_external_handoff",
+        "requires_external_review_before_closure",
+        "required_commands",
+        "risk_surface",
+        "deferred_boundary_must_remain_unchanged",
+    }
+    valid_blocker_values = {"yes", "no", "conditional"}
+    planned = [
+        milestone
+        for milestone in manifest["milestones"]
+        if 123 <= int(milestone["id"]) <= 151
+    ]
+
+    assert len(planned) == 29
+    for milestone in planned:
+        assert required_keys <= set(milestone)
+        assert milestone["blocks_capability_expansion"] in valid_blocker_values
+        assert milestone["blocks_broader_distribution"] in valid_blocker_values
+        assert milestone["blocks_external_handoff"] in valid_blocker_values
+        assert isinstance(milestone["requires_external_review_before_closure"], bool)
+        assert isinstance(milestone["required_commands"], list)
+        assert milestone["required_commands"]
+        assert isinstance(milestone["risk_surface"], list)
+        assert milestone["risk_surface"]
+        assert milestone["deferred_boundary_must_remain_unchanged"] is True
+
+
+def test_v04_gating_overlay_documents_required_stop_gates() -> None:
+    overlay = Path("docs/codex/v0.4-gating-overlay.md").read_text(encoding="utf-8")
+
+    for required in [
+        "Capability Expansion Gate",
+        "Tool-Surface Invariant Gate",
+        "Evidence-Confusion Gate",
+        "UI/Admin No-Mutation Gate",
+        "External-Review Closure Gate",
+        "make review-packet-diff OLD=<prior checkpoint> NEW=<current checkpoint>",
+        "tool count remains 10",
+        "Task 151 creates a review packet. It does not unlock v0.5",
+    ]:
+        assert required in overlay
 
 
 def test_negative_review_recipes_reference_existing_tools_and_commands() -> None:

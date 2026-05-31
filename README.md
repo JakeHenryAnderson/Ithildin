@@ -207,6 +207,10 @@ The v0.4 milestone roadmap is recorded in
 [docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-122 are
 complete; Tasks 123-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
+The hardened v0.4 process overlay is recorded in
+[docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release
+evidence/schema validation, packet diffing, guardrails, packet redaction scanning, test
+determinism, and explicit capability-expansion gates before deeper v0.4 hardening work.
 Executed review-run manifests are documented in
 [docs/codex/review-run-manifest-schema.md](docs/codex/review-run-manifest-schema.md) and validated
 with `make review-run-manifest-check`.

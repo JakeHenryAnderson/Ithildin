@@ -131,35 +131,35 @@ implemented until each receives its own checkpoint commit and gate output.
 
 | Task | Status | Spec |
 | --- | --- | --- |
-| 123 - v0.4 roadmap freeze | Planned | [v0.4-milestone-manifest.md](v0.4-milestone-manifest.md) |
-| 124 - v0.4 review packet draft | Planned | Review packet update |
-| 125 - v0.4 external review prompt | Planned | External prompt update |
-| 126 - v0.4 review-candidate gate refresh | Planned | Review-candidate output refresh |
-| 127 - External finding intake pass v0.4 | Planned | External/source finding intake |
-| 128 - Closure matrix source-review rows v4 | Planned | Closure matrix update |
-| 129 - Finding reproduction harness | Planned | Reproduction scripts/tests |
-| 130 - Accepted-risk register | Planned | Accepted/deferred risk register |
-| 131 - Blocking-finding stop gate | Planned | Release/review guardrail |
-| 132 - Source-review closure packet | Planned | Closure packet |
-| 133 - Patch apply recovery verification suite | Planned | Patch recovery tests |
-| 134 - Patch apply concurrent/fault stress suite | Planned | Patch stress tests |
-| 135 - Filesystem race corpus v3 | Planned | Filesystem adversarial corpus |
-| 136 - Filesystem platform contract review notes | Planned | Platform review notes |
-| 137 - HTTP resolver transport adversarial suite | Planned | HTTP transport tests |
-| 138 - HTTP safe-error and audit evidence suite | Planned | HTTP evidence tests |
-| 139 - Executor assurance subagent pass | Planned | Internal adversarial review |
-| 140 - Evidence contract compatibility policy | Planned | Evidence policy docs/tests |
-| 141 - Audit and signed-export substitution suite v2 | Planned | Signed audit tests |
-| 142 - Manifest lock signature review suite v2 | Planned | Signed manifest tests |
-| 143 - Policy evidence snapshot suite | Planned | Policy evidence tests |
-| 144 - Review-console evidence regression suite | Planned | UI/API evidence checks |
-| 145 - Operator recovery runbooks | Planned | Operator docs |
-| 146 - Docs claim-lint expansion v2 | Planned | Docs guardrails |
-| 147 - v0.4 release evidence packet | Planned | Release packet |
-| 148 - v0.4 consolidated review bundle | Planned | Consolidated packet |
-| 149 - External review handoff checkpoint | Planned | External handoff |
-| 150 - v0.4 boundary decision memo | Planned | Boundary decision |
-| 151 - v0.5 planning seed | Planned | Next planning seed |
+| 123 - v0.4 gating overlay | Planned | [v0.4-gating-overlay.md](v0.4-gating-overlay.md), [v0.4-milestone-manifest.md](v0.4-milestone-manifest.md) |
+| 124 - Release evidence schema gate v2 | Planned | Release evidence/schema gate |
+| 125 - Review packet diff gate v2 | Planned | Packet diff gate |
+| 126 - Release guardrail expansion v2 | Planned | Release/documentation guardrails |
+| 127 - Secrets hygiene and packet redaction scanner | Planned | Packet redaction scanner |
+| 128 - Test isolation and determinism gate | Planned | Deterministic test gate |
+| 129 - Signed-evidence verifier hardening | Planned | Signed evidence verification |
+| 130 - Audit integrity adversarial suite v2 | Planned | Audit adversarial tests |
+| 131 - Evidence contract versioning v2 | Planned | Evidence contract versioning |
+| 132 - Local audit retention and export lifecycle diagnostics | Planned | Audit lifecycle diagnostics |
+| 133 - Policy preview/runtime parity harness v2 | Planned | Policy parity harness |
+| 134 - OPA boundary decision | Planned | OPA boundary update |
+| 135 - Registry fail-closed exhaustive suite | Planned | Registry fail-closed coverage |
+| 136 - Manifest-change review workflow | Planned | Manifest change review |
+| 137 - MCP ingress bypass audit v2 | Planned | MCP ingress audit |
+| 138 - Local auth/session hardening within current boundary | Planned | Local auth posture |
+| 139 - Review-console approval UX v3 | Planned | Approval evidence UX |
+| 140 - Review-console failure and unauthorized states | Planned | Console failure states |
+| 141 - Negative transcript expansion v2 | Planned | Negative transcripts |
+| 142 - Adversarial corpus framework | Planned | Shared corpus framework |
+| 143 - Performance and resource-limit sanity | Planned | Resource limits |
+| 144 - CI and platform planning without broad claims | Planned | Platform/CI claims |
+| 145 - Redaction evidence and leak-boundary clarity | Planned | Redaction boundary |
+| 146 - Demo scenario pack v2 | Planned | Demo scenario evidence |
+| 147 - Documentation information architecture cleanup | Planned | Documentation structure |
+| 148 - v0.4 threat model refresh | Planned | Threat model refresh |
+| 149 - v0.4 review packet generator | Planned | Review packet generator |
+| 150 - External review intake and closure workflow v2 | Planned | External intake |
+| 151 - v0.4 external review packet and capability decision seed | Planned | External packet and decision seed |
 
 ## Future Candidate Track
 
