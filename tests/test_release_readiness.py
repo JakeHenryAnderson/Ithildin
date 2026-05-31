@@ -16,6 +16,7 @@ from scripts import (
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
+    external_response_normalize,
     external_response_template_check,
     external_review_closure_gate,
     external_review_dispatch_packets,
@@ -116,26 +117,19 @@ def test_release_packet_review_docs_exist() -> None:
 
 
 def test_v03_milestone_manifest_is_linked_and_complete() -> None:
-    manifest_doc = Path("docs/codex/v0.3-milestone-manifest.md").read_text(
-        encoding="utf-8"
-    )
+    manifest_doc = Path("docs/codex/v0.3-milestone-manifest.md").read_text(encoding="utf-8")
     manifest = json.loads(
         Path("docs/codex/v0.3-milestone-manifest.json").read_text(encoding="utf-8")
     )
     readme = Path("README.md").read_text(encoding="utf-8")
-    planning_seed = Path("docs/codex/v0.2-planning-seed.md").read_text(
-        encoding="utf-8"
-    )
+    planning_seed = Path("docs/codex/v0.2-planning-seed.md").read_text(encoding="utf-8")
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(85, 113)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "trust-boundary regression" in manifest["stop_conditions"]
-    assert (
-        "external source-review closure"
-        in manifest["subagent_policy"]["not_authorized_for"]
-    )
+    assert "external source-review closure" in manifest["subagent_policy"]["not_authorized_for"]
     assert "v0.3-milestone-manifest.json" in manifest_doc
     assert "v0.3-milestone-manifest.md" in readme
     assert "v0.3-milestone-manifest.md" in planning_seed
@@ -143,17 +137,13 @@ def test_v03_milestone_manifest_is_linked_and_complete() -> None:
 
 
 def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
-    manifest_doc = Path("docs/codex/v0.4-milestone-manifest.md").read_text(
-        encoding="utf-8"
-    )
+    manifest_doc = Path("docs/codex/v0.4-milestone-manifest.md").read_text(encoding="utf-8")
     manifest = json.loads(
         Path("docs/codex/v0.4-milestone-manifest.json").read_text(encoding="utf-8")
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.3-review-packet.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
@@ -163,9 +153,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "new powerful tool class" in manifest["external_review_required_before"]
-    assert "Capability Expansion Gate" in {
-        gate["name"] for gate in manifest["named_gates"]
-    }
+    assert "Capability Expansion Gate" in {gate["name"] for gate in manifest["named_gates"]}
     assert manifest["waves"][1]["tasks"] == [
         "123",
         "124",
@@ -214,9 +202,7 @@ def test_v04_planned_milestones_have_blocker_metadata() -> None:
     }
     valid_blocker_values = {"yes", "no", "conditional"}
     planned = [
-        milestone
-        for milestone in manifest["milestones"]
-        if 123 <= int(milestone["id"]) <= 151
+        milestone for milestone in manifest["milestones"] if 123 <= int(milestone["id"]) <= 151
     ]
 
     assert len(planned) == 29
@@ -271,9 +257,7 @@ def test_negative_review_recipes_reference_existing_tools_and_commands() -> None
 
 
 def test_reviewer_reproduction_map_references_implemented_targets() -> None:
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     for target in [
         "release-check",
@@ -334,11 +318,11 @@ def test_consolidated_review_packet_generation(
         "filesystem-contract-check.txt",
         "release-evidence.json",
         "release-packet.md",
-            "release-packet.json",
-            "review-doc-hashes.json",
-            "packet-redaction-scan.txt",
-            "artifact-hashes.json",
-            "git-summary.txt",
+        "release-packet.json",
+        "review-doc-hashes.json",
+        "packet-redaction-scan.txt",
+        "artifact-hashes.json",
+        "git-summary.txt",
     ]:
         bundle_dir.joinpath(path).write_text(f"# {path}\n", encoding="utf-8")
     for path in [
@@ -385,8 +369,7 @@ def test_consolidated_review_packet_generation(
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_text(f"# {source.stem}\n", encoding="utf-8")
     demo_summary = (
-        repo_root
-        / "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
+        repo_root / "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
     )
     demo_summary.parent.mkdir(parents=True)
     demo_summary.write_text("# demo\n", encoding="utf-8")
@@ -407,9 +390,7 @@ def test_consolidated_review_packet_generation(
     for filename in consolidate_review_packet.ATTACHMENT_FILES:
         assert output_dir.joinpath(filename).exists()
     hashes = json.loads(
-        output_dir.joinpath("consolidated-attachment-hashes.json").read_text(
-            encoding="utf-8"
-        )
+        output_dir.joinpath("consolidated-attachment-hashes.json").read_text(encoding="utf-8")
     )
     hash_paths = {entry["path"] for entry in hashes}
     assert hash_paths == set(consolidate_review_packet.ATTACHMENT_FILES)
@@ -417,9 +398,9 @@ def test_consolidated_review_packet_generation(
     assert "Negative Review Transcripts" in output_dir.joinpath(
         "04_REPRODUCTION_SECURITY_AND_NEGATIVE_RECIPES.md"
     ).read_text(encoding="utf-8")
-    assert "v0.5 Review-Closure Packet" in output_dir.joinpath(
-        "00_ATTACHMENT_INDEX.md"
-    ).read_text(encoding="utf-8")
+    assert "v0.5 Review-Closure Packet" in output_dir.joinpath("00_ATTACHMENT_INDEX.md").read_text(
+        encoding="utf-8"
+    )
     assert "v0.5 Roadmap From v0.4 Review" in output_dir.joinpath(
         "02_REVIEW_PACKET_AND_RESPONSE.md"
     ).read_text(encoding="utf-8")
@@ -449,9 +430,7 @@ def test_source_review_closure_matrix_covers_required_areas() -> None:
     matrix_path = Path("docs/codex/source-review-closure-matrix.md")
     matrix = matrix_path.read_text(encoding="utf-8")
     review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
-    prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(
-        encoding="utf-8"
-    )
+    prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(encoding="utf-8")
 
     for area in [
         "fs.read",
@@ -479,9 +458,7 @@ def test_source_review_closure_matrix_covers_required_areas() -> None:
 
 
 def test_source_review_closure_matrix_v2_separates_review_layers() -> None:
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for column in [
         "Internal review",
@@ -505,9 +482,7 @@ def test_internal_source_review_pass_is_linked_and_validated() -> None:
     review = review_path.read_text(encoding="utf-8")
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
 
     for area in [
         "`fs.patch.apply` Approval Binding And Atomic Apply",
@@ -534,9 +509,7 @@ def test_filesystem_executor_contract_is_linked_and_validated() -> None:
     contract = Path("docs/codex/filesystem-executor-contract.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     local_preview = Path("docs/codex/local-preview-release.md").read_text(encoding="utf-8")
 
     for required in [
@@ -553,13 +526,9 @@ def test_filesystem_executor_contract_is_linked_and_validated() -> None:
 
 
 def test_patch_apply_state_machine_contract_is_linked_and_validated() -> None:
-    contract = Path("docs/codex/patch-apply-state-machine.md").read_text(
-        encoding="utf-8"
-    )
+    contract = Path("docs/codex/patch-apply-state-machine.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "approved",
@@ -582,9 +551,7 @@ def test_patch_apply_state_machine_contract_is_linked_and_validated() -> None:
 def test_http_executor_contract_is_linked_and_validated() -> None:
     contract = Path("docs/codex/http-executor-contract.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "HTTP Fetch Executor Contract v2",
@@ -615,16 +582,10 @@ def test_http_executor_contract_is_linked_and_validated() -> None:
 def test_executor_contract_set_indexes_review_surfaces() -> None:
     contract = Path("docs/codex/executor-contract-set.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "Filesystem read",
@@ -652,16 +613,10 @@ def test_executor_contract_set_indexes_review_surfaces() -> None:
 def test_manifest_validation_suite_is_documented() -> None:
     doc = Path("docs/codex/manifest-validation-suite.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "invalid YAML",
@@ -683,16 +638,10 @@ def test_manifest_validation_suite_is_documented() -> None:
 def test_registry_fail_closed_suite_is_documented() -> None:
     doc = Path("docs/codex/registry-fail-closed-suite.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "invalid YAML",
@@ -712,20 +661,12 @@ def test_registry_fail_closed_suite_is_documented() -> None:
 
 
 def test_audit_integrity_adversarial_suite_is_documented() -> None:
-    doc = Path("docs/codex/audit-integrity-adversarial-suite.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/audit-integrity-adversarial-suite.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "invalid payload JSON rows",
@@ -746,16 +687,10 @@ def test_audit_integrity_adversarial_suite_is_documented() -> None:
 def test_release_guardrail_expansion_is_documented_and_wired() -> None:
     doc = Path("docs/codex/release-guardrail-expansion.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "required review/docs-site documents",
@@ -786,9 +721,7 @@ def test_evidence_contracts_define_versioning_policy() -> None:
     contract_index = json.loads(
         Path("docs/codex/evidence-contracts-v2.json").read_text(encoding="utf-8")
     )
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "Contract Versioning",
@@ -824,9 +757,7 @@ def test_policy_parity_harness_is_documented_and_gated() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/policy-parity-harness.md").read_text(encoding="utf-8")
 
     assert "policy-parity:" in makefile
@@ -843,9 +774,7 @@ def test_opa_parity_decision_keeps_yaml_canonical_for_gates() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     release = Path("docs/codex/local-preview-release.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/opa-parity-decision.md").read_text(encoding="utf-8")
 
     for required in [
@@ -870,9 +799,7 @@ def test_opa_parity_decision_keeps_yaml_canonical_for_gates() -> None:
 def test_mcp_ingress_bypass_audit_is_documented() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/mcp-ingress-bypass-audit.md").read_text(encoding="utf-8")
 
     for required in [
@@ -897,9 +824,7 @@ def test_mcp_ingress_bypass_audit_is_documented() -> None:
 def test_local_auth_boundary_is_documented() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/local-auth-boundary.md").read_text(encoding="utf-8")
 
     for required in [
@@ -920,9 +845,7 @@ def test_review_console_assurance_is_documented() -> None:
     app = Path("apps/ui/src/App.tsx").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/review-console-assurance.md").read_text(encoding="utf-8")
 
     for required in [
@@ -968,9 +891,7 @@ def test_review_console_assurance_is_documented() -> None:
 
 def test_negative_transcript_expansion_is_documented() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     recipes = Path("docs/codex/negative-review-recipes.md").read_text(encoding="utf-8")
 
     for required in [
@@ -991,13 +912,9 @@ def test_negative_transcript_expansion_is_documented() -> None:
 def test_adversarial_corpus_framework_is_documented() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/adversarial-corpus-framework.md").read_text(encoding="utf-8")
-    manifest = Path("tests/fixtures/adversarial_corpus_manifest.json").read_text(
-        encoding="utf-8"
-    )
+    manifest = Path("tests/fixtures/adversarial_corpus_manifest.json").read_text(encoding="utf-8")
 
     for required in [
         "make adversarial-corpus-check",
@@ -1018,9 +935,7 @@ def test_adversarial_corpus_framework_is_documented() -> None:
 def test_resource_limit_sanity_is_documented() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/resource-limit-sanity.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
 
@@ -1038,8 +953,7 @@ def test_resource_limit_sanity_is_documented() -> None:
     assert "resource-limit-check:" in makefile
     assert (
         "adversarial-corpus-check resource-limit-check demo-scenario-pack "
-        "evidence-contracts-check"
-        in makefile
+        "evidence-contracts-check" in makefile
     )
     assert "docs/codex/resource-limit-sanity.md" in review_docs.REVIEW_DOCS
 
@@ -1047,9 +961,7 @@ def test_resource_limit_sanity_is_documented() -> None:
 def test_ci_platform_plan_is_documented_without_broad_claims() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/ci-platform-plan.md").read_text(encoding="utf-8")
 
     for required in [
@@ -1070,9 +982,7 @@ def test_ci_platform_plan_is_documented_without_broad_claims() -> None:
 def test_redaction_evidence_boundary_is_documented() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/redaction-evidence-boundary.md").read_text(encoding="utf-8")
     evidence = Path("docs/codex/evidence-contracts.md").read_text(encoding="utf-8")
 
@@ -1096,13 +1006,9 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/demo-scenario-pack-v2.md").read_text(encoding="utf-8")
-    local_preview = Path("docs/codex/local-preview-release.md").read_text(
-        encoding="utf-8"
-    )
+    local_preview = Path("docs/codex/local-preview-release.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1127,16 +1033,10 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
 def test_review_docs_index_is_documented_and_wired() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
-    local_preview = Path("docs/codex/local-preview-release.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    local_preview = Path("docs/codex/local-preview-release.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1161,13 +1061,9 @@ def test_review_docs_index_is_documented_and_wired() -> None:
 def test_v04_threat_model_refresh_is_documented_and_wired() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/v0.4-threat-model-refresh.md").read_text(encoding="utf-8")
-    threat_model = Path("docs/codex/threat-model-and-non-goals.md").read_text(
-        encoding="utf-8"
-    )
+    threat_model = Path("docs/codex/threat-model-and-non-goals.md").read_text(encoding="utf-8")
     obsidian = Path("docs/obsidian/04-threat-model.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1196,12 +1092,8 @@ def test_v04_review_packet_generator_is_documented_and_secret_free(
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
-    doc = Path("docs/codex/v0.4-review-packet-generator.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/v0.4-review-packet-generator.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     monkeypatch.setattr(sys, "argv", ["v04_review_packet.py", "--json"])
@@ -1225,13 +1117,9 @@ def test_v04_review_packet_generator_is_documented_and_secret_free(
 def test_external_review_intake_v2_is_documented_and_wired() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/external-review-intake-v2.md").read_text(encoding="utf-8")
-    original = Path("docs/codex/external-review-intake-and-closure.md").read_text(
-        encoding="utf-8"
-    )
+    original = Path("docs/codex/external-review-intake-and-closure.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1253,16 +1141,10 @@ def test_external_review_intake_v2_is_documented_and_wired() -> None:
 def test_v04_external_packet_and_capability_seed_are_documented() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     packet = Path("docs/codex/v0.4-review-packet.md").read_text(encoding="utf-8")
-    prompt = Path("docs/codex/v0.4-external-review-prompt.md").read_text(
-        encoding="utf-8"
-    )
-    seed = Path("docs/codex/v0.4-capability-decision-seed.md").read_text(
-        encoding="utf-8"
-    )
+    prompt = Path("docs/codex/v0.4-external-review-prompt.md").read_text(encoding="utf-8")
+    seed = Path("docs/codex/v0.4-capability-decision-seed.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1287,20 +1169,14 @@ def test_v04_external_packet_and_capability_seed_are_documented() -> None:
 
 
 def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
-    manifest_doc = Path("docs/codex/v0.5-milestone-manifest.md").read_text(
-        encoding="utf-8"
-    )
+    manifest_doc = Path("docs/codex/v0.5-milestone-manifest.md").read_text(encoding="utf-8")
     manifest = json.loads(
         Path("docs/codex/v0.5-milestone-manifest.json").read_text(encoding="utf-8")
     )
-    roadmap = Path("docs/codex/v0.5-roadmap-from-v0.4-review.md").read_text(
-        encoding="utf-8"
-    )
+    roadmap = Path("docs/codex/v0.5-roadmap-from-v0.4-review.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
@@ -1330,9 +1206,7 @@ def test_capability_expansion_gate_reports_blocked_without_tool_drift() -> None:
     doc = Path("docs/codex/capability-expansion-gate.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["hard_failures"] == []
@@ -1353,9 +1227,7 @@ def test_tool_surface_invariant_gate_is_wired_and_valid() -> None:
     doc = Path("docs/codex/tool-surface-invariant-gate.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1383,9 +1255,7 @@ def test_evidence_confusion_gate_is_wired_and_valid() -> None:
     doc = Path("docs/codex/evidence-confusion-gate.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1406,14 +1276,10 @@ def test_evidence_confusion_gate_is_wired_and_valid() -> None:
 
 def test_external_review_closure_gate_is_wired_and_blocked_honestly() -> None:
     report = external_review_closure_gate.build_report(Path.cwd())
-    doc = Path("docs/codex/external-review-closure-gate.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/external-review-closure-gate.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1427,23 +1293,16 @@ def test_external_review_closure_gate_is_wired_and_blocked_honestly() -> None:
     assert "156 - External-review closure gate v2 | Done" in backlog
     assert "Task 156 verifies source-review closure" in matrix
     assert "external-review-closure-gate" in makefile.partition("release-check:")[2]
-    assert (
-        "external-review-closure-gate"
-        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
-    )
+    assert "external-review-closure-gate" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/external-review-closure-gate.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/external-review-closure-gate.md" in docs_site
 
 
 def test_source_review_runbook_v2_is_documented() -> None:
-    runbook = Path("docs/codex/source-review-runbook-v2.md").read_text(
-        encoding="utf-8"
-    )
+    runbook = Path("docs/codex/source-review-runbook-v2.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1466,14 +1325,10 @@ def test_source_review_runbook_v2_is_documented() -> None:
 
 
 def test_source_file_inspection_packet_maps_review_surfaces() -> None:
-    packet = Path("docs/codex/source-file-inspection-packet.md").read_text(
-        encoding="utf-8"
-    )
+    packet = Path("docs/codex/source-file-inspection-packet.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1513,9 +1368,7 @@ def test_patch_apply_source_review_checklist_is_documented() -> None:
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1540,14 +1393,10 @@ def test_patch_apply_source_review_checklist_is_documented() -> None:
 
 
 def test_filesystem_source_review_checklist_is_documented() -> None:
-    checklist = Path("docs/codex/filesystem-source-review-checklist.md").read_text(
-        encoding="utf-8"
-    )
+    checklist = Path("docs/codex/filesystem-source-review-checklist.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1569,14 +1418,10 @@ def test_filesystem_source_review_checklist_is_documented() -> None:
 
 
 def test_http_fetch_source_review_checklist_is_documented() -> None:
-    checklist = Path("docs/codex/http-fetch-source-review-checklist.md").read_text(
-        encoding="utf-8"
-    )
+    checklist = Path("docs/codex/http-fetch-source-review-checklist.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1603,9 +1448,7 @@ def test_signed_evidence_source_review_checklist_is_documented() -> None:
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1622,10 +1465,7 @@ def test_signed_evidence_source_review_checklist_is_documented() -> None:
     assert "signed-evidence-source-review-checklist.md" in readme
     assert "162 - Signed evidence source review checklist | Done" in backlog
     assert "Task 162 adds a source checklist" in matrix
-    assert (
-        "docs/codex/signed-evidence-source-review-checklist.md"
-        in review_docs.REVIEW_DOCS
-    )
+    assert "docs/codex/signed-evidence-source-review-checklist.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/signed-evidence-source-review-checklist.md" in docs_site
 
 
@@ -1635,9 +1475,7 @@ def test_policy_parity_source_review_checklist_is_documented() -> None:
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1664,9 +1502,7 @@ def test_mcp_ingress_source_review_checklist_is_documented() -> None:
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
@@ -1692,15 +1528,13 @@ def test_review_console_source_review_checklist_is_documented() -> None:
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     for required in [
         "apps/ui/src/App.tsx",
         "approval binding evidence display",
-        "decided_by: \"admin:local-ui\"",
+        'decided_by: "admin:local-ui"',
         "The UI does not add direct tool execution",
         "npm run typecheck --prefix apps/ui",
         "npm run build --prefix apps/ui",
@@ -1716,14 +1550,10 @@ def test_review_console_source_review_checklist_is_documented() -> None:
 
 def test_external_findings_intake_dry_run_is_wired() -> None:
     report = external_findings_intake_dry_run.run_dry_run()
-    doc = Path("docs/codex/external-findings-intake-dry-run.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/external-findings-intake-dry-run.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1736,10 +1566,7 @@ def test_external_findings_intake_dry_run_is_wired() -> None:
     assert "166 - External findings intake dry run | Done" in backlog
     assert "Task 166 validates EXT finding intake rails" in matrix
     assert "external-findings-intake-dry-run" in makefile.partition("release-check:")[2]
-    assert (
-        "external-findings-intake-dry-run"
-        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
-    )
+    assert "external-findings-intake-dry-run" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/external-findings-intake-dry-run.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/external-findings-intake-dry-run.md" in docs_site
 
@@ -1749,9 +1576,7 @@ def test_closure_matrix_evidence_sync_is_wired() -> None:
     doc = Path("docs/codex/closure-matrix-evidence-sync.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1777,9 +1602,7 @@ def test_accepted_risk_register_is_wired_and_scoped() -> None:
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1792,8 +1615,7 @@ def test_accepted_risk_register_is_wired_and_scoped() -> None:
         f"AR-{index:03d}" for index in range(1, 11)
     }
     assert all(
-        risk["external_review_required_before_closure"] is True
-        for risk in register["risks"]
+        risk["external_review_required_before_closure"] is True for risk in register["risks"]
     )
     assert "does not approve capability expansion" in doc
     assert "not production authorization" in doc
@@ -1812,9 +1634,7 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     doc = Path("docs/codex/capability-decision-report.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1841,9 +1661,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
     doc = Path("docs/codex/no-new-powers-guardrail.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1876,14 +1694,10 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
 
 def test_source_review_transcript_packet_is_wired() -> None:
     report = source_review_transcript_packet.build_report(Path.cwd())
-    doc = Path("docs/codex/source-review-transcript-packet.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/source-review-transcript-packet.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1904,14 +1718,10 @@ def test_source_review_transcript_packet_is_wired() -> None:
 
 def test_reviewer_artifact_manifest_is_wired() -> None:
     report = reviewer_artifact_manifest.build_manifest(Path.cwd())
-    doc = Path("docs/codex/reviewer-artifact-manifest-v2.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/reviewer-artifact-manifest-v2.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1937,9 +1747,7 @@ def test_external_response_template_v2_is_wired() -> None:
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1953,23 +1761,16 @@ def test_external_response_template_v2_is_wired() -> None:
     assert "173 - External review response intake template v2 | Done" in backlog
     assert "Task 173 adds a v2 template" in matrix
     assert "external-response-template-check:" in makefile
-    assert (
-        "docs/codex/external-review-response-intake-template-v2.md"
-        in review_docs.REVIEW_DOCS
-    )
+    assert "docs/codex/external-review-response-intake-template-v2.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/external-review-response-intake-template-v2.md" in docs_site
 
 
 def test_review_packet_source_pointers_are_wired() -> None:
     report = review_packet_source_pointers.build_report(Path.cwd())
-    doc = Path("docs/codex/review-packet-source-pointers.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/review-packet-source-pointers.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -1993,9 +1794,7 @@ def test_v05_threat_model_delta_is_wired_and_scoped() -> None:
     doc = Path("docs/codex/v0.5-threat-model-delta.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -2015,14 +1814,10 @@ def test_v05_threat_model_delta_is_wired_and_scoped() -> None:
 
 
 def test_v05_review_candidate_command_is_wired() -> None:
-    doc = Path("docs/codex/v0.5-review-candidate-command.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/v0.5-review-candidate-command.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
     target = re.search(r"^v05-review-candidate:\n(?P<body>(?:\t.*\n)+)", makefile, re.MULTILINE)
@@ -2048,18 +1843,12 @@ def test_v05_review_candidate_command_is_wired() -> None:
 
 
 def test_v05_consolidated_packet_update_is_wired() -> None:
-    doc = Path("docs/codex/v0.5-consolidated-packet-update.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/v0.5-consolidated-packet-update.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
-    consolidated = Path("scripts/consolidate_review_packet.py").read_text(
-        encoding="utf-8"
-    )
+    consolidated = Path("scripts/consolidate_review_packet.py").read_text(encoding="utf-8")
 
     assert "v0.5 Review-Closure Packet" in consolidated
     assert "v0.5 Roadmap From v0.4 Review" in consolidated
@@ -2073,18 +1862,12 @@ def test_v05_consolidated_packet_update_is_wired() -> None:
 
 
 def test_v05_external_review_prompt_is_wired() -> None:
-    prompt = Path("docs/codex/v0.5-external-review-prompt.md").read_text(
-        encoding="utf-8"
-    )
+    prompt = Path("docs/codex/v0.5-external-review-prompt.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
-    consolidated = Path("scripts/consolidate_review_packet.py").read_text(
-        encoding="utf-8"
-    )
+    consolidated = Path("scripts/consolidate_review_packet.py").read_text(encoding="utf-8")
 
     for required in [
         "Overall judgment",
@@ -2103,14 +1886,10 @@ def test_v05_external_review_prompt_is_wired() -> None:
 
 def test_v05_boundary_decision_draft_is_wired_and_blocked() -> None:
     report = v05_boundary_decision_draft_check.build_report(Path.cwd())
-    doc = Path("docs/codex/v0.5-boundary-decision-draft.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/v0.5-boundary-decision-draft.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -2125,8 +1904,7 @@ def test_v05_boundary_decision_draft_is_wired_and_blocked() -> None:
     assert "Task 179 records go for external handoff" in matrix
     assert "v05-boundary-decision-draft-check" in makefile.partition("release-check:")[2]
     assert (
-        "v05-boundary-decision-draft-check"
-        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+        "v05-boundary-decision-draft-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "docs/codex/v0.5-boundary-decision-draft.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.5-boundary-decision-draft.md" in docs_site
@@ -2137,9 +1915,7 @@ def test_v05_handoff_packet_is_wired_and_blocked() -> None:
     doc = Path("docs/codex/v0.5-handoff-packet.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -2181,25 +1957,21 @@ def test_v06_preflight_transition_note_is_wired() -> None:
 
 def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     charter = Path("docs/codex/v0.6-boundary-charter.md").read_text(encoding="utf-8")
-    manifest_doc = Path("docs/codex/v0.6-milestone-manifest.md").read_text(
-        encoding="utf-8"
-    )
+    manifest_doc = Path("docs/codex/v0.6-milestone-manifest.md").read_text(encoding="utf-8")
     manifest = json.loads(
         Path("docs/codex/v0.6-milestone-manifest.json").read_text(encoding="utf-8")
     )
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-183"
-    assert manifest["planned_range"] == "184-215"
+    assert manifest["completed_range"] == "181-184"
+    assert manifest["planned_range"] == "185-215"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
     for required in [
@@ -2228,14 +2000,10 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
 
 
 def test_v06_external_review_assignment_matrix_is_wired() -> None:
-    doc = Path("docs/codex/v0.6-external-review-assignment-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/v0.6-external-review-assignment-matrix.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -2267,15 +2035,11 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         Path.cwd(),
         tmp_path / "dispatch",
     )
-    doc = Path("docs/codex/v0.6-external-review-dispatch-packets.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/v0.6-external-review-dispatch-packets.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
@@ -2293,10 +2057,7 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         "release-automation.md",
     ]:
         assert expected in paths
-    assert all(
-        str(artifact["sha256"]).startswith("sha256:")
-        for artifact in summary["packets"]
-    )
+    assert all(str(artifact["sha256"]).startswith("sha256:") for artifact in summary["packets"])
     manifest = json.loads(Path(summary["manifest_path"]).read_text(encoding="utf-8"))
     assert manifest["packet_type"] == "ithildin.v0.6.external_review_dispatch_packets"
     assert "production readiness" in manifest["does_not_prove"]
@@ -2316,16 +2077,93 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
     assert "docs/codex/v0.6-external-review-dispatch-packets.md" in docs_site
 
 
+def test_v06_external_response_normalization_is_wired() -> None:
+    finding_header = (
+        "| Finding ID | Severity | Area | Affected files/functions | "
+        "Blocking status | Disposition | Recommended fix |"
+    )
+    finding_row = (
+        "| EXT-001 | medium | http-fetch | apps/api/src/ithildin_api/http_tools.py | "
+        "should-fix | open | add reviewer-requested regression |"
+    )
+    raw_response = "\n".join(
+        [
+            "# Review",
+            "",
+            finding_header,
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            finding_row,
+        ]
+    )
+    normalized = external_response_normalize.normalize_response(
+        raw_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="source-level",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="http-fetch",
+    )
+    doc = Path("docs/codex/v0.6-external-response-normalization.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert normalized["finding_count"] == 1
+    assert normalized["findings"][0]["finding_id"] == "EXT-001"
+    assert normalized["can_close_source_rows"] is True
+    assert normalized["mutates_findings"] is False
+    assert normalized["closes_external_review"] is False
+    for required in [
+        "source-level",
+        "reviewed packet hash",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "Secret-like markers are rejected",
+    ]:
+        assert required in doc
+    assert "make external-response-normalize FILE=..." in readme
+    assert "external-response-normalize:" in makefile
+    assert "184 - External response normalization | Done" in backlog
+    assert "Task 184 normalizes raw external responses" in matrix
+    assert "v0.6 External Response Normalization" in index
+    assert "docs/codex/v0.6-external-response-normalization.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-external-response-normalization.md" in docs_site
+
+
+def test_external_response_normalization_rejects_ambiguous_source_review() -> None:
+    finding_header = (
+        "| Finding ID | Severity | Area | Affected files/functions | "
+        "Blocking status | Disposition | Recommended fix |"
+    )
+    raw_response = "\n".join(
+        [
+            "# Review",
+            "",
+            finding_header,
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-002 | high | filesystem | unknown | blocking | open | inspect path handling |",
+        ]
+    )
+    with pytest.raises(external_response_normalize.ExternalResponseNormalizationError):
+        external_response_normalize.normalize_response(
+            raw_response,
+            reviewer="GPT 5.5 Pro",
+            reviewer_type="external-model",
+            source_access="source-level",
+            reviewed_commit="abcdef1234567890",
+            reviewed_packet_hash="sha256:" + "0" * 64,
+            area="filesystem",
+        )
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
-    template = Path("docs/codex/reviewer-finding-template.md").read_text(
-        encoding="utf-8"
-    )
-    prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    template = Path("docs/codex/reviewer-finding-template.md").read_text(encoding="utf-8")
+    prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
 
     for field in [
         "Finding ID",
@@ -2483,9 +2321,7 @@ def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
     intake = Path("docs/codex/reviewer-finding-intake.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
 
     assert "make reviewer-findings-check" in intake
     assert "reviewer-findings-check:" in makefile
@@ -2626,9 +2462,7 @@ def test_review_findings_summary_collects_structured_records() -> None:
 def test_review_findings_summary_doc_and_release_check_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    summary = Path("docs/codex/v0.3-review-findings-summary.md").read_text(
-        encoding="utf-8"
-    )
+    summary = Path("docs/codex/v0.3-review-findings-summary.md").read_text(encoding="utf-8")
 
     assert "review-findings-summary:" in makefile
     assert "review-findings-summary" in makefile.partition("release-check:")[2]
@@ -2638,9 +2472,7 @@ def test_review_findings_summary_doc_and_release_check_are_wired() -> None:
 
 
 def test_source_review_closure_matrix_v3_is_guarded() -> None:
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     assert "## v3 Closure State" in matrix
     for state in [
@@ -2661,9 +2493,7 @@ def test_source_review_closure_matrix_v3_is_guarded() -> None:
 
 def test_release_check_enforces_filesystem_contract_check() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
@@ -2676,9 +2506,7 @@ def test_release_check_enforces_filesystem_contract_check() -> None:
 def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) -> None:
     workflow = Path("docs/codex/internal-ai-review-workflow.md").read_text(encoding="utf-8")
     prompt = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
 
     for required in [
         "not an independent external audit",
@@ -2722,16 +2550,10 @@ def test_internal_ai_review_workflow_and_packet_are_validated(tmp_path: Path) ->
 def test_internal_review_packet_v2_is_documented() -> None:
     doc = Path("docs/codex/internal-review-packet-v2.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "var/review-packets/v0.3/internal-ai-review-packet/",
@@ -2751,17 +2573,11 @@ def test_internal_review_packet_v2_is_documented() -> None:
 
 def test_v03_external_review_packet_is_documented() -> None:
     packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
-    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(
-        encoding="utf-8"
-    )
+    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "v0.3-prep external/source-review packet",
@@ -2788,21 +2604,13 @@ def test_v03_external_review_packet_is_documented() -> None:
 
 
 def test_external_review_intake_and_closure_is_documented() -> None:
-    doc = Path("docs/codex/external-review-intake-and-closure.md").read_text(
-        encoding="utf-8"
-    )
+    doc = Path("docs/codex/external-review-intake-and-closure.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
-    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "EXT-###",
@@ -2822,16 +2630,10 @@ def test_v03_boundary_decision_is_documented() -> None:
     decision = Path("docs/codex/v0.3-boundary-decision.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
-    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     for required in [
         "ready for external/source review handoff",
@@ -2848,14 +2650,10 @@ def test_v03_boundary_decision_is_documented() -> None:
 
 
 def test_autonomous_sprint_guardrails_are_linked_and_validated() -> None:
-    guardrails = Path("docs/codex/autonomous-sprint-guardrails.md").read_text(
-        encoding="utf-8"
-    )
+    guardrails = Path("docs/codex/autonomous-sprint-guardrails.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
 
     for required in [
         "one formal goal at a time",
@@ -2939,10 +2737,7 @@ def test_review_packet_bundle_layout_and_exclusions(
         path = tmp_path / doc
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"# {path.stem}\n", encoding="utf-8")
-    demo_summary = (
-        tmp_path
-        / "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
-    )
+    demo_summary = tmp_path / "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
     demo_summary.parent.mkdir(parents=True)
     demo_summary.write_text("# Signed Evidence Demo\n", encoding="utf-8")
     negative_transcripts = (
@@ -3016,12 +2811,8 @@ def test_review_packet_bundle_layout_and_exclusions(
     bundle_paths = [path.as_posix() for path in result.path.rglob("*")]
     assert not any("/.env" in path for path in bundle_paths)
     assert not any("/var/keys/" in path for path in bundle_paths)
-    assert "review-doc-hashes.json" in result.path.joinpath("INDEX.md").read_text(
-        encoding="utf-8"
-    )
-    assert "artifact-hashes.json" in result.path.joinpath("INDEX.md").read_text(
-        encoding="utf-8"
-    )
+    assert "review-doc-hashes.json" in result.path.joinpath("INDEX.md").read_text(encoding="utf-8")
+    assert "artifact-hashes.json" in result.path.joinpath("INDEX.md").read_text(encoding="utf-8")
     assert "filesystem-contract-check.txt" in result.path.joinpath("INDEX.md").read_text(
         encoding="utf-8"
     )
@@ -3144,12 +2935,8 @@ def test_review_packet_diff_doc_and_target_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/review-packet-diff.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert "review-packet-diff:" in makefile
@@ -3209,16 +2996,10 @@ def test_packet_redaction_scan_doc_target_and_bundle_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/packet-redaction-scanner.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     bundle_script = Path("scripts/review_packet_bundle.py").read_text(encoding="utf-8")
-    consolidated_script = Path("scripts/consolidate_review_packet.py").read_text(
-        encoding="utf-8"
-    )
+    consolidated_script = Path("scripts/consolidate_review_packet.py").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert "packet-redaction-scan:" in makefile
@@ -3239,11 +3020,7 @@ def test_determinism_gate_detects_forbidden_patterns(tmp_path: Path) -> None:
     sleep_call = "time." + "sleep(1)"
     random_call = "random." + "random()"
     tests_dir.joinpath("test_bad.py").write_text(
-        "import time\n"
-        "import random\n"
-        "def test_bad():\n"
-        f"    {sleep_call}\n"
-        f"    {random_call}\n",
+        f"import time\nimport random\ndef test_bad():\n    {sleep_call}\n    {random_call}\n",
         encoding="utf-8",
     )
 
@@ -3256,20 +3033,15 @@ def test_determinism_gate_doc_and_target_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/test-determinism-gate.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert "determinism-check:" in makefile
     assert "release-check: release-context manifest-lock-check release-guardrails" in makefile
     assert (
         "determinism-check adversarial-corpus-check resource-limit-check "
-        "demo-scenario-pack evidence-contracts-check policy-test"
-        in makefile
+        "demo-scenario-pack evidence-contracts-check policy-test" in makefile
     )
     assert "make determinism-check" in readme
     assert "make determinism-check" in doc
@@ -3366,12 +3138,8 @@ def test_release_evidence_schema_doc_and_target_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/release-evidence-schema.md").read_text(encoding="utf-8")
-    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(
-        encoding="utf-8"
-    )
-    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    review_packet = Path("docs/codex/v0.2-review-packet.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
 
     assert "release-evidence-validate:" in makefile
     assert "release-evidence-gate:" in makefile

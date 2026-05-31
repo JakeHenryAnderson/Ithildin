@@ -53,6 +53,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.6-milestone-manifest.md",
     "docs/codex/v0.6-external-review-assignment-matrix.md",
     "docs/codex/v0.6-external-review-dispatch-packets.md",
+    "docs/codex/v0.6-external-response-normalization.md",
     "docs/codex/capability-expansion-gate.md",
     "docs/codex/tool-surface-invariant-gate.md",
     "docs/codex/no-new-powers-guardrail.md",

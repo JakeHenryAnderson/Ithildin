@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: accepted-risk-register-check admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen capability-decision-report capability-expansion-gate clean closure-matrix-evidence-sync compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-confusion-gate evidence-contracts-check external-findings-intake-dry-run external-response-template-check external-review-closure-gate filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts no-new-powers-guardrail ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-packet-source-pointers review-run-manifest-check reviewer-artifact-manifest reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify source-review-transcript-packet test tool-surface-invariant-gate typecheck ui-dev v04-review-packet v05-boundary-decision-draft-check v05-handoff-packet-check v05-review-candidate v05-threat-model-delta-check v06-review-dispatch-packets
+.PHONY: accepted-risk-register-check admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen capability-decision-report capability-expansion-gate clean closure-matrix-evidence-sync compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-confusion-gate evidence-contracts-check external-findings-intake-dry-run external-response-normalize external-response-template-check external-review-closure-gate filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts no-new-powers-guardrail ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-packet-source-pointers review-run-manifest-check reviewer-artifact-manifest reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify source-review-transcript-packet test tool-surface-invariant-gate typecheck ui-dev v04-review-packet v05-boundary-decision-draft-check v05-handoff-packet-check v05-review-candidate v05-threat-model-delta-check v06-review-dispatch-packets
 
 test:
 	uv run pytest
@@ -95,6 +95,16 @@ external-findings-intake-dry-run:
 
 external-response-template-check:
 	uv run python scripts/external_response_template_check.py
+
+external-response-normalize:
+	@test -n "$(FILE)" || (echo "FILE is required, e.g. make external-response-normalize FILE=raw-response.md REVIEWER='GPT 5.5 Pro' REVIEWER_TYPE=external-model SOURCE_ACCESS=source-level REVIEWED_COMMIT=$$(git rev-parse HEAD) REVIEWED_PACKET_HASH=sha256:... AREA=http-fetch" >&2; exit 1)
+	@test -n "$(REVIEWER)" || (echo "REVIEWER is required" >&2; exit 1)
+	@test -n "$(REVIEWER_TYPE)" || (echo "REVIEWER_TYPE is required" >&2; exit 1)
+	@test -n "$(SOURCE_ACCESS)" || (echo "SOURCE_ACCESS is required" >&2; exit 1)
+	@test -n "$(REVIEWED_COMMIT)" || (echo "REVIEWED_COMMIT is required" >&2; exit 1)
+	@test -n "$(REVIEWED_PACKET_HASH)" || (echo "REVIEWED_PACKET_HASH is required" >&2; exit 1)
+	@test -n "$(AREA)" || (echo "AREA is required" >&2; exit 1)
+	uv run python scripts/external_response_normalize.py "$(FILE)" --reviewer "$(REVIEWER)" --reviewer-type "$(REVIEWER_TYPE)" --source-access "$(SOURCE_ACCESS)" --reviewed-commit "$(REVIEWED_COMMIT)" --reviewed-packet-hash "$(REVIEWED_PACKET_HASH)" --area "$(AREA)" $(if $(OUTPUT),--output "$(OUTPUT)",)
 
 v05-threat-model-delta-check:
 	uv run python scripts/v05_threat_model_delta_check.py

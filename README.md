@@ -258,6 +258,9 @@ The v0.6 external reviewer assignment matrix is in
 Focused v0.6 review dispatch packets are generated with `make v06-review-dispatch-packets` and
 documented in
 [docs/codex/v0.6-external-review-dispatch-packets.md](docs/codex/v0.6-external-review-dispatch-packets.md).
+External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
+documented in
+[docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).
 The current source-review workflow is in
 [docs/codex/source-review-runbook-v2.md](docs/codex/source-review-runbook-v2.md).
 The source-file inspection packet for reviewers is in

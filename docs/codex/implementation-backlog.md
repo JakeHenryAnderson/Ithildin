@@ -209,7 +209,7 @@ expansion tasks.
 | 181 - v0.6 boundary charter and freeze | Done | [v0.6-boundary-charter.md](v0.6-boundary-charter.md), [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md) |
 | 182 - External reviewer assignment matrix | Done | [v0.6-external-review-assignment-matrix.md](v0.6-external-review-assignment-matrix.md) |
 | 183 - External review packet dispatch set | Done | [v0.6-external-review-dispatch-packets.md](v0.6-external-review-dispatch-packets.md), `make v06-review-dispatch-packets` |
-| 184 - External response normalization | Planned | Normalize external responses into structured finding drafts. |
+| 184 - External response normalization | Done | [v0.6-external-response-normalization.md](v0.6-external-response-normalization.md), `make external-response-normalize FILE=...` |
 | 185-215 - v0.6 review execution, closure, decisions, and handoff | Planned | See [v0.6-milestone-manifest.md](v0.6-milestone-manifest.md). |
 
 ## Future Candidate Track
