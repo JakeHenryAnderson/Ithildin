@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-136",
-  "planned_range": "137-151",
+  "completed_range": "113-137",
+  "planned_range": "138-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -156,7 +156,7 @@
         "127",
         "128"
       ],
-      "status": "planned",
+      "status": "done",
       "gate": "release-check, review-candidate, packet diff against prior checkpoint, docs/secret guardrails, deterministic-test checks, and no tool-surface drift."
     },
     {
@@ -564,7 +564,7 @@
     {
       "id": "137",
       "title": "MCP ingress bypass audit v2",
-      "status": "planned",
+      "status": "done",
       "commit": "Expand MCP ingress bypass audit",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "yes",

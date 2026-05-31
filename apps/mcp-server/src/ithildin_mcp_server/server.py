@@ -37,6 +37,8 @@ DEFAULT_AGENT_PRINCIPAL: JsonObject = {
     "type": "agent",
     "roles": ["AgentDeveloper"],
 }
+MCP_AGENT_PRINCIPAL_ID = "agent:mcp-local"
+MCP_SESSION_ID = "mcp-stdio"
 
 
 @dataclass(frozen=True)
@@ -51,7 +53,7 @@ class IthildinMcpAdapter:
             registered_tools = self.registry.list_tools()
         else:
             try:
-                principal = self.principal_registry.resolve_active("agent:mcp-local")
+                principal = self.principal_registry.resolve_active(MCP_AGENT_PRINCIPAL_ID)
             except PrincipalRegistryError:
                 registered_tools = []
             else:
@@ -88,7 +90,7 @@ class IthildinMcpAdapter:
             tool_name=tool_name,
             arguments=_json_object(arguments),
             principal=DEFAULT_AGENT_PRINCIPAL,
-            session_id="mcp-stdio",
+            session_id=MCP_SESSION_ID,
         )
         return types.CallToolResult(
             content=[

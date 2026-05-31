@@ -145,7 +145,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 134 - OPA boundary decision | Done | [opa-parity-decision.md](opa-parity-decision.md) reaffirms YAML canonical gates. |
 | 135 - Registry fail-closed exhaustive suite | Done | [registry-fail-closed-suite.md](registry-fail-closed-suite.md), expanded manifest-lock drift tests |
 | 136 - Manifest-change review workflow | Done | [manifest-change-review-workflow.md](manifest-change-review-workflow.md), `make manifest-change-review` |
-| 137 - MCP ingress bypass audit v2 | Planned | MCP ingress audit |
+| 137 - MCP ingress bypass audit v2 | Done | [mcp-ingress-bypass-audit.md](mcp-ingress-bypass-audit.md), `tests/test_mcp_adapter.py` |
 | 138 - Local auth/session hardening within current boundary | Planned | Local auth posture |
 | 139 - Review-console approval UX v3 | Planned | Approval evidence UX |
 | 140 - Review-console failure and unauthorized states | Planned | Console failure states |

@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-136"
-    assert manifest["planned_range"] == "137-151"
+    assert manifest["completed_range"] == "113-137"
+    assert manifest["planned_range"] == "138-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 137-151 are planned" in readme
+    assert "Tasks 138-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -722,7 +722,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-136 done",
+        "Tasks 113-137 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -834,8 +834,11 @@ def test_mcp_ingress_bypass_audit_is_documented() -> None:
     doc = Path("docs/codex/mcp-ingress-bypass-audit.md").read_text(encoding="utf-8")
 
     for required in [
+        "Task 137 expands",
         "fixed local MCP principal",
+        "fixed local MCP session",
         "MCP callers cannot spoof an admin principal",
+        "MCP callers cannot provide their own session or request ID",
         "Unknown tools called through MCP are denied",
         "policy.evaluated",
         "remote MCP remains deferred",
@@ -843,7 +846,9 @@ def test_mcp_ingress_bypass_audit_is_documented() -> None:
         assert required in doc
     assert "mcp-ingress-bypass-audit.md" in readme
     assert "098 - MCP ingress bypass audit | Done" in backlog
+    assert "137 - MCP ingress bypass audit v2 | Done" in backlog
     assert "Task 098 tests fixed-principal audit evidence" in matrix
+    assert "Task 137 fixed-principal/session bypass audit complete" in matrix
     assert "docs/codex/mcp-ingress-bypass-audit.md" in review_docs.REVIEW_DOCS
 
 

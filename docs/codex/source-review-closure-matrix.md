@@ -69,7 +69,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Policy parity | v0.3 parity harness complete | pending external review | none | pending | `make policy-parity`; `make release-check` | OPA remains optional evidence, YAML canonical for gates | external_pending |
 | Registry fail-closed | v0.3 manifest/principal/workspace suites expanded | pending external review | none | pending | `make manifest-lock-check`; `make release-check` | trusted local config remains TCB | external_pending |
 | Release evidence | v0.3 schema, packet diff, and guardrails complete | pending external review | none | pending | `make release-evidence`; `make review-candidate` | review packets are not external audits | external_pending |
-| MCP ingress | v0.3 thin-adapter audit complete | pending external review | none | pending | MCP adapter focused tests; `make release-check` | stdio-only local MCP remains boundary | external_pending |
+| MCP ingress | v0.4 Task 137 fixed-principal/session bypass audit complete | pending external review | none | pending | MCP adapter focused tests; `make release-check` | stdio-only local MCP remains boundary | external_pending |
 | Review console evidence | v0.3 approval evidence/failure UX improved | pending external review | none | pending | UI typecheck/build; `make release-check` | local admin UI is not production auth | external_pending |
 
 ## v2 Update Rules

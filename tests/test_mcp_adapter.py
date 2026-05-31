@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -24,7 +25,7 @@ from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_mcp_server import IthildinMcpAdapter, create_mcp_server
-from ithildin_mcp_server.server import create_adapter
+from ithildin_mcp_server.server import MCP_AGENT_PRINCIPAL_ID, MCP_SESSION_ID, create_adapter
 from ithildin_policy_core import PolicyEvaluator
 from ithildin_schemas import AuditEventType
 from mcp import types
@@ -212,7 +213,12 @@ def make_adapter(tmp_path: Path, *, http_body: bytes = b"mcp network") -> Ithild
     return make_adapter_harness(tmp_path, http_body=http_body).adapter
 
 
-def make_adapter_harness(tmp_path: Path, *, http_body: bytes = b"mcp network") -> McpAdapterHarness:
+def make_adapter_harness(
+    tmp_path: Path,
+    *,
+    http_body: bytes = b"mcp network",
+    principal_registry: PrincipalRegistry | None = None,
+) -> McpAdapterHarness:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
     write_manifest(manifest_dir, "fs.apply_patch", "write")
@@ -277,9 +283,14 @@ input_schema:
             max_patch_bytes=1024,
         ),
         http_executor,
+        principal_registry=principal_registry,
     )
     return McpAdapterHarness(
-        adapter=IthildinMcpAdapter(registry=registry, tool_call_service=service),
+        adapter=IthildinMcpAdapter(
+            registry=registry,
+            tool_call_service=service,
+            principal_registry=principal_registry,
+        ),
         audit_writer=audit_writer,
     )
 
@@ -377,6 +388,8 @@ def test_mcp_call_uses_fixed_agent_principal_and_audits_policy(
             {
                 "path": "README.md",
                 "principal": {"id": "admin:local-ui", "roles": ["Admin"]},
+                "session_id": "admin-session",
+                "request_id": "req_attacker",
             },
         )
     )
@@ -388,9 +401,46 @@ def test_mcp_call_uses_fixed_agent_principal_and_audits_policy(
     )[0]
     principal = cast(dict[str, object], event["principal"])
     metadata = cast(dict[str, object], event["metadata"])
-    assert principal["id"] == "agent:mcp-local"
-    assert metadata["principal_id"] == "agent:mcp-local"
+    assert principal["id"] == MCP_AGENT_PRINCIPAL_ID
+    assert metadata["principal_id"] == MCP_AGENT_PRINCIPAL_ID
+    assert metadata["session_id"] == MCP_SESSION_ID
     assert metadata["decision"] == "allow"
+
+
+def test_mcp_call_signature_does_not_accept_caller_identity() -> None:
+    signature = inspect.signature(IthildinMcpAdapter.call_tool)
+
+    assert list(signature.parameters) == ["self", "tool_name", "arguments"]
+
+
+def test_mcp_call_denies_when_fixed_agent_principal_is_not_active(tmp_path: Path) -> None:
+    registry_path = tmp_path / "principals.yaml"
+    registry_path.write_text(
+        """
+principals:
+  - id: agent:other
+    type: agent
+    display_name: Other Agent
+    roles: [AgentDeveloper]
+""",
+        encoding="utf-8",
+    )
+    harness = make_adapter_harness(
+        tmp_path,
+        principal_registry=PrincipalRegistry.load(registry_path),
+    )
+
+    result = asyncio.run(harness.adapter.call_tool("fs.read", {"path": "README.md"}))
+
+    assert result.isError is True
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "denied"
+    assert "unknown principal" in str(result.structuredContent["reason"])
+    event = harness.audit_writer.list_events(
+        event_type=AuditEventType.POLICY_EVALUATED.value,
+        request_id=str(result.structuredContent["request_id"]),
+    )[0]
+    assert event["decision"] == "deny"
 
 
 def test_mcp_unknown_tool_is_denied_and_audited(tmp_path: Path) -> None:
