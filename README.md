@@ -203,6 +203,10 @@ The v0.4 work charter is recorded in
 [docs/codex/v0.4-boundary-charter.md](docs/codex/v0.4-boundary-charter.md); it keeps the next wave
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
+The v0.4 milestone roadmap is recorded in
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-122 are
+complete; Tasks 123-151 are planned and should be externally reviewed before implementation drift or
+capability expansion.
 Executed review-run manifests are documented in
 [docs/codex/review-run-manifest-schema.md](docs/codex/review-run-manifest-schema.md) and validated
 with `make review-run-manifest-check`.

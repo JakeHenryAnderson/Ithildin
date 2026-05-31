@@ -124,6 +124,43 @@
 | 121 - HTTP canonicalization corpus v2 | Done | `tests/fixtures/http_canonicalization_corpus.json`, `tests/test_http_tools.py` |
 | 122 - HTTP fetch executor contract v2 | Done | [http-executor-contract.md](http-executor-contract.md), corpus-linked review pointers |
 
+## v0.4 Remaining Roadmap
+
+These tasks are planned in [v0.4-milestone-manifest.md](v0.4-milestone-manifest.md). They are not
+implemented until each receives its own checkpoint commit and gate output.
+
+| Task | Status | Spec |
+| --- | --- | --- |
+| 123 - v0.4 roadmap freeze | Planned | [v0.4-milestone-manifest.md](v0.4-milestone-manifest.md) |
+| 124 - v0.4 review packet draft | Planned | Review packet update |
+| 125 - v0.4 external review prompt | Planned | External prompt update |
+| 126 - v0.4 review-candidate gate refresh | Planned | Review-candidate output refresh |
+| 127 - External finding intake pass v0.4 | Planned | External/source finding intake |
+| 128 - Closure matrix source-review rows v4 | Planned | Closure matrix update |
+| 129 - Finding reproduction harness | Planned | Reproduction scripts/tests |
+| 130 - Accepted-risk register | Planned | Accepted/deferred risk register |
+| 131 - Blocking-finding stop gate | Planned | Release/review guardrail |
+| 132 - Source-review closure packet | Planned | Closure packet |
+| 133 - Patch apply recovery verification suite | Planned | Patch recovery tests |
+| 134 - Patch apply concurrent/fault stress suite | Planned | Patch stress tests |
+| 135 - Filesystem race corpus v3 | Planned | Filesystem adversarial corpus |
+| 136 - Filesystem platform contract review notes | Planned | Platform review notes |
+| 137 - HTTP resolver transport adversarial suite | Planned | HTTP transport tests |
+| 138 - HTTP safe-error and audit evidence suite | Planned | HTTP evidence tests |
+| 139 - Executor assurance subagent pass | Planned | Internal adversarial review |
+| 140 - Evidence contract compatibility policy | Planned | Evidence policy docs/tests |
+| 141 - Audit and signed-export substitution suite v2 | Planned | Signed audit tests |
+| 142 - Manifest lock signature review suite v2 | Planned | Signed manifest tests |
+| 143 - Policy evidence snapshot suite | Planned | Policy evidence tests |
+| 144 - Review-console evidence regression suite | Planned | UI/API evidence checks |
+| 145 - Operator recovery runbooks | Planned | Operator docs |
+| 146 - Docs claim-lint expansion v2 | Planned | Docs guardrails |
+| 147 - v0.4 release evidence packet | Planned | Release packet |
+| 148 - v0.4 consolidated review bundle | Planned | Consolidated packet |
+| 149 - External review handoff checkpoint | Planned | External handoff |
+| 150 - v0.4 boundary decision memo | Planned | Boundary decision |
+| 151 - v0.5 planning seed | Planned | Next planning seed |
+
 ## Future Candidate Track
 
 | Area | Status | Notes |

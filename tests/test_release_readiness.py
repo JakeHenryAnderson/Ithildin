@@ -121,6 +121,35 @@ def test_v03_milestone_manifest_is_linked_and_complete() -> None:
     assert "docs/codex/v0.3-milestone-manifest.md" in review_docs.REVIEW_DOCS
 
 
+def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
+    manifest_doc = Path("docs/codex/v0.4-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    manifest = json.loads(
+        Path("docs/codex/v0.4-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    review_packet = Path("docs/codex/v0.3-review-packet.md").read_text(
+        encoding="utf-8"
+    )
+
+    task_ids = [milestone["id"] for milestone in manifest["milestones"]]
+    assert task_ids == [f"{index:03d}" for index in range(113, 152)]
+    assert manifest["completed_range"] == "113-122"
+    assert manifest["planned_range"] == "123-151"
+    assert manifest["runtime_boundary"] == "v0.1 local-preview"
+    assert "shell execution" in manifest["deferred_boundaries"]
+    assert "new powerful tool class" in manifest["external_review_required_before"]
+    assert "Tasks 123-151" in manifest_doc
+    assert "planned only" in manifest_doc
+    assert "v0.4-milestone-manifest.json" in manifest_doc
+    assert "Tasks 123-151 are planned" in readme
+    assert "123 - v0.4 roadmap freeze | Planned" in backlog
+    assert "v0.4-milestone-manifest.md" in review_packet
+    assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
+
+
 def test_negative_review_recipes_reference_existing_tools_and_commands() -> None:
     recipes = Path("docs/codex/negative-review-recipes.md").read_text(encoding="utf-8")
     manifest_names = {

@@ -1,0 +1,136 @@
+{
+  "manifest_version": "1",
+  "program": "v0.4 review closure and evidence maturity",
+  "runtime_boundary": "v0.1 local-preview",
+  "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
+  "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
+  "completed_range": "113-122",
+  "planned_range": "123-151",
+  "deferred_boundaries": [
+    "shell execution",
+    "Docker socket access",
+    "Kubernetes tools",
+    "browser automation",
+    "arbitrary HTTP methods, caller-supplied headers, request bodies, cookies, or broad network access",
+    "broad filesystem writes, deletes, moves, chmod, archive extraction, or secrets-manager tools",
+    "plugin SDK or marketplace",
+    "remote hosted MCP gateway",
+    "production identity integrations",
+    "runtime Postgres",
+    "hosted telemetry collectors",
+    "managed model serving or LLM proxy workflows"
+  ],
+  "stop_conditions": [
+    "same blocking failure repeats three times",
+    "trust-boundary regression",
+    "critical or high internal finding",
+    "need to change the product boundary",
+    "ambiguous release, audit, manifest, signing, or review evidence",
+    "inability to return to a clean checkpoint",
+    "need for external secrets, privileged host state, or production credentials"
+  ],
+  "external_review_required_before": [
+    "new powerful tool class",
+    "production or security-product positioning",
+    "remote MCP transport",
+    "production identity",
+    "runtime Postgres",
+    "hosted telemetry",
+    "plugin SDK",
+    "shell, Docker, Kubernetes, browser, arbitrary HTTP, or broad filesystem write capabilities"
+  ],
+  "subagent_policy": {
+    "role": "internal adversarial reviewer and evidence checker",
+    "not_authorized_for": [
+      "external source-review closure",
+      "production readiness claims",
+      "accepting critical or high findings without user/external review"
+    ],
+    "cadence": "Run at wave gates and convert useful findings into reviewer finding records."
+  },
+  "waves": [
+    {
+      "id": "wave-1",
+      "name": "v0.4 Foundation and First Hardening",
+      "tasks": ["113", "114", "115", "116", "117", "118", "119", "120", "121", "122"],
+      "status": "complete",
+      "gate": "release-check, review-candidate, and clean tree."
+    },
+    {
+      "id": "wave-2",
+      "name": "Roadmap and Review Alignment",
+      "tasks": ["123", "124", "125", "126"],
+      "status": "planned",
+      "gate": "review-candidate, external review of the v0.4 manifest, and no open critical/high internal findings."
+    },
+    {
+      "id": "wave-3",
+      "name": "Source-Review Closure Execution",
+      "tasks": ["127", "128", "129", "130", "131", "132"],
+      "status": "planned",
+      "gate": "reviewer finding validation, closure matrix checks, focused tests, and release-check."
+    },
+    {
+      "id": "wave-4",
+      "name": "Executor Assurance Depth",
+      "tasks": ["133", "134", "135", "136", "137", "138", "139"],
+      "status": "planned",
+      "gate": "patch/filesystem/HTTP focused suites, adversarial subagent review, and release-check."
+    },
+    {
+      "id": "wave-5",
+      "name": "Evidence and Operator Assurance",
+      "tasks": ["140", "141", "142", "143", "144", "145", "146"],
+      "status": "planned",
+      "gate": "evidence/release/docs tests, signed-evidence-demo, and review-candidate."
+    },
+    {
+      "id": "wave-6",
+      "name": "v0.4 Review Candidate Freeze",
+      "tasks": ["147", "148", "149", "150", "151"],
+      "status": "planned",
+      "gate": "review-candidate, clean tree, external review handoff, and boundary decision memo."
+    }
+  ],
+  "milestones": [
+    {"id": "113", "title": "v0.4 boundary charter", "status": "done", "commit": "Add v0.4 boundary charter"},
+    {"id": "114", "title": "Review run manifest", "status": "done", "commit": "Add review run manifest"},
+    {"id": "115", "title": "Review findings aggregator", "status": "done", "commit": "Add review findings aggregator"},
+    {"id": "116", "title": "Source-review closure matrix v3", "status": "done", "commit": "Add source review closure matrix v3"},
+    {"id": "117", "title": "Patch apply failure evidence v2", "status": "done", "commit": "Harden patch apply failure evidence"},
+    {"id": "118", "title": "Patch apply state-machine formalization v2", "status": "done", "commit": "Formalize patch apply state machine"},
+    {"id": "119", "title": "Filesystem adversarial race harness v2", "status": "done", "commit": "Add filesystem adversarial race harness"},
+    {"id": "120", "title": "Filesystem platform support gate v2", "status": "done", "commit": "Add filesystem platform support gate"},
+    {"id": "121", "title": "HTTP canonicalization corpus v2", "status": "done", "commit": "Add HTTP canonicalization corpus"},
+    {"id": "122", "title": "HTTP fetch executor contract v2", "status": "done", "commit": "Add HTTP fetch executor contract v2"},
+    {"id": "123", "title": "v0.4 roadmap freeze", "status": "planned", "commit": "Add v0.4 milestone manifest"},
+    {"id": "124", "title": "v0.4 review packet draft", "status": "planned", "commit": "Add v0.4 review packet draft"},
+    {"id": "125", "title": "v0.4 external review prompt", "status": "planned", "commit": "Add v0.4 external review prompt"},
+    {"id": "126", "title": "v0.4 review-candidate gate refresh", "status": "planned", "commit": "Refresh v0.4 review candidate gate"},
+    {"id": "127", "title": "External finding intake pass v0.4", "status": "planned", "commit": "Intake v0.4 review findings"},
+    {"id": "128", "title": "Closure matrix source-review rows v4", "status": "planned", "commit": "Update source review closure matrix v4"},
+    {"id": "129", "title": "Finding reproduction harness", "status": "planned", "commit": "Add finding reproduction harness"},
+    {"id": "130", "title": "Accepted-risk register", "status": "planned", "commit": "Add accepted risk register"},
+    {"id": "131", "title": "Blocking-finding stop gate", "status": "planned", "commit": "Add blocking finding stop gate"},
+    {"id": "132", "title": "Source-review closure packet", "status": "planned", "commit": "Add source review closure packet"},
+    {"id": "133", "title": "Patch apply recovery verification suite", "status": "planned", "commit": "Expand patch recovery verification"},
+    {"id": "134", "title": "Patch apply concurrent/fault stress suite", "status": "planned", "commit": "Expand patch apply stress tests"},
+    {"id": "135", "title": "Filesystem race corpus v3", "status": "planned", "commit": "Expand filesystem race corpus"},
+    {"id": "136", "title": "Filesystem platform contract review notes", "status": "planned", "commit": "Add filesystem platform review notes"},
+    {"id": "137", "title": "HTTP resolver transport adversarial suite", "status": "planned", "commit": "Expand HTTP resolver transport tests"},
+    {"id": "138", "title": "HTTP safe-error and audit evidence suite", "status": "planned", "commit": "Expand HTTP safe error evidence"},
+    {"id": "139", "title": "Executor assurance subagent pass", "status": "planned", "commit": "Add executor assurance review pass"},
+    {"id": "140", "title": "Evidence contract compatibility policy", "status": "planned", "commit": "Add evidence compatibility policy"},
+    {"id": "141", "title": "Audit and signed-export substitution suite v2", "status": "planned", "commit": "Expand signed audit evidence tests"},
+    {"id": "142", "title": "Manifest lock signature review suite v2", "status": "planned", "commit": "Expand signed manifest evidence tests"},
+    {"id": "143", "title": "Policy evidence snapshot suite", "status": "planned", "commit": "Add policy evidence snapshots"},
+    {"id": "144", "title": "Review-console evidence regression suite", "status": "planned", "commit": "Add review console evidence checks"},
+    {"id": "145", "title": "Operator recovery runbooks", "status": "planned", "commit": "Add operator recovery runbooks"},
+    {"id": "146", "title": "Docs claim-lint expansion v2", "status": "planned", "commit": "Expand docs claim lint"},
+    {"id": "147", "title": "v0.4 release evidence packet", "status": "planned", "commit": "Add v0.4 release evidence packet"},
+    {"id": "148", "title": "v0.4 consolidated review bundle", "status": "planned", "commit": "Add v0.4 consolidated packet"},
+    {"id": "149", "title": "External review handoff checkpoint", "status": "planned", "commit": "Add v0.4 external handoff checkpoint"},
+    {"id": "150", "title": "v0.4 boundary decision memo", "status": "planned", "commit": "Add v0.4 boundary decision"},
+    {"id": "151", "title": "v0.5 planning seed", "status": "planned", "commit": "Add v0.5 planning seed"}
+  ]
+}
