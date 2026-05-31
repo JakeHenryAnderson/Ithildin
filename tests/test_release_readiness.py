@@ -1269,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-162"
-    assert manifest["planned_range"] == "163-180"
+    assert manifest["completed_range"] == "152-163"
+    assert manifest["planned_range"] == "164-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1591,6 +1591,35 @@ def test_signed_evidence_source_review_checklist_is_documented() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/signed-evidence-source-review-checklist.md" in docs_site
+
+
+def test_policy_parity_source_review_checklist_is_documented() -> None:
+    checklist = Path("docs/codex/policy-parity-source-review-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "PolicyPreviewService.preview",
+        "GovernedToolCallService.call_tool",
+        "decision_evidence.py",
+        "scripts/policy_parity.py",
+        "make policy-test",
+        "make policy-parity",
+        "side-effect-free",
+        "YAML remains canonical",
+    ]:
+        assert required in checklist
+    assert "policy-parity-source-review-checklist.md" in readme
+    assert "163 - Policy parity source review checklist | Done" in backlog
+    assert "Task 163 adds a source checklist" in matrix
+    assert "docs/codex/policy-parity-source-review-checklist.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/policy-parity-source-review-checklist.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

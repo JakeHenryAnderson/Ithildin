@@ -94,6 +94,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Filesystem source review checklist | Task 160 adds a source checklist for workspace path/race semantics | pending external review | none | pending | `make filesystem-contract-check`; `make release-check` | checklist guides review but does not close filesystem externally | external_pending |
 | HTTP fetch source review checklist | Task 161 adds a source checklist for SSRF, allowlist, redirect, and DNS behavior | pending external review | none | pending | HTTP focused tests; `make release-check` | checklist guides review but does not close http.fetch externally | external_pending |
 | Signed evidence source review checklist | Task 162 adds a source checklist for local signature evidence and verification | pending external review | none | pending | `make signed-evidence-demo-verify`; `make release-check` | local signatures are evidence only, not notarization or custody | external_pending |
+| Policy parity source review checklist | Task 163 adds a source checklist for preview/runtime decision parity | pending external review | none | pending | `make policy-test`; `make policy-parity`; `make release-check` | checklist guides review but does not close policy externally | external_pending |
 
 ## v2 Update Rules
 
