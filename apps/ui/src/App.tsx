@@ -184,6 +184,33 @@ type SystemStatus = {
     event_count: number;
     head_hash: string;
   };
+  principals: {
+    required: boolean;
+    path: string;
+    count: number;
+    enabled_count: number;
+  };
+  workspaces: {
+    required: boolean;
+    path: string;
+    default_workspace_id: string;
+    count: number;
+    enabled_count: number;
+  };
+  storage: {
+    runtime_backend: string;
+    runtime_enabled: boolean;
+    postgres: {
+      configured: boolean;
+      runtime_enabled: boolean;
+      readiness: string;
+    };
+  };
+  telemetry: {
+    enabled: boolean;
+    service_name: string;
+    exporters: string[];
+  };
   audit_signing: {
     algorithm: string;
     private_key_configured: boolean;
@@ -645,7 +672,7 @@ export function App() {
                       : "integrity-indicator invalid"
                   }
                 >
-                  {data.systemStatus.audit.valid ? "Verified" : "Attention required"}
+                  {data.systemStatus.audit.valid ? "Audit chain OK" : "Attention required"}
                 </span>
                 <span className="trust-service">{data.systemStatus.service}</span>
               </div>
@@ -706,6 +733,37 @@ export function App() {
                 <div>
                   <dt>Tools</dt>
                   <dd>{data.systemStatus.tool_count}</dd>
+                </div>
+                <div>
+                  <dt>Principals</dt>
+                  <dd>
+                    {data.systemStatus.principals.enabled_count}/
+                    {data.systemStatus.principals.count}
+                    {data.systemStatus.principals.required ? " required" : " optional"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Workspaces</dt>
+                  <dd>
+                    {data.systemStatus.workspaces.enabled_count}/
+                    {data.systemStatus.workspaces.count} ·{" "}
+                    {data.systemStatus.workspaces.default_workspace_id}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Storage</dt>
+                  <dd>
+                    {data.systemStatus.storage.runtime_backend}
+                    {data.systemStatus.storage.runtime_enabled ? "" : " unavailable"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Telemetry</dt>
+                  <dd>
+                    {data.systemStatus.telemetry.enabled
+                      ? data.systemStatus.telemetry.exporters.join(", ") || "enabled"
+                      : "disabled"}
+                  </dd>
                 </div>
                 <div>
                   <dt>Candidate</dt>
@@ -996,7 +1054,7 @@ export function App() {
                         : "integrity-indicator invalid"
                     }
                   >
-                    {data.verification.valid ? "Verified" : "Attention required"}
+                    {data.verification.valid ? "Audit chain OK" : "Attention required"}
                   </span>
                   <dl className="meta-list">
                     <div>

@@ -377,6 +377,18 @@ def test_mcp_call_returns_real_http_fetch_output(tmp_path: Path) -> None:
     assert result.structuredContent["url"] == "https://example.com/data"
 
 
+def test_mcp_call_denies_registered_tool_not_exposed_over_mcp(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(harness.adapter.call_tool("internal.hidden", {}))
+
+    assert result.isError is True
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "denied"
+    assert result.structuredContent["reason"] == "tool is not exposed over MCP"
+    assert harness.audit_writer.list_events(event_type=AuditEventType.POLICY_EVALUATED.value) == []
+
+
 def test_mcp_call_uses_fixed_agent_principal_and_audits_policy(
     tmp_path: Path,
 ) -> None:

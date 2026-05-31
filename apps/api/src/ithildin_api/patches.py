@@ -525,7 +525,10 @@ class PatchProposalService:
         expected_tool_input_schema_hash: str,
         expected_policy_engine: str,
         expected_policy_hash: str,
+        expected_policy_version: str,
         expected_policy_document_version: str,
+        expected_matched_rules: list[str],
+        expected_principal: JsonObject,
     ) -> JsonObject:
         checks: dict[str, bool] = {}
         reasons: list[str] = []
@@ -584,10 +587,28 @@ class PatchProposalService:
             "policy hash mismatch",
         )
         check(
+            "policy_version",
+            _optional_scope_string(scope, "policy_version") == expected_policy_version,
+            "policy version mismatch",
+        )
+        check(
             "policy_document_version",
             _optional_scope_string(scope, "policy_document_version")
             == expected_policy_document_version,
             "policy document version mismatch",
+        )
+        check(
+            "matched_rules",
+            _scope_string_list(scope, "matched_rules") == expected_matched_rules,
+            "matched rules mismatch",
+        )
+        requesting_principal = _scope_object_or_none(scope, "requesting_principal")
+        check(
+            "requesting_principal",
+            requesting_principal is not None
+            and canonical_json(requesting_principal) == canonical_json(approval.principal)
+            and canonical_json(requesting_principal) == canonical_json(expected_principal),
+            "requesting principal mismatch",
         )
 
         proposal_id = _optional_scope_string(scope, "proposal_id")
@@ -616,6 +637,11 @@ class PatchProposalService:
                     "path",
                     proposal.path == _optional_scope_string(scope, "path"),
                     "path mismatch",
+                )
+                check(
+                    "proposal_status",
+                    proposal.status == "proposed",
+                    f"proposal is {proposal.status}",
                 )
                 check(
                     "current_base",
@@ -1203,6 +1229,13 @@ def _scope_object(scope: JsonObject, key: str) -> JsonObject:
     value = scope.get(key)
     if not isinstance(value, dict) or not all(isinstance(item, str) for item in value):
         raise PatchProposalError(f"approval scope missing {key}")
+    return value
+
+
+def _scope_object_or_none(scope: JsonObject, key: str) -> JsonObject | None:
+    value = scope.get(key)
+    if not isinstance(value, dict) or not all(isinstance(item, str) for item in value):
+        return None
     return value
 
 

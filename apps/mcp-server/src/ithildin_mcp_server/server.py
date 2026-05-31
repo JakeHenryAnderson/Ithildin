@@ -20,7 +20,7 @@ from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.policy import load_policy_engine
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
-from ithildin_api.registry import ToolRegistry
+from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.security_status import validate_security_settings
 from ithildin_api.storage import validate_storage_settings
 from ithildin_api.telemetry import configure_telemetry
@@ -86,6 +86,14 @@ class IthildinMcpAdapter:
         return tools
 
     async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> types.CallToolResult:
+        try:
+            registered_tool = self.registry.get_tool(tool_name)
+        except UnknownToolDenied:
+            pass
+        else:
+            if (registered_tool.manifest.mcp or {}).get("exposed") is not True:
+                return _safe_mcp_denial(tool_name, "tool is not exposed over MCP")
+
         result = self.tool_call_service.call_tool(
             tool_name=tool_name,
             arguments=_json_object(arguments),
@@ -214,3 +222,22 @@ async def run_stdio_server(settings: Settings | None = None) -> None:
 
 def _json_object(value: dict[str, object]) -> JsonObject:
     return cast(JsonObject, value)
+
+
+def _safe_mcp_denial(tool_name: str, reason: str) -> types.CallToolResult:
+    structured_content = {
+        "status": "denied",
+        "request_id": None,
+        "tool_name": tool_name,
+        "reason": reason,
+    }
+    return types.CallToolResult(
+        content=[
+            types.TextContent(
+                type="text",
+                text=json.dumps(structured_content, sort_keys=True),
+            )
+        ],
+        structuredContent=structured_content,
+        isError=True,
+    )

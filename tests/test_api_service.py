@@ -526,6 +526,39 @@ def test_create_get_approve_and_deny_approval_endpoints(tmp_path: Path) -> None:
     assert deny_response.json()["status"] == "denied"
 
 
+def test_approval_mutation_routes_reject_body_decision_mismatch(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        create_response = client.post(
+            "/approvals",
+            headers={"Authorization": "Bearer correct-token"},
+            json={
+                "principal": {"id": "agent:local-dev"},
+                "tool_name": "fs.apply_patch",
+                "resource": {"path": "/workspace/app.py"},
+                "summary": "Modify app.py",
+                "one_time_scope": {"tool_name": "fs.apply_patch"},
+            },
+        )
+        approval_id = create_response.json()["approval_id"]
+        approve_mismatch = client.post(
+            f"/approvals/{approval_id}/approve",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"decision": "deny", "decided_by": "user:alice"},
+        )
+        deny_mismatch = client.post(
+            f"/approvals/{approval_id}/deny",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"decision": "approve", "decided_by": "user:alice"},
+        )
+
+    assert approve_mismatch.status_code == 400
+    assert approve_mismatch.json()["detail"] == "decision must be approve"
+    assert deny_mismatch.status_code == 400
+    assert deny_mismatch.json()["detail"] == "decision must be deny"
+
+
 def test_approval_list_requires_auth_and_supports_status_filter(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path, token="correct-token"))
 
@@ -1435,6 +1468,79 @@ def test_approval_review_endpoint_reports_binding_checks(tmp_path: Path) -> None
     assert reviewed["review"]["valid"] is True
     assert reviewed["review"]["checks"]["proposal_hash"] is True
     assert reviewed["review"]["proposal"]["base_file_hash_matches"] is True
+
+
+def test_approval_review_endpoint_reports_runtime_binding_drift(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    write_manifest(
+        settings.manifest_dir,
+        name="fs.patch.apply",
+        risk="write",
+        required=["proposal_id"],
+    )
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        patch_service = cast(PatchProposalService, app.state.patch_proposal_service)
+        approval_service = cast(ApprovalService, app.state.approval_service)
+        registry = cast(ToolRegistry, app.state.registry)
+        policy_evaluator = app.state.policy_evaluator
+        proposal = patch_service.create_proposal(
+            request_id="req_1",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff="--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\n",
+        )
+        tool = registry.get_tool("fs.patch.apply")
+        expires_at = datetime.now(UTC) + timedelta(minutes=15)
+        request_hash = sha256_digest({"request_id": "req_2"})
+        scope = patch_service.approval_scope(
+            proposal.proposal_id,
+            manifest_hash=tool.manifest_hash,
+            manifest_version=tool.manifest.version,
+            tool_input_schema_hash=sha256_digest(tool.manifest.input_schema),
+            policy_engine=policy_evaluator.engine_name,
+            policy_hash=policy_evaluator.policy_hash,
+            policy_version="policy-version-original",
+            policy_document_version=policy_evaluator.document_version,
+            matched_rules=["require_write_approval"],
+            requesting_principal={"id": "agent:test"},
+            request_hash=request_hash,
+            expires_at=expires_at,
+        )
+        scope["policy_version"] = "policy-version-drifted"
+        scope["matched_rules"] = ["wrong_rule"]
+        scope["requesting_principal"] = {"id": "agent:other"}
+        approval = approval_service.create_pending(
+            CreateApprovalInput(
+                request_id="req_2",
+                request_hash=request_hash,
+                principal={"id": "agent:test"},
+                tool_name="fs.patch.apply",
+                resource={"path": "README.md"},
+                summary="Apply patch",
+                one_time_scope=scope,
+                expires_at=expires_at,
+                metadata={
+                    "policy_version": "policy-version-original",
+                    "matched_rules": ["require_write_approval"],
+                },
+            )
+        )
+        response = client.get(
+            "/approvals/review?status=pending",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 200
+    reviewed = response.json()["approvals"][0]
+    assert reviewed["approval"]["approval_id"] == approval.approval_id
+    assert reviewed["review"]["valid"] is False
+    assert reviewed["review"]["checks"]["policy_version"] is False
+    assert reviewed["review"]["checks"]["matched_rules"] is False
+    assert reviewed["review"]["checks"]["requesting_principal"] is False
 
 
 def test_audit_events_endpoint_requires_auth_filters_and_bounds_results(tmp_path: Path) -> None:

@@ -360,7 +360,13 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                         ),
                         expected_policy_engine=policy_evaluator.engine_name,
                         expected_policy_hash=policy_evaluator.policy_hash,
+                        expected_policy_version=_approval_expected_policy_version(
+                            approval,
+                            policy_evaluator.policy_hash,
+                        ),
                         expected_policy_document_version=policy_evaluator.document_version,
+                        expected_matched_rules=_approval_expected_matched_rules(approval),
+                        expected_principal=approval.principal,
                     ),
                 }
                 for approval in approval_service.list(status=status)
@@ -391,6 +397,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @api.post("/approvals/{approval_id}/approve", dependencies=[Depends(require_admin_token)])
     def approve_approval(approval_id: str, payload: ApprovalDecisionPayload) -> ApprovalRequest:
+        _require_route_decision(payload.decision, ApprovalDecisionValue.APPROVE)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
             return approval_service.approve(
@@ -403,6 +410,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @api.post("/approvals/{approval_id}/deny", dependencies=[Depends(require_admin_token)])
     def deny_approval(approval_id: str, payload: ApprovalDecisionPayload) -> ApprovalRequest:
+        _require_route_decision(payload.decision, ApprovalDecisionValue.DENY)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
             return approval_service.deny(
@@ -489,6 +497,35 @@ def _write_audit_export_event(audit_writer: AuditWriter, *, signed: bool) -> Non
             "contents": "audit export metadata and events",
         },
     )
+
+
+def _approval_expected_policy_version(
+    approval: ApprovalRequest,
+    fallback_policy_hash: str,
+) -> str:
+    value = approval.metadata.get("policy_version")
+    return value if isinstance(value, str) and value else fallback_policy_hash
+
+
+def _approval_expected_matched_rules(approval: ApprovalRequest) -> list[str]:
+    value = approval.metadata.get("matched_rules")
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return cast(list[str], value)
+    scope_value = approval.one_time_scope.get("matched_rules")
+    if isinstance(scope_value, list) and all(isinstance(item, str) for item in scope_value):
+        return cast(list[str], scope_value)
+    return []
+
+
+def _require_route_decision(
+    actual: ApprovalDecisionValue,
+    expected: ApprovalDecisionValue,
+) -> None:
+    if actual != expected:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"decision must be {expected.value}",
+        )
 
 
 class CreateApprovalPayload(BaseModel):

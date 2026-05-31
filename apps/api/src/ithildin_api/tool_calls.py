@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import cast
 from uuid import uuid4
 
 from ithildin_audit_core import AuditWriter
@@ -316,12 +317,13 @@ class GovernedToolCallService:
                             summary=f"Apply patch {one_time_scope['proposal_id']}",
                             one_time_scope=one_time_scope,
                             expires_at=approval_expires_at,
-                            metadata={
+                            metadata=cast(JsonObject, {
                                 "policy_reason": policy_decision.reason,
                                 "policy_engine": self.policy_evaluator.engine_name,
                                 "policy_hash": self.policy_evaluator.policy_hash,
                                 "policy_version": policy_decision.policy_version,
                                 "policy_document_version": self.policy_evaluator.document_version,
+                                "matched_rules": policy_decision.matched_rules,
                                 "manifest_hash": registered_tool.manifest_hash,
                                 "manifest_version": manifest.version,
                                 "tool_input_schema_hash": sha256_digest(manifest.input_schema),
@@ -329,7 +331,7 @@ class GovernedToolCallService:
                                 "proposal_id": one_time_scope["proposal_id"],
                                 "proposal_hash": one_time_scope["proposal_hash"],
                                 "base_file_hash": one_time_scope["base_file_hash"],
-                            },
+                            }),
                         )
                     )
                     content = self._redact_content(
