@@ -1269,8 +1269,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-164"
-    assert manifest["planned_range"] == "165-180"
+    assert manifest["completed_range"] == "152-165"
+    assert manifest["planned_range"] == "166-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1648,6 +1648,34 @@ def test_mcp_ingress_source_review_checklist_is_documented() -> None:
     assert "Task 164 adds a source checklist" in matrix
     assert "docs/codex/mcp-ingress-source-review-checklist.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/mcp-ingress-source-review-checklist.md" in docs_site
+
+
+def test_review_console_source_review_checklist_is_documented() -> None:
+    checklist = Path("docs/codex/review-console-source-review-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    for required in [
+        "apps/ui/src/App.tsx",
+        "approval binding evidence display",
+        "decided_by: \"admin:local-ui\"",
+        "The UI does not add direct tool execution",
+        "npm run typecheck --prefix apps/ui",
+        "npm run build --prefix apps/ui",
+        "not custody or notarization",
+    ]:
+        assert required in checklist
+    assert "review-console-source-review-checklist.md" in readme
+    assert "165 - Review console source review checklist | Done" in backlog
+    assert "Task 165 adds a source checklist" in matrix
+    assert "docs/codex/review-console-source-review-checklist.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/review-console-source-review-checklist.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:
