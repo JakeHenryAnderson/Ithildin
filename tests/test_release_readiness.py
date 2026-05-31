@@ -14,6 +14,7 @@ from scripts import (
     release_guardrails,
     release_packet,
     review_docs,
+    review_findings_collect,
     review_packet_bundle,
     review_packet_diff,
     review_run_manifest,
@@ -922,7 +923,8 @@ def test_reviewer_finding_intake_doc_and_release_check_are_wired() -> None:
     assert "reviewer-findings-check:" in makefile
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
-        "reviewer-findings-check review-run-manifest-check filesystem-contract-check"
+        "reviewer-findings-check review-findings-summary "
+        "review-run-manifest-check filesystem-contract-check"
     ) in makefile
     assert "open critical/high findings" in intake
     assert "reviewer-finding-intake.md" in review_packet
@@ -1042,6 +1044,31 @@ def test_review_run_manifest_doc_and_release_check_are_wired() -> None:
     assert "docs/codex/review-run-manifest-schema.md" in review_docs.REVIEW_DOCS
 
 
+def test_review_findings_summary_collects_structured_records() -> None:
+    summary = review_findings_collect.collect_findings_summary(
+        Path("docs/codex/findings"),
+        Path.cwd(),
+    )
+
+    assert summary["total"] >= 1
+    assert summary["open_critical_high"] == 0
+    assert any(finding["finding_id"] == "SUB-001" for finding in summary["findings"])
+
+
+def test_review_findings_summary_doc_and_release_check_are_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    summary = Path("docs/codex/v0.3-review-findings-summary.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "review-findings-summary:" in makefile
+    assert "review-findings-summary" in makefile.partition("release-check:")[2]
+    assert "make review-findings-summary" in readme
+    assert "SUB-001" in summary
+    assert "docs/codex/v0.3-review-findings-summary.md" in review_docs.REVIEW_DOCS
+
+
 def test_release_check_enforces_filesystem_contract_check() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
@@ -1050,7 +1077,8 @@ def test_release_check_enforces_filesystem_contract_check() -> None:
 
     assert (
         "release-check: release-context manifest-lock-check release-guardrails "
-        "reviewer-findings-check review-run-manifest-check filesystem-contract-check"
+        "reviewer-findings-check review-findings-summary "
+        "review-run-manifest-check filesystem-contract-check"
     ) in makefile
     assert "Task 091 release-check filesystem-contract-check gate" in matrix
 

@@ -54,6 +54,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "manifest-lock-check",
     "release-guardrails",
     "reviewer-findings-check",
+    "review-findings-summary",
     "review-run-manifest-check",
     "filesystem-contract-check",
     "policy-test",
@@ -213,6 +214,7 @@ def _check_release_targets() -> list[str]:
         "release-evidence-validate:",
         "review-packet-diff:",
         "reviewer-findings-check:",
+        "review-findings-summary:",
         "review-run-manifest-check:",
     ]:
         if target not in makefile:

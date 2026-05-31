@@ -20,6 +20,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.3-boundary-decision.md",
     "docs/codex/v0.4-boundary-charter.md",
     "docs/codex/review-run-manifest-schema.md",
+    "docs/codex/v0.3-review-findings-summary.md",
     "docs/codex/v0.3-milestone-manifest.md",
     "docs/codex/patch-apply-state-machine.md",
     "docs/codex/executor-contract-set.md",
