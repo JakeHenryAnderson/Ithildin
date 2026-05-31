@@ -1,0 +1,158 @@
+{
+  "parse_cases": [
+    {
+      "id": "mixed_case_scheme_host_trailing_dot",
+      "url": "HTTPS://EXAMPLE.COM./Path",
+      "allowlist": "https://example.com",
+      "normalized_url": "https://example.com/Path",
+      "allowed": true
+    },
+    {
+      "id": "default_https_port_collapses",
+      "url": "https://example.com:443/data",
+      "allowlist": "https://example.com",
+      "normalized_url": "https://example.com/data",
+      "allowed": true
+    },
+    {
+      "id": "explicit_non_default_port_requires_exact_allowlist",
+      "url": "https://example.com:8443/data",
+      "allowlist": "https://example.com:8443",
+      "normalized_url": "https://example.com:8443/data",
+      "allowed": true
+    },
+    {
+      "id": "explicit_default_port_mismatch_denied",
+      "url": "https://example.com:443/data",
+      "allowlist": "http://example.com",
+      "normalized_url": "https://example.com/data",
+      "allowed": false
+    },
+    {
+      "id": "unicode_hostname_idna_normalized",
+      "url": "https://bücher.example/path",
+      "allowlist": "https://xn--bcher-kva.example",
+      "normalized_url": "https://xn--bcher-kva.example/path",
+      "allowed": true
+    },
+    {
+      "id": "global_ipv6_bracket_normalized",
+      "url": "https://[2606:2800:220:1:248:1893:25c8:1946]/",
+      "allowlist": "https://[2606:2800:220:1:248:1893:25c8:1946]",
+      "normalized_url": "https://[2606:2800:220:1:248:1893:25c8:1946]/",
+      "allowed": true
+    },
+    {
+      "id": "leading_whitespace_rejected",
+      "url": " https://example.com/",
+      "allowlist": "https://example.com",
+      "error": "whitespace or control"
+    },
+    {
+      "id": "embedded_space_rejected",
+      "url": "https://example.com/has space",
+      "allowlist": "https://example.com",
+      "error": "whitespace or control"
+    },
+    {
+      "id": "embedded_control_rejected",
+      "url": "https://example.com/\npath",
+      "allowlist": "https://example.com",
+      "error": "whitespace or control"
+    },
+    {
+      "id": "credentials_rejected",
+      "url": "https://user:pass@example.com/",
+      "allowlist": "https://example.com",
+      "error": "credentials"
+    },
+    {
+      "id": "fragment_rejected",
+      "url": "https://example.com/#frag",
+      "allowlist": "https://example.com",
+      "error": "fragments"
+    },
+    {
+      "id": "unsupported_scheme_rejected",
+      "url": "ftp://example.com/file",
+      "allowlist": "https://example.com",
+      "error": "http and https"
+    },
+    {
+      "id": "percent_encoded_host_rejected",
+      "url": "https://%65xample.com/",
+      "allowlist": "https://example.com",
+      "error": "percent encoding"
+    },
+    {
+      "id": "repeated_dot_host_rejected",
+      "url": "https://example..com/",
+      "allowlist": "https://example.com",
+      "error": "dot notation"
+    },
+    {
+      "id": "decimal_ipv4_rejected",
+      "url": "https://2130706433/",
+      "allowlist": "https://2130706433",
+      "error": "unsupported IP notation"
+    },
+    {
+      "id": "octal_ipv4_rejected",
+      "url": "https://0177.0.0.1/",
+      "allowlist": "https://0177.0.0.1",
+      "error": "unsupported IP notation"
+    },
+    {
+      "id": "hex_ipv4_rejected",
+      "url": "https://0x7f.0.0.1/",
+      "allowlist": "https://0x7f.0.0.1",
+      "error": "unsupported IP notation"
+    }
+  ],
+  "fetch_denial_cases": [
+    {
+      "id": "localhost_alias_blocks_at_resolution",
+      "url": "https://localhost/",
+      "allowlist": "https://localhost",
+      "scenario": "blocked_resolution",
+      "resolved_ips": ["127.0.0.1"],
+      "error": "blocked IP"
+    },
+    {
+      "id": "ipv4_mapped_ipv6_blocks_at_resolution",
+      "url": "https://example.com/",
+      "allowlist": "https://example.com",
+      "scenario": "blocked_resolution",
+      "resolved_ips": ["::ffff:127.0.0.1"],
+      "error": "blocked IP"
+    },
+    {
+      "id": "redirect_to_private_revalidated",
+      "url": "https://example.com/",
+      "allowlist": "https://example.com,https://private.example",
+      "scenario": "redirect_private",
+      "error": "blocked IP"
+    },
+    {
+      "id": "dns_change_rejected_before_open",
+      "url": "https://example.com/",
+      "allowlist": "https://example.com",
+      "scenario": "dns_change",
+      "error": "DNS resolution changed"
+    },
+    {
+      "id": "timeout_error_is_safe",
+      "url": "https://example.com/",
+      "allowlist": "https://example.com",
+      "scenario": "timeout",
+      "error": "HTTP fetch failed safely"
+    },
+    {
+      "id": "body_size_limit_is_safe",
+      "url": "https://example.com/",
+      "allowlist": "https://example.com",
+      "scenario": "size_limit",
+      "error": "byte limit"
+    }
+  ]
+}

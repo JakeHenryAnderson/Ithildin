@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Sequence
 from email.message import Message
 from pathlib import Path
@@ -13,6 +14,7 @@ from ithildin_api.http_tools import (
     HttpAllowlist,
     HttpFetchError,
     HttpFetchExecutor,
+    parse_http_url,
 )
 
 
@@ -93,6 +95,103 @@ def make_executor(
         opener=opener,
     )
     return executor, opener
+
+
+def _http_corpus() -> dict[str, list[dict[str, Any]]]:
+    corpus_path = Path(__file__).parent / "fixtures" / "http_canonicalization_corpus.json"
+    return cast(
+        dict[str, list[dict[str, Any]]],
+        json.loads(corpus_path.read_text(encoding="utf-8")),
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    _http_corpus()["parse_cases"],
+    ids=lambda case: str(case["id"]),
+)
+def test_http_url_canonicalization_corpus(case: dict[str, Any]) -> None:
+    expected_error = case.get("error")
+    if expected_error is not None:
+        with pytest.raises(HttpFetchError, match=str(expected_error)):
+            parse_http_url(str(case["url"]))
+        return
+
+    parsed = parse_http_url(str(case["url"]))
+    allowlist = HttpAllowlist.from_csv(str(case["allowlist"]))
+
+    assert parsed.normalized_url == case["normalized_url"]
+    assert allowlist.allows(parsed) is case["allowed"]
+
+
+@pytest.mark.parametrize(
+    "case",
+    _http_corpus()["fetch_denial_cases"],
+    ids=lambda case: str(case["id"]),
+)
+def test_http_fetch_denial_corpus(case: dict[str, Any]) -> None:
+    scenario = case["scenario"]
+    responses: list[object] = [FakeResponse(body=b"ok")]
+    resolver: Callable[[str, int], Sequence[str]]
+    max_response_bytes = 1024
+
+    if scenario == "blocked_resolution":
+        resolved_ips = cast(list[str], case["resolved_ips"])
+
+        def resolver(host: str, port: int) -> Sequence[str]:
+            return resolved_ips
+
+    elif scenario == "redirect_private":
+        responses = [
+            HTTPError(
+                str(case["url"]),
+                302,
+                "Found",
+                _headers(location="https://private.example/"),
+                None,
+            )
+        ]
+
+        def resolver(host: str, port: int) -> Sequence[str]:
+            return ["127.0.0.1"] if host == "private.example" else ["93.184.216.34"]
+
+    elif scenario == "dns_change":
+        calls = 0
+
+        def resolver(host: str, port: int) -> Sequence[str]:
+            nonlocal calls
+            calls += 1
+            return ["93.184.216.34"] if calls == 1 else ["93.184.216.35"]
+
+    elif scenario == "timeout":
+        responses = [TimeoutError("private timeout detail")]
+
+        def resolver(host: str, port: int) -> Sequence[str]:
+            return ["93.184.216.34"]
+
+    elif scenario == "size_limit":
+        responses = [FakeResponse(body=b"too large")]
+
+        def resolver(host: str, port: int) -> Sequence[str]:
+            return ["93.184.216.34"]
+
+        max_response_bytes = 4
+    else:  # pragma: no cover - fixture validation guard
+        raise AssertionError(f"unknown HTTP corpus scenario: {scenario}")
+
+    executor, opener = make_executor(
+        allowlist=str(case["allowlist"]),
+        responses=responses,
+        resolver=resolver,
+        max_response_bytes=max_response_bytes,
+    )
+
+    with pytest.raises(HttpFetchError, match=str(case["error"])) as exc_info:
+        executor.fetch(str(case["url"]))
+
+    assert "private timeout detail" not in str(exc_info.value)
+    if scenario in {"blocked_resolution", "dns_change"}:
+        assert opener.requests == []
 
 
 def test_allowed_exact_host_fetch_returns_text_and_json() -> None:

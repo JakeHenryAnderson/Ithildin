@@ -18,9 +18,10 @@ proxy, or timeout overrides.
 Before opening a request, the executor:
 
 1. parses the URL;
-2. rejects unsupported schemes, missing hosts, fragments, credentials, malformed ports, and
+2. rejects whitespace/control characters, unsupported schemes, missing hosts, fragments,
+   credentials, malformed ports, unsupported percent-encoded host forms, ambiguous dot notation, and
    obfuscated IP notation;
-3. normalizes hostnames to lowercase ASCII IDNA/punycode form and strips a trailing dot;
+3. normalizes hostnames to lowercase ASCII IDNA/punycode form and allows at most one trailing dot;
 4. normalizes default ports out of the URL representation;
 5. checks the exact allowlist against the normalized destination. Allowlist entries may be
    scheme-qualified (`https://example.com`), host-only (`example.com`, interpreted as
@@ -37,6 +38,12 @@ Redirects repeat the same parse, allowlist, DNS, and IP validation before the ne
 redirect to an unallowlisted or private destination fails before the redirected request is opened.
 Injected test transports must implement the same pinned-destination interface used by the runtime
 transport. Fetches fail closed if a custom transport cannot accept validated destination IPs.
+
+Task 121 adds a fixture-backed canonicalization corpus at
+`tests/fixtures/http_canonicalization_corpus.json`. It covers mixed-case schemes, default and
+explicit ports, whitespace/control characters, credentials, fragments, percent-encoding ambiguity,
+trailing/repeated dots, IDNA/punycode, IPv6, obfuscated IPv4 forms, redirect-to-private denial,
+DNS-change denial, timeout errors, size limits, and safe error behavior.
 
 ## Response Bounds
 

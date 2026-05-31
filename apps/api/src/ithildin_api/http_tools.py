@@ -364,6 +364,7 @@ class HttpFetchExecutor:
 def parse_http_url(url: str) -> ParsedHttpUrl:
     if not url:
         raise HttpFetchError("url must not be empty")
+    _reject_url_control_or_space(url)
     try:
         split = urlsplit(url)
     except ValueError as exc:
@@ -455,15 +456,23 @@ def _parse_allowlist_entry(raw_entry: str) -> HttpAllowlistEntry:
 
 
 def _normalize_host(host: str) -> str:
-    stripped = host.rstrip(".").lower()
+    lowered = host.lower()
+    if "%" in lowered:
+        raise HttpFetchError("host contains unsupported percent encoding")
+    stripped = lowered[:-1] if lowered.endswith(".") else lowered
     if not stripped:
         raise HttpFetchError("host must not be empty")
+    if stripped.startswith(".") or stripped.endswith(".") or ".." in stripped:
+        raise HttpFetchError("host contains ambiguous dot notation")
     if _looks_like_obfuscated_ip(stripped):
         raise HttpFetchError("host uses unsupported IP notation")
     try:
         return ipaddress.ip_address(stripped).compressed
     except ValueError:
-        return stripped.encode("idna").decode("ascii")
+        try:
+            return stripped.encode("idna").decode("ascii")
+        except UnicodeError as exc:
+            raise HttpFetchError("host is malformed") from exc
 
 
 def _looks_like_obfuscated_ip(host: str) -> bool:
@@ -482,6 +491,14 @@ def _looks_like_obfuscated_ip(host: str) -> bool:
             except ValueError:
                 return True
     return False
+
+
+def _reject_url_control_or_space(url: str) -> None:
+    if any(
+        character.isspace() or ord(character) < 32 or ord(character) == 127
+        for character in url
+    ):
+        raise HttpFetchError("url contains whitespace or control characters")
 
 
 def _resolve_host(host: str, port: int) -> Sequence[str]:
