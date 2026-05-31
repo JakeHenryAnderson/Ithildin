@@ -950,7 +950,7 @@ def test_patch_apply_failure_before_replace_records_failed_attempt(
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
     harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
 
-    def fail_before_replace(target: Path, content: str) -> None:
+    def fail_before_replace(workspace_root: Path, relative_path: str, content: str) -> None:
         raise OSError("simulated replace failure")
 
     monkeypatch.setattr(patches, "_atomic_write_text", fail_before_replace)
@@ -1330,11 +1330,12 @@ def test_patch_apply_denies_parent_directory_symlink_swap_before_replace(
 
     original_atomic_write = patches_module._atomic_write_text
 
-    def swap_parent_to_symlink(target: Path, content: str) -> None:
+    def swap_parent_to_symlink(workspace_root: Path, relative_path: str, content: str) -> None:
+        target = workspace_root / relative_path
         if target.parent.name == "docs":
-            target.parent.rename(harness.workspace_root / "docs-original")
+            target.parent.rename(workspace_root / "docs-original")
             target.parent.symlink_to(outside)
-        original_atomic_write(target, content)
+        original_atomic_write(workspace_root, relative_path, content)
 
     monkeypatch.setattr(patches_module, "_atomic_write_text", swap_parent_to_symlink)
 
@@ -1351,6 +1352,84 @@ def test_patch_apply_denies_parent_directory_symlink_swap_before_replace(
     assert (harness.workspace_root / "docs-original/README.md").read_text(
         encoding="utf-8"
     ) == "old\n"
+
+
+def test_patch_apply_denies_ancestor_directory_symlink_swap_before_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = make_patch_harness(tmp_path)
+    nested = harness.workspace_root / "docs" / "nested"
+    nested.mkdir(parents=True)
+    nested.joinpath("README.md").write_text("old\n", encoding="utf-8")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    proposal_result = harness.service.call_tool(
+        tool_name="fs.patch.propose",
+        arguments={
+            "path": "docs/nested/README.md",
+            "unified_diff": (
+                "--- a/docs/nested/README.md\n"
+                "+++ b/docs/nested/README.md\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+new\n"
+            ),
+        },
+        principal=principal(),
+        session_id="sess_1",
+    )
+    assert proposal_result.status == "completed"
+    proposal = proposal_result.content
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    import ithildin_api.patches as patches_module
+
+    original_atomic_write = patches_module._atomic_write_text
+
+    def swap_ancestor_to_symlink(workspace_root: Path, relative_path: str, content: str) -> None:
+        docs = workspace_root / "docs"
+        docs.rename(workspace_root / "docs-original")
+        docs.symlink_to(outside)
+        original_atomic_write(workspace_root, relative_path, content)
+
+    monkeypatch.setattr(patches_module, "_atomic_write_text", swap_ancestor_to_symlink)
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "failed to apply patch safely" in str(result.content["reason"])
+    assert outside.joinpath("nested/README.md").exists() is False
+    assert (harness.workspace_root / "docs-original/nested/README.md").read_text(
+        encoding="utf-8"
+    ) == "old\n"
+
+
+def test_http_fetch_audit_resource_redacts_query_string(tmp_path: Path) -> None:
+    opener = FakeHttpOpener()
+    service = make_http_service(tmp_path, opener=opener)
+
+    result = service.call_tool(
+        tool_name=HTTP_FETCH_TOOL,
+        arguments={"url": "https://example.com/data?token=secret-value"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "completed"
+    payloads = audit_payloads(tmp_path)
+    audit_text = json.dumps(payloads)
+    assert "secret-value" not in audit_text
+    for payload in payloads:
+        resource = payload.get("resource")
+        if isinstance(resource, dict) and resource.get("type") == "network":
+            assert resource["url"] == "https://example.com/data"
 
 
 def test_direct_patch_payload_cannot_be_applied(tmp_path: Path) -> None:

@@ -73,6 +73,18 @@
       "error": "fragments"
     },
     {
+      "id": "zero_port_rejected",
+      "url": "https://example.com:0/",
+      "allowlist": "https://example.com",
+      "error": "port"
+    },
+    {
+      "id": "empty_explicit_port_rejected",
+      "url": "https://example.com:/",
+      "allowlist": "https://example.com",
+      "error": "port"
+    },
+    {
       "id": "unsupported_scheme_rejected",
       "url": "ftp://example.com/file",
       "allowlist": "https://example.com",

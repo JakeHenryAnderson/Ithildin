@@ -39,7 +39,7 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
         source_files=(
             "apps/api/src/ithildin_api/patches.py",
             "apps/api/src/ithildin_api/approvals.py",
-            "apps/api/src/ithildin_api/governed_tools.py",
+            "apps/api/src/ithildin_api/tool_calls.py",
         ),
         review_docs=(
             "docs/codex/patch-apply-source-review-checklist.md",

@@ -41,6 +41,15 @@ class FakeResponse:
         return self.code
 
 
+class RaisingReadResponse(FakeResponse):
+    def __init__(self, exc: Exception) -> None:
+        super().__init__(body=b"")
+        self.exc = exc
+
+    def read(self, size: int) -> bytes:
+        raise self.exc
+
+
 class FakeOpener:
     def __init__(self, responses: list[object]) -> None:
         self.responses = responses
@@ -286,6 +295,22 @@ def test_invalid_port_is_denied_safely_without_opening_request() -> None:
     assert opener.requests == []
 
 
+@pytest.mark.parametrize("url", ["https://example.com:0/", "https://example.com:/"])
+def test_zero_or_empty_explicit_ports_are_denied_without_opening_request(url: str) -> None:
+    executor, opener = make_executor()
+
+    with pytest.raises(HttpFetchError, match="port"):
+        executor.fetch(url)
+
+    assert opener.requests == []
+
+
+@pytest.mark.parametrize("entry", ["https://example.com:0", "https://example.com:"])
+def test_zero_or_empty_explicit_allowlist_ports_are_invalid(entry: str) -> None:
+    with pytest.raises(ValueError, match="invalid"):
+        HttpAllowlist.from_csv(entry)
+
+
 @pytest.mark.parametrize("host", ["2130706433", "0177.0.0.1", "0x7f.0.0.1"])
 def test_obfuscated_ipv4_url_hosts_are_rejected(host: str) -> None:
     executor, opener = make_executor()
@@ -496,6 +521,31 @@ def test_timeout_and_url_errors_return_safe_error() -> None:
         executor.fetch("https://example.com/")
 
     assert "secret backend detail" not in str(exc_info.value)
+
+
+def test_body_read_errors_return_safe_error() -> None:
+    executor, _ = make_executor(responses=[RaisingReadResponse(TimeoutError("secret read detail"))])
+
+    with pytest.raises(HttpFetchError, match="HTTP fetch failed safely") as exc_info:
+        executor.fetch("https://example.com/")
+
+    assert "secret read detail" not in str(exc_info.value)
+
+
+def test_unknown_response_charset_returns_safe_error() -> None:
+    executor, _ = make_executor(
+        responses=[
+            FakeResponse(
+                body=b"hello",
+                content_type="text/plain; charset=secret_backend_charset",
+            )
+        ]
+    )
+
+    with pytest.raises(HttpFetchError, match="HTTP fetch failed safely") as exc_info:
+        executor.fetch("https://example.com/")
+
+    assert "secret_backend_charset" not in str(exc_info.value)
 
 
 def test_obfuscated_ipv4_hosts_are_rejected() -> None:

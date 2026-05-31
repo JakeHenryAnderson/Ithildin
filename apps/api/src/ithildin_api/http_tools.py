@@ -255,11 +255,21 @@ class HttpFetchExecutor:
                         raise HttpFetchError("redirect limit exceeded") from exc
                     current = next_url
                     continue
-                return self._result_from_response(cast(HttpResponse, exc), current, redirect_chain)
+                return self._safe_result_from_response(
+                    cast(HttpResponse, exc),
+                    current,
+                    redirect_chain,
+                )
             except (TimeoutError, OSError, URLError) as exc:
                 raise HttpFetchError("HTTP fetch failed safely") from exc
 
-            status_code = response.code or _call_no_arg(response, "getcode")
+            try:
+                status_code = response.code or _call_no_arg(response, "getcode")
+            except (HttpFetchError, TimeoutError, OSError, http.client.HTTPException) as exc:
+                _close_response(response)
+                if isinstance(exc, HttpFetchError):
+                    raise
+                raise HttpFetchError("HTTP fetch failed safely") from exc
             if _is_redirect(status_code):
                 location = response.headers.get("Location")
                 _close_response(response)
@@ -278,9 +288,24 @@ class HttpFetchExecutor:
                 current = next_url
                 continue
 
-            return self._result_from_response(response, current, redirect_chain)
+            return self._safe_result_from_response(response, current, redirect_chain)
 
         raise HttpFetchError("redirect limit exceeded")
+
+    def _safe_result_from_response(
+        self,
+        response: HttpResponse,
+        parsed_url: ParsedHttpUrl,
+        redirect_chain: list[JsonValue],
+    ) -> JsonObject:
+        try:
+            return self._result_from_response(response, parsed_url, redirect_chain)
+        except HttpFetchError:
+            raise
+        except (TimeoutError, OSError, http.client.HTTPException, LookupError, UnicodeError) as exc:
+            raise HttpFetchError("HTTP fetch failed safely") from exc
+        finally:
+            _close_response(response)
 
     def _ensure_allowed_destination(self, parsed_url: ParsedHttpUrl) -> tuple[str, ...]:
         if not self.allowlist.allows(parsed_url):
@@ -379,7 +404,9 @@ def parse_http_url(url: str) -> ParsedHttpUrl:
         raise HttpFetchError("URL host is required")
 
     host = _normalize_host(split.hostname)
-    port = _port_from_split(split) or _default_port(split.scheme)
+    port = _port_from_split(split)
+    if port is None:
+        port = _default_port(split.scheme)
     normalized = SplitResult(
         scheme=split.scheme,
         netloc=_netloc(host, port, split.scheme),
@@ -411,7 +438,7 @@ def http_resource_from_url(url: str, allowlist: HttpAllowlist) -> JsonObject:
         "type": "network",
         "in_scope": allowlist.allows(parsed_url),
         "risk": "network",
-        "url": parsed_url.normalized_url,
+        "url": _resource_url(parsed_url),
         "scheme": parsed_url.scheme,
         "host": parsed_url.host,
     }
@@ -430,10 +457,12 @@ def _parse_allowlist_entry(raw_entry: str) -> HttpAllowlistEntry:
         return HttpAllowlistEntry(
             scheme=split.scheme,
             host=_normalize_host(split.hostname),
-            port=_port_from_split(split) or _default_port(split.scheme),
+            port=_allowlist_port_from_split(split) or _default_port(split.scheme),
         )
 
     if "/" in entry or "?" in entry or "#" in entry:
+        raise ValueError(f"invalid HTTP allowlist entry: {raw_entry}")
+    if entry.endswith(":"):
         raise ValueError(f"invalid HTTP allowlist entry: {raw_entry}")
 
     host = entry
@@ -445,6 +474,8 @@ def _parse_allowlist_entry(raw_entry: str) -> HttpAllowlistEntry:
             port = int(maybe_port)
     if port is None:
         return HttpAllowlistEntry(scheme="https", host=_normalize_host(host), port=443)
+    if port <= 0:
+        raise ValueError(f"invalid HTTP allowlist entry: {raw_entry}")
     if port == 443:
         return HttpAllowlistEntry(scheme="https", host=_normalize_host(host), port=443)
     if port == 80:
@@ -534,7 +565,10 @@ def _read_bounded(response: HttpResponse, max_response_bytes: int) -> bytes:
 
 
 def _call_read(response: HttpResponse, size: int) -> bytes:
-    body = response.read(size)
+    try:
+        body = response.read(size)
+    except (TimeoutError, OSError, http.client.HTTPException) as exc:
+        raise HttpFetchError("HTTP fetch failed safely") from exc
     if not isinstance(body, bytes):
         raise HttpFetchError("HTTP response body was not bytes")
     return body
@@ -569,10 +603,32 @@ def _default_port(scheme: str) -> int:
 
 
 def _port_from_split(split: SplitResult) -> int | None:
+    if _has_explicit_empty_port(split):
+        raise HttpFetchError("URL port is invalid")
     try:
-        return split.port
+        port = split.port
     except ValueError as exc:
         raise HttpFetchError("URL port is invalid") from exc
+    if port is not None and port <= 0:
+        raise HttpFetchError("URL port is invalid")
+    return port
+
+
+def _allowlist_port_from_split(split: SplitResult) -> int | None:
+    try:
+        return _port_from_split(split)
+    except HttpFetchError as exc:
+        raise ValueError("invalid HTTP allowlist entry: invalid port") from exc
+
+
+def _has_explicit_empty_port(split: SplitResult) -> bool:
+    netloc = split.netloc.rsplit("@", 1)[-1]
+    if netloc.startswith("["):
+        closing = netloc.find("]")
+        if closing == -1:
+            return False
+        return netloc[closing + 1 :] == ":"
+    return netloc.endswith(":")
 
 
 def _netloc(host: str, port: int, scheme: str) -> str:
@@ -582,6 +638,11 @@ def _netloc(host: str, port: int, scheme: str) -> str:
     if port == default_port:
         return host
     return f"{host}:{port}"
+
+
+def _resource_url(parsed_url: ParsedHttpUrl) -> str:
+    split = urlsplit(parsed_url.normalized_url)
+    return urlunsplit((split.scheme, split.netloc, split.path or "/", "", ""))
 
 
 def _is_redirect(status_code: int) -> bool:

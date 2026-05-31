@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import stat
 import subprocess
 import unicodedata
@@ -240,8 +241,7 @@ class FilesystemReadTools:
             raise ReadToolError("path traversal is outside the workspace scope")
 
         target = self.workspace_root.joinpath(requested)
-        if target.is_symlink():
-            raise ReadToolError("path is a symlink")
+        self._ensure_no_symlink_components(requested)
         try:
             resolved = target.resolve(strict=True)
         except OSError as exc:
@@ -330,10 +330,7 @@ class FilesystemReadTools:
 
     def _ensure_not_sensitive(self, path: Path) -> None:
         relative = path.relative_to(self.workspace_root)
-        for part in relative.parts:
-            lowered = part.lower()
-            if part.startswith(".") or lowered in {"secret", "secrets"} or lowered == ".env":
-                raise ReadToolError("path is hidden or sensitive")
+        _ensure_relative_parts_not_sensitive(relative)
 
     def _ensure_not_hardlinked_file(self, path: Path) -> None:
         try:
@@ -342,6 +339,18 @@ class FilesystemReadTools:
             raise ReadToolError("path does not exist in the workspace") from exc
         if stat.S_ISREG(stat_result.st_mode) and stat_result.st_nlink > 1:
             raise ReadToolError("hardlinked files are not allowed")
+
+    def _ensure_no_symlink_components(self, requested: Path) -> None:
+        current = self.workspace_root
+        for part in requested.parts:
+            if part in {"", "."}:
+                continue
+            current = current / part
+            try:
+                if current.is_symlink():
+                    raise ReadToolError("path is a symlink")
+            except OSError as exc:
+                raise ReadToolError("path does not exist in the workspace") from exc
 
 
 @dataclass(frozen=True)
@@ -365,6 +374,7 @@ class GitReadTools:
     def diff(self, path: str = ".") -> JsonObject:
         repo = self._repo_path(path)
         output = self._run_git(repo, ["diff", "--no-ext-diff", "--"])
+        _ensure_git_diff_output_safe(output.text)
         return {
             "workspace_id": self.filesystem.workspace_id,
             "path": self.filesystem.relative_path(repo),
@@ -447,11 +457,58 @@ def _path_type(path: Path) -> str:
 
 
 def _reject_ambiguous_path_input(path: str) -> None:
+    if any(ord(character) < 32 or ord(character) == 127 for character in path):
+        raise ReadToolError("path contains control characters")
     lowered = path.lower()
     if any(token in lowered for token in ("%2e", "%2f", "%5c")):
         raise ReadToolError("encoded path tokens are not allowed")
     if not unicodedata.is_normalized("NFC", path):
         raise ReadToolError("path is not Unicode-normalized")
+
+
+def _ensure_relative_parts_not_sensitive(relative: Path) -> None:
+    for part in relative.parts:
+        lowered = part.lower()
+        if part.startswith(".") or lowered in {"secret", "secrets"} or lowered == ".env":
+            raise ReadToolError("path is hidden or sensitive")
+
+
+def _ensure_git_diff_output_safe(diff_text: str) -> None:
+    for raw_path in _git_diff_paths(diff_text):
+        candidate = Path(raw_path)
+        if candidate.is_absolute() or ".." in candidate.parts:
+            raise ReadToolError("git diff includes an unsafe path")
+        _ensure_relative_parts_not_sensitive(candidate)
+
+
+def _git_diff_paths(diff_text: str) -> set[str]:
+    paths: set[str] = set()
+    for line in diff_text.splitlines():
+        if line.startswith("diff --git "):
+            try:
+                parts = shlex.split(line)
+            except ValueError as exc:
+                raise ReadToolError("git diff path metadata is invalid") from exc
+            for token in parts[2:4]:
+                path = _strip_git_path_prefix(token)
+                if path is not None:
+                    paths.add(path)
+        elif line.startswith(("--- ", "+++ ")):
+            token = line[4:].strip()
+            if token == "/dev/null":
+                continue
+            path = _strip_git_path_prefix(token)
+            if path is not None:
+                paths.add(path)
+    return paths
+
+
+def _strip_git_path_prefix(token: str) -> str | None:
+    if token.startswith(("a/", "b/")):
+        return token[2:]
+    if token in {"a", "b"}:
+        return None
+    return token
 
 
 def _git_log_lines(output: str) -> list[JsonValue]:

@@ -6,7 +6,7 @@ import json
 import os
 import re
 import sqlite3
-import tempfile
+import stat
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -821,7 +821,8 @@ class PatchProposalService:
             )
             self._inject_apply_fault("after_create_apply_attempt")
             self._inject_apply_fault("before_atomic_replace")
-            _atomic_write_text(target, patched_content)
+            filesystem = self._filesystem(proposal.workspace_id)
+            _atomic_write_text(filesystem.workspace_root, proposal.path, patched_content)
             file_replaced = True
             self._inject_apply_fault("after_atomic_replace")
             self.store.set_apply_attempt_status(attempt.attempt_id, "file_replaced")
@@ -1205,27 +1206,107 @@ def _scope_object(scope: JsonObject, key: str) -> JsonObject:
     return value
 
 
-def _atomic_write_text(target: Path, content: str) -> None:
-    if target.parent.is_symlink() or not target.parent.is_dir():
-        raise OSError("patch target parent is not a safe directory")
-    mode = target.stat().st_mode
-    temp_path: Path | None = None
+def _atomic_write_text(workspace_root: Path, relative_path: str, content: str) -> None:
+    requested = _patch_relative_path(relative_path)
+    parts = requested.parts
+    if not parts:
+        raise OSError("patch target path is invalid")
+
+    root_fd = _open_verified_directory(workspace_root)
+    parent_fd = os.dup(root_fd)
+    temp_name: str | None = None
     try:
-        with tempfile.NamedTemporaryFile(
-            "w",
-            encoding="utf-8",
-            dir=target.parent,
-            delete=False,
-        ) as temp_file:
-            temp_path = Path(temp_file.name)
-            temp_file.write(content)
-            temp_file.flush()
-            os.fsync(temp_file.fileno())
-        os.chmod(temp_path, mode)
-        temp_path.replace(target)
+        for part in parts[:-1]:
+            next_fd = _open_verified_directory_component(parent_fd, part)
+            os.close(parent_fd)
+            parent_fd = next_fd
+
+        filename = parts[-1]
+        target_fd = _open_verified_target(parent_fd, filename)
+        try:
+            target_stat = os.fstat(target_fd)
+            if not stat.S_ISREG(target_stat.st_mode):
+                raise OSError("patch target is not a safe regular file")
+            if target_stat.st_nlink > 1:
+                raise OSError("patch target is hardlinked")
+            mode = stat.S_IMODE(target_stat.st_mode)
+        finally:
+            os.close(target_fd)
+
+        temp_name = f".{filename}.ithildin-{uuid4().hex}.tmp"
+        temp_fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode, dir_fd=parent_fd)
+        try:
+            data = content.encode("utf-8")
+            view = memoryview(data)
+            while view:
+                written = os.write(temp_fd, view)
+                if written <= 0:
+                    raise OSError("patch temp write failed")
+                view = view[written:]
+            os.fsync(temp_fd)
+        finally:
+            os.close(temp_fd)
+        os.replace(temp_name, filename, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        temp_name = None
+        os.fsync(parent_fd)
     finally:
-        if temp_path is not None and temp_path.exists():
-            temp_path.unlink()
+        if temp_name is not None:
+            try:
+                os.unlink(temp_name, dir_fd=parent_fd)
+            except OSError:
+                pass
+        os.close(parent_fd)
+        os.close(root_fd)
+
+
+def _patch_relative_path(relative_path: str) -> Path:
+    requested = Path(relative_path)
+    if not relative_path or requested.is_absolute() or ".." in requested.parts:
+        raise OSError("patch target path is outside the workspace")
+    if len(requested.parts) == 0 or requested.parts[-1] in {"", "."}:
+        raise OSError("patch target path is invalid")
+    return requested
+
+
+def _open_verified_directory(path: Path) -> int:
+    flags = os.O_RDONLY | _o_directory()
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(path, flags)
+    try:
+        stat_result = os.fstat(fd)
+        if not stat.S_ISDIR(stat_result.st_mode):
+            raise OSError("patch target parent is not a safe directory")
+        return fd
+    except Exception:
+        os.close(fd)
+        raise
+
+
+def _open_verified_directory_component(parent_fd: int, name: str) -> int:
+    flags = os.O_RDONLY | _o_directory()
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(name, flags, dir_fd=parent_fd)
+    try:
+        stat_result = os.fstat(fd)
+        if not stat.S_ISDIR(stat_result.st_mode):
+            raise OSError("patch target parent is not a safe directory")
+        return fd
+    except Exception:
+        os.close(fd)
+        raise
+
+
+def _open_verified_target(parent_fd: int, name: str) -> int:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    return os.open(name, flags, dir_fd=parent_fd)
+
+
+def _o_directory() -> int:
+    return getattr(os, "O_DIRECTORY", 0)
 
 
 def _new_id(prefix: str) -> str:

@@ -23,7 +23,7 @@ Inspect:
 - `apps/api/src/ithildin_api/approvals.py`
   - `ApprovalService.begin_execution`
   - `ApprovalService.complete_execution`
-  - `ApprovalService.fail_execution`
+  - `ApprovalService.complete_execution(..., success=False)`
 - `apps/api/src/ithildin_api/tool_calls.py`
   - `GovernedToolCallService._execute_approved_patch`
   - `GovernedToolCallService.call_tool`

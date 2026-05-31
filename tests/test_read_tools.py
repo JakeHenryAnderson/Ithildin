@@ -67,6 +67,17 @@ def test_filesystem_denies_symlink_escape(tmp_path: Path) -> None:
         filesystem.read_file("link.txt")
 
 
+def test_filesystem_denies_symlink_directory_component_inside_workspace(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path)
+    real = filesystem.workspace_root / "real"
+    real.mkdir()
+    real.joinpath("README.md").write_text("safe\n", encoding="utf-8")
+    filesystem.workspace_root.joinpath("linked").symlink_to(real)
+
+    with pytest.raises(ReadToolError, match="symlink"):
+        filesystem.read_file("linked/README.md")
+
+
 def test_filesystem_denies_hidden_and_sensitive_paths(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path)
     filesystem.workspace_root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
@@ -86,6 +97,14 @@ def test_filesystem_denies_encoded_path_tokens(tmp_path: Path, path: str) -> Non
     filesystem = make_filesystem(tmp_path)
 
     with pytest.raises(ReadToolError, match="encoded path tokens"):
+        filesystem.read_file(path)
+
+
+@pytest.mark.parametrize("path", ["bad\x00path.txt", "bad\npath.txt", "bad\x7fpath.txt"])
+def test_filesystem_denies_control_character_paths(tmp_path: Path, path: str) -> None:
+    filesystem = make_filesystem(tmp_path)
+
+    with pytest.raises(ReadToolError, match="control characters"):
         filesystem.read_file(path)
 
 
@@ -248,6 +267,23 @@ def test_git_status_diff_and_log_inside_workspace_repo(tmp_path: Path) -> None:
     assert "?? untracked.txt" in status_lines
     assert "+new" in diff_text
     assert commits == [{"commit": commits[0]["commit"], "subject": "initial"}]
+
+
+def test_git_diff_denies_hidden_or_sensitive_tracked_paths(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=2048)
+    repo = filesystem.workspace_root / "repo"
+    repo.mkdir()
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath(".env").write_text("TOKEN=old\n", encoding="utf-8")
+    run_git(repo, ["add", ".env"])
+    run_git(repo, ["commit", "-m", "initial"])
+    repo.joinpath(".env").write_text("TOKEN=new\n", encoding="utf-8")
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=2048, git_log_limit=10)
+
+    with pytest.raises(ReadToolError, match="hidden or sensitive"):
+        git.diff("repo")
 
 
 def test_git_non_repo_fails_safely(tmp_path: Path) -> None:
