@@ -142,7 +142,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 131 - Evidence contract versioning v2 | Done | `make evidence-contracts-check` validates stable evidence contracts. |
 | 132 - Local audit retention and export lifecycle diagnostics | Done | [audit-export-lifecycle-diagnostics.md](audit-export-lifecycle-diagnostics.md), `make audit-diagnostics` |
 | 133 - Policy preview/runtime parity harness v2 | Done | Pre-policy denial parity added to `make policy-parity`. |
-| 134 - OPA boundary decision | Planned | OPA boundary update |
+| 134 - OPA boundary decision | Done | [opa-parity-decision.md](opa-parity-decision.md) reaffirms YAML canonical gates. |
 | 135 - Registry fail-closed exhaustive suite | Planned | Registry fail-closed coverage |
 | 136 - Manifest-change review workflow | Planned | Manifest change review |
 | 137 - MCP ingress bypass audit v2 | Planned | MCP ingress audit |

@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-133",
-  "planned_range": "134-151",
+  "completed_range": "113-134",
+  "planned_range": "135-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -503,7 +503,7 @@
     {
       "id": "134",
       "title": "OPA boundary decision",
-      "status": "planned",
+      "status": "done",
       "commit": "Update OPA boundary decision",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "conditional",

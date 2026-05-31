@@ -1,12 +1,28 @@
 # OPA Parity Decision
 
-Task 097 records the v0.3-prep decision for optional OPA policy support:
+Task 097 records the v0.3-prep decision for optional OPA policy support. Task 134 reaffirms the
+same boundary for v0.4 after the preview/runtime parity harness was expanded:
 
 **YAML remains the canonical local-preview policy engine for parity and release gates. OPA remains an
 optional sidecar/evidence prototype until it has its own fixture runner or controlled test server
 that can execute the same policy parity cases as YAML.**
 
 Short form: OPA remains an optional sidecar/evidence prototype, not the canonical parity engine.
+
+## v0.4 Boundary Decision
+
+For v0.4 review closure, YAML remains the only canonical policy engine for release gates:
+
+- `make policy-test` evaluates committed `PolicyInput` fixtures against `policies/default.yaml`;
+- `make policy-parity` compares preview/runtime decisions and decision evidence through the YAML
+  engine only;
+- OPA status and bundle verification remain useful local evidence, but OPA is not used to close
+  preview/runtime parity rows;
+- release documents must not describe OPA as production authorization, hosted policy management, or
+  the source of truth for local-preview policy semantics.
+
+This is an explicit deferral, not a failed feature. OPA can become canonical only after a future
+checkpoint adds a controlled OPA fixture/parity runner and updates this decision document.
 
 ## Current OPA Guarantees
 

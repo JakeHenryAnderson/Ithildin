@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-133"
-    assert manifest["planned_range"] == "134-151"
+    assert manifest["completed_range"] == "113-134"
+    assert manifest["planned_range"] == "135-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 134-151 are planned" in readme
+    assert "Tasks 135-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -719,7 +719,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-133 done",
+        "Tasks 113-134 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []
@@ -809,11 +809,15 @@ def test_opa_parity_decision_keeps_yaml_canonical_for_gates() -> None:
         "make policy-test",
         "make policy-parity",
         "not a semantic parity claim",
+        "v0.4 Boundary Decision",
+        "YAML remains the only canonical policy engine for release gates",
+        "controlled OPA fixture/parity runner",
     ]:
         assert required in doc
     assert "opa-parity-decision.md" in readme
     assert "OPA Parity Decision" in release
     assert "097 - OPA parity decision point | Done" in backlog
+    assert "134 - OPA boundary decision | Done" in backlog
     assert "Task 097 keeps YAML canonical" in matrix
     assert "docs/codex/opa-parity-decision.md" in review_docs.REVIEW_DOCS
 
