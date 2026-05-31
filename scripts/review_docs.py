@@ -32,6 +32,7 @@ REVIEW_DOCS = [
     "docs/codex/audit-integrity-adversarial-suite.md",
     "docs/codex/audit-export-lifecycle-diagnostics.md",
     "docs/codex/manifest-validation-suite.md",
+    "docs/codex/manifest-change-review-workflow.md",
     "docs/codex/policy-parity-harness.md",
     "docs/codex/opa-parity-decision.md",
     "docs/codex/mcp-ingress-bypass-audit.md",

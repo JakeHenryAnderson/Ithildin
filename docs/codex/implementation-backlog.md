@@ -144,7 +144,7 @@ implemented until each receives its own checkpoint commit and gate output.
 | 133 - Policy preview/runtime parity harness v2 | Done | Pre-policy denial parity added to `make policy-parity`. |
 | 134 - OPA boundary decision | Done | [opa-parity-decision.md](opa-parity-decision.md) reaffirms YAML canonical gates. |
 | 135 - Registry fail-closed exhaustive suite | Done | [registry-fail-closed-suite.md](registry-fail-closed-suite.md), expanded manifest-lock drift tests |
-| 136 - Manifest-change review workflow | Planned | Manifest change review |
+| 136 - Manifest-change review workflow | Done | [manifest-change-review-workflow.md](manifest-change-review-workflow.md), `make manifest-change-review` |
 | 137 - MCP ingress bypass audit v2 | Planned | MCP ingress audit |
 | 138 - Local auth/session hardening within current boundary | Planned | Local auth posture |
 | 139 - Review-console approval UX v3 | Planned | Approval evidence UX |

@@ -67,6 +67,7 @@ tamper-evident audit log.
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.
 - `make manifest-lock-check` - verify trusted tool manifests still match the committed lock.
+- `make manifest-change-review` - check manifest/lock change coupling before review handoff.
 - `make manifest-lock-keygen` - create a local Ed25519 keypair for manifest lock signatures.
 - `make manifest-lock-sign` - sign the current `tool-manifests.lock.json`.
 - `make manifest-lock-signature-check` - verify the local manifest lock signature.
@@ -210,8 +211,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-135 are
-complete; Tasks 136-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-136 are
+complete; Tasks 137-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

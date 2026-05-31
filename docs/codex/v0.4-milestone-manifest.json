@@ -4,8 +4,8 @@
   "runtime_boundary": "v0.1 local-preview",
   "review_candidate_label": "v0.4 review-closure candidate for the v0.1 local-preview runtime boundary",
   "purpose": "Plan and gate review closure, evidence maturity, diagnostics, and local-preview hardening before any new governed tool-power class is considered.",
-  "completed_range": "113-135",
-  "planned_range": "136-151",
+  "completed_range": "113-136",
+  "planned_range": "137-151",
   "gating_overlay_version": "1",
   "deferred_boundaries": [
     "shell execution",
@@ -543,7 +543,7 @@
     {
       "id": "136",
       "title": "Manifest-change review workflow",
-      "status": "planned",
+      "status": "done",
       "commit": "Add manifest change review workflow",
       "blocks_capability_expansion": "yes",
       "blocks_broader_distribution": "yes",
@@ -551,6 +551,7 @@
       "requires_external_review_before_closure": true,
       "required_commands": [
         "make manifest-lock-check",
+        "make manifest-change-review",
         "make review-packet-diff-gate OLD=<prior checkpoint> NEW=<current checkpoint>",
         "make release-check"
       ],
