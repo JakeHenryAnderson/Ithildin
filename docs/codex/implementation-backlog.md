@@ -169,7 +169,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | Task | Status | Spec |
 | --- | --- | --- |
 | 152 - v0.5 roadmap from v0.4 review | Done | [v0.5-roadmap-from-v0.4-review.md](v0.5-roadmap-from-v0.4-review.md), [v0.5-milestone-manifest.md](v0.5-milestone-manifest.md) |
-| 153 - Capability expansion gate v2 | Planned | Capability expansion gate |
+| 153 - Capability expansion gate v2 | Done | [capability-expansion-gate.md](capability-expansion-gate.md), `make capability-expansion-gate` |
 | 154 - Tool-surface invariant gate v2 | Planned | Tool-surface invariant gate |
 | 155 - Evidence-confusion gate v2 | Planned | Evidence-confusion gate |
 | 156 - External-review closure gate v2 | Planned | External closure gate |

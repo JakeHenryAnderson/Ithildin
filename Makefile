@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-contracts-check filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-run-manifest-check reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify test typecheck ui-dev v04-review-packet
+.PHONY: admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen capability-expansion-gate clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-contracts-check filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-run-manifest-check reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify test typecheck ui-dev v04-review-packet
 
 test:
 	uv run pytest
@@ -15,6 +15,9 @@ adversarial-corpus-check:
 
 resource-limit-check:
 	uv run python scripts/resource_limit_check.py
+
+capability-expansion-gate:
+	uv run python scripts/capability_expansion_gate.py
 
 evidence-contracts-check:
 	uv run python scripts/evidence_contracts_check.py

@@ -95,6 +95,7 @@ tamper-evident audit log.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.
 - `make release-guardrails` - validate public-preview warning labels and deployment guardrails.
+- `make capability-expansion-gate` - report whether future powerful-tool planning is allowed.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
