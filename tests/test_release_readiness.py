@@ -1279,8 +1279,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-175"
-    assert manifest["planned_range"] == "176-180"
+    assert manifest["completed_range"] == "152-176"
+    assert manifest["planned_range"] == "177-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1796,8 +1796,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
     assert report["tool_count"] == 10
-    assert report["completed_range"] == "152-175"
-    assert report["planned_range"] == "176-180"
+    assert report["completed_range"] == "152-176"
+    assert report["planned_range"] == "177-180"
     assert report["open_accepted_risks"] == 10
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
@@ -1986,6 +1986,39 @@ def test_v05_threat_model_delta_is_wired_and_scoped() -> None:
     assert "v05-threat-model-delta-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/v0.5-threat-model-delta.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.5-threat-model-delta.md" in docs_site
+
+
+def test_v05_review_candidate_command_is_wired() -> None:
+    doc = Path("docs/codex/v0.5-review-candidate-command.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    target = re.search(r"^v05-review-candidate:\n(?P<body>(?:\t.*\n)+)", makefile, re.MULTILINE)
+
+    assert target is not None
+    body = target.group("body")
+    expected_commands = [
+        "$(MAKE) review-candidate",
+        "$(MAKE) v05-threat-model-delta-check",
+        "$(MAKE) review-packet-source-pointers",
+        "$(MAKE) external-response-template-check",
+        "$(MAKE) source-review-transcript-packet",
+        "$(MAKE) reviewer-artifact-manifest",
+    ]
+    positions = [body.index(command) for command in expected_commands]
+    assert positions == sorted(positions)
+    assert "does not approve capability expansion" in doc
+    assert "make v05-review-candidate" in readme
+    assert "176 - v0.5 review candidate command | Done" in backlog
+    assert "Task 176 adds a one-command" in matrix
+    assert "docs/codex/v0.5-review-candidate-command.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.5-review-candidate-command.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: accepted-risk-register-check admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen capability-decision-report capability-expansion-gate clean closure-matrix-evidence-sync compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-confusion-gate evidence-contracts-check external-findings-intake-dry-run external-response-template-check external-review-closure-gate filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts no-new-powers-guardrail ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-packet-source-pointers review-run-manifest-check reviewer-artifact-manifest reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify source-review-transcript-packet test tool-surface-invariant-gate typecheck ui-dev v04-review-packet v05-threat-model-delta-check
+.PHONY: accepted-risk-register-check admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen capability-decision-report capability-expansion-gate clean closure-matrix-evidence-sync compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-confusion-gate evidence-contracts-check external-findings-intake-dry-run external-response-template-check external-review-closure-gate filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts no-new-powers-guardrail ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-packet-source-pointers review-run-manifest-check reviewer-artifact-manifest reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify source-review-transcript-packet test tool-surface-invariant-gate typecheck ui-dev v04-review-packet v05-review-candidate v05-threat-model-delta-check
 
 test:
 	uv run pytest
@@ -166,6 +166,15 @@ review-candidate:
 	$(MAKE) packet-redaction-scan
 	$(MAKE) docs-site
 	@echo "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated"
+
+v05-review-candidate:
+	$(MAKE) review-candidate
+	$(MAKE) v05-threat-model-delta-check
+	$(MAKE) review-packet-source-pointers
+	$(MAKE) external-response-template-check
+	$(MAKE) source-review-transcript-packet
+	$(MAKE) reviewer-artifact-manifest
+	@echo "v0.5 review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated and var/review-packets/v0.5"
 
 internal-review-packet:
 	uv run python scripts/internal_review_packet.py

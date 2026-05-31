@@ -192,7 +192,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 173 - External review response intake template v2 | Done | [external-review-response-intake-template-v2.md](external-review-response-intake-template-v2.md), `make external-response-template-check` |
 | 174 - Review packet source pointers | Done | [review-packet-source-pointers.md](review-packet-source-pointers.md), `make review-packet-source-pointers` |
 | 175 - v0.5 threat model delta | Done | [v0.5-threat-model-delta.md](v0.5-threat-model-delta.md), `make v05-threat-model-delta-check` |
-| 176 - v0.5 review candidate command | Planned | Candidate command |
+| 176 - v0.5 review candidate command | Done | [v0.5-review-candidate-command.md](v0.5-review-candidate-command.md), `make v05-review-candidate` |
 | 177 - v0.5 consolidated packet update | Planned | Consolidated packet |
 | 178 - v0.5 external review prompt | Planned | External prompt |
 | 179 - v0.5 boundary decision draft | Planned | Boundary decision |

@@ -82,6 +82,7 @@ tamper-evident audit log.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
 - `make v04-review-packet` - print a v0.4 review-candidate packet snapshot.
 - `make review-candidate` - run the full local handoff gate and regenerate review artifacts.
+- `make v05-review-candidate` - run the v0.5 handoff gate plus source-review artifact prep.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
 - `make review-packet-diff OLD=... NEW=...` - compare two review packet bundles by artifact hash.
@@ -241,8 +242,8 @@ The v0.4 milestone roadmap is recorded in
 complete and should be externally reviewed before implementation drift or capability expansion.
 The v0.5 source-review and capability-decision roadmap is recorded in
 [docs/codex/v0.5-roadmap-from-v0.4-review.md](docs/codex/v0.5-roadmap-from-v0.4-review.md) and
-[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-175 are
-complete; Tasks 176-180 are planned and do not add new governed tool powers.
+[docs/codex/v0.5-milestone-manifest.md](docs/codex/v0.5-milestone-manifest.md). Tasks 152-176 are
+complete; Tasks 177-180 are planned and do not add new governed tool powers.
 The v0.5 threat-model delta is in
 [docs/codex/v0.5-threat-model-delta.md](docs/codex/v0.5-threat-model-delta.md).
 The current source-review workflow is in

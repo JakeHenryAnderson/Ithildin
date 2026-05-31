@@ -58,6 +58,7 @@ externally closed.
 - [v0.5 Roadmap From v0.4 Review](v0.5-roadmap-from-v0.4-review.md)
 - [v0.5 Milestone Manifest](v0.5-milestone-manifest.md)
 - [v0.5 Threat Model Delta](v0.5-threat-model-delta.md)
+- [v0.5 Review Candidate Command](v0.5-review-candidate-command.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [No-New-Powers Guardrail v2](no-new-powers-guardrail.md)

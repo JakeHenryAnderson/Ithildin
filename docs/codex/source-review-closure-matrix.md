@@ -107,6 +107,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | External response intake template | Task 173 adds a v2 template for turning external review responses into EXT findings | pending external review | none | pending | `make external-response-template-check`; `make docs-site` | template guides intake but does not mutate findings or close review | external_pending |
 | Review packet source pointers | Task 174 maps review packet claims to source files for external reviewers | pending external review | none | pending | `make review-packet-source-pointers`; `make docs-site` | source pointers improve review navigation but do not close review | external_pending |
 | v0.5 threat model delta | Task 175 records what changed and did not change in the v0.5 review-closure wave | pending external review | none | pending | `make v05-threat-model-delta-check`; `make release-check` | delta preserves v0.1 local-preview boundary and does not close review | external_pending |
+| v0.5 review candidate command | Task 176 adds a one-command v0.5 review-candidate handoff wrapper | pending external review | none | pending | `make v05-review-candidate`; `make release-check` | command prepares handoff artifacts but does not close review | external_pending |
 
 ## v2 Update Rules
 
