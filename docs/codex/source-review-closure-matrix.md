@@ -97,6 +97,7 @@ Closure states are `not_started`, `internal_reviewed`, `external_pending`, `exte
 | Policy parity source review checklist | Task 163 adds a source checklist for preview/runtime decision parity | pending external review | none | pending | `make policy-test`; `make policy-parity`; `make release-check` | checklist guides review but does not close policy externally | external_pending |
 | MCP ingress source review checklist | Task 164 adds a source checklist for stdio MCP adapter thinness | pending external review | none | pending | MCP focused tests; `make release-check` | checklist guides review but does not close MCP ingress externally | external_pending |
 | Review console source review checklist | Task 165 adds a source checklist for local admin evidence UX and safe controls | pending external review | none | pending | UI build/typecheck; `make release-check` | checklist guides review but does not close review console externally | external_pending |
+| External findings intake dry run | Task 166 validates EXT finding intake rails with temporary fixtures | pending external review | none | pending | `make external-findings-intake-dry-run`; `make release-check` | dry run does not create real external findings or close rows | external_pending |
 
 ## v2 Update Rules
 

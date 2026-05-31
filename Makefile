@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
 
-.PHONY: admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen capability-expansion-gate clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-confusion-gate evidence-contracts-check external-review-closure-gate filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-run-manifest-check reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify test tool-surface-invariant-gate typecheck ui-dev v04-review-packet
+.PHONY: admin-token-generate adversarial-corpus-check audit-diagnostics audit-export-verify audit-keygen capability-expansion-gate clean compose-config compose-down compose-logs compose-smoke compose-up demo-flow demo-scenario-pack demo-seed determinism-check docs-site evidence-confusion-gate evidence-contracts-check external-findings-intake-dry-run external-review-closure-gate filesystem-contract-check internal-review-packet lint local-model-demo mcp-inspector-recipes manifest-change-review manifest-lock manifest-lock-check manifest-lock-keygen manifest-lock-sign manifest-lock-signature-check negative-review-transcripts ollama-smoke packet-redaction-scan policy-parity policy-test release-check release-context release-evidence release-evidence-gate release-evidence-validate release-guardrails release-packet resource-limit-check review-candidate review-findings-summary review-packet-bundle review-packet-consolidated review-packet-diff review-packet-diff-gate review-run-manifest-check reviewer-findings-check signed-evidence-demo signed-evidence-demo-verify test tool-surface-invariant-gate typecheck ui-dev v04-review-packet
 
 test:
 	uv run pytest
@@ -77,6 +77,9 @@ release-guardrails:
 
 reviewer-findings-check:
 	uv run python scripts/reviewer_findings.py
+
+external-findings-intake-dry-run:
+	uv run python scripts/external_findings_intake_dry_run.py
 
 review-run-manifest-check:
 	uv run python scripts/review_run_manifest.py
@@ -160,7 +163,7 @@ release-context:
 	@echo "git_commit=$$(git rev-parse HEAD)"
 	@echo "git_dirty=$$(test -z "$$(git status --short)" && echo false || echo true)"
 
-release-check: release-context manifest-lock-check release-guardrails release-evidence-gate reviewer-findings-check review-findings-summary review-run-manifest-check filesystem-contract-check tool-surface-invariant-gate evidence-confusion-gate external-review-closure-gate manifest-change-review determinism-check adversarial-corpus-check resource-limit-check demo-scenario-pack evidence-contracts-check policy-test policy-parity test lint typecheck docs-site
+release-check: release-context manifest-lock-check release-guardrails release-evidence-gate reviewer-findings-check review-findings-summary review-run-manifest-check filesystem-contract-check external-findings-intake-dry-run tool-surface-invariant-gate evidence-confusion-gate external-review-closure-gate manifest-change-review determinism-check adversarial-corpus-check resource-limit-check demo-scenario-pack evidence-contracts-check policy-test policy-parity test lint typecheck docs-site
 	npm run build --prefix apps/ui
 
 ui-dev:

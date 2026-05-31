@@ -12,6 +12,7 @@ from scripts import (
     consolidate_review_packet,
     evidence_confusion_gate,
     evidence_contracts_check,
+    external_findings_intake_dry_run,
     external_review_closure_gate,
     internal_review_packet,
     packet_redaction_scan,
@@ -1269,8 +1270,8 @@ def test_v05_roadmap_from_review_is_documented_and_scoped() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(152, 181)]
-    assert manifest["completed_range"] == "152-165"
-    assert manifest["planned_range"] == "166-180"
+    assert manifest["completed_range"] == "152-166"
+    assert manifest["planned_range"] == "167-180"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
@@ -1676,6 +1677,36 @@ def test_review_console_source_review_checklist_is_documented() -> None:
     assert "Task 165 adds a source checklist" in matrix
     assert "docs/codex/review-console-source-review-checklist.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/review-console-source-review-checklist.md" in docs_site
+
+
+def test_external_findings_intake_dry_run_is_wired() -> None:
+    report = external_findings_intake_dry_run.run_dry_run()
+    doc = Path("docs/codex/external-findings-intake-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["validated_fixture_id"] == "EXT-900"
+    assert report["open_high_fixture_rejected"] is True
+    assert report["committed_findings_mutated"] is False
+    assert "make external-findings-intake-dry-run" in readme
+    assert "temporary `EXT-###` finding fixtures" in doc
+    assert "166 - External findings intake dry run | Done" in backlog
+    assert "Task 166 validates EXT finding intake rails" in matrix
+    assert "external-findings-intake-dry-run" in makefile.partition("release-check:")[2]
+    assert (
+        "external-findings-intake-dry-run"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/external-findings-intake-dry-run.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/external-findings-intake-dry-run.md" in docs_site
 
 
 def test_reviewer_finding_template_has_required_fields() -> None:

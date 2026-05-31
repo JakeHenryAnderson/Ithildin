@@ -69,6 +69,7 @@ externally closed.
 - [Policy Parity Source Review Checklist](policy-parity-source-review-checklist.md)
 - [MCP Ingress Source Review Checklist](mcp-ingress-source-review-checklist.md)
 - [Review Console Source Review Checklist](review-console-source-review-checklist.md)
+- [External Findings Intake Dry Run](external-findings-intake-dry-run.md)
 
 ## Reading Rule
 

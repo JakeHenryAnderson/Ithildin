@@ -55,6 +55,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "release-guardrails",
     "release-evidence-gate",
     "reviewer-findings-check",
+    "external-findings-intake-dry-run",
     "review-findings-summary",
     "review-run-manifest-check",
     "filesystem-contract-check",
