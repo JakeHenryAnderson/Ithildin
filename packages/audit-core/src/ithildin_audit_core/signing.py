@@ -250,6 +250,7 @@ def verify_exported_events_jsonl(events_jsonl: str) -> AuditVerificationResult:
     last_timestamp: Optional[str] = None
     head_hash = GENESIS_HASH
     parsed_rows: list[tuple[object]] = [(line,) for line in lines]
+    seen_event_ids: set[str] = set()
 
     for row_number, line in enumerate(lines, start=1):
         try:
@@ -273,6 +274,15 @@ def verify_exported_events_jsonl(events_jsonl: str) -> AuditVerificationResult:
                 reason="invalid audit event schema",
                 event_id=event_id,
             )
+        if event.event_id in seen_event_ids:
+            return _failed_jsonl_verification(
+                rows=parsed_rows,
+                row_number=row_number,
+                head_hash=head_hash,
+                reason="duplicate audit event id",
+                event_id=event.event_id,
+            )
+        seen_event_ids.add(event.event_id)
         if event.prev_event_hash != previous_hash:
             return _failed_jsonl_verification(
                 rows=parsed_rows,

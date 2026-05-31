@@ -17,7 +17,7 @@ from ithildin_audit_core import (
     verify_exported_events_jsonl,
     verify_signed_audit_export_bundle,
 )
-from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue
+from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue, sha256_digest
 
 VALID_HASH = "sha256:" + ("a" * 64)
 NOW = datetime(2026, 5, 25, 12, 0, tzinfo=UTC)
@@ -31,6 +31,32 @@ def make_writer(tmp_path: Path, redact_fields: set[str] | None = None) -> AuditW
     )
     writer.initialize()
     return writer
+
+
+def tamper_text(value: str) -> str:
+    replacement = "A" if value[-1] != "A" else "B"
+    return f"{value[:-1]}{replacement}"
+
+
+def event_hash_from_payload(payload: JsonObject) -> str:
+    return sha256_digest(
+        {
+            "event_id": payload["event_id"],
+            "timestamp": payload["timestamp"],
+            "event_type": payload["event_type"],
+            "request_id": payload["request_id"],
+            "principal": payload["principal"],
+            "tool_name": payload.get("tool_name"),
+            "resource": payload.get("resource"),
+            "decision": payload.get("decision"),
+            "policy_version": payload.get("policy_version"),
+            "matched_rules": payload.get("matched_rules", []),
+            "input_hash": payload.get("input_hash"),
+            "redactions": payload.get("redactions", []),
+            "metadata": payload.get("metadata", {}),
+            "prev_event_hash": payload["prev_event_hash"],
+        }
+    )
 
 
 def test_audit_writer_persists_sqlite_and_jsonl(tmp_path: Path) -> None:
@@ -176,8 +202,15 @@ def test_audit_writer_detects_broken_previous_hash(tmp_path: Path) -> None:
         payload = json.loads(str(payload_json))
         payload["prev_event_hash"] = "sha256:" + ("1" * 64)
         connection.execute(
-            "UPDATE audit_events SET payload_json = ? WHERE event_id = 'evt_2'",
-            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
+            """
+            UPDATE audit_events
+            SET payload_json = ?, prev_event_hash = ?
+            WHERE event_id = 'evt_2'
+            """,
+            (
+                json.dumps(payload, sort_keys=True, separators=(",", ":")),
+                payload["prev_event_hash"],
+            ),
         )
         connection.commit()
 
@@ -293,6 +326,31 @@ def test_audit_writer_detects_missing_middle_row(tmp_path: Path) -> None:
     assert result.failure.reason == "previous event hash mismatch"
     assert result.failure.event_id == "evt_3"
     assert result.event_count == 2
+
+
+def test_audit_writer_detects_index_payload_mismatch(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    with sqlite3.connect(writer.db_path) as connection:
+        connection.execute(
+            "UPDATE audit_events SET event_hash = ? WHERE event_id = 'evt_1'",
+            ("sha256:" + ("b" * 64),),
+        )
+        connection.commit()
+
+    result = writer.verify_chain()
+    diagnostics = writer.diagnostics()
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "indexed audit columns mismatch"
+    assert diagnostics["category"] == "index_mismatch"
 
 
 def test_audit_diagnostics_categorize_corruption(tmp_path: Path) -> None:
@@ -441,9 +499,9 @@ def test_signed_audit_export_detects_tampering(tmp_path: Path, tamper: str) -> N
     elif tamper == "events_sha256":
         bundle["events_sha256"] = "sha256:" + ("b" * 64)
     elif tamper == "signature":
-        bundle["signature"]["signature"] = "AA" + str(bundle["signature"]["signature"])[2:]
+        bundle["signature"]["signature"] = tamper_text(str(bundle["signature"]["signature"]))
     else:
-        bundle["signature"]["public_key"] = "AA" + str(bundle["signature"]["public_key"])[2:]
+        bundle["signature"]["public_key"] = tamper_text(str(bundle["signature"]["public_key"]))
 
     result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
 
@@ -658,7 +716,44 @@ def test_exported_events_jsonl_rejects_duplicate_event_lines(tmp_path: Path) -> 
 
     assert result.valid is False
     assert result.failure is not None
-    assert result.failure.reason == "previous event hash mismatch"
+    assert result.failure.reason == "duplicate audit event id"
+    assert result.failure.event_id == "evt_1"
+
+
+def test_exported_events_jsonl_rejects_duplicate_event_ids_with_valid_hash(
+    tmp_path: Path,
+) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.TOOL_CALL_PROPOSED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    writer.write_event(
+        event_id="evt_2",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_2",
+        principal={"id": "agent:local-dev"},
+    )
+    event_lines = writer.export_jsonl_bundle().splitlines()[1:]
+    second_payload = cast(JsonObject, json.loads(event_lines[1]))
+    second_payload["event_id"] = "evt_1"
+    second_payload["event_hash"] = event_hash_from_payload(second_payload)
+    adversarial_jsonl = "\n".join(
+        [
+            event_lines[0],
+            json.dumps(second_payload, sort_keys=True, separators=(",", ":")),
+        ]
+    )
+
+    result = verify_exported_events_jsonl(f"{adversarial_jsonl}\n")
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert result.failure.reason == "duplicate audit event id"
     assert result.failure.event_id == "evt_1"
 
 

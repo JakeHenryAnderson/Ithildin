@@ -23,6 +23,11 @@ from ithildin_api.registry import (
 )
 
 
+def tamper_text(value: str) -> str:
+    replacement = "A" if value[-1] != "A" else "B"
+    return f"{value[:-1]}{replacement}"
+
+
 def write_manifest(path: Path, name: str = "fs.read") -> None:
     path.write_text(
         f"""
@@ -369,9 +374,9 @@ def test_manifest_lock_signature_tampering_fails_closed(tmp_path: Path, tamper: 
     else:
         payload = cast(dict[str, Any], json.loads(signature_path.read_text(encoding="utf-8")))
         if tamper == "signature":
-            payload["signature"]["signature"] = "AA" + payload["signature"]["signature"][2:]
+            payload["signature"]["signature"] = tamper_text(payload["signature"]["signature"])
         elif tamper == "public_key":
-            payload["signature"]["public_key"] = "AA" + payload["signature"]["public_key"][2:]
+            payload["signature"]["public_key"] = tamper_text(payload["signature"]["public_key"])
         else:
             payload["signature"]["key_id"] = "sha256:" + ("b" * 64)
         signature_path.write_text(

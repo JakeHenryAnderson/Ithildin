@@ -202,7 +202,7 @@ class AuditWriter:
         head_hash = GENESIS_HASH
 
         for index, row in enumerate(rows, start=1):
-            payload_json = str(row[0])
+            payload_json = _payload_json_from_row(row)
             try:
                 payload = cast(JsonObject, json.loads(payload_json))
             except json.JSONDecodeError:
@@ -223,6 +223,15 @@ class AuditWriter:
                     head_hash=head_hash,
                     reason="invalid audit event schema",
                     event_id=event_id,
+                )
+
+            if not _indexed_columns_match_event(row, event):
+                return _failed_verification(
+                    rows=rows,
+                    row_number=index,
+                    head_hash=head_hash,
+                    reason="indexed audit columns mismatch",
+                    event_id=event.event_id,
                 )
 
             if event.prev_event_hash != previous_hash:
@@ -270,7 +279,7 @@ class AuditWriter:
         }
         lines = [
             json.dumps({"metadata": metadata}, sort_keys=True, separators=(",", ":")),
-            *[str(row[0]) for row in self._payload_rows()],
+            *[_payload_json_from_row(row) for row in self._payload_rows()],
         ]
         return "\n".join(lines) + "\n"
 
@@ -332,7 +341,18 @@ class AuditWriter:
         try:
             with sqlite3.connect(self.db_path) as connection:
                 return connection.execute(
-                    "SELECT payload_json FROM audit_events ORDER BY rowid ASC"
+                    """
+                    SELECT
+                        event_id,
+                        timestamp,
+                        event_type,
+                        request_id,
+                        prev_event_hash,
+                        event_hash,
+                        payload_json
+                    FROM audit_events
+                    ORDER BY rowid ASC
+                    """
                 ).fetchall()
         except sqlite3.Error as exc:
             raise AuditWriteError("failed to read audit events") from exc
@@ -427,6 +447,21 @@ def _event_hash_from_event(event: AuditEvent) -> str:
     return sha256_digest(_json_ready(event_data))
 
 
+def _payload_json_from_row(row: tuple[object, ...]) -> str:
+    return str(row[-1])
+
+
+def _indexed_columns_match_event(row: tuple[object, ...], event: AuditEvent) -> bool:
+    return (
+        str(row[0]) == event.event_id
+        and str(row[1]) == event.timestamp.isoformat()
+        and str(row[2]) == event.event_type.value
+        and str(row[3]) == event.request_id
+        and str(row[4]) == event.prev_event_hash
+        and str(row[5]) == event.event_hash
+    )
+
+
 def _failed_verification(
     *,
     rows: list[tuple[object]],
@@ -465,6 +500,8 @@ def _diagnostic_category(result: AuditVerificationResult) -> str:
         return "previous_hash_mismatch"
     if result.failure.reason == "event hash mismatch":
         return "event_hash_mismatch"
+    if result.failure.reason == "indexed audit columns mismatch":
+        return "index_mismatch"
     return "verification_failure"
 
 
@@ -472,7 +509,7 @@ def _timestamps_from_rows(rows: list[tuple[object]]) -> tuple[Optional[str], Opt
     timestamps: list[str] = []
     for row in rows:
         try:
-            payload = json.loads(str(row[0]))
+            payload = json.loads(_payload_json_from_row(row))
         except json.JSONDecodeError:
             continue
         timestamp = payload.get("timestamp") if isinstance(payload, dict) else None
