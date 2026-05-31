@@ -136,8 +136,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-124"
-    assert manifest["planned_range"] == "125-151"
+    assert manifest["completed_range"] == "113-125"
+    assert manifest["planned_range"] == "126-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -157,9 +157,10 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 125-151 are planned" in readme
+    assert "Tasks 126-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
+    assert "125 - Review packet diff gate v2 | Done" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
     assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
@@ -209,7 +210,7 @@ def test_v04_gating_overlay_documents_required_stop_gates() -> None:
         "Evidence-Confusion Gate",
         "UI/Admin No-Mutation Gate",
         "External-Review Closure Gate",
-        "make review-packet-diff OLD=<prior checkpoint> NEW=<current checkpoint>",
+        "make review-packet-diff-gate OLD=<prior checkpoint> NEW=<current checkpoint>",
         "tool count remains 10",
         "Task 151 creates a review packet. It does not unlock v0.5",
     ]:
@@ -1621,6 +1622,59 @@ def test_review_packet_diff_rejects_unsafe_artifact_paths(tmp_path: Path) -> Non
         review_packet_diff.compare_packets(old_packet, new_packet)
 
 
+def test_review_packet_diff_gate_rejects_removed_artifacts(tmp_path: Path) -> None:
+    old_packet = tmp_path / "old"
+    new_packet = tmp_path / "new"
+    old_packet.mkdir()
+    new_packet.mkdir()
+    old_packet.joinpath("artifact-hashes.json").write_text(
+        json.dumps(
+            [
+                {"path": "INDEX.md", "sha256": "sha256:" + ("1" * 64), "bytes": 10},
+                {"path": "removed.txt", "sha256": "sha256:" + ("2" * 64), "bytes": 20},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    new_packet.joinpath("artifact-hashes.json").write_text(
+        json.dumps(
+            [
+                {"path": "INDEX.md", "sha256": "sha256:" + ("1" * 64), "bytes": 10},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    diff = review_packet_diff.compare_packets(old_packet, new_packet, require_hashes=True)
+
+    with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="removed"):
+        review_packet_diff.validate_packet_diff_gate(diff)
+
+
+def test_review_packet_diff_gate_requires_artifact_hashes(tmp_path: Path) -> None:
+    old_packet = tmp_path / "old"
+    new_packet = tmp_path / "new"
+    old_packet.mkdir()
+    new_packet.mkdir()
+    old_packet.joinpath("INDEX.md").write_text("# old\n", encoding="utf-8")
+    new_packet.joinpath("INDEX.md").write_text("# new\n", encoding="utf-8")
+
+    with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="missing"):
+        review_packet_diff.compare_packets(old_packet, new_packet, require_hashes=True)
+
+
+def test_review_packet_diff_rejects_malformed_sha256(tmp_path: Path) -> None:
+    packet = tmp_path / "packet"
+    packet.mkdir()
+    packet.joinpath("artifact-hashes.json").write_text(
+        json.dumps([{"path": "INDEX.md", "sha256": "sha256:not-a-digest", "bytes": 1}]),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(review_packet_diff.ReviewPacketDiffError, match="sha256"):
+        review_packet_diff.collect_packet_artifacts(packet)
+
+
 def test_review_packet_diff_doc_and_target_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -1634,11 +1688,17 @@ def test_review_packet_diff_doc_and_target_are_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert "review-packet-diff:" in makefile
+    assert "review-packet-diff-gate:" in makefile
     assert "make review-packet-diff OLD=... NEW=..." in readme
+    assert "make review-packet-diff-gate OLD=... NEW=..." in readme
     assert "artifact-hashes.json" in doc
+    assert "make review-packet-diff-gate OLD=old-packet NEW=new-packet" in doc
     assert "make review-packet-diff OLD=old-packet NEW=new-packet" in review_packet
+    assert "make review-packet-diff-gate OLD=old-packet NEW=new-packet" in review_packet
     assert "make review-packet-diff OLD=old-packet NEW=new-packet" in reproduction_map
+    assert "make review-packet-diff-gate OLD=old-packet NEW=new-packet" in reproduction_map
     assert "103 - Review packet diff command | Done" in backlog
+    assert "125 - Review packet diff gate v2 | Done" in backlog
     assert "docs/codex/review-packet-diff.md" in review_docs.REVIEW_DOCS
 
 

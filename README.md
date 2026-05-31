@@ -81,6 +81,7 @@ tamper-evident audit log.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
 - `make review-packet-diff OLD=... NEW=...` - compare two review packet bundles by artifact hash.
+- `make review-packet-diff-gate OLD=... NEW=...` - require packet hashes and fail on removed artifacts.
 - `make internal-review-packet` - build v2 local prompts for internal AI/subagent source review.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
 - `make review-findings-summary` - summarize structured findings for v0.4 planning and release gates.
@@ -205,8 +206,8 @@ The v0.4 work charter is recorded in
 focused on review closure, evidence maturity, diagnostics, and local-preview hardening rather than
 new governed tool powers.
 The v0.4 milestone roadmap is recorded in
-[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-124 are
-complete; Tasks 125-151 are planned and should be externally reviewed before implementation drift or
+[docs/codex/v0.4-milestone-manifest.md](docs/codex/v0.4-milestone-manifest.md). Tasks 113-125 are
+complete; Tasks 126-151 are planned and should be externally reviewed before implementation drift or
 capability expansion.
 The hardened v0.4 process overlay is recorded in
 [docs/codex/v0.4-gating-overlay.md](docs/codex/v0.4-gating-overlay.md). It front-loads release

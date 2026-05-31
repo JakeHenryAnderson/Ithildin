@@ -62,33 +62,38 @@ work must stop for status, reassessment, or external consultation.
    Expected outcome: prints added, removed, changed, and unchanged artifact counts for two generated
    packets using `artifact-hashes.json` when available.
 
-5. `make filesystem-contract-check`
+7. `make review-packet-diff-gate OLD=old-packet NEW=new-packet`
+
+   Expected outcome: requires `artifact-hashes.json` in both packets and fails if a previously
+   comparable artifact was removed. Added or changed artifacts are reported for reviewer attention.
+
+8. `make filesystem-contract-check`
 
    Expected outcome: prints secret-free local platform and filesystem capability evidence. On
    macOS/Linux with `O_NOFOLLOW`, the support status should be `supported`; Windows/WSL are reported
    as unsupported/untested for local-preview workspace/race claims.
 
-6. `make review-packet-bundle`
+9. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
-   step 4 was run first.
+   step 5 was run first.
 
-7. `make negative-review-transcripts`
+10. `make negative-review-transcripts`
 
    Expected outcome: creates ignored observed-denial transcripts under
    `var/review-packets/v0.2/negative-review-transcripts/`, covering traversal, symlink escape,
    stale-base patch apply, private redirect, unknown principal, disabled principal, and replayed
    approval.
 
-8. `make review-packet-consolidated`
+11. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-9. `make docs-site`
+12. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.

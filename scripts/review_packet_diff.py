@@ -56,15 +56,29 @@ class PacketDiff:
         }
 
 
+def validate_packet_diff_gate(diff: PacketDiff) -> None:
+    """Fail closed on packet changes that can hide evidence from reviewers."""
+    if diff.removed:
+        removed = ", ".join(artifact.path for artifact in diff.removed)
+        raise ReviewPacketDiffError(f"packet diff removed artifacts: {removed}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--old", required=True, type=Path, help="old review packet directory")
     parser.add_argument("--new", required=True, type=Path, help="new review packet directory")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    parser.add_argument(
+        "--gate",
+        action="store_true",
+        help="require artifact hashes and fail if comparable artifacts were removed",
+    )
     args = parser.parse_args()
 
     try:
-        diff = compare_packets(args.old, args.new)
+        diff = compare_packets(args.old, args.new, require_hashes=args.gate)
+        if args.gate:
+            validate_packet_diff_gate(diff)
     except ReviewPacketDiffError as exc:
         print(f"review packet diff failed: {exc}", file=sys.stderr)
         return 1
@@ -73,12 +87,16 @@ def main() -> int:
         print(json.dumps(diff.as_dict(), indent=2, sort_keys=True))
     else:
         print(render_diff(diff))
+        if args.gate:
+            print("Review packet diff gate passed.")
     return 0
 
 
-def compare_packets(old_packet: Path, new_packet: Path) -> PacketDiff:
-    old_artifacts = collect_packet_artifacts(old_packet)
-    new_artifacts = collect_packet_artifacts(new_packet)
+def compare_packets(
+    old_packet: Path, new_packet: Path, *, require_hashes: bool = False
+) -> PacketDiff:
+    old_artifacts = collect_packet_artifacts(old_packet, require_hashes=require_hashes)
+    new_artifacts = collect_packet_artifacts(new_packet, require_hashes=require_hashes)
 
     old_paths = set(old_artifacts)
     new_paths = set(new_artifacts)
@@ -105,7 +123,9 @@ def compare_packets(old_packet: Path, new_packet: Path) -> PacketDiff:
     )
 
 
-def collect_packet_artifacts(packet_dir: Path) -> dict[str, Artifact]:
+def collect_packet_artifacts(
+    packet_dir: Path, *, require_hashes: bool = False
+) -> dict[str, Artifact]:
     if not packet_dir.exists() or not packet_dir.is_dir():
         raise ReviewPacketDiffError(f"packet directory does not exist: {packet_dir}")
     hash_file = packet_dir / "artifact-hashes.json"
@@ -118,6 +138,10 @@ def collect_packet_artifacts(packet_dir: Path) -> dict[str, Artifact]:
             raise ReviewPacketDiffError("artifact-hashes.json must contain a list")
         artifacts = [_artifact_from_json(item) for item in raw]
     else:
+        if require_hashes:
+            raise ReviewPacketDiffError(
+                f"packet directory missing artifact-hashes.json: {packet_dir}"
+            )
         artifacts = _hash_directory(packet_dir)
 
     result: dict[str, Artifact] = {}
@@ -173,8 +197,15 @@ def _artifact_from_json(item: object) -> Artifact:
         raise ReviewPacketDiffError("artifact entry missing path")
     if path.startswith("/") or ".." in Path(path).parts:
         raise ReviewPacketDiffError(f"unsafe artifact path: {path}")
-    if not isinstance(sha256, str) or not sha256.startswith("sha256:"):
+    if (
+        not isinstance(sha256, str)
+        or not sha256.startswith("sha256:")
+        or len(sha256) != len("sha256:") + 64
+    ):
         raise ReviewPacketDiffError(f"artifact {path} missing sha256 digest")
+    hex_digest = sha256.removeprefix("sha256:")
+    if any(character not in "0123456789abcdef" for character in hex_digest):
+        raise ReviewPacketDiffError(f"artifact {path} has invalid sha256 digest")
     if not isinstance(byte_count, int) or byte_count < 0:
         raise ReviewPacketDiffError(f"artifact {path} missing byte count")
     return Artifact(path=path, sha256=sha256, bytes=byte_count)

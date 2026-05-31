@@ -16,6 +16,12 @@ Direct JSON form:
 uv run python scripts/review_packet_diff.py --old old-packet --new new-packet --json
 ```
 
+Gate form for v0.4 handoff checkpoints:
+
+```sh
+make review-packet-diff-gate OLD=old-packet NEW=new-packet
+```
+
 ## Inputs
 
 The command prefers each packet's `artifact-hashes.json`. If that file is unavailable, it computes
@@ -28,6 +34,11 @@ The output includes:
 - removed artifacts;
 - changed artifacts with old/new digests and byte counts;
 - unchanged artifact count.
+
+Task 125 adds `--gate` / `make review-packet-diff-gate`. Gate mode requires both packet directories
+to include `artifact-hashes.json`, validates every artifact hash shape, and fails if the new packet
+removes a previously comparable artifact. Added and changed artifacts are reported but allowed, since
+the purpose is to make handoff drift visible rather than freeze generated packet content.
 
 ## Boundary
 
