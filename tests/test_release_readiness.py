@@ -139,8 +139,8 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
 
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(113, 152)]
-    assert manifest["completed_range"] == "113-134"
-    assert manifest["planned_range"] == "135-151"
+    assert manifest["completed_range"] == "113-135"
+    assert manifest["planned_range"] == "136-151"
     assert manifest["gating_overlay_version"] == "1"
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
     assert "shell execution" in manifest["deferred_boundaries"]
@@ -160,7 +160,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "planned only" in manifest_doc
     assert "v0.4-gating-overlay.md" in manifest_doc
     assert "v0.4-milestone-manifest.json" in manifest_doc
-    assert "Tasks 135-151 are planned" in readme
+    assert "Tasks 136-151 are planned" in readme
     assert "123 - v0.4 gating overlay | Done" in backlog
     assert "124 - Release evidence schema gate v2 | Done" in backlog
     assert "125 - Review packet diff gate v2 | Done" in backlog
@@ -172,6 +172,7 @@ def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:
     assert "131 - Evidence contract versioning v2 | Done" in backlog
     assert "132 - Local audit retention and export lifecycle diagnostics | Done" in backlog
     assert "133 - Policy preview/runtime parity harness v2 | Done" in backlog
+    assert "135 - Registry fail-closed exhaustive suite | Done" in backlog
     assert "v0.4-milestone-manifest.md" in review_packet
     assert "v0.4-gating-overlay.md" in review_packet
     assert "docs/codex/v0.4-milestone-manifest.md" in review_docs.REVIEW_DOCS
@@ -719,7 +720,7 @@ def test_release_guardrail_expansion_is_documented_and_wired() -> None:
         "deferred shell, Docker, Kubernetes, or browser tool",
         "Tasks 101-112 are marked done",
         "Task 126 extends",
-        "Tasks 113-134 done",
+        "Tasks 113-135 done",
     ]:
         assert required in doc
     assert release_guardrails._check_review_docs_present() == []

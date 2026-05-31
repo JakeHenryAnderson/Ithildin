@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any, cast
 
@@ -590,6 +591,54 @@ def test_manifest_lock_hash_mismatch_fails_closed(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("name", "fs.changed", "name mismatch"),
+        ("version", "9.9.9", "version mismatch"),
+    ],
+)
+def test_manifest_lock_name_and_version_mismatch_fail_closed(
+    tmp_path: Path,
+    field: str,
+    value: str,
+    message: str,
+) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    payload["manifests"][0][field] = value
+    lock_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ManifestLockError, match=message):
+        ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+
+def test_missing_manifest_directory_with_nonempty_lock_fails_closed(tmp_path: Path) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    shutil.rmtree(manifest_dir)
+
+    with pytest.raises(ManifestLockError, match="stale manifest lock entry"):
+        ToolRegistry.load(manifest_dir, lock_path=lock_path, require_lock=True)
+
+
+@pytest.mark.parametrize(
     ("mutator", "message"),
     [
         (lambda payload: payload.update({"lockfile_version": 999}), "unsupported"),
@@ -662,6 +711,34 @@ def test_manifest_lock_invalid_json_and_non_object_fail_closed(tmp_path: Path) -
         ToolRegistry.load(manifest_dir, lock_path=invalid_json, require_lock=True)
     with pytest.raises(ManifestLockError, match="JSON object"):
         ToolRegistry.load(manifest_dir, lock_path=non_object, require_lock=True)
+
+
+@pytest.mark.parametrize(
+    ("body", "failure"),
+    [
+        ("{", "manifest lock signature is invalid JSON"),
+        ("[]", "manifest lock signature must be an object"),
+    ],
+)
+def test_manifest_lock_signature_invalid_json_and_non_object_fail_closed(
+    tmp_path: Path,
+    body: str,
+    failure: str,
+) -> None:
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    lock_path.write_text("{}", encoding="utf-8")
+    signature_path = tmp_path / "tool-manifests.lock.sig.json"
+    signature_path.write_text(body, encoding="utf-8")
+
+    result = verify_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        public_key_path=tmp_path / "missing-public.pem",
+    )
+
+    assert result.valid is False
+    assert result.failure is not None
+    assert failure in result.failure
 
 
 def test_signed_lock_requirement_requires_lock_enforcement(tmp_path: Path) -> None:

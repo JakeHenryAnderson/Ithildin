@@ -44,3 +44,16 @@ tenant isolation.
 The suite does not add OIDC, SAML, SCIM, production sessions, multi-tenant stores, remote MCP, or
 strong host isolation. It confirms that local registry evidence is explicit, parseable, and
 fail-closed before governed calls rely on it.
+
+## Task 135 v0.4 Additions
+
+Task 135 extends the trusted-configuration fail-closed suite to the tool manifest registry and
+manifest-lock evidence. `tests/test_tool_registry.py` now also covers:
+
+- manifest-lock name and version drift;
+- non-empty manifest locks whose manifest directory has disappeared;
+- malformed manifest-lock signature JSON and non-object signature bundles;
+- deterministic signature tampering that cannot accidentally leave random signature text unchanged.
+
+These checks do not add a plugin SDK, hosted supply-chain trust, remote manifest distribution, or new
+tool powers. They only strengthen local startup/review evidence for trusted YAML manifests.
