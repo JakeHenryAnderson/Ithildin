@@ -191,7 +191,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 172 - Reviewer artifact manifest v2 | Done | [reviewer-artifact-manifest-v2.md](reviewer-artifact-manifest-v2.md), `make reviewer-artifact-manifest` |
 | 173 - External review response intake template v2 | Done | [external-review-response-intake-template-v2.md](external-review-response-intake-template-v2.md), `make external-response-template-check` |
 | 174 - Review packet source pointers | Done | [review-packet-source-pointers.md](review-packet-source-pointers.md), `make review-packet-source-pointers` |
-| 175 - v0.5 threat model delta | Planned | Threat delta |
+| 175 - v0.5 threat model delta | Done | [v0.5-threat-model-delta.md](v0.5-threat-model-delta.md), `make v05-threat-model-delta-check` |
 | 176 - v0.5 review candidate command | Planned | Candidate command |
 | 177 - v0.5 consolidated packet update | Planned | Consolidated packet |
 | 178 - v0.5 external review prompt | Planned | External prompt |

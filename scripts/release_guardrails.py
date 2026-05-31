@@ -66,6 +66,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "closure-matrix-evidence-sync",
     "accepted-risk-register-check",
     "capability-decision-report",
+    "v05-threat-model-delta-check",
     "determinism-check",
     "adversarial-corpus-check",
     "resource-limit-check",
