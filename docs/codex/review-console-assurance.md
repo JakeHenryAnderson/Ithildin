@@ -1,10 +1,18 @@
 # Review Console Assurance
 
-Tasks 099-100 tighten the local review console for v0.3-prep handoff.
+Tasks 099-100 tighten the local review console for v0.3-prep handoff. Task 139 adds the v0.4
+approval-evidence UX pass without changing approval APIs or executor behavior.
 
 ## Approval Evidence Clarity
 
-Pending approval cards show derived patch-apply binding evidence:
+Pending approval cards show derived patch-apply binding evidence grouped by:
+
+- patch artifact;
+- tool manifest;
+- policy decision;
+- principal and scope.
+
+The grouped evidence includes:
 
 - tool name;
 - proposal ID and proposal hash;

@@ -1256,28 +1256,52 @@ function StatusPill({ status }: { status: string }) {
 
 function ApprovalEvidence({ approval }: { approval: Approval }) {
   const scope = approval.one_time_scope;
-  const evidence = [
-    ["Tool", scopeString(scope, "tool_name") || approval.tool_name],
-    ["Proposal", scopeString(scope, "proposal_id")],
-    ["Proposal hash", scopeString(scope, "proposal_hash")],
-    ["Base hash", scopeString(scope, "base_file_hash")],
-    ["Target", scopeString(scope, "path")],
-    ["Manifest hash", scopeString(scope, "manifest_hash")],
-    ["Manifest version", scopeString(scope, "manifest_version")],
-    ["Policy engine", scopeString(scope, "policy_engine")],
-    ["Policy hash", scopeString(scope, "policy_hash")],
-    ["Policy version", scopeString(scope, "policy_version")],
-    ["Policy doc", scopeString(scope, "policy_document_version")],
-    ["Matched rules", scopeList(scope, "matched_rules").join(", ")],
-    ["Principal", formatJsonCompact(scopeObject(scope, "requesting_principal") ?? approval.principal)],
-    ["Request hash", scopeString(scope, "request_hash") || approval.request_hash],
-    ["Expires", scopeString(scope, "expires_at") || approval.expires_at],
-    ["Input schema", scopeString(scope, "tool_input_schema_hash")],
-    ["Scope hash", scopeString(approval.metadata, "approval_scope_hash")],
-    ["Policy reason", scopeString(approval.metadata, "policy_reason")],
-  ].filter((entry): entry is [string, string] => Boolean(entry[1]));
+  const groups = [
+    {
+      title: "Patch Artifact",
+      items: evidenceItems([
+        ["Proposal", scopeString(scope, "proposal_id")],
+        ["Proposal hash", scopeString(scope, "proposal_hash")],
+        ["Base hash", scopeString(scope, "base_file_hash")],
+        ["Target", scopeString(scope, "path")],
+        ["Workspace", scopeString(scope, "workspace_id")],
+      ]),
+    },
+    {
+      title: "Tool Manifest",
+      items: evidenceItems([
+        ["Tool", scopeString(scope, "tool_name") || approval.tool_name],
+        ["Manifest hash", scopeString(scope, "manifest_hash")],
+        ["Manifest version", scopeString(scope, "manifest_version")],
+        ["Input schema", scopeString(scope, "tool_input_schema_hash")],
+      ]),
+    },
+    {
+      title: "Policy Decision",
+      items: evidenceItems([
+        ["Policy engine", scopeString(scope, "policy_engine")],
+        ["Policy hash", scopeString(scope, "policy_hash")],
+        ["Policy version", scopeString(scope, "policy_version")],
+        ["Policy doc", scopeString(scope, "policy_document_version")],
+        ["Matched rules", scopeList(scope, "matched_rules").join(", ")],
+        ["Policy reason", scopeString(approval.metadata, "policy_reason")],
+      ]),
+    },
+    {
+      title: "Principal and Scope",
+      items: evidenceItems([
+        [
+          "Principal",
+          formatJsonCompact(scopeObject(scope, "requesting_principal") ?? approval.principal),
+        ],
+        ["Request hash", scopeString(scope, "request_hash") || approval.request_hash],
+        ["Expires", scopeString(scope, "expires_at") || approval.expires_at],
+        ["Scope hash", scopeString(approval.metadata, "approval_scope_hash")],
+      ]),
+    },
+  ].filter((group) => group.items.length > 0);
 
-  if (evidence.length === 0) {
+  if (groups.length === 0) {
     return null;
   }
 
@@ -1294,14 +1318,21 @@ function ApprovalEvidence({ approval }: { approval: Approval }) {
           Copy
         </button>
       </div>
-      <dl className="evidence-grid">
-        {evidence.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd title={value}>{formatEvidenceValue(value)}</dd>
-          </div>
+      <div className="evidence-sections">
+        {groups.map((group) => (
+          <section className="evidence-subsection" key={group.title}>
+            <h5>{group.title}</h5>
+            <dl className="evidence-grid">
+              {group.items.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd title={value}>{formatEvidenceValue(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         ))}
-      </dl>
+      </div>
     </section>
   );
 }
@@ -1440,6 +1471,10 @@ function scopeObject(scope: JsonObject, key: string) {
 
 function formatJsonCompact(value: JsonObject) {
   return JSON.stringify(value);
+}
+
+function evidenceItems(items: Array<[string, string | undefined]>) {
+  return items.filter((entry): entry is [string, string] => Boolean(entry[1]));
 }
 
 function formatEvidenceValue(value: string) {
