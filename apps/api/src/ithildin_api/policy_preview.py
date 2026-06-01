@@ -20,6 +20,7 @@ from ithildin_api.identity import (
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.resources import resource_from_arguments
+from ithildin_api.schema_validation import safe_json_schema_error
 
 DEFAULT_PREVIEW_PRINCIPAL: JsonObject = {"id": "admin:local-ui", "roles": ["Admin"]}
 DEFAULT_PREVIEW_SESSION_ID = "policy-preview"
@@ -48,7 +49,7 @@ class PolicyPreviewService:
         principal: JsonObject | None = None,
         session_id: str = DEFAULT_PREVIEW_SESSION_ID,
     ) -> JsonObject:
-        preview_principal = principal or DEFAULT_PREVIEW_PRINCIPAL
+        preview_principal = DEFAULT_PREVIEW_PRINCIPAL if principal is None else principal
 
         try:
             registered_tool = self.registry.get_tool(tool_name)
@@ -65,10 +66,12 @@ class PolicyPreviewService:
                 "resource": {"type": "tool_call", "in_scope": False},
                 "decision": PolicyDecisionValue.DENY.value,
                 "reason": exc.reason,
-                "policy_version": self.policy_evaluator.policy_hash,
+                "policy_version": None,
                 "matched_rules": [],
                 "obligations": {"audit_level": "full"},
                 "decision_evidence": None,
+                "policy_evaluated": False,
+                "deny_source": "registry",
             }
 
         manifest = registered_tool.manifest
@@ -114,15 +117,17 @@ class PolicyPreviewService:
                 "manifest_risk": manifest.risk.value,
                 "manifest_version": manifest.version,
                 "valid_arguments": False,
-                "argument_error": getattr(exc, "message", str(exc)),
+                "argument_error": safe_json_schema_error(exc),
                 "policy_input": None,
                 "resource": {"type": "tool_call", "in_scope": False},
                 "decision": PolicyDecisionValue.DENY.value,
                 "reason": "invalid tool arguments",
-                "policy_version": self.policy_evaluator.policy_hash,
+                "policy_version": None,
                 "matched_rules": [],
                 "obligations": {"audit_level": "full"},
                 "decision_evidence": None,
+                "policy_evaluated": False,
+                "deny_source": "argument_validation",
             }
 
         resource = resource_from_arguments(
@@ -182,6 +187,8 @@ class PolicyPreviewService:
             "matched_rules": matched_rules,
             "obligations": policy_decision.obligations,
             "decision_evidence": decision_evidence,
+            "policy_evaluated": True,
+            "deny_source": None,
         }
 
     def _policy_evidence(self) -> JsonObject:
@@ -216,10 +223,12 @@ class PolicyPreviewService:
             "resource": resource,
             "decision": PolicyDecisionValue.DENY.value,
             "reason": reason,
-            "policy_version": self.policy_evaluator.policy_hash,
+            "policy_version": None,
             "matched_rules": [],
             "obligations": {"audit_level": "full", **(metadata or {})},
             "decision_evidence": None,
+            "policy_evaluated": False,
+            "deny_source": "pre_policy",
         }
 
 

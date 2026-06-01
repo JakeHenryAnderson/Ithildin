@@ -84,6 +84,20 @@ def test_workspace_registry_fails_closed_on_missing_strict_registry(tmp_path: Pa
         )
 
 
+def test_workspace_registry_strict_mode_does_not_fallback_to_overridden_root(
+    tmp_path: Path,
+) -> None:
+    default_like_path = tmp_path / "workspaces" / "local.yaml"
+
+    with pytest.raises(WorkspaceRegistryError, match="workspace registry not found"):
+        WorkspaceRegistry.load(
+            default_like_path,
+            require_registry=True,
+            fallback_root=tmp_path / "overridden-workspace",
+            default_workspace_id="default",
+        )
+
+
 def test_workspace_registry_can_opt_out_to_fallback_root(tmp_path: Path) -> None:
     registry = WorkspaceRegistry.load(
         tmp_path / "missing.yaml",
@@ -138,6 +152,30 @@ def test_workspace_registry_negative_shapes_fail_closed(
     registry_path.write_text(body, encoding="utf-8")
 
     with pytest.raises(WorkspaceRegistryError, match=message):
+        WorkspaceRegistry.load(
+            registry_path,
+            require_registry=True,
+            fallback_root=tmp_path / "fallback",
+            default_workspace_id="alpha",
+        )
+
+
+def test_workspace_registry_rejects_duplicate_yaml_keys(tmp_path: Path) -> None:
+    registry_path = tmp_path / "workspaces.yaml"
+    registry_path.write_text(
+        f"""
+version: test-workspaces-v1
+default_workspace_id: alpha
+workspaces:
+  - id: alpha
+    root: {(tmp_path / "alpha").as_posix()}
+    display_name: Alpha
+    display_name: Duplicate
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(WorkspaceRegistryError, match="duplicate YAML key"):
         WorkspaceRegistry.load(
             registry_path,
             require_registry=True,

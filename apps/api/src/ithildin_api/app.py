@@ -46,7 +46,7 @@ from ithildin_api.identity import (
     filter_tools_for_principal,
 )
 from ithildin_api.logging import configure_logging
-from ithildin_api.manifest_lock import manifest_lock_signature_status
+from ithildin_api.manifest_lock import ManifestLockError, manifest_lock_signature_status
 from ithildin_api.patches import (
     PATCH_APPLY_TOOL,
     PatchProposalError,
@@ -61,7 +61,7 @@ from ithildin_api.policy_preview import (
 )
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
-from ithildin_api.registry import ToolRegistry
+from ithildin_api.registry import ToolRegistry, ToolRegistryError
 from ithildin_api.security_status import (
     LOCAL_CORS_ORIGINS,
     security_status,
@@ -211,6 +211,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             JsonObject,
             getattr(api.state, "manifest_lock_signature_startup", current_manifest_lock_signature),
         )
+        current_manifest_lock = _current_manifest_lock_status(settings_state)
         with telemetry.start_span("ithildin.api.system_status"):
             return {
                 "status": "ok",
@@ -219,6 +220,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 "manifest_lock": {
                     "required": settings_state.require_manifest_lock,
                     "path": settings_state.manifest_lock_path.as_posix(),
+                    "current": current_manifest_lock,
                     "signature": current_manifest_lock_signature,
                     "signature_startup": startup_manifest_lock_signature,
                     "signature_drift": current_manifest_lock_signature
@@ -538,6 +540,31 @@ def _approval_expected_matched_rules(approval: ApprovalRequest) -> list[str]:
     if isinstance(scope_value, list) and all(isinstance(item, str) for item in scope_value):
         return cast(list[str], scope_value)
     return []
+
+
+def _current_manifest_lock_status(settings: Settings) -> JsonObject:
+    if not settings.require_manifest_lock:
+        return {"verified": False, "required": False, "error": None}
+    try:
+        ToolRegistry.load(
+            settings.manifest_dir,
+            lock_path=settings.manifest_lock_path,
+            require_lock=True,
+            signature_path=settings.manifest_lock_signature_path,
+            signature_public_key_path=settings.manifest_lock_signing_public_key_path,
+            require_signed_lock=settings.require_signed_manifest_lock,
+        )
+    except (ToolRegistryError, ManifestLockError) as exc:
+        return {
+            "verified": False,
+            "required": True,
+            "error": str(exc),
+        }
+    return {
+        "verified": True,
+        "required": True,
+        "error": None,
+    }
 
 
 def _require_route_decision(

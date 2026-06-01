@@ -426,6 +426,24 @@ def test_invalid_arguments_are_denied_before_policy(tmp_path: Path) -> None:
     assert metadata["reason"] == "invalid tool arguments"
 
 
+def test_invalid_argument_audit_metadata_does_not_echo_secret_values(
+    tmp_path: Path,
+) -> None:
+    service = make_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="fs.read",
+        arguments={"path": {"token": "secret-value"}},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    payload_text = json.dumps(audit_payloads(tmp_path))
+    assert "secret-value" not in payload_text
+    assert "JSON Schema validation failed" in payload_text
+
+
 def test_unknown_principal_is_denied_and_audited_before_policy(tmp_path: Path) -> None:
     service = make_identity_service(tmp_path)
 

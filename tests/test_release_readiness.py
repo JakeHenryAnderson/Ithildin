@@ -1928,13 +1928,14 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-063" in handoff
+    assert "SUB-073" in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
     assert "Internally remediated" in backlog
     assert "Internal proxy findings SUB-040 through SUB-047 fixed internally" in manifest
     assert "Internal proxy findings SUB-048 through SUB-063 fixed internally" in manifest
+    assert "Internal proxy findings SUB-064 through SUB-073 fixed internally" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2051,7 +2052,7 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-063"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-073"
     assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
@@ -2213,6 +2214,34 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         "SUB-063",
     ]:
         assert required in release_packet_text
+    policy_packet = dispatch_root.joinpath("policy-registry.md").read_text(encoding="utf-8")
+    for finding_id in [
+        "SUB-015",
+        "SUB-016",
+        "SUB-017",
+        "SUB-064",
+        "SUB-065",
+        "SUB-066",
+        "SUB-067",
+        "SUB-068",
+        "SUB-069",
+        "SUB-070",
+        "SUB-071",
+        "SUB-072",
+        "SUB-073",
+    ]:
+        assert finding_id in policy_packet
+    for required in [
+        "apps/api/src/ithildin_api/tool_calls.py",
+        "apps/api/src/ithildin_api/schema_validation.py",
+        "apps/api/src/ithildin_api/yaml_utils.py",
+        "tests/test_policy_parity.py",
+        "tests/test_workspaces.py",
+        "make policy-test",
+        "make policy-parity",
+        "tests/test_policy_parity.py tests/test_policy_test_harness.py",
+    ]:
+        assert required in policy_packet
     for required in [
         "make v06-review-dispatch-packets",
         "dispatch-packet-hashes.json",

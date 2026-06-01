@@ -41,6 +41,7 @@ from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
 from ithildin_api.redaction import RedactionResult, RedactionService, RedactionSummary
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.resources import resource_from_arguments
+from ithildin_api.schema_validation import safe_json_schema_error
 from ithildin_api.telemetry import Telemetry, safe_span_attributes
 
 
@@ -172,7 +173,7 @@ class GovernedToolCallService:
                 input_hash=request_hash,
                 metadata={
                     "reason": "invalid tool arguments",
-                    "validation_error": getattr(exc, "message", str(exc)),
+                    "validation_error": safe_json_schema_error(exc),
                 },
             )
             return GovernedToolCallResult(

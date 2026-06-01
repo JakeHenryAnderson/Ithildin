@@ -180,17 +180,59 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
         source_files=(
             "apps/api/src/ithildin_api/policy.py",
             "apps/api/src/ithildin_api/policy_preview.py",
+            "apps/api/src/ithildin_api/policy_parity.py",
+            "apps/api/src/ithildin_api/tool_calls.py",
+            "apps/api/src/ithildin_api/resources.py",
+            "apps/api/src/ithildin_api/decision_evidence.py",
+            "apps/api/src/ithildin_api/schema_validation.py",
+            "apps/api/src/ithildin_api/yaml_utils.py",
             "apps/api/src/ithildin_api/registry.py",
             "apps/api/src/ithildin_api/identity.py",
             "apps/api/src/ithildin_api/workspaces.py",
+            "scripts/policy_parity.py",
+            "scripts/policy_test.py",
+            "policies/default.yaml",
+            "policies/tests/default.yaml",
+            "policies/tests/parity.yaml",
+            "tests/test_policy_parity.py",
+            "tests/test_policy_test_harness.py",
+            "tests/test_policy_impact.py",
+            "tests/test_api_service.py",
+            "tests/test_governed_tool_calls.py",
+            "tests/test_tool_registry.py",
+            "tests/test_identity.py",
+            "tests/test_workspaces.py",
         ),
         review_docs=(
             "docs/codex/policy-parity-source-review-checklist.md",
             "docs/codex/policy-parity-harness.md",
             "docs/codex/registry-fail-closed-suite.md",
             "docs/codex/opa-parity-decision.md",
+            "docs/codex/findings/sub-015-filesystem-resource-scope.md",
+            "docs/codex/findings/sub-016-manifest-schema-validation.md",
+            "docs/codex/findings/sub-017-policy-parity-executor-denial.md",
+            "docs/codex/findings/sub-064-empty-preview-principal.md",
+            "docs/codex/findings/sub-065-patch-apply-parity-service.md",
+            "docs/codex/findings/sub-066-validation-error-value-leak.md",
+            "docs/codex/findings/sub-067-pre-policy-denial-evidence.md",
+            "docs/codex/findings/sub-068-workspace-registry-strict-fail-open.md",
+            "docs/codex/findings/sub-069-manifest-drift-status.md",
+            "docs/codex/findings/sub-070-duplicate-yaml-keys.md",
+            "docs/codex/findings/sub-071-policy-registry-closure-traceability.md",
+            "docs/codex/findings/sub-072-policy-registry-dispatch-coverage.md",
+            "docs/codex/findings/sub-073-policy-registry-lane-result.md",
         ),
-        commands=("make policy-test", "make policy-parity", "make release-check"),
+        commands=(
+            "make policy-test",
+            "make policy-parity",
+            (
+                "uv run pytest tests/test_policy_parity.py tests/test_policy_test_harness.py "
+                "tests/test_policy_impact.py tests/test_policy_evaluator.py "
+                "tests/test_tool_registry.py tests/test_identity.py tests/test_workspaces.py "
+                "tests/test_api_service.py tests/test_governed_tool_calls.py -q"
+            ),
+            "make release-check",
+        ),
         prompt=(
             "Review principal/resource normalization, policy preview/runtime parity, "
             "OPA/YAML boundary, and manifest/principal/workspace fail-closed behavior."

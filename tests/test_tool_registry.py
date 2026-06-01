@@ -86,6 +86,25 @@ def test_invalid_yaml_fails_closed(tmp_path: Path) -> None:
         ToolRegistry.load(tmp_path)
 
 
+def test_duplicate_yaml_keys_fail_closed(tmp_path: Path) -> None:
+    (tmp_path / "duplicate.yaml").write_text(
+        """
+name: fs.read
+name: fs.stat
+version: 1.0.0
+title: Duplicate key
+risk: read
+category: filesystem
+input_schema:
+  type: object
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(InvalidToolManifest, match="duplicate YAML key"):
+        ToolRegistry.load(tmp_path)
+
+
 def test_invalid_manifest_schema_fails_closed(tmp_path: Path) -> None:
     (tmp_path / "invalid.yaml").write_text("name: fs.read\n", encoding="utf-8")
 

@@ -24,6 +24,7 @@ cases:
       id: agent:mcp-local
     session_id: parity-write
     expect_decision: require_approval
+    expect_runtime_status: approval_required
 
   - id: proposal_preview_matches_runtime
     description: Patch proposal preview and runtime policy evidence agree.
@@ -115,6 +116,18 @@ cases:
     principal:
       id: agent:readonly
     session_id: parity-readonly-network
+    expect_decision: deny
+    expect_valid_arguments: false
+    expect_runtime_status: denied
+    expect_policy_evidence: false
+
+  - id: empty_principal_preview_matches_runtime
+    description: An explicit empty principal is denied instead of defaulting to admin.
+    tool_name: fs.read
+    arguments:
+      path: README.md
+    principal: {}
+    session_id: parity-empty-principal
     expect_decision: deny
     expect_valid_arguments: false
     expect_runtime_status: denied

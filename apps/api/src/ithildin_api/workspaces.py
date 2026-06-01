@@ -10,6 +10,8 @@ from ithildin_schemas import JsonObject
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, ValidationError
 
+from ithildin_api.yaml_utils import safe_load_no_duplicate_keys
+
 
 class WorkspaceRegistryError(RuntimeError):
     """Raised when workspace configuration is invalid or unsafe."""
@@ -65,15 +67,9 @@ class WorkspaceRegistry:
         fallback_root: Path,
         default_workspace_id: str,
     ) -> WorkspaceRegistry:
-        if not registry_path.exists() or _uses_overridden_single_root(
-            registry_path,
-            fallback_root,
-        ):
+        if not registry_path.exists():
             if require_registry:
-                if not _uses_overridden_single_root(registry_path, fallback_root):
-                    raise WorkspaceRegistryError(
-                        f"workspace registry not found: {registry_path}"
-                    )
+                raise WorkspaceRegistryError(f"workspace registry not found: {registry_path}")
             fallback = WorkspaceRecord(
                 id=default_workspace_id,
                 root=fallback_root.as_posix(),
@@ -92,10 +88,10 @@ class WorkspaceRegistry:
             )
 
         try:
-            raw_registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+            raw_registry = safe_load_no_duplicate_keys(registry_path)
         except yaml.YAMLError as exc:
             raise WorkspaceRegistryError(
-                f"invalid workspace registry YAML: {registry_path}"
+                f"invalid workspace registry YAML: {registry_path}: {exc}"
             ) from exc
         if not isinstance(raw_registry, dict):
             raise WorkspaceRegistryError(f"workspace registry must be a mapping: {registry_path}")
@@ -171,12 +167,6 @@ def _resolve_root(root: str) -> Path:
     if ".." in root_path.parts:
         raise WorkspaceRegistryError("workspace root must not contain traversal")
     return root_path.resolve(strict=False)
-
-
-def _uses_overridden_single_root(registry_path: Path, fallback_root: Path) -> bool:
-    if registry_path != Path("workspaces/local.yaml"):
-        return False
-    return fallback_root.resolve(strict=False) != Path("workspaces").resolve(strict=False)
 
 
 def _json_object(value: dict[Any, Any]) -> JsonObject:

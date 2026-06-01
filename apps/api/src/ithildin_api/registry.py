@@ -17,6 +17,7 @@ from ithildin_api.manifest_lock import (
     require_manifest_lock_signature,
     verify_manifest_lock,
 )
+from ithildin_api.yaml_utils import safe_load_no_duplicate_keys
 
 
 class ToolRegistryError(RuntimeError):
@@ -151,9 +152,9 @@ class ToolRegistry:
 
 def _load_manifest(manifest_path: Path) -> RegisteredTool:
     try:
-        raw_manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+        raw_manifest = safe_load_no_duplicate_keys(manifest_path)
     except yaml.YAMLError as exc:
-        raise InvalidToolManifest(f"invalid YAML in {manifest_path}") from exc
+        raise InvalidToolManifest(f"invalid YAML in {manifest_path}: {exc}") from exc
 
     if not isinstance(raw_manifest, dict):
         raise InvalidToolManifest(f"manifest must be a mapping: {manifest_path}")

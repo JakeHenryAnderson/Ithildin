@@ -109,6 +109,24 @@ principals:
         PrincipalRegistry.load(registry_path)
 
 
+def test_principal_registry_rejects_duplicate_yaml_keys(tmp_path: Path) -> None:
+    registry_path = tmp_path / "principals.yaml"
+    write_registry(
+        registry_path,
+        """
+principals:
+  - id: agent:test
+    type: agent
+    display_name: One
+    display_name: Two
+    roles: [AgentDeveloper]
+""",
+    )
+
+    with pytest.raises(PrincipalRegistryError, match="duplicate YAML key"):
+        PrincipalRegistry.load(registry_path)
+
+
 def test_principal_registry_rejects_invalid_roles(tmp_path: Path) -> None:
     registry_path = tmp_path / "principals.yaml"
     write_registry(

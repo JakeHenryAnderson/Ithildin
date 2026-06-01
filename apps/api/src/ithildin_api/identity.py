@@ -13,6 +13,8 @@ from ithildin_schemas import JsonObject, ToolRisk
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, ValidationError, field_validator
 
+from ithildin_api.yaml_utils import safe_load_no_duplicate_keys
+
 
 class PrincipalRegistryError(RuntimeError):
     """Raised when trusted principal configuration is invalid."""
@@ -106,9 +108,11 @@ class PrincipalRegistry:
             return cls({}, path)
 
         try:
-            raw_document = yaml.safe_load(path.read_text(encoding="utf-8"))
+            raw_document = safe_load_no_duplicate_keys(path)
         except yaml.YAMLError as exc:
-            raise PrincipalRegistryError(f"invalid YAML principal registry: {path}") from exc
+            raise PrincipalRegistryError(
+                f"invalid YAML principal registry: {path}: {exc}"
+            ) from exc
 
         if not isinstance(raw_document, dict):
             raise PrincipalRegistryError(f"principal registry must be a mapping: {path}")

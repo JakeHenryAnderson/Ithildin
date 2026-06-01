@@ -19,10 +19,12 @@ from pydantic import Field, ValidationError
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.http_tools import HttpAllowlist, HttpFetchExecutor, ParsedHttpUrl
 from ithildin_api.identity import PrincipalRegistry
+from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.policy_preview import PolicyPreviewService
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
+from ithildin_api.yaml_utils import safe_load_no_duplicate_keys
 
 DEFAULT_POLICY_PARITY_TESTS_PATH = Path("policies/tests/parity.yaml")
 PARITY_EVIDENCE_KEYS = (
@@ -139,7 +141,7 @@ def run_policy_parity(
 
 def load_policy_parity_tests(tests_path: Path) -> PolicyParityDocument:
     try:
-        raw_tests = yaml.safe_load(tests_path.read_text(encoding="utf-8"))
+        raw_tests = safe_load_no_duplicate_keys(tests_path)
     except FileNotFoundError as exc:
         raise PolicyParityError(f"policy parity tests file not found: {tests_path}") from exc
     except yaml.YAMLError as exc:
@@ -198,6 +200,27 @@ class _PolicyParityHarness:
             search_result_limit=10,
             git_log_limit=5,
         )
+        patch_store = PatchProposalStore(work_dir / "policy-parity.sqlite3")
+        patch_store.initialize()
+        patch_service = PatchProposalService(
+            patch_store,
+            read_tool_executor.filesystem,
+            max_patch_bytes=2048,
+            filesystems=read_tool_executor.filesystems,
+            default_workspace_id=read_tool_executor.default_workspace_id,
+        )
+        self.patch_apply_proposal_id = patch_service.create_proposal(
+            request_id="req_policy_parity_seed",
+            principal={"id": "agent:mcp-local", "roles": ["AgentDeveloper"]},
+            path="README.md",
+            unified_diff=(
+                "--- a/README.md\n"
+                "+++ b/README.md\n"
+                "@@ -1 +1 @@\n"
+                "-policy parity fixture\n"
+                "+policy parity fixture updated\n"
+            ),
+        ).proposal_id
 
         self.audit_writer = audit_writer
         self.preview_service = PolicyPreviewService(
@@ -214,20 +237,22 @@ class _PolicyParityHarness:
             audit_writer=audit_writer,
             http_fetch_executor=http_fetch_executor,
             read_tool_executor=read_tool_executor,
+            patch_proposal_service=patch_service,
             principal_registry=principal_registry,
         )
 
     def run_case(self, case: PolicyParityCase) -> PolicyParityCaseResult:
         failures: list[str] = []
+        arguments = self._case_arguments(case)
         preview = self.preview_service.preview(
             tool_name=case.tool_name,
-            arguments=case.arguments,
+            arguments=arguments,
             principal=case.principal,
             session_id=case.session_id,
         )
         runtime = self.tool_call_service.call_tool(
             tool_name=case.tool_name,
-            arguments=case.arguments,
+            arguments=arguments,
             principal=case.principal,
             session_id=case.session_id,
         )
@@ -306,6 +331,15 @@ class _PolicyParityHarness:
             runtime_decision=runtime_decision,
             request_id=runtime.request_id,
         )
+
+    def _case_arguments(self, case: PolicyParityCase) -> JsonObject:
+        arguments = dict(case.arguments)
+        if (
+            case.tool_name == "fs.patch.apply"
+            and arguments.get("proposal_id") == "patch_abc"
+        ):
+            arguments["proposal_id"] = self.patch_apply_proposal_id
+        return arguments
 
     def _policy_event(self, request_id: str) -> JsonObject:
         events = self.audit_writer.list_events(

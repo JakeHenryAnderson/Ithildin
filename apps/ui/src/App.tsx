@@ -91,7 +91,7 @@ type PolicyPreviewResult = {
   resource: JsonObject;
   decision: string;
   reason: string;
-  policy_version: string;
+  policy_version: string | null;
   matched_rules: string[];
   obligations: JsonObject;
 };

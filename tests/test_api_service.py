@@ -66,6 +66,20 @@ cases:
 """,
         encoding="utf-8",
     )
+    workspace_root = tmp_path / "workspace"
+    workspace_registry_path = tmp_path / "workspaces.yaml"
+    workspace_registry_path.write_text(
+        f"""
+version: test-workspaces-v1
+default_workspace_id: default
+workspaces:
+  - id: default
+    root: {workspace_root.as_posix()}
+    display_name: Default workspace
+    enabled: true
+""",
+        encoding="utf-8",
+    )
     return Settings(
         admin_token=token,
         audit_log_path=tmp_path / "audit.jsonl",
@@ -79,7 +93,8 @@ cases:
         manifest_lock_signature_path=tmp_path / "signatures" / "tool-manifests.lock.sig.json",
         policy_path=policy_path,
         policy_tests_path=policy_tests_path,
-        workspace_root=tmp_path / "workspace",
+        workspace_root=workspace_root,
+        workspace_registry_path=workspace_registry_path,
         http_allowlist=http_allowlist,
     )
 
@@ -210,6 +225,11 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
     assert payload["manifest_lock"] == {
         "required": False,
         "path": settings.manifest_lock_path.as_posix(),
+        "current": {
+            "verified": False,
+            "required": False,
+            "error": None,
+        },
         "signature": {
             "required": False,
             "signature_path": settings.manifest_lock_signature_path.as_posix(),
@@ -800,6 +820,45 @@ def test_app_startup_allows_unsigned_manifest_lock_by_default(tmp_path: Path) ->
     assert response.json()["manifest_lock"]["signature"]["verified"] is False
 
 
+def test_system_status_reports_current_manifest_lock_drift(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    manifest_path = settings.manifest_dir / "fs-read.yaml"
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    settings.require_manifest_lock = True
+    settings.manifest_lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(settings.manifest_dir)
+    write_manifest_lock(
+        manifest_dir=settings.manifest_dir,
+        lock_path=settings.manifest_lock_path,
+        records=[
+            ManifestLockRecord(
+                path=tool.source_path,
+                name=tool.manifest.name,
+                version=tool.manifest.version,
+                manifest_hash=tool.manifest_hash,
+            )
+            for tool in registry.list_tools()
+        ],
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        manifest_path.write_text(
+            manifest_path.read_text(encoding="utf-8").replace("title: fs.read", "title: drift"),
+            encoding="utf-8",
+        )
+        response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer test-admin-token"},
+        )
+
+    assert response.status_code == 200
+    current = response.json()["manifest_lock"]["current"]
+    assert current["required"] is True
+    assert current["verified"] is False
+    assert "hash mismatch" in current["error"]
+
+
 def test_app_startup_enforces_signed_manifest_lock_when_enabled(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
@@ -1151,6 +1210,32 @@ def test_policy_preview_denies_unknown_principal_without_side_effects(tmp_path: 
     assert _row_count(settings.db_path, "audit_events") == 0
 
 
+def test_policy_preview_empty_principal_does_not_default_to_admin(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={
+                "tool_name": "fs.read",
+                "arguments": {"path": "README.md"},
+                "principal": {},
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision"] == "deny"
+    assert payload["policy_evaluated"] is False
+    assert payload["deny_source"] == "pre_policy"
+    assert "principal id is required" in payload["reason"]
+    assert payload["policy_input"] is None
+    assert _row_count(settings.db_path, "audit_events") == 0
+
+
 def test_policy_preview_denies_role_unauthorized_principal(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
@@ -1298,6 +1383,35 @@ def test_policy_preview_invalid_http_arguments_use_generic_resource(
     assert payload["valid_arguments"] is False
     assert payload["decision"] == "deny"
     assert payload["resource"] == {"type": "tool_call", "in_scope": False}
+    assert "secret-value" not in json.dumps(payload)
+    assert _row_count(settings.db_path, "audit_events") == 0
+
+
+def test_policy_preview_invalid_arguments_do_not_echo_secret_values(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, http_allowlist="https://example.com")
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={
+                "tool_name": "http.fetch",
+                "arguments": {
+                    "url": {"token": "secret-value"},
+                },
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is False
+    assert payload["policy_evaluated"] is False
+    assert payload["deny_source"] == "argument_validation"
+    assert "JSON Schema validation failed" in payload["argument_error"]
     assert "secret-value" not in json.dumps(payload)
     assert _row_count(settings.db_path, "audit_events") == 0
 

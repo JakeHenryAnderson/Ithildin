@@ -3,7 +3,7 @@
   "release_track": "v0.6 external-review execution and closure",
   "runtime_boundary": "v0.1 local-preview",
   "freeze_commit": "a43d180c1838afc68dbe496f1b1ea6044e91e386",
-  "completed_range": "181-184 plus internal remediation through SUB-063",
+  "completed_range": "181-184 plus internal remediation through SUB-073",
   "planned_range": "external review and post-review closure remain pending",
   "capability_expansion_allowed": false,
   "broader_distribution_allowed": false,
@@ -24,40 +24,250 @@
     "external audit anchoring and hosted supply-chain signing"
   ],
   "milestones": [
-    {"id": "181", "title": "v0.6 boundary charter and freeze", "wave": "Wave 1", "status": "Done", "planned_commit": "Add v0.6 boundary charter"},
-    {"id": "182", "title": "External reviewer assignment matrix", "wave": "Wave 1", "status": "Done", "planned_commit": "Add external reviewer assignment matrix"},
-    {"id": "183", "title": "External review packet dispatch set", "wave": "Wave 1", "status": "Done", "planned_commit": "Add external review dispatch packets"},
-    {"id": "184", "title": "External response normalization", "wave": "Wave 1", "status": "Done", "planned_commit": "Add external response normalization"},
-    {"id": "185", "title": "Patch apply external review execution", "wave": "Wave 2", "status": "Source review received; EXT-PA findings remediated; proxy recheck findings SUB-027 through SUB-031 fixed internally; closure follow-up pending", "planned_commit": "Prepare patch apply external review; Polish patch apply review handoff; Remediate patch apply external findings; Harden internal proxy review pilot"},
-    {"id": "186", "title": "Filesystem/platform external review execution", "wave": "Wave 2", "status": "Internal proxy recheck findings SUB-032 through SUB-039 fixed internally; external pending", "planned_commit": "Remediate filesystem proxy findings"},
-    {"id": "187", "title": "HTTP fetch external review execution", "wave": "Wave 2", "status": "Internal proxy findings SUB-040 through SUB-047 fixed internally; external pending", "planned_commit": "Remediate HTTP proxy findings (6feb97890c37)"},
-    {"id": "188", "title": "Audit and signed-evidence external review execution", "wave": "Wave 2", "status": "Internal proxy findings SUB-048 through SUB-063 fixed internally; external pending", "planned_commit": "Remediate signed evidence proxy findings (722eadc87500)"},
-    {"id": "189", "title": "Policy parity and registry external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},
-    {"id": "190", "title": "MCP ingress external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},
-    {"id": "191", "title": "Review console external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},
-    {"id": "192", "title": "Release automation external review execution", "wave": "Wave 2", "status": "Internal proxy remediated; external pending", "planned_commit": "TBD"},
-    {"id": "193", "title": "External finding triage wave", "wave": "Wave 3", "status": "Waiting on external review", "planned_commit": "TBD"},
-    {"id": "194", "title": "Critical/high fix freeze", "wave": "Wave 3", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "195", "title": "Medium-risk disposition wave", "wave": "Wave 3", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "196", "title": "External review outcome summary", "wave": "Wave 3", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "197", "title": "Closure matrix v4", "wave": "Wave 3", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "198", "title": "Accepted-risk register v2", "wave": "Wave 3", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "199", "title": "v0.6 post-review packet", "wave": "Wave 3", "status": "Handoff packet ready; external review pending", "planned_commit": "TBD"},
-    {"id": "200", "title": "Public-preview readiness decision", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "201", "title": "Capability decision v2", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "202", "title": "Public-preview documentation polish", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "203", "title": "Operator quickstart v2", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "204", "title": "Diagnostics bundle v2", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "205", "title": "External-review recheck loop", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "206", "title": "Release candidate naming cleanup", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "207", "title": "v0.6 public-preview packet", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "208", "title": "v0.7 design-only capability rubric", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "209", "title": "Candidate capability triage, no implementation", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "210", "title": "Security claims freeze for public preview", "wave": "Wave 4", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "211", "title": "v0.6 final go/no-go packet", "wave": "Wave 5", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "212", "title": "v0.7 boundary decision seed", "wave": "Wave 5", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "213", "title": "v0.6 retrospective", "wave": "Wave 5", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "214", "title": "Review artifact minimization pass", "wave": "Wave 5", "status": "Planned", "planned_commit": "TBD"},
-    {"id": "215", "title": "v0.6 handoff to user", "wave": "Wave 5", "status": "In progress", "planned_commit": "TBD"}
+    {
+      "id": "181",
+      "title": "v0.6 boundary charter and freeze",
+      "wave": "Wave 1",
+      "status": "Done",
+      "planned_commit": "Add v0.6 boundary charter"
+    },
+    {
+      "id": "182",
+      "title": "External reviewer assignment matrix",
+      "wave": "Wave 1",
+      "status": "Done",
+      "planned_commit": "Add external reviewer assignment matrix"
+    },
+    {
+      "id": "183",
+      "title": "External review packet dispatch set",
+      "wave": "Wave 1",
+      "status": "Done",
+      "planned_commit": "Add external review dispatch packets"
+    },
+    {
+      "id": "184",
+      "title": "External response normalization",
+      "wave": "Wave 1",
+      "status": "Done",
+      "planned_commit": "Add external response normalization"
+    },
+    {
+      "id": "185",
+      "title": "Patch apply external review execution",
+      "wave": "Wave 2",
+      "status": "Source review received; EXT-PA findings remediated; proxy recheck findings SUB-027 through SUB-031 fixed internally; closure follow-up pending",
+      "planned_commit": "Prepare patch apply external review; Polish patch apply review handoff; Remediate patch apply external findings; Harden internal proxy review pilot"
+    },
+    {
+      "id": "186",
+      "title": "Filesystem/platform external review execution",
+      "wave": "Wave 2",
+      "status": "Internal proxy recheck findings SUB-032 through SUB-039 fixed internally; external pending",
+      "planned_commit": "Remediate filesystem proxy findings"
+    },
+    {
+      "id": "187",
+      "title": "HTTP fetch external review execution",
+      "wave": "Wave 2",
+      "status": "Internal proxy findings SUB-040 through SUB-047 fixed internally; external pending",
+      "planned_commit": "Remediate HTTP proxy findings (6feb97890c37)"
+    },
+    {
+      "id": "188",
+      "title": "Audit and signed-evidence external review execution",
+      "wave": "Wave 2",
+      "status": "Internal proxy findings SUB-048 through SUB-063 fixed internally; external pending",
+      "planned_commit": "Remediate signed evidence proxy findings (722eadc87500)"
+    },
+    {
+      "id": "189",
+      "title": "Policy parity and registry external review execution",
+      "wave": "Wave 2",
+      "status": "Internal proxy findings SUB-064 through SUB-073 fixed internally; external pending",
+      "planned_commit": "Remediate policy registry proxy findings (pending commit)"
+    },
+    {
+      "id": "190",
+      "title": "MCP ingress external review execution",
+      "wave": "Wave 2",
+      "status": "Internal proxy remediated; external pending",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "191",
+      "title": "Review console external review execution",
+      "wave": "Wave 2",
+      "status": "Internal proxy remediated; external pending",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "192",
+      "title": "Release automation external review execution",
+      "wave": "Wave 2",
+      "status": "Internal proxy remediated; external pending",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "193",
+      "title": "External finding triage wave",
+      "wave": "Wave 3",
+      "status": "Waiting on external review",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "194",
+      "title": "Critical/high fix freeze",
+      "wave": "Wave 3",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "195",
+      "title": "Medium-risk disposition wave",
+      "wave": "Wave 3",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "196",
+      "title": "External review outcome summary",
+      "wave": "Wave 3",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "197",
+      "title": "Closure matrix v4",
+      "wave": "Wave 3",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "198",
+      "title": "Accepted-risk register v2",
+      "wave": "Wave 3",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "199",
+      "title": "v0.6 post-review packet",
+      "wave": "Wave 3",
+      "status": "Handoff packet ready; external review pending",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "200",
+      "title": "Public-preview readiness decision",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "201",
+      "title": "Capability decision v2",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "202",
+      "title": "Public-preview documentation polish",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "203",
+      "title": "Operator quickstart v2",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "204",
+      "title": "Diagnostics bundle v2",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "205",
+      "title": "External-review recheck loop",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "206",
+      "title": "Release candidate naming cleanup",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "207",
+      "title": "v0.6 public-preview packet",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "208",
+      "title": "v0.7 design-only capability rubric",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "209",
+      "title": "Candidate capability triage, no implementation",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "210",
+      "title": "Security claims freeze for public preview",
+      "wave": "Wave 4",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "211",
+      "title": "v0.6 final go/no-go packet",
+      "wave": "Wave 5",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "212",
+      "title": "v0.7 boundary decision seed",
+      "wave": "Wave 5",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "213",
+      "title": "v0.6 retrospective",
+      "wave": "Wave 5",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "214",
+      "title": "Review artifact minimization pass",
+      "wave": "Wave 5",
+      "status": "Planned",
+      "planned_commit": "TBD"
+    },
+    {
+      "id": "215",
+      "title": "v0.6 handoff to user",
+      "wave": "Wave 5",
+      "status": "In progress",
+      "planned_commit": "TBD"
+    }
   ]
 }
