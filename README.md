@@ -99,6 +99,7 @@ tamper-evident audit log.
 - `make v06-closure-readiness` - verify v0.6 closure-readiness docs without closing external review.
 - `make v06-final-handoff` - verify v0.6 final no-go/handoff docs preserve current blockers.
 - `make v07-closure-prep` - verify the v0.7 external-review closure charter, packet sanity review, and row partition.
+- `make v07-patch-apply-recheck-prep` - verify patch-apply recheck prep for `EXT-PA-001` through `EXT-PA-004`.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
@@ -280,6 +281,10 @@ The v0.7 external-review closure prep starts with
 [docs/codex/v0.6-final-packet-sanity-review.md](docs/codex/v0.6-final-packet-sanity-review.md),
 and [docs/codex/v0.7-external-review-row-partition.md](docs/codex/v0.7-external-review-row-partition.md);
 it is verified with `make v07-closure-prep` and does not approve public preview or new tool powers.
+The first v0.7 lane recheck is
+[docs/codex/v0.7-patch-apply-recheck-request.md](docs/codex/v0.7-patch-apply-recheck-request.md)
+and is verified with `make v07-patch-apply-recheck-prep`; generated packet artifacts still come
+from `make v06-patch-apply-review-packet`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

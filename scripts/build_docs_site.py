@@ -80,6 +80,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.7-external-review-closure-charter.md",
     "docs/codex/v0.6-final-packet-sanity-review.md",
     "docs/codex/v0.7-external-review-row-partition.md",
+    "docs/codex/v0.7-patch-apply-recheck-request.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",
     "docs/codex/v0.6-internal-proxy-review-operating-model.md",

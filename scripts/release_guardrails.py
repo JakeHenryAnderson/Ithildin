@@ -70,6 +70,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v06-closure-readiness",
     "v06-final-handoff",
     "v07-closure-prep",
+    "v07-patch-apply-recheck-prep",
     "v05-threat-model-delta-check",
     "v05-boundary-decision-draft-check",
     "v05-handoff-packet-check",

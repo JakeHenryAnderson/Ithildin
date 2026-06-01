@@ -31,6 +31,7 @@ TEST_FILES = [
     Path("tests/test_security_regressions.py"),
 ]
 CONTRACT_DOCS = [
+    Path("docs/codex/v0.7-patch-apply-recheck-request.md"),
     Path("docs/codex/patch-apply-source-review-checklist.md"),
     Path("docs/codex/patch-apply-state-machine.md"),
     Path("docs/codex/filesystem-executor-contract.md"),
@@ -176,7 +177,9 @@ def _prompt(context: dict[str, Any]) -> str:
     return f"""# Patch Apply Source Review Prompt
 
 You are reviewing Ithildin as an external source reviewer for the patch-apply lane only. Treat this
-as source-level review if and only if you inspect the attached source bundle and tests.
+as source-level review if and only if you inspect the attached source bundle and tests. If this is a
+recheck, focus on whether `EXT-PA-001` through `EXT-PA-004` are closed for the local-preview
+patch-apply lane.
 
 Reviewed commit: `{context["commit"]}`
 Reviewed dispatch packet hash: `{context["patch_packet_sha256"]}`
@@ -196,6 +199,15 @@ Review the stored-proposal-only `fs.patch.apply` flow:
 - failure evidence before replacement, after replacement, and before completion;
 - replay denial and stuck/incomplete apply diagnostics;
 - safe audit metadata with no file contents, diff contents, tokens, private keys, or secrets.
+
+## Recheck Findings
+
+If you are performing the v0.7 patch-apply recheck, please explicitly assess:
+
+- `EXT-PA-001`: final completion audit failure after file replacement remains diagnosable.
+- `EXT-PA-002`: proposal-level compare-and-set prevents duplicate proposal application.
+- `EXT-PA-003`: approval begin-execution includes an expiry guard.
+- `EXT-PA-004`: unified-diff hunk old/new counts are enforced.
 
 ## Required Response
 

@@ -48,6 +48,7 @@ from scripts import (
     v06_final_handoff,
     v06_lane_status,
     v07_closure_prep,
+    v07_patch_apply_recheck,
 )
 
 
@@ -2724,6 +2725,45 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
         "Docs/claims/public-preview wording",
     ]:
         assert batch in partition
+
+
+def test_v07_patch_apply_recheck_prep_is_wired() -> None:
+    report = v07_patch_apply_recheck.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    recheck_doc = Path("docs/codex/v0.7-patch-apply-recheck-request.md").read_text(
+        encoding="utf-8"
+    )
+    packet_script = Path("scripts/patch_apply_external_review_packet.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["fixed_findings"] == [
+        "EXT-PA-001",
+        "EXT-PA-002",
+        "EXT-PA-003",
+        "EXT-PA-004",
+    ]
+    assert report["closure_state"] == "external_pending"
+    assert "make v07-patch-apply-recheck-prep" in readme
+    assert "v07-patch-apply-recheck-prep:" in makefile
+    assert "v07-patch-apply-recheck-prep" in makefile.partition("release-check:")[2]
+    assert (
+        "v07-patch-apply-recheck-prep"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "219 - Patch-apply recheck closure prep | Done" in backlog
+    assert "docs/codex/v0.7-patch-apply-recheck-request.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.7-patch-apply-recheck-request.md" in docs_site
+    assert "v0.7 Patch Apply Recheck Request" in index
+    assert "EXT-PA-001" in recheck_doc
+    assert "EXT-PA-004" in recheck_doc
+    assert "docs/codex/v0.7-patch-apply-recheck-request.md" in packet_script
+    assert "EXT-PA-001" in packet_script
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:
