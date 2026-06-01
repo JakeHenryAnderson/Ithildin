@@ -140,6 +140,9 @@ def _extract_findings(text: str, *, source_access: str, area: str) -> list[dict[
             continue
         if header is None:
             continue
+        if len(cells) != len(header):
+            header = None
+            continue
         row = dict(zip(header, cells, strict=False))
         if not row.get("finding id", "").startswith("EXT-"):
             continue

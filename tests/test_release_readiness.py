@@ -2546,15 +2546,15 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
     assert json.loads(json.dumps(board)) == payload
     assert board["summary"]["lane_count"] == 8
     assert board["summary"]["external_review_received"] == 1
-    assert board["summary"]["external_review_closed"] == 0
+    assert board["summary"]["external_review_closed"] == 1
     assert board["summary"]["critical_high_open_count"] == 0
     patch_lane = next(lane for lane in board["lanes"] if lane["slug"] == "patch-apply")
     assert patch_lane["external_review_received"] is True
     assert patch_lane["ext_findings_count"] == 4
-    assert patch_lane["reviewer_recheck_required"] is True
-    assert patch_lane["closure_state"] == "external_pending"
-    assert "does not close external/source review" in doc
-    assert "Patch Apply | yes | 4 | 0 | yes | external_pending" in doc
+    assert patch_lane["reviewer_recheck_required"] is False
+    assert patch_lane["closure_state"] == "closed_local_preview"
+    assert "does not itself close review" in doc
+    assert "Patch Apply | yes | 4 | 0 | no | closed_local_preview" in doc
     assert "make v06-lane-status" in readme
     assert "v06-lane-status:" in makefile
     assert "v06-lane-status" in makefile.partition("release-check:")[2]
@@ -2587,7 +2587,7 @@ def test_v06_closure_readiness_bundle_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["external_review_received"] == 1
-    assert report["external_review_closed"] == 0
+    assert report["external_review_closed"] == 1
     assert report["critical_high_open_count"] == 0
     assert "make v06-closure-readiness" in readme
     assert "v06-closure-readiness:" in makefile
@@ -2636,7 +2636,7 @@ def test_v06_final_handoff_docs_are_wired() -> None:
 
     assert report["valid"] is True
     assert report["external_review_received"] == 1
-    assert report["external_review_closed"] == 0
+    assert report["external_review_closed"] == 1
     assert report["capability_expansion_allowed"] is False
     assert "make v06-final-handoff" in readme
     assert "v06-final-handoff:" in makefile
@@ -2690,8 +2690,8 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["pending_external_review_rows"] == 55
-    assert report["externally_closed_rows"] == 0
+    assert report["pending_external_review_rows"] == 54
+    assert report["externally_closed_rows"] == 1
     assert report["capability_expansion_allowed"] is False
     assert "make v07-closure-prep" in readme
     assert "v07-closure-prep:" in makefile
@@ -2748,7 +2748,7 @@ def test_v07_patch_apply_recheck_prep_is_wired() -> None:
         "EXT-PA-003",
         "EXT-PA-004",
     ]
-    assert report["closure_state"] == "external_pending"
+    assert report["closure_state"] == "closed_local_preview"
     assert "make v07-patch-apply-recheck-prep" in readme
     assert "v07-patch-apply-recheck-prep:" in makefile
     assert "v07-patch-apply-recheck-prep" in makefile.partition("release-check:")[2]
@@ -2756,10 +2756,13 @@ def test_v07_patch_apply_recheck_prep_is_wired() -> None:
         "v07-patch-apply-recheck-prep"
         in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
-    assert "219 - Patch-apply recheck closure prep | Done" in backlog
+    assert "219 - Patch-apply recheck closure | Done" in backlog
     assert "docs/codex/v0.7-patch-apply-recheck-request.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.7-patch-apply-recheck-outcome.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.7-patch-apply-recheck-request.md" in docs_site
+    assert "docs/codex/v0.7-patch-apply-recheck-outcome.md" in docs_site
     assert "v0.7 Patch Apply Recheck Request" in index
+    assert "v0.7 Patch Apply Recheck Outcome" in index
     assert "EXT-PA-001" in recheck_doc
     assert "EXT-PA-004" in recheck_doc
     assert "docs/codex/v0.7-patch-apply-recheck-request.md" in packet_script
@@ -2897,6 +2900,39 @@ def test_external_response_normalization_requires_findings_or_explicit_none() ->
     )
 
     assert normalized["finding_count"] == 0
+
+
+def test_external_response_normalization_ignores_later_non_finding_tables() -> None:
+    raw_response = "\n".join(
+        [
+            "# Patch Recheck",
+            "",
+            "No actionable findings.",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| - | - | patch-apply | - | - | no new finding | - |",
+            "",
+            "| Prior finding | Recheck disposition | Rationale |",
+            "| --- | --- | --- |",
+            "| EXT-PA-001 | closed for local-preview patch-apply lane | "
+            "Completion audit failure is diagnosable. |",
+        ]
+    )
+
+    normalized = external_response_normalize.normalize_response(
+        raw_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="source-level",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="patch-apply",
+    )
+
+    assert normalized["finding_count"] == 0
+    assert normalized["can_close_source_rows"] is True
 
 
 def test_external_response_normalization_rejects_malformed_packet_hash() -> None:

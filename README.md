@@ -285,6 +285,10 @@ The first v0.7 lane recheck is
 [docs/codex/v0.7-patch-apply-recheck-request.md](docs/codex/v0.7-patch-apply-recheck-request.md)
 and is verified with `make v07-patch-apply-recheck-prep`; generated packet artifacts still come
 from `make v06-patch-apply-review-packet`.
+The patch-apply recheck outcome is recorded in
+[docs/codex/v0.7-patch-apply-recheck-outcome.md](docs/codex/v0.7-patch-apply-recheck-outcome.md);
+it closes only the local-preview patch-apply lane and does not approve public preview or new tool
+powers.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

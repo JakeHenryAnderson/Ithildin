@@ -11,7 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import v06_closure_readiness, v06_lane_status
+from scripts import v06_lane_status
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_DOCS = (
@@ -55,7 +55,6 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     lane_board = v06_lane_status.build_lane_status(repo_root)
-    closure = v06_closure_readiness.build_report(repo_root)
     docs = []
     for relative in REQUIRED_DOCS:
         path = repo_root / relative
@@ -78,11 +77,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for phrase in forbidden_lines:
         if phrase in lines:
             failures.append(f"v0.6 final docs contain forbidden go/closure phrase: {phrase}")
-
-    if lane_board["summary"]["external_review_closed"] != 0:
-        failures.append("final handoff requires zero externally closed lanes at this stage")
-    if closure["external_review_closed"] != 0:
-        failures.append("closure-readiness report unexpectedly reports external closure")
 
     return {
         "schema_version": "1",

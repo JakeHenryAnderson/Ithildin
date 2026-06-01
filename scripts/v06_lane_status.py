@@ -146,6 +146,7 @@ def build_lane_status(repo_root: Path) -> dict[str, Any]:
         external_received = any(
             "review received" in row["External status"].lower()
             or "source-level review received" in row["External status"].lower()
+            or "recheck received" in row["External status"].lower()
             for row in rows
         )
         closure_states = sorted({row["Closure state"] for row in rows})
@@ -203,7 +204,7 @@ def build_lane_status(repo_root: Path) -> dict[str, Any]:
             "capability_expansion_allowed": False,
         },
         "does_not_prove": [
-            "external/source-review closure",
+            "complete external/source-review closure",
             "capability expansion approval",
             "production readiness",
             "public/security-product positioning",
@@ -246,7 +247,7 @@ def render_markdown(board: dict[str, Any]) -> str:
         "# v0.6 Lane Status Board",
         "",
         "This generated board summarizes source-review lane state for v0.6. It is a",
-        "navigation aid only: it does not close external/source review, approve",
+        "navigation aid only: it reports lane state but does not itself close review, approve",
         "capability expansion, or change the v0.1 local-preview runtime boundary.",
         "",
         "## Summary",
@@ -379,7 +380,7 @@ def _next_action(
         return "run verification commands and send recheck before closure"
     if not external_received:
         return f"send {lane.next_external_packet} for source review"
-    return "record closure only with external verification evidence"
+    return "lane closed for local preview; continue remaining external/source-review lanes"
 
 
 def _yes_no(value: bool) -> str:

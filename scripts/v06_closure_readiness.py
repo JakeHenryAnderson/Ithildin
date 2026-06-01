@@ -74,8 +74,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         if accepted_risk_v2.get("risk_count") != 10:
             failures.append("accepted-risk v2 must track the 10 accepted local-preview risks")
 
-    if lane_board["summary"]["external_review_closed"] != 0:
-        failures.append("lane-status board unexpectedly reports externally closed lanes")
     if lane_board["summary"]["critical_high_open_count"] != 0:
         failures.append("lane-status board reports open critical/high findings")
 

@@ -65,12 +65,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     matrix = (repo_root / "docs/codex/source-review-closure-matrix.md").read_text(
         encoding="utf-8"
     )
-    if "Patch apply | v0.6 source-level external review received" not in matrix:
+    if "Patch apply | v0.7 source-level recheck received" not in matrix:
         failures.append("source-review closure matrix missing patch-apply external review lineage")
-    if "Patch apply | v0.6 source-level external review received" in matrix and (
-        "| Patch apply |" in matrix and "external_pending" not in _patch_apply_matrix_row(matrix)
-    ):
-        failures.append("patch-apply closure matrix row must remain external_pending")
+    patch_row = _patch_apply_matrix_row(matrix)
+    if "closed_local_preview" not in patch_row:
+        failures.append("patch-apply closure matrix row must be closed_local_preview")
 
     recheck_path = repo_root / RECHECK_DOC
     if not recheck_path.exists():
@@ -113,7 +112,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             for finding_id in REQUIRED_FINDINGS
             if finding_id in by_id and by_id[finding_id].fields["Disposition"] == "fixed"
         ],
-        "closure_state": "external_pending",
+        "closure_state": "closed_local_preview",
         "capability_expansion_allowed": False,
     }
 

@@ -96,6 +96,7 @@ externally closed.
 - [v0.6 Final Packet Sanity Review](v0.6-final-packet-sanity-review.md)
 - [v0.7 External Review Row Partition](v0.7-external-review-row-partition.md)
 - [v0.7 Patch Apply Recheck Request](v0.7-patch-apply-recheck-request.md)
+- [v0.7 Patch Apply Recheck Outcome](v0.7-patch-apply-recheck-outcome.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)
 - [v0.6 Internal Proxy Review Operating Model](v0.6-internal-proxy-review-operating-model.md)

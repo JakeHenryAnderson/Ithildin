@@ -210,7 +210,7 @@ expansion tasks.
 | 182 - External reviewer assignment matrix | Done | [v0.6-external-review-assignment-matrix.md](v0.6-external-review-assignment-matrix.md) |
 | 183 - External review packet dispatch set | Done | [v0.6-external-review-dispatch-packets.md](v0.6-external-review-dispatch-packets.md), `make v06-review-dispatch-packets` |
 | 184 - External response normalization | Done | [v0.6-external-response-normalization.md](v0.6-external-response-normalization.md), `make external-response-normalize FILE=...` |
-| 185 - Patch apply external review execution packet | Source review received; findings remediated | [v0.6-patch-apply-external-review-execution.md](v0.6-patch-apply-external-review-execution.md), `EXT-PA-001` through `EXT-PA-004`; patch-apply closure still requires post-intake gates and any reviewer follow-up. |
+| 185 - Patch apply external review execution packet | Source review received; findings remediated and later rechecked | [v0.6-patch-apply-external-review-execution.md](v0.6-patch-apply-external-review-execution.md), `EXT-PA-001` through `EXT-PA-004`; final local-preview patch-apply closure is recorded in Task 219. |
 | 185-192 - Wave 2 internal proxy review execution | Internally remediated | [v0.6-internal-review-execution-wave-2.md](v0.6-internal-review-execution-wave-2.md); `SUB-010` through `SUB-077` are fixed; external review remains pending. |
 | 193 - External finding triage wave | Done | [v0.6-lane-status-board.md](v0.6-lane-status-board.md), `make v06-lane-status`; patch apply remains external-pending until reviewer recheck/closure evidence exists. |
 | 194-199 - v0.6 closure-readiness bundle | Done | [v0.6-post-review-packet.md](v0.6-post-review-packet.md), [source-review-closure-matrix-v4.md](source-review-closure-matrix-v4.md), [accepted-risk-register-v2.md](accepted-risk-register-v2.md), `make v06-closure-readiness`; external rows remain pending. |
@@ -226,8 +226,8 @@ does not approve public preview, capability design, capability implementation, o
 | --- | --- | --- |
 | 216 - v0.7 closure charter and freeze | Done | [v0.7-external-review-closure-charter.md](v0.7-external-review-closure-charter.md), `make v07-closure-prep` |
 | 217 - v0.6 final packet sanity review | Done | [v0.6-final-packet-sanity-review.md](v0.6-final-packet-sanity-review.md), `make v07-closure-prep` |
-| 218 - External-review row partition | Done | [v0.7-external-review-row-partition.md](v0.7-external-review-row-partition.md), `make v07-closure-prep`; 55 pending rows are partitioned into executable review batches. |
-| 219 - Patch-apply recheck closure prep | Done | [v0.7-patch-apply-recheck-request.md](v0.7-patch-apply-recheck-request.md), `make v07-patch-apply-recheck-prep`, `make v06-patch-apply-review-packet`; external closure remains pending reviewer recheck. |
+| 218 - External-review row partition | Done | [v0.7-external-review-row-partition.md](v0.7-external-review-row-partition.md), `make v07-closure-prep`; original 55 pending rows are partitioned into executable review batches. |
+| 219 - Patch-apply recheck closure | Done | [v0.7-patch-apply-recheck-request.md](v0.7-patch-apply-recheck-request.md), [v0.7-patch-apply-recheck-outcome.md](v0.7-patch-apply-recheck-outcome.md), `make v07-patch-apply-recheck-prep`; patch apply is closed for the v0.1 local-preview lane only. |
 
 ## Future Candidate Track
 

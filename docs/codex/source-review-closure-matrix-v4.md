@@ -8,7 +8,7 @@ matrix of record.
 
 | Lane | External Review | Findings | Closure State | Next Action |
 | --- | --- | --- | --- | --- |
-| Patch apply | source-level review received | `EXT-PA-001` through `EXT-PA-004` fixed | external_pending | send minimal recheck or record external closure evidence |
+| Patch apply | source-level recheck received | `EXT-PA-001` through `EXT-PA-004` closed for local-preview patch apply; no new findings | closed_local_preview | continue remaining external/source-review lanes; no capability or public-preview approval |
 | Filesystem/platform | pending | none | external_pending | send focused dispatch packet |
 | HTTP fetch | pending | none | external_pending | send focused dispatch packet |
 | Signed evidence/audit | pending | none | external_pending | send focused dispatch packet |

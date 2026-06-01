@@ -120,9 +120,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     if closure_report["external_closure_complete"]:
         failures.append("v0.7 closure prep expected external closure to remain incomplete")
-    if closure_report["externally_closed_rows"]:
-        failures.append("v0.7 closure prep expected zero externally closed rows")
-
     return {
         "schema_version": "1",
         "valid": not failures,

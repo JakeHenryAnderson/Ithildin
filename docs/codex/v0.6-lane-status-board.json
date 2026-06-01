@@ -1,31 +1,33 @@
 {
   "does_not_prove": [
-    "external/source-review closure",
+    "complete external/source-review closure",
     "capability expansion approval",
     "production readiness",
     "public/security-product positioning"
   ],
   "lanes": [
     {
-      "closure_state": "external_pending",
+      "closure_state": "closed_local_preview",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
       "ext_findings_count": 4,
       "external_review_received": true,
       "fixed_commits": [
         "15e1fb5dff7dc9e2a365154d90604810f7368ac4",
-        "bf23a15952b940d6dd1987c5f36219fba586d322"
+        "bf23a15952b940d6dd1987c5f36219fba586d322",
+        "652c4c47ead00ed543b074f1caea80970c5421ef"
       ],
       "lane": "Patch Apply",
       "matrix_areas": [
         "Patch apply"
       ],
-      "next_action": "run verification commands and send recheck before closure",
-      "reviewer_recheck_required": true,
+      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
+      "reviewer_recheck_required": false,
       "slug": "patch-apply",
       "verification_commands": [
         "patch/approval/security focused tests",
         "make reviewer-findings-check",
+        "make external-review-closure-gate",
         "make release-check"
       ]
     },
@@ -215,7 +217,7 @@
   "summary": {
     "capability_expansion_allowed": false,
     "critical_high_open_count": 0,
-    "external_review_closed": 0,
+    "external_review_closed": 1,
     "external_review_received": 1,
     "lane_count": 8
   },

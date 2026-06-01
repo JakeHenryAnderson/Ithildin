@@ -10,4 +10,4 @@
 - Recommended fix: Enforce old/new hunk counts or document the constrained custom unified-diff subset.
 - Blocking status: later
 - Disposition: fixed
-- Verification notes: `apply_unified_diff()` now counts context, removal, and addition lines per hunk and rejects hunks whose actual old/new counts do not match the header. `test_invalid_diff_shapes_are_denied` includes inconsistent hunk-count fixtures.
+- Verification notes: `apply_unified_diff()` now counts context, removal, and addition lines per hunk and rejects hunks whose actual old/new counts do not match the header. `test_invalid_diff_shapes_are_denied` includes inconsistent hunk-count fixtures. GPT 5.5 Pro source-level recheck at commit `652c4c47ead00ed543b074f1caea80970c5421ef` found this closed for the v0.1 local-preview patch-apply lane.

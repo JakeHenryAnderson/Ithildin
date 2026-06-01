@@ -10,4 +10,4 @@
 - Recommended fix: Include expiry in the atomic execution transition or immediately re-check after transition and fail safely.
 - Blocking status: later
 - Disposition: fixed
-- Verification notes: `ApprovalStore.compare_and_set_status()` now supports an `expires_after` guard, and `ApprovalService.begin_execution()` passes the current timestamp when moving an approval to `executing`. `test_begin_execution_uses_expiry_guard_in_atomic_transition` verifies the execution transition carries the expiry guard.
+- Verification notes: `ApprovalStore.compare_and_set_status()` now supports an `expires_after` guard, and `ApprovalService.begin_execution()` passes the current timestamp when moving an approval to `executing`. `test_begin_execution_uses_expiry_guard_in_atomic_transition` verifies the execution transition carries the expiry guard. GPT 5.5 Pro source-level recheck at commit `652c4c47ead00ed543b074f1caea80970c5421ef` found this closed for the v0.1 local-preview patch-apply lane.
