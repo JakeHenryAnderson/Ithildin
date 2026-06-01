@@ -28,8 +28,10 @@ The grouped evidence includes:
 - approval scope hash;
 - policy reason.
 
-The console also exposes a copy action for the safe approval evidence payload so a reviewer can
-compare UI-visible evidence with API/audit evidence without copying raw diffs or file contents.
+The console also exposes a copy action for the safe approval evidence payload, including the
+derived `review_summary` validity, checks, reasons, and proposal review shown by the UI. This lets a
+reviewer compare UI-visible approval state with API/audit evidence without copying raw diffs or file
+contents.
 
 ## Failure-State and Trust UX
 

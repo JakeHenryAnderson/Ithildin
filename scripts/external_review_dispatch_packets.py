@@ -280,15 +280,33 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "Review console evidence",
             "Review console source review checklist",
         ),
-        source_files=("apps/ui/src/App.tsx", "apps/api/src/ithildin_api/app.py"),
+        source_files=(
+            "apps/ui/src/App.tsx",
+            "apps/api/src/ithildin_api/app.py",
+            "apps/api/src/ithildin_api/patches.py",
+            "tests/test_api_service.py",
+            "tests/test_release_readiness.py",
+        ),
         review_docs=(
             "docs/codex/review-console-source-review-checklist.md",
             "docs/codex/review-console-assurance.md",
             "docs/codex/local-auth-boundary.md",
+            "docs/codex/findings/sub-019-approval-review-binding-drift.md",
+            "docs/codex/findings/sub-020-review-console-trust-posture.md",
+            "docs/codex/findings/sub-021-approval-route-decision-mismatch.md",
+            "docs/codex/findings/sub-075-review-console-copy-evidence-parity.md",
         ),
         commands=(
             "npm run typecheck --prefix apps/ui",
             "npm run build --prefix apps/ui",
+            (
+                "uv run pytest tests/test_api_service.py::"
+                "test_approval_review_endpoint_reports_binding_checks "
+                "tests/test_api_service.py::"
+                "test_approval_review_endpoint_reports_runtime_binding_drift "
+                "tests/test_api_service.py::"
+                "test_approval_mutation_routes_reject_body_decision_mismatch -q"
+            ),
             "make release-check",
         ),
         prompt=(

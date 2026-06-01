@@ -1152,7 +1152,7 @@ export function App() {
                     </div>
                   </dl>
                   <BindingReviewSummary review={approvalReview.review} />
-                  <ApprovalEvidence approval={approval} />
+                  <ApprovalEvidence approval={approval} review={approvalReview.review} />
                   <div className="decision-row">
                     <input
                       aria-label={`Deny reason for ${approval.approval_id}`}
@@ -1327,7 +1327,13 @@ function StatusPill({ status }: { status: string }) {
   return <span className={`status-pill status-${status}`}>{status}</span>;
 }
 
-function ApprovalEvidence({ approval }: { approval: Approval }) {
+function ApprovalEvidence({
+  approval,
+  review,
+}: {
+  approval: Approval;
+  review?: BindingReview;
+}) {
   const scope = approval.one_time_scope;
   const groups = [
     {
@@ -1385,7 +1391,7 @@ function ApprovalEvidence({ approval }: { approval: Approval }) {
         <button
           className="copy-button"
           type="button"
-          onClick={() => void copyApprovalEvidence(approval)}
+          onClick={() => void copyApprovalEvidence(approval, review)}
         >
           <Copy aria-hidden="true" size={14} />
           Copy
@@ -1473,7 +1479,7 @@ function BindingReviewSummary({
   );
 }
 
-async function copyApprovalEvidence(approval: Approval) {
+async function copyApprovalEvidence(approval: Approval, review?: BindingReview) {
   const payload = {
     approval_id: approval.approval_id,
     request_id: approval.request_id,
@@ -1483,6 +1489,14 @@ async function copyApprovalEvidence(approval: Approval) {
     expires_at: approval.expires_at,
     one_time_scope: approval.one_time_scope,
     metadata: approval.metadata,
+    review_summary: review
+      ? {
+          valid: review.valid,
+          checks: review.checks,
+          reasons: review.reasons,
+          proposal: review.proposal,
+        }
+      : undefined,
   };
   await navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
 }

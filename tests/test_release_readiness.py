@@ -877,6 +877,7 @@ def test_review_console_assurance_is_documented() -> None:
         "rejected admin token shows a locked dashboard state",
         "failed export responses are parsed",
         "does not add repair",
+        "review_summary",
     ]:
         assert required in doc
     for ui_marker in [
@@ -884,6 +885,7 @@ def test_review_console_assurance_is_documented() -> None:
         "/patch-apply-diagnostics",
         "Patch Apply Diagnostics",
         "copyApprovalEvidence",
+        "review_summary",
         "approval_scope_hash",
         "Patch Artifact",
         "Tool Manifest",
@@ -900,7 +902,7 @@ def test_review_console_assurance_is_documented() -> None:
     assert "139 - Review-console approval UX v3 | Done" in backlog
     assert "140 - Review-console failure and unauthorized states | Done" in backlog
     assert "Tasks 099-100 expose copyable approval binding evidence" in matrix
-    assert "Tasks 139-140 grouped approval evidence and failure-state UX complete" in matrix
+    assert "SUB-075" in matrix
     assert "docs/codex/review-console-assurance.md" in review_docs.REVIEW_DOCS
 
 
@@ -1553,6 +1555,7 @@ def test_review_console_source_review_checklist_is_documented() -> None:
         "approval binding evidence display",
         'decided_by: "admin:local-ui"',
         "The UI does not add direct tool execution",
+        "derived review verdict/checks/reasons",
         "npm run typecheck --prefix apps/ui",
         "npm run build --prefix apps/ui",
         "not custody or notarization",
@@ -1929,7 +1932,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-074" in handoff
+    assert "SUB-075" in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
@@ -1938,6 +1941,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "Internal proxy findings SUB-048 through SUB-063 fixed internally" in manifest
     assert "Internal proxy findings SUB-064 through SUB-073 fixed internally" in manifest
     assert "Internal proxy finding SUB-074 fixed internally" in manifest
+    assert "Internal proxy finding SUB-075 fixed internally" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2054,7 +2058,7 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-074"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-075"
     assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
@@ -2259,6 +2263,22 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         ),
     ]:
         assert required in mcp_packet
+    review_console_packet = dispatch_root.joinpath("review-console.md").read_text(
+        encoding="utf-8"
+    )
+    for finding_id in ["SUB-019", "SUB-020", "SUB-021", "SUB-075"]:
+        assert finding_id in review_console_packet
+    for required in [
+        "apps/ui/src/App.tsx",
+        "apps/api/src/ithildin_api/app.py",
+        "apps/api/src/ithildin_api/patches.py",
+        "tests/test_api_service.py",
+        "tests/test_release_readiness.py",
+        "npm run build --prefix apps/ui",
+        "test_approval_review_endpoint_reports_binding_checks",
+        "test_approval_mutation_routes_reject_body_decision_mismatch",
+    ]:
+        assert required in review_console_packet
     for required in [
         "make v06-review-dispatch-packets",
         "dispatch-packet-hashes.json",
