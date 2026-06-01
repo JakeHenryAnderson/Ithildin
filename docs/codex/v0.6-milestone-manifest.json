@@ -85,7 +85,7 @@
       "title": "Policy parity and registry external review execution",
       "wave": "Wave 2",
       "status": "Internal proxy findings SUB-064 through SUB-073 fixed internally; external pending",
-      "planned_commit": "Remediate policy registry proxy findings (pending commit)"
+      "planned_commit": "Remediate policy registry proxy findings (e388f8f1158321e0b1628795f85da791cdb3cde3)"
     },
     {
       "id": "190",
