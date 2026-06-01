@@ -186,6 +186,7 @@ review-candidate:
 	$(MAKE) signed-evidence-demo
 	$(MAKE) signed-evidence-demo-verify
 	$(MAKE) negative-review-transcripts
+	$(MAKE) v06-review-dispatch-packets
 	$(MAKE) review-packet-bundle
 	$(MAKE) review-packet-consolidated
 	$(MAKE) packet-redaction-scan

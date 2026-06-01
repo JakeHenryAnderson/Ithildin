@@ -14,9 +14,9 @@ cd /Users/jake/Documents/Codex/Ithildin
 
 Run `make review-candidate` to execute the full local handoff sequence. It runs `release-check`,
 `filesystem-contract-check`, `signed-evidence-demo`, `negative-review-transcripts`,
-`review-packet-bundle`, `review-packet-consolidated`, packet redaction scan, and `docs-site`, then
-prints the consolidated packet path. `release-check` includes `make adversarial-corpus-check`,
-`make resource-limit-check`, and `make demo-scenario-pack`. Use
+`v06-review-dispatch-packets`, `review-packet-bundle`, `review-packet-consolidated`, packet
+redaction scan, and `docs-site`, then prints the consolidated packet path. `release-check` includes
+`make adversarial-corpus-check`, `make resource-limit-check`, and `make demo-scenario-pack`. Use
 [demo-scenario-pack-v2.md](demo-scenario-pack-v2.md) as the concise scenario map for positive,
 negative, signing, filesystem, and review-packet demos.
 Use [review-docs-index.md](review-docs-index.md) to orient reviewers before attaching the packet.
@@ -89,49 +89,56 @@ work must stop for status, reassessment, or external consultation.
    Expected outcome: verifies the signed audit demo bundle, confirms the tampered audit bundle does
    not verify, and verifies the demo manifest-lock signature using the generated demo public keys.
 
-11. `make review-packet-diff OLD=old-packet NEW=new-packet`
-
-   Expected outcome: prints added, removed, changed, and unchanged artifact counts for two generated
-   packets using `artifact-hashes.json` when available.
-
-12. `make review-packet-diff-gate OLD=old-packet NEW=new-packet`
-
-   Expected outcome: requires `artifact-hashes.json` in both packets and fails if a previously
-   comparable artifact was removed. Added or changed artifacts are reported for reviewer attention.
-
-13. `make filesystem-contract-check`
-
-   Expected outcome: prints secret-free local platform and filesystem capability evidence. On
-   macOS/Linux with `O_NOFOLLOW`, the support status should be `supported`; Windows/WSL are reported
-   as unsupported/untested for local-preview workspace/race claims.
-
-14. `make review-packet-bundle`
-
-   Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
-   command outputs, `filesystem-contract-check.txt`, copied review docs,
-   `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
-   step 9 was run first.
-
-15. `make negative-review-transcripts`
+11. `make negative-review-transcripts`
 
    Expected outcome: creates ignored observed-denial transcripts under
    `var/review-packets/v0.2/negative-review-transcripts/`, covering traversal, symlink escape,
    stale-base patch apply, private redirect, unknown principal, disabled principal, and replayed
    approval.
 
-16. `make review-packet-consolidated`
+12. `make v06-review-dispatch-packets`
+
+   Expected outcome: creates focused v0.6 source-review dispatch packets under
+   `var/review-packets/v0.6/dispatch/`, including `dispatch-packet-hashes.json` for patch apply,
+   filesystem, HTTP fetch, signed evidence, policy/registry, MCP ingress, review console, and
+   release automation review lanes.
+
+13. `make review-packet-diff OLD=old-packet NEW=new-packet`
+
+   Expected outcome: prints added, removed, changed, and unchanged artifact counts for two generated
+   packets using `artifact-hashes.json` when available.
+
+14. `make review-packet-diff-gate OLD=old-packet NEW=new-packet`
+
+   Expected outcome: requires `artifact-hashes.json` in both packets and fails if a previously
+   comparable artifact was removed. Added or changed artifacts are reported for reviewer attention.
+
+15. `make filesystem-contract-check`
+
+   Expected outcome: prints secret-free local platform and filesystem capability evidence. On
+   macOS/Linux with `O_NOFOLLOW`, the support status should be `supported`; Windows/WSL are reported
+   as unsupported/untested for local-preview workspace/race claims.
+
+16. `make review-packet-bundle`
+
+   Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
+   command outputs, `filesystem-contract-check.txt`, copied review docs,
+   `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
+   step 9 was run first.
+
+17. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-17. `make packet-redaction-scan`
+18. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-18. `make docs-site`
+19. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -149,6 +156,7 @@ work must stop for status, reassessment, or external consultation.
 - Packet redaction scan: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/packet-redaction-scan.txt`
 - Generated artifact hashes: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/artifact-hashes.json`
 - Consolidated attachment hashes: `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/consolidated-attachment-hashes.json`
+- v0.6 focused dispatch packets: `var/review-packets/v0.6/dispatch/dispatch-packet-hashes.json`
 - Signed evidence demo summary: `var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md`
 - Negative review transcripts: `var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md`
 - Negative review recipes: [negative-review-recipes.md](negative-review-recipes.md)

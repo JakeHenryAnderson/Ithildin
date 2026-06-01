@@ -275,6 +275,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "signed-evidence-demo-verify",
         "filesystem-contract-check",
         "reviewer-findings-check",
+        "v06-review-dispatch-packets",
         "review-packet-bundle",
         "review-packet-consolidated",
         "review-packet-diff",
@@ -299,8 +300,10 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) signed-evidence-demo",
         "$(MAKE) signed-evidence-demo-verify",
         "$(MAKE) negative-review-transcripts",
+        "$(MAKE) v06-review-dispatch-packets",
         "$(MAKE) review-packet-bundle",
         "$(MAKE) review-packet-consolidated",
+        "$(MAKE) packet-redaction-scan",
         "$(MAKE) docs-site",
     ]
     positions = [body.index(command) for command in expected_commands]
@@ -1932,7 +1935,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-076" in handoff
+    assert "SUB-077" in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
@@ -1942,7 +1945,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "Internal proxy findings SUB-064 through SUB-073 fixed internally" in manifest
     assert "Internal proxy finding SUB-074 fixed internally" in manifest
     assert "Internal proxy finding SUB-075 fixed internally" in manifest
-    assert "Internal proxy finding SUB-076 fixed internally" in manifest
+    assert "Internal proxy findings SUB-076 through SUB-077 fixed internally" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2059,7 +2062,7 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-076"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-077"
     assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
@@ -2241,6 +2244,8 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         "SUB-062",
         "SUB-063",
         "SUB-076",
+        "SUB-077",
+        "make review-candidate",
     ]:
         assert required in release_packet_text
     policy_packet = dispatch_root.joinpath("policy-registry.md").read_text(encoding="utf-8")

@@ -394,9 +394,11 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "docs/codex/findings/sub-062-release-dispatch-evidence-commands.md",
             "docs/codex/findings/sub-063-release-transcript-returncode.md",
             "docs/codex/findings/sub-076-release-automation-dispatch-focus.md",
+            "docs/codex/findings/sub-077-review-candidate-dispatch-freshness.md",
         ),
         commands=(
             "make v05-review-candidate",
+            "make review-candidate",
             "make release-evidence",
             "make release-evidence-validate",
             "make release-evidence-gate",
