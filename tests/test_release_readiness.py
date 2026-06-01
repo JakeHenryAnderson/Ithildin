@@ -22,6 +22,7 @@ from scripts import (
     external_response_template_check,
     external_review_closure_gate,
     external_review_dispatch_packets,
+    filesystem_source_review_bundle,
     internal_review_packet,
     no_new_powers_guardrail,
     packet_redaction_scan,
@@ -2512,6 +2513,182 @@ def test_v06_patch_apply_external_review_packet_is_wired(
         for command in dispatch_area.commands
     )
     assert dispatch_area.finding_namespace == "EXT-PA-###"
+
+
+def test_filesystem_source_review_bundle_is_wired(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path
+    for marker in [
+        "pyproject.toml",
+        "Makefile",
+        "apps/api",
+        "apps/mcp-server",
+        "tool-manifests.lock.json",
+    ]:
+        path = repo_root / marker
+        if "." in Path(marker).name:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("marker\n", encoding="utf-8")
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+    for relative in (
+        filesystem_source_review_bundle.SOURCE_FILES
+        + filesystem_source_review_bundle.TEST_FILES
+        + filesystem_source_review_bundle.CONTRACT_DOCS
+    ):
+        path = repo_root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {relative.name}\n", encoding="utf-8")
+
+    def fake_build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, object]:
+        output_root.mkdir(parents=True)
+        output_root.joinpath("filesystem.md").write_text("# Filesystem\n", encoding="utf-8")
+        manifest: dict[str, object] = {
+            "packets": [
+                {
+                    "path": "filesystem.md",
+                    "sha256": "sha256:" + ("3" * 64),
+                    "payload_sha256": "sha256:" + ("4" * 64),
+                    "bytes": 13,
+                }
+            ]
+        }
+        output_root.joinpath("dispatch-packet-hashes.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        return manifest
+
+    monkeypatch.setattr(
+        filesystem_source_review_bundle,
+        "_build_dispatch_packets",
+        fake_build_dispatch_packets,
+    )
+    monkeypatch.setattr(
+        filesystem_source_review_bundle,
+        "_git",
+        lambda repo_root, args: "fedcba9876543210"
+        if args == ["rev-parse", "HEAD"]
+        else "",
+    )
+    monkeypatch.setattr(
+        filesystem_source_review_bundle,
+        "collect_filesystem_contract_status",
+        lambda: {
+            "support": {"status": "supported", "reason": "test"},
+            "platform": {"system": "Darwin", "profile": "macos"},
+            "capabilities": {
+                "o_no_follow_available": True,
+                "symlink_supported": True,
+                "hardlink_supported": True,
+                "case_sensitive": False,
+            },
+        },
+    )
+
+    output_dir = filesystem_source_review_bundle.build_bundle(
+        repo_root=repo_root,
+        output_dir=repo_root / "var/review-packets/v0.7/filesystem-source-review",
+        run_commands=False,
+    )
+
+    for required in [
+        "00_FILESYSTEM_SOURCE_REVIEW_INDEX.md",
+        "01_FILESYSTEM_SOURCE_REVIEW_PROMPT.md",
+        "02_FILESYSTEM_DISPATCH_PACKET.md",
+        "03_FILESYSTEM_SOURCE_BUNDLE.md",
+        "04_FILESYSTEM_TESTS_BUNDLE.md",
+        "05_FILESYSTEM_CONTRACTS_BUNDLE.md",
+        "06_FILESYSTEM_EVIDENCE.md",
+        "07_FILESYSTEM_FOCUSED_TESTS.txt",
+        "08_FILESYSTEM_INTAKE_COMMANDS.md",
+        "filesystem-source-review-artifact-hashes.json",
+    ]:
+        assert output_dir.joinpath(required).exists()
+
+    index = output_dir.joinpath("00_FILESYSTEM_SOURCE_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EXT-FS-001" in index
+    assert "source/test evidence" in index
+    prompt = output_dir.joinpath("01_FILESYSTEM_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EXT-FS-###" in prompt
+    assert "workspace confinement" in prompt
+    assert "sha256:" + ("3" * 64) in prompt
+    source_bundle = output_dir.joinpath("03_FILESYSTEM_SOURCE_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "apps/api/src/ithildin_api/read_tools.py" in source_bundle
+    assert "apps/api/src/ithildin_api/app.py" in source_bundle
+    tests_bundle = output_dir.joinpath("04_FILESYSTEM_TESTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "tests/test_workspaces.py" in tests_bundle
+    assert "tests/test_filesystem_contract_check.py" in tests_bundle
+    intake = output_dir.joinpath("08_FILESYSTEM_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "--area \"filesystem\"" in intake
+    evidence = output_dir.joinpath("06_FILESYSTEM_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "/system/status.filesystem" in evidence
+    assert '"status": "supported"' in evidence
+    hashes = json.loads(
+        output_dir.joinpath("filesystem-source-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert "filesystem-source-review-artifact-hashes.json" not in {
+        entry["path"] for entry in hashes
+    }
+    assert {entry["path"] for entry in hashes} == {
+        "00_FILESYSTEM_SOURCE_REVIEW_INDEX.md",
+        "01_FILESYSTEM_SOURCE_REVIEW_PROMPT.md",
+        "02_FILESYSTEM_DISPATCH_PACKET.md",
+        "03_FILESYSTEM_SOURCE_BUNDLE.md",
+        "04_FILESYSTEM_TESTS_BUNDLE.md",
+        "05_FILESYSTEM_CONTRACTS_BUNDLE.md",
+        "06_FILESYSTEM_EVIDENCE.md",
+        "07_FILESYSTEM_FOCUSED_TESTS.txt",
+        "08_FILESYSTEM_INTAKE_COMMANDS.md",
+    }
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    review_doc = Path("docs/codex/v0.7-filesystem-platform-source-review.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    assert "make filesystem-source-review-bundle" in readme
+    assert "filesystem-source-review-bundle:" in makefile
+    assert "make filesystem-source-review-bundle" in reproduction
+    assert "var/review-packets/v0.7/filesystem-source-review/" in reproduction
+    assert "EXT-FS-001" in review_doc
+    assert "make filesystem-source-review-bundle" in review_doc
+    assert "221 - Filesystem source-review bundle | Done" in backlog
+
+    dispatch_area = next(
+        area
+        for area in external_review_dispatch_packets.DISPATCH_AREAS
+        if area.slug == "filesystem"
+    )
+    for required in [
+        "apps/api/src/ithildin_api/filesystem_contract.py",
+        "apps/api/src/ithildin_api/app.py",
+        "scripts/filesystem_contract_check.py",
+        "tests/test_workspaces.py",
+        "tests/test_filesystem_contract_check.py",
+    ]:
+        assert required in dispatch_area.source_files
+    assert dispatch_area.finding_namespace == "EXT-FS-###"
 
 
 def test_v06_external_response_normalization_is_wired() -> None:

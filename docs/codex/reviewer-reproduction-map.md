@@ -122,26 +122,34 @@ work must stop for status, reassessment, or external consultation.
    macOS/Linux with `O_NOFOLLOW`, the support status should be `supported`; Windows/WSL are reported
    as unsupported/untested for local-preview workspace/race claims.
 
-16. `make review-packet-bundle`
+16. `make filesystem-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.7/filesystem-source-review/`. This directly answers `EXT-FS-001` by
+   attaching the filesystem/platform implementation files, focused tests, contract docs,
+   `make filesystem-contract-check` output, `/system/status.filesystem` evidence, and artifact
+   hashes for source-level external review.
+
+17. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-17. `make review-packet-consolidated`
+18. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-18. `make packet-redaction-scan`
+19. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-19. `make docs-site`
+20. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -150,6 +158,7 @@ work must stop for status, reassessment, or external consultation.
 
 - Release-check transcript: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-check.txt`
 - Filesystem contract check transcript: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/filesystem-contract-check.txt`
+- Filesystem source-review bundle: `var/review-packets/v0.7/filesystem-source-review/`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

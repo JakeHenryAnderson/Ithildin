@@ -68,7 +68,16 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
         source_files=(
             "apps/api/src/ithildin_api/read_tools.py",
             "apps/api/src/ithildin_api/workspaces.py",
+            "apps/api/src/ithildin_api/filesystem_contract.py",
             "apps/api/src/ithildin_api/patches.py",
+            "apps/api/src/ithildin_api/app.py",
+            "apps/api/src/ithildin_api/security_status.py",
+            "scripts/filesystem_contract_check.py",
+            "tests/test_read_tools.py",
+            "tests/test_patch_proposals.py",
+            "tests/test_security_regressions.py",
+            "tests/test_workspaces.py",
+            "tests/test_filesystem_contract_check.py",
         ),
         review_docs=(
             "docs/codex/filesystem-source-review-checklist.md",
