@@ -362,6 +362,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/threat-model-and-non-goals.md",
         "docs/codex/negative-review-recipes.md",
         "docs/codex/source-review-closure-matrix.md",
+        "docs/codex/v0.7-filesystem-platform-source-review.md",
         "docs/codex/accepted-risk-register.md",
         "docs/codex/capability-decision-report.md",
         "docs/codex/no-new-powers-guardrail.md",
@@ -2809,6 +2810,30 @@ def test_v07_patch_apply_recheck_prep_is_wired() -> None:
     assert "EXT-PA-004" in recheck_doc
     assert "docs/codex/v0.7-patch-apply-recheck-request.md" in packet_script
     assert "EXT-PA-001" in packet_script
+
+
+def test_v07_filesystem_platform_source_review_is_wired() -> None:
+    review_doc_path = "docs/codex/v0.7-filesystem-platform-source-review.md"
+    review_doc = Path(review_doc_path).read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    consolidated = Path("scripts/consolidate_review_packet.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "v0.7 Filesystem and Platform Source Review" in review_doc
+    assert "Findings recorded in this pass: `0`" in review_doc
+    assert "Blocking findings: `0`" in review_doc
+    assert "ready for external/source disposition" in review_doc
+    assert "does not close external/source review" in review_doc
+    assert "220 - Filesystem/platform source review pass | Done" in backlog
+    assert review_doc_path in review_docs.REVIEW_DOCS
+    assert review_doc_path in docs_site
+    assert "v0.7 Filesystem and Platform Source Review" in index
+    assert "v0.7 Codex source-level filesystem/platform review recorded no new findings" in matrix
+    assert "v0.7 Filesystem and Platform Source Review" in consolidated
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:

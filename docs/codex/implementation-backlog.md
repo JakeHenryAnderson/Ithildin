@@ -228,6 +228,7 @@ does not approve public preview, capability design, capability implementation, o
 | 217 - v0.6 final packet sanity review | Done | [v0.6-final-packet-sanity-review.md](v0.6-final-packet-sanity-review.md), `make v07-closure-prep` |
 | 218 - External-review row partition | Done | [v0.7-external-review-row-partition.md](v0.7-external-review-row-partition.md), `make v07-closure-prep`; original 55 pending rows are partitioned into executable review batches. |
 | 219 - Patch-apply recheck closure | Done | [v0.7-patch-apply-recheck-request.md](v0.7-patch-apply-recheck-request.md), [v0.7-patch-apply-recheck-outcome.md](v0.7-patch-apply-recheck-outcome.md), `make v07-patch-apply-recheck-prep`; patch apply is closed for the v0.1 local-preview lane only. |
+| 220 - Filesystem/platform source review pass | Done | [v0.7-filesystem-platform-source-review.md](v0.7-filesystem-platform-source-review.md); Codex source-level pass recorded no findings, and the lane remains pending external/source disposition. |
 
 ## Future Candidate Track
 

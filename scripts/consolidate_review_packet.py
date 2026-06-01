@@ -262,6 +262,11 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root,
         )
         + _section(
+            "v0.7 Filesystem and Platform Source Review",
+            repo_root / "docs/codex/v0.7-filesystem-platform-source-review.md",
+            repo_root,
+        )
+        + _section(
             "Accepted Risk Register",
             repo_root / "docs/codex/accepted-risk-register.md",
             repo_root,

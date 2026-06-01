@@ -51,8 +51,8 @@
       "slug": "filesystem",
       "verification_commands": [
         "make filesystem-contract-check",
-        "make release-check",
-        "read-tool and patch-filesystem focused tests"
+        "focused read/patch/workspace tests",
+        "make release-check"
       ]
     },
     {
