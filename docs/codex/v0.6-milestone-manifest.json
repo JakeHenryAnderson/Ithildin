@@ -106,7 +106,7 @@
       "title": "Release automation external review execution",
       "wave": "Wave 2",
       "status": "Internal proxy finding SUB-076 fixed internally; external pending",
-      "planned_commit": "Remediate release automation proxy finding"
+      "planned_commit": "Remediate release automation proxy finding (957c1e4700bd)"
     },
     {
       "id": "193",
