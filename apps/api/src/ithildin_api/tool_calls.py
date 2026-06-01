@@ -601,6 +601,35 @@ class GovernedToolCallService:
             content=redacted.value,
         )
 
+    def deny_tool_call(
+        self,
+        *,
+        tool_name: str,
+        arguments: JsonObject,
+        principal: JsonObject,
+        session_id: str,
+        reason: str,
+        metadata: JsonObject,
+    ) -> GovernedToolCallResult:
+        """Record a safe pre-policy denial for an ingress-layer guardrail."""
+        request_id = _new_id("req")
+        input_hash = _tool_call_hash(request_id, tool_name, arguments, principal, session_id)
+        self._audit_decision(
+            request_id=request_id,
+            principal=principal,
+            tool_name=tool_name,
+            decision=PolicyDecisionValue.DENY,
+            input_hash=input_hash,
+            metadata={"reason": reason, **metadata},
+        )
+        return GovernedToolCallResult(
+            status="denied",
+            request_id=request_id,
+            tool_name=tool_name,
+            content=self._redact_content({"reason": reason}).value,
+            is_error=True,
+        )
+
     def _audit_decision(
         self,
         *,

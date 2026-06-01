@@ -17,6 +17,7 @@ Inspect:
   - `run_stdio_server`
 - `apps/api/src/ithildin_api/tool_calls.py`
   - `GovernedToolCallService.call_tool`
+  - `GovernedToolCallService.deny_tool_call`
 - `apps/api/src/ithildin_api/visibility.py`
 - `apps/api/src/ithildin_api/identity.py`
 - `tests/test_mcp_adapter.py`
@@ -31,6 +32,8 @@ Inspect:
 - `tools/call` routes through `GovernedToolCallService.call_tool` for registry lookup, schema
   validation, principal resolution, resource construction, policy, approval, execution, redaction,
   and audit.
+- Registered tools that are not exposed over MCP are denied before execution through the shared
+  pre-policy denial audit helper rather than silently inside the adapter.
 - Caller-supplied principal/session spoofing cannot override the configured trusted MCP principal.
 - Unknown tools, unauthorized principals, invalid arguments, denied policy decisions, and
   approval-required write calls return safe MCP responses.
@@ -42,7 +45,7 @@ Inspect:
 ## Evidence Commands
 
 ```sh
-uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py tests/test_governed_tool_calls.py
+uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py tests/test_governed_tool_calls.py -q
 make release-check
 ```
 

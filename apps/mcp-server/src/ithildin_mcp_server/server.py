@@ -92,7 +92,25 @@ class IthildinMcpAdapter:
             pass
         else:
             if (registered_tool.manifest.mcp or {}).get("exposed") is not True:
-                return _safe_mcp_denial(tool_name, "tool is not exposed over MCP")
+                result = self.tool_call_service.deny_tool_call(
+                    tool_name=tool_name,
+                    arguments=_json_object(arguments),
+                    principal=DEFAULT_AGENT_PRINCIPAL,
+                    session_id=MCP_SESSION_ID,
+                    reason="tool is not exposed over MCP",
+                    metadata={
+                        "deny_source": "mcp_exposure",
+                        "manifest_hash": registered_tool.manifest_hash,
+                        "tool_risk": registered_tool.manifest.risk.value,
+                    },
+                )
+                return _mcp_result(
+                    result.status,
+                    result.request_id,
+                    result.tool_name,
+                    result.content,
+                    result.is_error,
+                )
 
         result = self.tool_call_service.call_tool(
             tool_name=tool_name,
@@ -100,20 +118,12 @@ class IthildinMcpAdapter:
             principal=DEFAULT_AGENT_PRINCIPAL,
             session_id=MCP_SESSION_ID,
         )
-        return types.CallToolResult(
-            content=[
-                types.TextContent(
-                    type="text",
-                    text=json.dumps(result.content, sort_keys=True),
-                )
-            ],
-            structuredContent={
-                "status": result.status,
-                "request_id": result.request_id,
-                "tool_name": result.tool_name,
-                **result.content,
-            },
-            isError=result.is_error,
+        return _mcp_result(
+            result.status,
+            result.request_id,
+            result.tool_name,
+            result.content,
+            result.is_error,
         )
 
 
@@ -224,12 +234,18 @@ def _json_object(value: dict[str, object]) -> JsonObject:
     return cast(JsonObject, value)
 
 
-def _safe_mcp_denial(tool_name: str, reason: str) -> types.CallToolResult:
+def _mcp_result(
+    status: str,
+    request_id: str | None,
+    tool_name: str,
+    content: JsonObject,
+    is_error: bool,
+) -> types.CallToolResult:
     structured_content = {
-        "status": "denied",
-        "request_id": None,
+        "status": status,
+        "request_id": request_id,
         "tool_name": tool_name,
-        "reason": reason,
+        **content,
     }
     return types.CallToolResult(
         content=[
@@ -239,5 +255,5 @@ def _safe_mcp_denial(tool_name: str, reason: str) -> types.CallToolResult:
             )
         ],
         structuredContent=structured_content,
-        isError=True,
+        isError=is_error,
     )

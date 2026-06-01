@@ -243,14 +243,27 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
         title="MCP Ingress External Review Packet",
         finding_namespace="EXT-MCP-###",
         closure_rows=("MCP ingress", "MCP ingress source review checklist"),
-        source_files=("apps/mcp-server/src/ithildin_mcp_server/",),
+        source_files=(
+            "apps/mcp-server/src/ithildin_mcp_server/server.py",
+            "apps/api/src/ithildin_api/tool_calls.py",
+            "apps/api/src/ithildin_api/identity.py",
+            "apps/api/src/ithildin_api/registry.py",
+            "tests/test_mcp_adapter.py",
+            "tests/test_mcp_integration_flow.py",
+            "tests/test_governed_tool_calls.py",
+        ),
         review_docs=(
             "docs/codex/mcp-ingress-source-review-checklist.md",
             "docs/codex/mcp-ingress-bypass-audit.md",
             "docs/codex/mcp-inspector-recipes.md",
+            "docs/codex/findings/sub-018-mcp-exposure-gate.md",
+            "docs/codex/findings/sub-074-mcp-unexposed-denial-audit.md",
         ),
         commands=(
-            "uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py",
+            (
+                "uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py "
+                "tests/test_governed_tool_calls.py -q"
+            ),
             "make release-check",
         ),
         prompt=(

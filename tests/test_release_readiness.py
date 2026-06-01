@@ -823,6 +823,7 @@ def test_mcp_ingress_bypass_audit_is_documented() -> None:
         "MCP callers cannot spoof an admin principal",
         "MCP callers cannot provide their own session or request ID",
         "Unknown tools called through MCP are denied",
+        "deny_source: mcp_exposure",
         "policy.evaluated",
         "remote MCP remains deferred",
     ]:
@@ -831,7 +832,7 @@ def test_mcp_ingress_bypass_audit_is_documented() -> None:
     assert "098 - MCP ingress bypass audit | Done" in backlog
     assert "137 - MCP ingress bypass audit v2 | Done" in backlog
     assert "Task 098 tests fixed-principal audit evidence" in matrix
-    assert "Task 137 fixed-principal/session bypass audit complete" in matrix
+    assert "SUB-074" in matrix
     assert "docs/codex/mcp-ingress-bypass-audit.md" in review_docs.REVIEW_DOCS
 
 
@@ -1928,7 +1929,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-073" in handoff
+    assert "SUB-074" in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
@@ -1936,6 +1937,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "Internal proxy findings SUB-040 through SUB-047 fixed internally" in manifest
     assert "Internal proxy findings SUB-048 through SUB-063 fixed internally" in manifest
     assert "Internal proxy findings SUB-064 through SUB-073 fixed internally" in manifest
+    assert "Internal proxy finding SUB-074 fixed internally" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2052,7 +2054,7 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-073"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-074"
     assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
@@ -2242,6 +2244,21 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         "tests/test_policy_parity.py tests/test_policy_test_harness.py",
     ]:
         assert required in policy_packet
+    mcp_packet = dispatch_root.joinpath("mcp-ingress.md").read_text(encoding="utf-8")
+    for finding_id in ["SUB-018", "SUB-074"]:
+        assert finding_id in mcp_packet
+    for required in [
+        "apps/mcp-server/src/ithildin_mcp_server/server.py",
+        "apps/api/src/ithildin_api/tool_calls.py",
+        "tests/test_mcp_adapter.py",
+        "tests/test_mcp_integration_flow.py",
+        "tests/test_governed_tool_calls.py",
+        (
+            "uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py "
+            "tests/test_governed_tool_calls.py -q"
+        ),
+    ]:
+        assert required in mcp_packet
     for required in [
         "make v06-review-dispatch-packets",
         "dispatch-packet-hashes.json",

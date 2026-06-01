@@ -386,7 +386,17 @@ def test_mcp_call_denies_registered_tool_not_exposed_over_mcp(tmp_path: Path) ->
     assert result.structuredContent is not None
     assert result.structuredContent["status"] == "denied"
     assert result.structuredContent["reason"] == "tool is not exposed over MCP"
-    assert harness.audit_writer.list_events(event_type=AuditEventType.POLICY_EVALUATED.value) == []
+    event = harness.audit_writer.list_events(
+        event_type=AuditEventType.POLICY_EVALUATED.value,
+        request_id=str(result.structuredContent["request_id"]),
+    )[0]
+    metadata = cast(dict[str, object], event["metadata"])
+    assert event["decision"] == "deny"
+    assert event["tool_name"] == "internal.hidden"
+    assert metadata["deny_source"] == "mcp_exposure"
+    assert metadata["reason"] == "tool is not exposed over MCP"
+    assert str(metadata["manifest_hash"]).startswith("sha256:")
+    assert metadata["tool_risk"] == "read"
 
 
 def test_mcp_call_uses_fixed_agent_principal_and_audits_policy(

@@ -28,6 +28,9 @@ Automated tests cover these ingress claims:
   execution fails closed instead of falling back to untrusted caller-supplied roles.
 - Unknown tools called through MCP are denied by the shared governed pipeline and produce a
   `policy.evaluated` audit event.
+- Registered tools that are not explicitly exposed over MCP are denied before execution and now
+  produce safe `policy.evaluated` denial evidence with `deny_source: mcp_exposure`, manifest hash,
+  and tool risk metadata.
 - `tools/list` returns only MCP-exposed registered tools and respects role visibility for the local
   MCP principal.
 - Tool calls route through the same policy, approval, redaction, execution, and audit services used
@@ -36,6 +39,7 @@ Automated tests cover these ingress claims:
 ## Files and Tests
 
 - Adapter implementation: `apps/mcp-server/src/ithildin_mcp_server/server.py`.
+- Shared denial evidence: `apps/api/src/ithildin_api/tool_calls.py`.
 - Focused tests: `tests/test_mcp_adapter.py`.
 - Integration coverage: `tests/test_mcp_integration_flow.py`.
 - Required release gate: `make release-check`.
