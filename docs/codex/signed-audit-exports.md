@@ -44,12 +44,6 @@ The review console also exposes separate JSONL and signed export actions.
 
 ## Verify
 
-Verify a signed bundle with the embedded public key:
-
-```sh
-make audit-export-verify FILE=ithildin-audit-export-signed.json
-```
-
 Verify against a trusted public key file:
 
 ```sh
@@ -58,6 +52,8 @@ make audit-export-verify FILE=ithildin-audit-export-signed.json \
 ```
 
 Verification checks the Ed25519 signature, the event JSONL digest, and the embedded audit hash chain.
+The embedded public key is bundle metadata only; it is not a trusted root by itself, so the verifier
+requires the trusted local public key file.
 The signed bundle records audit verification status at export time, including failed verification if
 the local audit chain was already tampered or truncated.
 

@@ -133,6 +133,9 @@ def main() -> int:
         settings.manifest_dir,
         lock_path=settings.manifest_lock_path,
         require_lock=settings.require_manifest_lock,
+        signature_path=settings.manifest_lock_signature_path,
+        signature_public_key_path=settings.manifest_lock_signing_public_key_path,
+        require_signed_lock=settings.require_signed_manifest_lock,
     )
     principal_registry = PrincipalRegistry.load(
         settings.principal_registry_path,
@@ -263,6 +266,7 @@ def validate_release_evidence_snapshot(payload: object) -> None:
     _validate_release_check_transcript(release_check, git)
     if not isinstance(git.get("dirty"), bool):
         raise ReleaseEvidenceSchemaError("git.dirty must be a boolean")
+    _validate_manifest_lock_evidence(_required_object(evidence, "manifest_lock"))
     tools = _required_object(evidence, "tools")
     if not isinstance(tools.get("count"), int) or not isinstance(tools.get("names"), list):
         raise ReleaseEvidenceSchemaError("tools must include count and names")
@@ -348,8 +352,31 @@ def _validate_release_check_transcript(
             raise ReleaseEvidenceSchemaError(
                 "passing release-check transcript path cannot be read"
             ) from exc
-        if "returncode=" in transcript_text and "returncode=0" not in transcript_text:
+        if "returncode=0" not in transcript_text:
             raise ReleaseEvidenceSchemaError("release-check transcript did not pass")
+
+
+def _validate_manifest_lock_evidence(manifest_lock: dict[str, Any]) -> None:
+    if not isinstance(manifest_lock.get("path"), str):
+        raise ReleaseEvidenceSchemaError("manifest_lock.path must be a string")
+    if not isinstance(manifest_lock.get("required"), bool):
+        raise ReleaseEvidenceSchemaError("manifest_lock.required must be a boolean")
+    if not isinstance(manifest_lock.get("current"), bool):
+        raise ReleaseEvidenceSchemaError("manifest_lock.current must be a boolean")
+    signature = _required_object(manifest_lock, "signature")
+    if not isinstance(signature.get("required"), bool):
+        raise ReleaseEvidenceSchemaError("manifest_lock.signature.required must be a boolean")
+    if not isinstance(signature.get("verified"), bool):
+        raise ReleaseEvidenceSchemaError("manifest_lock.signature.verified must be a boolean")
+    if signature.get("required") is True and signature.get("verified") is not True:
+        raise ReleaseEvidenceSchemaError("required signed manifest lock is not verified")
+    if signature.get("verified") is True:
+        for key in ("key_id", "lock_sha256"):
+            value = signature.get(key)
+            if not isinstance(value, str) or not value.startswith("sha256:"):
+                raise ReleaseEvidenceSchemaError(
+                    f"verified manifest lock signature requires {key}"
+                )
 
 
 def _release_check(

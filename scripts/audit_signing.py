@@ -28,7 +28,7 @@ def main() -> None:
 
     verify = subparsers.add_parser("verify", help="verify a signed audit export JSON bundle")
     verify.add_argument("file", type=Path)
-    verify.add_argument("--public-key", type=Path, help="optional trusted public key PEM")
+    verify.add_argument("--public-key", type=Path, required=True, help="trusted public key PEM")
 
     args = parser.parse_args()
     settings = Settings(admin_token="audit-signing-cli")
@@ -58,7 +58,10 @@ def main() -> None:
             return
 
         if args.command == "verify":
-            bundle = cast(JsonObject, json.loads(args.file.read_text(encoding="utf-8")))
+            raw_bundle = json.loads(args.file.read_text(encoding="utf-8"))
+            if not isinstance(raw_bundle, dict):
+                raise AuditSigningError("bundle must be an object")
+            bundle = cast(JsonObject, raw_bundle)
             result = verify_signed_audit_export_bundle(
                 bundle,
                 public_key_path=args.public_key,

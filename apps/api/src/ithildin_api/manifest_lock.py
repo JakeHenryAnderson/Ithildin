@@ -241,11 +241,11 @@ def verify_manifest_lock_signature(
             base64.b64decode(signature_b64, validate=True),
             canonical_json(payload).encode("utf-8"),
         )
-    except (ManifestLockSignatureError, InvalidSignature, ValueError) as exc:
+    except (ManifestLockError, InvalidSignature, ValueError) as exc:
         return ManifestLockSignatureVerificationResult(
             valid=False,
             lock_sha256=_optional_lock_sha(signature_path),
-            key_id=_optional_key_id(signature_path),
+            key_id=None,
             failure=(
                 "manifest lock signature verification failed"
                 if isinstance(exc, InvalidSignature)
@@ -290,6 +290,7 @@ def manifest_lock_signature_status(
         "signature_configured": signature_path.exists(),
         "verified": False,
         "key_id": None,
+        "lock_sha256": None,
     }
     if not public_key_path.exists() or not signature_path.exists():
         return status
@@ -301,6 +302,7 @@ def manifest_lock_signature_status(
     )
     status["verified"] = result.valid
     status["key_id"] = result.key_id
+    status["lock_sha256"] = result.lock_sha256
     if result.failure is not None:
         status["error"] = result.failure
     return status

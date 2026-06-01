@@ -126,6 +126,7 @@ def build_demo(*, output_dir: Path, lock_path: Path) -> JsonObject:
         },
         "manifest_lock": {
             "key_id": manifest_key_id,
+            "lock_path": lock_path.as_posix(),
             "signature_path": manifest_signature_path.as_posix(),
             "verified": manifest_verification.valid,
         },
@@ -190,6 +191,7 @@ or official release signing keys.
 ## Manifest Lock
 
 - key ID: `{manifest_lock["key_id"]}`
+- signed lock path: `{manifest_lock["lock_path"]}`
 - signature bundle: `{manifest_lock["signature_path"]}`
 - signature bundle SHA-256: `{manifest_signature["sha256"]}`
 - verification valid: `{str(manifest_lock["verified"]).lower()}`

@@ -509,6 +509,54 @@ def test_manifest_lock_signature_requires_trusted_public_key(tmp_path: Path) -> 
     assert result.failure == "trusted manifest lock public key is required"
 
 
+def test_manifest_lock_signature_missing_lock_returns_invalid_status(
+    tmp_path: Path,
+) -> None:
+    manifest_dir = tmp_path / "manifests"
+    manifest_dir.mkdir()
+    write_manifest(manifest_dir / "fs-read.yaml")
+    lock_path = tmp_path / "tool-manifests.lock.json"
+    registry = ToolRegistry.load(manifest_dir)
+    write_manifest_lock(
+        manifest_dir=manifest_dir,
+        lock_path=lock_path,
+        records=_lock_records(registry),
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    signature_path = tmp_path / "tool-manifests.lock.sig.json"
+    generate_manifest_lock_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    write_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    lock_path.unlink()
+
+    result = verify_manifest_lock_signature(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        public_key_path=public_key_path,
+    )
+    status = manifest_lock_signature_status(
+        lock_path=lock_path,
+        signature_path=signature_path,
+        public_key_path=public_key_path,
+        required=False,
+    )
+
+    assert result.valid is False
+    assert result.key_id is None
+    assert "manifest lock not found" in str(result.failure)
+    assert status["verified"] is False
+    assert status["key_id"] is None
+    assert "manifest lock not found" in str(status["error"])
+
+
 def test_manifest_lock_signature_status_reports_optional_and_verified(tmp_path: Path) -> None:
     lock_path = tmp_path / "tool-manifests.lock.json"
     write_manifest_lock(
@@ -533,6 +581,7 @@ def test_manifest_lock_signature_status_reports_optional_and_verified(tmp_path: 
         "signature_configured": False,
         "verified": False,
         "key_id": None,
+        "lock_sha256": None,
     }
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,7 @@ PROJECT_MARKERS = (
 SIGNED_EVIDENCE_DEMO_SUMMARY = Path(
     "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
 )
+SIGNED_EVIDENCE_DEMO_JSON = Path("var/review-packets/v0.2/signed-evidence-demo/summary.json")
 NEGATIVE_TRANSCRIPTS_SUMMARY = Path(
     "var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
 )
@@ -297,6 +299,35 @@ def _copy_signed_evidence_demo_summary(repo_root: Path, bundle_dir: Path) -> boo
     destination = bundle_dir / "signed-evidence-demo" / "SIGNED_EVIDENCE_DEMO.md"
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, destination)
+    verify_path = bundle_dir / "signed-evidence-demo" / "signed-evidence-demo-verify.json"
+    if (repo_root / SIGNED_EVIDENCE_DEMO_JSON).exists():
+        _write_command_json(
+            verify_path,
+            _required_command(["uv", "run", "python", "scripts/signed_evidence_demo_verify.py"]),
+        )
+    else:
+        verify_path.write_text(
+            json.dumps(
+                {
+                    "verified": False,
+                    "skipped": True,
+                    "reason": "summary.json missing from copied signed-evidence demo",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        _write_command_output(
+            verify_path.with_suffix(verify_path.suffix + ".transcript.txt"),
+            CommandOutput(
+                command=["uv", "run", "python", "scripts/signed_evidence_demo_verify.py"],
+                returncode=0,
+                stdout="skipped: summary.json missing from copied signed-evidence demo\n",
+                stderr="",
+            ),
+        )
     return True
 
 
@@ -333,6 +364,8 @@ def _collect_artifact_hashes(
     paths.extend(Path("docs") / doc for doc in review_docs)
     if signed_demo_included:
         paths.append(Path("signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"))
+        paths.append(Path("signed-evidence-demo/signed-evidence-demo-verify.json"))
+        paths.append(Path("signed-evidence-demo/signed-evidence-demo-verify.json.transcript.txt"))
     if negative_transcripts_included:
         paths.append(Path("negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"))
 
@@ -405,6 +438,8 @@ Send this bundle to GPT 5.5 Pro / Very High or a human expert reviewer. Start wi
 - `packet-redaction-scan.txt`
 - `artifact-hashes.json`
 - `signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md` if `make signed-evidence-demo` was run first
+- `signed-evidence-demo/signed-evidence-demo-verify.json` if `make signed-evidence-demo`
+  was run first
 - `negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md` if
   `make negative-review-transcripts` was run first
 - `git-summary.txt`
@@ -429,7 +464,8 @@ not external notarization, hosted custody, or official supply-chain signing.
 ## Bundle Artifact Hashes
 
 See `artifact-hashes.json` for SHA-256 digests of the generated bundle outputs, copied review
-documents, and copied signed-evidence demo summary when present.
+documents, copied signed-evidence demo summary, and copied signed-evidence verification transcript
+when present.
 
 ## Packet Redaction Scan
 

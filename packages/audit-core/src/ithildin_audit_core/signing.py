@@ -124,22 +124,38 @@ def signed_audit_export_bundle(
 
 
 def verify_signed_audit_export_bundle(
-    bundle: JsonObject,
+    bundle: object,
     *,
     public_key_path: Optional[Path] = None,
 ) -> AuditSignatureVerificationResult:
     """Verify a signed audit export bundle and its embedded event chain."""
+    if not isinstance(bundle, dict):
+        return AuditSignatureVerificationResult(
+            valid=False,
+            key_id=None,
+            events_sha256=None,
+            audit_verification=verify_exported_events_jsonl(""),
+            failure="bundle must be an object",
+        )
+    signed_bundle = cast(JsonObject, bundle)
     try:
-        _require_string(bundle.get("bundle_type"), "bundle_type", SIGNED_AUDIT_EXPORT_BUNDLE_TYPE)
         _require_string(
-            bundle.get("format_version"),
+            signed_bundle.get("bundle_type"),
+            "bundle_type",
+            SIGNED_AUDIT_EXPORT_BUNDLE_TYPE,
+        )
+        _require_string(
+            signed_bundle.get("format_version"),
             "format_version",
             SIGNED_AUDIT_EXPORT_FORMAT_VERSION,
         )
-        metadata = _require_object(bundle.get("metadata"), "metadata")
-        events_jsonl = _require_any_string(bundle.get("events_jsonl"), "events_jsonl")
-        events_sha256 = _require_prefixed_hash(bundle.get("events_sha256"), "events_sha256")
-        signature = _require_object(bundle.get("signature"), "signature")
+        metadata = _require_object(signed_bundle.get("metadata"), "metadata")
+        events_jsonl = _require_any_string(signed_bundle.get("events_jsonl"), "events_jsonl")
+        events_sha256 = _require_prefixed_hash(
+            signed_bundle.get("events_sha256"),
+            "events_sha256",
+        )
+        signature = _require_object(signed_bundle.get("signature"), "signature")
         algorithm = _require_string(signature.get("algorithm"), "signature.algorithm")
         if algorithm != SIGNATURE_ALGORITHM:
             raise AuditSigningError("unsupported signature algorithm")
@@ -182,12 +198,12 @@ def verify_signed_audit_export_bundle(
         if not _metadata_matches_verification(metadata, audit_verification):
             raise AuditSigningError("metadata verification does not match exported events")
     except (AuditSigningError, InvalidSignature, ValueError) as exc:
-        exported_events = _optional_string(bundle.get("events_jsonl")) or ""
+        exported_events = _optional_string(signed_bundle.get("events_jsonl")) or ""
         failure = "signature verification failed" if isinstance(exc, InvalidSignature) else str(exc)
         return AuditSignatureVerificationResult(
             valid=False,
-            key_id=_optional_hash_from_bundle(bundle),
-            events_sha256=_optional_string(bundle.get("events_sha256")),
+            key_id=_optional_hash_from_bundle(signed_bundle),
+            events_sha256=_optional_string(signed_bundle.get("events_sha256")),
             audit_verification=verify_exported_events_jsonl(exported_events),
             failure=failure,
         )
@@ -380,6 +396,15 @@ def _metadata_matches_verification(
 ) -> bool:
     verification_metadata = metadata.get("verification")
     if not isinstance(verification_metadata, dict):
+        return False
+    if metadata.get("bundle_type") != "ithildin.audit.export":
+        return False
+    if metadata.get("format_version") != "1":
+        return False
+    if not isinstance(metadata.get("generated_at"), str):
+        return False
+    diagnostics = metadata.get("diagnostics")
+    if not isinstance(diagnostics, dict):
         return False
     return (
         metadata.get("event_count") == verification.event_count

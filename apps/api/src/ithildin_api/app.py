@@ -107,6 +107,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 signature_public_key_path=resolved_settings.manifest_lock_signing_public_key_path,
                 require_signed_lock=resolved_settings.require_signed_manifest_lock,
             )
+            app_instance.state.manifest_lock_signature_startup = manifest_lock_signature_status(
+                lock_path=resolved_settings.manifest_lock_path,
+                signature_path=resolved_settings.manifest_lock_signature_path,
+                public_key_path=resolved_settings.manifest_lock_signing_public_key_path,
+                required=resolved_settings.require_signed_manifest_lock,
+            )
             principal_registry = PrincipalRegistry.load(
                 resolved_settings.principal_registry_path,
                 require_registry=resolved_settings.require_known_principals,
@@ -195,6 +201,16 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         redaction_service = cast(RedactionService, api.state.redaction_service)
         tools = registry.list_tools()
         verification = audit_writer.verify_chain().as_dict()
+        current_manifest_lock_signature = manifest_lock_signature_status(
+            lock_path=settings_state.manifest_lock_path,
+            signature_path=settings_state.manifest_lock_signature_path,
+            public_key_path=settings_state.manifest_lock_signing_public_key_path,
+            required=settings_state.require_signed_manifest_lock,
+        )
+        startup_manifest_lock_signature = cast(
+            JsonObject,
+            getattr(api.state, "manifest_lock_signature_startup", current_manifest_lock_signature),
+        )
         with telemetry.start_span("ithildin.api.system_status"):
             return {
                 "status": "ok",
@@ -203,12 +219,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 "manifest_lock": {
                     "required": settings_state.require_manifest_lock,
                     "path": settings_state.manifest_lock_path.as_posix(),
-                    "signature": manifest_lock_signature_status(
-                        lock_path=settings_state.manifest_lock_path,
-                        signature_path=settings_state.manifest_lock_signature_path,
-                        public_key_path=settings_state.manifest_lock_signing_public_key_path,
-                        required=settings_state.require_signed_manifest_lock,
-                    ),
+                    "signature": current_manifest_lock_signature,
+                    "signature_startup": startup_manifest_lock_signature,
+                    "signature_drift": current_manifest_lock_signature
+                    != startup_manifest_lock_signature,
                 },
                 "principals": {
                     **principal_registry.status(),
@@ -428,13 +442,16 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         request_id: Optional[str] = None,
     ) -> dict[str, list[JsonObject]]:
         audit_writer = cast(AuditWriter, api.state.audit_writer)
-        return {
-            "audit_events": audit_writer.list_events(
-                limit=limit,
-                event_type=event_type,
-                request_id=request_id,
-            )
-        }
+        try:
+            return {
+                "audit_events": audit_writer.list_events(
+                    limit=limit,
+                    event_type=event_type,
+                    request_id=request_id,
+                )
+            }
+        except AuditWriteError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     @api.get("/audit-events/verify", dependencies=[Depends(require_admin_token)])
     def verify_audit_events() -> JsonObject:
@@ -473,6 +490,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         settings_state = cast(Settings, api.state.settings)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         try:
+            preflight_jsonl_bundle = audit_writer.export_jsonl_bundle(require_clean_lifecycle=True)
+            signed_audit_export_bundle(
+                jsonl_bundle=preflight_jsonl_bundle,
+                private_key_path=settings_state.audit_signing_private_key_path,
+                public_key_path=settings_state.audit_signing_public_key_path,
+            )
             _write_audit_export_event(audit_writer, signed=True)
             return signed_audit_export_bundle(
                 jsonl_bundle=audit_writer.export_jsonl_bundle(require_clean_lifecycle=True),

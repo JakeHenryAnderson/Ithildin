@@ -52,6 +52,7 @@ def verify_demo(demo_root: Path) -> JsonObject:
     audit_public_key = demo_root / "keys/audit-demo-ed25519-public.pem"
     manifest_public_key = demo_root / "keys/manifest-lock-demo-ed25519-public.pem"
     manifest_signature_path = Path(str(manifest_lock["signature_path"]))
+    manifest_lock_path = Path(str(manifest_lock.get("lock_path", "tool-manifests.lock.json")))
 
     signed_bundle = _read_json_object(signed_bundle_path)
     tampered_bundle = _read_json_object(tampered_bundle_path)
@@ -64,7 +65,7 @@ def verify_demo(demo_root: Path) -> JsonObject:
         public_key_path=audit_public_key,
     )
     manifest_result = verify_manifest_lock_signature(
-        lock_path=Path("tool-manifests.lock.json"),
+        lock_path=manifest_lock_path,
         signature_path=manifest_signature_path,
         public_key_path=manifest_public_key,
     )

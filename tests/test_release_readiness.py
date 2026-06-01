@@ -5,6 +5,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -1927,12 +1928,13 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-047" in handoff
+    assert "SUB-063" in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
     assert "Internally remediated" in backlog
     assert "Internal proxy findings SUB-040 through SUB-047 fixed internally" in manifest
+    assert "Internal proxy findings SUB-048 through SUB-063 fixed internally" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2049,7 +2051,7 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-047"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-063"
     assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
@@ -2177,6 +2179,40 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         "SUB-047",
     ]:
         assert finding_id in http_packet
+    signed_packet = dispatch_root.joinpath("signed-evidence.md").read_text(encoding="utf-8")
+    for finding_id in [
+        "SUB-010",
+        "SUB-011",
+        "SUB-012",
+        "SUB-013",
+        "SUB-014",
+        "SUB-048",
+        "SUB-049",
+        "SUB-050",
+        "SUB-051",
+        "SUB-052",
+        "SUB-053",
+        "SUB-054",
+        "SUB-055",
+        "SUB-056",
+        "SUB-057",
+        "SUB-058",
+        "SUB-059",
+        "SUB-060",
+        "SUB-061",
+    ]:
+        assert finding_id in signed_packet
+    release_packet_text = dispatch_root.joinpath("release-automation.md").read_text(
+        encoding="utf-8"
+    )
+    for required in [
+        "make release-evidence",
+        "make release-evidence-validate",
+        "make release-evidence-gate",
+        "SUB-062",
+        "SUB-063",
+    ]:
+        assert required in release_packet_text
     for required in [
         "make v06-review-dispatch-packets",
         "dispatch-packet-hashes.json",
@@ -3211,6 +3247,10 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert result.path.joinpath("docs/README.md").exists()
     assert result.path.joinpath("docs/docs/codex/v0.2-review-packet.md").exists()
     assert result.path.joinpath("signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md").exists()
+    assert result.path.joinpath("signed-evidence-demo/signed-evidence-demo-verify.json").exists()
+    assert result.path.joinpath(
+        "signed-evidence-demo/signed-evidence-demo-verify.json.transcript.txt"
+    ).exists()
     assert result.path.joinpath(
         "negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
     ).exists()
@@ -3229,6 +3269,8 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert "review-doc-hashes.json" in artifact_paths
     assert "docs/README.md" in artifact_paths
     assert "signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md" in artifact_paths
+    assert "signed-evidence-demo/signed-evidence-demo-verify.json" in artifact_paths
+    assert "signed-evidence-demo/signed-evidence-demo-verify.json.transcript.txt" in artifact_paths
     assert "negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md" in artifact_paths
     bundle_paths = [path.as_posix() for path in result.path.rglob("*")]
     assert not any("/.env" in path for path in bundle_paths)
@@ -3516,7 +3558,7 @@ def test_release_evidence_records_attached_release_check_metadata(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     transcript = tmp_path / "release-check.txt"
-    transcript.write_text("passed\n", encoding="utf-8")
+    transcript.write_text("returncode=0\npassed\n", encoding="utf-8")
     current_commit = release_evidence._git(["rev-parse", "HEAD"])
     monkeypatch.setattr(
         sys,
@@ -3548,6 +3590,42 @@ def test_release_evidence_schema_validator_accepts_minimal_snapshot() -> None:
     payload = _minimal_release_evidence_payload()
 
     release_evidence.validate_release_evidence_snapshot(payload)
+
+
+def test_release_evidence_rejects_passing_transcript_without_returncode_zero(
+    tmp_path: Path,
+) -> None:
+    payload = _minimal_release_evidence_payload()
+    transcript = tmp_path / "release-check.txt"
+    transcript.write_text("passed\n", encoding="utf-8")
+    payload["release_check"] = {
+        "gate_executed_by_release_packet": False,
+        "gate_status": "not_run",
+        "attached_transcript_exists": True,
+        "attached_transcript_status": "passed",
+        "attached_transcript_commit": "abc123",
+        "attached_transcript_path": transcript.as_posix(),
+    }
+
+    with pytest.raises(
+        release_evidence.ReleaseEvidenceSchemaError,
+        match="release-check transcript did not pass",
+    ):
+        release_evidence.validate_release_evidence_snapshot(payload)
+
+
+def test_release_evidence_rejects_required_unverified_signed_manifest_lock() -> None:
+    payload = _minimal_release_evidence_payload()
+    manifest_lock = cast(dict[str, Any], payload["manifest_lock"])
+    signature = cast(dict[str, Any], manifest_lock["signature"])
+    signature["required"] = True
+    signature["verified"] = False
+
+    with pytest.raises(
+        release_evidence.ReleaseEvidenceSchemaError,
+        match="required signed manifest lock is not verified",
+    ):
+        release_evidence.validate_release_evidence_snapshot(payload)
 
 
 def test_release_evidence_schema_validator_rejects_missing_key() -> None:
@@ -3647,7 +3725,17 @@ def _minimal_release_evidence_payload() -> dict[str, object]:
                 "bytes": 1,
             }
         ],
-        "manifest_lock": {},
+        "manifest_lock": {
+            "path": "tool-manifests.lock.json",
+            "required": True,
+            "current": True,
+            "signature": {
+                "required": False,
+                "verified": False,
+                "key_id": None,
+                "lock_sha256": None,
+            },
+        },
         "docs_site": {},
         "tools": {"count": 0, "names": []},
         "policy": {},

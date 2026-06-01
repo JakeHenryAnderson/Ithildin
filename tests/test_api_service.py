@@ -217,7 +217,18 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
             "signature_configured": False,
             "verified": False,
             "key_id": None,
+            "lock_sha256": None,
         },
+        "signature_startup": {
+            "required": False,
+            "signature_path": settings.manifest_lock_signature_path.as_posix(),
+            "public_key_configured": False,
+            "signature_configured": False,
+            "verified": False,
+            "key_id": None,
+            "lock_sha256": None,
+        },
+        "signature_drift": False,
     }
     assert payload["principals"]["required"] is True
     assert payload["principals"]["count"] >= 1
@@ -1714,6 +1725,7 @@ def test_signed_audit_export_endpoint_requires_auth_and_keys(tmp_path: Path) -> 
     assert unauthenticated.status_code == 401
     assert missing_keys.status_code == 409
     assert "private key" in missing_keys.json()["detail"]
+    assert _row_count(settings.db_path, "audit_events") == 0
 
 
 def test_signed_audit_export_endpoint_returns_signed_bundle(tmp_path: Path) -> None:
@@ -1778,6 +1790,37 @@ def test_signed_audit_export_endpoint_rejects_unclean_lifecycle(tmp_path: Path) 
 
     assert response.status_code == 409
     assert "audit lifecycle is not clean" in response.json()["detail"]
+    payloads = AuditWriter(settings.db_path, settings.audit_log_path).list_events()
+    assert all(payload["event_type"] != "audit.exported" for payload in payloads)
+
+
+def test_audit_event_list_returns_structured_error_for_corrupt_payload(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        audit_writer.write_event(
+            event_id="evt_1",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_1",
+            principal={"id": "agent:local-dev"},
+        )
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                "UPDATE audit_events SET payload_json = ? WHERE event_id = ?",
+                ("{", "evt_1"),
+            )
+            connection.commit()
+        response = client.get(
+            "/audit-events",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "failed to decode audit event payload"
 
 
 def test_audit_export_reflects_failed_verification(tmp_path: Path) -> None:

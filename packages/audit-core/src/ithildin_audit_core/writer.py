@@ -183,7 +183,16 @@ class AuditWriter:
         except sqlite3.Error as exc:
             raise AuditWriteError("failed to read audit events") from exc
 
-        return [cast(JsonObject, json.loads(str(row[0]))) for row in rows]
+        events: list[JsonObject] = []
+        for row in rows:
+            try:
+                payload = json.loads(str(row[0]))
+            except json.JSONDecodeError as exc:
+                raise AuditWriteError("failed to decode audit event payload") from exc
+            if not isinstance(payload, dict):
+                raise AuditWriteError("failed to decode audit event payload")
+            events.append(cast(JsonObject, payload))
+        return events
 
     def verify_chain(self) -> AuditVerificationResult:
         rows = self._payload_rows()

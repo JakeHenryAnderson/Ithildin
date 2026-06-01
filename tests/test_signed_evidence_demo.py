@@ -84,6 +84,17 @@ def test_signed_evidence_demo_standalone_verifier(tmp_path: Path) -> None:
     assert manifest_lock["verified"] is True
 
 
+def test_signed_evidence_demo_verifier_uses_recorded_lock_path(tmp_path: Path) -> None:
+    lock_path = tmp_path / "custom-tool-manifests.lock.json"
+    lock_path.write_text(Path("tool-manifests.lock.json").read_text(encoding="utf-8"))
+    build_demo(output_dir=tmp_path / "demo", lock_path=lock_path)
+
+    result = verify_demo(tmp_path / "demo")
+    manifest_lock = cast(JsonObject, result["manifest_lock"])
+
+    assert manifest_lock["verified"] is True
+
+
 def test_signed_evidence_demo_verifier_rejects_summary_confusion(tmp_path: Path) -> None:
     lock_path = Path("tool-manifests.lock.json")
     build_demo(output_dir=tmp_path / "demo", lock_path=lock_path)

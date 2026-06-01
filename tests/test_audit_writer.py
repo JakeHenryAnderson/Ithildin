@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import sqlite3
@@ -8,6 +9,8 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ithildin_audit_core import (
     AuditSigningError,
     AuditWriteError,
@@ -17,7 +20,14 @@ from ithildin_audit_core import (
     verify_exported_events_jsonl,
     verify_signed_audit_export_bundle,
 )
-from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue, sha256_digest
+from ithildin_audit_core.signing import _signature_payload
+from ithildin_schemas import (
+    AuditEventType,
+    JsonObject,
+    PolicyDecisionValue,
+    canonical_json,
+    sha256_digest,
+)
 
 VALID_HASH = "sha256:" + ("a" * 64)
 NOW = datetime(2026, 5, 25, 12, 0, tzinfo=UTC)
@@ -695,6 +705,64 @@ def test_signed_audit_export_rejects_malformed_top_level_fields(
 
     assert result.valid is False
     assert result.failure == failure
+
+
+def test_signed_audit_export_rejects_resigned_malformed_nested_metadata(
+    tmp_path: Path,
+) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    private_key_path = tmp_path / "private.pem"
+    public_key_path = tmp_path / "public.pem"
+    generate_audit_signing_keypair(
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
+    )
+    bundle = cast(
+        dict[str, Any],
+        signed_audit_export_bundle(
+            jsonl_bundle=writer.export_jsonl_bundle(),
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+        ),
+    )
+    metadata = cast(dict[str, Any], bundle["metadata"])
+    metadata["bundle_type"] = "wrong.bundle"
+    signature = cast(dict[str, Any], bundle["signature"])
+    signature_metadata: JsonObject = {
+        "algorithm": cast(str, signature["algorithm"]),
+        "key_id": cast(str, signature["key_id"]),
+        "public_key": cast(str, signature["public_key"]),
+        "created_at": cast(str, signature["created_at"]),
+    }
+    private_key = serialization.load_pem_private_key(private_key_path.read_bytes(), password=None)
+    assert isinstance(private_key, Ed25519PrivateKey)
+    payload = _signature_payload(
+        metadata=cast(JsonObject, metadata),
+        events_sha256=cast(str, bundle["events_sha256"]),
+        signature_metadata=signature_metadata,
+    )
+    signature["signature"] = base64.b64encode(
+        private_key.sign(canonical_json(payload).encode("utf-8"))
+    ).decode("ascii")
+
+    result = verify_signed_audit_export_bundle(bundle, public_key_path=public_key_path)
+
+    assert result.valid is False
+    assert result.failure == "metadata verification does not match exported events"
+
+
+def test_signed_audit_export_rejects_non_object_bundle() -> None:
+    result = verify_signed_audit_export_bundle([])
+
+    assert result.valid is False
+    assert result.failure == "bundle must be an object"
 
 
 def test_signed_audit_export_rejects_manifest_signature_bundle_confusion(
