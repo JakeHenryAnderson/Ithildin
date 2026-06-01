@@ -1932,7 +1932,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-075" in handoff
+    assert "SUB-076" in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
@@ -1942,6 +1942,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "Internal proxy findings SUB-064 through SUB-073 fixed internally" in manifest
     assert "Internal proxy finding SUB-074 fixed internally" in manifest
     assert "Internal proxy finding SUB-075 fixed internally" in manifest
+    assert "Internal proxy finding SUB-076 fixed internally" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2058,7 +2059,7 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-075"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-076"
     assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
@@ -2216,8 +2217,30 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         "make release-evidence",
         "make release-evidence-validate",
         "make release-evidence-gate",
+        "make packet-redaction-scan",
+        "scripts/release_evidence.py",
+        "scripts/review_packet_bundle.py",
+        "scripts/consolidate_review_packet.py",
+        "scripts/review_packet_diff.py",
+        "scripts/packet_redaction_scan.py",
+        "scripts/external_response_normalize.py",
+        "scripts/capability_decision_report.py",
+        "tests/test_release_readiness.py",
+        "docs/codex/release-evidence-schema.md",
+        "docs/codex/review-packet-diff.md",
+        "docs/codex/packet-redaction-scanner.md",
+        "docs/codex/v0.6-external-response-normalization.md",
+        "SUB-022",
+        "SUB-023",
+        "SUB-024",
+        "SUB-025",
+        "SUB-026",
+        "SUB-054",
+        "SUB-060",
+        "SUB-061",
         "SUB-062",
         "SUB-063",
+        "SUB-076",
     ]:
         assert required in release_packet_text
     policy_packet = dispatch_root.joinpath("policy-registry.md").read_text(encoding="utf-8")

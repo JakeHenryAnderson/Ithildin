@@ -3,7 +3,7 @@
   "release_track": "v0.6 external-review execution and closure",
   "runtime_boundary": "v0.1 local-preview",
   "freeze_commit": "a43d180c1838afc68dbe496f1b1ea6044e91e386",
-  "completed_range": "181-184 plus internal remediation through SUB-075",
+  "completed_range": "181-184 plus internal remediation through SUB-076",
   "planned_range": "external review and post-review closure remain pending",
   "capability_expansion_allowed": false,
   "broader_distribution_allowed": false,
@@ -105,8 +105,8 @@
       "id": "192",
       "title": "Release automation external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy remediated; external pending",
-      "planned_commit": "TBD"
+      "status": "Internal proxy finding SUB-076 fixed internally; external pending",
+      "planned_commit": "Remediate release automation proxy finding"
     },
     {
       "id": "193",
