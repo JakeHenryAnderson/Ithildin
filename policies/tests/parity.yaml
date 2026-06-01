@@ -90,6 +90,23 @@ cases:
     expect_runtime_status: denied
     expect_policy_evidence: false
 
+  - id: invalid_http_arguments_preview_matches_runtime
+    description: Schema-invalid HTTP arguments do not construct a network resource before denial.
+    tool_name: http.fetch
+    arguments:
+      url: https://example.com/data
+      headers:
+        authorization: Bearer secret-value
+    principal:
+      id: agent:mcp-local
+    session_id: parity-invalid-http-arguments
+    expect_decision: deny
+    expect_valid_arguments: false
+    expect_runtime_status: denied
+    expect_resource_type: tool_call
+    expect_resource_in_scope: false
+    expect_policy_evidence: false
+
   - id: readonly_network_visibility_matches_runtime
     description: Read-only principals are denied for network tools before policy evidence is produced.
     tool_name: http.fetch

@@ -104,13 +104,6 @@ class PolicyPreviewService:
                     metadata=principal_denial_metadata(reason),
                 )
 
-        resource = resource_from_arguments(
-            arguments,
-            manifest.risk,
-            http_allowlist=self.http_allowlist,
-            read_tool_executor=self.read_tool_executor,
-        )
-
         try:
             validate_json_schema(instance=arguments, schema=manifest.input_schema)
         except (JsonSchemaValidationError, JsonSchemaSchemaError) as exc:
@@ -123,7 +116,7 @@ class PolicyPreviewService:
                 "valid_arguments": False,
                 "argument_error": getattr(exc, "message", str(exc)),
                 "policy_input": None,
-                "resource": resource,
+                "resource": {"type": "tool_call", "in_scope": False},
                 "decision": PolicyDecisionValue.DENY.value,
                 "reason": "invalid tool arguments",
                 "policy_version": self.policy_evaluator.policy_hash,
@@ -131,6 +124,13 @@ class PolicyPreviewService:
                 "obligations": {"audit_level": "full"},
                 "decision_evidence": None,
             }
+
+        resource = resource_from_arguments(
+            arguments,
+            manifest.risk,
+            http_allowlist=self.http_allowlist,
+            read_tool_executor=self.read_tool_executor,
+        )
         if resource.get("in_scope") is False:
             reason = _resource_scope_denial_reason(resource)
             return self._deny_preview(

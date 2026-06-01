@@ -1328,8 +1328,10 @@ def test_source_review_runbook_v2_is_documented() -> None:
         "make external-review-closure-gate",
         "Critical/high open findings stop autonomous implementation",
         "External rows may not be closed by internal review",
+        "http-executor-contract.md",
     ]:
         assert required in runbook
+    assert "http-fetch-executor-contract.md" not in runbook
     assert "source-review-runbook-v2.md" in readme
     assert "157 - Source review runbook v2 | Done" in backlog
     assert "Task 157 documents the repeatable source-review workflow" in matrix
@@ -1605,6 +1607,40 @@ def test_closure_matrix_evidence_sync_is_wired() -> None:
     assert "closure-matrix-evidence-sync" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/closure-matrix-evidence-sync.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/closure-matrix-evidence-sync.md" in docs_site
+
+
+def test_closure_matrix_evidence_sync_rejects_fixed_rows_with_pending_commit(
+    tmp_path: Path,
+) -> None:
+    docs_dir = tmp_path / "docs/codex"
+    docs_dir.mkdir(parents=True)
+    docs_dir.joinpath("v0.5-milestone-manifest.json").write_text(
+        json.dumps({"milestones": []}),
+        encoding="utf-8",
+    )
+    docs_dir.joinpath("source-review-closure-matrix.md").write_text(
+        "\n".join(
+            [
+                "# Matrix",
+                "",
+                "## v3 Closure State",
+                "",
+                "| Area | Internal status | External status | Highest open severity | "
+                "Fixed commit | Verification command | Accepted/deferred risk link | "
+                "Closure state |",
+                "| --- | --- | --- | --- | --- | --- | --- | --- |",
+                "| HTTP fetch | findings fixed internally | pending external review | none | "
+                "pending | `make release-check` | none | external_pending |",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    report = closure_matrix_evidence_sync.build_report(tmp_path)
+
+    assert report["valid"] is False
+    assert "HTTP fetch records fixed internal findings with pending commit" in report["failures"]
 
 
 def test_accepted_risk_register_is_wired_and_scoped() -> None:
@@ -1891,12 +1927,12 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-026" in handoff
+    assert "SUB-047" in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
     assert "Internally remediated" in backlog
-    assert "Internal proxy remediated; external pending" in manifest
+    assert "Internal proxy findings SUB-040 through SUB-047 fixed internally" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2013,7 +2049,7 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
     task_ids = [milestone["id"] for milestone in manifest["milestones"]]
     assert task_ids == [f"{index:03d}" for index in range(181, 216)]
     assert manifest["runtime_boundary"] == "v0.1 local-preview"
-    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-026"
+    assert manifest["completed_range"] == "181-184 plus internal remediation through SUB-047"
     assert manifest["planned_range"] == "external review and post-review closure remain pending"
     assert manifest["capability_expansion_allowed"] is False
     assert manifest["broader_distribution_allowed"] is False
@@ -2125,6 +2161,22 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
     assert (
         "historical note: some generated bundle paths still contain v0.2/v0.5 names" in index_text
     )
+    http_packet = dispatch_root.joinpath("http-fetch.md").read_text(encoding="utf-8")
+    for finding_id in [
+        "SUB-001",
+        "SUB-007",
+        "SUB-008",
+        "SUB-009",
+        "SUB-040",
+        "SUB-041",
+        "SUB-042",
+        "SUB-043",
+        "SUB-044",
+        "SUB-045",
+        "SUB-046",
+        "SUB-047",
+    ]:
+        assert finding_id in http_packet
     for required in [
         "make v06-review-dispatch-packets",
         "dispatch-packet-hashes.json",

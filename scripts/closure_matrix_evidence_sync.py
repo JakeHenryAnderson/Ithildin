@@ -65,6 +65,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             and closure_state in {"external_reviewed", "closed_local_preview"}
         ):
             row_failures.append(f"{area} claims external closure while pending review")
+        internal_status = row.get("Internal status", "").lower()
+        if (
+            "finding" in internal_status
+            and "fixed internally" in internal_status
+            and row.get("Fixed commit", "").strip().lower() == "pending"
+        ):
+            row_failures.append(f"{area} records fixed internal findings with pending commit")
     failures.extend(row_failures)
 
     return {

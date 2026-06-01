@@ -1235,6 +1235,62 @@ def test_policy_preview_denies_unallowlisted_http_fetch_without_audit(tmp_path: 
     assert _row_count(settings.db_path, "audit_events") == 0
 
 
+def test_policy_preview_malformed_http_resource_omits_raw_query_string(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, http_allowlist="https://example.com")
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={
+                "tool_name": "http.fetch",
+                "arguments": {"url": " https://example.com/data?token=secret-value"},
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is True
+    assert payload["decision"] == "deny"
+    assert "secret-value" not in json.dumps(payload)
+    assert "url" not in payload["resource"]
+    assert payload["resource"]["raw_url_hash"].startswith("sha256:")
+    assert _row_count(settings.db_path, "audit_events") == 0
+
+
+def test_policy_preview_invalid_http_arguments_use_generic_resource(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, http_allowlist="https://example.com")
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/policy/preview",
+            headers={"Authorization": "Bearer test-admin-token"},
+            json={
+                "tool_name": "http.fetch",
+                "arguments": {
+                    "url": "https://example.com/data",
+                    "headers": {"authorization": "Bearer secret-value"},
+                },
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_arguments"] is False
+    assert payload["decision"] == "deny"
+    assert payload["resource"] == {"type": "tool_call", "in_scope": False}
+    assert "secret-value" not in json.dumps(payload)
+    assert _row_count(settings.db_path, "audit_events") == 0
+
+
 def test_policy_preview_unknown_tool_is_safe_and_side_effect_free(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     app = create_app(settings)

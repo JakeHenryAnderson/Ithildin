@@ -523,6 +523,41 @@ def test_timeout_and_url_errors_return_safe_error() -> None:
     assert "secret backend detail" not in str(exc_info.value)
 
 
+def test_transport_unicode_errors_return_safe_error() -> None:
+    executor, _ = make_executor(
+        responses=[
+            UnicodeEncodeError(
+                "latin-1",
+                "secret backend detail",
+                0,
+                1,
+                "cannot encode",
+            )
+        ]
+    )
+
+    with pytest.raises(HttpFetchError, match="HTTP fetch failed safely") as exc_info:
+        executor.fetch("https://example.com/")
+
+    assert "secret backend detail" not in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://example.com/é",
+        "https://example.com/data?q=✓",
+    ],
+)
+def test_raw_non_ascii_path_or_query_is_rejected_before_open(url: str) -> None:
+    executor, opener = make_executor()
+
+    with pytest.raises(HttpFetchError, match="raw non-ASCII"):
+        executor.fetch(url)
+
+    assert opener.requests == []
+
+
 def test_body_read_errors_return_safe_error() -> None:
     executor, _ = make_executor(responses=[RaisingReadResponse(TimeoutError("secret read detail"))])
 
@@ -546,6 +581,27 @@ def test_unknown_response_charset_returns_safe_error() -> None:
         executor.fetch("https://example.com/")
 
     assert "secret_backend_charset" not in str(exc_info.value)
+
+
+def test_json_parser_errors_do_not_escape(monkeypatch: pytest.MonkeyPatch) -> None:
+    executor, _ = make_executor(
+        responses=[
+            FakeResponse(
+                body=b'{"ok": true}',
+                content_type="application/json; charset=utf-8",
+            )
+        ]
+    )
+
+    def fail_json_parse(body_text: str) -> object:
+        raise RecursionError("secret parser detail")
+
+    monkeypatch.setattr("ithildin_api.http_tools.json.loads", fail_json_parse)
+
+    result = executor.fetch("https://example.com/")
+
+    assert result["body_text"] == '{"ok": true}'
+    assert "body_json" not in result
 
 
 def test_obfuscated_ipv4_hosts_are_rejected() -> None:

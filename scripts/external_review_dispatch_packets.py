@@ -96,6 +96,17 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "docs/codex/http-fetch-source-review-checklist.md",
             "docs/codex/http-executor-contract.md",
             "docs/codex/findings/sub-001-http-fetch-dns-pinning.md",
+            "docs/codex/findings/sub-007-http-response-processing-safe-errors.md",
+            "docs/codex/findings/sub-008-http-explicit-port-normalization.md",
+            "docs/codex/findings/sub-009-http-audit-query-redaction.md",
+            "docs/codex/findings/sub-040-http-malformed-url-resource-redaction.md",
+            "docs/codex/findings/sub-041-http-preview-schema-resource-order.md",
+            "docs/codex/findings/sub-042-http-raw-unicode-url-safe-error.md",
+            "docs/codex/findings/sub-043-http-json-parser-safe-errors.md",
+            "docs/codex/findings/sub-044-http-dispatch-finding-coverage.md",
+            "docs/codex/findings/sub-045-http-closure-traceability.md",
+            "docs/codex/findings/sub-046-http-lane-result-summary.md",
+            "docs/codex/findings/sub-047-http-contract-link-drift.md",
         ),
         commands=(
             "uv run pytest tests/test_http_tools.py tests/test_governed_tool_calls.py",
@@ -367,6 +378,7 @@ def _render_packet(area: DispatchArea, commit: str, dirty: bool, payload_sha256:
 
 
 def _render_packet_payload(area: DispatchArea, commit: str, dirty: bool) -> str:
+    internal_findings = _internal_finding_ids(area.review_docs)
     return "\n".join(
         [
             f"# {area.title}",
@@ -401,6 +413,16 @@ def _render_packet_payload(area: DispatchArea, commit: str, dirty: bool) -> str:
             "",
             *[f"- [{doc}]({doc})" for doc in area.review_docs],
             "",
+            *(
+                [
+                    "## Relevant Internal Findings",
+                    "",
+                    *[f"- {finding_id}" for finding_id in internal_findings],
+                    "",
+                ]
+                if internal_findings
+                else []
+            ),
             "## Expected Commands",
             "",
             "Required minimum commands:",
@@ -426,6 +448,18 @@ def _render_packet_payload(area: DispatchArea, commit: str, dirty: bool) -> str:
             "",
         ]
     )
+
+
+def _internal_finding_ids(review_docs: tuple[str, ...]) -> list[str]:
+    finding_ids: list[str] = []
+    for doc in review_docs:
+        name = Path(doc).name
+        if not name.startswith("sub-"):
+            continue
+        parts = name.split("-", maxsplit=2)
+        if len(parts) >= 2 and parts[1].isdigit():
+            finding_ids.append(f"SUB-{parts[1]}")
+    return finding_ids
 
 
 def _render_index(commit: str, dirty: bool, packets: list[dict[str, Any]]) -> str:

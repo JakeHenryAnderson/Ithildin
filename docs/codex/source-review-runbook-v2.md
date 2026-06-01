@@ -63,7 +63,7 @@ Review these areas before any future capability-expansion decision:
 | --- | --- | --- |
 | Patch apply | [patch-apply-state-machine.md](patch-apply-state-machine.md) | `make release-check` |
 | Filesystem | [filesystem-executor-contract.md](filesystem-executor-contract.md) | `make filesystem-contract-check` |
-| HTTP fetch | [http-fetch-executor-contract.md](http-fetch-executor-contract.md) | `make release-check` |
+| HTTP fetch | [http-executor-contract.md](http-executor-contract.md) | `make release-check` |
 | Signed evidence | [evidence-contracts.md](evidence-contracts.md) | `make signed-evidence-demo-verify` |
 | Policy parity | policy preview/runtime parity docs and fixtures | `make policy-parity` |
 | MCP ingress | MCP ingress bypass audit and adapter tests | `make release-check` |

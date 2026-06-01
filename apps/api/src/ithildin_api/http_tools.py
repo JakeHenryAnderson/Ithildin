@@ -14,7 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import SplitResult, urljoin, urlsplit, urlunsplit
 from urllib.request import Request
 
-from ithildin_schemas import JsonObject, JsonValue
+from ithildin_schemas import JsonObject, JsonValue, sha256_digest
 
 HTTP_FETCH_TOOL = "http.fetch"
 DEFAULT_HTTP_USER_AGENT = "Ithildin/0.1 http.fetch"
@@ -260,7 +260,7 @@ class HttpFetchExecutor:
                     current,
                     redirect_chain,
                 )
-            except (TimeoutError, OSError, URLError) as exc:
+            except (TimeoutError, OSError, URLError, UnicodeError) as exc:
                 raise HttpFetchError("HTTP fetch failed safely") from exc
 
             try:
@@ -381,7 +381,7 @@ class HttpFetchExecutor:
             if "json" in content_type.lower():
                 try:
                     result["body_json"] = json.loads(body_text)
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, ValueError, RecursionError):
                     pass
         return result
 
@@ -402,6 +402,7 @@ def parse_http_url(url: str) -> ParsedHttpUrl:
         raise HttpFetchError("URL fragments are not allowed")
     if not split.hostname:
         raise HttpFetchError("URL host is required")
+    _reject_raw_non_ascii_path_or_query(split)
 
     host = _normalize_host(split.hostname)
     port = _port_from_split(split)
@@ -431,7 +432,7 @@ def http_resource_from_url(url: str, allowlist: HttpAllowlist) -> JsonObject:
             "type": "network",
             "in_scope": False,
             "risk": "network",
-            "url": url,
+            "raw_url_hash": sha256_digest(url),
             "reason": exc.reason,
         }
     return {
@@ -530,6 +531,11 @@ def _reject_url_control_or_space(url: str) -> None:
         for character in url
     ):
         raise HttpFetchError("url contains whitespace or control characters")
+
+
+def _reject_raw_non_ascii_path_or_query(split: SplitResult) -> None:
+    if any(ord(character) > 127 for character in f"{split.path}?{split.query}"):
+        raise HttpFetchError("URL path or query contains raw non-ASCII characters")
 
 
 def _resolve_host(host: str, port: int) -> Sequence[str]:

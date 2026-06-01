@@ -1644,6 +1644,29 @@ def test_http_fetch_audit_resource_redacts_query_string(tmp_path: Path) -> None:
             assert resource["url"] == "https://example.com/data"
 
 
+def test_malformed_http_fetch_audit_resource_omits_raw_query_string(tmp_path: Path) -> None:
+    opener = FakeHttpOpener()
+    service = make_http_service(tmp_path, opener=opener)
+
+    result = service.call_tool(
+        tool_name=HTTP_FETCH_TOOL,
+        arguments={"url": " https://example.com/data?token=secret-value"},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert opener.requests == []
+    payloads = audit_payloads(tmp_path)
+    audit_text = json.dumps(payloads)
+    assert "secret-value" not in audit_text
+    for payload in payloads:
+        resource = payload.get("resource")
+        if isinstance(resource, dict) and resource.get("type") == "network":
+            assert "url" not in resource
+            assert str(resource["raw_url_hash"]).startswith("sha256:")
+
+
 def test_direct_patch_payload_cannot_be_applied(tmp_path: Path) -> None:
     harness = make_patch_harness(tmp_path)
 
