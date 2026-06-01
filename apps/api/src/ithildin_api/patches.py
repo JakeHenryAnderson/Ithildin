@@ -455,7 +455,7 @@ class PatchProposalService:
         unified_diff: str,
         workspace_id: str | None = None,
     ) -> PatchProposal:
-        if len(unified_diff.encode("utf-8")) > self.max_patch_bytes:
+        if _utf8_size(unified_diff, "patch") > self.max_patch_bytes:
             raise PatchProposalError("patch exceeds configured size limit")
 
         filesystem = self._filesystem(workspace_id)
@@ -884,7 +884,13 @@ class PatchProposalService:
             self._inject_apply_fault("after_create_apply_attempt")
             self._inject_apply_fault("before_atomic_replace")
             filesystem = self._filesystem(proposal.workspace_id)
-            _atomic_write_text(filesystem.workspace_root, proposal.path, patched_content)
+            _atomic_write_text(
+                filesystem.workspace_root,
+                proposal.path,
+                patched_content,
+                expected_base_file_hash=proposal.base_file_hash,
+                max_verify_bytes=filesystem.max_read_bytes,
+            )
             file_replaced = True
             self._inject_apply_fault("after_atomic_replace")
             self.store.set_apply_attempt_status(attempt.attempt_id, "file_replaced")
@@ -1020,6 +1026,7 @@ class PatchProposalService:
         if current_hash != proposal.base_file_hash:
             raise PatchProposalError("patch target has changed since proposal")
         patched_content = apply_unified_diff(current_content, proposal.unified_diff)
+        _ensure_safe_text_content(patched_content, "patched content")
         return target, patched_content
 
     def _record_apply_failure(
@@ -1129,7 +1136,7 @@ def validate_unified_diff(
         raise PatchProposalError("patch target does not match requested path")
     if hunk_start >= len(lines):
         raise PatchProposalError("patch must contain at least one hunk")
-    apply_unified_diff(current_content, unified_diff)
+    _ensure_safe_text_content(apply_unified_diff(current_content, unified_diff), "patched content")
 
 
 def apply_unified_diff(current_content: str, unified_diff: str) -> str:
@@ -1314,7 +1321,15 @@ def _scope_object_or_none(scope: JsonObject, key: str) -> JsonObject | None:
     return value
 
 
-def _atomic_write_text(workspace_root: Path, relative_path: str, content: str) -> None:
+def _atomic_write_text(
+    workspace_root: Path,
+    relative_path: str,
+    content: str,
+    *,
+    expected_base_file_hash: str | None = None,
+    max_verify_bytes: int | None = None,
+) -> None:
+    _ensure_safe_text_content(content, "patched content")
     requested = _patch_relative_path(relative_path)
     parts = requested.parts
     if not parts:
@@ -1337,6 +1352,12 @@ def _atomic_write_text(workspace_root: Path, relative_path: str, content: str) -
                 raise OSError("patch target is not a safe regular file")
             if target_stat.st_nlink > 1:
                 raise OSError("patch target is hardlinked")
+            if expected_base_file_hash is not None:
+                _verify_target_base_hash(
+                    target_fd,
+                    expected_base_file_hash=expected_base_file_hash,
+                    max_verify_bytes=max_verify_bytes,
+                )
             mode = stat.S_IMODE(target_stat.st_mode)
         finally:
             os.close(target_fd)
@@ -1344,7 +1365,7 @@ def _atomic_write_text(workspace_root: Path, relative_path: str, content: str) -
         temp_name = f".{filename}.ithildin-{uuid4().hex}.tmp"
         temp_fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode, dir_fd=parent_fd)
         try:
-            data = content.encode("utf-8")
+            data = _safe_utf8_bytes(content, "patched content")
             view = memoryview(data)
             while view:
                 written = os.write(temp_fd, view)
@@ -1374,6 +1395,47 @@ def _patch_relative_path(relative_path: str) -> Path:
     if len(requested.parts) == 0 or requested.parts[-1] in {"", "."}:
         raise OSError("patch target path is invalid")
     return requested
+
+
+def _verify_target_base_hash(
+    fd: int,
+    *,
+    expected_base_file_hash: str,
+    max_verify_bytes: int | None,
+) -> None:
+    stat_result = os.fstat(fd)
+    if max_verify_bytes is not None and stat_result.st_size > max_verify_bytes:
+        raise OSError("patch target has changed since proposal")
+    os.lseek(fd, 0, os.SEEK_SET)
+    data = os.read(fd, (max_verify_bytes or stat_result.st_size) + 1)
+    if max_verify_bytes is not None and len(data) > max_verify_bytes:
+        raise OSError("patch target has changed since proposal")
+    if b"\x00" in data:
+        raise OSError("patch target has changed since proposal")
+    try:
+        current_content = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise OSError("patch target has changed since proposal") from exc
+    if sha256_digest(current_content) != expected_base_file_hash:
+        raise OSError("patch target has changed since proposal")
+    os.lseek(fd, 0, os.SEEK_SET)
+
+
+def _ensure_safe_text_content(content: str, label: str) -> None:
+    _safe_utf8_bytes(content, label)
+    if "\x00" in content:
+        raise PatchProposalError(f"{label} appears to be binary")
+
+
+def _utf8_size(content: str, label: str) -> int:
+    return len(_safe_utf8_bytes(content, label))
+
+
+def _safe_utf8_bytes(content: str, label: str) -> bytes:
+    try:
+        return content.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise PatchProposalError(f"{label} is not valid UTF-8 text") from exc
 
 
 def _open_verified_directory(path: Path) -> int:

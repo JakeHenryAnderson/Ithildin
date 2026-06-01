@@ -100,7 +100,16 @@ def test_filesystem_denies_encoded_path_tokens(tmp_path: Path, path: str) -> Non
         filesystem.read_file(path)
 
 
-@pytest.mark.parametrize("path", ["bad\x00path.txt", "bad\npath.txt", "bad\x7fpath.txt"])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "bad\x00path.txt",
+        "bad\npath.txt",
+        "bad\x7fpath.txt",
+        "bad\u0085path.txt",
+        "bad\u202epath.txt",
+    ],
+)
 def test_filesystem_denies_control_character_paths(tmp_path: Path, path: str) -> None:
     filesystem = make_filesystem(tmp_path)
 
@@ -158,6 +167,34 @@ def test_filesystem_denies_hardlink_swap_between_resolution_and_open(
     assert outside.read_text(encoding="utf-8") == "outside\n"
 
 
+def test_filesystem_read_denies_ancestor_symlink_swap_between_resolution_and_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    filesystem = make_filesystem(tmp_path)
+    parent = filesystem.workspace_root / "docs"
+    parent.mkdir()
+    parent.joinpath("README.md").write_text("safe\n", encoding="utf-8")
+    outside = tmp_path / "outside-docs"
+    outside.mkdir()
+    outside.joinpath("README.md").write_text("outside\n", encoding="utf-8")
+    original_resolver = filesystem.resolve_existing_path
+
+    def swap_parent_to_symlink(path: str) -> Path:
+        resolved = original_resolver(path)
+        if path == "docs/README.md":
+            parent.rename(filesystem.workspace_root / "docs-old")
+            parent.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(filesystem, "resolve_existing_path", swap_parent_to_symlink)
+
+    with pytest.raises(ReadToolError, match="safe directory"):
+        filesystem.read_file("docs/README.md")
+
+    assert outside.joinpath("README.md").read_text(encoding="utf-8") == "outside\n"
+
+
 def test_filesystem_search_denies_symlink_swap_between_resolution_and_open(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -184,6 +221,25 @@ def test_filesystem_search_denies_symlink_swap_between_resolution_and_open(
 
     assert result["matches"] == []
     assert outside.read_text(encoding="utf-8") == "outside needle\n"
+
+
+def test_filesystem_list_and_search_skip_symlink_entries_inside_workspace(
+    tmp_path: Path,
+) -> None:
+    filesystem = make_filesystem(tmp_path)
+    filesystem.workspace_root.joinpath("README.md").write_text("needle\n", encoding="utf-8")
+    filesystem.workspace_root.joinpath("README-link.md").symlink_to(
+        filesystem.workspace_root / "README.md"
+    )
+
+    listing = filesystem.list_path(".")
+    search = filesystem.search(path=".", query="needle")
+    entries = cast(list[dict[str, object]], listing["entries"])
+
+    assert [entry["path"] for entry in entries] == ["README.md"]
+    assert search["matches"] == [
+        {"path": "README.md", "line_number": 1, "preview": "needle"}
+    ]
 
 
 @pytest.mark.parametrize(

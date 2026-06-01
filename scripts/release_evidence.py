@@ -267,6 +267,31 @@ def validate_release_evidence_snapshot(payload: object) -> None:
     if not isinstance(tools.get("count"), int) or not isinstance(tools.get("names"), list):
         raise ReleaseEvidenceSchemaError("tools must include count and names")
     filesystem = _required_object(evidence, "filesystem")
+    platform_status = filesystem.get("platform")
+    if not isinstance(platform_status, dict):
+        raise ReleaseEvidenceSchemaError("filesystem must include platform evidence")
+    if not isinstance(platform_status.get("system"), str) or not isinstance(
+        platform_status.get("profile"), str
+    ):
+        raise ReleaseEvidenceSchemaError("filesystem platform evidence is invalid")
+    python_status = filesystem.get("python")
+    if not isinstance(python_status, dict) or not isinstance(
+        python_status.get("version"), str
+    ):
+        raise ReleaseEvidenceSchemaError("filesystem must include python version evidence")
+    capabilities = filesystem.get("capabilities")
+    if not isinstance(capabilities, dict):
+        raise ReleaseEvidenceSchemaError("filesystem must include capability evidence")
+    for capability in (
+        "o_no_follow_available",
+        "symlink_supported",
+        "hardlink_supported",
+        "case_sensitive",
+    ):
+        if not isinstance(capabilities.get(capability), bool):
+            raise ReleaseEvidenceSchemaError(
+                f"filesystem capability evidence missing {capability}"
+            )
     support = filesystem.get("support")
     if not isinstance(support, dict):
         raise ReleaseEvidenceSchemaError("filesystem must include support evidence")

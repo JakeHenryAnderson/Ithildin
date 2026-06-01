@@ -951,7 +951,12 @@ def test_patch_apply_failure_before_replace_records_failed_attempt(
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
     harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
 
-    def fail_before_replace(workspace_root: Path, relative_path: str, content: str) -> None:
+    def fail_before_replace(
+        workspace_root: Path,
+        relative_path: str,
+        content: str,
+        **_: object,
+    ) -> None:
         raise OSError("simulated replace failure")
 
     monkeypatch.setattr(patches, "_atomic_write_text", fail_before_replace)
@@ -969,6 +974,40 @@ def test_patch_apply_failure_before_replace_records_failed_attempt(
     assert harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8") == "old\n"
     assert attempts[0].status == "failed"
     assert attempts[0].failure_reason == "failed to apply patch safely"
+    assert harness.approval_service.get(str(approval["approval_id"])).status.value == "failed"
+
+
+def test_patch_apply_rechecks_base_immediately_before_replace(tmp_path: Path) -> None:
+    phases: list[str] = []
+
+    def fault(phase: str) -> None:
+        phases.append(phase)
+        if phase == "before_atomic_replace":
+            (harness.workspace_root / "README.md").write_text(
+                "concurrent change\n",
+                encoding="utf-8",
+            )
+
+    harness = make_patch_harness(tmp_path, apply_fault_hook=fault)
+    proposal = propose_patch(harness.service)
+    approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
+    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+
+    result = harness.service.call_tool(
+        tool_name="fs.patch.apply",
+        arguments={"approval_id": approval["approval_id"]},
+        principal=principal(),
+        session_id="sess_1",
+    )
+
+    assert result.status == "denied"
+    assert "failed to apply patch safely" in str(result.content["reason"])
+    assert "before_atomic_replace" in phases
+    assert (
+        harness.workspace_root.joinpath("README.md").read_text(encoding="utf-8")
+        == "concurrent change\n"
+    )
+    assert harness.patch_service.list_apply_attempts()[0].status == "failed"
     assert harness.approval_service.get(str(approval["approval_id"])).status.value == "failed"
 
 
@@ -1203,9 +1242,22 @@ def test_two_approved_apply_calls_for_same_proposal_mutate_once(
     original_atomic_write = patches._atomic_write_text
     writes: list[str] = []
 
-    def counted_atomic_write(workspace_root: Path, relative_path: str, content: str) -> None:
+    def counted_atomic_write(
+        workspace_root: Path,
+        relative_path: str,
+        content: str,
+        *,
+        expected_base_file_hash: str | None = None,
+        max_verify_bytes: int | None = None,
+    ) -> None:
         writes.append(relative_path)
-        original_atomic_write(workspace_root, relative_path, content)
+        original_atomic_write(
+            workspace_root,
+            relative_path,
+            content,
+            expected_base_file_hash=expected_base_file_hash,
+            max_verify_bytes=max_verify_bytes,
+        )
 
     monkeypatch.setattr(patches, "_atomic_write_text", counted_atomic_write)
 
@@ -1464,12 +1516,25 @@ def test_patch_apply_denies_parent_directory_symlink_swap_before_replace(
 
     original_atomic_write = patches_module._atomic_write_text
 
-    def swap_parent_to_symlink(workspace_root: Path, relative_path: str, content: str) -> None:
+    def swap_parent_to_symlink(
+        workspace_root: Path,
+        relative_path: str,
+        content: str,
+        *,
+        expected_base_file_hash: str | None = None,
+        max_verify_bytes: int | None = None,
+    ) -> None:
         target = workspace_root / relative_path
         if target.parent.name == "docs":
             target.parent.rename(workspace_root / "docs-original")
             target.parent.symlink_to(outside)
-        original_atomic_write(workspace_root, relative_path, content)
+        original_atomic_write(
+            workspace_root,
+            relative_path,
+            content,
+            expected_base_file_hash=expected_base_file_hash,
+            max_verify_bytes=max_verify_bytes,
+        )
 
     monkeypatch.setattr(patches_module, "_atomic_write_text", swap_parent_to_symlink)
 
@@ -1522,11 +1587,24 @@ def test_patch_apply_denies_ancestor_directory_symlink_swap_before_replace(
 
     original_atomic_write = patches_module._atomic_write_text
 
-    def swap_ancestor_to_symlink(workspace_root: Path, relative_path: str, content: str) -> None:
+    def swap_ancestor_to_symlink(
+        workspace_root: Path,
+        relative_path: str,
+        content: str,
+        *,
+        expected_base_file_hash: str | None = None,
+        max_verify_bytes: int | None = None,
+    ) -> None:
         docs = workspace_root / "docs"
         docs.rename(workspace_root / "docs-original")
         docs.symlink_to(outside)
-        original_atomic_write(workspace_root, relative_path, content)
+        original_atomic_write(
+            workspace_root,
+            relative_path,
+            content,
+            expected_base_file_hash=expected_base_file_hash,
+            max_verify_bytes=max_verify_bytes,
+        )
 
     monkeypatch.setattr(patches_module, "_atomic_write_text", swap_ancestor_to_symlink)
 

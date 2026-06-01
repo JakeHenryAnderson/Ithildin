@@ -258,6 +258,7 @@ def test_invalid_diff_shapes_are_denied(tmp_path: Path) -> None:
         "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-stale\n+new\n",
         "--- a/README.md\n+++ b/README.md\n@@ -1,2 +1 @@\n-old\n+new\n",
         "--- a/README.md\n+++ b/README.md\n@@ -1 +1,2 @@\n-old\n+new\n",
+        "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new\x00\n",
         unified_diff("README.md", "old\n", "new\n") + ("x" * 300),
     ]
 
@@ -269,3 +270,16 @@ def test_invalid_diff_shapes_are_denied(tmp_path: Path) -> None:
                 path="README.md",
                 unified_diff=invalid_diff,
             )
+
+
+def test_patch_proposal_rejects_invalid_unicode_diff(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    service.filesystem.workspace_root.joinpath("README.md").write_text("old\n", encoding="utf-8")
+
+    with pytest.raises(PatchProposalError, match="not valid UTF-8"):
+        service.create_proposal(
+            request_id="req_1",
+            principal={"id": "agent:test"},
+            path="README.md",
+            unified_diff="\ud800",
+        )

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+from ithildin_api import filesystem_contract
 
 from scripts import filesystem_contract_check
 
@@ -72,6 +73,29 @@ def test_platform_profiles_report_supported_for_macos_and_linux(tmp_path: Path) 
     assert linux["platform"]["profile"] == "linux"
     assert macos["support"]["status"] in {"supported", "degraded"}
     assert linux["support"]["status"] in {"supported", "degraded"}
+
+
+def test_supported_platform_without_symlink_or_hardlink_probe_is_degraded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        filesystem_contract,
+        "_probe_capabilities",
+        lambda probe_parent: {
+            "o_no_follow_available": True,
+            "symlink_supported": False,
+            "hardlink_supported": False,
+            "case_sensitive": True,
+        },
+    )
+
+    status = filesystem_contract_check.collect_filesystem_contract_status(
+        system="Linux",
+        release="6.8.0",
+    )
+
+    assert status["support"]["status"] == "degraded"
+    assert status["support"]["local_preview_security_supported"] is False
 
 
 def test_platform_profiles_report_windows_and_wsl_as_unsupported(tmp_path: Path) -> None:

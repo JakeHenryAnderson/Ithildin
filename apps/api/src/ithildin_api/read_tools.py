@@ -193,6 +193,8 @@ class FilesystemReadTools:
 
         entries: list[JsonValue] = []
         for child in sorted(target.iterdir(), key=lambda item: item.name):
+            if child.is_symlink():
+                continue
             try:
                 allowed_child = self.resolve_existing_path(self.relative_path(child))
             except ReadToolError:
@@ -228,6 +230,8 @@ class FilesystemReadTools:
         for candidate in candidates:
             if len(matches) >= self.search_result_limit:
                 break
+            if candidate.is_symlink():
+                continue
             if not candidate.is_file():
                 continue
             try:
@@ -281,13 +285,7 @@ class FilesystemReadTools:
             raise ReadToolError("file is not valid UTF-8 text") from exc
 
     def read_file_bytes(self, path: Path) -> bytes:
-        flags = os.O_RDONLY
-        if hasattr(os, "O_NOFOLLOW"):
-            flags |= os.O_NOFOLLOW
-        try:
-            fd = os.open(path, flags)
-        except OSError as exc:
-            raise ReadToolError("path is not a safe regular file") from exc
+        fd = self._open_no_follow_file(path)
         try:
             stat_result = os.fstat(fd)
             if not stat.S_ISREG(stat_result.st_mode):
@@ -302,6 +300,30 @@ class FilesystemReadTools:
         if len(data) > self.max_read_bytes:
             raise ReadToolError("file exceeds configured read limit")
         return data
+
+    def _open_no_follow_file(self, path: Path) -> int:
+        try:
+            relative = path.relative_to(self.workspace_root)
+        except ValueError as exc:
+            raise ReadToolError("path escapes the workspace scope") from exc
+        if not relative.parts:
+            raise ReadToolError("path is not a file")
+
+        root_fd = _open_no_follow_directory(self.workspace_root)
+        parent_fd = os.dup(root_fd)
+        try:
+            for part in relative.parts[:-1]:
+                next_fd = _open_no_follow_directory_component(parent_fd, part)
+                os.close(parent_fd)
+                parent_fd = next_fd
+            fd = _open_no_follow_file_component(parent_fd, relative.parts[-1])
+            os.close(parent_fd)
+            return fd
+        except Exception:
+            os.close(parent_fd)
+            raise
+        finally:
+            os.close(root_fd)
 
     def relative_path(self, path: Path) -> str:
         try:
@@ -476,7 +498,12 @@ def _path_type(path: Path) -> str:
 
 
 def _reject_ambiguous_path_input(path: str) -> None:
-    if any(ord(character) < 32 or ord(character) == 127 for character in path):
+    if any(
+        ord(character) < 32
+        or ord(character) == 127
+        or unicodedata.category(character) in {"Cc", "Cf", "Cs"}
+        for character in path
+    ):
         raise ReadToolError("path contains control characters")
     lowered = path.lower()
     if any(token in lowered for token in ("%2e", "%2f", "%5c")):
@@ -528,6 +555,52 @@ def _strip_git_path_prefix(token: str) -> str | None:
     if token in {"a", "b"}:
         return None
     return token
+
+
+def _open_no_follow_directory(path: Path) -> int:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        fd = os.open(path, flags)
+    except OSError as exc:
+        raise ReadToolError("path is not a safe directory") from exc
+    try:
+        stat_result = os.fstat(fd)
+        if not stat.S_ISDIR(stat_result.st_mode):
+            raise ReadToolError("path is not a safe directory")
+        return fd
+    except Exception:
+        os.close(fd)
+        raise
+
+
+def _open_no_follow_directory_component(parent_fd: int, name: str) -> int:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        fd = os.open(name, flags, dir_fd=parent_fd)
+    except OSError as exc:
+        raise ReadToolError("path is not a safe directory") from exc
+    try:
+        stat_result = os.fstat(fd)
+        if not stat.S_ISDIR(stat_result.st_mode):
+            raise ReadToolError("path is not a safe directory")
+        return fd
+    except Exception:
+        os.close(fd)
+        raise
+
+
+def _open_no_follow_file_component(parent_fd: int, name: str) -> int:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        return os.open(name, flags, dir_fd=parent_fd)
+    except OSError as exc:
+        raise ReadToolError("path is not a safe regular file") from exc
 
 
 def _git_log_lines(output: str) -> list[JsonValue]:

@@ -3602,6 +3602,19 @@ def _minimal_release_evidence_payload() -> dict[str, object]:
         "principals": {},
         "workspaces": {},
         "filesystem": {
+            "platform": {
+                "system": "Darwin",
+                "profile": "macos",
+                "release": "23.0.0",
+                "machine": "arm64",
+            },
+            "python": {"version": "3.12.13"},
+            "capabilities": {
+                "o_no_follow_available": True,
+                "symlink_supported": True,
+                "hardlink_supported": True,
+                "case_sensitive": False,
+            },
             "support": {
                 "status": "supported",
                 "local_preview_security_supported": True,
@@ -3618,6 +3631,34 @@ def _minimal_release_evidence_payload() -> dict[str, object]:
         "audit_signing": {},
         "deferred_boundaries": [],
     }
+
+
+def test_release_evidence_schema_validator_requires_filesystem_capabilities() -> None:
+    payload = _minimal_release_evidence_payload()
+    filesystem = payload["filesystem"]
+    assert isinstance(filesystem, dict)
+    del filesystem["capabilities"]
+
+    with pytest.raises(
+        release_evidence.ReleaseEvidenceSchemaError,
+        match="capability evidence",
+    ):
+        release_evidence.validate_release_evidence_snapshot(payload)
+
+
+def test_release_evidence_schema_validator_requires_o_no_follow_evidence() -> None:
+    payload = _minimal_release_evidence_payload()
+    filesystem = payload["filesystem"]
+    assert isinstance(filesystem, dict)
+    capabilities = filesystem["capabilities"]
+    assert isinstance(capabilities, dict)
+    del capabilities["o_no_follow_available"]
+
+    with pytest.raises(
+        release_evidence.ReleaseEvidenceSchemaError,
+        match="o_no_follow_available",
+    ):
+        release_evidence.validate_release_evidence_snapshot(payload)
 
 
 def _write_project_markers(root: Path) -> None:

@@ -22,7 +22,11 @@ def collect_filesystem_contract_status(
     profile = _platform_profile(resolved_system, resolved_release)
     capabilities = _probe_capabilities(probe_parent)
     supported_platform = profile in {"macos", "linux"}
-    required_capabilities = bool(capabilities["o_no_follow_available"])
+    required_capabilities = bool(
+        capabilities["o_no_follow_available"]
+        and capabilities["symlink_supported"]
+        and capabilities["hardlink_supported"]
+    )
     local_preview_supported = supported_platform and required_capabilities
 
     if not supported_platform:
@@ -30,7 +34,9 @@ def collect_filesystem_contract_status(
         reason = "platform is not security-supported for local-preview filesystem claims"
     elif not required_capabilities:
         support_status = "degraded"
-        reason = "platform is supported, but required filesystem capability evidence is missing"
+        reason = (
+            "platform is supported, but required filesystem capability evidence is missing"
+        )
     else:
         support_status = "supported"
         reason = "platform and required filesystem capability evidence match the contract"
