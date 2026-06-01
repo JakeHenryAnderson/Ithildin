@@ -217,6 +217,17 @@ expansion tasks.
 | 200-215 - v0.6 final no-go handoff | Done | [v0.6-final-go-no-go-packet.md](v0.6-final-go-no-go-packet.md), [v0.6-handoff-to-user.md](v0.6-handoff-to-user.md), `make v06-final-handoff`; external handoff is go, capability expansion and public/security-product positioning remain no-go. |
 | 193-215 - v0.6 triage, closure, decisions, and handoff | Done | [v0.6-closure-handoff.md](v0.6-closure-handoff.md), [v0.6-gpt-55-pro-handoff-prompt.md](v0.6-gpt-55-pro-handoff-prompt.md); external review remains pending. |
 
+## v0.7 External Review Closure Track
+
+v0.7 begins from the v0.6 final no-go state. It is external/source-review closure work only and
+does not approve public preview, capability design, capability implementation, or new tool powers.
+
+| Task | Status | Spec |
+| --- | --- | --- |
+| 216 - v0.7 closure charter and freeze | Done | [v0.7-external-review-closure-charter.md](v0.7-external-review-closure-charter.md), `make v07-closure-prep` |
+| 217 - v0.6 final packet sanity review | Done | [v0.6-final-packet-sanity-review.md](v0.6-final-packet-sanity-review.md), `make v07-closure-prep` |
+| 218 - External-review row partition | Done | [v0.7-external-review-row-partition.md](v0.7-external-review-row-partition.md), `make v07-closure-prep`; 55 pending rows are partitioned into executable review batches. |
+
 ## Future Candidate Track
 
 | Area | Status | Notes |

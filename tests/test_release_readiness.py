@@ -47,6 +47,7 @@ from scripts import (
     v06_closure_readiness,
     v06_final_handoff,
     v06_lane_status,
+    v07_closure_prep,
 )
 
 
@@ -2674,6 +2675,55 @@ def test_v06_final_handoff_docs_are_wired() -> None:
         "v0.6 Handoff To User",
     ]:
         assert title in index
+
+
+def test_v07_external_review_closure_prep_is_wired() -> None:
+    report = v07_closure_prep.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["pending_external_review_rows"] == 55
+    assert report["externally_closed_rows"] == 0
+    assert report["capability_expansion_allowed"] is False
+    assert "make v07-closure-prep" in readme
+    assert "v07-closure-prep:" in makefile
+    assert "v07-closure-prep" in makefile.partition("release-check:")[2]
+    assert "v07-closure-prep" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "216 - v0.7 closure charter and freeze | Done" in backlog
+    assert "217 - v0.6 final packet sanity review | Done" in backlog
+    assert "218 - External-review row partition | Done" in backlog
+    for doc in [
+        "docs/codex/v0.7-external-review-closure-charter.md",
+        "docs/codex/v0.6-final-packet-sanity-review.md",
+        "docs/codex/v0.7-external-review-row-partition.md",
+    ]:
+        assert doc in review_docs.REVIEW_DOCS
+        assert doc in docs_site
+    for title in [
+        "v0.7 External Review Closure Charter",
+        "v0.6 Final Packet Sanity Review",
+        "v0.7 External Review Row Partition",
+    ]:
+        assert title in index
+    for batch in [
+        "Patch apply recheck",
+        "Filesystem/platform",
+        "HTTP fetch",
+        "Signed evidence/audit",
+        "Policy/registry",
+        "MCP ingress",
+        "Review console/admin",
+        "Release/evidence automation",
+        "Docs/claims/public-preview wording",
+    ]:
+        assert batch in partition
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:
