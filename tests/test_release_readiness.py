@@ -430,6 +430,8 @@ def test_consolidated_review_packet_generation(
     assert "v0.6 Closure Handoff" in output_dir.joinpath(
         "02_REVIEW_PACKET_AND_RESPONSE.md"
     ).read_text(encoding="utf-8")
+    assert "Historical v0.2, v0.3, and v0.5 prompts are included for lineage" in start_text
+    assert "The active review prompt is the v0.6/v0.7 external-review closure prompt" in start_text
     assert "v0.5 Roadmap From v0.4 Review" in output_dir.joinpath(
         "02_REVIEW_PACKET_AND_RESPONSE.md"
     ).read_text(encoding="utf-8")
@@ -1973,6 +1975,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "docs/codex/v0.6-closure-handoff.md" in docs_site
     assert "v0.6 GPT 5.5 Pro Handoff Prompt" in consolidated
     assert "CURRENT_STATUS_BANNER" in consolidated
+    assert "HISTORICAL_PROMPT_NOTE" in consolidated
 
 
 def test_current_review_status_banner_is_wired() -> None:

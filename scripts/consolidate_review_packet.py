@@ -34,6 +34,12 @@ CURRENT_STATUS_BANNER = (
     "**Current status:** v0.6/v0.7 external-review closure work for the v0.1 "
     "local-preview runtime boundary; some generated paths retain historical v0.2 names.\n\n"
 )
+HISTORICAL_PROMPT_NOTE = (
+    "## Historical Prompt Context\n\n"
+    "Historical v0.2, v0.3, and v0.5 prompts are included for lineage and context. "
+    "The active review prompt is the v0.6/v0.7 external-review closure prompt unless "
+    "a reviewer is explicitly reviewing an older packet.\n\n"
+)
 
 
 class ConsolidationError(RuntimeError):
@@ -121,6 +127,7 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
             repo_root / "docs/codex/v0.6-boundary-charter.md",
             repo_root,
         )
+        + HISTORICAL_PROMPT_NOTE
         + _section(
             "v0.5 External Review Prompt",
             repo_root / "docs/codex/v0.5-external-review-prompt.md",
