@@ -1950,6 +1950,8 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "SUB-077" in handoff
     assert "v0.6/v0.7 external-review closure work" in handoff
     assert "Patch apply is externally closed for the v0.1 local-preview patch-apply lane" in handoff
+    assert "Closed/reference lane" in handoff
+    assert "Remaining highest-value review areas" in handoff
     assert "every source-review closure row" not in handoff
     assert "v0.6 external/source-review handoff" in prompt
     assert "v0.6/v0.7 external-review closure work" in prompt
