@@ -106,7 +106,7 @@
       "title": "Release automation external review execution",
       "wave": "Wave 2",
       "status": "Internal proxy findings SUB-076 through SUB-077 fixed internally; external pending",
-      "planned_commit": "Remediate release automation proxy finding (957c1e4700bd); Remediate review candidate dispatch freshness (pending)"
+      "planned_commit": "Remediate release automation proxy finding (957c1e4700bd); Remediate review candidate dispatch freshness (cc357b567c58)"
     },
     {
       "id": "193",
