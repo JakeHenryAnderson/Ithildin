@@ -2113,6 +2113,9 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
         "external handoff: go",
         "capability expansion: no-go",
         "broader public/security-product positioning: no-go",
+        "Current post-v0.7 patch-apply recheck state differs",
+        "patch apply is now externally closed for the v0.1 local-preview patch-apply lane",
+        "all other source-review lanes remain pending",
         "critical/high external finding appears",
     ]:
         assert required in charter
