@@ -95,6 +95,7 @@ tamper-evident audit log.
 - `make external-response-template-check` - validate the external review response intake template.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
 - `make review-findings-summary` - summarize structured findings for v0.4 planning and release gates.
+- `make v06-lane-status` - verify the generated v0.6 lane-status board is current.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
@@ -261,6 +262,9 @@ documented in
 The first focused source-review execution packet, for patch apply, is generated with
 `make v06-patch-apply-review-packet` and documented in
 [docs/codex/v0.6-patch-apply-external-review-execution.md](docs/codex/v0.6-patch-apply-external-review-execution.md).
+The generated v0.6 lane-status board is in
+[docs/codex/v0.6-lane-status-board.md](docs/codex/v0.6-lane-status-board.md) and is verified with
+`make v06-lane-status`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

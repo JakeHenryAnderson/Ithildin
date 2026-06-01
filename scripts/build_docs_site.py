@@ -55,6 +55,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.6-external-review-dispatch-packets.md",
     "docs/codex/v0.6-external-response-normalization.md",
     "docs/codex/v0.6-patch-apply-external-review-execution.md",
+    "docs/codex/v0.6-lane-status-board.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",
     "docs/codex/v0.6-internal-proxy-review-operating-model.md",

@@ -112,8 +112,8 @@
       "id": "193",
       "title": "External finding triage wave",
       "wave": "Wave 3",
-      "status": "Waiting on external review",
-      "planned_commit": "TBD"
+      "status": "Done: lane-status board added; patch-apply closure prep remains external-pending",
+      "planned_commit": "Add v0.6 lane status board"
     },
     {
       "id": "194",

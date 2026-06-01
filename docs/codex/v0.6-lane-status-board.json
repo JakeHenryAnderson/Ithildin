@@ -1,0 +1,223 @@
+{
+  "does_not_prove": [
+    "external/source-review closure",
+    "capability expansion approval",
+    "production readiness",
+    "public/security-product positioning"
+  ],
+  "lanes": [
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 4,
+      "external_review_received": true,
+      "fixed_commits": [
+        "15e1fb5dff7dc9e2a365154d90604810f7368ac4",
+        "bf23a15952b940d6dd1987c5f36219fba586d322"
+      ],
+      "lane": "Patch Apply",
+      "matrix_areas": [
+        "Patch apply"
+      ],
+      "next_action": "run verification commands and send recheck before closure",
+      "reviewer_recheck_required": true,
+      "slug": "patch-apply",
+      "verification_commands": [
+        "patch/approval/security focused tests",
+        "make reviewer-findings-check",
+        "make release-check"
+      ]
+    },
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 0,
+      "external_review_received": false,
+      "fixed_commits": [
+        "714ef4ce4bdcfbe22d14edfbec78d549c8f2d073"
+      ],
+      "lane": "Filesystem and Platform",
+      "matrix_areas": [
+        "Filesystem",
+        "CI/platform claims",
+        "Filesystem source review checklist"
+      ],
+      "next_action": "send filesystem dispatch packet for source review",
+      "reviewer_recheck_required": false,
+      "slug": "filesystem",
+      "verification_commands": [
+        "make filesystem-contract-check",
+        "make release-check",
+        "read-tool and patch-filesystem focused tests"
+      ]
+    },
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 0,
+      "external_review_received": false,
+      "fixed_commits": [
+        "c8781dad5b7a",
+        "927334eccc59",
+        "f6d968a2f85e",
+        "6feb97890c37"
+      ],
+      "lane": "HTTP Fetch",
+      "matrix_areas": [
+        "HTTP fetch",
+        "HTTP fetch source review checklist"
+      ],
+      "next_action": "send HTTP fetch dispatch packet for source review",
+      "reviewer_recheck_required": false,
+      "slug": "http-fetch",
+      "verification_commands": [
+        "uv run pytest tests/test_http_tools.py tests/test_governed_tool_calls.py tests/test_policy_parity.py -q",
+        "make policy-parity",
+        "make release-check",
+        "HTTP focused tests"
+      ]
+    },
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 0,
+      "external_review_received": false,
+      "fixed_commits": [
+        "722eadc87500"
+      ],
+      "lane": "Signed Evidence and Audit",
+      "matrix_areas": [
+        "Signed evidence",
+        "Audit integrity",
+        "Manifest-lock verification"
+      ],
+      "next_action": "send signed evidence dispatch packet for source review",
+      "reviewer_recheck_required": false,
+      "slug": "signed-evidence-audit",
+      "verification_commands": [
+        "make signed-evidence-demo",
+        "make signed-evidence-demo-verify",
+        "uv run pytest tests/test_audit_writer.py tests/test_signed_evidence_demo.py tests/test_tool_registry.py -q",
+        "make release-check",
+        "make audit-diagnostics",
+        "uv run pytest tests/test_audit_writer.py tests/test_audit_diagnostics.py -q"
+      ]
+    },
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 0,
+      "external_review_received": false,
+      "fixed_commits": [
+        "e388f8f1158321e0b1628795f85da791cdb3cde3"
+      ],
+      "lane": "Policy and Registry",
+      "matrix_areas": [
+        "Policy parity",
+        "Registry fail-closed"
+      ],
+      "next_action": "send policy/registry dispatch packet for source review",
+      "reviewer_recheck_required": false,
+      "slug": "policy-registry",
+      "verification_commands": [
+        "make policy-test",
+        "make policy-parity",
+        "focused policy/registry pytest command",
+        "make release-check",
+        "make manifest-lock-check",
+        "registry/API focused tests"
+      ]
+    },
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 0,
+      "external_review_received": false,
+      "fixed_commits": [
+        "49eee9e3c2131273d8dede8c79c7afceba4c7ed5"
+      ],
+      "lane": "MCP Ingress",
+      "matrix_areas": [
+        "MCP ingress",
+        "MCP ingress source review checklist"
+      ],
+      "next_action": "send MCP ingress dispatch packet for source review",
+      "reviewer_recheck_required": false,
+      "slug": "mcp-ingress",
+      "verification_commands": [
+        "uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py tests/test_governed_tool_calls.py -q",
+        "make release-check",
+        "MCP focused tests"
+      ]
+    },
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 0,
+      "external_review_received": false,
+      "fixed_commits": [
+        "7603b0689a8b265dc2bfd66e1d02920a67f1d09b"
+      ],
+      "lane": "Review Console",
+      "matrix_areas": [
+        "Review console evidence",
+        "Local admin auth"
+      ],
+      "next_action": "send review console dispatch packet for source review",
+      "reviewer_recheck_required": false,
+      "slug": "review-console",
+      "verification_commands": [
+        "npm run typecheck --prefix apps/ui",
+        "npm run build --prefix apps/ui",
+        "approval review API focused tests",
+        "make release-check",
+        "API focused tests"
+      ]
+    },
+    {
+      "closure_state": "external_pending",
+      "critical_high_open_count": 0,
+      "critical_high_open_findings": [],
+      "ext_findings_count": 0,
+      "external_review_received": false,
+      "fixed_commits": [
+        "957c1e4700bdfddefd67f029ddc4b47b529c7ae2",
+        "cc357b567c5805cf6de9cb3ebc7f3bbcc373e316"
+      ],
+      "lane": "Release Automation",
+      "matrix_areas": [
+        "Release evidence",
+        "v0.6 external review dispatch packets"
+      ],
+      "next_action": "send release automation dispatch packet for source review",
+      "reviewer_recheck_required": false,
+      "slug": "release-automation",
+      "verification_commands": [
+        "make release-evidence",
+        "make release-evidence-gate",
+        "make packet-redaction-scan",
+        "make v06-review-dispatch-packets",
+        "make review-candidate",
+        "docs-site and release-readiness tests",
+        "make release-check"
+      ]
+    }
+  ],
+  "runtime_boundary": "v0.1 local-preview",
+  "schema_version": "1",
+  "summary": {
+    "capability_expansion_allowed": false,
+    "critical_high_open_count": 0,
+    "external_review_closed": 0,
+    "external_review_received": 1,
+    "lane_count": 8
+  },
+  "track": "v0.6 external/source-review closure"
+}

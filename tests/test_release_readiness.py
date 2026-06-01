@@ -44,6 +44,7 @@ from scripts import (
     v05_boundary_decision_draft_check,
     v05_handoff_packet_check,
     v05_threat_model_delta_check,
+    v06_lane_status,
 )
 
 
@@ -2521,6 +2522,49 @@ def test_v06_external_response_normalization_is_wired() -> None:
     assert "v0.6 External Response Normalization" in index
     assert "docs/codex/v0.6-external-response-normalization.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-external-response-normalization.md" in docs_site
+
+
+def test_v06_lane_status_board_is_generated_and_wired() -> None:
+    board = v06_lane_status.build_lane_status(Path.cwd())
+    doc = Path("docs/codex/v0.6-lane-status-board.md").read_text(encoding="utf-8")
+    payload = json.loads(
+        Path("docs/codex/v0.6-lane-status-board.json").read_text(encoding="utf-8")
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    manifest = Path("docs/codex/v0.6-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert json.loads(json.dumps(board)) == payload
+    assert board["summary"]["lane_count"] == 8
+    assert board["summary"]["external_review_received"] == 1
+    assert board["summary"]["external_review_closed"] == 0
+    assert board["summary"]["critical_high_open_count"] == 0
+    patch_lane = next(lane for lane in board["lanes"] if lane["slug"] == "patch-apply")
+    assert patch_lane["external_review_received"] is True
+    assert patch_lane["ext_findings_count"] == 4
+    assert patch_lane["reviewer_recheck_required"] is True
+    assert patch_lane["closure_state"] == "external_pending"
+    assert "does not close external/source review" in doc
+    assert "Patch Apply | yes | 4 | 0 | yes | external_pending" in doc
+    assert "make v06-lane-status" in readme
+    assert "v06-lane-status:" in makefile
+    assert "v06-lane-status" in makefile.partition("release-check:")[2]
+    assert "193 - External finding triage wave | Done" in backlog
+    assert "lane-status board added" in manifest
+    assert "v0.6 Lane Status Board" in index
+    assert "docs/codex/v0.6-lane-status-board.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-lane-status-board.json" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.6-lane-status-board.md" in docs_site
+    v06_lane_status.check_outputs(
+        board,
+        output_doc=Path("docs/codex/v0.6-lane-status-board.md"),
+        output_json=Path("docs/codex/v0.6-lane-status-board.json"),
+    )
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:
