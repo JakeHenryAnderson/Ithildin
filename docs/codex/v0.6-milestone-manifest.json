@@ -99,7 +99,7 @@
       "title": "Review console external review execution",
       "wave": "Wave 2",
       "status": "Internal proxy finding SUB-075 fixed internally; external pending",
-      "planned_commit": "Remediate review console proxy finding"
+      "planned_commit": "Remediate review console proxy finding (7603b0689a8b)"
     },
     {
       "id": "192",
