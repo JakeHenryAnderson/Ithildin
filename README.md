@@ -97,6 +97,7 @@ tamper-evident audit log.
 - `make review-findings-summary` - summarize structured findings for v0.4 planning and release gates.
 - `make v06-lane-status` - verify the generated v0.6 lane-status board is current.
 - `make v06-closure-readiness` - verify v0.6 closure-readiness docs without closing external review.
+- `make v06-final-handoff` - verify v0.6 final no-go/handoff docs preserve current blockers.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
@@ -270,6 +271,9 @@ The v0.6 closure-readiness bundle starts at
 [docs/codex/v0.6-post-review-packet.md](docs/codex/v0.6-post-review-packet.md) and is verified
 with `make v06-closure-readiness`; it preserves external-pending status and does not approve new
 tool powers.
+The final v0.6 handoff/no-go packet is
+[docs/codex/v0.6-final-go-no-go-packet.md](docs/codex/v0.6-final-go-no-go-packet.md) and is
+verified with `make v06-final-handoff`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

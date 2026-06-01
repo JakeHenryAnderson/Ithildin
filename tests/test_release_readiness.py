@@ -45,6 +45,7 @@ from scripts import (
     v05_handoff_packet_check,
     v05_threat_model_delta_check,
     v06_closure_readiness,
+    v06_final_handoff,
     v06_lane_status,
 )
 
@@ -2613,6 +2614,64 @@ def test_v06_closure_readiness_bundle_is_wired() -> None:
         "Source Review Closure Matrix v4",
         "Accepted Risk Register v2",
         "v0.6 Post-Review Packet",
+    ]:
+        assert title in index
+
+
+def test_v06_final_handoff_docs_are_wired() -> None:
+    report = v06_final_handoff.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    manifest = Path("docs/codex/v0.6-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    manifest_json = json.loads(
+        Path("docs/codex/v0.6-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["external_review_received"] == 1
+    assert report["external_review_closed"] == 0
+    assert report["capability_expansion_allowed"] is False
+    assert "make v06-final-handoff" in readme
+    assert "v06-final-handoff:" in makefile
+    assert "v06-final-handoff" in makefile.partition("release-check:")[2]
+    assert "v06-final-handoff" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "200-215 - v0.6 final no-go handoff | Done" in backlog
+    assert "211 | v0.6 final go/no-go packet | Done" in manifest
+    assert "215 | v0.6 handoff to user | Done" in manifest
+    assert manifest_json["milestones"][-1]["status"].startswith("Done")
+    for doc in [
+        "docs/codex/v0.6-public-preview-readiness-decision.md",
+        "docs/codex/v0.6-capability-decision-v2.md",
+        "docs/codex/operator-quickstart-v2.md",
+        "docs/codex/diagnostics-bundle-v2.md",
+        "docs/codex/external-review-recheck-loop.md",
+        "docs/codex/release-candidate-naming-cleanup.md",
+        "docs/codex/v0.6-public-preview-packet.md",
+        "docs/codex/v0.7-design-only-capability-rubric.md",
+        "docs/codex/candidate-capability-triage.md",
+        "docs/codex/security-claims-freeze.md",
+        "docs/codex/v0.6-final-go-no-go-packet.md",
+        "docs/codex/v0.7-boundary-decision-seed.md",
+        "docs/codex/v0.6-retrospective.md",
+        "docs/codex/review-artifact-minimization-pass.md",
+        "docs/codex/v0.6-handoff-to-user.md",
+    ]:
+        assert doc in review_docs.REVIEW_DOCS
+        assert doc in docs_site
+    for title in [
+        "v0.6 Public-Preview Readiness Decision",
+        "v0.6 Capability Decision v2",
+        "Operator Quickstart v2",
+        "Diagnostics Bundle v2",
+        "External Review Recheck Loop",
+        "Release Candidate Naming Cleanup",
+        "v0.6 Final Go/No-Go Packet",
+        "v0.6 Handoff To User",
     ]:
         assert title in index
 

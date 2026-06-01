@@ -161,113 +161,113 @@
       "id": "200",
       "title": "Public-preview readiness decision",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: no-go until external closure",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "201",
       "title": "Capability decision v2",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: no-go for capability expansion",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "202",
       "title": "Public-preview documentation polish",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: claims frozen",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "203",
       "title": "Operator quickstart v2",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: command path documented",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "204",
       "title": "Diagnostics bundle v2",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: evidence commands documented",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "205",
       "title": "External-review recheck loop",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: loop documented",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "206",
       "title": "Release candidate naming cleanup",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: label frozen",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "207",
       "title": "v0.6 public-preview packet",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: blocked packet recorded",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "208",
       "title": "v0.7 design-only capability rubric",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: design-only seed added",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "209",
       "title": "Candidate capability triage, no implementation",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: no implementation approved",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "210",
       "title": "Security claims freeze for public preview",
       "wave": "Wave 4",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: claims frozen",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "211",
       "title": "v0.6 final go/no-go packet",
       "wave": "Wave 5",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: external handoff go, capability no-go",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "212",
       "title": "v0.7 boundary decision seed",
       "wave": "Wave 5",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: seed added without approval",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "213",
       "title": "v0.6 retrospective",
       "wave": "Wave 5",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "214",
       "title": "Review artifact minimization pass",
       "wave": "Wave 5",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done",
+      "planned_commit": "Add v0.6 final no-go handoff"
     },
     {
       "id": "215",
       "title": "v0.6 handoff to user",
       "wave": "Wave 5",
-      "status": "In progress",
-      "planned_commit": "TBD"
+      "status": "Done: current next step documented",
+      "planned_commit": "Add v0.6 final no-go handoff"
     }
   ]
 }

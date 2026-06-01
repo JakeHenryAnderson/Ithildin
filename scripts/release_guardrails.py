@@ -68,6 +68,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "capability-decision-report",
     "v06-lane-status",
     "v06-closure-readiness",
+    "v06-final-handoff",
     "v05-threat-model-delta-check",
     "v05-boundary-decision-draft-check",
     "v05-handoff-packet-check",

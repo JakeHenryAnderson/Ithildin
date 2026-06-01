@@ -214,7 +214,8 @@ expansion tasks.
 | 185-192 - Wave 2 internal proxy review execution | Internally remediated | [v0.6-internal-review-execution-wave-2.md](v0.6-internal-review-execution-wave-2.md); `SUB-010` through `SUB-077` are fixed; external review remains pending. |
 | 193 - External finding triage wave | Done | [v0.6-lane-status-board.md](v0.6-lane-status-board.md), `make v06-lane-status`; patch apply remains external-pending until reviewer recheck/closure evidence exists. |
 | 194-199 - v0.6 closure-readiness bundle | Done | [v0.6-post-review-packet.md](v0.6-post-review-packet.md), [source-review-closure-matrix-v4.md](source-review-closure-matrix-v4.md), [accepted-risk-register-v2.md](accepted-risk-register-v2.md), `make v06-closure-readiness`; external rows remain pending. |
-| 193-215 - v0.6 triage, closure, decisions, and handoff | Handoff started | [v0.6-closure-handoff.md](v0.6-closure-handoff.md), [v0.6-gpt-55-pro-handoff-prompt.md](v0.6-gpt-55-pro-handoff-prompt.md); external review remains pending. |
+| 200-215 - v0.6 final no-go handoff | Done | [v0.6-final-go-no-go-packet.md](v0.6-final-go-no-go-packet.md), [v0.6-handoff-to-user.md](v0.6-handoff-to-user.md), `make v06-final-handoff`; external handoff is go, capability expansion and public/security-product positioning remain no-go. |
+| 193-215 - v0.6 triage, closure, decisions, and handoff | Done | [v0.6-closure-handoff.md](v0.6-closure-handoff.md), [v0.6-gpt-55-pro-handoff-prompt.md](v0.6-gpt-55-pro-handoff-prompt.md); external review remains pending. |
 
 ## Future Candidate Track
 
