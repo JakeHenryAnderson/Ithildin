@@ -2,16 +2,19 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
-**v0.2 review candidate for the v0.1 local-preview runtime boundary:** Ithildin is a
-local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM agent, SIEM,
-production identity system, hosted MCP platform, compliance audit system, or immutable evidence
-store. It assumes the local host, local admin, trusted tool manifests, and local policy files are
-part of the trusted computing base. Audit records are tamper-evident local evidence, not notarized
-or custody-grade logs. Redaction is best-effort leak reduction, not a guarantee that secrets cannot
-be exposed.
+**Current status:** v0.6/v0.7 external-review closure work for the v0.1 local-preview runtime
+boundary; some generated paths retain historical v0.2 names.
 
-In practice, v0.2 is a trust-evidence review wave over the same narrow v0.1 local-preview runtime
-boundary.
+Ithildin is a local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM
+agent, SIEM, production identity system, hosted MCP platform, compliance audit system, or immutable
+evidence store. It assumes the local host, local admin, trusted tool manifests, and local policy
+files are part of the trusted computing base. Audit records are tamper-evident local evidence, not
+notarized or custody-grade logs. Redaction is best-effort leak reduction, not a guarantee that
+secrets cannot be exposed.
+
+In practice, v0.6/v0.7 is external-review closure work over the same narrow v0.1 local-preview
+runtime boundary. Earlier v0.2 wording and generated paths refer to the historical trust-evidence
+packet lineage, not a broader runtime-power release.
 
 v0.1 supports narrow built-in tools only: workspace reads, git reads, stored patch proposals,
 approval-gated patch apply, and exact-allowlist GET-only HTTP fetch. It deliberately does not

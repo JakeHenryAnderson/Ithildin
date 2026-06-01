@@ -1,8 +1,11 @@
 # Reviewer Reproduction Map
 
-This map gives external reviewers a repeatable way to reproduce the v0.2 review packet evidence.
-It is a review aid for a v0.2 review candidate for the v0.1 local-preview runtime boundary, not a
-claim of production security or implementation correctness.
+**Current status:** v0.6/v0.7 external-review closure work for the v0.1 local-preview runtime
+boundary; some generated paths retain historical v0.2 names.
+
+This map gives external reviewers a repeatable way to reproduce the current review packet evidence.
+It is a review aid for the v0.1 local-preview runtime boundary and later review-closure waves, not
+a claim of production security or implementation correctness.
 
 Run all commands from the Ithildin repo root:
 

@@ -44,6 +44,11 @@ NEGATIVE_TRANSCRIPTS_SUMMARY = Path(
     "var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
 )
 
+CURRENT_STATUS_BANNER = (
+    "**Current status:** v0.6/v0.7 external-review closure work for the v0.1 "
+    "local-preview runtime boundary; some generated paths retain historical v0.2 names."
+)
+
 class BundleError(RuntimeError):
     """Raised for release-bundle failures that should be shown to the operator."""
 
@@ -415,6 +420,8 @@ def _write_index(
     )
     bundle_dir.joinpath("INDEX.md").write_text(
         f"""# Ithildin v0.2 Review Bundle
+
+{CURRENT_STATUS_BANNER}
 
 Generated at: `{datetime.now(UTC).isoformat()}`
 

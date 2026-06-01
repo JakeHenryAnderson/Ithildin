@@ -417,6 +417,13 @@ def test_consolidated_review_packet_generation(
     assert "v0.6 Review-Closure Packet" in output_dir.joinpath("00_ATTACHMENT_INDEX.md").read_text(
         encoding="utf-8"
     )
+    index_text = output_dir.joinpath("00_ATTACHMENT_INDEX.md").read_text(encoding="utf-8")
+    start_text = output_dir.joinpath("01_START_HERE_AND_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    assert "v0.6/v0.7 external-review closure work" in index_text
+    assert "some generated paths retain historical v0.2 names" in index_text
+    assert "v0.6/v0.7 external-review closure work" in start_text
     assert "v0.6 GPT 5.5 Pro Handoff Prompt" in output_dir.joinpath(
         "01_START_HERE_AND_REVIEW_PROMPT.md"
     ).read_text(encoding="utf-8")
@@ -1941,10 +1948,17 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
 
     assert "SUB-001" in handoff
     assert "SUB-077" in handoff
+    assert "v0.6/v0.7 external-review closure work" in handoff
+    assert "Patch apply is externally closed for the v0.1 local-preview patch-apply lane" in handoff
+    assert "every source-review closure row" not in handoff
     assert "v0.6 external/source-review handoff" in prompt
+    assert "v0.6/v0.7 external-review closure work" in prompt
+    assert "Patch apply has external recheck closure" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
+    assert "v0.6/v0.7 external-review closure work" in readme
     assert "Internally remediated" in backlog
+    assert "patch apply remains external-pending" not in backlog
     assert "Internal proxy findings SUB-040 through SUB-047 fixed internally" in manifest
     assert "Internal proxy findings SUB-048 through SUB-063 fixed internally" in manifest
     assert "Internal proxy findings SUB-064 through SUB-073 fixed internally" in manifest
@@ -1956,6 +1970,26 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-closure-handoff.md" in docs_site
     assert "v0.6 GPT 5.5 Pro Handoff Prompt" in consolidated
+    assert "CURRENT_STATUS_BANNER" in consolidated
+
+
+def test_current_review_status_banner_is_wired() -> None:
+    for path in [
+        Path("README.md"),
+        Path("docs/codex/local-preview-release.md"),
+        Path("docs/codex/reviewer-reproduction-map.md"),
+        Path("docs/codex/v0.6-closure-handoff.md"),
+        Path("docs/codex/v0.6-gpt-55-pro-handoff-prompt.md"),
+    ]:
+        text = path.read_text(encoding="utf-8")
+        assert "Current status" in text
+        assert "v0.6/v0.7 external-review closure work" in text
+        assert "some generated paths retain historical v0.2 names" in text
+
+    bundle_script = Path("scripts/review_packet_bundle.py").read_text(encoding="utf-8")
+    consolidated_script = Path("scripts/consolidate_review_packet.py").read_text(encoding="utf-8")
+    assert "CURRENT_STATUS_BANNER" in bundle_script
+    assert "CURRENT_STATUS_BANNER" in consolidated_script
 
 
 def test_v05_external_review_prompt_is_wired() -> None:
@@ -3653,6 +3687,9 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert "filesystem-contract-check.txt" in result.path.joinpath("INDEX.md").read_text(
         encoding="utf-8"
     )
+    assert "v0.6/v0.7 external-review closure work" in result.path.joinpath(
+        "INDEX.md"
+    ).read_text(encoding="utf-8")
 
 
 def test_review_packet_diff_compares_artifact_hashes(tmp_path: Path) -> None:

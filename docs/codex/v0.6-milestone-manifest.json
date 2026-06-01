@@ -56,7 +56,7 @@
       "id": "185",
       "title": "Patch apply external review execution",
       "wave": "Wave 2",
-      "status": "Source review received; EXT-PA findings remediated; proxy recheck findings SUB-027 through SUB-031 fixed internally; closure follow-up pending",
+      "status": "Source review received; EXT-PA findings remediated; proxy recheck findings SUB-027 through SUB-031 fixed internally; closure completed later in Task 219 for the v0.1 local-preview lane",
       "planned_commit": "Prepare patch apply external review; Polish patch apply review handoff; Remediate patch apply external findings; Harden internal proxy review pilot"
     },
     {
@@ -112,7 +112,7 @@
       "id": "193",
       "title": "External finding triage wave",
       "wave": "Wave 3",
-      "status": "Done: lane-status board added; patch-apply closure prep remains external-pending",
+      "status": "Done: lane-status board added; patch-apply closure completed later in Task 219",
       "planned_commit": "Add v0.6 lane status board"
     },
     {
@@ -133,7 +133,7 @@
       "id": "196",
       "title": "External review outcome summary",
       "wave": "Wave 3",
-      "status": "Done: patch apply reviewed/fixed; remaining lanes pending",
+      "status": "Done: patch apply reviewed/fixed, with final local-preview lane closure recorded in Task 219; remaining lanes pending",
       "planned_commit": "Add v0.6 closure readiness bundle"
     },
     {

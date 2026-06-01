@@ -1,7 +1,10 @@
 # Ithildin Local Preview Release Guide
 
-This guide describes the v0.2 review candidate for the v0.1 local-preview runtime boundary. It is
-intended for a developer running Ithildin locally, connecting an MCP-capable client, reviewing
+**Current status:** v0.6/v0.7 external-review closure work for the v0.1 local-preview runtime
+boundary; some generated paths retain historical v0.2 names.
+
+This guide describes the current local-preview runtime boundary and review-handoff command path. It
+is intended for a developer running Ithildin locally, connecting an MCP-capable client, reviewing
 approvals, and exporting audit evidence.
 
 Read [Threat Model and Non-Goals](threat-model-and-non-goals.md) before treating the preview as a

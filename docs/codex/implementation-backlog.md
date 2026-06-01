@@ -212,10 +212,10 @@ expansion tasks.
 | 184 - External response normalization | Done | [v0.6-external-response-normalization.md](v0.6-external-response-normalization.md), `make external-response-normalize FILE=...` |
 | 185 - Patch apply external review execution packet | Source review received; findings remediated and later rechecked | [v0.6-patch-apply-external-review-execution.md](v0.6-patch-apply-external-review-execution.md), `EXT-PA-001` through `EXT-PA-004`; final local-preview patch-apply closure is recorded in Task 219. |
 | 185-192 - Wave 2 internal proxy review execution | Internally remediated | [v0.6-internal-review-execution-wave-2.md](v0.6-internal-review-execution-wave-2.md); `SUB-010` through `SUB-077` are fixed; external review remains pending. |
-| 193 - External finding triage wave | Done | [v0.6-lane-status-board.md](v0.6-lane-status-board.md), `make v06-lane-status`; patch apply remains external-pending until reviewer recheck/closure evidence exists. |
+| 193 - External finding triage wave | Done | [v0.6-lane-status-board.md](v0.6-lane-status-board.md), `make v06-lane-status`; later Task 219 records patch-apply closure for the v0.1 local-preview lane. |
 | 194-199 - v0.6 closure-readiness bundle | Done | [v0.6-post-review-packet.md](v0.6-post-review-packet.md), [source-review-closure-matrix-v4.md](source-review-closure-matrix-v4.md), [accepted-risk-register-v2.md](accepted-risk-register-v2.md), `make v06-closure-readiness`; external rows remain pending. |
 | 200-215 - v0.6 final no-go handoff | Done | [v0.6-final-go-no-go-packet.md](v0.6-final-go-no-go-packet.md), [v0.6-handoff-to-user.md](v0.6-handoff-to-user.md), `make v06-final-handoff`; external handoff is go, capability expansion and public/security-product positioning remain no-go. |
-| 193-215 - v0.6 triage, closure, decisions, and handoff | Done | [v0.6-closure-handoff.md](v0.6-closure-handoff.md), [v0.6-gpt-55-pro-handoff-prompt.md](v0.6-gpt-55-pro-handoff-prompt.md); external review remains pending. |
+| 193-215 - v0.6 triage, closure, decisions, and handoff | Done | [v0.6-closure-handoff.md](v0.6-closure-handoff.md), [v0.6-gpt-55-pro-handoff-prompt.md](v0.6-gpt-55-pro-handoff-prompt.md); patch apply is closed by Task 219 and remaining external rows remain pending. |
 
 ## v0.7 External Review Closure Track
 

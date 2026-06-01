@@ -30,6 +30,11 @@ ATTACHMENT_FILES = [
     "07_PROJECT_README.md",
 ]
 
+CURRENT_STATUS_BANNER = (
+    "**Current status:** v0.6/v0.7 external-review closure work for the v0.1 "
+    "local-preview runtime boundary; some generated paths retain historical v0.2 names.\n\n"
+)
+
 
 class ConsolidationError(RuntimeError):
     """Raised when the consolidated review packet cannot be generated."""
@@ -100,7 +105,8 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
     short_commit = bundle_dir.name.removeprefix("ithildin-v0.2-review-packet-")
     negative_transcripts = repo_root / NEGATIVE_TRANSCRIPTS_SUMMARY
     attachments = {
-        "01_START_HERE_AND_REVIEW_PROMPT.md": _section(
+        "01_START_HERE_AND_REVIEW_PROMPT.md": CURRENT_STATUS_BANNER
+        + _section(
             "v0.6 GPT 5.5 Pro Handoff Prompt",
             repo_root / "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md",
             repo_root,
@@ -347,6 +353,8 @@ def _attachment_contents(repo_root: Path, bundle_dir: Path) -> dict[str, str]:
         "07_PROJECT_README.md": _section("README", repo_root / "README.md", repo_root),
     }
     index = f"""# Ithildin v0.6 Review-Closure Packet: Consolidated Attachments
+
+{CURRENT_STATUS_BANNER.rstrip()}
 
 This folder is the 10-attachment-friendly packet for GPT 5.5 Pro / Very High or a human expert
 reviewer. It consolidates the review bundle generated from commit `{short_commit}`.
