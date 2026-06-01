@@ -92,7 +92,7 @@
       "title": "MCP ingress external review execution",
       "wave": "Wave 2",
       "status": "Internal proxy finding SUB-074 fixed internally; external pending",
-      "planned_commit": "Remediate MCP ingress proxy finding"
+      "planned_commit": "Remediate MCP ingress proxy finding (49eee9e3c213)"
     },
     {
       "id": "191",
