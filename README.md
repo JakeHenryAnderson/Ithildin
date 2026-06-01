@@ -96,6 +96,7 @@ tamper-evident audit log.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
 - `make review-findings-summary` - summarize structured findings for v0.4 planning and release gates.
 - `make v06-lane-status` - verify the generated v0.6 lane-status board is current.
+- `make v06-closure-readiness` - verify v0.6 closure-readiness docs without closing external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
@@ -265,6 +266,10 @@ The first focused source-review execution packet, for patch apply, is generated 
 The generated v0.6 lane-status board is in
 [docs/codex/v0.6-lane-status-board.md](docs/codex/v0.6-lane-status-board.md) and is verified with
 `make v06-lane-status`.
+The v0.6 closure-readiness bundle starts at
+[docs/codex/v0.6-post-review-packet.md](docs/codex/v0.6-post-review-packet.md) and is verified
+with `make v06-closure-readiness`; it preserves external-pending status and does not approve new
+tool powers.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

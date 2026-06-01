@@ -66,6 +66,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "closure-matrix-evidence-sync",
     "accepted-risk-register-check",
     "capability-decision-report",
+    "v06-lane-status",
+    "v06-closure-readiness",
     "v05-threat-model-delta-check",
     "v05-boundary-decision-draft-check",
     "v05-handoff-packet-check",

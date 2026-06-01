@@ -44,6 +44,7 @@ from scripts import (
     v05_boundary_decision_draft_check,
     v05_handoff_packet_check,
     v05_threat_model_delta_check,
+    v06_closure_readiness,
     v06_lane_status,
 )
 
@@ -2565,6 +2566,55 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
         output_doc=Path("docs/codex/v0.6-lane-status-board.md"),
         output_json=Path("docs/codex/v0.6-lane-status-board.json"),
     )
+
+
+def test_v06_closure_readiness_bundle_is_wired() -> None:
+    report = v06_closure_readiness.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    manifest = Path("docs/codex/v0.6-milestone-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    manifest_json = json.loads(
+        Path("docs/codex/v0.6-milestone-manifest.json").read_text(encoding="utf-8")
+    )
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["external_review_received"] == 1
+    assert report["external_review_closed"] == 0
+    assert report["critical_high_open_count"] == 0
+    assert "make v06-closure-readiness" in readme
+    assert "v06-closure-readiness:" in makefile
+    assert "v06-closure-readiness" in makefile.partition("release-check:")[2]
+    assert "v06-closure-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "194-199 - v0.6 closure-readiness bundle | Done" in backlog
+    assert "194 | Critical/high fix freeze | Done" in manifest
+    assert "199 | v0.6 post-review packet | Done" in manifest
+    assert manifest_json["milestones"][13]["status"].startswith("Done")
+    for doc in [
+        "docs/codex/v0.6-critical-high-fix-freeze.md",
+        "docs/codex/v0.6-medium-risk-disposition.md",
+        "docs/codex/v0.6-external-review-outcome-summary.md",
+        "docs/codex/source-review-closure-matrix-v4.md",
+        "docs/codex/accepted-risk-register-v2.md",
+        "docs/codex/accepted-risk-register-v2.json",
+        "docs/codex/v0.6-post-review-packet.md",
+    ]:
+        assert doc in review_docs.REVIEW_DOCS
+        if doc.endswith(".md"):
+            assert doc in docs_site
+    for title in [
+        "v0.6 Critical/High Fix Freeze",
+        "v0.6 Medium-Risk Disposition",
+        "v0.6 External Review Outcome Summary",
+        "Source Review Closure Matrix v4",
+        "Accepted Risk Register v2",
+        "v0.6 Post-Review Packet",
+    ]:
+        assert title in index
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:

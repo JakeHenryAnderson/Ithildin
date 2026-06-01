@@ -1,0 +1,12 @@
+{
+  "schema_version": "2",
+  "program": "v0.6 external/source-review closure",
+  "scope": "v0.1 local-preview runtime boundary",
+  "risk_count": 10,
+  "critical_high_accepted_risks": 0,
+  "external_review_required_before_closure": true,
+  "capability_expansion_allowed": false,
+  "source_register": "docs/codex/accepted-risk-register.json",
+  "lane_status_board": "docs/codex/v0.6-lane-status-board.json",
+  "status": "accepted local-preview risks remain pending external/source review"
+}

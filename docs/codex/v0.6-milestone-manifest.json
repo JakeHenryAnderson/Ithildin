@@ -119,43 +119,43 @@
       "id": "194",
       "title": "Critical/high fix freeze",
       "wave": "Wave 3",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: no open critical/high findings; stop rules preserved",
+      "planned_commit": "Add v0.6 closure readiness bundle"
     },
     {
       "id": "195",
       "title": "Medium-risk disposition wave",
       "wave": "Wave 3",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: current medium/lower findings fixed or external-pending",
+      "planned_commit": "Add v0.6 closure readiness bundle"
     },
     {
       "id": "196",
       "title": "External review outcome summary",
       "wave": "Wave 3",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: patch apply reviewed/fixed; remaining lanes pending",
+      "planned_commit": "Add v0.6 closure readiness bundle"
     },
     {
       "id": "197",
       "title": "Closure matrix v4",
       "wave": "Wave 3",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: v4 overlay added without closing rows",
+      "planned_commit": "Add v0.6 closure readiness bundle"
     },
     {
       "id": "198",
       "title": "Accepted-risk register v2",
       "wave": "Wave 3",
-      "status": "Planned",
-      "planned_commit": "TBD"
+      "status": "Done: v2 summary added; risks remain external-review pending",
+      "planned_commit": "Add v0.6 closure readiness bundle"
     },
     {
       "id": "199",
       "title": "v0.6 post-review packet",
       "wave": "Wave 3",
-      "status": "Handoff packet ready; external review pending",
-      "planned_commit": "TBD"
+      "status": "Done: post-review packet prepared; external review pending",
+      "planned_commit": "Add v0.6 closure readiness bundle"
     },
     {
       "id": "200",
