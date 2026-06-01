@@ -86,6 +86,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.6-patch-apply-external-review-execution.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",
+    "docs/codex/v0.6-internal-proxy-review-operating-model.md",
     "docs/codex/v0.6-closure-handoff.md",
     "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md",
     "docs/codex/capability-expansion-gate.md",

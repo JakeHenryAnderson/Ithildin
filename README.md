@@ -265,6 +265,8 @@ External responses can be normalized with `make external-response-normalize FILE
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).
 The v0.6 internal proxy-review remediation handoff is summarized in
+[docs/codex/v0.6-internal-proxy-review-operating-model.md](docs/codex/v0.6-internal-proxy-review-operating-model.md)
+and
 [docs/codex/v0.6-closure-handoff.md](docs/codex/v0.6-closure-handoff.md), with a ready-to-paste
 GPT 5.5 Pro prompt in
 [docs/codex/v0.6-gpt-55-pro-handoff-prompt.md](docs/codex/v0.6-gpt-55-pro-handoff-prompt.md).

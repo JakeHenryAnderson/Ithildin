@@ -100,6 +100,41 @@ def test_begin_execution_uses_expiry_guard_in_atomic_transition(
     assert observed_expiry_guards[0] is not None
 
 
+def test_begin_execution_rejects_approval_expiring_during_atomic_transition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = make_service(tmp_path)
+    approval = service.create_pending(create_input())
+    approved = service.approve(approval.approval_id, decided_by="user:alice")
+    original_compare_and_set = service.store.compare_and_set_status
+    expired_during_transition = False
+
+    def expire_before_executing_update(*args: object, **kwargs: object) -> object:
+        nonlocal expired_during_transition
+        if kwargs.get("next_status") == ApprovalStatus.EXECUTING and not expired_during_transition:
+            expired_during_transition = True
+            with sqlite3.connect(service.store.db_path) as connection:
+                connection.execute(
+                    "UPDATE approvals SET expires_at = ? WHERE approval_id = ?",
+                    (
+                        (datetime.now(UTC) - timedelta(seconds=1)).isoformat(),
+                        approved.approval_id,
+                    ),
+                )
+                connection.commit()
+        return original_compare_and_set(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(service.store, "compare_and_set_status", expire_before_executing_update)
+
+    with pytest.raises(ApprovalError, match="expired"):
+        service.begin_execution(approved.approval_id, approved.request_hash)
+
+    current = service.store.get(approved.approval_id)
+    assert expired_during_transition
+    assert current.status == ApprovalStatus.EXPIRED
+
+
 def test_denied_approval_cannot_execute(tmp_path: Path) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())

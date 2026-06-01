@@ -197,6 +197,7 @@ class ApprovalStore:
         next_status: ApprovalStatus,
         expires_after: Optional[datetime] = None,
     ) -> ApprovalRequest:
+        transition_time = datetime.now(UTC)
         query = """
             UPDATE approvals
             SET status = ?,
@@ -206,13 +207,13 @@ class ApprovalStore:
         """
         parameters: list[str] = [
             next_status.value,
-            datetime.now(UTC).isoformat(),
+            transition_time.isoformat(),
             approval_id,
             expected_status.value,
         ]
         if expires_after is not None:
             query += " AND expires_at > ?"
-            parameters.append(expires_after.isoformat())
+            parameters.append(transition_time.isoformat())
         with sqlite3.connect(self.db_path) as connection:
             updated = connection.execute(query, parameters).rowcount
             connection.commit()
@@ -315,12 +316,23 @@ class ApprovalService:
             raise ApprovalError("approval is expired")
         if approval.request_hash != request_hash:
             raise ApprovalError("approval request hash mismatch")
-        return self.store.compare_and_set_status(
-            approval_id,
-            expected_status=ApprovalStatus.APPROVED,
-            next_status=ApprovalStatus.EXECUTING,
-            expires_after=now,
-        )
+        try:
+            return self.store.compare_and_set_status(
+                approval_id,
+                expected_status=ApprovalStatus.APPROVED,
+                next_status=ApprovalStatus.EXECUTING,
+                expires_after=now,
+            )
+        except ApprovalError:
+            current = self.store.get(approval_id)
+            if current.status == ApprovalStatus.APPROVED and _is_expired(current):
+                self.store.compare_and_set_status(
+                    approval_id,
+                    expected_status=ApprovalStatus.APPROVED,
+                    next_status=ApprovalStatus.EXPIRED,
+                )
+                raise ApprovalError("approval is expired") from None
+            raise
 
     def complete_execution(self, approval_id: str, success: bool) -> ApprovalRequest:
         return self.store.compare_and_set_status(

@@ -13,10 +13,21 @@ VALID_SOURCE_ACCESS = {"source-level", "packet-and-source", "packet-only", "docs
 VALID_SEVERITIES = {"critical", "high", "medium", "low", "informational"}
 VALID_BLOCKING_STATUSES = {"blocking", "should-fix", "later", "accepted risk", "advisory"}
 VALID_DISPOSITIONS = {"open", "fixed", "deferred", "rejected", "accepted-deferred"}
+AREA_NAMESPACES = {
+    "patch-apply": "PA",
+    "filesystem": "FS",
+    "http-fetch": "HTTP",
+    "signed-evidence": "SE",
+    "policy-registry": "PR",
+    "mcp-ingress": "MCP",
+    "review-console": "UI",
+    "release-automation": "REL",
+}
 FINDING_PATTERN = re.compile(
     r"^EXT-((PA|FS|HTTP|SE|PR|MCP|UI|REL)-(\d{3}|###)|(\d{3}|###))$"
 )
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
+SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 SECRET_MARKERS = (
     "BEGIN PRIVATE KEY",
     "ITHILDIN_ADMIN_TOKEN=",
@@ -83,12 +94,17 @@ def normalize_response(
         raise ExternalResponseNormalizationError(f"invalid source access level: {source_access}")
     if not COMMIT_PATTERN.match(reviewed_commit):
         raise ExternalResponseNormalizationError("reviewed commit must be a git commit hash")
-    if not reviewed_packet_hash.startswith("sha256:"):
-        raise ExternalResponseNormalizationError("reviewed packet hash must start with sha256:")
-    if not area.strip():
+    if not SHA256_PATTERN.match(reviewed_packet_hash):
+        raise ExternalResponseNormalizationError(
+            "reviewed packet hash must be sha256:<64 lowercase hex chars>"
+        )
+    area = area.strip()
+    if not area:
         raise ExternalResponseNormalizationError("reviewed area is required")
+    if area not in AREA_NAMESPACES:
+        raise ExternalResponseNormalizationError(f"unknown reviewed area: {area}")
 
-    findings = _extract_findings(text, source_access=source_access)
+    findings = _extract_findings(text, source_access=source_access, area=area)
     return {
         "schema_version": "1",
         "response_type": "ithildin.external_review.normalized_response",
@@ -106,9 +122,10 @@ def normalize_response(
     }
 
 
-def _extract_findings(text: str, *, source_access: str) -> list[dict[str, str]]:
+def _extract_findings(text: str, *, source_access: str, area: str) -> list[dict[str, str]]:
     findings: list[dict[str, str]] = []
     header: list[str] | None = None
+    saw_finding_table = False
     for raw_line in text.splitlines():
         line = raw_line.strip()
         cells = _table_cells(line)
@@ -119,13 +136,22 @@ def _extract_findings(text: str, *, source_access: str) -> list[dict[str, str]]:
         normalized = [_normalize_header(cell) for cell in cells]
         if "finding id" in normalized and "severity" in normalized:
             header = normalized
+            saw_finding_table = True
             continue
         if header is None:
             continue
         row = dict(zip(header, cells, strict=False))
         if not row.get("finding id", "").startswith("EXT-"):
             continue
-        findings.append(_validate_finding_row(row, source_access=source_access))
+        findings.append(_validate_finding_row(row, source_access=source_access, area=area))
+    if not findings and not _has_explicit_no_findings_statement(text):
+        if saw_finding_table:
+            raise ExternalResponseNormalizationError(
+                "finding table contained no valid EXT findings; explicitly state no findings"
+            )
+        raise ExternalResponseNormalizationError(
+            "response must contain a finding table or explicitly state no findings"
+        )
     return findings
 
 
@@ -137,7 +163,9 @@ def _table_cells(line: str) -> list[str] | None:
     return None
 
 
-def _validate_finding_row(row: dict[str, str], *, source_access: str) -> dict[str, str]:
+def _validate_finding_row(
+    row: dict[str, str], *, source_access: str, area: str
+) -> dict[str, str]:
     required = [
         "finding id",
         "severity",
@@ -153,6 +181,17 @@ def _validate_finding_row(row: dict[str, str], *, source_access: str) -> dict[st
     finding_id = row["finding id"]
     if not FINDING_PATTERN.match(finding_id):
         raise ExternalResponseNormalizationError(f"invalid finding ID: {finding_id}")
+    expected_namespace = AREA_NAMESPACES[area]
+    namespace_match = re.match(r"^EXT-([A-Z]+)-", finding_id)
+    if namespace_match and namespace_match.group(1) != expected_namespace:
+        raise ExternalResponseNormalizationError(
+            f"{finding_id} namespace does not match reviewed area: {area}"
+        )
+    row_area = _normalize_area(row["area"])
+    if row_area != area:
+        raise ExternalResponseNormalizationError(
+            f"{finding_id} area {row_area!r} does not match reviewed area: {area}"
+        )
     severity = _normalize_severity(row["severity"])
     if severity not in VALID_SEVERITIES:
         raise ExternalResponseNormalizationError(f"{finding_id} invalid severity: {severity}")
@@ -179,7 +218,7 @@ def _validate_finding_row(row: dict[str, str], *, source_access: str) -> dict[st
     return {
         "finding_id": finding_id,
         "severity": severity,
-        "area": row["area"],
+        "area": row_area,
         "affected_files_functions": affected,
         "blocking_status": blocking_status,
         "disposition": disposition,
@@ -189,6 +228,24 @@ def _validate_finding_row(row: dict[str, str], *, source_access: str) -> dict[st
 
 def _normalize_header(value: str) -> str:
     return re.sub(r"\s+", " ", value.strip().lower())
+
+
+def _normalize_area(value: str) -> str:
+    return re.sub(r"\s+", "-", value.strip().lower())
+
+
+def _has_explicit_no_findings_statement(text: str) -> bool:
+    normalized = re.sub(r"\s+", " ", text.strip().lower())
+    return any(
+        marker in normalized
+        for marker in (
+            "no findings",
+            "there are no findings",
+            "no actionable findings",
+            "finding_count: 0",
+            "finding count: 0",
+        )
+    )
 
 
 def _normalize_severity(value: str) -> str:

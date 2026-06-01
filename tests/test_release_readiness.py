@@ -2418,6 +2418,78 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
     assert tab_normalized["findings"][1]["blocking_status"] == "later"
 
 
+def test_external_response_normalization_binds_area_and_namespace() -> None:
+    raw_response = "\n".join(
+        [
+            "# Patch Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-HTTP-001 | medium | http-fetch | apps/api/src/ithildin_api/http_tools.py | "
+            "should-fix | open | inspect redirect behavior |",
+        ]
+    )
+
+    with pytest.raises(
+        external_response_normalize.ExternalResponseNormalizationError,
+        match="namespace does not match",
+    ):
+        external_response_normalize.normalize_response(
+            raw_response,
+            reviewer="GPT 5.5 Pro",
+            reviewer_type="external-model",
+            source_access="source-level",
+            reviewed_commit="abcdef1234567890",
+            reviewed_packet_hash="sha256:" + "0" * 64,
+            area="patch-apply",
+        )
+
+
+def test_external_response_normalization_requires_findings_or_explicit_none() -> None:
+    with pytest.raises(
+        external_response_normalize.ExternalResponseNormalizationError,
+        match="finding table or explicitly state no findings",
+    ):
+        external_response_normalize.normalize_response(
+            "# Review\n\nLooks good from the packet.",
+            reviewer="GPT 5.5 Pro",
+            reviewer_type="external-model",
+            source_access="source-level",
+            reviewed_commit="abcdef1234567890",
+            reviewed_packet_hash="sha256:" + "0" * 64,
+            area="patch-apply",
+        )
+
+    normalized = external_response_normalize.normalize_response(
+        "# Review\n\nNo findings.",
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="source-level",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="patch-apply",
+    )
+
+    assert normalized["finding_count"] == 0
+
+
+def test_external_response_normalization_rejects_malformed_packet_hash() -> None:
+    with pytest.raises(
+        external_response_normalize.ExternalResponseNormalizationError,
+        match="64 lowercase hex",
+    ):
+        external_response_normalize.normalize_response(
+            "# Review\n\nNo findings.",
+            reviewer="GPT 5.5 Pro",
+            reviewer_type="external-model",
+            source_access="source-level",
+            reviewed_commit="abcdef1234567890",
+            reviewed_packet_hash="sha256:not-a-real-digest",
+            area="patch-apply",
+        )
+
+
 def test_reviewer_finding_template_has_required_fields() -> None:
     template = Path("docs/codex/reviewer-finding-template.md").read_text(encoding="utf-8")
     prompt = Path("docs/codex/v0.2-external-review-prompt.md").read_text(encoding="utf-8")

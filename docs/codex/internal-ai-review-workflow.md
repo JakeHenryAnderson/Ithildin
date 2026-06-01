@@ -51,6 +51,9 @@ Use [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md) for the s
 wall-hit status format that apply when internal review or test failures expose a possible boundary
 problem.
 
+For the v0.6 lane-by-lane proxy-review cadence, use
+[v0.6-internal-proxy-review-operating-model.md](v0.6-internal-proxy-review-operating-model.md).
+
 ## Prompt Template
 
 Use the generated area prompts as the source of truth. Each prompt asks the reviewer to inspect
