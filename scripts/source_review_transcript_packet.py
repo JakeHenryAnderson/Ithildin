@@ -134,6 +134,15 @@ def _packet_markdown(report: dict[str, Any]) -> str:
             "- Files/functions inspected:",
             "- Findings:",
             "",
+            "### Release Automation",
+            "",
+            "- Reviewer:",
+            "- Date:",
+            "- Files/functions inspected:",
+            "- Required evidence inputs: release evidence, redaction scan, artifact hashes, "
+            "external response normalization, closure/capability gates, dispatch packets.",
+            "- Findings:",
+            "",
         ]
     )
     return "\n".join(lines)

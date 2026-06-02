@@ -1447,6 +1447,84 @@ function PatchDiagnosticsSummary({ diagnostics }: { diagnostics: PatchApplyDiagn
           ))}
         </ul>
       ) : null}
+      {diagnostics.attempts.length > 0 ? (
+        <div className="table-wrap diagnostics-table">
+          <table>
+            <caption>Incomplete patch apply attempts</caption>
+            <thead>
+              <tr>
+                <th>Attempt</th>
+                <th>Approval</th>
+                <th>Proposal</th>
+                <th>Workspace</th>
+                <th>Path</th>
+                <th>Status</th>
+                <th>Expected Hash</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {diagnostics.attempts.map((attempt, index) => (
+                <tr key={scopeString(attempt, "attempt_id") || `attempt-${index}`}>
+                  <td title={scopeString(attempt, "attempt_id")}>
+                    {shortId(scopeString(attempt, "attempt_id") || "unknown")}
+                  </td>
+                  <td title={scopeString(attempt, "approval_id")}>
+                    {shortId(scopeString(attempt, "approval_id") || "unknown")}
+                  </td>
+                  <td title={scopeString(attempt, "proposal_id")}>
+                    {shortId(scopeString(attempt, "proposal_id") || "unknown")}
+                  </td>
+                  <td>{scopeString(attempt, "workspace_id") || "default"}</td>
+                  <td title={scopeString(attempt, "path")}>{scopeString(attempt, "path") || "-"}</td>
+                  <td>{scopeString(attempt, "diagnostic_status") || scopeString(attempt, "status") || "-"}</td>
+                  <td>{scopeBooleanStatus(attempt, "current_matches_expected_post_apply_hash")}</td>
+                  <td title={scopeString(attempt, "diagnostic_reason") || scopeString(attempt, "failure_reason")}>
+                    {scopeString(attempt, "diagnostic_reason") ||
+                      scopeString(attempt, "failure_reason") ||
+                      "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      {diagnostics.stuck_approvals.length > 0 ? (
+        <div className="table-wrap diagnostics-table">
+          <table>
+            <caption>Executing patch approvals needing review</caption>
+            <thead>
+              <tr>
+                <th>Approval</th>
+                <th>Request</th>
+                <th>Proposal</th>
+                <th>Workspace</th>
+                <th>Path</th>
+                <th>Attempt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {diagnostics.stuck_approvals.map((approval, index) => (
+                <tr key={scopeString(approval, "approval_id") || `approval-${index}`}>
+                  <td title={scopeString(approval, "approval_id")}>
+                    {shortId(scopeString(approval, "approval_id") || "unknown")}
+                  </td>
+                  <td title={scopeString(approval, "request_id")}>
+                    {shortId(scopeString(approval, "request_id") || "unknown")}
+                  </td>
+                  <td title={scopeString(approval, "proposal_id")}>
+                    {shortId(scopeString(approval, "proposal_id") || "unknown")}
+                  </td>
+                  <td>{scopeString(approval, "workspace_id") || "default"}</td>
+                  <td title={scopeString(approval, "path")}>{scopeString(approval, "path") || "-"}</td>
+                  <td>{scopeBooleanStatus(approval, "has_apply_attempt")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1560,6 +1638,17 @@ function scopeList(scope: JsonObject, key: string) {
 function scopeObject(scope: JsonObject, key: string) {
   const value = scope[key];
   return isJsonObject(value) ? value : null;
+}
+
+function scopeBooleanStatus(scope: JsonObject, key: string) {
+  const value = scope[key];
+  if (value === true) {
+    return "yes";
+  }
+  if (value === false) {
+    return "no";
+  }
+  return "unknown";
 }
 
 function formatJsonCompact(value: JsonObject) {

@@ -601,6 +601,19 @@ h3 {
   padding-left: 18px;
 }
 
+.diagnostics-table table {
+  min-width: 860px;
+}
+
+caption {
+  color: #607168;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0 0 8px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
 .meta-list {
   display: grid;
   gap: 8px;

@@ -252,8 +252,8 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "docs/codex/registry-fail-closed-suite.md",
             "docs/codex/opa-parity-decision.md",
             "docs/codex/findings/sub-015-filesystem-resource-scope.md",
-            "docs/codex/findings/sub-016-manifest-schema-validation.md",
-            "docs/codex/findings/sub-017-policy-parity-executor-denial.md",
+            "docs/codex/findings/sub-016-manifest-input-schema-validation.md",
+            "docs/codex/findings/sub-017-policy-parity-resource-scope.md",
             "docs/codex/findings/sub-064-empty-preview-principal.md",
             "docs/codex/findings/sub-065-patch-apply-parity-service.md",
             "docs/codex/findings/sub-066-validation-error-value-leak.md",
@@ -338,6 +338,9 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "docs/codex/findings/sub-020-review-console-trust-posture.md",
             "docs/codex/findings/sub-021-approval-route-decision-mismatch.md",
             "docs/codex/findings/sub-075-review-console-copy-evidence-parity.md",
+            "docs/codex/findings/sub-078-approval-review-drift.md",
+            "docs/codex/findings/sub-079-patch-diagnostics-detail.md",
+            "docs/codex/findings/sub-080-review-console-ui-test-harness.md",
         ),
         commands=(
             "npm run typecheck --prefix apps/ui",
@@ -438,6 +441,9 @@ DISPATCH_AREAS: tuple[DispatchArea, ...] = (
             "docs/codex/findings/sub-063-release-transcript-returncode.md",
             "docs/codex/findings/sub-076-release-automation-dispatch-focus.md",
             "docs/codex/findings/sub-077-review-candidate-dispatch-freshness.md",
+            "docs/codex/findings/sub-081-review-artifact-dispatch-inventory.md",
+            "docs/codex/findings/sub-082-dispatch-pointer-validation.md",
+            "docs/codex/findings/sub-083-release-automation-transcript-section.md",
         ),
         commands=(
             "make v05-review-candidate",
@@ -483,6 +489,7 @@ def build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, Any]
     if missing:
         raise RuntimeError("must be run from Ithildin repo root; missing " + ", ".join(missing))
 
+    _validate_dispatch_area_paths(repo_root)
     output_root.mkdir(parents=True, exist_ok=True)
     commit = _git(["rev-parse", "HEAD"])
     dirty = bool(_git(["status", "--short"]))
@@ -531,6 +538,18 @@ def build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, Any]
         "dirty": dirty,
         "packets": manifest["packets"],
     }
+
+
+def _validate_dispatch_area_paths(repo_root: Path) -> None:
+    missing: list[str] = []
+    for area in DISPATCH_AREAS:
+        for rel_path in (*area.source_files, *area.review_docs):
+            if not (repo_root / rel_path).exists():
+                missing.append(f"{area.slug}: {rel_path}")
+    if missing:
+        raise RuntimeError(
+            "dispatch packet inputs are missing: " + "; ".join(sorted(missing))
+        )
 
 
 def _render_packet(area: DispatchArea, commit: str, dirty: bool, payload_sha256: str) -> str:

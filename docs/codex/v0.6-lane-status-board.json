@@ -181,7 +181,8 @@
       "ext_findings_count": 0,
       "external_review_received": false,
       "fixed_commits": [
-        "7603b0689a8b265dc2bfd66e1d02920a67f1d09b"
+        "7603b0689a8b265dc2bfd66e1d02920a67f1d09b",
+        "pending current checkpoint"
       ],
       "lane": "Review Console",
       "matrix_areas": [
@@ -207,7 +208,8 @@
       "external_review_received": false,
       "fixed_commits": [
         "957c1e4700bdfddefd67f029ddc4b47b529c7ae2",
-        "cc357b567c5805cf6de9cb3ebc7f3bbcc373e316"
+        "cc357b567c5805cf6de9cb3ebc7f3bbcc373e316",
+        "pending current checkpoint"
       ],
       "lane": "Release Automation",
       "matrix_areas": [
@@ -222,6 +224,8 @@
         "make release-evidence-gate",
         "make packet-redaction-scan",
         "make v06-review-dispatch-packets",
+        "make source-review-transcript-packet",
+        "make reviewer-artifact-manifest",
         "make review-candidate",
         "docs-site and release-readiness tests",
         "make release-check"

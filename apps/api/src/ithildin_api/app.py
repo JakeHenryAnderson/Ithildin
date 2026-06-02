@@ -359,31 +359,11 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     @api.get("/approvals/review", dependencies=[Depends(require_admin_token)])
     def list_approval_reviews(status: Optional[ApprovalStatus] = None) -> JsonObject:
         approval_service = cast(ApprovalService, api.state.approval_service)
-        patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
-        registry = cast(ToolRegistry, api.state.registry)
-        policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
-        tool = registry.get_tool(PATCH_APPLY_TOOL)
         return {
             "approvals": [
                 {
                     "approval": approval.model_dump(mode="json"),
-                    "review": patch_service.approval_review(
-                        approval,
-                        expected_manifest_hash=tool.manifest_hash,
-                        expected_manifest_version=tool.manifest.version,
-                        expected_tool_input_schema_hash=sha256_digest(
-                            tool.manifest.input_schema
-                        ),
-                        expected_policy_engine=policy_evaluator.engine_name,
-                        expected_policy_hash=policy_evaluator.policy_hash,
-                        expected_policy_version=_approval_expected_policy_version(
-                            approval,
-                            policy_evaluator.policy_hash,
-                        ),
-                        expected_policy_document_version=policy_evaluator.document_version,
-                        expected_matched_rules=_approval_expected_matched_rules(approval),
-                        expected_principal=approval.principal,
-                    ),
+                    "review": _patch_apply_approval_review(api, approval),
                 }
                 for approval in approval_service.list(status=status)
             ]
@@ -416,6 +396,14 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         _require_route_decision(payload.decision, ApprovalDecisionValue.APPROVE)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
+            approval = approval_service.get(approval_id)
+            if (
+                approval.tool_name == PATCH_APPLY_TOOL
+                and isinstance(approval.one_time_scope.get("proposal_id"), str)
+            ):
+                review = _patch_apply_approval_review(api, approval)
+                if review.get("valid") is not True:
+                    raise ApprovalError("patch apply approval binding review failed")
             return approval_service.approve(
                 approval_id,
                 decided_by=payload.decided_by,
@@ -540,6 +528,28 @@ def _approval_expected_matched_rules(approval: ApprovalRequest) -> list[str]:
     if isinstance(scope_value, list) and all(isinstance(item, str) for item in scope_value):
         return cast(list[str], scope_value)
     return []
+
+
+def _patch_apply_approval_review(api: FastAPI, approval: ApprovalRequest) -> JsonObject:
+    patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
+    registry = cast(ToolRegistry, api.state.registry)
+    policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
+    tool = registry.get_tool(PATCH_APPLY_TOOL)
+    return patch_service.approval_review(
+        approval,
+        expected_manifest_hash=tool.manifest_hash,
+        expected_manifest_version=tool.manifest.version,
+        expected_tool_input_schema_hash=sha256_digest(tool.manifest.input_schema),
+        expected_policy_engine=policy_evaluator.engine_name,
+        expected_policy_hash=policy_evaluator.policy_hash,
+        expected_policy_version=_approval_expected_policy_version(
+            approval,
+            policy_evaluator.policy_hash,
+        ),
+        expected_policy_document_version=policy_evaluator.document_version,
+        expected_matched_rules=_approval_expected_matched_rules(approval),
+        expected_principal=approval.principal,
+    )
 
 
 def _current_manifest_lock_status(settings: Settings) -> JsonObject:

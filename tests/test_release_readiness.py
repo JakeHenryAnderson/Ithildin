@@ -1782,6 +1782,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
 
 def test_source_review_transcript_packet_is_wired() -> None:
     report = source_review_transcript_packet.build_report(Path.cwd())
+    transcript = source_review_transcript_packet._packet_markdown(report)
     doc = Path("docs/codex/source-review-transcript-packet.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
@@ -1795,6 +1796,8 @@ def test_source_review_transcript_packet_is_wired() -> None:
     assert report["external_review_closed"] is False
     assert report["runtime_behavior_changed"] is False
     assert all(str(item["sha256"]).startswith("sha256:") for item in report["docs"])
+    assert "### Release Automation" in transcript
+    assert "release evidence, redaction scan, artifact hashes" in transcript
     assert "does not close external review" in doc
     assert "make source-review-transcript-packet" in readme
     assert "171 - Source review transcript packet | Done" in backlog
@@ -1820,6 +1823,11 @@ def test_reviewer_artifact_manifest_is_wired() -> None:
     assert "make review-candidate" not in report["does_not_prove"]
     assert "external/source review closure" in report["does_not_prove"]
     assert "make reviewer-artifact-manifest" in readme
+    assert "make v06-review-dispatch-packets" in report["required_commands"]
+    assert (
+        "var/review-packets/v0.6/dispatch/dispatch-packet-hashes.json"
+        in report["generated_artifacts"]
+    )
     assert "172 - Reviewer artifact manifest v2 | Done" in backlog
     assert "Task 172 generates a v0.5 artifact inventory" in matrix
     assert "reviewer-artifact-manifest:" in makefile
@@ -2202,6 +2210,9 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert summary["packet_count"] == 8
+    for area in external_review_dispatch_packets.DISPATCH_AREAS:
+        for rel_path in (*area.source_files, *area.review_docs):
+            assert Path(rel_path).exists(), f"{area.slug} references missing {rel_path}"
     paths = {artifact["path"] for artifact in summary["packets"]}
     for expected in [
         "INDEX.md",
@@ -2309,6 +2320,9 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
         "SUB-063",
         "SUB-076",
         "SUB-077",
+        "SUB-081",
+        "SUB-082",
+        "SUB-083",
         "make review-candidate",
     ]:
         assert required in release_packet_text
@@ -2358,7 +2372,15 @@ def test_v06_external_review_dispatch_packets_are_wired(tmp_path: Path) -> None:
     review_console_packet = dispatch_root.joinpath("review-console.md").read_text(
         encoding="utf-8"
     )
-    for finding_id in ["SUB-019", "SUB-020", "SUB-021", "SUB-075"]:
+    for finding_id in [
+        "SUB-019",
+        "SUB-020",
+        "SUB-021",
+        "SUB-075",
+        "SUB-078",
+        "SUB-079",
+        "SUB-080",
+    ]:
         assert finding_id in review_console_packet
     for required in [
         "apps/ui/src/App.tsx",

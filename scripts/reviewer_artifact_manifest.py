@@ -22,6 +22,7 @@ REQUIRED_COMMANDS = [
     "make signed-evidence-demo-verify",
     "make negative-review-transcripts",
     "make source-review-transcript-packet",
+    "make v06-review-dispatch-packets",
     "make review-packet-bundle",
     "make review-packet-consolidated",
     "make packet-redaction-scan",
@@ -35,6 +36,8 @@ GENERATED_ARTIFACTS = [
     "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md",
     "var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md",
     "var/review-packets/v0.5/source-review-transcripts/SOURCE_REVIEW_TRANSCRIPT_PACKET.md",
+    "var/review-packets/v0.6/dispatch/dispatch-packet-hashes.json",
+    "var/review-packets/v0.6/dispatch/release-automation.md",
 ]
 
 
