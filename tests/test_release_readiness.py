@@ -28,6 +28,7 @@ from scripts import (
     no_new_powers_guardrail,
     packet_redaction_scan,
     patch_apply_external_review_packet,
+    policy_registry_source_review_bundle,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -3054,6 +3055,190 @@ def test_signed_evidence_source_review_bundle_is_wired(
     ]:
         assert required in dispatch_area.source_files
     assert dispatch_area.finding_namespace == "EXT-SE-###"
+
+
+def test_policy_registry_source_review_bundle_is_wired(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path
+    for marker in [
+        "pyproject.toml",
+        "Makefile",
+        "apps/api",
+        "apps/mcp-server",
+        "tool-manifests.lock.json",
+    ]:
+        path = repo_root / marker
+        if "." in Path(marker).name:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("marker\n", encoding="utf-8")
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+    for relative in (
+        policy_registry_source_review_bundle.SOURCE_FILES
+        + policy_registry_source_review_bundle.TEST_FILES
+        + policy_registry_source_review_bundle.CONTRACT_DOCS
+    ):
+        path = repo_root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {relative.name}\n", encoding="utf-8")
+
+    def fake_build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, object]:
+        output_root.mkdir(parents=True)
+        output_root.joinpath("policy-registry.md").write_text(
+            "# Policy Registry\n",
+            encoding="utf-8",
+        )
+        manifest: dict[str, object] = {
+            "packets": [
+                {
+                    "path": "policy-registry.md",
+                    "sha256": "sha256:" + ("9" * 64),
+                    "payload_sha256": "sha256:" + ("a" * 64),
+                    "bytes": 18,
+                }
+            ]
+        }
+        output_root.joinpath("dispatch-packet-hashes.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        return manifest
+
+    monkeypatch.setattr(
+        policy_registry_source_review_bundle,
+        "_build_dispatch_packets",
+        fake_build_dispatch_packets,
+    )
+    monkeypatch.setattr(
+        policy_registry_source_review_bundle,
+        "_git",
+        lambda repo_root, args: "fedcba9876543210" if args == ["rev-parse", "HEAD"] else "",
+    )
+
+    output_dir = policy_registry_source_review_bundle.build_bundle(
+        repo_root=repo_root,
+        output_dir=repo_root / "var/review-packets/v0.7/policy-registry-source-review",
+        run_commands=False,
+    )
+
+    for required in [
+        "00_POLICY_REGISTRY_SOURCE_REVIEW_INDEX.md",
+        "01_POLICY_REGISTRY_SOURCE_REVIEW_PROMPT.md",
+        "02_POLICY_REGISTRY_DISPATCH_PACKET.md",
+        "03_POLICY_REGISTRY_SOURCE_BUNDLE.md",
+        "04_POLICY_REGISTRY_TESTS_BUNDLE.md",
+        "05_POLICY_REGISTRY_CONTRACTS_BUNDLE.md",
+        "06_POLICY_REGISTRY_EVIDENCE.md",
+        "07_POLICY_REGISTRY_FOCUSED_TESTS.txt",
+        "08_POLICY_REGISTRY_INTAKE_COMMANDS.md",
+        "policy-registry-source-review-artifact-hashes.json",
+    ]:
+        assert output_dir.joinpath(required).exists()
+
+    index = output_dir.joinpath("00_POLICY_REGISTRY_SOURCE_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    assert "policy parity and registry fail-closed lanes" in index
+    assert "source/test" in index
+    prompt = output_dir.joinpath("01_POLICY_REGISTRY_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EXT-PR-###" in prompt
+    assert "principal/resource normalization" in prompt
+    assert "sha256:" + ("9" * 64) in prompt
+    source_bundle = output_dir.joinpath("03_POLICY_REGISTRY_SOURCE_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "packages/policy-core/src/ithildin_policy_core/evaluator.py" in source_bundle
+    assert "apps/api/src/ithildin_api/policy_preview.py" in source_bundle
+    assert "apps/api/src/ithildin_api/registry.py" in source_bundle
+    assert "principals/local.yaml" in source_bundle
+    assert "workspaces/local.yaml" in source_bundle
+    tests_bundle = output_dir.joinpath("04_POLICY_REGISTRY_TESTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "tests/test_policy_parity.py" in tests_bundle
+    assert "tests/test_tool_registry.py" in tests_bundle
+    assert "tests/test_workspaces.py" in tests_bundle
+    contracts_bundle = output_dir.joinpath(
+        "05_POLICY_REGISTRY_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    assert "docs/codex/policy-parity-source-review-checklist.md" in contracts_bundle
+    assert "docs/codex/registry-fail-closed-suite.md" in contracts_bundle
+    assert "sub-064-empty-preview-principal.md" in contracts_bundle
+    assert "sub-073-policy-registry-lane-result.md" in contracts_bundle
+    evidence = output_dir.joinpath("06_POLICY_REGISTRY_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "make policy-test" in evidence
+    assert "make policy-parity" in evidence
+    assert "make manifest-lock-check" in evidence
+    assert "YAML policy remains canonical" in evidence
+    focused = output_dir.joinpath("07_POLICY_REGISTRY_FOCUSED_TESTS.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "tests/test_policy_parity.py" in focused
+    assert "tests/test_governed_tool_calls.py" in focused
+    intake = output_dir.joinpath("08_POLICY_REGISTRY_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "--area \"policy-registry\"" in intake
+    hashes = json.loads(
+        output_dir.joinpath(
+            "policy-registry-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert "policy-registry-source-review-artifact-hashes.json" not in {
+        entry["path"] for entry in hashes
+    }
+    assert {entry["path"] for entry in hashes} == {
+        "00_POLICY_REGISTRY_SOURCE_REVIEW_INDEX.md",
+        "01_POLICY_REGISTRY_SOURCE_REVIEW_PROMPT.md",
+        "02_POLICY_REGISTRY_DISPATCH_PACKET.md",
+        "03_POLICY_REGISTRY_SOURCE_BUNDLE.md",
+        "04_POLICY_REGISTRY_TESTS_BUNDLE.md",
+        "05_POLICY_REGISTRY_CONTRACTS_BUNDLE.md",
+        "06_POLICY_REGISTRY_EVIDENCE.md",
+        "07_POLICY_REGISTRY_FOCUSED_TESTS.txt",
+        "08_POLICY_REGISTRY_INTAKE_COMMANDS.md",
+    }
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    lane_status = Path("docs/codex/v0.6-lane-status-board.md").read_text(encoding="utf-8")
+    row_partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+    assert "make policy-registry-source-review-bundle" in readme
+    assert "policy-registry-source-review-bundle:" in makefile
+    assert "make policy-registry-source-review-bundle" in reproduction
+    assert "var/review-packets/v0.7/policy-registry-source-review/" in reproduction
+    assert "226 - Policy/registry source-review bundle | Done" in backlog
+    assert "make policy-registry-source-review-bundle" in lane_status
+    assert "make policy-registry-source-review-bundle" in row_partition
+
+    dispatch_area = next(
+        area
+        for area in external_review_dispatch_packets.DISPATCH_AREAS
+        if area.slug == "policy-registry"
+    )
+    for required in [
+        "apps/api/src/ithildin_api/policy.py",
+        "apps/api/src/ithildin_api/policy_preview.py",
+        "apps/api/src/ithildin_api/policy_parity.py",
+        "apps/api/src/ithildin_api/registry.py",
+        "apps/api/src/ithildin_api/identity.py",
+        "tests/test_policy_parity.py",
+        "tests/test_tool_registry.py",
+    ]:
+        assert required in dispatch_area.source_files
+    assert dispatch_area.finding_namespace == "EXT-PR-###"
 
 
 def test_v06_external_response_normalization_is_wired() -> None:

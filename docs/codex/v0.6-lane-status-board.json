@@ -132,7 +132,7 @@
         "Policy parity",
         "Registry fail-closed"
       ],
-      "next_action": "send policy/registry dispatch packet for source review",
+      "next_action": "send `make policy-registry-source-review-bundle` output for source review",
       "reviewer_recheck_required": false,
       "slug": "policy-registry",
       "verification_commands": [

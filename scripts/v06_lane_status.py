@@ -65,7 +65,7 @@ LANES: tuple[Lane, ...] = (
         title="Policy and Registry",
         matrix_areas=("Policy parity", "Registry fail-closed"),
         finding_prefixes=("EXT-PR-",),
-        next_external_packet="policy/registry dispatch packet",
+        next_external_packet="`make policy-registry-source-review-bundle` output",
     ),
     Lane(
         slug="mcp-ingress",
