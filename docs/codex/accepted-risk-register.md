@@ -17,7 +17,8 @@ make accepted-risk-register-check
 - Accepted risks are not production authorization and are not production security certification.
 - Local signed evidence remains local operator evidence, not external notarization.
 - Critical or high accepted risks are not allowed in this register.
-- Every accepted risk remains pending external/source review before closure.
+- Accepted risks remain pending external/source review before closure unless a structured
+  local-preview source-review closure is recorded for that risk.
 - Any new powerful tool class requires a separate capability decision and external/source review.
 
 ## Risks
@@ -28,7 +29,7 @@ make accepted-risk-register-check
 | AR-002 | Local principal labels | v0.1 local-preview only | Accepted for preview; external review required before closure |
 | AR-003 | Local tamper-evident audit | v0.1 local-preview only | Accepted for preview; external review required before closure |
 | AR-004 | Patch apply write surface | v0.1 local-preview only | Accepted for preview; external review required before closure |
-| AR-005 | Filesystem platform/race claims | v0.1 local-preview only | Accepted for preview; external review required before closure |
+| AR-005 | Filesystem platform/race claims | v0.1 local-preview only | Source-reviewed and closed for the v0.1 local-preview filesystem/platform lane via EXT-FS-001 |
 | AR-006 | HTTP fetch SSRF-sensitive boundary | v0.1 local-preview only | Accepted for preview; external review required before closure |
 | AR-007 | Policy engine parity and OPA optionality | v0.1 local-preview only | Accepted for preview; external review required before closure |
 | AR-008 | Local operator signing keys | v0.1 local-preview only | Accepted for preview; external review required before closure |
@@ -38,5 +39,7 @@ make accepted-risk-register-check
 ## Review Use
 
 Reviewers should use this register as a map of known local-preview limitations. A risk can move out of
-accepted-preview status only after implementation evidence, source review, and explicit closure notes are
-recorded in [source-review-closure-matrix.md](source-review-closure-matrix.md).
+accepted-preview pending status only after implementation evidence, source review, and explicit closure
+notes are recorded in [source-review-closure-matrix.md](source-review-closure-matrix.md). This register
+does not close external source review globally, does not approve capability expansion, and does not
+support production/security-product claims.

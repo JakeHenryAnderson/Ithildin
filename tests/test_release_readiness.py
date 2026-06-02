@@ -1684,12 +1684,22 @@ def test_accepted_risk_register_is_wired_and_scoped() -> None:
     assert report["risk_count"] == 10
     assert report["capability_expansion_approved"] is False
     assert report["external_source_review_closed"] is False
+    assert report["open_external_review_ids"] == [
+        f"AR-{index:03d}" for index in [1, 2, 3, 4, 6, 7, 8, 9, 10]
+    ]
+    assert report["reviewed_external_review_ids"] == ["AR-005"]
     assert {risk["id"] for risk in register["risks"]} == {
         f"AR-{index:03d}" for index in range(1, 11)
     }
-    assert all(
-        risk["external_review_required_before_closure"] is True for risk in register["risks"]
-    )
+    ar005 = next(risk for risk in register["risks"] if risk["id"] == "AR-005")
+    assert ar005["external_review_required_before_closure"] is False
+    assert ar005["external_review_closure"] == "closed_local_preview"
+    assert ar005["closure_finding"] == "EXT-FS-001"
+    assert sum(
+        1
+        for risk in register["risks"]
+        if risk["external_review_required_before_closure"] is True
+    ) == 9
     assert "does not approve capability expansion" in doc
     assert "not production authorization" in doc
     assert "make accepted-risk-register-check" in readme
@@ -1717,7 +1727,7 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["tool_count"] == 10
     assert report["completed_range"] == "152-180"
     assert report["planned_range"] == "none"
-    assert report["open_accepted_risks"] == 10
+    assert report["open_accepted_risks"] == 9
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
     assert "make capability-decision-report" in readme
@@ -2765,16 +2775,22 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
 
     assert json.loads(json.dumps(board)) == payload
     assert board["summary"]["lane_count"] == 8
-    assert board["summary"]["external_review_received"] == 1
-    assert board["summary"]["external_review_closed"] == 1
+    assert board["summary"]["external_review_received"] == 2
+    assert board["summary"]["external_review_closed"] == 2
     assert board["summary"]["critical_high_open_count"] == 0
     patch_lane = next(lane for lane in board["lanes"] if lane["slug"] == "patch-apply")
     assert patch_lane["external_review_received"] is True
     assert patch_lane["ext_findings_count"] == 4
     assert patch_lane["reviewer_recheck_required"] is False
     assert patch_lane["closure_state"] == "closed_local_preview"
+    filesystem_lane = next(lane for lane in board["lanes"] if lane["slug"] == "filesystem")
+    assert filesystem_lane["external_review_received"] is True
+    assert filesystem_lane["ext_findings_count"] == 1
+    assert filesystem_lane["reviewer_recheck_required"] is False
+    assert filesystem_lane["closure_state"] == "closed_local_preview"
     assert "does not itself close review" in doc
     assert "Patch Apply | yes | 4 | 0 | no | closed_local_preview" in doc
+    assert "Filesystem and Platform | yes | 1 | 0 | no | closed_local_preview" in doc
     assert "make v06-lane-status" in readme
     assert "v06-lane-status:" in makefile
     assert "v06-lane-status" in makefile.partition("release-check:")[2]
@@ -2806,8 +2822,8 @@ def test_v06_closure_readiness_bundle_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 1
-    assert report["external_review_closed"] == 1
+    assert report["external_review_received"] == 2
+    assert report["external_review_closed"] == 2
     assert report["critical_high_open_count"] == 0
     assert "make v06-closure-readiness" in readme
     assert "v06-closure-readiness:" in makefile
@@ -2855,8 +2871,8 @@ def test_v06_final_handoff_docs_are_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 1
-    assert report["external_review_closed"] == 1
+    assert report["external_review_received"] == 2
+    assert report["external_review_closed"] == 2
     assert report["capability_expansion_allowed"] is False
     assert "make v06-final-handoff" in readme
     assert "v06-final-handoff:" in makefile
@@ -2910,8 +2926,8 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["pending_external_review_rows"] == 54
-    assert report["externally_closed_rows"] == 1
+    assert report["pending_external_review_rows"] == 51
+    assert report["externally_closed_rows"] == 4
     assert report["capability_expansion_allowed"] is False
     assert "make v07-closure-prep" in readme
     assert "v07-closure-prep:" in makefile

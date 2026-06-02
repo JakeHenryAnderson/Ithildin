@@ -24,7 +24,11 @@ REQUIRED_RISK_IDS = {
     "AR-010",
 }
 ALLOWED_SEVERITIES = {"informational", "low", "medium"}
-ALLOWED_STATUSES = {"accepted_local_preview", "deferred_until_external_review"}
+ALLOWED_STATUSES = {
+    "accepted_local_preview",
+    "deferred_until_external_review",
+    "reviewed_local_preview",
+}
 FORBIDDEN_ACCEPTANCE_PHRASES = [
     "allows capability expansion",
     "approves new tool powers",
@@ -75,6 +79,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     ids: list[str] = []
     open_external_review_ids: list[str] = []
+    reviewed_external_review_ids: list[str] = []
     for index, risk in enumerate(risks, start=1):
         if not isinstance(risk, dict):
             failures.append(f"risk #{index} must be an object")
@@ -84,6 +89,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.extend(_validate_risk(risk, index))
         if risk.get("external_review_required_before_closure") is True:
             open_external_review_ids.append(risk_id)
+        elif _has_review_closure(risk):
+            reviewed_external_review_ids.append(risk_id)
 
     duplicate_ids = sorted({risk_id for risk_id in ids if ids.count(risk_id) > 1})
     if duplicate_ids:
@@ -111,7 +118,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         if phrase in combined:
             failures.append(f"accepted-risk register contains forbidden phrase: {phrase}")
 
-    return _report(failures, risks, open_external_review_ids)
+    return _report(failures, risks, open_external_review_ids, reviewed_external_review_ids)
 
 
 def _validate_risk(risk: dict[str, Any], index: int) -> list[str]:
@@ -144,17 +151,33 @@ def _validate_risk(risk: dict[str, Any], index: int) -> list[str]:
         failures.append(f"{risk_id} accepted scope must stay within v0.1 local-preview")
     if not isinstance(risk["mitigations"], list) or not risk["mitigations"]:
         failures.append(f"{risk_id} must include at least one mitigation")
-    if risk["external_review_required_before_closure"] is not True:
-        failures.append(f"{risk_id} must require external review before closure")
+    if risk["external_review_required_before_closure"] is not True and not _has_review_closure(
+        risk
+    ):
+        failures.append(
+            f"{risk_id} must require external review before closure or record "
+            "closed local-preview review evidence"
+        )
     if not str(risk["revisit_trigger"]).strip():
         failures.append(f"{risk_id} must include a revisit trigger")
     return failures
+
+
+def _has_review_closure(risk: dict[str, Any]) -> bool:
+    return (
+        risk.get("external_review_required_before_closure") is False
+        and risk.get("status") == "reviewed_local_preview"
+        and risk.get("external_review_closure") == "closed_local_preview"
+        and str(risk.get("closure_finding", "")).startswith("EXT-")
+        and bool(str(risk.get("closure_notes", "")).strip())
+    )
 
 
 def _report(
     failures: list[str],
     risks: list[Any],
     open_external_review_ids: list[str],
+    reviewed_external_review_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     return {
         "schema_version": "1",
@@ -162,6 +185,7 @@ def _report(
         "failures": failures,
         "risk_count": len(risks),
         "open_external_review_ids": open_external_review_ids,
+        "reviewed_external_review_ids": reviewed_external_review_ids or [],
         "capability_expansion_approved": False,
         "external_source_review_closed": False,
     }
@@ -173,6 +197,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"risk_count: {report['risk_count']}",
         f"open_external_review_ids: {len(report['open_external_review_ids'])}",
+        f"reviewed_external_review_ids: {len(report['reviewed_external_review_ids'])}",
         "capability_expansion_approved: false",
         "external_source_review_closed: false",
     ]

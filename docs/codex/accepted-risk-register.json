@@ -55,12 +55,15 @@
       "id": "AR-005",
       "title": "Filesystem race claims are platform scoped",
       "severity": "medium",
-      "status": "accepted_local_preview",
+      "status": "reviewed_local_preview",
       "accepted_scope": "v0.1 local-preview only",
       "risk": "Path handling and race behavior are documented for macOS and Linux local-preview profiles only.",
       "rationale": "Windows and WSL semantics require separate review before security support claims.",
       "mitigations": ["Filesystem contract", "Capability check", "Adversarial race corpus", "Unsupported-platform warnings"],
-      "external_review_required_before_closure": true,
+      "external_review_required_before_closure": false,
+      "external_review_closure": "closed_local_preview",
+      "closure_finding": "EXT-FS-001",
+      "closure_notes": "GPT 5.5 Pro source-level review of the filesystem/platform bundle at commit 48b2a5f5ee3b173953780d03ae3985a0a64df104 closed EXT-FS-001 and found no new implementation findings for the v0.1 local-preview filesystem/platform lane.",
       "revisit_trigger": "Before Windows/WSL support claims or broader filesystem mutation features"
     },
     {
