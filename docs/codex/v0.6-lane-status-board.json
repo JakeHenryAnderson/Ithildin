@@ -149,26 +149,29 @@
       ]
     },
     {
-      "closure_state": "external_pending",
+      "closure_state": "closed_local_preview",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
       "ext_findings_count": 0,
-      "external_review_received": false,
+      "external_review_received": true,
       "fixed_commits": [
-        "49eee9e3c2131273d8dede8c79c7afceba4c7ed5"
+        "49eee9e3c2131273d8dede8c79c7afceba4c7ed5",
+        "ded26a34c574923f7a01b254866b4228d0f0143a"
       ],
       "lane": "MCP Ingress",
       "matrix_areas": [
         "MCP ingress",
         "MCP ingress source review checklist"
       ],
-      "next_action": "send `make mcp-ingress-source-review-bundle` output for source review",
+      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
       "reviewer_recheck_required": false,
       "slug": "mcp-ingress",
       "verification_commands": [
-        "uv run pytest tests/test_mcp_adapter.py tests/test_mcp_integration_flow.py tests/test_governed_tool_calls.py -q",
-        "make release-check",
-        "MCP focused tests"
+        "make mcp-ingress-source-review-bundle",
+        "MCP focused tests",
+        "make no-new-powers-guardrail",
+        "make mcp-inspector-recipes",
+        "make release-check"
       ]
     },
     {
@@ -230,8 +233,8 @@
   "summary": {
     "capability_expansion_allowed": false,
     "critical_high_open_count": 0,
-    "external_review_closed": 5,
-    "external_review_received": 5,
+    "external_review_closed": 6,
+    "external_review_received": 6,
     "lane_count": 8
   },
   "track": "v0.6 external/source-review closure"

@@ -234,8 +234,9 @@ does not approve public preview, capability design, capability implementation, o
 | 223 - HTTP fetch source-review closure | Done | [v0.7-http-fetch-source-review.md](v0.7-http-fetch-source-review.md); GPT 5.5 Pro source-level review recorded no new findings, and the lane is closed for local-preview `http.fetch` only. |
 | 224 - Signed evidence source-review bundle | Done | `make signed-evidence-source-review-bundle` builds the focused audit/signed-evidence source/test/evidence handoff under ignored `var/review-packets/v0.7/signed-evidence-source-review/`. |
 | 225 - Signed evidence source-review closure | Done | [v0.7-signed-evidence-source-review.md](v0.7-signed-evidence-source-review.md); GPT 5.5 Pro source-level review recorded no new findings, and signed evidence, audit integrity, and manifest-lock verification are closed for local-preview evidence only. |
-| 226 - Policy/registry source-review bundle | Done | `make policy-registry-source-review-bundle` builds the focused policy/registry source/test/evidence handoff under ignored `var/review-packets/v0.7/policy-registry-source-review/`; the lane remains pending external/source disposition. |
-| 227 - MCP ingress source-review bundle | Done | `make mcp-ingress-source-review-bundle` builds the focused stdio MCP ingress source/test/evidence handoff under ignored `var/review-packets/v0.7/mcp-ingress-source-review/`; the lane remains pending external/source disposition. |
+| 226 - Policy/registry source-review bundle | Done | `make policy-registry-source-review-bundle` builds the focused policy/registry source/test/evidence handoff under ignored `var/review-packets/v0.7/policy-registry-source-review/`. |
+| 227 - MCP ingress source-review bundle | Done | `make mcp-ingress-source-review-bundle` builds the focused stdio MCP ingress source/test/evidence handoff under ignored `var/review-packets/v0.7/mcp-ingress-source-review/`. |
+| 228 - MCP ingress source-review closure | Done | [v0.7-mcp-ingress-source-review.md](v0.7-mcp-ingress-source-review.md); GPT 5.5 Pro source-level review recorded no new findings, and stdio MCP ingress plus the MCP ingress source-review checklist are closed for local-preview only. |
 
 ## Future Candidate Track
 

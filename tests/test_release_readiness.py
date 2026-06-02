@@ -368,6 +368,7 @@ def test_consolidated_review_packet_generation(
         "docs/codex/negative-review-recipes.md",
         "docs/codex/source-review-closure-matrix.md",
         "docs/codex/v0.7-filesystem-platform-source-review.md",
+        "docs/codex/v0.7-mcp-ingress-source-review.md",
         "docs/codex/accepted-risk-register.md",
         "docs/codex/capability-decision-report.md",
         "docs/codex/no-new-powers-guardrail.md",
@@ -3493,8 +3494,8 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
 
     assert json.loads(json.dumps(board)) == payload
     assert board["summary"]["lane_count"] == 8
-    assert board["summary"]["external_review_received"] == 5
-    assert board["summary"]["external_review_closed"] == 5
+    assert board["summary"]["external_review_received"] == 6
+    assert board["summary"]["external_review_closed"] == 6
     assert board["summary"]["critical_high_open_count"] == 0
     patch_lane = next(lane for lane in board["lanes"] if lane["slug"] == "patch-apply")
     assert patch_lane["external_review_received"] is True
@@ -3521,12 +3522,18 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
     assert policy_lane["ext_findings_count"] == 1
     assert policy_lane["reviewer_recheck_required"] is False
     assert policy_lane["closure_state"] == "closed_local_preview"
+    mcp_lane = next(lane for lane in board["lanes"] if lane["slug"] == "mcp-ingress")
+    assert mcp_lane["external_review_received"] is True
+    assert mcp_lane["ext_findings_count"] == 0
+    assert mcp_lane["reviewer_recheck_required"] is False
+    assert mcp_lane["closure_state"] == "closed_local_preview"
     assert "does not itself close review" in doc
     assert "Patch Apply | yes | 4 | 0 | no | closed_local_preview" in doc
     assert "Filesystem and Platform | yes | 1 | 0 | no | closed_local_preview" in doc
     assert "HTTP Fetch | yes | 0 | 0 | no | closed_local_preview" in doc
     assert "Signed Evidence and Audit | yes | 0 | 0 | no | closed_local_preview" in doc
     assert "Policy and Registry | yes | 1 | 0 | no | closed_local_preview" in doc
+    assert "MCP Ingress | yes | 0 | 0 | no | closed_local_preview" in doc
     assert "make v06-lane-status" in readme
     assert "v06-lane-status:" in makefile
     assert "v06-lane-status" in makefile.partition("release-check:")[2]
@@ -3558,8 +3565,8 @@ def test_v06_closure_readiness_bundle_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 5
-    assert report["external_review_closed"] == 5
+    assert report["external_review_received"] == 6
+    assert report["external_review_closed"] == 6
     assert report["critical_high_open_count"] == 0
     assert "make v06-closure-readiness" in readme
     assert "v06-closure-readiness:" in makefile
@@ -3607,8 +3614,8 @@ def test_v06_final_handoff_docs_are_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 5
-    assert report["external_review_closed"] == 5
+    assert report["external_review_received"] == 6
+    assert report["external_review_closed"] == 6
     assert report["capability_expansion_allowed"] is False
     assert "make v06-final-handoff" in readme
     assert "v06-final-handoff:" in makefile
@@ -3662,8 +3669,8 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["pending_external_review_rows"] == 43
-    assert report["externally_closed_rows"] == 12
+    assert report["pending_external_review_rows"] == 41
+    assert report["externally_closed_rows"] == 14
     assert report["capability_expansion_allowed"] is False
     assert "make v07-closure-prep" in readme
     assert "v07-closure-prep:" in makefile
@@ -3792,8 +3799,8 @@ def test_v07_http_fetch_source_review_is_wired() -> None:
     assert "closed for local-preview `http.fetch`" in matrix
     assert "arbitrary HTTP methods" in matrix
     assert "HTTP fetch: source-level external review received" in outcome
-    assert "Pending external-review rows: 46." in partition
-    assert "Externally closed rows: 9." in partition
+    assert "Pending external-review rows: 41." in partition
+    assert "Externally closed rows: 14." in partition
 
 
 def test_v07_signed_evidence_source_review_is_wired() -> None:
@@ -3829,8 +3836,43 @@ def test_v07_signed_evidence_source_review_is_wired() -> None:
     assert "Signed evidence/audit: source-level external review received" in outcome
     assert "no new `EXT-SE-###` findings" in outcome
     assert "Source-level review received; local-preview lane closed" in partition
-    assert "Pending external-review rows: 46." in partition
-    assert "Externally closed rows: 9." in partition
+    assert "Pending external-review rows: 41." in partition
+    assert "Externally closed rows: 14." in partition
+
+
+def test_v07_mcp_ingress_source_review_is_wired() -> None:
+    review_doc_path = "docs/codex/v0.7-mcp-ingress-source-review.md"
+    review_doc = Path(review_doc_path).read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    outcome = Path("docs/codex/v0.6-external-review-outcome-summary.md").read_text(
+        encoding="utf-8"
+    )
+    partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "v0.7 MCP Ingress Source Review" in review_doc
+    assert "Findings recorded in this pass: `0`" in review_doc
+    assert "Blocking findings: `0`" in review_doc
+    assert "closed for local-preview stdio MCP ingress" in review_doc
+    assert "does not approve remote MCP" in review_doc
+    assert "228 - MCP ingress source-review closure | Done" in backlog
+    assert review_doc_path in review_docs.REVIEW_DOCS
+    assert review_doc_path in docs_site
+    assert "v0.7 MCP Ingress Source Review" in index
+    assert "source-level review received; no new implementation findings" in matrix
+    assert "closed for local-preview stdio MCP ingress" in matrix
+    assert "MCP ingress: source-level external review received" in outcome
+    assert "no new `EXT-MCP-###` findings" in outcome
+    assert (
+        "MCP ingress | MCP ingress; MCP ingress source review checklist | "
+        "Source-level review received; local-preview lane closed"
+    ) in partition
+    assert "Pending external-review rows: 41." in partition
+    assert "Externally closed rows: 14." in partition
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:
