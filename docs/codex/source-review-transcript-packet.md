@@ -21,7 +21,8 @@ checklists, finding template, and closure matrix. It provides blank transcript s
 - patch apply;
 - filesystem;
 - HTTP fetch;
-- signed evidence, policy, MCP, and review console.
+- signed evidence, policy, MCP, and review console;
+- release automation.
 
 Completed reviewer transcripts should be treated as review input. Findings still need structured intake
 through [reviewer-finding-template.md](reviewer-finding-template.md) and closure updates in

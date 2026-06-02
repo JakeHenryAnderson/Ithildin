@@ -57,6 +57,7 @@ CONTRACT_DOCS = [
     Path("docs/codex/findings/sub-078-approval-review-drift.md"),
     Path("docs/codex/findings/sub-079-patch-diagnostics-detail.md"),
     Path("docs/codex/findings/sub-080-review-console-ui-test-harness.md"),
+    Path("docs/codex/findings/sub-084-patch-apply-missing-scope-approval.md"),
 ]
 
 FOCUSED_TEST_COMMAND = [

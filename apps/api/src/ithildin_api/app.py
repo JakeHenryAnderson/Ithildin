@@ -397,11 +397,13 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
             approval = approval_service.get(approval_id)
-            if (
-                approval.tool_name == PATCH_APPLY_TOOL
-                and isinstance(approval.one_time_scope.get("proposal_id"), str)
-            ):
-                review = _patch_apply_approval_review(api, approval)
+            if approval.tool_name == PATCH_APPLY_TOOL:
+                try:
+                    review = _patch_apply_approval_review(api, approval)
+                except PatchProposalError as exc:
+                    raise ApprovalError(
+                        "patch apply approval binding review failed"
+                    ) from exc
                 if review.get("valid") is not True:
                     raise ApprovalError("patch apply approval binding review failed")
             return approval_service.approve(

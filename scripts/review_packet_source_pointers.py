@@ -32,6 +32,14 @@ REQUIRED_POINTERS = {
     ],
     "mcp ingress": ["apps/mcp-server/src/ithildin_mcp_server/server.py"],
     "review console": ["apps/ui/src/App.tsx"],
+    "release automation": [
+        "scripts/release_evidence.py",
+        "scripts/external_review_dispatch_packets.py",
+        "scripts/reviewer_artifact_manifest.py",
+        "scripts/source_review_transcript_packet.py",
+        "scripts/review_packet_source_pointers.py",
+        "scripts/v06_lane_status.py",
+    ],
 }
 
 

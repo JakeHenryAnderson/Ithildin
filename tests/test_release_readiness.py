@@ -1800,6 +1800,7 @@ def test_source_review_transcript_packet_is_wired() -> None:
     assert all(str(item["sha256"]).startswith("sha256:") for item in report["docs"])
     assert "### Release Automation" in transcript
     assert "release evidence, redaction scan, artifact hashes" in transcript
+    assert "release automation" in doc
     assert "does not close external review" in doc
     assert "make source-review-transcript-packet" in readme
     assert "171 - Source review transcript packet | Done" in backlog
@@ -1874,11 +1875,12 @@ def test_review_packet_source_pointers_are_wired() -> None:
 
     assert report["valid"] is True
     assert report["failures"] == []
-    assert report["area_count"] == 7
-    assert report["pointer_count"] >= 12
+    assert report["area_count"] == 8
+    assert report["pointer_count"] >= 18
     assert report["runtime_behavior_changed"] is False
     assert "apps/api/src/ithildin_api/patches.py" in doc
     assert "apps/api/src/ithildin_api/http_tools.py" in doc
+    assert "scripts/external_review_dispatch_packets.py" in doc
     assert "make review-packet-source-pointers" in readme
     assert "174 - Review packet source pointers | Done" in backlog
     assert "Task 174 maps review packet claims" in matrix
@@ -2730,6 +2732,22 @@ def test_filesystem_source_review_bundle_is_wired(
     assert dispatch_area.finding_namespace == "EXT-FS-###"
 
 
+def test_release_automation_dispatch_packet_includes_source_inventory() -> None:
+    dispatch_area = next(
+        area
+        for area in external_review_dispatch_packets.DISPATCH_AREAS
+        if area.slug == "release-automation"
+    )
+    for required in [
+        "scripts/external_review_dispatch_packets.py",
+        "scripts/reviewer_artifact_manifest.py",
+        "scripts/source_review_transcript_packet.py",
+        "scripts/review_packet_source_pointers.py",
+        "scripts/v06_lane_status.py",
+    ]:
+        assert required in dispatch_area.source_files
+
+
 def test_http_fetch_source_review_bundle_is_wired(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -3542,6 +3560,7 @@ def test_review_console_source_review_bundle_is_wired(
     assert "docs/codex/review-console-source-review-checklist.md" in contracts_bundle
     assert "sub-078-approval-review-drift.md" in contracts_bundle
     assert "sub-080-review-console-ui-test-harness.md" in contracts_bundle
+    assert "sub-084-patch-apply-missing-scope-approval.md" in contracts_bundle
     evidence = output_dir.joinpath("06_REVIEW_CONSOLE_EVIDENCE.md").read_text(
         encoding="utf-8"
     )
@@ -3676,6 +3695,8 @@ def test_release_automation_source_review_bundle_is_wired(
     assert "docs/codex/release-evidence-schema.md" in contracts_bundle
     assert "sub-081-review-artifact-dispatch-inventory.md" in contracts_bundle
     assert "sub-083-release-automation-transcript-section.md" in contracts_bundle
+    assert "sub-085-release-automation-source-inventory.md" in contracts_bundle
+    assert "sub-086-release-transcript-doc-freshness.md" in contracts_bundle
     evidence = output_dir.joinpath("06_RELEASE_AUTOMATION_EVIDENCE.md").read_text(
         encoding="utf-8"
     )

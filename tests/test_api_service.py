@@ -600,10 +600,10 @@ def test_approval_list_requires_auth_and_supports_status_filter(tmp_path: Path) 
             headers={"Authorization": "Bearer correct-token"},
             json={
                 "principal": {"id": "agent:local-dev"},
-                "tool_name": "fs.patch.apply",
+                "tool_name": "fs.apply_patch",
                 "resource": {"path": "README.md"},
                 "summary": "Apply README patch",
-                "one_time_scope": {"tool_name": "fs.patch.apply"},
+                "one_time_scope": {"tool_name": "fs.apply_patch"},
             },
         )
         second_response = client.post(
@@ -611,10 +611,10 @@ def test_approval_list_requires_auth_and_supports_status_filter(tmp_path: Path) 
             headers={"Authorization": "Bearer correct-token"},
             json={
                 "principal": {"id": "agent:local-dev"},
-                "tool_name": "fs.patch.apply",
+                "tool_name": "fs.apply_patch",
                 "resource": {"path": "other.md"},
                 "summary": "Apply other patch",
-                "one_time_scope": {"tool_name": "fs.patch.apply"},
+                "one_time_scope": {"tool_name": "fs.apply_patch"},
             },
         )
         client.post(
@@ -640,6 +640,41 @@ def test_approval_list_requires_auth_and_supports_status_filter(tmp_path: Path) 
     assert [approval["approval_id"] for approval in pending_response.json()["approvals"]] == [
         second_response.json()["approval_id"]
     ]
+
+
+def test_patch_apply_approval_requires_valid_binding_scope_before_approval(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    write_manifest(
+        settings.manifest_dir,
+        name="fs.patch.apply",
+        risk="write",
+        required=["proposal_id"],
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        create_response = client.post(
+            "/approvals",
+            headers={"Authorization": "Bearer correct-token"},
+            json={
+                "principal": {"id": "agent:local-dev"},
+                "tool_name": "fs.patch.apply",
+                "resource": {"path": "README.md"},
+                "summary": "Apply README patch",
+                "one_time_scope": {"tool_name": "fs.patch.apply"},
+            },
+        )
+        approve_response = client.post(
+            f"/approvals/{create_response.json()['approval_id']}/approve",
+            headers={"Authorization": "Bearer correct-token"},
+            json={"decision": "approve", "decided_by": "user:alice"},
+        )
+
+    assert create_response.status_code == 200
+    assert approve_response.status_code == 409
+    assert approve_response.json()["detail"] == "patch apply approval binding review failed"
 
 
 def test_tools_requires_authentication(tmp_path: Path) -> None:

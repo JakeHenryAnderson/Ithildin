@@ -14,6 +14,7 @@ source reviewers and does not close external review or change runtime behavior.
 | Policy parity | `apps/api/src/ithildin_api/policy_preview.py`, `apps/api/src/ithildin_api/tool_calls.py`, `apps/api/src/ithildin_api/decision_evidence.py` | preview/runtime resource construction, trusted principal resolution, decision evidence |
 | MCP ingress | `apps/mcp-server/src/ithildin_mcp_server/server.py` | stdio adapter thinness and use of the shared governed pipeline |
 | Review console | `apps/ui/src/App.tsx` | local admin evidence display, approval evidence visibility, no hidden mutation controls |
+| Release automation | `scripts/release_evidence.py`, `scripts/external_review_dispatch_packets.py`, `scripts/reviewer_artifact_manifest.py`, `scripts/source_review_transcript_packet.py`, `scripts/review_packet_source_pointers.py`, `scripts/v06_lane_status.py` | release evidence, dispatch packets, artifact manifests, transcript packets, source pointers, lane status, and handoff freshness |
 
 ## Command
 

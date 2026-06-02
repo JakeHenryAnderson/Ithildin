@@ -241,6 +241,8 @@ does not approve public preview, capability design, capability implementation, o
 | 230 - Release automation internal proxy remediation | Done | `SUB-081` through `SUB-083` fixed reviewer artifact inventory, dispatch pointer validation, and release-automation transcript coverage. External review remains pending. |
 | 231 - Review console source-review bundle | Done | `make review-console-source-review-bundle` builds the focused review-console/admin source/test/evidence handoff under ignored `var/review-packets/v0.7/review-console-source-review/`. |
 | 232 - Release automation source-review bundle | Done | `make release-automation-source-review-bundle` builds the focused release/evidence automation source/test/evidence handoff under ignored `var/review-packets/v0.7/release-automation-source-review/`. |
+| 233 - Review console proxy recheck remediation | Done | `SUB-084` fixed missing-scope patch-apply approvals so malformed patch-apply approvals cannot be approved before binding review. External review remains pending. |
+| 234 - Release automation proxy recheck remediation | Done | `SUB-085` and `SUB-086` fixed release-automation source inventory and transcript documentation freshness for focused handoff packets. External review remains pending. |
 
 ## Future Candidate Track
 

@@ -78,6 +78,8 @@ CONTRACT_DOCS = [
     Path("docs/codex/findings/sub-081-review-artifact-dispatch-inventory.md"),
     Path("docs/codex/findings/sub-082-dispatch-pointer-validation.md"),
     Path("docs/codex/findings/sub-083-release-automation-transcript-section.md"),
+    Path("docs/codex/findings/sub-085-release-automation-source-inventory.md"),
+    Path("docs/codex/findings/sub-086-release-transcript-doc-freshness.md"),
 ]
 
 FOCUSED_TEST_COMMAND = [
