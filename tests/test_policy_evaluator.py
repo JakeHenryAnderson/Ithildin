@@ -181,3 +181,43 @@ def test_invalid_policy_yaml_fails_closed(tmp_path: Path) -> None:
 
     with pytest.raises(PolicyError):
         PolicyEvaluator.load(policy_path)
+
+
+def test_policy_rejects_duplicate_yaml_keys(tmp_path: Path) -> None:
+    policy_path = tmp_path / "policy.yaml"
+    policy_path.write_text(
+        """
+version: test-v1
+version: overwritten
+rules:
+  - id: allow_reads
+    decision: allow
+    reason: reads allowed
+    match:
+      tool.risk: read
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(PolicyError, match="invalid YAML policy"):
+        PolicyEvaluator.load(policy_path)
+
+
+def test_policy_rejects_nested_duplicate_yaml_keys(tmp_path: Path) -> None:
+    policy_path = tmp_path / "policy.yaml"
+    policy_path.write_text(
+        """
+version: test-v1
+rules:
+  - id: allow_reads
+    decision: allow
+    reason: reads allowed
+    match:
+      tool.risk: read
+      tool.risk: write
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(PolicyError, match="invalid YAML policy"):
+        PolicyEvaluator.load(policy_path)

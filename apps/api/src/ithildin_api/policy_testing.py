@@ -13,6 +13,8 @@ from ithildin_schemas import JsonObject, JsonValue, PolicyDecisionValue, PolicyI
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, ValidationError
 
+from ithildin_api.yaml_utils import safe_load_no_duplicate_keys
+
 
 class PolicyTestError(RuntimeError):
     """Raised when policy fixtures cannot be loaded or evaluated safely."""
@@ -108,7 +110,7 @@ def run_policy_tests(*, policy_path: Path, tests_path: Path) -> PolicyTestRun:
 
 def load_policy_tests(tests_path: Path) -> PolicyTestDocument:
     try:
-        raw_tests = yaml.safe_load(tests_path.read_text(encoding="utf-8"))
+        raw_tests = safe_load_no_duplicate_keys(tests_path)
     except FileNotFoundError as exc:
         raise PolicyTestError(f"policy tests file not found: {tests_path}") from exc
     except yaml.YAMLError as exc:

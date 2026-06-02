@@ -122,7 +122,7 @@
       "closure_state": "external_pending",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
-      "ext_findings_count": 0,
+      "ext_findings_count": 1,
       "external_review_received": false,
       "fixed_commits": [
         "e388f8f1158321e0b1628795f85da791cdb3cde3"

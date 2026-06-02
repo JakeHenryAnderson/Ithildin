@@ -170,6 +170,48 @@ cases:
         load_policy_tests(tests_path)
 
 
+def test_policy_test_harness_rejects_duplicate_yaml_keys(tmp_path: Path) -> None:
+    tests_path = tmp_path / "tests.yaml"
+    tests_path.write_text(
+        """
+version: test-fixtures-v1
+version: overwritten
+cases: []
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(PolicyTestError, match="invalid policy tests YAML"):
+        load_policy_tests(tests_path)
+
+
+def test_policy_test_harness_rejects_nested_duplicate_yaml_keys(tmp_path: Path) -> None:
+    tests_path = tmp_path / "tests.yaml"
+    tests_path.write_text(
+        """
+version: test-fixtures-v1
+cases:
+  - id: duplicate_mapping_key
+    policy_input:
+      principal:
+        id: "agent:test"
+      tool:
+        name: fs.read
+        risk: read
+      resource:
+        in_scope: true
+        in_scope: false
+      context: {}
+    expect:
+      decision: allow
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(PolicyTestError, match="invalid policy tests YAML"):
+        load_policy_tests(tests_path)
+
+
 def test_policy_test_harness_reports_policy_load_errors(tmp_path: Path) -> None:
     policy_path = tmp_path / "policy.yaml"
     tests_path = tmp_path / "tests.yaml"
