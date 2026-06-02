@@ -232,6 +232,7 @@ does not approve public preview, capability design, capability implementation, o
 | 221 - Filesystem source-review bundle | Done | `make filesystem-source-review-bundle` builds the focused source/test/evidence handoff requested by `EXT-FS-001` under ignored `var/review-packets/v0.7/filesystem-source-review/`. |
 | 222 - HTTP fetch source-review bundle | Done | `make http-fetch-source-review-bundle` builds the focused `http.fetch` source/test/evidence handoff under ignored `var/review-packets/v0.7/http-fetch-source-review/`. |
 | 223 - HTTP fetch source-review closure | Done | [v0.7-http-fetch-source-review.md](v0.7-http-fetch-source-review.md); GPT 5.5 Pro source-level review recorded no new findings, and the lane is closed for local-preview `http.fetch` only. |
+| 224 - Signed evidence source-review bundle | Done | `make signed-evidence-source-review-bundle` builds the focused audit/signed-evidence source/test/evidence handoff under ignored `var/review-packets/v0.7/signed-evidence-source-review/`; the lane remains pending external/source disposition. |
 
 ## Future Candidate Track
 

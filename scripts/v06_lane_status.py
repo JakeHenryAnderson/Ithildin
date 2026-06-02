@@ -58,7 +58,7 @@ LANES: tuple[Lane, ...] = (
         title="Signed Evidence and Audit",
         matrix_areas=("Signed evidence", "Audit integrity", "Manifest-lock verification"),
         finding_prefixes=("EXT-SE-",),
-        next_external_packet="signed evidence dispatch packet",
+        next_external_packet="`make signed-evidence-source-review-bundle` output",
     ),
     Lane(
         slug="policy-registry",

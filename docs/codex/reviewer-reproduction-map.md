@@ -137,26 +137,34 @@ work must stop for status, reassessment, or external consultation.
    implementation path, canonicalization corpus, focused HTTP tests, contract docs, prior internal
    HTTP findings, policy-parity evidence, and artifact hashes for source-level external review.
 
-18. `make review-packet-bundle`
+18. `make signed-evidence-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.7/signed-evidence-source-review/`. This attaches audit signing/export
+   code, audit writer verification, manifest-lock signature code, API/CLI/demo wiring, focused
+   audit/signing tests, contract docs, prior internal signed-evidence findings, demo verification
+   evidence, and artifact hashes for source-level external review.
+
+19. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-19. `make review-packet-consolidated`
+20. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-20. `make packet-redaction-scan`
+21. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-21. `make docs-site`
+22. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -167,6 +175,7 @@ work must stop for status, reassessment, or external consultation.
 - Filesystem contract check transcript: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/filesystem-contract-check.txt`
 - Filesystem source-review bundle: `var/review-packets/v0.7/filesystem-source-review/`
 - HTTP fetch source-review bundle: `var/review-packets/v0.7/http-fetch-source-review/`
+- Signed evidence source-review bundle: `var/review-packets/v0.7/signed-evidence-source-review/`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

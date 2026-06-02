@@ -105,6 +105,7 @@ tamper-evident audit log.
 - `make v07-patch-apply-recheck-prep` - verify patch-apply recheck prep for `EXT-PA-001` through `EXT-PA-004`.
 - `make filesystem-source-review-bundle` - build the focused filesystem/platform source/test/evidence handoff requested by `EXT-FS-001`.
 - `make http-fetch-source-review-bundle` - build the focused `http.fetch` source/test/evidence handoff for source-level external review.
+- `make signed-evidence-source-review-bundle` - build the focused audit/signed-evidence source/test/evidence handoff for source-level external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
@@ -302,6 +303,9 @@ Generate the focused source/test/evidence bundle requested by `EXT-FS-001` with
 Generate the focused source/test/evidence bundle for the `http.fetch` lane with
 `make http-fetch-source-review-bundle`; the ignored output is
 `var/review-packets/v0.7/http-fetch-source-review/`.
+Generate the focused source/test/evidence bundle for the signed evidence/audit lane with
+`make signed-evidence-source-review-bundle`; the ignored output is
+`var/review-packets/v0.7/signed-evidence-source-review/`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

@@ -102,7 +102,7 @@
         "Audit integrity",
         "Manifest-lock verification"
       ],
-      "next_action": "send signed evidence dispatch packet for source review",
+      "next_action": "send `make signed-evidence-source-review-bundle` output for source review",
       "reviewer_recheck_required": false,
       "slug": "signed-evidence-audit",
       "verification_commands": [
