@@ -108,6 +108,8 @@ tamper-evident audit log.
 - `make signed-evidence-source-review-bundle` - build the focused audit/signed-evidence source/test/evidence handoff for source-level external review.
 - `make policy-registry-source-review-bundle` - build the focused policy/registry source/test/evidence handoff for source-level external review.
 - `make mcp-ingress-source-review-bundle` - build the focused MCP ingress source/test/evidence handoff for source-level external review.
+- `make review-console-source-review-bundle` - build the focused review-console/admin source/test/evidence handoff for source-level external review.
+- `make release-automation-source-review-bundle` - build the focused release/evidence automation source/test/evidence handoff for source-level external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
@@ -314,6 +316,12 @@ Generate the focused source/test/evidence bundle for the policy/registry lane wi
 Generate the focused source/test/evidence bundle for the MCP ingress lane with
 `make mcp-ingress-source-review-bundle`; the ignored output is
 `var/review-packets/v0.7/mcp-ingress-source-review/`.
+Generate the focused source/test/evidence bundle for the review-console/admin lane with
+`make review-console-source-review-bundle`; the ignored output is
+`var/review-packets/v0.7/review-console-source-review/`.
+Generate the focused source/test/evidence bundle for the release/evidence automation lane with
+`make release-automation-source-review-bundle`; the ignored output is
+`var/review-packets/v0.7/release-automation-source-review/`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

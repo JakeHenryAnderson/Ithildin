@@ -239,6 +239,8 @@ does not approve public preview, capability design, capability implementation, o
 | 228 - MCP ingress source-review closure | Done | [v0.7-mcp-ingress-source-review.md](v0.7-mcp-ingress-source-review.md); GPT 5.5 Pro source-level review recorded no new findings, and stdio MCP ingress plus the MCP ingress source-review checklist are closed for local-preview only. |
 | 229 - Review console internal proxy remediation | Done | `SUB-078` and `SUB-079` fixed approval-time binding review and patch diagnostics detail; `SUB-080` records the low deferred frontend interaction-test harness. External review remains pending. |
 | 230 - Release automation internal proxy remediation | Done | `SUB-081` through `SUB-083` fixed reviewer artifact inventory, dispatch pointer validation, and release-automation transcript coverage. External review remains pending. |
+| 231 - Review console source-review bundle | Done | `make review-console-source-review-bundle` builds the focused review-console/admin source/test/evidence handoff under ignored `var/review-packets/v0.7/review-console-source-review/`. |
+| 232 - Release automation source-review bundle | Done | `make release-automation-source-review-bundle` builds the focused release/evidence automation source/test/evidence handoff under ignored `var/review-packets/v0.7/release-automation-source-review/`. |
 
 ## Future Candidate Track
 

@@ -30,9 +30,11 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    release_automation_source_review_bundle,
     release_evidence,
     release_guardrails,
     release_packet,
+    review_console_source_review_bundle,
     review_docs,
     review_findings_collect,
     review_packet_bundle,
@@ -2424,7 +2426,7 @@ def test_v06_patch_apply_external_review_packet_is_wired(
         "tool-manifests.lock.json",
     ]:
         path = repo_root / marker
-        if "." in Path(marker).name:
+        if marker in {"pyproject.toml", "Makefile", "tool-manifests.lock.json"}:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("marker\n", encoding="utf-8")
         else:
@@ -2565,7 +2567,7 @@ def test_filesystem_source_review_bundle_is_wired(
         "tool-manifests.lock.json",
     ]:
         path = repo_root / marker
-        if "." in Path(marker).name:
+        if marker in {"pyproject.toml", "Makefile", "tool-manifests.lock.json"}:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("marker\n", encoding="utf-8")
         else:
@@ -2741,7 +2743,7 @@ def test_http_fetch_source_review_bundle_is_wired(
         "tool-manifests.lock.json",
     ]:
         path = repo_root / marker
-        if "." in Path(marker).name:
+        if marker in {"pyproject.toml", "Makefile", "tool-manifests.lock.json"}:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("marker\n", encoding="utf-8")
         else:
@@ -2913,7 +2915,7 @@ def test_signed_evidence_source_review_bundle_is_wired(
         "tool-manifests.lock.json",
     ]:
         path = repo_root / marker
-        if "." in Path(marker).name:
+        if marker in {"pyproject.toml", "Makefile", "tool-manifests.lock.json"}:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("marker\n", encoding="utf-8")
         else:
@@ -3440,6 +3442,274 @@ def test_mcp_ingress_source_review_bundle_is_wired(
     ]:
         assert required in dispatch_area.source_files
     assert dispatch_area.finding_namespace == "EXT-MCP-###"
+
+
+def test_review_console_source_review_bundle_is_wired(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path
+    for marker in [
+        "pyproject.toml",
+        "Makefile",
+        "apps/api",
+        "apps/mcp-server",
+        "tool-manifests.lock.json",
+    ]:
+        path = repo_root / marker
+        if marker in {"pyproject.toml", "Makefile", "tool-manifests.lock.json"}:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("marker\n", encoding="utf-8")
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+    for relative in (
+        review_console_source_review_bundle.SOURCE_FILES
+        + review_console_source_review_bundle.TEST_FILES
+        + review_console_source_review_bundle.CONTRACT_DOCS
+    ):
+        path = repo_root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {relative.name}\n", encoding="utf-8")
+
+    def fake_build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, object]:
+        output_root.mkdir(parents=True)
+        output_root.joinpath("review-console.md").write_text(
+            "# Review Console\n",
+            encoding="utf-8",
+        )
+        manifest: dict[str, object] = {
+            "packets": [
+                {
+                    "path": "review-console.md",
+                    "sha256": "sha256:" + ("9" * 64),
+                    "payload_sha256": "sha256:" + ("a" * 64),
+                    "bytes": 17,
+                }
+            ]
+        }
+        output_root.joinpath("dispatch-packet-hashes.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        return manifest
+
+    monkeypatch.setattr(
+        review_console_source_review_bundle,
+        "_build_dispatch_packets",
+        fake_build_dispatch_packets,
+    )
+    monkeypatch.setattr(
+        review_console_source_review_bundle,
+        "_git",
+        lambda repo_root, args: "abc123def4567890" if args == ["rev-parse", "HEAD"] else "",
+    )
+
+    output_dir = review_console_source_review_bundle.build_bundle(
+        repo_root=repo_root,
+        output_dir=repo_root / "var/review-packets/v0.7/review-console-source-review",
+        run_commands=False,
+    )
+
+    expected_files = {
+        "00_REVIEW_CONSOLE_SOURCE_REVIEW_INDEX.md",
+        "01_REVIEW_CONSOLE_SOURCE_REVIEW_PROMPT.md",
+        "02_REVIEW_CONSOLE_DISPATCH_PACKET.md",
+        "03_REVIEW_CONSOLE_SOURCE_BUNDLE.md",
+        "04_REVIEW_CONSOLE_TESTS_BUNDLE.md",
+        "05_REVIEW_CONSOLE_CONTRACTS_BUNDLE.md",
+        "06_REVIEW_CONSOLE_EVIDENCE.md",
+        "07_REVIEW_CONSOLE_FOCUSED_TESTS.txt",
+        "08_REVIEW_CONSOLE_INTAKE_COMMANDS.md",
+        "review-console-source-review-artifact-hashes.json",
+    }
+    for required in expected_files:
+        assert output_dir.joinpath(required).exists()
+
+    prompt = output_dir.joinpath("01_REVIEW_CONSOLE_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EXT-UI-###" in prompt
+    assert "local bearer-token admin authentication" in prompt
+    source_bundle = output_dir.joinpath("03_REVIEW_CONSOLE_SOURCE_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "apps/ui/src/App.tsx" in source_bundle
+    assert "apps/api/src/ithildin_api/app.py" in source_bundle
+    assert "apps/api/src/ithildin_api/patches.py" in source_bundle
+    contracts_bundle = output_dir.joinpath(
+        "05_REVIEW_CONSOLE_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    assert "docs/codex/review-console-source-review-checklist.md" in contracts_bundle
+    assert "sub-078-approval-review-drift.md" in contracts_bundle
+    assert "sub-080-review-console-ui-test-harness.md" in contracts_bundle
+    evidence = output_dir.joinpath("06_REVIEW_CONSOLE_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "npm run typecheck --prefix apps/ui" in evidence
+    assert "frontend interaction harness is a low deferred assurance item" in evidence
+    intake = output_dir.joinpath("08_REVIEW_CONSOLE_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "--area \"review-console\"" in intake
+    hashes = json.loads(
+        output_dir.joinpath(
+            "review-console-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert {entry["path"] for entry in hashes} == expected_files - {
+        "review-console-source-review-artifact-hashes.json"
+    }
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    lane_status_source = Path("scripts/v06_lane_status.py").read_text(encoding="utf-8")
+    row_partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+    assert "make review-console-source-review-bundle" in readme
+    assert "review-console-source-review-bundle:" in makefile
+    assert "make review-console-source-review-bundle" in reproduction
+    assert "231 - Review console source-review bundle | Done" in backlog
+    assert "make review-console-source-review-bundle" in lane_status_source
+    assert "make review-console-source-review-bundle" in row_partition
+
+
+def test_release_automation_source_review_bundle_is_wired(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path
+    for marker in [
+        "pyproject.toml",
+        "Makefile",
+        "apps/api",
+        "apps/mcp-server",
+        "tool-manifests.lock.json",
+    ]:
+        path = repo_root / marker
+        if marker in {"pyproject.toml", "Makefile", "tool-manifests.lock.json"}:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("marker\n", encoding="utf-8")
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+    for relative in (
+        release_automation_source_review_bundle.SOURCE_FILES
+        + release_automation_source_review_bundle.TEST_FILES
+        + release_automation_source_review_bundle.CONTRACT_DOCS
+    ):
+        path = repo_root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {relative.name}\n", encoding="utf-8")
+
+    def fake_build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, object]:
+        output_root.mkdir(parents=True)
+        output_root.joinpath("release-automation.md").write_text(
+            "# Release Automation\n",
+            encoding="utf-8",
+        )
+        manifest: dict[str, object] = {
+            "packets": [
+                {
+                    "path": "release-automation.md",
+                    "sha256": "sha256:" + ("8" * 64),
+                    "payload_sha256": "sha256:" + ("b" * 64),
+                    "bytes": 21,
+                }
+            ]
+        }
+        output_root.joinpath("dispatch-packet-hashes.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        return manifest
+
+    monkeypatch.setattr(
+        release_automation_source_review_bundle,
+        "_build_dispatch_packets",
+        fake_build_dispatch_packets,
+    )
+    monkeypatch.setattr(
+        release_automation_source_review_bundle,
+        "_git",
+        lambda repo_root, args: "fedcba9876543210" if args == ["rev-parse", "HEAD"] else "",
+    )
+
+    output_dir = release_automation_source_review_bundle.build_bundle(
+        repo_root=repo_root,
+        output_dir=repo_root / "var/review-packets/v0.7/release-automation-source-review",
+        run_commands=False,
+    )
+
+    expected_files = {
+        "00_RELEASE_AUTOMATION_SOURCE_REVIEW_INDEX.md",
+        "01_RELEASE_AUTOMATION_SOURCE_REVIEW_PROMPT.md",
+        "02_RELEASE_AUTOMATION_DISPATCH_PACKET.md",
+        "03_RELEASE_AUTOMATION_SOURCE_BUNDLE.md",
+        "04_RELEASE_AUTOMATION_TESTS_BUNDLE.md",
+        "05_RELEASE_AUTOMATION_CONTRACTS_BUNDLE.md",
+        "06_RELEASE_AUTOMATION_EVIDENCE.md",
+        "07_RELEASE_AUTOMATION_FOCUSED_TESTS.txt",
+        "08_RELEASE_AUTOMATION_INTAKE_COMMANDS.md",
+        "release-automation-source-review-artifact-hashes.json",
+    }
+    for required in expected_files:
+        assert output_dir.joinpath(required).exists()
+
+    prompt = output_dir.joinpath(
+        "01_RELEASE_AUTOMATION_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    assert "EXT-REL-###" in prompt
+    assert "make release-check" in prompt
+    source_bundle = output_dir.joinpath(
+        "03_RELEASE_AUTOMATION_SOURCE_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    assert "scripts/release_evidence.py" in source_bundle
+    assert "scripts/external_review_dispatch_packets.py" in source_bundle
+    assert "scripts/capability_decision_report.py" in source_bundle
+    contracts_bundle = output_dir.joinpath(
+        "05_RELEASE_AUTOMATION_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    assert "docs/codex/release-evidence-schema.md" in contracts_bundle
+    assert "sub-081-review-artifact-dispatch-inventory.md" in contracts_bundle
+    assert "sub-083-release-automation-transcript-section.md" in contracts_bundle
+    evidence = output_dir.joinpath("06_RELEASE_AUTOMATION_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "make release-evidence" in evidence
+    assert "Capability expansion remains blocked" in evidence
+    intake = output_dir.joinpath("08_RELEASE_AUTOMATION_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "--area \"release-automation\"" in intake
+    hashes = json.loads(
+        output_dir.joinpath(
+            "release-automation-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert {entry["path"] for entry in hashes} == expected_files - {
+        "release-automation-source-review-artifact-hashes.json"
+    }
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    lane_status_source = Path("scripts/v06_lane_status.py").read_text(encoding="utf-8")
+    row_partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+    assert "make release-automation-source-review-bundle" in readme
+    assert "release-automation-source-review-bundle:" in makefile
+    assert "make release-automation-source-review-bundle" in reproduction
+    assert "232 - Release automation source-review bundle | Done" in backlog
+    assert "make release-automation-source-review-bundle" in lane_status_source
+    assert "make release-automation-source-review-bundle" in row_partition
 
 
 def test_v06_external_response_normalization_is_wired() -> None:

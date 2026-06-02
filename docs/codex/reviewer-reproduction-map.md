@@ -161,7 +161,23 @@ work must stop for status, reassessment, or external consultation.
    findings, focused MCP tests, command evidence, and artifact hashes for source-level external
    review.
 
-21. `make review-packet-bundle`
+21. `make review-console-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.7/review-console-source-review/`. This attaches the React console,
+   local admin API routes, approval review/mutation and patch diagnostics paths, focused API/UI
+   validation, prior review-console findings, command evidence, and artifact hashes for
+   source-level external review.
+
+22. `make release-automation-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.7/release-automation-source-review/`. This attaches release evidence,
+   guardrails, packet/bundle generation, redaction scan, response normalization, closure/capability
+   gates, release-readiness tests, prior release-automation findings, command evidence, and artifact
+   hashes for source-level external review.
+
+23. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,

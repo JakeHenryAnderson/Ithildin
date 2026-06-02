@@ -189,7 +189,7 @@
         "Review console evidence",
         "Local admin auth"
       ],
-      "next_action": "send review console dispatch packet for source review",
+      "next_action": "send `make review-console-source-review-bundle` output for source review",
       "reviewer_recheck_required": false,
       "slug": "review-console",
       "verification_commands": [
@@ -216,7 +216,7 @@
         "Release evidence",
         "v0.6 external review dispatch packets"
       ],
-      "next_action": "send release automation dispatch packet for source review",
+      "next_action": "send `make release-automation-source-review-bundle` output for source review",
       "reviewer_recheck_required": false,
       "slug": "release-automation",
       "verification_commands": [

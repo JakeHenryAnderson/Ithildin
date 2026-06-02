@@ -83,14 +83,14 @@ LANES: tuple[Lane, ...] = (
         title="Review Console",
         matrix_areas=("Review console evidence", "Local admin auth"),
         finding_prefixes=("EXT-UI-",),
-        next_external_packet="review console dispatch packet",
+        next_external_packet="`make review-console-source-review-bundle` output",
     ),
     Lane(
         slug="release-automation",
         title="Release Automation",
         matrix_areas=("Release evidence", "v0.6 external review dispatch packets"),
         finding_prefixes=("EXT-REL-",),
-        next_external_packet="release automation dispatch packet",
+        next_external_packet="`make release-automation-source-review-bundle` output",
     ),
 )
 
