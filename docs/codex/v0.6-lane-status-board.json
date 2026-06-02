@@ -119,20 +119,22 @@
       ]
     },
     {
-      "closure_state": "external_pending",
+      "closure_state": "closed_local_preview",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
       "ext_findings_count": 1,
-      "external_review_received": false,
+      "external_review_received": true,
       "fixed_commits": [
-        "e388f8f1158321e0b1628795f85da791cdb3cde3"
+        "e388f8f1158321e0b1628795f85da791cdb3cde3",
+        "81cdfbc874155c85a4f8de717caab7538bb75ac7"
       ],
       "lane": "Policy and Registry",
       "matrix_areas": [
         "Policy parity",
-        "Registry fail-closed"
+        "Registry fail-closed",
+        "Policy parity source review checklist"
       ],
-      "next_action": "send `make policy-registry-source-review-bundle` output for source review",
+      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
       "reviewer_recheck_required": false,
       "slug": "policy-registry",
       "verification_commands": [
@@ -141,7 +143,9 @@
         "focused policy/registry pytest command",
         "make release-check",
         "make manifest-lock-check",
-        "registry/API focused tests"
+        "registry/API focused tests",
+        "make policy-registry-source-review-bundle",
+        "focused policy/registry tests"
       ]
     },
     {
@@ -226,8 +230,8 @@
   "summary": {
     "capability_expansion_allowed": false,
     "critical_high_open_count": 0,
-    "external_review_closed": 4,
-    "external_review_received": 4,
+    "external_review_closed": 5,
+    "external_review_received": 5,
     "lane_count": 8
   },
   "track": "v0.6 external/source-review closure"

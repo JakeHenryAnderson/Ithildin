@@ -3315,8 +3315,8 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
 
     assert json.loads(json.dumps(board)) == payload
     assert board["summary"]["lane_count"] == 8
-    assert board["summary"]["external_review_received"] == 4
-    assert board["summary"]["external_review_closed"] == 4
+    assert board["summary"]["external_review_received"] == 5
+    assert board["summary"]["external_review_closed"] == 5
     assert board["summary"]["critical_high_open_count"] == 0
     patch_lane = next(lane for lane in board["lanes"] if lane["slug"] == "patch-apply")
     assert patch_lane["external_review_received"] is True
@@ -3338,11 +3338,17 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
     assert signed_lane["ext_findings_count"] == 0
     assert signed_lane["reviewer_recheck_required"] is False
     assert signed_lane["closure_state"] == "closed_local_preview"
+    policy_lane = next(lane for lane in board["lanes"] if lane["slug"] == "policy-registry")
+    assert policy_lane["external_review_received"] is True
+    assert policy_lane["ext_findings_count"] == 1
+    assert policy_lane["reviewer_recheck_required"] is False
+    assert policy_lane["closure_state"] == "closed_local_preview"
     assert "does not itself close review" in doc
     assert "Patch Apply | yes | 4 | 0 | no | closed_local_preview" in doc
     assert "Filesystem and Platform | yes | 1 | 0 | no | closed_local_preview" in doc
     assert "HTTP Fetch | yes | 0 | 0 | no | closed_local_preview" in doc
     assert "Signed Evidence and Audit | yes | 0 | 0 | no | closed_local_preview" in doc
+    assert "Policy and Registry | yes | 1 | 0 | no | closed_local_preview" in doc
     assert "make v06-lane-status" in readme
     assert "v06-lane-status:" in makefile
     assert "v06-lane-status" in makefile.partition("release-check:")[2]
@@ -3374,8 +3380,8 @@ def test_v06_closure_readiness_bundle_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 4
-    assert report["external_review_closed"] == 4
+    assert report["external_review_received"] == 5
+    assert report["external_review_closed"] == 5
     assert report["critical_high_open_count"] == 0
     assert "make v06-closure-readiness" in readme
     assert "v06-closure-readiness:" in makefile
@@ -3423,8 +3429,8 @@ def test_v06_final_handoff_docs_are_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 4
-    assert report["external_review_closed"] == 4
+    assert report["external_review_received"] == 5
+    assert report["external_review_closed"] == 5
     assert report["capability_expansion_allowed"] is False
     assert "make v06-final-handoff" in readme
     assert "v06-final-handoff:" in makefile
@@ -3478,8 +3484,8 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["pending_external_review_rows"] == 46
-    assert report["externally_closed_rows"] == 9
+    assert report["pending_external_review_rows"] == 43
+    assert report["externally_closed_rows"] == 12
     assert report["capability_expansion_allowed"] is False
     assert "make v07-closure-prep" in readme
     assert "v07-closure-prep:" in makefile

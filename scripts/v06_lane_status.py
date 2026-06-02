@@ -63,7 +63,11 @@ LANES: tuple[Lane, ...] = (
     Lane(
         slug="policy-registry",
         title="Policy and Registry",
-        matrix_areas=("Policy parity", "Registry fail-closed"),
+        matrix_areas=(
+            "Policy parity",
+            "Registry fail-closed",
+            "Policy parity source review checklist",
+        ),
         finding_prefixes=("EXT-PR-",),
         next_external_packet="`make policy-registry-source-review-bundle` output",
     ),
