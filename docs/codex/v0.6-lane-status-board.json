@@ -162,7 +162,7 @@
         "MCP ingress",
         "MCP ingress source review checklist"
       ],
-      "next_action": "send MCP ingress dispatch packet for source review",
+      "next_action": "send `make mcp-ingress-source-review-bundle` output for source review",
       "reviewer_recheck_required": false,
       "slug": "mcp-ingress",
       "verification_commands": [

@@ -107,6 +107,7 @@ tamper-evident audit log.
 - `make http-fetch-source-review-bundle` - build the focused `http.fetch` source/test/evidence handoff for source-level external review.
 - `make signed-evidence-source-review-bundle` - build the focused audit/signed-evidence source/test/evidence handoff for source-level external review.
 - `make policy-registry-source-review-bundle` - build the focused policy/registry source/test/evidence handoff for source-level external review.
+- `make mcp-ingress-source-review-bundle` - build the focused MCP ingress source/test/evidence handoff for source-level external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
@@ -310,6 +311,9 @@ Generate the focused source/test/evidence bundle for the signed evidence/audit l
 Generate the focused source/test/evidence bundle for the policy/registry lane with
 `make policy-registry-source-review-bundle`; the ignored output is
 `var/review-packets/v0.7/policy-registry-source-review/`.
+Generate the focused source/test/evidence bundle for the MCP ingress lane with
+`make mcp-ingress-source-review-bundle`; the ignored output is
+`var/review-packets/v0.7/mcp-ingress-source-review/`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

@@ -76,7 +76,7 @@ LANES: tuple[Lane, ...] = (
         title="MCP Ingress",
         matrix_areas=("MCP ingress", "MCP ingress source review checklist"),
         finding_prefixes=("EXT-MCP-",),
-        next_external_packet="MCP ingress dispatch packet",
+        next_external_packet="`make mcp-ingress-source-review-bundle` output",
     ),
     Lane(
         slug="review-console",
