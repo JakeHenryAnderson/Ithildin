@@ -3130,8 +3130,8 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
 
     assert json.loads(json.dumps(board)) == payload
     assert board["summary"]["lane_count"] == 8
-    assert board["summary"]["external_review_received"] == 3
-    assert board["summary"]["external_review_closed"] == 3
+    assert board["summary"]["external_review_received"] == 4
+    assert board["summary"]["external_review_closed"] == 4
     assert board["summary"]["critical_high_open_count"] == 0
     patch_lane = next(lane for lane in board["lanes"] if lane["slug"] == "patch-apply")
     assert patch_lane["external_review_received"] is True
@@ -3148,10 +3148,16 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
     assert http_lane["ext_findings_count"] == 0
     assert http_lane["reviewer_recheck_required"] is False
     assert http_lane["closure_state"] == "closed_local_preview"
+    signed_lane = next(lane for lane in board["lanes"] if lane["slug"] == "signed-evidence-audit")
+    assert signed_lane["external_review_received"] is True
+    assert signed_lane["ext_findings_count"] == 0
+    assert signed_lane["reviewer_recheck_required"] is False
+    assert signed_lane["closure_state"] == "closed_local_preview"
     assert "does not itself close review" in doc
     assert "Patch Apply | yes | 4 | 0 | no | closed_local_preview" in doc
     assert "Filesystem and Platform | yes | 1 | 0 | no | closed_local_preview" in doc
     assert "HTTP Fetch | yes | 0 | 0 | no | closed_local_preview" in doc
+    assert "Signed Evidence and Audit | yes | 0 | 0 | no | closed_local_preview" in doc
     assert "make v06-lane-status" in readme
     assert "v06-lane-status:" in makefile
     assert "v06-lane-status" in makefile.partition("release-check:")[2]
@@ -3183,8 +3189,8 @@ def test_v06_closure_readiness_bundle_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 3
-    assert report["external_review_closed"] == 3
+    assert report["external_review_received"] == 4
+    assert report["external_review_closed"] == 4
     assert report["critical_high_open_count"] == 0
     assert "make v06-closure-readiness" in readme
     assert "v06-closure-readiness:" in makefile
@@ -3232,8 +3238,8 @@ def test_v06_final_handoff_docs_are_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 3
-    assert report["external_review_closed"] == 3
+    assert report["external_review_received"] == 4
+    assert report["external_review_closed"] == 4
     assert report["capability_expansion_allowed"] is False
     assert "make v06-final-handoff" in readme
     assert "v06-final-handoff:" in makefile
@@ -3287,8 +3293,8 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["pending_external_review_rows"] == 49
-    assert report["externally_closed_rows"] == 6
+    assert report["pending_external_review_rows"] == 46
+    assert report["externally_closed_rows"] == 9
     assert report["capability_expansion_allowed"] is False
     assert "make v07-closure-prep" in readme
     assert "v07-closure-prep:" in makefile
@@ -3417,8 +3423,45 @@ def test_v07_http_fetch_source_review_is_wired() -> None:
     assert "closed for local-preview `http.fetch`" in matrix
     assert "arbitrary HTTP methods" in matrix
     assert "HTTP fetch: source-level external review received" in outcome
-    assert "Pending external-review rows: 49." in partition
-    assert "Externally closed rows: 6." in partition
+    assert "Pending external-review rows: 46." in partition
+    assert "Externally closed rows: 9." in partition
+
+
+def test_v07_signed_evidence_source_review_is_wired() -> None:
+    review_doc_path = "docs/codex/v0.7-signed-evidence-source-review.md"
+    review_doc = Path(review_doc_path).read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    outcome = Path("docs/codex/v0.6-external-review-outcome-summary.md").read_text(
+        encoding="utf-8"
+    )
+    partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "v0.7 Signed Evidence Source Review" in review_doc
+    assert "Findings recorded in this pass: `0`" in review_doc
+    assert "Blocking findings: `0`" in review_doc
+    assert "closed for local-preview evidence" in review_doc
+    assert "does not approve public/security" in review_doc
+    assert "external notarization" in review_doc
+    assert "225 - Signed evidence source-review closure | Done" in backlog
+    assert review_doc_path in review_docs.REVIEW_DOCS
+    assert review_doc_path in docs_site
+    assert "v0.7 Signed Evidence Source Review" in index
+    assert "source-level review received; no new implementation findings" in matrix
+    assert "closed for local-preview signed audit exports" in matrix
+    assert "closed for local-preview audit verification/export evidence" in matrix
+    assert "checklist lane closed for local-preview signed evidence" in matrix
+    assert "Manifest-lock verification" in matrix
+    assert "source-level external review recorded no new findings" in matrix
+    assert "Signed evidence/audit: source-level external review received" in outcome
+    assert "no new `EXT-SE-###` findings" in outcome
+    assert "Source-level review received; local-preview lane closed" in partition
+    assert "Pending external-review rows: 46." in partition
+    assert "Externally closed rows: 9." in partition
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:

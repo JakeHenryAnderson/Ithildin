@@ -88,13 +88,14 @@
       ]
     },
     {
-      "closure_state": "external_pending",
+      "closure_state": "closed_local_preview",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
       "ext_findings_count": 0,
-      "external_review_received": false,
+      "external_review_received": true,
       "fixed_commits": [
-        "722eadc87500"
+        "722eadc87500",
+        "e55e9b14679e668674857ccf2042720d4feaf042"
       ],
       "lane": "Signed Evidence and Audit",
       "matrix_areas": [
@@ -102,16 +103,19 @@
         "Audit integrity",
         "Manifest-lock verification"
       ],
-      "next_action": "send `make signed-evidence-source-review-bundle` output for source review",
+      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
       "reviewer_recheck_required": false,
       "slug": "signed-evidence-audit",
       "verification_commands": [
+        "make signed-evidence-source-review-bundle",
         "make signed-evidence-demo",
         "make signed-evidence-demo-verify",
-        "uv run pytest tests/test_audit_writer.py tests/test_signed_evidence_demo.py tests/test_tool_registry.py -q",
+        "make evidence-confusion-gate",
+        "signed evidence focused tests",
+        "make reviewer-findings-check",
         "make release-check",
         "make audit-diagnostics",
-        "uv run pytest tests/test_audit_writer.py tests/test_audit_diagnostics.py -q"
+        "audit diagnostics and writer focused tests"
       ]
     },
     {
@@ -222,8 +226,8 @@
   "summary": {
     "capability_expansion_allowed": false,
     "critical_high_open_count": 0,
-    "external_review_closed": 3,
-    "external_review_received": 3,
+    "external_review_closed": 4,
+    "external_review_received": 4,
     "lane_count": 8
   },
   "track": "v0.6 external/source-review closure"
