@@ -130,26 +130,33 @@ work must stop for status, reassessment, or external consultation.
    `make filesystem-contract-check` output, `/system/status.filesystem` evidence, and artifact
    hashes for source-level external review.
 
-17. `make review-packet-bundle`
+17. `make http-fetch-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.7/http-fetch-source-review/`. This attaches the `http.fetch`
+   implementation path, canonicalization corpus, focused HTTP tests, contract docs, prior internal
+   HTTP findings, policy-parity evidence, and artifact hashes for source-level external review.
+
+18. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-18. `make review-packet-consolidated`
+19. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-19. `make packet-redaction-scan`
+20. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-20. `make docs-site`
+21. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -159,6 +166,7 @@ work must stop for status, reassessment, or external consultation.
 - Release-check transcript: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-check.txt`
 - Filesystem contract check transcript: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/filesystem-contract-check.txt`
 - Filesystem source-review bundle: `var/review-packets/v0.7/filesystem-source-review/`
+- HTTP fetch source-review bundle: `var/review-packets/v0.7/http-fetch-source-review/`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

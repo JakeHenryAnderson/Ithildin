@@ -51,7 +51,7 @@ LANES: tuple[Lane, ...] = (
         title="HTTP Fetch",
         matrix_areas=("HTTP fetch", "HTTP fetch source review checklist"),
         finding_prefixes=("EXT-HTTP-",),
-        next_external_packet="HTTP fetch dispatch packet",
+        next_external_packet="`make http-fetch-source-review-bundle` output",
     ),
     Lane(
         slug="signed-evidence-audit",

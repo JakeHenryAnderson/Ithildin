@@ -23,6 +23,7 @@ from scripts import (
     external_review_closure_gate,
     external_review_dispatch_packets,
     filesystem_source_review_bundle,
+    http_fetch_source_review_bundle,
     internal_review_packet,
     no_new_powers_guardrail,
     packet_redaction_scan,
@@ -2699,6 +2700,178 @@ def test_filesystem_source_review_bundle_is_wired(
     ]:
         assert required in dispatch_area.source_files
     assert dispatch_area.finding_namespace == "EXT-FS-###"
+
+
+def test_http_fetch_source_review_bundle_is_wired(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path
+    for marker in [
+        "pyproject.toml",
+        "Makefile",
+        "apps/api",
+        "apps/mcp-server",
+        "tool-manifests.lock.json",
+    ]:
+        path = repo_root / marker
+        if "." in Path(marker).name:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("marker\n", encoding="utf-8")
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+    for relative in (
+        http_fetch_source_review_bundle.SOURCE_FILES
+        + http_fetch_source_review_bundle.TEST_FILES
+        + http_fetch_source_review_bundle.CONTRACT_DOCS
+    ):
+        path = repo_root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {relative.name}\n", encoding="utf-8")
+
+    def fake_build_dispatch_packets(repo_root: Path, output_root: Path) -> dict[str, object]:
+        output_root.mkdir(parents=True)
+        output_root.joinpath("http-fetch.md").write_text("# HTTP Fetch\n", encoding="utf-8")
+        manifest: dict[str, object] = {
+            "packets": [
+                {
+                    "path": "http-fetch.md",
+                    "sha256": "sha256:" + ("5" * 64),
+                    "payload_sha256": "sha256:" + ("6" * 64),
+                    "bytes": 13,
+                }
+            ]
+        }
+        output_root.joinpath("dispatch-packet-hashes.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        return manifest
+
+    monkeypatch.setattr(
+        http_fetch_source_review_bundle,
+        "_build_dispatch_packets",
+        fake_build_dispatch_packets,
+    )
+    monkeypatch.setattr(
+        http_fetch_source_review_bundle,
+        "_git",
+        lambda repo_root, args: "abc123def4567890" if args == ["rev-parse", "HEAD"] else "",
+    )
+
+    output_dir = http_fetch_source_review_bundle.build_bundle(
+        repo_root=repo_root,
+        output_dir=repo_root / "var/review-packets/v0.7/http-fetch-source-review",
+        run_commands=False,
+    )
+
+    for required in [
+        "00_HTTP_FETCH_SOURCE_REVIEW_INDEX.md",
+        "01_HTTP_FETCH_SOURCE_REVIEW_PROMPT.md",
+        "02_HTTP_FETCH_DISPATCH_PACKET.md",
+        "03_HTTP_FETCH_SOURCE_BUNDLE.md",
+        "04_HTTP_FETCH_TESTS_BUNDLE.md",
+        "05_HTTP_FETCH_CONTRACTS_BUNDLE.md",
+        "06_HTTP_FETCH_EVIDENCE.md",
+        "07_HTTP_FETCH_FOCUSED_TESTS.txt",
+        "08_HTTP_FETCH_INTAKE_COMMANDS.md",
+        "http-fetch-source-review-artifact-hashes.json",
+    ]:
+        assert output_dir.joinpath(required).exists()
+
+    index = output_dir.joinpath("00_HTTP_FETCH_SOURCE_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    assert "HTTP fetch lane" in index
+    assert "source/test evidence" in index
+    prompt = output_dir.joinpath("01_HTTP_FETCH_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EXT-HTTP-###" in prompt
+    assert "exact allowlist semantics" in prompt
+    assert "sha256:" + ("5" * 64) in prompt
+    source_bundle = output_dir.joinpath("03_HTTP_FETCH_SOURCE_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "apps/api/src/ithildin_api/http_tools.py" in source_bundle
+    assert "apps/mcp-server/src/ithildin_mcp_server/server.py" in source_bundle
+    assert "tool-manifests/http-fetch.yaml" in source_bundle
+    tests_bundle = output_dir.joinpath("04_HTTP_FETCH_TESTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "tests/fixtures/http_canonicalization_corpus.json" in tests_bundle
+    assert "tests/test_mcp_integration_flow.py" in tests_bundle
+    contracts_bundle = output_dir.joinpath("05_HTTP_FETCH_CONTRACTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "docs/codex/http-executor-contract.md" in contracts_bundle
+    assert "sub-001-http-fetch-dns-pinning.md" in contracts_bundle
+    assert "sub-047-http-contract-link-drift.md" in contracts_bundle
+    evidence = output_dir.joinpath("06_HTTP_FETCH_EVIDENCE.md").read_text(encoding="utf-8")
+    assert "make policy-parity" in evidence
+    assert "GET-only and URL-only" in evidence
+    focused = output_dir.joinpath("07_HTTP_FETCH_FOCUSED_TESTS.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "tests/test_http_tools.py" in focused
+    assert "tests/test_mcp_adapter.py" in focused
+    intake = output_dir.joinpath("08_HTTP_FETCH_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "--area \"http-fetch\"" in intake
+    hashes = json.loads(
+        output_dir.joinpath("http-fetch-source-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert "http-fetch-source-review-artifact-hashes.json" not in {
+        entry["path"] for entry in hashes
+    }
+    assert {entry["path"] for entry in hashes} == {
+        "00_HTTP_FETCH_SOURCE_REVIEW_INDEX.md",
+        "01_HTTP_FETCH_SOURCE_REVIEW_PROMPT.md",
+        "02_HTTP_FETCH_DISPATCH_PACKET.md",
+        "03_HTTP_FETCH_SOURCE_BUNDLE.md",
+        "04_HTTP_FETCH_TESTS_BUNDLE.md",
+        "05_HTTP_FETCH_CONTRACTS_BUNDLE.md",
+        "06_HTTP_FETCH_EVIDENCE.md",
+        "07_HTTP_FETCH_FOCUSED_TESTS.txt",
+        "08_HTTP_FETCH_INTAKE_COMMANDS.md",
+    }
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    lane_status = Path("docs/codex/v0.6-lane-status-board.md").read_text(encoding="utf-8")
+    row_partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+    assert "make http-fetch-source-review-bundle" in readme
+    assert "http-fetch-source-review-bundle:" in makefile
+    assert "make http-fetch-source-review-bundle" in reproduction
+    assert "var/review-packets/v0.7/http-fetch-source-review/" in reproduction
+    assert "222 - HTTP fetch source-review bundle | Done" in backlog
+    assert "make http-fetch-source-review-bundle" in lane_status
+    assert "make http-fetch-source-review-bundle" in row_partition
+
+    dispatch_area = next(
+        area
+        for area in external_review_dispatch_packets.DISPATCH_AREAS
+        if area.slug == "http-fetch"
+    )
+    for required in [
+        "apps/api/src/ithildin_api/http_tools.py",
+        "apps/api/src/ithildin_api/resources.py",
+        "apps/api/src/ithildin_api/policy_preview.py",
+        "apps/api/src/ithildin_api/tool_calls.py",
+        "tests/test_http_tools.py",
+        "tests/test_mcp_adapter.py",
+    ]:
+        assert required in dispatch_area.source_files
+    assert dispatch_area.finding_namespace == "EXT-HTTP-###"
 
 
 def test_v06_external_response_normalization_is_wired() -> None:

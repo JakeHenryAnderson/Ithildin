@@ -75,7 +75,7 @@
         "HTTP fetch",
         "HTTP fetch source review checklist"
       ],
-      "next_action": "send HTTP fetch dispatch packet for source review",
+      "next_action": "send `make http-fetch-source-review-bundle` output for source review",
       "reviewer_recheck_required": false,
       "slug": "http-fetch",
       "verification_commands": [
