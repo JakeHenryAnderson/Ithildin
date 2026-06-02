@@ -98,6 +98,7 @@ externally closed.
 - [v0.7 Patch Apply Recheck Request](v0.7-patch-apply-recheck-request.md)
 - [v0.7 Patch Apply Recheck Outcome](v0.7-patch-apply-recheck-outcome.md)
 - [v0.7 Filesystem and Platform Source Review](v0.7-filesystem-platform-source-review.md)
+- [v0.7 HTTP Fetch Source Review](v0.7-http-fetch-source-review.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)
 - [v0.6 Internal Proxy Review Operating Model](v0.6-internal-proxy-review-operating-model.md)

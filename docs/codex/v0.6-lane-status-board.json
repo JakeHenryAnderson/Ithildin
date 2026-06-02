@@ -59,30 +59,32 @@
       ]
     },
     {
-      "closure_state": "external_pending",
+      "closure_state": "closed_local_preview",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
       "ext_findings_count": 0,
-      "external_review_received": false,
+      "external_review_received": true,
       "fixed_commits": [
         "c8781dad5b7a",
         "927334eccc59",
         "f6d968a2f85e",
-        "6feb97890c37"
+        "6feb97890c37",
+        "de6193cd8e70646ec9ce3d1a52521979406b0d1a"
       ],
       "lane": "HTTP Fetch",
       "matrix_areas": [
         "HTTP fetch",
         "HTTP fetch source review checklist"
       ],
-      "next_action": "send `make http-fetch-source-review-bundle` output for source review",
+      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
       "reviewer_recheck_required": false,
       "slug": "http-fetch",
       "verification_commands": [
-        "uv run pytest tests/test_http_tools.py tests/test_governed_tool_calls.py tests/test_policy_parity.py -q",
+        "make http-fetch-source-review-bundle",
+        "HTTP focused tests",
         "make policy-parity",
-        "make release-check",
-        "HTTP focused tests"
+        "make reviewer-findings-check",
+        "make release-check"
       ]
     },
     {
@@ -220,8 +222,8 @@
   "summary": {
     "capability_expansion_allowed": false,
     "critical_high_open_count": 0,
-    "external_review_closed": 2,
-    "external_review_received": 2,
+    "external_review_closed": 3,
+    "external_review_received": 3,
     "lane_count": 8
   },
   "track": "v0.6 external/source-review closure"

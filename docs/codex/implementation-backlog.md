@@ -230,7 +230,8 @@ does not approve public preview, capability design, capability implementation, o
 | 219 - Patch-apply recheck closure | Done | [v0.7-patch-apply-recheck-request.md](v0.7-patch-apply-recheck-request.md), [v0.7-patch-apply-recheck-outcome.md](v0.7-patch-apply-recheck-outcome.md), `make v07-patch-apply-recheck-prep`; patch apply is closed for the v0.1 local-preview lane only. |
 | 220 - Filesystem/platform source review pass | Done | [v0.7-filesystem-platform-source-review.md](v0.7-filesystem-platform-source-review.md); Codex source-level pass recorded no findings, and the lane remains pending external/source disposition. |
 | 221 - Filesystem source-review bundle | Done | `make filesystem-source-review-bundle` builds the focused source/test/evidence handoff requested by `EXT-FS-001` under ignored `var/review-packets/v0.7/filesystem-source-review/`. |
-| 222 - HTTP fetch source-review bundle | Done | `make http-fetch-source-review-bundle` builds the focused `http.fetch` source/test/evidence handoff under ignored `var/review-packets/v0.7/http-fetch-source-review/`; the lane remains pending external/source disposition. |
+| 222 - HTTP fetch source-review bundle | Done | `make http-fetch-source-review-bundle` builds the focused `http.fetch` source/test/evidence handoff under ignored `var/review-packets/v0.7/http-fetch-source-review/`. |
+| 223 - HTTP fetch source-review closure | Done | [v0.7-http-fetch-source-review.md](v0.7-http-fetch-source-review.md); GPT 5.5 Pro source-level review recorded no new findings, and the lane is closed for local-preview `http.fetch` only. |
 
 ## Future Candidate Track
 
