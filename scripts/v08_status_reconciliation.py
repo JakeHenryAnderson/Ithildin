@@ -22,7 +22,7 @@ REQUIRED_PHRASES = [
     "accepted-risk rows",
     "dispositioned",
     "product-decision rows",
-    "pending decision",
+    "conditional_go",
     "limited public-preview sharing",
     "public/security-product positioning",
     "blocked",

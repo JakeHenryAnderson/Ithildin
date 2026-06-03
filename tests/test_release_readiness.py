@@ -56,6 +56,7 @@ from scripts import (
     v06_lane_status,
     v07_closure_prep,
     v07_patch_apply_recheck,
+    v08_public_preview_decision,
     v08_status_reconciliation,
 )
 
@@ -169,6 +170,7 @@ def test_v08_status_source_of_truth_is_wired() -> None:
     assert "Product-decision rows" in doc
     assert "pending decision" in doc
     assert "Limited public-preview sharing" in doc
+    assert "conditional_go" in doc
     assert "Public/security-product positioning" in doc
     assert "Capability implementation" in doc
     assert "Capability design" in doc
@@ -177,6 +179,34 @@ def test_v08_status_source_of_truth_is_wired() -> None:
     assert "v08-status-reconciliation" in makefile.partition("release-check:")[2]
     assert "docs/codex/v0.8-status-source-of-truth.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.8-status-source-of-truth.md" in docs_site
+
+
+def test_v08_public_preview_decision_is_wired() -> None:
+    report = v08_public_preview_decision.build_report(Path.cwd())
+    doc = Path("docs/codex/v0.8-public-preview-risk-review.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["continued_local_preview_development"] == "go"
+    assert report["limited_technical_preview_sharing"] == "conditional_go"
+    assert report["public_security_product_positioning"] == "no_go"
+    assert report["production_security_compliance_positioning"] == "no_go"
+    assert report["capability_implementation"] == "no_go"
+    assert "Continued local-preview development" in doc
+    assert "Limited technical-preview sharing" in doc
+    assert "Broad public/security-product positioning" in doc
+    assert "Production/security/compliance positioning" in doc
+    assert "not a sandbox" in doc
+    assert "redaction is best-effort" in doc
+    assert "make v08-public-preview-decision" in readme
+    assert "v08-public-preview-decision:" in makefile
+    assert "v08-public-preview-decision" in makefile.partition("release-check:")[2]
+    assert "docs/codex/v0.8-public-preview-risk-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.8-public-preview-risk-review.md" in docs_site
 
 
 def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:

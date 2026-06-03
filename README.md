@@ -125,6 +125,7 @@ tamper-evident audit log.
 - `make external-findings-intake-dry-run` - exercise EXT finding intake without mutating findings.
 - `make closure-matrix-evidence-sync` - verify completed v0.5 tasks are represented in the matrix.
 - `make accepted-risk-register-check` - validate accepted local-preview risks stay scoped and explicitly dispositioned.
+- `make v08-public-preview-decision` - validate the v0.8 local-preview sharing and public/security-product no-go decision.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
@@ -334,6 +335,10 @@ The v0.8 accepted-risk disposition is recorded in
 [docs/codex/v0.8-accepted-risk-disposition.md](docs/codex/v0.8-accepted-risk-disposition.md);
 `make accepted-risk-register-check` now reports closed local-preview and accepted-deferred risk
 counts separately.
+The v0.8 public-preview claims decision is recorded in
+[docs/codex/v0.8-public-preview-risk-review.md](docs/codex/v0.8-public-preview-risk-review.md):
+continued local-preview development is `go`, limited technical-preview sharing is
+`conditional_go`, and public/security-product positioning remains `no_go`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).
