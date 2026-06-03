@@ -19,7 +19,7 @@ For v0.2 external/code review handoff, start with
 [Reviewer Reproduction Map](reviewer-reproduction-map.md).
 For internal AI/subagent pressure testing, use
 [Internal Review Packet v2](internal-review-packet-v2.md).
-For the current v0.3-prep external handoff, use
+For historical v0.3-prep external handoff lineage, use
 [v0.3 Review Packet](v0.3-review-packet.md) and
 [v0.3 External Review Prompt](v0.3-external-review-prompt.md).
 For the current v0.4 handoff, use [v0.4 Review Packet](v0.4-review-packet.md) and
@@ -28,8 +28,11 @@ Use [Review Docs Index](review-docs-index.md) when you need the current reviewer
 map.
 After review, process findings through
 [External Review Intake and Closure](external-review-intake-and-closure.md).
-The current go/no-go posture is recorded in
-[v0.3 Boundary Decision](v0.3-boundary-decision.md).
+The current v0.8 go/no-go posture is recorded in
+[v0.8 Status Source Of Truth](v0.8-status-source-of-truth.md),
+[v0.8 Public-Preview Risk Review](v0.8-public-preview-risk-review.md), and
+[v0.8 Capability-Design Decision](v0.8-capability-design-decision.md). The
+[v0.3 Boundary Decision](v0.3-boundary-decision.md) is historical lineage.
 
 ## Quick Start
 

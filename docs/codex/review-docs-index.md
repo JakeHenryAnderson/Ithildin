@@ -105,6 +105,7 @@ externally closed.
 - [v0.8 Status Source Of Truth](v0.8-status-source-of-truth.md)
 - [v0.8 Accepted-Risk Disposition](v0.8-accepted-risk-disposition.md)
 - [v0.8 Public-Preview Risk Review](v0.8-public-preview-risk-review.md)
+- [v0.8 Capability-Design Decision](v0.8-capability-design-decision.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)
 - [v0.6 Internal Proxy Review Operating Model](v0.6-internal-proxy-review-operating-model.md)

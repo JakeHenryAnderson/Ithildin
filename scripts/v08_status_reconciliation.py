@@ -29,7 +29,7 @@ REQUIRED_PHRASES = [
     "capability implementation",
     "no new governed tool powers",
     "capability design",
-    "pending v0.8 decision",
+    "design-only proposals",
 ]
 FALSE_STATUS_PHRASES = [
     "review console/admin pending",
@@ -92,7 +92,7 @@ def _report(failures: list[str], checked_docs: list[str]) -> dict[str, Any]:
         "product_decision_rows_pending": True,
         "public_security_product_positioning_allowed": False,
         "capability_implementation_allowed": False,
-        "capability_design_decision": "pending",
+        "capability_design_decision": "conditional_go",
     }
 
 
@@ -105,7 +105,7 @@ def render_report(report: dict[str, Any]) -> str:
         "product_decision_rows_pending: true",
         "public_security_product_positioning_allowed: false",
         "capability_implementation_allowed: false",
-        "capability_design_decision: pending",
+        "capability_design_decision: conditional_go",
         f"checked_docs: {len(report['checked_docs'])}",
     ]
     if report["failures"]:

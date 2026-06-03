@@ -67,11 +67,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "accepted risks remain external-review-pending: "
             f"{len(accepted_risks['open_external_review_ids'])}"
         )
-    if accepted_risks["blocks_capability_design_ids"]:
-        blockers.append(
-            "accepted risks constrain capability design: "
-            f"{len(accepted_risks['blocks_capability_design_ids'])}"
-        )
     if planned_range not in {"", "none"}:
         blockers.append(f"v0.5 planned tasks remain: {planned_range}")
 
@@ -110,7 +105,10 @@ def _recommended_next_step(blockers: list[str], planned_range: str) -> str:
     if planned_range not in {"", "none"}:
         return "continue v0.5 review-closure tasks before requesting capability expansion"
     if blockers:
-        return "resolve v0.8 public-preview/security-product and capability-design decisions"
+        return (
+            "prepare design-only capability proposals under v0.8 gate; "
+            "implementation remains blocked"
+        )
     return "prepare a separate explicit capability-decision proposal"
 
 

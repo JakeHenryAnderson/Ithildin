@@ -56,6 +56,7 @@ from scripts import (
     v06_lane_status,
     v07_closure_prep,
     v07_patch_apply_recheck,
+    v08_capability_design_gate,
     v08_public_preview_decision,
     v08_status_reconciliation,
 )
@@ -162,7 +163,7 @@ def test_v08_status_source_of_truth_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["capability_implementation_allowed"] is False
-    assert report["capability_design_decision"] == "pending"
+    assert report["capability_design_decision"] == "conditional_go"
     assert "Focused implementation lanes" in doc
     assert "closed for v0.1 local preview" in doc
     assert "Accepted-risk rows" in doc
@@ -174,11 +175,40 @@ def test_v08_status_source_of_truth_is_wired() -> None:
     assert "Public/security-product positioning" in doc
     assert "Capability implementation" in doc
     assert "Capability design" in doc
+    assert "design-only proposals" in doc
     assert "make v08-status-reconciliation" in readme
     assert "v08-status-reconciliation:" in makefile
     assert "v08-status-reconciliation" in makefile.partition("release-check:")[2]
     assert "docs/codex/v0.8-status-source-of-truth.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.8-status-source-of-truth.md" in docs_site
+
+
+def test_v08_capability_design_gate_is_wired() -> None:
+    report = v08_capability_design_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/v0.8-capability-design-decision.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["capability_design_only"] == "conditional_go"
+    assert report["capability_implementation"] == "no_go"
+    assert report["new_governed_tool_powers"] == "no_go"
+    assert report["evidence"]["tool_count"] == 10
+    assert report["evidence"]["accepted_risks_constraining_design"] == 1
+    assert "Capability design-only exploration" in doc
+    assert "Capability implementation" in doc
+    assert "New governed tool powers" in doc
+    assert "executor contract" in doc
+    assert "policy fixtures" in doc
+    assert "negative transcripts" in doc
+    assert "make v08-capability-design-gate" in readme
+    assert "v08-capability-design-gate:" in makefile
+    assert "v08-capability-design-gate" in makefile.partition("release-check:")[2]
+    assert "docs/codex/v0.8-capability-design-decision.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.8-capability-design-decision.md" in docs_site
 
 
 def test_v08_public_preview_decision_is_wired() -> None:
@@ -1825,7 +1855,8 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["accepted_risks_blocking_capability_design"] == 1
     assert (
         report["recommended_next_step"]
-        == "resolve v0.8 public-preview/security-product and capability-design decisions"
+        == "prepare design-only capability proposals under v0.8 gate; "
+        "implementation remains blocked"
     )
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc

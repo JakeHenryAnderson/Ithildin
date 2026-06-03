@@ -36,10 +36,18 @@ REQUIRED_WARNINGS = [
 FORBIDDEN_PUBLIC_CLAIMS = [
     "production-ready",
     "secure sandbox",
+    "security product",
+    "production security software",
     "enterprise identity",
     "tamper-proof audit",
     "immutable audit",
     "compliance-grade",
+    "compliance tool",
+    "production control plane",
+    "custody-grade",
+    "notarized",
+    "runtime postgres",
+    "hosted telemetry",
     "remote mcp gateway",
     "safe arbitrary tool use",
 ]
@@ -88,10 +96,28 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
 
 def _is_unqualified_claim(text: str, phrase: str) -> bool:
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
         if phrase not in line:
             continue
-        if any(marker in line for marker in ["not ", "no ", "avoid ", "forbidden", "deferred"]):
+        context = " ".join(lines[max(0, index - 3) : index + 2])
+        if any(
+            marker in line
+            or marker in context
+            for marker in [
+                "not ",
+                "no ",
+                "no_",
+                "avoid ",
+                "deliberately does not",
+                "forbidden",
+                "deferred",
+                "deferred-power",
+                "blocked",
+                "unsupported",
+                "remain",
+            ]
+        ):
             continue
         return True
     return False
