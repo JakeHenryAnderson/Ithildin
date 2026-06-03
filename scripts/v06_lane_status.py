@@ -384,7 +384,10 @@ def _next_action(
         return "run verification commands and send recheck before closure"
     if not external_received:
         return f"send {lane.next_external_packet} for source review"
-    return "lane closed for local preview; continue remaining external/source-review lanes"
+    return (
+        "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, "
+        "not capability implementation"
+    )
 
 
 def _yes_no(value: bool) -> str:

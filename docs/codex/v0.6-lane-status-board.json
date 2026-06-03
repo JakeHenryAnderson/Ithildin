@@ -21,7 +21,7 @@
       "matrix_areas": [
         "Patch apply"
       ],
-      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "patch-apply",
       "verification_commands": [
@@ -47,7 +47,7 @@
         "CI/platform claims",
         "Filesystem source review checklist"
       ],
-      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "filesystem",
       "verification_commands": [
@@ -76,7 +76,7 @@
         "HTTP fetch",
         "HTTP fetch source review checklist"
       ],
-      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "http-fetch",
       "verification_commands": [
@@ -103,7 +103,7 @@
         "Audit integrity",
         "Manifest-lock verification"
       ],
-      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "signed-evidence-audit",
       "verification_commands": [
@@ -134,7 +134,7 @@
         "Registry fail-closed",
         "Policy parity source review checklist"
       ],
-      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "policy-registry",
       "verification_commands": [
@@ -163,7 +163,7 @@
         "MCP ingress",
         "MCP ingress source review checklist"
       ],
-      "next_action": "lane closed for local preview; continue remaining external/source-review lanes",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "mcp-ingress",
       "verification_commands": [
@@ -175,48 +175,52 @@
       ]
     },
     {
-      "closure_state": "external_pending",
+      "closure_state": "closed_local_preview",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
       "ext_findings_count": 0,
-      "external_review_received": false,
+      "external_review_received": true,
       "fixed_commits": [
         "7603b0689a8b265dc2bfd66e1d02920a67f1d09b",
-        "pending current checkpoint"
+        "8f5ffbae40a8b00d2b807c0955f4173e38e1167d",
+        "0c5effa06e7eb793a2cc878c130e98c0a3559ea6"
       ],
       "lane": "Review Console",
       "matrix_areas": [
         "Review console evidence",
         "Local admin auth"
       ],
-      "next_action": "send `make review-console-source-review-bundle` output for source review",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "review-console",
       "verification_commands": [
         "npm run typecheck --prefix apps/ui",
         "npm run build --prefix apps/ui",
         "approval review API focused tests including missing patch-apply scope rejection",
+        "make review-console-source-review-bundle",
         "make release-check",
-        "API focused tests"
+        "API focused tests",
+        "UI build/typecheck"
       ]
     },
     {
-      "closure_state": "external_pending",
+      "closure_state": "closed_local_preview",
       "critical_high_open_count": 0,
       "critical_high_open_findings": [],
       "ext_findings_count": 0,
-      "external_review_received": false,
+      "external_review_received": true,
       "fixed_commits": [
         "957c1e4700bdfddefd67f029ddc4b47b529c7ae2",
         "cc357b567c5805cf6de9cb3ebc7f3bbcc373e316",
-        "pending current checkpoint"
+        "8f5ffbae40a8b00d2b807c0955f4173e38e1167d",
+        "0c5effa06e7eb793a2cc878c130e98c0a3559ea6"
       ],
       "lane": "Release Automation",
       "matrix_areas": [
         "Release evidence",
         "v0.6 external review dispatch packets"
       ],
-      "next_action": "send `make release-automation-source-review-bundle` output for source review",
+      "next_action": "lane closed for local preview; proceed to v0.8 roadmap/product-risk decision, not capability implementation",
       "reviewer_recheck_required": false,
       "slug": "release-automation",
       "verification_commands": [
@@ -238,8 +242,8 @@
   "summary": {
     "capability_expansion_allowed": false,
     "critical_high_open_count": 0,
-    "external_review_closed": 6,
-    "external_review_received": 6,
+    "external_review_closed": 8,
+    "external_review_received": 8,
     "lane_count": 8
   },
   "track": "v0.6 external/source-review closure"

@@ -38,7 +38,7 @@ REQUIRED_BATCHES = (
 )
 REQUIRED_STATUS_PHRASES = (
     "external handoff: go",
-    "source-review closure: incomplete",
+    "source-review closure: focused lanes closed",
     "capability expansion: no-go",
     "public/security-product positioning: no-go",
     "no new governed tool powers",

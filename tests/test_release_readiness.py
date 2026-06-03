@@ -435,9 +435,9 @@ def test_consolidated_review_packet_generation(
     start_text = output_dir.joinpath("01_START_HERE_AND_REVIEW_PROMPT.md").read_text(
         encoding="utf-8"
     )
-    assert "v0.6/v0.7 external-review closure work" in index_text
+    assert "v0.8 roadmap/product-risk consultation" in index_text
     assert "some generated paths retain historical v0.2 names" in index_text
-    assert "v0.6/v0.7 external-review closure work" in start_text
+    assert "v0.8 roadmap/product-risk consultation" in start_text
     assert "v0.6 GPT 5.5 Pro Handoff Prompt" in output_dir.joinpath(
         "01_START_HERE_AND_REVIEW_PROMPT.md"
     ).read_text(encoding="utf-8")
@@ -445,7 +445,7 @@ def test_consolidated_review_packet_generation(
         "02_REVIEW_PACKET_AND_RESPONSE.md"
     ).read_text(encoding="utf-8")
     assert "Historical v0.2, v0.3, and v0.5 prompts are included for lineage" in start_text
-    assert "The active review prompt is the v0.6/v0.7 external-review closure prompt" in start_text
+    assert "The active review prompt is the v0.8 roadmap/product-risk prompt" in start_text
     assert "v0.5 Roadmap From v0.4 Review" in output_dir.joinpath(
         "02_REVIEW_PACKET_AND_RESPONSE.md"
     ).read_text(encoding="utf-8")
@@ -517,7 +517,7 @@ def test_source_review_closure_matrix_v2_separates_review_layers() -> None:
     assert "v0.3-milestone-manifest.md" in matrix
     assert "Pending Wave 2" in matrix
     assert "Wave 3 subagent review complete" in matrix
-    assert "Pending Wave 4" in matrix
+    assert "GPT 5.5 Pro source-level review received" in matrix
     assert "cannot mark an external/source-review row closed" in matrix
     assert "No blocking finding open" in matrix
 
@@ -1984,10 +1984,13 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
 
     assert "SUB-001" in handoff
     assert "SUB-086" in handoff
-    assert "v0.6/v0.7 external-review closure work" in handoff
+    assert "v0.8 roadmap/product-risk consultation" in handoff
     assert "Closed/reference lanes for the v0.1 local-preview boundary" in handoff
-    assert "Still pending source review: review console/admin" in handoff
-    assert "Source-level review received but pending intake/gates: none" in handoff
+    assert "review console/admin, and release/evidence automation" in handoff
+    assert (
+        "Source-level or packet-and-source review received but pending intake/gates: none"
+        in handoff
+    )
     assert (
         "Patch apply is externally closed for the v0.1 local-preview patch-apply lane"
         not in handoff
@@ -1995,21 +1998,21 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "Closed/reference lanes" in handoff
     assert "Remaining highest-value review areas" in handoff
     assert "every source-review closure row" not in handoff
-    assert "v0.6/v0.7 external/source-review closure handoff" in prompt
-    assert "v0.6/v0.7 external-review closure work" in prompt
+    assert "v0.8 roadmap/product-risk consultation" in prompt
+    assert "v0.8 roadmap/product-risk consultation" in prompt
     assert "Closed/reference lanes for the v0.1 local-preview boundary" in prompt
-    assert "Still pending source review: review console/admin" in prompt
+    assert "13 pending" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
-    assert "v0.6/v0.7 external-review closure work" in readme
+    assert "v0.8 roadmap/product-risk consultation" in readme
     assert "Internally remediated" in backlog
     assert "patch apply remains external-pending" not in backlog
-    assert "Internal proxy findings SUB-040 through SUB-047 fixed internally" in manifest
-    assert "Internal proxy findings SUB-048 through SUB-063 fixed internally" in manifest
-    assert "Internal proxy findings SUB-064 through SUB-073 fixed internally" in manifest
-    assert "Internal proxy finding SUB-074 fixed internally" in manifest
-    assert "Internal proxy finding SUB-075 fixed internally" in manifest
-    assert "Internal proxy findings SUB-076 through SUB-077 fixed internally" in manifest
+    assert "no new EXT-HTTP findings" in manifest
+    assert "no new EXT-SE findings" in manifest
+    assert "EXT-PR-001 fixed and rechecked" in manifest
+    assert "no new EXT-MCP findings" in manifest
+    assert "no new EXT-UI findings" in manifest
+    assert "no new EXT-REL findings" in manifest
     assert "v0.6 Closure Handoff" in review_index
     assert "docs/codex/v0.6-closure-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md" in review_docs.REVIEW_DOCS
@@ -2029,8 +2032,8 @@ def test_current_review_status_banner_is_wired() -> None:
     ]:
         text = path.read_text(encoding="utf-8")
         assert "Current status" in text
-        assert "v0.6/v0.7 external-review closure work" in text
-        assert "some generated paths retain historical v0.2 names" in text
+        assert "v0.8 roadmap/product-risk consultation" in text
+        assert "historical v0.2 names" in text
 
     bundle_script = Path("scripts/review_packet_bundle.py").read_text(encoding="utf-8")
     consolidated_script = Path("scripts/consolidate_review_packet.py").read_text(encoding="utf-8")
@@ -3820,8 +3823,8 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
 
     assert json.loads(json.dumps(board)) == payload
     assert board["summary"]["lane_count"] == 8
-    assert board["summary"]["external_review_received"] == 6
-    assert board["summary"]["external_review_closed"] == 6
+    assert board["summary"]["external_review_received"] == 8
+    assert board["summary"]["external_review_closed"] == 8
     assert board["summary"]["critical_high_open_count"] == 0
     patch_lane = next(lane for lane in board["lanes"] if lane["slug"] == "patch-apply")
     assert patch_lane["external_review_received"] is True
@@ -3860,6 +3863,8 @@ def test_v06_lane_status_board_is_generated_and_wired() -> None:
     assert "Signed Evidence and Audit | yes | 0 | 0 | no | closed_local_preview" in doc
     assert "Policy and Registry | yes | 1 | 0 | no | closed_local_preview" in doc
     assert "MCP Ingress | yes | 0 | 0 | no | closed_local_preview" in doc
+    assert "Review Console | yes | 0 | 0 | no | closed_local_preview" in doc
+    assert "Release Automation | yes | 0 | 0 | no | closed_local_preview" in doc
     assert "make v06-lane-status" in readme
     assert "v06-lane-status:" in makefile
     assert "v06-lane-status" in makefile.partition("release-check:")[2]
@@ -3891,8 +3896,8 @@ def test_v06_closure_readiness_bundle_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 6
-    assert report["external_review_closed"] == 6
+    assert report["external_review_received"] == 8
+    assert report["external_review_closed"] == 8
     assert report["critical_high_open_count"] == 0
     assert "make v06-closure-readiness" in readme
     assert "v06-closure-readiness:" in makefile
@@ -3940,8 +3945,8 @@ def test_v06_final_handoff_docs_are_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["external_review_received"] == 6
-    assert report["external_review_closed"] == 6
+    assert report["external_review_received"] == 8
+    assert report["external_review_closed"] == 8
     assert report["capability_expansion_allowed"] is False
     assert "make v06-final-handoff" in readme
     assert "v06-final-handoff:" in makefile
@@ -3995,8 +4000,8 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["pending_external_review_rows"] == 41
-    assert report["externally_closed_rows"] == 14
+    assert report["pending_external_review_rows"] == 13
+    assert report["externally_closed_rows"] == 42
     assert report["capability_expansion_allowed"] is False
     assert "make v07-closure-prep" in readme
     assert "v07-closure-prep:" in makefile
@@ -4125,8 +4130,8 @@ def test_v07_http_fetch_source_review_is_wired() -> None:
     assert "closed for local-preview `http.fetch`" in matrix
     assert "arbitrary HTTP methods" in matrix
     assert "HTTP fetch: source-level external review received" in outcome
-    assert "Pending external-review rows: 41." in partition
-    assert "Externally closed rows: 14." in partition
+    assert "Pending external-review rows: 13." in partition
+    assert "Externally closed rows: 42." in partition
 
 
 def test_v07_signed_evidence_source_review_is_wired() -> None:
@@ -4162,8 +4167,8 @@ def test_v07_signed_evidence_source_review_is_wired() -> None:
     assert "Signed evidence/audit: source-level external review received" in outcome
     assert "no new `EXT-SE-###` findings" in outcome
     assert "Source-level review received; local-preview lane closed" in partition
-    assert "Pending external-review rows: 41." in partition
-    assert "Externally closed rows: 14." in partition
+    assert "Pending external-review rows: 13." in partition
+    assert "Externally closed rows: 42." in partition
 
 
 def test_v07_mcp_ingress_source_review_is_wired() -> None:
@@ -4197,8 +4202,8 @@ def test_v07_mcp_ingress_source_review_is_wired() -> None:
         "MCP ingress | MCP ingress; MCP ingress source review checklist | "
         "Source-level review received; local-preview lane closed"
     ) in partition
-    assert "Pending external-review rows: 41." in partition
-    assert "Externally closed rows: 14." in partition
+    assert "Pending external-review rows: 13." in partition
+    assert "Externally closed rows: 42." in partition
 
 
 def test_external_response_normalization_rejects_ambiguous_source_review() -> None:
@@ -5085,7 +5090,7 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert "filesystem-contract-check.txt" in result.path.joinpath("INDEX.md").read_text(
         encoding="utf-8"
     )
-    assert "v0.6/v0.7 external-review closure work" in result.path.joinpath(
+    assert "v0.8 roadmap/product-risk consultation" in result.path.joinpath(
         "INDEX.md"
     ).read_text(encoding="utf-8")
 

@@ -45,8 +45,9 @@ NEGATIVE_TRANSCRIPTS_SUMMARY = Path(
 )
 
 CURRENT_STATUS_BANNER = (
-    "**Current status:** v0.6/v0.7 external-review closure work for the v0.1 "
-    "local-preview runtime boundary; some generated paths retain historical v0.2 names."
+    "**Current status:** v0.8 roadmap/product-risk consultation after v0.6/v0.7 "
+    "focused source-review lane closure for the v0.1 local-preview runtime boundary; "
+    "some generated paths retain historical v0.2 names."
 )
 
 class BundleError(RuntimeError):

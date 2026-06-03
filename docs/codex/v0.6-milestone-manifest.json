@@ -63,50 +63,50 @@
       "id": "186",
       "title": "Filesystem/platform external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy recheck findings SUB-032 through SUB-039 fixed internally; external pending",
-      "planned_commit": "Remediate filesystem proxy findings"
+      "status": "Source-level review received; EXT-FS-001 closed; lane closed for local-preview only",
+      "planned_commit": "Remediate filesystem proxy findings; Add filesystem platform source review (48b2a5f5ee3b)"
     },
     {
       "id": "187",
       "title": "HTTP fetch external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy findings SUB-040 through SUB-047 fixed internally; external pending",
-      "planned_commit": "Remediate HTTP proxy findings (6feb97890c37)"
+      "status": "GPT 5.5 Pro source-level review received; no new EXT-HTTP findings; lane closed for local-preview only",
+      "planned_commit": "Remediate HTTP proxy findings (6feb97890c37); Add HTTP fetch source review bundle (de6193cd8e70)"
     },
     {
       "id": "188",
       "title": "Audit and signed-evidence external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy findings SUB-048 through SUB-063 fixed internally; external pending",
-      "planned_commit": "Remediate signed evidence proxy findings (722eadc87500)"
+      "status": "GPT 5.5 Pro source-level review received; no new EXT-SE findings; lane closed for local-preview evidence only",
+      "planned_commit": "Remediate signed evidence proxy findings (722eadc87500); signed-evidence closure intake (e55e9b14679e)"
     },
     {
       "id": "189",
       "title": "Policy parity and registry external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy findings SUB-064 through SUB-073 fixed internally; external pending",
-      "planned_commit": "Remediate policy registry proxy findings (e388f8f1158321e0b1628795f85da791cdb3cde3)"
+      "status": "GPT 5.5 Pro source-level review received; EXT-PR-001 fixed and rechecked; lane closed for local-preview behavior only",
+      "planned_commit": "Remediate policy registry proxy findings (e388f8f1158321e0b1628795f85da791cdb3cde3); policy/registry closure intake (81cdfbc87415)"
     },
     {
       "id": "190",
       "title": "MCP ingress external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy finding SUB-074 fixed internally; external pending",
-      "planned_commit": "Remediate MCP ingress proxy finding (49eee9e3c213)"
+      "status": "GPT 5.5 Pro source-level review received; no new EXT-MCP findings; lane closed for local-preview stdio MCP only",
+      "planned_commit": "Remediate MCP ingress proxy finding (49eee9e3c213); Close MCP ingress review lane (8d9ffe7)"
     },
     {
       "id": "191",
       "title": "Review console external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy finding SUB-075 fixed internally; external pending",
-      "planned_commit": "Remediate review console proxy finding (7603b0689a8b)"
+      "status": "GPT 5.5 Pro source-level review received; no new EXT-UI findings; lane closed for local-preview only",
+      "planned_commit": "Remediate review console proxy finding (7603b0689a8b); Remediate remaining proxy review findings (8f5ffbae40a)"
     },
     {
       "id": "192",
       "title": "Release automation external review execution",
       "wave": "Wave 2",
-      "status": "Internal proxy findings SUB-076 through SUB-077 fixed internally; external pending",
-      "planned_commit": "Remediate release automation proxy finding (957c1e4700bd); Remediate review candidate dispatch freshness (cc357b567c58)"
+      "status": "GPT 5.5 Pro packet-and-source review received; no new EXT-REL findings; lane closed for local-preview review automation only",
+      "planned_commit": "Remediate release automation proxy finding (957c1e4700bd); Remediate review candidate dispatch freshness (cc357b567c58); Remediate remaining proxy review findings (8f5ffbae40a)"
     },
     {
       "id": "193",

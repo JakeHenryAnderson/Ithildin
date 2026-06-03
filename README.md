@@ -2,8 +2,9 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
-**Current status:** v0.6/v0.7 external-review closure work for the v0.1 local-preview runtime
-boundary; some generated paths retain historical v0.2 names.
+**Current status:** v0.8 roadmap/product-risk consultation after v0.6/v0.7 focused
+source-review lane closure for the v0.1 local-preview runtime boundary; some generated paths retain
+historical v0.2 names.
 
 Ithildin is a local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM
 agent, SIEM, production identity system, hosted MCP platform, compliance audit system, or immutable
@@ -322,6 +323,10 @@ Generate the focused source/test/evidence bundle for the review-console/admin la
 Generate the focused source/test/evidence bundle for the release/evidence automation lane with
 `make release-automation-source-review-bundle`; the ignored output is
 `var/review-packets/v0.7/release-automation-source-review/`.
+All eight focused v0.7 source-review lanes are now closed for the v0.1 local-preview runtime
+boundary only. The next strategic handoff prompt for v0.8 roadmap/product-risk consultation is in
+[docs/codex/v0.8-roadmap-prompt.md](docs/codex/v0.8-roadmap-prompt.md). This does not approve
+public/security-product positioning or new governed tool powers.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

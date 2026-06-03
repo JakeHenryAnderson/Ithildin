@@ -31,14 +31,15 @@ ATTACHMENT_FILES = [
 ]
 
 CURRENT_STATUS_BANNER = (
-    "**Current status:** v0.6/v0.7 external-review closure work for the v0.1 "
-    "local-preview runtime boundary; some generated paths retain historical v0.2 names.\n\n"
+    "**Current status:** v0.8 roadmap/product-risk consultation after v0.6/v0.7 "
+    "focused source-review lane closure for the v0.1 local-preview runtime boundary; "
+    "some generated paths retain historical v0.2 names.\n\n"
 )
 HISTORICAL_PROMPT_NOTE = (
     "## Historical Prompt Context\n\n"
     "Historical v0.2, v0.3, and v0.5 prompts are included for lineage and context. "
-    "The active review prompt is the v0.6/v0.7 external-review closure prompt unless "
-    "a reviewer is explicitly reviewing an older packet.\n\n"
+    "The active review prompt is the v0.8 roadmap/product-risk prompt unless a reviewer "
+    "is explicitly reviewing an older packet.\n\n"
 )
 
 

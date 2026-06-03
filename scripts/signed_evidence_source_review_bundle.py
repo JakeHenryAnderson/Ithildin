@@ -203,8 +203,8 @@ internal finding history, and command evidence.
 
 ## Boundary
 
-- Current review status: v0.6/v0.7 external-review closure work for the v0.1 local-preview runtime
-  boundary.
+- Current review status: v0.8 roadmap/product-risk consultation after v0.6/v0.7 focused
+  source-review lane closure for the v0.1 local-preview runtime boundary.
 - Lane: signed evidence and audit.
 - Finding namespace: `EXT-SE-###`.
 - Reviewed commit: `{context["commit"]}`.

@@ -1,7 +1,8 @@
 # Reviewer Reproduction Map
 
-**Current status:** v0.6/v0.7 external-review closure work for the v0.1 local-preview runtime
-boundary; some generated paths retain historical v0.2 names.
+**Current status:** v0.8 roadmap/product-risk consultation after v0.6/v0.7 focused
+source-review lane closure for the v0.1 local-preview runtime boundary; some generated paths retain
+historical v0.2 names.
 
 This map gives external reviewers a repeatable way to reproduce the current review packet evidence.
 It is a review aid for the v0.1 local-preview runtime boundary and later review-closure waves, not
