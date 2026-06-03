@@ -110,11 +110,20 @@ def _forbidden_design_only_surface_changes(repo_root: Path) -> list[str]:
     )
     if working.returncode != 0:
         return ["could not inspect working-tree v0.9 design-only diff"]
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if untracked.returncode != 0:
+        return ["could not inspect untracked v0.9 design-only files"]
 
     changed = sorted(
         {
             line.strip()
-            for output in (committed.stdout, working.stdout)
+            for output in (committed.stdout, working.stdout, untracked.stdout)
             for line in output.splitlines()
             if line.strip()
         }

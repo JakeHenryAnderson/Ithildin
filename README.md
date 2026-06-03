@@ -130,6 +130,7 @@ tamper-evident audit log.
 - `make v08-final-decision-packet` - validate the final v0.8 product-risk decision packet.
 - `make v09-design-only-gate` - validate that v0.9 capability planning remains design-only.
 - `make git-commit-metadata-proposal-check` - validate the first design-only capability proposal.
+- `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
@@ -358,6 +359,10 @@ implementation blocked.
 The first design-only capability proposal is
 [docs/codex/capability-proposals/git-show-commit-metadata.md](docs/codex/capability-proposals/git-show-commit-metadata.md)
 and is checked with `make git-commit-metadata-proposal-check`.
+The focused design-review handoff for that proposal is generated with
+`make v09-design-review-packet`; it asks GPT 5.5 Pro / human review whether implementation
+planning may be considered later, without authorizing manifests, executors, policy rules, MCP
+exposure, or runtime behavior.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

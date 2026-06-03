@@ -66,6 +66,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "closure-matrix-evidence-sync",
     "accepted-risk-register-check",
     "capability-decision-report",
+    "v09-design-only-gate",
+    "git-commit-metadata-proposal-check",
     "v06-lane-status",
     "v06-closure-readiness",
     "v06-final-handoff",

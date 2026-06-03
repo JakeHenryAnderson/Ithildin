@@ -62,6 +62,7 @@ from scripts import (
     v08_public_preview_decision,
     v08_status_reconciliation,
     v09_design_only_gate,
+    v09_design_review_packet,
 )
 
 
@@ -333,6 +334,80 @@ def test_git_commit_metadata_proposal_check_is_wired() -> None:
     assert "Capability Proposal: git.show.commit_metadata" in index
     assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in docs_site
+
+
+def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
+    output_dir = v09_design_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=tmp_path / "v09-design-review",
+        allow_dirty=True,
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    expected_files = {
+        "00_V09_DESIGN_REVIEW_INDEX.md",
+        "01_V09_DESIGN_REVIEW_PROMPT.md",
+        "02_V08_FINAL_DECISION_PACKET.md",
+        "03_V09_DESIGN_ONLY_CHARTER.md",
+        "04_GIT_COMMIT_METADATA_PROPOSAL.md",
+        "05_GATE_AND_RISK_EVIDENCE.md",
+        "06_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "v09-design-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected_files
+
+    hashes = json.loads(
+        output_dir.joinpath("v09-design-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+    assert hashed_paths == expected_files - {"v09-design-review-artifact-hashes.json"}
+    assert all(entry["sha256"].startswith("sha256:") for entry in hashes)
+    assert all(entry["bytes"] > 0 for entry in hashes)
+
+    index = output_dir.joinpath("00_V09_DESIGN_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = output_dir.joinpath("01_V09_DESIGN_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = output_dir.joinpath("05_GATE_AND_RISK_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    intake = output_dir.joinpath("06_REVIEW_INTAKE_AND_NEXT_STEPS.md").read_text(
+        encoding="utf-8"
+    )
+    combined = "\n".join([index, prompt, evidence, intake])
+    for required in [
+        "git.show.commit_metadata",
+        "design-only proposal",
+        "Implementation status: blocked",
+        "Tool count: `10`",
+        "does not add or approve a tool manifest",
+        "EXT-DESIGN-GIT-###",
+        "implementation-planning sprint may be considered",
+        "make v09-design-only-gate",
+        "make git-commit-metadata-proposal-check",
+        "make v09-design-review-packet",
+        '"valid": true',
+        '"new_power_classes_allowed": false',
+    ]:
+        assert required in combined
+    for forbidden in [
+        "implementation is approved",
+        "add a tool manifest now",
+        "add an executor now",
+    ]:
+        assert forbidden not in combined
+
+    assert "make v09-design-review-packet" in readme
+    assert "v09-design-review-packet:" in makefile
+    assert "v09-design-only-gate" in release_check_body
+    assert "git-commit-metadata-proposal-check" in release_check_body
 
 
 def test_v08_public_preview_decision_is_wired() -> None:
