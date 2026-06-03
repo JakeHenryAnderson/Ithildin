@@ -298,6 +298,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "artifact-hashes.json" in reproduction_map
     assert "consolidated-attachment-hashes.json" in reproduction_map
     assert "review-doc-hashes.json" in reproduction_map
+    assert "23. `make review-packet-bundle`" in reproduction_map
+    assert "24. `make review-packet-consolidated`" in reproduction_map
+    assert "25. `make packet-redaction-scan`" in reproduction_map
+    assert "26. `make docs-site`" in reproduction_map
+    assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
 def test_review_candidate_target_sequences_handoff_commands() -> None:
@@ -1978,15 +1983,22 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     )
 
     assert "SUB-001" in handoff
-    assert "SUB-077" in handoff
+    assert "SUB-086" in handoff
     assert "v0.6/v0.7 external-review closure work" in handoff
-    assert "Patch apply is externally closed for the v0.1 local-preview patch-apply lane" in handoff
-    assert "Closed/reference lane" in handoff
+    assert "Closed/reference lanes for the v0.1 local-preview boundary" in handoff
+    assert "Still pending source review: review console/admin" in handoff
+    assert "Source-level review received but pending intake/gates: none" in handoff
+    assert (
+        "Patch apply is externally closed for the v0.1 local-preview patch-apply lane"
+        not in handoff
+    )
+    assert "Closed/reference lanes" in handoff
     assert "Remaining highest-value review areas" in handoff
     assert "every source-review closure row" not in handoff
-    assert "v0.6 external/source-review handoff" in prompt
+    assert "v0.6/v0.7 external/source-review closure handoff" in prompt
     assert "v0.6/v0.7 external-review closure work" in prompt
-    assert "Patch apply has external recheck closure" in prompt
+    assert "Closed/reference lanes for the v0.1 local-preview boundary" in prompt
+    assert "Still pending source review: review console/admin" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
     assert "v0.6/v0.7 external-review closure work" in readme
@@ -2145,9 +2157,10 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
         "external handoff: go",
         "capability expansion: no-go",
         "broader public/security-product positioning: no-go",
-        "Current post-v0.7 patch-apply recheck state differs",
-        "patch apply is now externally closed for the v0.1 local-preview patch-apply lane",
-        "all other source-review lanes remain pending",
+        "Current post-v0.7 state differs",
+        "closed/reference lanes for the v0.1 local-preview boundary",
+        "review console/admin",
+        "broader closure rows remain pending",
         "critical/high external finding appears",
     ]:
         assert required in charter
