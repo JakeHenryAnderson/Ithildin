@@ -60,6 +60,7 @@ from scripts import (
     v08_final_decision_packet,
     v08_public_preview_decision,
     v08_status_reconciliation,
+    v09_design_only_gate,
 )
 
 
@@ -253,6 +254,41 @@ def test_v08_capability_design_gate_is_wired() -> None:
     assert "v08-capability-design-gate" in makefile.partition("release-check:")[2]
     assert "docs/codex/v0.8-capability-design-decision.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.8-capability-design-decision.md" in docs_site
+
+
+def test_v09_design_only_charter_and_gate_are_wired() -> None:
+    report = v09_design_only_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/v0.9-design-only-boundary-charter.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["v09_scope"] == "design_only"
+    assert report["capability_implementation"] == "no_go"
+    assert report["new_governed_tool_powers"] == "no_go"
+    assert report["evidence"]["v09_baseline_commit"] == "de32893"
+    assert report["evidence"]["tool_count"] == 10
+    for required in [
+        "v0.9 starts design-only capability planning",
+        "must not implement new runtime behavior",
+        "tool manifests",
+        "executor code",
+        "API or MCP runtime behavior",
+        "policy rules or approval behavior",
+        "git.show.commit_metadata",
+        "proposal only",
+        "make v09-design-only-gate",
+    ]:
+        assert required in doc
+    assert "make v09-design-only-gate" in readme
+    assert "v09-design-only-gate:" in makefile
+    assert "v0.9-design-only-boundary-charter.md" in index
+    assert "docs/codex/v0.9-design-only-boundary-charter.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.9-design-only-boundary-charter.md" in docs_site
 
 
 def test_v08_public_preview_decision_is_wired() -> None:
