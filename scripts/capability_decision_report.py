@@ -67,6 +67,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "accepted risks remain external-review-pending: "
             f"{len(accepted_risks['open_external_review_ids'])}"
         )
+    if accepted_risks["blocks_capability_design_ids"]:
+        blockers.append(
+            "accepted risks constrain capability design: "
+            f"{len(accepted_risks['blocks_capability_design_ids'])}"
+        )
     if planned_range not in {"", "none"}:
         blockers.append(f"v0.5 planned tasks remain: {planned_range}")
 
@@ -85,6 +90,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": tool_surface["tool_count"],
         "accepted_risk_count": accepted_risks["risk_count"],
         "open_accepted_risks": len(accepted_risks["open_external_review_ids"]),
+        "accepted_deferred_risks": len(accepted_risks["accepted_deferred_ids"]),
+        "accepted_risks_blocking_public_preview": len(
+            accepted_risks["blocks_public_preview_ids"]
+        ),
+        "accepted_risks_blocking_capability_design": len(
+            accepted_risks["blocks_capability_design_ids"]
+        ),
         "finding_count": findings["total"],
         "open_critical_high_findings": findings["open_critical_high"],
         "external_closure_complete": closure["external_closure_complete"],
@@ -98,7 +110,7 @@ def _recommended_next_step(blockers: list[str], planned_range: str) -> str:
     if planned_range not in {"", "none"}:
         return "continue v0.5 review-closure tasks before requesting capability expansion"
     if blockers:
-        return "send source-review packet for external review and record findings"
+        return "resolve v0.8 public-preview/security-product and capability-design decisions"
     return "prepare a separate explicit capability-decision proposal"
 
 
@@ -113,6 +125,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         f"accepted_risk_count: {report['accepted_risk_count']}",
         f"open_accepted_risks: {report['open_accepted_risks']}",
+        f"accepted_deferred_risks: {report['accepted_deferred_risks']}",
+        "accepted_risks_blocking_public_preview: "
+        f"{report['accepted_risks_blocking_public_preview']}",
+        "accepted_risks_blocking_capability_design: "
+        f"{report['accepted_risks_blocking_capability_design']}",
         f"finding_count: {report['finding_count']}",
         f"open_critical_high_findings: {report['open_critical_high_findings']}",
         f"external_closure_complete: {str(report['external_closure_complete']).lower()}",

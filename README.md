@@ -124,7 +124,7 @@ tamper-evident audit log.
 - `make external-review-closure-gate` - verify source-review closure is not overstated.
 - `make external-findings-intake-dry-run` - exercise EXT finding intake without mutating findings.
 - `make closure-matrix-evidence-sync` - verify completed v0.5 tasks are represented in the matrix.
-- `make accepted-risk-register-check` - validate accepted local-preview risks stay scoped and review-pending.
+- `make accepted-risk-register-check` - validate accepted local-preview risks stay scoped and explicitly dispositioned.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
@@ -330,6 +330,10 @@ public/security-product positioning or new governed tool powers.
 The current v0.8 truth table is recorded in
 [docs/codex/v0.8-status-source-of-truth.md](docs/codex/v0.8-status-source-of-truth.md), and can be
 checked with `make v08-status-reconciliation`.
+The v0.8 accepted-risk disposition is recorded in
+[docs/codex/v0.8-accepted-risk-disposition.md](docs/codex/v0.8-accepted-risk-disposition.md);
+`make accepted-risk-register-check` now reports closed local-preview and accepted-deferred risk
+counts separately.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

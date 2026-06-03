@@ -164,8 +164,11 @@ def test_v08_status_source_of_truth_is_wired() -> None:
     assert report["capability_design_decision"] == "pending"
     assert "Focused implementation lanes" in doc
     assert "closed for v0.1 local preview" in doc
-    assert "Accepted-risk/product rows" in doc
-    assert "pending disposition" in doc
+    assert "Accepted-risk rows" in doc
+    assert "dispositioned" in doc
+    assert "Product-decision rows" in doc
+    assert "pending decision" in doc
+    assert "Limited public-preview sharing" in doc
     assert "Public/security-product positioning" in doc
     assert "Capability implementation" in doc
     assert "Capability design" in doc
@@ -1721,10 +1724,24 @@ def test_accepted_risk_register_is_wired_and_scoped() -> None:
     assert report["risk_count"] == 10
     assert report["capability_expansion_approved"] is False
     assert report["external_source_review_closed"] is False
-    assert report["open_external_review_ids"] == [
-        f"AR-{index:03d}" for index in [1, 2, 3, 4, 6, 7, 8, 9, 10]
+    assert report["open_external_review_ids"] == []
+    assert report["undispositioned_external_review_ids"] == []
+    assert report["reviewed_external_review_ids"] == [
+        "AR-004",
+        "AR-005",
+        "AR-006",
+        "AR-007",
+        "AR-008",
     ]
-    assert report["reviewed_external_review_ids"] == ["AR-005"]
+    assert report["accepted_deferred_ids"] == [
+        "AR-001",
+        "AR-002",
+        "AR-003",
+        "AR-009",
+        "AR-010",
+    ]
+    assert report["blocks_public_preview_ids"] == ["AR-001", "AR-002", "AR-003", "AR-010"]
+    assert report["blocks_capability_design_ids"] == ["AR-010"]
     assert {risk["id"] for risk in register["risks"]} == {
         f"AR-{index:03d}" for index in range(1, 11)
     }
@@ -1732,21 +1749,29 @@ def test_accepted_risk_register_is_wired_and_scoped() -> None:
     assert ar005["external_review_required_before_closure"] is False
     assert ar005["external_review_closure"] == "closed_local_preview"
     assert ar005["closure_finding"] == "EXT-FS-001"
+    ar001 = next(risk for risk in register["risks"] if risk["id"] == "AR-001")
+    assert ar001["status"] == "accepted_deferred"
+    assert ar001["external_review_closure"] == "accepted_deferred"
+    assert ar001["blocks_public_preview"] is True
     assert sum(
         1
         for risk in register["risks"]
         if risk["external_review_required_before_closure"] is True
-    ) == 9
+    ) == 0
     assert "does not approve capability expansion" in doc
     assert "not production authorization" in doc
+    assert "accepted_deferred" in doc
     assert "make accepted-risk-register-check" in readme
+    assert "v0.8-accepted-risk-disposition.md" in readme
     assert "168 - Accepted risk register | Done" in backlog
     assert "Task 168 records accepted local-preview risks" in matrix
     assert "accepted-risk-register-check" in makefile.partition("release-check:")[2]
     assert "accepted-risk-register-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "docs/codex/accepted-risk-register.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/accepted-risk-register.json" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.8-accepted-risk-disposition.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/accepted-risk-register.md" in docs_site
+    assert "docs/codex/v0.8-accepted-risk-disposition.md" in docs_site
 
 
 def test_capability_decision_report_is_wired_and_blocked() -> None:
@@ -1764,7 +1789,14 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["tool_count"] == 10
     assert report["completed_range"] == "152-180"
     assert report["planned_range"] == "none"
-    assert report["open_accepted_risks"] == 9
+    assert report["open_accepted_risks"] == 0
+    assert report["accepted_deferred_risks"] == 5
+    assert report["accepted_risks_blocking_public_preview"] == 4
+    assert report["accepted_risks_blocking_capability_design"] == 1
+    assert (
+        report["recommended_next_step"]
+        == "resolve v0.8 public-preview/security-product and capability-design decisions"
+    )
     assert report["external_closure_complete"] is False
     assert "does not approve new governed tool powers" in doc
     assert "make capability-decision-report" in readme

@@ -1,15 +1,15 @@
 {
   "schema_version": "2",
-  "program": "v0.6 external/source-review closure",
+  "program": "v0.8 accepted-risk disposition",
   "scope": "v0.1 local-preview runtime boundary",
   "risk_count": 10,
-  "open_external_review_risk_count": 9,
-  "reviewed_external_review_risk_count": 1,
-  "reviewed_external_review_ids": ["AR-005"],
+  "closed_local_preview_risk_count": 5,
+  "accepted_deferred_risk_count": 5,
+  "closed_local_preview_ids": ["AR-004", "AR-005", "AR-006", "AR-007", "AR-008"],
+  "accepted_deferred_ids": ["AR-001", "AR-002", "AR-003", "AR-009", "AR-010"],
   "critical_high_accepted_risks": 0,
-  "external_review_required_before_closure": true,
+  "external_review_required_before_closure": false,
   "capability_expansion_allowed": false,
   "source_register": "docs/codex/accepted-risk-register.json",
-  "lane_status_board": "docs/codex/v0.6-lane-status-board.json",
-  "status": "nine accepted local-preview risks remain pending external/source review; AR-005 is source-reviewed and closed for the filesystem/platform local-preview lane"
+  "status": "accepted risks are dispositioned for v0.8 product-risk planning; closed risks are local-preview only and deferred risks block stronger claims or capability work"
 }

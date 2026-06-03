@@ -26,6 +26,8 @@ REQUIRED_RISK_IDS = {
 ALLOWED_SEVERITIES = {"informational", "low", "medium"}
 ALLOWED_STATUSES = {
     "accepted_local_preview",
+    "accepted_deferred",
+    "closed_local_preview",
     "deferred_until_external_review",
     "reviewed_local_preview",
 }
@@ -78,8 +80,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         risks = []
 
     ids: list[str] = []
-    open_external_review_ids: list[str] = []
+    undispositioned_ids: list[str] = []
     reviewed_external_review_ids: list[str] = []
+    accepted_deferred_ids: list[str] = []
+    blocks_public_preview_ids: list[str] = []
+    blocks_capability_design_ids: list[str] = []
     for index, risk in enumerate(risks, start=1):
         if not isinstance(risk, dict):
             failures.append(f"risk #{index} must be an object")
@@ -87,10 +92,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         risk_id = str(risk.get("id", ""))
         ids.append(risk_id)
         failures.extend(_validate_risk(risk, index))
-        if risk.get("external_review_required_before_closure") is True:
-            open_external_review_ids.append(risk_id)
-        elif _has_review_closure(risk):
+        if _has_review_closure(risk):
             reviewed_external_review_ids.append(risk_id)
+        elif _has_accepted_deferral(risk):
+            accepted_deferred_ids.append(risk_id)
+            if risk.get("blocks_public_preview") is True:
+                blocks_public_preview_ids.append(risk_id)
+            if risk.get("blocks_capability_design") is True:
+                blocks_capability_design_ids.append(risk_id)
+        elif risk.get("external_review_required_before_closure") is True:
+            undispositioned_ids.append(risk_id)
 
     duplicate_ids = sorted({risk_id for risk_id in ids if ids.count(risk_id) > 1})
     if duplicate_ids:
@@ -118,7 +129,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         if phrase in combined:
             failures.append(f"accepted-risk register contains forbidden phrase: {phrase}")
 
-    return _report(failures, risks, open_external_review_ids, reviewed_external_review_ids)
+    return _report(
+        failures,
+        risks,
+        undispositioned_ids,
+        reviewed_external_review_ids,
+        accepted_deferred_ids,
+        blocks_public_preview_ids,
+        blocks_capability_design_ids,
+    )
 
 
 def _validate_risk(risk: dict[str, Any], index: int) -> list[str]:
@@ -151,12 +170,14 @@ def _validate_risk(risk: dict[str, Any], index: int) -> list[str]:
         failures.append(f"{risk_id} accepted scope must stay within v0.1 local-preview")
     if not isinstance(risk["mitigations"], list) or not risk["mitigations"]:
         failures.append(f"{risk_id} must include at least one mitigation")
-    if risk["external_review_required_before_closure"] is not True and not _has_review_closure(
-        risk
+    if (
+        risk["external_review_required_before_closure"] is not True
+        and not _has_review_closure(risk)
+        and not _has_accepted_deferral(risk)
     ):
         failures.append(
             f"{risk_id} must require external review before closure or record "
-            "closed local-preview review evidence"
+            "closed local-preview review evidence or accepted-deferred rationale"
         )
     if not str(risk["revisit_trigger"]).strip():
         failures.append(f"{risk_id} must include a revisit trigger")
@@ -166,26 +187,50 @@ def _validate_risk(risk: dict[str, Any], index: int) -> list[str]:
 def _has_review_closure(risk: dict[str, Any]) -> bool:
     return (
         risk.get("external_review_required_before_closure") is False
-        and risk.get("status") == "reviewed_local_preview"
+        and risk.get("status") in {"reviewed_local_preview", "closed_local_preview"}
         and risk.get("external_review_closure") == "closed_local_preview"
         and str(risk.get("closure_finding", "")).startswith("EXT-")
         and bool(str(risk.get("closure_notes", "")).strip())
     )
 
 
+def _has_accepted_deferral(risk: dict[str, Any]) -> bool:
+    return (
+        risk.get("external_review_required_before_closure") is False
+        and risk.get("status") == "accepted_deferred"
+        and risk.get("external_review_closure") == "accepted_deferred"
+        and bool(str(risk.get("disposition_rationale", "")).strip())
+        and bool(str(risk.get("owner", "")).strip())
+        and bool(str(risk.get("revisit_criteria", "")).strip())
+        and isinstance(risk.get("blocked_claims"), list)
+        and bool(risk.get("blocked_claims"))
+        and isinstance(risk.get("linked_reviews"), list)
+        and bool(risk.get("linked_reviews"))
+    )
+
+
 def _report(
     failures: list[str],
     risks: list[Any],
-    open_external_review_ids: list[str],
+    undispositioned_ids: list[str],
     reviewed_external_review_ids: list[str] | None = None,
+    accepted_deferred_ids: list[str] | None = None,
+    blocks_public_preview_ids: list[str] | None = None,
+    blocks_capability_design_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "risk_count": len(risks),
-        "open_external_review_ids": open_external_review_ids,
+        "open_external_review_ids": undispositioned_ids,
+        "undispositioned_external_review_ids": undispositioned_ids,
+        "undispositioned_ids": undispositioned_ids,
         "reviewed_external_review_ids": reviewed_external_review_ids or [],
+        "closed_local_preview_ids": reviewed_external_review_ids or [],
+        "accepted_deferred_ids": accepted_deferred_ids or [],
+        "blocks_public_preview_ids": blocks_public_preview_ids or [],
+        "blocks_capability_design_ids": blocks_capability_design_ids or [],
         "capability_expansion_approved": False,
         "external_source_review_closed": False,
     }
@@ -196,8 +241,13 @@ def render_report(report: dict[str, Any]) -> str:
         "Ithildin accepted-risk register check",
         f"valid: {str(report['valid']).lower()}",
         f"risk_count: {report['risk_count']}",
-        f"open_external_review_ids: {len(report['open_external_review_ids'])}",
+        f"undispositioned_external_review_ids: {len(report['undispositioned_ids'])}",
         f"reviewed_external_review_ids: {len(report['reviewed_external_review_ids'])}",
+        f"accepted_deferred_ids: {len(report['accepted_deferred_ids'])}",
+        "accepted_deferred_risks_are_not_closed: "
+        f"{str(bool(report['accepted_deferred_ids'])).lower()}",
+        f"blocks_public_preview_ids: {len(report['blocks_public_preview_ids'])}",
+        f"blocks_capability_design_ids: {len(report['blocks_capability_design_ids'])}",
         "capability_expansion_approved: false",
         "external_source_review_closed: false",
     ]

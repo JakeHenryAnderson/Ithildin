@@ -67,12 +67,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures,
     )
     if accepted_risk_v2:
-        if accepted_risk_v2.get("external_review_required_before_closure") is not True:
-            failures.append("accepted-risk v2 must require external review before closure")
         if accepted_risk_v2.get("capability_expansion_allowed") is not False:
             failures.append("accepted-risk v2 must not approve capability expansion")
         if accepted_risk_v2.get("risk_count") != 10:
             failures.append("accepted-risk v2 must track the 10 accepted local-preview risks")
+        if (
+            accepted_risk_v2.get("closed_local_preview_risk_count", 0)
+            + accepted_risk_v2.get("accepted_deferred_risk_count", 0)
+            != 10
+        ):
+            failures.append("accepted-risk v2 must disposition all 10 accepted risks")
 
     if lane_board["summary"]["critical_high_open_count"] != 0:
         failures.append("lane-status board reports open critical/high findings")
