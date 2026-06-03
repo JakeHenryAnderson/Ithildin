@@ -56,6 +56,7 @@ from scripts import (
     v06_lane_status,
     v07_closure_prep,
     v07_patch_apply_recheck,
+    v08_status_reconciliation,
 )
 
 
@@ -149,6 +150,30 @@ def test_v03_milestone_manifest_is_linked_and_complete() -> None:
     assert "v0.3-milestone-manifest.md" in readme
     assert "v0.3-milestone-manifest.md" in planning_seed
     assert "docs/codex/v0.3-milestone-manifest.md" in review_docs.REVIEW_DOCS
+
+
+def test_v08_status_source_of_truth_is_wired() -> None:
+    report = v08_status_reconciliation.build_report(Path.cwd())
+    doc = Path("docs/codex/v0.8-status-source-of-truth.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["capability_implementation_allowed"] is False
+    assert report["capability_design_decision"] == "pending"
+    assert "Focused implementation lanes" in doc
+    assert "closed for v0.1 local preview" in doc
+    assert "Accepted-risk/product rows" in doc
+    assert "pending disposition" in doc
+    assert "Public/security-product positioning" in doc
+    assert "Capability implementation" in doc
+    assert "Capability design" in doc
+    assert "make v08-status-reconciliation" in readme
+    assert "v08-status-reconciliation:" in makefile
+    assert "v08-status-reconciliation" in makefile.partition("release-check:")[2]
+    assert "docs/codex/v0.8-status-source-of-truth.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.8-status-source-of-truth.md" in docs_site
 
 
 def test_v04_milestone_manifest_is_linked_and_scopes_remaining_plan() -> None:

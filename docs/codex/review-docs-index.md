@@ -102,6 +102,7 @@ externally closed.
 - [v0.7 Signed Evidence Source Review](v0.7-signed-evidence-source-review.md)
 - [v0.7 MCP Ingress Source Review](v0.7-mcp-ingress-source-review.md)
 - [v0.8 Roadmap Prompt](v0.8-roadmap-prompt.md)
+- [v0.8 Status Source Of Truth](v0.8-status-source-of-truth.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)
 - [v0.6 Internal Proxy Review Operating Model](v0.6-internal-proxy-review-operating-model.md)

@@ -327,6 +327,9 @@ All eight focused v0.7 source-review lanes are now closed for the v0.1 local-pre
 boundary only. The next strategic handoff prompt for v0.8 roadmap/product-risk consultation is in
 [docs/codex/v0.8-roadmap-prompt.md](docs/codex/v0.8-roadmap-prompt.md). This does not approve
 public/security-product positioning or new governed tool powers.
+The current v0.8 truth table is recorded in
+[docs/codex/v0.8-status-source-of-truth.md](docs/codex/v0.8-status-source-of-truth.md), and can be
+checked with `make v08-status-reconciliation`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).
