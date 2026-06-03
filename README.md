@@ -132,6 +132,7 @@ tamper-evident audit log.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
 - `make filesystem-contract-check` - report local filesystem capability evidence for the executor contract.
 - `make docs-site` - build a small local static docs site under ignored `site/`.
+- `make ui-test` - run the review console Vitest/React Testing Library interaction harness.
 - `make ollama-smoke` - detect a host Ollama install and local models, skipping safely if absent.
 - `make local-model-demo` - print host-side MCP wiring for an Ollama-backed local model client.
 - `make mcp-inspector-recipes` - validate and print local MCP Inspector recipe prerequisites.

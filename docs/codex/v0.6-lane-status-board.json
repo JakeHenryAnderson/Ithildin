@@ -194,6 +194,7 @@
       "reviewer_recheck_required": false,
       "slug": "review-console",
       "verification_commands": [
+        "npm run test --prefix apps/ui",
         "npm run typecheck --prefix apps/ui",
         "npm run build --prefix apps/ui",
         "approval review API focused tests including missing patch-apply scope rejection",

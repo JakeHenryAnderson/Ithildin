@@ -405,8 +405,8 @@ def _mcp_evidence(outputs: list[dict[str, Any]]) -> str:
         "  powers.",
         "- Patch apply approval-time binding review is enforced server-side for stored proposals.",
         "- Patch apply diagnostics remain read-only and content-free.",
-        "- UI validation is TypeScript/build plus backend/release-readiness tests; a dedicated",
-        "  frontend interaction harness is a low deferred assurance item.",
+        "- UI validation includes TypeScript/build checks, backend/release-readiness tests, and a",
+        "  focused Vitest/React Testing Library interaction harness.",
         "",
     ]
     for output in outputs:

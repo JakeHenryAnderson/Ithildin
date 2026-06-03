@@ -977,15 +977,23 @@ def test_local_auth_boundary_is_documented() -> None:
 
 def test_review_console_assurance_is_documented() -> None:
     app = Path("apps/ui/src/App.tsx").read_text(encoding="utf-8")
+    package_json = json.loads(Path("apps/ui/package.json").read_text(encoding="utf-8"))
     readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    finding = Path("docs/codex/findings/sub-080-review-console-ui-test-harness.md").read_text(
+        encoding="utf-8"
+    )
     matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(encoding="utf-8")
     doc = Path("docs/codex/review-console-assurance.md").read_text(encoding="utf-8")
+    ui_test = Path("apps/ui/src/App.test.tsx").read_text(encoding="utf-8")
 
     for required in [
         "approval scope hash",
         "Task 139 adds",
         "Task 140 tightens",
+        "Task 246 adds",
+        "Vitest and React Testing Library",
         "patch artifact",
         "tool manifest",
         "policy decision",
@@ -997,6 +1005,7 @@ def test_review_console_assurance_is_documented() -> None:
         "failed export responses are parsed",
         "does not add repair",
         "review_summary",
+        "policy preview JSON error handling",
     ]:
         assert required in doc
     for ui_marker in [
@@ -1016,11 +1025,26 @@ def test_review_console_assurance_is_documented() -> None:
     ]:
         assert ui_marker in app
     assert "review-console-assurance.md" in readme
+    assert "make ui-test" in readme
+    assert package_json["scripts"]["test"] == "vitest run"
+    assert "ui-test:" in makefile
+    assert "ui-test" in makefile.partition("release-check:")[2]
+    for required in [
+        "sessionStorage.getItem",
+        "Authorization: \"Bearer local-token\"",
+        "Binding Evidence",
+        "Export Signed",
+        "Policy Preview",
+    ]:
+        assert required in ui_test
     assert "099 - Review-console approval evidence clarity | Done" in backlog
     assert "100 - Review-console failure-state and trust-status UX | Done" in backlog
     assert "139 - Review-console approval UX v3 | Done" in backlog
     assert "140 - Review-console failure and unauthorized states | Done" in backlog
+    assert "- Disposition: fixed" in finding
+    assert "npm run test --prefix apps/ui" in finding
     assert "Tasks 099-100 expose copyable approval binding evidence" in matrix
+    assert "v0.8 adds a focused Vitest/React Testing Library harness" in matrix
     assert "SUB-075" in matrix
     assert "docs/codex/review-console-assurance.md" in review_docs.REVIEW_DOCS
 
@@ -3699,7 +3723,7 @@ def test_review_console_source_review_bundle_is_wired(
         encoding="utf-8"
     )
     assert "npm run typecheck --prefix apps/ui" in evidence
-    assert "frontend interaction harness is a low deferred assurance item" in evidence
+    assert "Vitest/React Testing Library interaction harness" in evidence
     intake = output_dir.joinpath("08_REVIEW_CONSOLE_INTAKE_COMMANDS.md").read_text(
         encoding="utf-8"
     )

@@ -54,3 +54,18 @@ The console fetches `/patch-apply-diagnostics` with the rest of the dashboard da
 
 This is read-only UX. It does not add repair, rollback, approval mutation, new tools, or remote
 review surfaces.
+
+## Interaction Test Harness
+
+Task 246 adds a small Vitest and React Testing Library harness for the local review console. The
+harness uses mocked local API responses and covers:
+
+- admin token storage and bearer authorization on dashboard requests;
+- system trust warning rendering for dev-token and weak-token states;
+- approval binding evidence visibility and approve/deny actions;
+- signed audit export button behavior;
+- policy preview JSON error handling.
+
+Run `make ui-test` or `npm run test --prefix apps/ui` to execute the harness. It is frontend
+interaction assurance for the local admin console only; it does not add browser automation,
+production authentication, new approval APIs, or new governed tool powers.
