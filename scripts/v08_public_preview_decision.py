@@ -14,6 +14,7 @@ CLAIM_DOCS = [
     ROOT / "docs/codex/local-preview-release.md",
     ROOT / "docs/codex/operator-quickstart-v2.md",
     ROOT / "docs/codex/v0.8-public-preview-risk-review.md",
+    ROOT / "docs/codex/v0.8-final-decision-packet.md",
 ]
 REQUIRED_DECISIONS = {
     "continued local-preview development": "go",

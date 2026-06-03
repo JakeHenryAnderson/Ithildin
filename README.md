@@ -127,6 +127,7 @@ tamper-evident audit log.
 - `make accepted-risk-register-check` - validate accepted local-preview risks stay scoped and explicitly dispositioned.
 - `make v08-public-preview-decision` - validate the v0.8 local-preview sharing and public/security-product no-go decision.
 - `make v08-capability-design-gate` - validate design-only capability planning while implementation remains blocked.
+- `make v08-final-decision-packet` - validate the final v0.8 product-risk decision packet.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
 - `make audit-export-verify FILE=...` - verify a downloaded signed audit export bundle.
@@ -345,6 +346,9 @@ The v0.8 capability-design decision is recorded in
 [docs/codex/v0.8-capability-design-decision.md](docs/codex/v0.8-capability-design-decision.md):
 design-only exploration is `conditional_go`, while capability implementation and new governed tool
 powers remain `no_go`.
+The final v0.8 decision packet is recorded in
+[docs/codex/v0.8-final-decision-packet.md](docs/codex/v0.8-final-decision-packet.md) and checked
+with `make v08-final-decision-packet`.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

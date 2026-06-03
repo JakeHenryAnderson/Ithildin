@@ -15,6 +15,7 @@ from scripts import accepted_risk_register, no_new_powers_guardrail
 
 ROOT = Path(__file__).resolve().parents[1]
 DECISION_DOC = ROOT / "docs/codex/v0.8-capability-design-decision.md"
+V08_BASELINE_COMMIT = "f993cec"
 FORBIDDEN_IMPLEMENTATION_SURFACE_PREFIXES = (
     "apps/api/",
     "apps/mcp-server/",
@@ -83,12 +84,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     accepted_risks = accepted_risk_register.build_report(repo_root)
     failures.extend(no_new_powers["failures"])
     failures.extend(accepted_risks["failures"])
-    failures.extend(_forbidden_working_tree_implementation_changes(repo_root))
+    failures.extend(_forbidden_implementation_changes_since_baseline(repo_root))
 
     return _report(
         failures,
         {
             "tool_count": no_new_powers["tool_count"],
+            "v08_baseline_commit": V08_BASELINE_COMMIT,
             "accepted_deferred_risks": len(accepted_risks["accepted_deferred_ids"]),
             "accepted_risks_constraining_design": len(
                 accepted_risks["blocks_capability_design_ids"]
@@ -109,22 +111,48 @@ def _report(failures: list[str], evidence: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _forbidden_working_tree_implementation_changes(repo_root: Path) -> list[str]:
+def _forbidden_implementation_changes_since_baseline(repo_root: Path) -> list[str]:
     git_dir = repo_root / ".git"
     if not git_dir.exists():
         return []
     import subprocess
 
+    baseline_check = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{V08_BASELINE_COMMIT}^{{commit}}"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if baseline_check.returncode != 0:
+        return [f"could not verify v0.8 capability baseline commit: {V08_BASELINE_COMMIT}"]
+
     result = subprocess.run(
-        ["git", "diff", "--name-only", "HEAD"],
+        ["git", "diff", "--name-only", V08_BASELINE_COMMIT, "HEAD"],
         cwd=repo_root,
         check=False,
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
+        return ["could not inspect committed diff for capability-design implementation drift"]
+    working_tree = subprocess.run(
+        ["git", "diff", "--name-only", "HEAD"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if working_tree.returncode != 0:
         return ["could not inspect working-tree diff for capability-design implementation drift"]
-    changed = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    changed = sorted(
+        {
+            line.strip()
+            for output in (result.stdout, working_tree.stdout)
+            for line in output.splitlines()
+            if line.strip()
+        }
+    )
     forbidden = [
         path
         for path in changed
@@ -132,7 +160,9 @@ def _forbidden_working_tree_implementation_changes(repo_root: Path) -> list[str]
         or path.startswith(FORBIDDEN_IMPLEMENTATION_SURFACE_PREFIXES)
     ]
     return [
-        "capability-design work changed implementation surfaces: " + ", ".join(forbidden)
+        "v0.8 decision work changed implementation surfaces since baseline "
+        f"{V08_BASELINE_COMMIT}: "
+        + ", ".join(forbidden)
     ] if forbidden else []
 
 
@@ -144,6 +174,7 @@ def render_report(report: dict[str, Any]) -> str:
         "capability_implementation: no_go",
         "new_governed_tool_powers: no_go",
         f"tool_count: {report['evidence'].get('tool_count', 'unknown')}",
+        f"v08_baseline_commit: {report['evidence'].get('v08_baseline_commit', 'unknown')}",
         "accepted_risks_constraining_design: "
         f"{report['evidence'].get('accepted_risks_constraining_design', 'unknown')}",
     ]

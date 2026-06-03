@@ -57,6 +57,7 @@ from scripts import (
     v07_closure_prep,
     v07_patch_apply_recheck,
     v08_capability_design_gate,
+    v08_final_decision_packet,
     v08_public_preview_decision,
     v08_status_reconciliation,
 )
@@ -164,13 +165,15 @@ def test_v08_status_source_of_truth_is_wired() -> None:
     assert report["valid"] is True
     assert report["capability_implementation_allowed"] is False
     assert report["capability_design_decision"] == "conditional_go"
+    assert report["product_decision_rows_pending"] is False
+    assert report["product_decision_rows_recorded"] is True
     assert "Focused implementation lanes" in doc
     assert "closed for v0.1 local preview" in doc
     assert "Accepted-risk rows" in doc
     assert "dispositioned" in doc
     assert "Product-decision rows" in doc
-    assert "pending decision" in doc
-    assert "Limited public-preview sharing" in doc
+    assert "decisions recorded" in doc
+    assert "Limited technical-preview sharing" in doc
     assert "conditional_go" in doc
     assert "Public/security-product positioning" in doc
     assert "Capability implementation" in doc
@@ -181,6 +184,46 @@ def test_v08_status_source_of_truth_is_wired() -> None:
     assert "v08-status-reconciliation" in makefile.partition("release-check:")[2]
     assert "docs/codex/v0.8-status-source-of-truth.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.8-status-source-of-truth.md" in docs_site
+
+
+def test_v08_final_decision_packet_is_wired() -> None:
+    report = v08_final_decision_packet.build_report(Path.cwd())
+    doc = Path("docs/codex/v0.8-final-decision-packet.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["local_preview_lanes"] == "closed_reference_only"
+    assert report["public_security_product_positioning"] == "no_go"
+    assert report["capability_implementation"] == "no_go"
+    assert report["capability_design_only"] == "conditional_go"
+    assert report["sub_080"] == "fixed"
+    for required in [
+        "Local-preview implementation lanes",
+        "closed/reference-only",
+        "Accepted-risk rows",
+        "dispositioned",
+        "Limited technical-preview sharing",
+        "conditional_go",
+        "Public/security-product positioning",
+        "no_go",
+        "Capability implementation",
+        "Capability design-only planning",
+        "`SUB-080` review-console interaction assurance",
+        "redaction is best-effort leak reduction",
+        "macOS/Linux local-preview filesystem support only",
+        "make v08-final-decision-packet",
+        "make ui-test",
+    ]:
+        assert required in doc
+    assert "make v08-final-decision-packet" in readme
+    assert "v08-final-decision-packet:" in makefile
+    assert "v08-final-decision-packet" in makefile.partition("release-check:")[2]
+    assert "v0.8-final-decision-packet.md" in index
+    assert "docs/codex/v0.8-final-decision-packet.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.8-final-decision-packet.md" in docs_site
 
 
 def test_v08_capability_design_gate_is_wired() -> None:
@@ -197,6 +240,7 @@ def test_v08_capability_design_gate_is_wired() -> None:
     assert report["capability_implementation"] == "no_go"
     assert report["new_governed_tool_powers"] == "no_go"
     assert report["evidence"]["tool_count"] == 10
+    assert report["evidence"]["v08_baseline_commit"] == "f993cec"
     assert report["evidence"]["accepted_risks_constraining_design"] == 1
     assert "Capability design-only exploration" in doc
     assert "Capability implementation" in doc
@@ -1042,6 +1086,7 @@ def test_review_console_assurance_is_documented() -> None:
     assert "139 - Review-console approval UX v3 | Done" in backlog
     assert "140 - Review-console failure and unauthorized states | Done" in backlog
     assert "- Disposition: fixed" in finding
+    assert "- Blocking status: should-fix" in finding
     assert "npm run test --prefix apps/ui" in finding
     assert "Tasks 099-100 expose copyable approval binding evidence" in matrix
     assert "v0.8 adds a focused Vitest/React Testing Library harness" in matrix

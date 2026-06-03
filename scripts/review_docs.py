@@ -122,6 +122,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.8-accepted-risk-disposition.md",
     "docs/codex/v0.8-public-preview-risk-review.md",
     "docs/codex/v0.8-capability-design-decision.md",
+    "docs/codex/v0.8-final-decision-packet.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",
     "docs/codex/v0.6-internal-proxy-review-operating-model.md",
