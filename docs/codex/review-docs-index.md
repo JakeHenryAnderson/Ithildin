@@ -108,6 +108,7 @@ externally closed.
 - [v0.8 Capability-Design Decision](v0.8-capability-design-decision.md)
 - [v0.8 Final Decision Packet](v0.8-final-decision-packet.md)
 - [v0.9 Design-Only Boundary Charter](v0.9-design-only-boundary-charter.md)
+- [Capability Proposal: git.show.commit_metadata](capability-proposals/git-show-commit-metadata.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)
 - [v0.6 Internal Proxy Review Operating Model](v0.6-internal-proxy-review-operating-model.md)

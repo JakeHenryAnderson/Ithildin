@@ -23,6 +23,7 @@ from scripts import (
     external_review_closure_gate,
     external_review_dispatch_packets,
     filesystem_source_review_bundle,
+    git_commit_metadata_proposal_check,
     http_fetch_source_review_bundle,
     internal_review_packet,
     mcp_ingress_source_review_bundle,
@@ -289,6 +290,49 @@ def test_v09_design_only_charter_and_gate_are_wired() -> None:
     assert "v0.9-design-only-boundary-charter.md" in index
     assert "docs/codex/v0.9-design-only-boundary-charter.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.9-design-only-boundary-charter.md" in docs_site
+
+
+def test_git_commit_metadata_proposal_check_is_wired() -> None:
+    report = git_commit_metadata_proposal_check.build_report(Path.cwd())
+    doc = Path("docs/codex/capability-proposals/git-show-commit-metadata.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["proposal"] == "git.show.commit_metadata"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["evidence"]["tool_count"] == 10
+    for required in [
+        "Status: design-only proposal",
+        "does not add a tool manifest",
+        "git.show.commit_metadata",
+        "Ref Resolution Policy",
+        "--end-of-options",
+        "reject arbitrary Git revision syntax",
+        "HEAD~1",
+        "HEAD@{1}",
+        ":/message",
+        "remote-tracking refs",
+        "Changed-File Summary Contract",
+        "NUL-delimited",
+        "rename/copy records",
+        "submodules/gitlinks",
+        "binary `numstat` values",
+        "Negative Transcript Sketches",
+        "Must not expose",
+        "external/source review",
+    ]:
+        assert required in doc
+    assert "make git-commit-metadata-proposal-check" in readme
+    assert "git-commit-metadata-proposal-check:" in makefile
+    assert "Capability Proposal: git.show.commit_metadata" in index
+    assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in docs_site
 
 
 def test_v08_public_preview_decision_is_wired() -> None:
