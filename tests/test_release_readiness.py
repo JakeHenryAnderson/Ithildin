@@ -2347,13 +2347,18 @@ def test_v06_boundary_charter_and_manifest_are_wired() -> None:
         "external handoff: go",
         "capability expansion: no-go",
         "broader public/security-product positioning: no-go",
-        "Current post-v0.7 state differs",
+        "Current post-v0.8 state differs",
         "closed/reference lanes for the v0.1 local-preview boundary",
         "review console/admin",
-        "broader closure rows remain pending",
+        "release/evidence automation",
+        "v0.8 final decision packet",
+        "capability implementation remains blocked",
+        "design-only capability planning is",
         "critical/high external finding appears",
     ]:
         assert required in charter
+    assert "review console/admin, release/evidence automation" not in charter
+    assert "broader closure rows remain pending" not in charter
     assert "No task in this manifest may add new governed tool powers" in manifest_doc
     assert "181 - v0.6 boundary charter and freeze | Done" in backlog
     assert "Task 181 freezes v0.6" in matrix
