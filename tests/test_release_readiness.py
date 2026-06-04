@@ -527,6 +527,14 @@ def test_git_commit_metadata_source_review_bundle_is_wired(tmp_path: Path) -> No
     }
     assert all(entry["sha256"].startswith("sha256:") for entry in hashes)
     assert all(entry["bytes"] > 0 for entry in hashes)
+    implementation_hash = next(
+        entry["sha256"]
+        for entry in hashes
+        if entry["path"] == "02_GIT_COMMIT_METADATA_IMPLEMENTATION_PACKET.md"
+    )
+    assert f"Implementation packet SHA-256: `{implementation_hash}`" in index
+    assert f"Reviewed implementation packet hash: `{implementation_hash}`" in prompt
+    assert f'--reviewed-packet-hash "{implementation_hash}"' in intake
 
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")

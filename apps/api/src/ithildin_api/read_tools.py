@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import os
 import re
+import selectors
 import shlex
 import stat
 import subprocess
+import time
 import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -36,6 +38,7 @@ _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
 _COMMIT_METADATA_SUBJECT_LIMIT = 240
 _COMMIT_METADATA_BODY_LIMIT = 2000
+_COMMIT_METADATA_IDENTITY_LIMIT = 240
 _COMMIT_METADATA_CHANGED_FILE_LIMIT = 100
 _SENSITIVE_EXACT_PATH_PARTS = {
     ".env",
@@ -623,10 +626,16 @@ class GitReadTools:
         _validate_git_iso_timestamp(committer_ts)
         return {
             "parent_hashes": cast(list[JsonValue], parent_hashes),
-            "author_name": _sanitize_git_identity_name(author_name.strip()),
+            "author_name": _bounded_text(
+                _sanitize_git_identity_name(author_name.strip()),
+                _COMMIT_METADATA_IDENTITY_LIMIT,
+            )[0],
             "author_email": author_email.strip(),
             "author_timestamp": author_ts.strip(),
-            "committer_name": _sanitize_git_identity_name(committer_name.strip()),
+            "committer_name": _bounded_text(
+                _sanitize_git_identity_name(committer_name.strip()),
+                _COMMIT_METADATA_IDENTITY_LIMIT,
+            )[0],
             "committer_email": committer_email.strip(),
             "committer_timestamp": committer_ts.strip(),
             "subject": subject.strip(),
@@ -682,25 +691,64 @@ class GitReadTools:
 
     def _run_git(self, cwd: Path, args: list[str]) -> GitOutput:
         command = ["git", "-C", str(cwd), *args]
+        timeout_seconds = 10.0
         try:
-            completed = subprocess.run(
+            process = subprocess.Popen(
                 command,
-                check=False,
-                capture_output=True,
-                timeout=10,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
             )
-        except (OSError, subprocess.TimeoutExpired) as exc:
+        except OSError as exc:
             raise ReadToolError("git command failed safely") from exc
 
-        if completed.returncode != 0:
+        stdout = bytearray()
+        truncated = False
+        deadline = time.monotonic() + timeout_seconds
+        selector = selectors.DefaultSelector()
+        try:
+            if process.stdout is None:
+                raise ReadToolError("git command failed safely")
+            selector.register(process.stdout, selectors.EVENT_READ)
+            fd = process.stdout.fileno()
+            while True:
+                if process.poll() is not None:
+                    while len(stdout) <= self.max_output_bytes:
+                        chunk = os.read(fd, min(65536, self.max_output_bytes + 1 - len(stdout)))
+                        if not chunk:
+                            break
+                        stdout.extend(chunk)
+                    truncated = len(stdout) > self.max_output_bytes
+                    break
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(command, timeout_seconds)
+                events = selector.select(timeout=min(0.1, remaining))
+                if not events:
+                    continue
+                chunk = os.read(fd, min(65536, self.max_output_bytes + 1 - len(stdout)))
+                if not chunk:
+                    break
+                stdout.extend(chunk)
+                if len(stdout) > self.max_output_bytes:
+                    truncated = True
+                    process.kill()
+                    break
+            if truncated:
+                process.kill()
+            return_code = process.wait(timeout=max(0.0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired as exc:
+            process.kill()
+            process.wait()
+            raise ReadToolError("git command failed safely") from exc
+        finally:
+            selector.close()
+            if process.stdout is not None:
+                process.stdout.close()
+
+        if return_code != 0 and not truncated:
             raise ReadToolError("path is not a readable git repository")
 
-        stdout = completed.stdout
-        truncated = len(stdout) > self.max_output_bytes
-        if truncated:
-            text = stdout[: self.max_output_bytes].decode("utf-8", errors="replace")
-        else:
-            text = stdout.decode("utf-8", errors="replace")
+        text = bytes(stdout[: self.max_output_bytes]).decode("utf-8", errors="replace")
         return GitOutput(text=text, truncated=truncated)
 
     def _ensure_repo_toplevel_in_workspace(self, repo: Path) -> None:

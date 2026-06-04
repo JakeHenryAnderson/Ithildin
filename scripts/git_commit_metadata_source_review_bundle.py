@@ -123,12 +123,12 @@ def build_bundle(
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
 
-    implementation_packet = _implementation_packet(
-        repo_root, commit, dirty, run_commands=run_commands
+    implementation_packet = _packet_text(
+        _implementation_packet(
+            repo_root, commit, dirty, run_commands=run_commands
+        )
     )
-    implementation_packet_sha256 = (
-        "sha256:" + hashlib.sha256(implementation_packet.encode("utf-8")).hexdigest()
-    )
+    implementation_packet_sha256 = _content_sha256(implementation_packet)
     context: dict[str, Any] = {
         "commit": commit,
         "dirty": dirty,
@@ -147,12 +147,12 @@ def build_bundle(
         "08_GIT_COMMIT_METADATA_INTAKE_COMMANDS.md": _intake_commands(context),
     }
     for relative, content in files.items():
-        (output_dir / relative).write_text(content.rstrip() + "\n", encoding="utf-8")
+        (output_dir / relative).write_text(_packet_text(content), encoding="utf-8")
 
     gate_output = _command_output(IMPLEMENTATION_GATE_COMMAND, run_commands=run_commands)
     parity_output = _command_output(POLICY_PARITY_COMMAND, run_commands=run_commands)
     (output_dir / "06_GIT_COMMIT_METADATA_EVIDENCE.md").write_text(
-        _evidence(gate_output, parity_output).rstrip() + "\n",
+        _packet_text(_evidence(gate_output, parity_output)),
         encoding="utf-8",
     )
     _write_command_output(
@@ -164,6 +164,14 @@ def build_bundle(
         _hashes(output_dir),
     )
     return output_dir
+
+
+def _packet_text(content: str) -> str:
+    return content.rstrip() + "\n"
+
+
+def _content_sha256(content: str) -> str:
+    return "sha256:" + hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 def _index(context: dict[str, Any]) -> str:

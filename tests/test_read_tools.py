@@ -426,7 +426,7 @@ def test_git_commit_metadata_sanitizes_identity_separator_and_hides_email(
         repo,
         ["commit", "-m", "separator identity"],
         env={
-            "GIT_AUTHOR_NAME": "Test\x1fUser <hidden@example.com>",
+            "GIT_AUTHOR_NAME": f"Test\x1fUser <hidden@example.com>{'x' * 400}",
             "GIT_AUTHOR_EMAIL": "author@example.com",
             "GIT_COMMITTER_NAME": "Committer\x1fUser <hidden@example.com>",
             "GIT_COMMITTER_EMAIL": "committer@example.com",
@@ -441,7 +441,8 @@ def test_git_commit_metadata_sanitizes_identity_separator_and_hides_email(
 
     author = cast(dict[str, object], metadata["author"])
     committer = cast(dict[str, object], metadata["committer"])
-    assert author["name"] == "Test�User [REDACTED_EMAIL]"
+    assert str(author["name"]).startswith("Test�User [REDACTED_EMAIL]")
+    assert len(str(author["name"]).encode("utf-8")) <= 240
     assert committer["name"] == "Committer�User [REDACTED_EMAIL]"
     assert "hidden@example.com" not in json_dump(metadata)
     assert "author@example.com" not in json_dump(metadata)
@@ -457,13 +458,33 @@ def test_git_commit_metadata_denies_unsupported_ref_syntax(tmp_path: Path) -> No
     denied_refs: list[dict[str, str]] = [
         {"kind": "branch", "value": "origin/main"},
         {"kind": "branch", "value": "refs/heads/main"},
+        {"kind": "branch", "value": "refs/remotes/origin/main"},
         {"kind": "branch", "value": "feature..main"},
+        {"kind": "branch", "value": "feature...main"},
+        {"kind": "branch", "value": "HEAD~1"},
+        {"kind": "branch", "value": "HEAD@{1}"},
+        {"kind": "branch", "value": ":/message"},
+        {"kind": "branch", "value": "main:path"},
+        {"kind": "branch", "value": "bad\x1fref"},
+        {"kind": "branch", "value": "cafe\u0301"},
         {"kind": "tag", "value": "-bad"},
         {"kind": "object_id", "value": "HEAD"},
     ]
     for ref in denied_refs:
         with pytest.raises(ReadToolError):
             git.commit_metadata({"ref": cast(JsonObject, ref)})
+
+
+def test_git_commit_metadata_denies_non_commit_object_id(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    repo.joinpath("blob.txt").write_text("blob\n", encoding="utf-8")
+    blob_hash = git_output(repo, ["hash-object", "blob.txt"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    with pytest.raises(ReadToolError):
+        git.commit_metadata({"ref": {"kind": "object_id", "value": blob_hash}})
 
 
 def test_git_commit_metadata_redacts_hidden_or_sensitive_changed_paths(tmp_path: Path) -> None:

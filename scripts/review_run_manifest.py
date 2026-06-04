@@ -32,7 +32,8 @@ VALID_REVIEWER_TYPES = {"codex_internal", "internal_ai", "external_ai", "human"}
 VALID_SEVERITIES = ("critical", "high", "medium", "low", "informational")
 FINDING_ID_PATTERN = re.compile(
     r"^(V03-(INT|EXT|DOCS)-[A-Z0-9]+-\d{3}|"
-    r"EXT-(PA|FS|HTTP|SE|PR|MCP|UI|REL)-\d{3}|SUB-GITMETA-\d{3})$"
+    r"EXT-(PA|FS|HTTP|SE|PR|MCP|UI|REL)-\d{3}|SUB-GITMETA-\d{3}|"
+    r"XH-GITMETA-\d{3})$"
 )
 
 
