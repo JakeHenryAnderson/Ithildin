@@ -68,6 +68,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "capability-decision-report",
     "v09-design-only-gate",
     "git-commit-metadata-proposal-check",
+    "git-commit-metadata-implementation-plan-check",
     "v06-lane-status",
     "v06-closure-readiness",
     "v06-final-handoff",

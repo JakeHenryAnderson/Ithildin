@@ -36,6 +36,7 @@ REQUIRED_PHRASES = [
     "git.show.commit_metadata",
     "proposal only",
     "make v09-design-only-gate",
+    "make git-commit-metadata-implementation-plan-check",
 ]
 
 

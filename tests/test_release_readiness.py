@@ -23,6 +23,7 @@ from scripts import (
     external_review_closure_gate,
     external_review_dispatch_packets,
     filesystem_source_review_bundle,
+    git_commit_metadata_implementation_plan_check,
     git_commit_metadata_proposal_check,
     http_fetch_source_review_bundle,
     internal_review_packet,
@@ -284,6 +285,7 @@ def test_v09_design_only_charter_and_gate_are_wired() -> None:
         "git.show.commit_metadata",
         "proposal only",
         "make v09-design-only-gate",
+        "make git-commit-metadata-implementation-plan-check",
     ]:
         assert required in doc
     assert "make v09-design-only-gate" in readme
@@ -342,6 +344,66 @@ def test_git_commit_metadata_proposal_check_is_wired() -> None:
     assert "Capability Proposal: git.show.commit_metadata" in index
     assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in docs_site
+
+
+def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
+    report = git_commit_metadata_implementation_plan_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/capability-implementation-plans/git-show-commit-metadata.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "git.show.commit_metadata"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 10
+    for required in [
+        "Status: implementation-planning only",
+        "does not add a tool manifest",
+        "Implementation state: blocked",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Executor Contract Checklist",
+        "Ref Resolution Test Plan",
+        "Metadata Parsing Plan",
+        "Redaction And Sensitive Metadata Plan",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Resource Limits",
+        "GPT 5.5 Pro / Human External Source Review Requirement",
+        "refs/heads/<name>",
+        "refs/tags/<name>",
+        "--end-of-options",
+        "include_emails=false",
+        "include_body=false",
+        "sensitive-path classifier",
+        "no `include_sensitive_paths` escape hatch",
+        "Actual implementation remains blocked",
+    ]:
+        assert required in doc
+    for forbidden in [
+        "implementation is approved",
+        "runtime behavior is added",
+        "this planning sprint adds a manifest",
+    ]:
+        assert forbidden not in doc.lower()
+    assert "make git-commit-metadata-implementation-plan-check" in readme
+    assert "git-commit-metadata-implementation-plan-check:" in makefile
+    assert "git-commit-metadata-implementation-plan-check" in release_check_body
+    assert "Implementation-Planning Packet: git.show.commit_metadata" in index
+    assert (
+        "docs/codex/capability-implementation-plans/git-show-commit-metadata.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/git-show-commit-metadata.md" in docs_site
 
 
 def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
