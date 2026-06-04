@@ -7,7 +7,12 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from ithildin_api.read_tools import FilesystemReadTools, GitReadTools, ReadToolError
+from ithildin_api.read_tools import (
+    FilesystemReadTools,
+    GitReadTools,
+    ReadToolError,
+    ReadToolExecutor,
+)
 from ithildin_schemas import JsonObject
 
 
@@ -409,6 +414,40 @@ def test_git_commit_metadata_redacts_emails_when_requested(tmp_path: Path) -> No
     assert "test@example.com" not in json_dump(metadata)
 
 
+def test_git_commit_metadata_sanitizes_identity_separator_and_hides_email(
+    tmp_path: Path,
+) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(
+        repo,
+        ["commit", "-m", "separator identity"],
+        env={
+            "GIT_AUTHOR_NAME": "Test\x1fUser <hidden@example.com>",
+            "GIT_AUTHOR_EMAIL": "author@example.com",
+            "GIT_COMMITTER_NAME": "Committer\x1fUser <hidden@example.com>",
+            "GIT_COMMITTER_EMAIL": "committer@example.com",
+        },
+    )
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    metadata = git.commit_metadata(
+        {"ref": {"kind": "object_id", "value": commit_hash}, "include_emails": False}
+    )
+
+    author = cast(dict[str, object], metadata["author"])
+    committer = cast(dict[str, object], metadata["committer"])
+    assert author["name"] == "Test�User [REDACTED_EMAIL]"
+    assert committer["name"] == "Committer�User [REDACTED_EMAIL]"
+    assert "hidden@example.com" not in json_dump(metadata)
+    assert "author@example.com" not in json_dump(metadata)
+    assert "committer@example.com" not in json_dump(metadata)
+
+
 def test_git_commit_metadata_denies_unsupported_ref_syntax(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     repo = filesystem.workspace_root
@@ -450,6 +489,82 @@ def test_git_commit_metadata_redacts_hidden_or_sensitive_changed_paths(tmp_path:
             "path_hash": "sha256:239a7b407f92134ace046281584ad04306c5d4c81d642e902124f8dcd1a6e680",
         }
     ]
+
+
+def test_git_commit_metadata_redacts_private_key_and_credential_paths(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    for name in ["id_rsa", "credentials.json", "private-key.pem"]:
+        repo.joinpath(name).write_text("secret\n", encoding="utf-8")
+    run_git(repo, ["add", "id_rsa", "credentials.json", "private-key.pem"])
+    run_git(repo, ["commit", "-m", "credential paths"])
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    metadata = git.commit_metadata({"ref": {"kind": "object_id", "value": commit_hash}})
+    changed_files = cast(list[dict[str, object]], metadata["changed_files"])
+
+    assert metadata["sensitive_paths_redacted"] == 3
+    assert all(record["path"] == "<redacted>" for record in changed_files)
+    assert "id_rsa" not in json_dump(metadata)
+    assert "credentials.json" not in json_dump(metadata)
+    assert "private-key.pem" not in json_dump(metadata)
+
+
+def test_git_commit_metadata_denies_parent_repo_outside_workspace(tmp_path: Path) -> None:
+    parent_repo = tmp_path / "parent"
+    parent_repo.mkdir()
+    workspace_root = parent_repo / "workspace"
+    workspace_root.mkdir()
+    run_git(parent_repo, ["init"])
+    run_git(parent_repo, ["config", "user.email", "test@example.com"])
+    run_git(parent_repo, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(parent_repo, ["add", "workspace/tracked.txt"])
+    run_git(parent_repo, ["commit", "-m", "parent repo commit"])
+    commit_hash = git_output(parent_repo, ["rev-parse", "HEAD"])
+    filesystem = FilesystemReadTools(
+        workspace_root=workspace_root,
+        max_read_bytes=4096,
+        search_result_limit=5,
+    )
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    with pytest.raises(ReadToolError, match="workspace scope"):
+        git.commit_metadata({"ref": {"kind": "object_id", "value": commit_hash}})
+
+
+def test_git_commit_metadata_resource_denies_parent_repo_outside_workspace(
+    tmp_path: Path,
+) -> None:
+    parent_repo = tmp_path / "parent"
+    parent_repo.mkdir()
+    workspace_root = parent_repo / "workspace"
+    workspace_root.mkdir()
+    run_git(parent_repo, ["init"])
+    run_git(parent_repo, ["config", "user.email", "test@example.com"])
+    run_git(parent_repo, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(parent_repo, ["add", "workspace/tracked.txt"])
+    run_git(parent_repo, ["commit", "-m", "parent repo commit"])
+    commit_hash = git_output(parent_repo, ["rev-parse", "HEAD"])
+    executor = ReadToolExecutor.from_settings(
+        workspace_root=workspace_root,
+        max_read_bytes=4096,
+        search_result_limit=5,
+        git_log_limit=10,
+    )
+
+    resource = executor.resource_from_arguments(
+        {"ref": {"kind": "object_id", "value": commit_hash}},
+        tool_name="git.show.commit_metadata",
+    )
+
+    assert resource["in_scope"] is False
+    assert resource["scope_error"] == "git repository escapes the workspace scope"
 
 
 def test_git_diff_denies_hidden_or_sensitive_tracked_paths(tmp_path: Path) -> None:
@@ -497,8 +612,14 @@ def test_git_output_is_bounded(tmp_path: Path) -> None:
     assert len(str(diff["diff"]).encode("utf-8")) <= 40
 
 
-def run_git(repo: Path, args: list[str]) -> None:
-    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
+def run_git(repo: Path, args: list[str], *, env: dict[str, str] | None = None) -> None:
+    subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+        env={**os.environ, **(env or {})},
+    )
 
 
 def git_output(repo: Path, args: list[str]) -> str:

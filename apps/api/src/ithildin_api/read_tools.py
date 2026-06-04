@@ -33,10 +33,27 @@ READ_TOOL_NAMES = frozenset(
 _GIT_COMMIT_METADATA_TOOL = "git.show.commit_metadata"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
-_COMMIT_METADATA_FIELD_SEPARATOR = "\x1f"
+_EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
 _COMMIT_METADATA_SUBJECT_LIMIT = 240
 _COMMIT_METADATA_BODY_LIMIT = 2000
 _COMMIT_METADATA_CHANGED_FILE_LIMIT = 100
+_SENSITIVE_EXACT_PATH_PARTS = {
+    ".env",
+    "credentials.json",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "id_rsa",
+    "private-key.pem",
+    "private_key.pem",
+    "secret",
+    "secrets",
+}
+_SENSITIVE_PATH_MARKERS = (
+    "credential",
+    "private-key",
+    "private_key",
+)
 
 
 class ReadToolError(RuntimeError):
@@ -160,6 +177,9 @@ class ReadToolExecutor:
         }
         try:
             self._filesystem(workspace_id)
+            git = self._git(workspace_id)
+            repo = git._repo_path(".")
+            git._ensure_repo_toplevel_in_workspace(repo)
             selector = _commit_ref_selector(arguments)
             _validate_commit_ref_selector(selector)
         except ReadToolError as exc:
@@ -485,6 +505,7 @@ class GitReadTools:
         include_diffstat = _bool_arg(arguments, "include_diffstat", default=True)
 
         repo = self._repo_path(".")
+        self._ensure_repo_toplevel_in_workspace(repo)
         resolved_commit = self._resolve_commit(repo, selector)
         metadata = self._commit_identity_metadata(repo, resolved_commit)
         changed_files = (
@@ -583,48 +604,43 @@ class GitReadTools:
         return resolved.lower()
 
     def _commit_identity_metadata(self, repo: Path, commit_hash: str) -> JsonObject:
-        output = self._run_git(
-            repo,
-            [
-                "show",
-                "--no-patch",
-                "--format=%H%x1f%P%x1f%an%x1f%ae%x1f%aI%x1f%cn%x1f%ce%x1f%cI%x1f%s%x1f%b",
-                commit_hash,
-            ],
-        )
-        if output.truncated:
-            raise ReadToolError("git commit metadata exceeds configured read limit")
-        parts = output.text.split(_COMMIT_METADATA_FIELD_SEPARATOR, 9)
-        if len(parts) != 10:
-            raise ReadToolError("git commit metadata could not be parsed safely")
-        (
-            commit,
-            parents,
-            author_name,
-            author_email,
-            author_ts,
-            committer_name,
-            committer_email,
-            committer_ts,
-            subject,
-            body,
-        ) = parts
+        commit = self._commit_format_field(repo, commit_hash, "%H")
+        parents = self._commit_format_field(repo, commit_hash, "%P")
+        author_name = self._commit_format_field(repo, commit_hash, "%an")
+        author_email = self._commit_format_field(repo, commit_hash, "%ae")
+        author_ts = self._commit_format_field(repo, commit_hash, "%aI")
+        committer_name = self._commit_format_field(repo, commit_hash, "%cn")
+        committer_email = self._commit_format_field(repo, commit_hash, "%ce")
+        committer_ts = self._commit_format_field(repo, commit_hash, "%cI")
+        subject = self._commit_format_field(repo, commit_hash, "%s")
+        body = self._commit_format_field(repo, commit_hash, "%b")
         if commit.strip().lower() != commit_hash:
             raise ReadToolError("git commit metadata mismatch")
         parent_hashes = [parent.lower() for parent in parents.split() if parent]
         if any(not _HEX_OBJECT_RE.fullmatch(parent) for parent in parent_hashes):
             raise ReadToolError("git commit parent metadata is invalid")
+        _validate_git_iso_timestamp(author_ts)
+        _validate_git_iso_timestamp(committer_ts)
         return {
             "parent_hashes": cast(list[JsonValue], parent_hashes),
-            "author_name": author_name.strip(),
+            "author_name": _sanitize_git_identity_name(author_name.strip()),
             "author_email": author_email.strip(),
             "author_timestamp": author_ts.strip(),
-            "committer_name": committer_name.strip(),
+            "committer_name": _sanitize_git_identity_name(committer_name.strip()),
             "committer_email": committer_email.strip(),
             "committer_timestamp": committer_ts.strip(),
             "subject": subject.strip(),
             "body": body.strip(),
         }
+
+    def _commit_format_field(self, repo: Path, commit_hash: str, format_field: str) -> str:
+        output = self._run_git(
+            repo,
+            ["show", "--no-patch", f"--format={format_field}", commit_hash],
+        )
+        if output.truncated:
+            raise ReadToolError("git commit metadata exceeds configured read limit")
+        return output.text.removesuffix("\n")
 
     def _commit_changed_files(self, repo: Path, commit_hash: str) -> JsonObject:
         output = self._run_git(
@@ -686,6 +702,14 @@ class GitReadTools:
         else:
             text = stdout.decode("utf-8", errors="replace")
         return GitOutput(text=text, truncated=truncated)
+
+    def _ensure_repo_toplevel_in_workspace(self, repo: Path) -> None:
+        output = self._run_git(repo, ["rev-parse", "--show-toplevel"])
+        try:
+            toplevel = Path(output.text.strip()).resolve(strict=True)
+            toplevel.relative_to(self.filesystem.workspace_root)
+        except (OSError, ValueError) as exc:
+            raise ReadToolError("git repository escapes the workspace scope") from exc
 
 
 def _string_arg(arguments: JsonObject, name: str, *, default: Optional[str] = None) -> str:
@@ -784,7 +808,11 @@ def _reject_control_or_unnormalized_text(value: str, *, label: str) -> None:
 def _ensure_relative_parts_not_sensitive(relative: Path) -> None:
     for part in relative.parts:
         lowered = part.lower()
-        if part.startswith(".") or lowered in {"secret", "secrets"} or lowered == ".env":
+        if (
+            part.startswith(".")
+            or lowered in _SENSITIVE_EXACT_PATH_PARTS
+            or any(marker in lowered for marker in _SENSITIVE_PATH_MARKERS)
+        ):
             raise ReadToolError("path is hidden or sensitive")
 
 
@@ -939,3 +967,15 @@ def _sanitize_git_metadata_text(value: str, *, multiline: bool) -> str:
             continue
         safe_chars.append(character)
     return "".join(safe_chars)
+
+
+def _sanitize_git_identity_name(value: str) -> str:
+    sanitized = _sanitize_git_metadata_text(value, multiline=False)
+    return _EMAIL_LIKE_RE.sub("[REDACTED_EMAIL]", sanitized)
+
+
+def _validate_git_iso_timestamp(value: str) -> None:
+    try:
+        datetime.fromisoformat(value.strip())
+    except ValueError as exc:
+        raise ReadToolError("git commit timestamp metadata is invalid") from exc
