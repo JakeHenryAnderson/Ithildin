@@ -375,6 +375,14 @@ The focused source-review handoff for that implementation is recorded in
 [docs/codex/v0.9-git-commit-metadata-source-review.md](docs/codex/v0.9-git-commit-metadata-source-review.md).
 Generate the focused source/test/evidence bundle with `make git-commit-metadata-source-review-bundle`;
 the ignored output is `var/review-packets/v0.9/git-commit-metadata-source-review/`.
+The v0.9 lane-closure summary is recorded in
+[docs/codex/v0.9-lane-closure-summary.md](docs/codex/v0.9-lane-closure-summary.md): internal
+xhigh review is sufficient to continue local-preview development for this one bounded read-only Git
+metadata lane, while public/security-product positioning and broader capability expansion remain
+unapproved.
+The next read-only capability seed is
+[docs/codex/v0.9-next-read-only-capability-seed.md](docs/codex/v0.9-next-read-only-capability-seed.md);
+it is planning material only and does not add runtime behavior.
 The focused design-review handoff for that proposal is generated with
 `make v09-design-review-packet`; it asks GPT 5.5 Pro / human review whether implementation
 planning may be considered later, without authorizing manifests, executors, policy rules, MCP

@@ -29,4 +29,5 @@ capability class lacks a separate explicit implementation decision.
 The report is suitable for handoff and planning. It is not a capability-expansion approval. New powerful
 tool planning remains blocked until external/source review closure, accepted-risk disposition, and a
 separate explicit capability decision are recorded. The bounded v0.9 `git.show.commit_metadata`
-implementation has its own separate gate and does not unlock broader capability implementation.
+implementation has its own separate gate and internal xhigh lane-closure summary; it does not unlock
+broader capability implementation.

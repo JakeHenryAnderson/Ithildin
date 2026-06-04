@@ -2573,7 +2573,7 @@ def test_v06_closure_handoff_docs_are_wired() -> None:
     assert "v0.8 roadmap/product-risk consultation" in prompt
     assert "v0.8 roadmap/product-risk consultation" in prompt
     assert "Closed/reference lanes for the v0.1 local-preview boundary" in prompt
-    assert "13 pending" in prompt
+    assert "12 pending" in prompt
     assert "v0.6-closure-handoff.md" in readme
     assert "v0.6-gpt-55-pro-handoff-prompt.md" in readme
     assert "v0.8 roadmap/product-risk consultation" in readme
@@ -4577,7 +4577,7 @@ def test_v07_external_review_closure_prep_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["pending_external_review_rows"] == 13
+    assert report["pending_external_review_rows"] == 12
     assert report["externally_closed_rows"] == 42
     assert report["capability_expansion_allowed"] is False
     assert "make v07-closure-prep" in readme

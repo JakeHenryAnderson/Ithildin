@@ -258,6 +258,8 @@ read-only Git metadata capability. Broad capability implementation remains block
 | 239 - git.show.commit_metadata implementation plan | Done | [capability-implementation-plans/git-show-commit-metadata.md](capability-implementation-plans/git-show-commit-metadata.md), `make git-commit-metadata-implementation-plan-check` |
 | 240 - git.show.commit_metadata implementation | Done | [v0.9-git-commit-metadata-implementation.md](v0.9-git-commit-metadata-implementation.md), `make git-commit-metadata-implementation-gate` |
 | 241 - git.show.commit_metadata source-review handoff | Done | [v0.9-git-commit-metadata-source-review.md](v0.9-git-commit-metadata-source-review.md), `make git-commit-metadata-source-review-bundle` |
+| 242 - git.show.commit_metadata internal lane closure | Done | [v0.9-lane-closure-summary.md](v0.9-lane-closure-summary.md); internal xhigh review/remediation is sufficient to continue local-preview development for this bounded read-only lane. |
+| 243 - Next read-only capability seed | Done | [v0.9-next-read-only-capability-seed.md](v0.9-next-read-only-capability-seed.md); planning only, no runtime behavior. |
 
 ## Future Candidate Track
 
