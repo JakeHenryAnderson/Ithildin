@@ -85,6 +85,10 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
     context = {
         "commit": commit,
         "dirty": dirty,
+        "design_only_baseline_commit": design_gate["evidence"].get(
+            "design_only_baseline_commit",
+            design_gate["evidence"].get("v09_baseline_commit", "unknown"),
+        ),
         "design_gate": design_gate,
         "proposal_check": proposal_check,
         "accepted_risks": risks,
@@ -121,6 +125,7 @@ not request implementation approval.
 ## Boundary
 
 - Reviewed commit: `{context["commit"]}`.
+- Design-only baseline commit: `{context["design_only_baseline_commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Capability: `git.show.commit_metadata`.
 - Scope: design-only proposal.
@@ -144,6 +149,13 @@ not request implementation approval.
 This packet does not add or approve a tool manifest, executor, policy rule, MCP exposure, runtime
 behavior, public/security-product positioning, production identity, remote MCP, shell/Docker/
 Kubernetes/browser tooling, arbitrary HTTP, broad filesystem writes, or plugin SDK work.
+
+## Commit Evidence Note
+
+The reviewed commit is the clean commit that generated this packet. The design-only baseline commit
+is intentionally older: it is the commit before v0.9 design-only planning began and is used only by
+`make v09-design-only-gate` to verify that v0.9 changes did not touch runtime/tool surfaces. A later
+reviewed packet commit plus an older design-only baseline is expected, not an evidence mismatch.
 """
 
 
@@ -183,7 +195,20 @@ Use finding IDs `EXT-DESIGN-GIT-###` for actionable findings.
 
 
 def _gate_evidence(context: dict[str, Any]) -> str:
+    interpretation = (
+        "- Interpretation: the reviewed commit is what GPT 5.5 Pro / human reviewers inspect; "
+        "the baseline commit is only the pre-v0.9 comparison point used by "
+        "`make v09-design-only-gate`."
+    )
     return f"""# v0.9 Gate And Risk Evidence
+
+## Commit Evidence Reconciliation
+
+- Reviewed packet commit: `{context["commit"]}`.
+- Design-only baseline commit: `{context["design_only_baseline_commit"]}`.
+{interpretation}
+- Expected relationship: the reviewed packet commit should be a clean descendant of the design-only
+  baseline commit, and the gate should remain valid.
 
 ## v0.9 Design-Only Gate
 

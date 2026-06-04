@@ -73,6 +73,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures,
         {
             "v09_baseline_commit": V09_BASELINE_COMMIT,
+            "design_only_baseline_commit": V09_BASELINE_COMMIT,
+            "baseline_purpose": (
+                "commit before v0.9 design-only planning began; reviewed packet commits are "
+                "expected to be later clean commits"
+            ),
             "tool_count": no_new_powers.get("tool_count"),
             "capability_design_only": v08_gate.get("capability_design_only"),
             "capability_implementation": v08_gate.get("capability_implementation"),
@@ -160,6 +165,7 @@ def render_report(report: dict[str, Any]) -> str:
         "capability_implementation: no_go",
         "new_governed_tool_powers: no_go",
         f"v09_baseline_commit: {report['evidence'].get('v09_baseline_commit', 'unknown')}",
+        "baseline_purpose: design-only diff comparison, not the reviewed packet commit",
         f"tool_count: {report['evidence'].get('tool_count', 'unknown')}",
     ]
     if report["failures"]:
