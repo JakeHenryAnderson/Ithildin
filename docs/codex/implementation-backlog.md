@@ -257,6 +257,7 @@ read-only Git metadata capability. Broad capability implementation remains block
 | 238 - git.show.commit_metadata proposal | Done | [capability-proposals/git-show-commit-metadata.md](capability-proposals/git-show-commit-metadata.md), `make git-commit-metadata-proposal-check` |
 | 239 - git.show.commit_metadata implementation plan | Done | [capability-implementation-plans/git-show-commit-metadata.md](capability-implementation-plans/git-show-commit-metadata.md), `make git-commit-metadata-implementation-plan-check` |
 | 240 - git.show.commit_metadata implementation | Done | [v0.9-git-commit-metadata-implementation.md](v0.9-git-commit-metadata-implementation.md), `make git-commit-metadata-implementation-gate` |
+| 241 - git.show.commit_metadata source-review handoff | Done | [v0.9-git-commit-metadata-source-review.md](v0.9-git-commit-metadata-source-review.md), `make git-commit-metadata-source-review-bundle` |
 
 ## Future Candidate Track
 

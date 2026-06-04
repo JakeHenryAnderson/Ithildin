@@ -132,6 +132,7 @@ tamper-evident audit log.
 - `make git-commit-metadata-proposal-check` - validate the first design-only capability proposal.
 - `make git-commit-metadata-implementation-plan-check` - validate the historical implementation-planning packet.
 - `make git-commit-metadata-implementation-gate` - validate the approved read-only `git.show.commit_metadata` implementation boundary.
+- `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
@@ -370,6 +371,10 @@ The approved v0.9 implementation record is
 [docs/codex/v0.9-git-commit-metadata-implementation.md](docs/codex/v0.9-git-commit-metadata-implementation.md)
 and is checked with `make git-commit-metadata-implementation-gate`; it permits exactly one bounded
 read-only Git metadata tool and does not unlock broader capability implementation.
+The focused source-review handoff for that implementation is recorded in
+[docs/codex/v0.9-git-commit-metadata-source-review.md](docs/codex/v0.9-git-commit-metadata-source-review.md).
+Generate the focused source/test/evidence bundle with `make git-commit-metadata-source-review-bundle`;
+the ignored output is `var/review-packets/v0.9/git-commit-metadata-source-review/`.
 The focused design-review handoff for that proposal is generated with
 `make v09-design-review-packet`; it asks GPT 5.5 Pro / human review whether implementation
 planning may be considered later, without authorizing manifests, executors, policy rules, MCP

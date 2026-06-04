@@ -96,6 +96,7 @@ DEFAULT_DOCS = [
     "docs/codex/capability-proposals/git-show-commit-metadata.md",
     "docs/codex/capability-implementation-plans/git-show-commit-metadata.md",
     "docs/codex/v0.9-git-commit-metadata-implementation.md",
+    "docs/codex/v0.9-git-commit-metadata-source-review.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",
     "docs/codex/v0.6-internal-proxy-review-operating-model.md",

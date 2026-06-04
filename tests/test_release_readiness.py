@@ -26,6 +26,7 @@ from scripts import (
     git_commit_metadata_implementation_gate,
     git_commit_metadata_implementation_plan_check,
     git_commit_metadata_proposal_check,
+    git_commit_metadata_source_review_bundle,
     http_fetch_source_review_bundle,
     internal_review_packet,
     mcp_ingress_source_review_bundle,
@@ -444,6 +445,108 @@ def test_git_commit_metadata_implementation_gate_is_wired() -> None:
     assert "docs/codex/v0.9-git-commit-metadata-implementation.md" in docs_site
 
 
+def test_git_commit_metadata_source_review_bundle_is_wired(tmp_path: Path) -> None:
+    output_dir = git_commit_metadata_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=tmp_path / "git-commit-metadata-source-review",
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected_files = {
+        "00_GIT_COMMIT_METADATA_SOURCE_REVIEW_INDEX.md",
+        "01_GIT_COMMIT_METADATA_SOURCE_REVIEW_PROMPT.md",
+        "02_GIT_COMMIT_METADATA_IMPLEMENTATION_PACKET.md",
+        "03_GIT_COMMIT_METADATA_SOURCE_BUNDLE.md",
+        "04_GIT_COMMIT_METADATA_TESTS_BUNDLE.md",
+        "05_GIT_COMMIT_METADATA_CONTRACTS_BUNDLE.md",
+        "06_GIT_COMMIT_METADATA_EVIDENCE.md",
+        "07_GIT_COMMIT_METADATA_FOCUSED_TESTS.txt",
+        "08_GIT_COMMIT_METADATA_INTAKE_COMMANDS.md",
+        "git-commit-metadata-source-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected_files
+
+    index = output_dir.joinpath(
+        "00_GIT_COMMIT_METADATA_SOURCE_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_GIT_COMMIT_METADATA_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    implementation_packet = output_dir.joinpath(
+        "02_GIT_COMMIT_METADATA_IMPLEMENTATION_PACKET.md"
+    ).read_text(encoding="utf-8")
+    source_bundle = output_dir.joinpath(
+        "03_GIT_COMMIT_METADATA_SOURCE_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    tests_bundle = output_dir.joinpath(
+        "04_GIT_COMMIT_METADATA_TESTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    contracts_bundle = output_dir.joinpath(
+        "05_GIT_COMMIT_METADATA_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    evidence = output_dir.joinpath("06_GIT_COMMIT_METADATA_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    focused = output_dir.joinpath("07_GIT_COMMIT_METADATA_FOCUSED_TESTS.txt").read_text(
+        encoding="utf-8"
+    )
+    intake = output_dir.joinpath("08_GIT_COMMIT_METADATA_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "`git.show.commit_metadata` lane" in index
+    assert "EXT-GITMETA-###" in prompt
+    assert "fixed Git argv behavior" in prompt
+    assert "no raw diffs/file/blob contents" in prompt
+    assert "Implementation Gate JSON" in implementation_packet
+    assert "Internal Checkpoint Note" in implementation_packet
+    assert "apps/api/src/ithildin_api/read_tools.py" in source_bundle
+    assert "apps/api/src/ithildin_api/resources.py" in source_bundle
+    assert "apps/mcp-server/src/ithildin_mcp_server/server.py" in source_bundle
+    assert "tool-manifests/git-show-commit-metadata.yaml" in source_bundle
+    assert "policies/tests/parity.yaml" in tests_bundle
+    assert "tests/test_manifest_change_review.py" in tests_bundle
+    assert "docs/codex/v0.9-git-commit-metadata-implementation.md" in contracts_bundle
+    assert "docs/codex/tool-surface-invariant-gate.md" in contracts_bundle
+    assert "make git-commit-metadata-implementation-gate" in evidence
+    assert "make policy-parity" in evidence
+    assert "tests/test_read_tools.py" in focused
+    assert "tests/test_mcp_adapter.py" in focused
+    assert "--area \"git-commit-metadata\"" in intake
+
+    hashes = json.loads(
+        output_dir.joinpath(
+            "git-commit-metadata-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+    assert hashed_paths == expected_files - {
+        "git-commit-metadata-source-review-artifact-hashes.json"
+    }
+    assert all(entry["sha256"].startswith("sha256:") for entry in hashes)
+    assert all(entry["bytes"] > 0 for entry in hashes)
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    index_doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    assert "make git-commit-metadata-source-review-bundle" in readme
+    assert "git-commit-metadata-source-review-bundle:" in makefile
+    assert "make git-commit-metadata-source-review-bundle" in reproduction
+    assert "var/review-packets/v0.9/git-commit-metadata-source-review/" in reproduction
+    assert "v0.9 git.show.commit_metadata Source Review Handoff" in index_doc
+    assert (
+        "docs/codex/v0.9-git-commit-metadata-source-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/v0.9-git-commit-metadata-source-review.md" in docs_site
+
+
 def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
     output_dir = v09_design_review_packet.build_packet(
         repo_root=Path.cwd(),
@@ -685,6 +788,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "signed-evidence-demo",
         "signed-evidence-demo-verify",
         "filesystem-contract-check",
+        "git-commit-metadata-source-review-bundle",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -697,10 +801,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "artifact-hashes.json" in reproduction_map
     assert "consolidated-attachment-hashes.json" in reproduction_map
     assert "review-doc-hashes.json" in reproduction_map
-    assert "23. `make review-packet-bundle`" in reproduction_map
-    assert "24. `make review-packet-consolidated`" in reproduction_map
-    assert "25. `make packet-redaction-scan`" in reproduction_map
-    assert "26. `make docs-site`" in reproduction_map
+    assert "23. `make git-commit-metadata-source-review-bundle`" in reproduction_map
+    assert "24. `make review-packet-bundle`" in reproduction_map
+    assert "25. `make review-packet-consolidated`" in reproduction_map
+    assert "26. `make packet-redaction-scan`" in reproduction_map
+    assert "27. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 

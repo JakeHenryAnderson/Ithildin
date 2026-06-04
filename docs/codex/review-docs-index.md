@@ -111,6 +111,7 @@ externally closed.
 - [Capability Proposal: git.show.commit_metadata](capability-proposals/git-show-commit-metadata.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
 - [v0.9 git.show.commit_metadata Implementation](v0.9-git-commit-metadata-implementation.md)
+- [v0.9 git.show.commit_metadata Source Review Handoff](v0.9-git-commit-metadata-source-review.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)
 - [v0.6 Internal Proxy Review Operating Model](v0.6-internal-proxy-review-operating-model.md)
