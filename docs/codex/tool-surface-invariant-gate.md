@@ -12,7 +12,7 @@ uv run python scripts/tool_surface_invariant_gate.py --json
 
 ## Current Invariant
 
-The local-preview tool surface remains exactly ten tools:
+The local-preview tool surface remains the approved eleven tools:
 
 - `fs.list`
 - `fs.patch.apply`
@@ -22,14 +22,16 @@ The local-preview tool surface remains exactly ten tools:
 - `fs.stat`
 - `git.diff`
 - `git.log`
+- `git.show.commit_metadata`
 - `git.status`
 - `http.fetch`
 
 The gate fails if the lockfile tool names drift, the manifest count changes, or manifest text
 references obvious deferred/broad powers such as shell, Docker, Kubernetes, browser, delete, chmod,
 or archive behavior. It also parses the YAML manifests, checks the expected risk class for each
-tool, verifies lockfile paths against the manifest directory, and keeps `http.fetch` limited to the
-single caller-controlled `url` field.
+tool, verifies lockfile paths against the manifest directory, keeps `http.fetch` limited to the
+single caller-controlled `url` field, and keeps `git.show.commit_metadata` limited to structured ref
+selectors with no caller-controlled Git argv, format strings, pathspecs, raw diffs, or file content.
 
 This gate is intentionally conservative. A future capability expansion must update the boundary
 decision, manifest review, threat model, source-review closure matrix, and external review packet

@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_CATEGORIES = {"filesystem", "git", "network"}
 ALLOWED_WRITE_TOOLS = {"fs.patch.apply", "fs.patch.propose"}
 ALLOWED_NETWORK_TOOLS = {"http.fetch"}
+ALLOWED_NEW_READ_TOOLS = {"git.show.commit_metadata"}
 FORBIDDEN_TOOL_PREFIXES = (
     "shell.",
     "docker.",
@@ -105,9 +106,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.extend(_validate_manifest(tool_manifest, repo_root, path))
 
     if names != EXPECTED_TOOL_NAMES:
-        failures.append("governed tool names changed without capability decision")
-    if len(names) != 10:
-        failures.append("governed tool count changed without capability decision")
+        failures.append("governed tool names changed outside the approved v0.9 read capability")
+    if len(names) != len(EXPECTED_TOOL_NAMES):
+        failures.append("governed tool count changed outside the approved v0.9 read capability")
 
     return {
         "schema_version": "1",
@@ -119,6 +120,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "deferred_boundaries_unchanged": (
             manifest.get("deferred_boundaries") == EXPECTED_DEFERRED_BOUNDARIES
         ),
+        "approved_new_read_tools": sorted(ALLOWED_NEW_READ_TOOLS),
         "new_power_classes_allowed": False,
     }
 

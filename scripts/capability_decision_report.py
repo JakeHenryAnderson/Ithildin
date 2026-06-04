@@ -106,8 +106,8 @@ def _recommended_next_step(blockers: list[str], planned_range: str) -> str:
         return "continue v0.5 review-closure tasks before requesting capability expansion"
     if blockers:
         return (
-            "prepare design-only capability proposals under v0.8 gate; "
-            "implementation remains blocked"
+            "continue source-review closure and keep further capability implementation blocked "
+            "unless a separate explicit implementation decision is recorded"
         )
     return "prepare a separate explicit capability-decision proposal"
 

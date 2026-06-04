@@ -12,6 +12,7 @@ def resource_from_arguments(
     arguments: JsonObject,
     risk: ToolRisk,
     *,
+    tool_name: str | None = None,
     http_allowlist: HttpAllowlist | None = None,
     read_tool_executor: ReadToolExecutor | None = None,
 ) -> JsonObject:
@@ -20,7 +21,7 @@ def resource_from_arguments(
         return http_resource_from_url(url, http_allowlist or HttpAllowlist(()))
 
     if risk in {ToolRisk.READ, ToolRisk.WRITE_PROPOSAL} and read_tool_executor is not None:
-        path_resource = read_tool_executor.resource_from_arguments(arguments)
+        path_resource = read_tool_executor.resource_from_arguments(arguments, tool_name=tool_name)
         path_resource["risk"] = risk.value
         return path_resource
 

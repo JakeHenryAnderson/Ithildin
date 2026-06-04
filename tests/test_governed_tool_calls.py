@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -214,6 +215,43 @@ input_schema:
     )
 
 
+def write_git_commit_metadata_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("git-show-commit-metadata.yaml").write_text(
+        """
+name: git.show.commit_metadata
+version: 1.0.0
+title: Show commit metadata
+risk: read
+category: git
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["ref"]
+  properties:
+    ref:
+      type: object
+      additionalProperties: false
+      required: ["kind", "value"]
+      properties:
+        kind:
+          type: string
+          enum: [object_id, branch, tag]
+        value:
+          type: string
+    include_body:
+      type: boolean
+    include_emails:
+      type: boolean
+    include_diffstat:
+      type: boolean
+""",
+        encoding="utf-8",
+    )
+
+
 def make_service(tmp_path: Path) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -290,6 +328,43 @@ def make_read_service(
             search_result_limit=10,
             git_log_limit=10,
         ),
+    )
+
+
+def make_git_commit_metadata_service(tmp_path: Path) -> tuple[GovernedToolCallService, str]:
+    manifest_dir = tmp_path / "manifests"
+    write_git_commit_metadata_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    run_git(workspace_root, ["init"])
+    run_git(workspace_root, ["config", "user.email", "test@example.com"])
+    run_git(workspace_root, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("README.md").write_text("hello\n", encoding="utf-8")
+    run_git(workspace_root, ["add", "README.md"])
+    run_git(workspace_root, ["commit", "-m", "initial"])
+    commit_hash = git_output(workspace_root, ["rev-parse", "HEAD"])
+    return (
+        GovernedToolCallService(
+            ToolRegistry.load(manifest_dir),
+            PolicyEvaluator.load(policy_path),
+            approval_service,
+            audit_writer,
+            ReadToolExecutor.from_settings(
+                workspace_root=workspace_root,
+                max_read_bytes=4096,
+                search_result_limit=10,
+                git_log_limit=10,
+            ),
+        ),
+        commit_hash,
     )
 
 
@@ -393,6 +468,19 @@ def audit_payloads(tmp_path: Path) -> list[JsonObject]:
         json.loads(line)
         for line in (tmp_path / "audit.jsonl").read_text(encoding="utf-8").splitlines()
     ]
+
+
+def run_git(repo: Path, args: list[str]) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
+
+
+def git_output(repo: Path, args: list[str]) -> str:
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
 
 def test_unknown_tool_is_denied_and_audited(tmp_path: Path) -> None:
@@ -545,6 +633,59 @@ def test_read_tool_executes_after_policy_allow_and_is_audited(tmp_path: Path) ->
     metadata = cast(JsonObject, payloads[-1]["metadata"])
     assert metadata["redaction_applied"] is True
     assert metadata["redaction_count"] == 0
+
+
+def test_git_commit_metadata_tool_executes_after_policy_allow_and_is_audited(
+    tmp_path: Path,
+) -> None:
+    service, commit_hash = make_git_commit_metadata_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="git.show.commit_metadata",
+        arguments={"ref": {"kind": "object_id", "value": commit_hash}},
+        principal=principal(),
+        session_id="sess_git_commit",
+    )
+
+    assert result.status == "completed"
+    assert result.content["resolved_commit_hash"] == commit_hash
+    assert result.content["subject"] == "initial"
+    output_policy = cast(JsonObject, result.content["output_policy"])
+    assert output_policy["raw_diff_included"] is False
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+    policy_metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert policy_metadata["resource_type"] == "git_commit"
+    assert policy_metadata["resource_in_scope"] is True
+    execution_resource = cast(JsonObject, payloads[1]["resource"])
+    assert execution_resource["type"] == "git_commit"
+    assert execution_resource["ref_kind"] == "object_id"
+    assert "value" not in execution_resource
+
+
+def test_git_commit_metadata_unresolved_commit_fails_without_content_leak(
+    tmp_path: Path,
+) -> None:
+    service, _commit_hash = make_git_commit_metadata_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="git.show.commit_metadata",
+        arguments={"ref": {"kind": "object_id", "value": "0" * 40}},
+        principal=principal(),
+        session_id="sess_git_commit_missing",
+    )
+
+    assert result.status == "denied"
+    assert result.is_error is True
+    assert result.content == {"reason": "path is not a readable git repository"}
+    payloads = audit_payloads(tmp_path)
+    assert payloads[2]["event_type"] == AuditEventType.TOOL_EXECUTION_FAILED.value
+    resources = [payload["resource"] for payload in payloads]
+    assert "0000000000000000000000000000000000000000" not in json.dumps(resources)
 
 
 def test_read_tool_output_is_redacted_and_audit_summary_is_recorded(tmp_path: Path) -> None:

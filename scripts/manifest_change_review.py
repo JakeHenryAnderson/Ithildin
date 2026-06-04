@@ -111,7 +111,7 @@ def main() -> int:
 
 
 def _changed_files(repo_root: Path) -> list[str]:
-    completed = subprocess.run(
+    committed = subprocess.run(
         [
             "git",
             "diff",
@@ -126,9 +126,23 @@ def _changed_files(repo_root: Path) -> list[str]:
         capture_output=True,
         text=True,
     )
-    if completed.returncode != 0:
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "--", MANIFEST_DIR.as_posix()],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if committed.returncode != 0 or untracked.returncode != 0:
         return []
-    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    return sorted(
+        {
+            line.strip()
+            for output in (committed.stdout, untracked.stdout)
+            for line in output.splitlines()
+            if line.strip()
+        }
+    )
 
 
 def _is_manifest_path(path: str) -> bool:

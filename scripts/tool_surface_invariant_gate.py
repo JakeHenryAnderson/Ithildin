@@ -19,6 +19,7 @@ EXPECTED_TOOL_NAMES = [
     "fs.stat",
     "git.diff",
     "git.log",
+    "git.show.commit_metadata",
     "git.status",
     "http.fetch",
 ]
@@ -31,6 +32,7 @@ EXPECTED_TOOL_RISKS = {
     "fs.stat": "read",
     "git.diff": "read",
     "git.log": "read",
+    "git.show.commit_metadata": "read",
     "git.status": "read",
     "http.fetch": "network",
 }
@@ -106,6 +108,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             )
         if manifest_name == "http.fetch":
             failures.extend(_check_http_fetch_schema(manifest))
+        if manifest_name == "git.show.commit_metadata":
+            failures.extend(_check_git_commit_metadata_schema(manifest))
     if marker_hits:
         failures.append("manifest text references deferred or broad tool-power markers")
 
@@ -141,6 +145,61 @@ def _check_http_fetch_schema(manifest: dict[str, Any]) -> list[str]:
     drift = sorted(exposed & forbidden_http_inputs)
     if drift:
         failures.append(f"http.fetch exposes forbidden caller-controlled fields: {drift}")
+    return failures
+
+
+def _check_git_commit_metadata_schema(manifest: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    schema = manifest.get("input_schema")
+    if not isinstance(schema, dict):
+        return ["git.show.commit_metadata input_schema is missing or invalid"]
+    if schema.get("additionalProperties") is not False:
+        failures.append("git.show.commit_metadata must keep additionalProperties: false")
+    required = schema.get("required")
+    if required != ["ref"]:
+        failures.append("git.show.commit_metadata required fields drifted")
+    properties = schema.get("properties")
+    allowed = ["include_body", "include_diffstat", "include_emails", "ref", "workspace_id"]
+    if not isinstance(properties, dict) or sorted(properties) != allowed:
+        failures.append("git.show.commit_metadata properties drifted")
+        return failures
+    ref_schema = properties.get("ref")
+    if not isinstance(ref_schema, dict):
+        return failures + ["git.show.commit_metadata ref schema is invalid"]
+    if ref_schema.get("additionalProperties") is not False:
+        failures.append("git.show.commit_metadata ref must keep additionalProperties: false")
+    if ref_schema.get("required") != ["kind", "value"]:
+        failures.append("git.show.commit_metadata ref required fields drifted")
+    ref_properties = ref_schema.get("properties")
+    if not isinstance(ref_properties, dict):
+        failures.append("git.show.commit_metadata ref properties are invalid")
+        return failures
+    kind = ref_properties.get("kind")
+    if not isinstance(kind, dict) or sorted(kind.get("enum", [])) != [
+        "branch",
+        "object_id",
+        "tag",
+    ]:
+        failures.append("git.show.commit_metadata ref kind enum drifted")
+    forbidden_inputs = {
+        "argv",
+        "args",
+        "command",
+        "format",
+        "pathspec",
+        "remote",
+        "checkout",
+        "diff",
+        "headers",
+        "body",
+    }
+    exposed = set(properties) | set(ref_properties)
+    drift = sorted(exposed & forbidden_inputs)
+    if drift:
+        failures.append(
+            "git.show.commit_metadata exposes forbidden caller-controlled fields: "
+            + ", ".join(drift)
+        )
     return failures
 
 

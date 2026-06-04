@@ -8,6 +8,7 @@ from typing import cast
 
 import pytest
 from ithildin_api.read_tools import FilesystemReadTools, GitReadTools, ReadToolError
+from ithildin_schemas import JsonObject
 
 
 def make_filesystem(tmp_path: Path, *, max_read_bytes: int = 128) -> FilesystemReadTools:
@@ -325,6 +326,132 @@ def test_git_status_diff_and_log_inside_workspace_repo(tmp_path: Path) -> None:
     assert commits == [{"commit": commits[0]["commit"], "subject": "initial"}]
 
 
+def test_git_commit_metadata_returns_structured_bounded_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial subject", "-m", "body line"])
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    metadata = git.commit_metadata(
+        {
+            "ref": {"kind": "object_id", "value": commit_hash},
+            "include_body": True,
+            "include_emails": False,
+            "include_diffstat": True,
+        }
+    )
+
+    assert metadata["resolved_commit_hash"] == commit_hash
+    assert metadata["parent_hashes"] == []
+    assert metadata["subject"] == "initial subject"
+    assert metadata["body"] == "body line"
+    assert metadata["body_included"] is True
+    assert metadata["author"] == {
+            "name": "Test User",
+            "email_included": False,
+            "email_hash": "sha256:cce878759375b6479cdf7131305e30163e3decec0da61df6840dafa3a747f3f2",
+    }
+    assert metadata["changed_files"] == [
+        {"status": "A", "path": "tracked.txt", "path_redacted": False}
+    ]
+    output_policy = cast(dict[str, object], metadata["output_policy"])
+    assert output_policy["raw_diff_included"] is False
+    assert output_policy["file_contents_included"] is False
+
+
+def test_git_commit_metadata_resolves_local_branch_and_tag(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    run_git(repo, ["branch", "safe/topic"])
+    run_git(repo, ["tag", "v1"])
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    branch_metadata = git.commit_metadata({"ref": {"kind": "branch", "value": "safe/topic"}})
+    tag_metadata = git.commit_metadata({"ref": {"kind": "tag", "value": "v1"}})
+
+    assert branch_metadata["resolved_commit_hash"] == commit_hash
+    assert tag_metadata["resolved_commit_hash"] == commit_hash
+
+
+def test_git_commit_metadata_redacts_emails_when_requested(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    metadata = git.commit_metadata(
+        {"ref": {"kind": "object_id", "value": commit_hash}, "include_emails": True}
+    )
+
+    author = cast(dict[str, object], metadata["author"])
+    committer = cast(dict[str, object], metadata["committer"])
+    assert author["email"] == "[REDACTED]"
+    assert committer["email"] == "[REDACTED]"
+    assert "test@example.com" not in json_dump(metadata)
+
+
+def test_git_commit_metadata_denies_unsupported_ref_syntax(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    denied_refs: list[dict[str, str]] = [
+        {"kind": "branch", "value": "origin/main"},
+        {"kind": "branch", "value": "refs/heads/main"},
+        {"kind": "branch", "value": "feature..main"},
+        {"kind": "tag", "value": "-bad"},
+        {"kind": "object_id", "value": "HEAD"},
+    ]
+    for ref in denied_refs:
+        with pytest.raises(ReadToolError):
+            git.commit_metadata({"ref": cast(JsonObject, ref)})
+
+
+def test_git_commit_metadata_redacts_hidden_or_sensitive_changed_paths(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath(".env").write_text("TOKEN=value\n", encoding="utf-8")
+    run_git(repo, ["add", ".env"])
+    run_git(repo, ["commit", "-m", "secret path"])
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    metadata = git.commit_metadata({"ref": {"kind": "object_id", "value": commit_hash}})
+
+    assert metadata["sensitive_paths_redacted"] == 1
+    assert metadata["changed_files"] == [
+        {
+            "status": "A",
+            "path": "<redacted>",
+            "path_redacted": True,
+            "path_hash": "sha256:239a7b407f92134ace046281584ad04306c5d4c81d642e902124f8dcd1a6e680",
+        }
+    ]
+
+
 def test_git_diff_denies_hidden_or_sensitive_tracked_paths(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=2048)
     repo = filesystem.workspace_root / "repo"
@@ -372,3 +499,18 @@ def test_git_output_is_bounded(tmp_path: Path) -> None:
 
 def run_git(repo: Path, args: list[str]) -> None:
     subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
+
+
+def git_output(repo: Path, args: list[str]) -> str:
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def json_dump(value: object) -> str:
+    import json
+
+    return json.dumps(value, sort_keys=True)

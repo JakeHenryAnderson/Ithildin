@@ -133,6 +133,7 @@ class PolicyPreviewService:
         resource = resource_from_arguments(
             arguments,
             manifest.risk,
+            tool_name=manifest.name,
             http_allowlist=self.http_allowlist,
             read_tool_executor=self.read_tool_executor,
         )

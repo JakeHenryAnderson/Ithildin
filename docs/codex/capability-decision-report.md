@@ -12,8 +12,8 @@ uv run python scripts/capability_decision_report.py --json
 ```
 
 The command exits successfully when the report can be generated and hard invariants are intact. A
-`decision: blocked` result is expected while v0.5 tasks remain planned or external/source review rows
-remain pending.
+`decision: blocked` result is expected while external/source review rows remain pending or a future
+capability class lacks a separate explicit implementation decision.
 
 ## Inputs
 
@@ -28,4 +28,5 @@ remain pending.
 
 The report is suitable for handoff and planning. It is not a capability-expansion approval. New powerful
 tool planning remains blocked until external/source review closure, accepted-risk disposition, and a
-separate explicit capability decision are recorded.
+separate explicit capability decision are recorded. The bounded v0.9 `git.show.commit_metadata`
+implementation has its own separate gate and does not unlock broader capability implementation.

@@ -39,7 +39,8 @@ Expected current state:
 
 - release and candidate gates pass;
 - capability expansion reports blocked;
-- tool surface remains exactly ten tools;
+- tool surface remains the approved local-preview tool set, including the bounded v0.9
+  `git.show.commit_metadata` read-only addition;
 - evidence wording is local/non-production where applicable;
 - external closure is valid but incomplete while rows remain `external_pending`.
 

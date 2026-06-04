@@ -23,6 +23,7 @@ EXPECTED_TOOL_NAMES = [
     "fs.stat",
     "git.diff",
     "git.log",
+    "git.show.commit_metadata",
     "git.status",
     "http.fetch",
 ]

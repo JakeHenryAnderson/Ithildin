@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
@@ -194,6 +195,12 @@ class _PolicyParityHarness:
             "policy parity fixture\n",
             encoding="utf-8",
         )
+        _run_git(workspace_root, ["init"])
+        _run_git(workspace_root, ["config", "user.email", "policy@example.com"])
+        _run_git(workspace_root, ["config", "user.name", "Policy Fixture"])
+        _run_git(workspace_root, ["add", "README.md"])
+        _run_git(workspace_root, ["commit", "-m", "policy parity commit"])
+        self.commit_hash = _git_output(workspace_root, ["rev-parse", "HEAD"])
         read_tool_executor = ReadToolExecutor.from_settings(
             workspace_root=workspace_root,
             max_read_bytes=1024,
@@ -339,6 +346,10 @@ class _PolicyParityHarness:
             and arguments.get("proposal_id") == "patch_abc"
         ):
             arguments["proposal_id"] = self.patch_apply_proposal_id
+        if case.tool_name == "git.show.commit_metadata":
+            ref = arguments.get("ref")
+            if isinstance(ref, dict) and ref.get("value") == "POLICY_PARITY_COMMIT":
+                arguments["ref"] = {**ref, "value": self.commit_hash}
         return arguments
 
     def _policy_event(self, request_id: str) -> JsonObject:
@@ -387,6 +398,19 @@ def _json_object(value: dict[Any, Any]) -> JsonObject:
             raise PolicyParityError("policy parity keys must be strings")
         result[key] = item
     return result
+
+
+def _run_git(repo: Path, args: list[str]) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
+
+
+def _git_output(repo: Path, args: list[str]) -> str:
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
 
 def _json_object_or_none(value: object) -> JsonObject | None:

@@ -1,0 +1,44 @@
+name: git.show.commit_metadata
+version: 0.1.0
+title: Show git commit metadata
+risk: read
+category: git
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+    - ref
+  properties:
+    ref:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - value
+      properties:
+        kind:
+          type: string
+          enum:
+            - object_id
+            - branch
+            - tag
+        value:
+          type: string
+          minLength: 1
+          maxLength: 128
+    include_body:
+      type: boolean
+      default: false
+    include_emails:
+      type: boolean
+      default: false
+    include_diffstat:
+      type: boolean
+      default: true
+    workspace_id:
+      type: string
+      default: default

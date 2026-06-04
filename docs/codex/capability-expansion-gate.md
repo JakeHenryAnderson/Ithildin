@@ -20,8 +20,9 @@ begin. Today, that form should fail.
 
 ## Hard Invariants
 
-- tool count remains 10;
-- tool names remain the existing local-preview set;
+- tool count remains the approved local-preview set, including the bounded v0.9 read-only
+  `git.show.commit_metadata` addition;
+- tool names remain the approved local-preview set;
 - runtime boundary remains `v0.1 local-preview`;
 - deferred-power list remains unchanged;
 - structured reviewer findings validate with no open critical/high findings.

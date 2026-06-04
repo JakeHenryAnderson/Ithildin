@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shlex
 import stat
 import subprocess
@@ -10,9 +11,9 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
-from ithildin_schemas import JsonObject, JsonValue
+from ithildin_schemas import JsonObject, JsonValue, sha256_digest
 
 from ithildin_api.workspaces import WorkspaceRegistry
 
@@ -25,8 +26,17 @@ READ_TOOL_NAMES = frozenset(
         "git.status",
         "git.diff",
         "git.log",
+        "git.show.commit_metadata",
     }
 )
+
+_GIT_COMMIT_METADATA_TOOL = "git.show.commit_metadata"
+_HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
+_SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
+_COMMIT_METADATA_FIELD_SEPARATOR = "\x1f"
+_COMMIT_METADATA_SUBJECT_LIMIT = 240
+_COMMIT_METADATA_BODY_LIMIT = 2000
+_COMMIT_METADATA_CHANGED_FILE_LIMIT = 100
 
 
 class ReadToolError(RuntimeError):
@@ -114,7 +124,15 @@ class ReadToolExecutor:
     def supports(self, tool_name: str) -> bool:
         return tool_name in READ_TOOL_NAMES
 
-    def resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+    def resource_from_arguments(
+        self,
+        arguments: JsonObject,
+        *,
+        tool_name: str | None = None,
+    ) -> JsonObject:
+        if tool_name == _GIT_COMMIT_METADATA_TOOL:
+            return self._commit_metadata_resource_from_arguments(arguments)
+
         path = _string_arg(arguments, "path", default=".")
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
         resource: JsonObject = {
@@ -131,6 +149,29 @@ class ReadToolExecutor:
             return resource
         resource["path"] = filesystem.relative_path(target)
         resource["in_scope"] = True
+        return resource
+
+    def _commit_metadata_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        resource: JsonObject = {
+            "type": "git_commit",
+            "workspace_id": workspace_id,
+            "in_scope": False,
+        }
+        try:
+            self._filesystem(workspace_id)
+            selector = _commit_ref_selector(arguments)
+            _validate_commit_ref_selector(selector)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "ref_kind": selector["kind"],
+                "ref_value_hash": sha256_digest(selector["value"]),
+                "in_scope": True,
+            }
+        )
         return resource
 
     def execute(self, tool_name: str, arguments: JsonObject) -> JsonObject:
@@ -157,6 +198,8 @@ class ReadToolExecutor:
                 path=_string_arg(arguments, "path", default="."),
                 limit=_int_arg(arguments, "limit", default=git.git_log_limit),
             )
+        if tool_name == _GIT_COMMIT_METADATA_TOOL:
+            return git.commit_metadata(arguments)
         raise ReadToolError("unsupported read tool")
 
     def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
@@ -434,12 +477,192 @@ class GitReadTools:
             "truncated": output.truncated,
         }
 
+    def commit_metadata(self, arguments: JsonObject) -> JsonObject:
+        selector = _commit_ref_selector(arguments)
+        _validate_commit_ref_selector(selector)
+        include_body = _bool_arg(arguments, "include_body", default=False)
+        include_emails = _bool_arg(arguments, "include_emails", default=False)
+        include_diffstat = _bool_arg(arguments, "include_diffstat", default=True)
+
+        repo = self._repo_path(".")
+        resolved_commit = self._resolve_commit(repo, selector)
+        metadata = self._commit_identity_metadata(repo, resolved_commit)
+        changed_files = (
+            self._commit_changed_files(repo, resolved_commit)
+            if include_diffstat
+            else _empty_changes()
+        )
+
+        author_email = str(metadata["author_email"])
+        committer_email = str(metadata["committer_email"])
+        author: JsonObject = {
+            "name": metadata["author_name"],
+            "email_included": include_emails,
+            "email_hash": sha256_digest(author_email) if author_email else None,
+        }
+        committer: JsonObject = {
+            "name": metadata["committer_name"],
+            "email_included": include_emails,
+            "email_hash": sha256_digest(committer_email) if committer_email else None,
+        }
+        if include_emails:
+            author["email"] = "[REDACTED]"
+            author["email_redacted"] = True
+            committer["email"] = "[REDACTED]"
+            committer["email_redacted"] = True
+
+        body = str(metadata["body"])
+        body_text, body_truncated = _bounded_text(
+            _sanitize_git_metadata_text(body, multiline=True),
+            _COMMIT_METADATA_BODY_LIMIT,
+        )
+        subject_text, subject_truncated = _bounded_text(
+            _sanitize_git_metadata_text(str(metadata["subject"]), multiline=False),
+            _COMMIT_METADATA_SUBJECT_LIMIT,
+        )
+        result: JsonObject = {
+            "workspace_id": self.filesystem.workspace_id,
+            "tool_name": _GIT_COMMIT_METADATA_TOOL,
+            "requested_ref": {
+                "kind": selector["kind"],
+                "value_hash": sha256_digest(selector["value"]),
+            },
+            "resolved_commit_hash": resolved_commit,
+            "parent_hashes": metadata["parent_hashes"],
+            "author": author,
+            "committer": committer,
+            "author_timestamp": metadata["author_timestamp"],
+            "committer_timestamp": metadata["committer_timestamp"],
+            "subject": subject_text,
+            "subject_truncated": subject_truncated,
+            "body_included": include_body,
+            "changed_files_included": include_diffstat,
+            "changed_files": changed_files["files"],
+            "changed_file_count": changed_files["count"],
+            "changed_files_truncated": changed_files["truncated"],
+            "sensitive_paths_redacted": changed_files["sensitive_paths_redacted"],
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_diff_included": False,
+                "emails_included": include_emails,
+                "email_values_redacted": include_emails,
+                "metadata_is_untrusted": True,
+            },
+        }
+        if include_body:
+            result["body"] = body_text
+            result["body_truncated"] = body_truncated
+        return result
+
     def _repo_path(self, path: str) -> Path:
         repo = self.filesystem.resolve_existing_path(path)
         if not repo.is_dir():
             raise ReadToolError("git path is not a directory")
         self._run_git(repo, ["rev-parse", "--is-inside-work-tree"])
         return repo
+
+    def _resolve_commit(self, repo: Path, selector: JsonObject) -> str:
+        kind = str(selector["kind"])
+        value = str(selector["value"])
+        if kind == "object_id":
+            commitish = value
+        elif kind == "branch":
+            commitish = f"refs/heads/{value}"
+        elif kind == "tag":
+            commitish = f"refs/tags/{value}"
+        else:
+            raise ReadToolError("unsupported ref selector")
+
+        output = self._run_git(
+            repo,
+            ["rev-parse", "--verify", "--end-of-options", f"{commitish}^{{commit}}"],
+        )
+        resolved = output.text.strip()
+        if not _HEX_OBJECT_RE.fullmatch(resolved):
+            raise ReadToolError("commit metadata resolution failed safely")
+        return resolved.lower()
+
+    def _commit_identity_metadata(self, repo: Path, commit_hash: str) -> JsonObject:
+        output = self._run_git(
+            repo,
+            [
+                "show",
+                "--no-patch",
+                "--format=%H%x1f%P%x1f%an%x1f%ae%x1f%aI%x1f%cn%x1f%ce%x1f%cI%x1f%s%x1f%b",
+                commit_hash,
+            ],
+        )
+        if output.truncated:
+            raise ReadToolError("git commit metadata exceeds configured read limit")
+        parts = output.text.split(_COMMIT_METADATA_FIELD_SEPARATOR, 9)
+        if len(parts) != 10:
+            raise ReadToolError("git commit metadata could not be parsed safely")
+        (
+            commit,
+            parents,
+            author_name,
+            author_email,
+            author_ts,
+            committer_name,
+            committer_email,
+            committer_ts,
+            subject,
+            body,
+        ) = parts
+        if commit.strip().lower() != commit_hash:
+            raise ReadToolError("git commit metadata mismatch")
+        parent_hashes = [parent.lower() for parent in parents.split() if parent]
+        if any(not _HEX_OBJECT_RE.fullmatch(parent) for parent in parent_hashes):
+            raise ReadToolError("git commit parent metadata is invalid")
+        return {
+            "parent_hashes": cast(list[JsonValue], parent_hashes),
+            "author_name": author_name.strip(),
+            "author_email": author_email.strip(),
+            "author_timestamp": author_ts.strip(),
+            "committer_name": committer_name.strip(),
+            "committer_email": committer_email.strip(),
+            "committer_timestamp": committer_ts.strip(),
+            "subject": subject.strip(),
+            "body": body.strip(),
+        }
+
+    def _commit_changed_files(self, repo: Path, commit_hash: str) -> JsonObject:
+        output = self._run_git(
+            repo,
+            [
+                "diff-tree",
+                "--root",
+                "--no-commit-id",
+                "--name-status",
+                "-z",
+                "-r",
+                "--no-renames",
+                commit_hash,
+            ],
+        )
+        files: list[JsonValue] = []
+        sensitive_paths_redacted = 0
+        records = _parse_git_name_status_records(output.text)
+        for status_code, path in records:
+            if len(files) >= _COMMIT_METADATA_CHANGED_FILE_LIMIT:
+                break
+            file_record: JsonObject = {"status": status_code}
+            if _safe_commit_path(path):
+                file_record["path"] = path
+                file_record["path_redacted"] = False
+            else:
+                file_record["path"] = "<redacted>"
+                file_record["path_redacted"] = True
+                file_record["path_hash"] = sha256_digest(path)
+                sensitive_paths_redacted += 1
+            files.append(file_record)
+        return {
+            "files": files,
+            "count": len(records),
+            "truncated": output.truncated or len(records) > len(files),
+            "sensitive_paths_redacted": sensitive_paths_redacted,
+        }
+
 
     def _run_git(self, cwd: Path, args: list[str]) -> GitOutput:
         command = ["git", "-C", str(cwd), *args]
@@ -448,7 +671,6 @@ class GitReadTools:
                 command,
                 check=False,
                 capture_output=True,
-                text=True,
                 timeout=10,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
@@ -457,12 +679,12 @@ class GitReadTools:
         if completed.returncode != 0:
             raise ReadToolError("path is not a readable git repository")
 
-        encoded = completed.stdout.encode("utf-8")
-        truncated = len(encoded) > self.max_output_bytes
+        stdout = completed.stdout
+        truncated = len(stdout) > self.max_output_bytes
         if truncated:
-            text = encoded[: self.max_output_bytes].decode("utf-8", errors="replace")
+            text = stdout[: self.max_output_bytes].decode("utf-8", errors="replace")
         else:
-            text = completed.stdout
+            text = stdout.decode("utf-8", errors="replace")
         return GitOutput(text=text, truncated=truncated)
 
 
@@ -487,6 +709,49 @@ def _int_arg(arguments: JsonObject, name: str, *, default: int) -> int:
     return value
 
 
+def _bool_arg(arguments: JsonObject, name: str, *, default: bool) -> bool:
+    value = arguments.get(name, default)
+    if not isinstance(value, bool):
+        raise ReadToolError(f"{name} must be a boolean")
+    return value
+
+
+def _commit_ref_selector(arguments: JsonObject) -> JsonObject:
+    raw = arguments.get("ref")
+    if not isinstance(raw, dict):
+        raise ReadToolError("ref must be an object")
+    kind = raw.get("kind")
+    value = raw.get("value")
+    if not isinstance(kind, str) or not isinstance(value, str):
+        raise ReadToolError("ref kind and value must be strings")
+    return {"kind": kind, "value": value}
+
+
+def _validate_commit_ref_selector(selector: JsonObject) -> None:
+    kind = str(selector["kind"])
+    value = str(selector["value"])
+    if kind not in {"object_id", "branch", "tag"}:
+        raise ReadToolError("unsupported ref selector")
+    if not value or len(value.encode("utf-8")) > 128:
+        raise ReadToolError("ref value is outside allowed bounds")
+    _reject_control_or_unnormalized_text(value, label="ref value")
+    if value.startswith("-"):
+        raise ReadToolError("ref value is not allowed")
+    if kind == "object_id":
+        if not _HEX_OBJECT_RE.fullmatch(value):
+            raise ReadToolError("object_id ref must be a full commit hash")
+        return
+    if value.startswith(("refs/", "origin/")):
+        raise ReadToolError("ref value must name a local branch or tag")
+    if value.startswith("/") or value.endswith("/") or "//" in value:
+        raise ReadToolError("ref value is not allowed")
+    forbidden_tokens = ("..", "@{", "\\", "^", "~", ":", "?", "*", "[", " ")
+    if any(token in value for token in forbidden_tokens):
+        raise ReadToolError("ref value contains unsupported syntax")
+    if not _SAFE_REF_RE.fullmatch(value):
+        raise ReadToolError("ref value contains unsupported characters")
+
+
 def _path_type(path: Path) -> str:
     if path.is_symlink():
         return "symlink"
@@ -498,18 +763,22 @@ def _path_type(path: Path) -> str:
 
 
 def _reject_ambiguous_path_input(path: str) -> None:
+    _reject_control_or_unnormalized_text(path, label="path")
+    lowered = path.lower()
+    if any(token in lowered for token in ("%2e", "%2f", "%5c")):
+        raise ReadToolError("encoded path tokens are not allowed")
+
+
+def _reject_control_or_unnormalized_text(value: str, *, label: str) -> None:
     if any(
         ord(character) < 32
         or ord(character) == 127
         or unicodedata.category(character) in {"Cc", "Cf", "Cs"}
-        for character in path
+        for character in value
     ):
-        raise ReadToolError("path contains control characters")
-    lowered = path.lower()
-    if any(token in lowered for token in ("%2e", "%2f", "%5c")):
-        raise ReadToolError("encoded path tokens are not allowed")
-    if not unicodedata.is_normalized("NFC", path):
-        raise ReadToolError("path is not Unicode-normalized")
+        raise ReadToolError(f"{label} contains control characters")
+    if not unicodedata.is_normalized("NFC", value):
+        raise ReadToolError(f"{label} is not Unicode-normalized")
 
 
 def _ensure_relative_parts_not_sensitive(relative: Path) -> None:
@@ -609,3 +878,64 @@ def _git_log_lines(output: str) -> list[JsonValue]:
         commit_hash, _, subject = line.partition(" ")
         commits.append({"commit": commit_hash, "subject": subject})
     return commits
+
+
+def _bounded_text(value: str, limit: int) -> tuple[str, bool]:
+    encoded = value.encode("utf-8")
+    if len(encoded) <= limit:
+        return value, False
+    return encoded[:limit].decode("utf-8", errors="replace"), True
+
+
+def _parse_git_name_status_records(output: str) -> list[tuple[str, str]]:
+    tokens = [token for token in output.split("\x00") if token]
+    records: list[tuple[str, str]] = []
+    for index in range(0, len(tokens) - 1, 2):
+        status_code = tokens[index]
+        path = tokens[index + 1]
+        if not status_code or not path:
+            continue
+        status = status_code[0]
+        if status not in {"A", "C", "D", "M", "R", "T", "U", "X"}:
+            status = "other"
+        records.append((status, path))
+    return records
+
+
+def _safe_commit_path(path: str) -> bool:
+    try:
+        _reject_ambiguous_path_input(path)
+        candidate = Path(path)
+        if candidate.is_absolute() or ".." in candidate.parts:
+            return False
+        _ensure_relative_parts_not_sensitive(candidate)
+    except ReadToolError:
+        return False
+    return True
+
+
+def _empty_changes() -> JsonObject:
+    return {
+        "files": [],
+        "count": 0,
+        "truncated": False,
+        "sensitive_paths_redacted": 0,
+    }
+
+
+def _sanitize_git_metadata_text(value: str, *, multiline: bool) -> str:
+    normalized = unicodedata.normalize("NFC", value)
+    safe_chars: list[str] = []
+    for character in normalized:
+        if multiline and character in {"\n", "\t"}:
+            safe_chars.append(character)
+            continue
+        if (
+            ord(character) < 32
+            or ord(character) == 127
+            or unicodedata.category(character) in {"Cc", "Cf", "Cs"}
+        ):
+            safe_chars.append("\uFFFD")
+            continue
+        safe_chars.append(character)
+    return "".join(safe_chars)

@@ -247,6 +247,17 @@ does not approve public preview, capability design, capability implementation, o
 | 236 - Release automation external closure intake | Done | Source-review closure matrix, lane-status board, and row-partition docs now mark release/evidence automation closed for local-preview review automation only. |
 | 237 - v0.8 roadmap prompt prep | Done | [v0.8-roadmap-prompt.md](v0.8-roadmap-prompt.md) asks GPT 5.5 Pro for strategic v0.8 sequencing after focused lane closure, while preserving no-new-powers boundaries. |
 
+## v0.9 Capability Implementation Track
+
+v0.9 begins from the v0.8 product-risk decision and implements only the first approved bounded
+read-only Git metadata capability. Broad capability implementation remains blocked.
+
+| Task | Status | Spec |
+| --- | --- | --- |
+| 238 - git.show.commit_metadata proposal | Done | [capability-proposals/git-show-commit-metadata.md](capability-proposals/git-show-commit-metadata.md), `make git-commit-metadata-proposal-check` |
+| 239 - git.show.commit_metadata implementation plan | Done | [capability-implementation-plans/git-show-commit-metadata.md](capability-implementation-plans/git-show-commit-metadata.md), `make git-commit-metadata-implementation-plan-check` |
+| 240 - git.show.commit_metadata implementation | Done | [v0.9-git-commit-metadata-implementation.md](v0.9-git-commit-metadata-implementation.md), `make git-commit-metadata-implementation-gate` |
+
 ## Future Candidate Track
 
 | Area | Status | Notes |

@@ -15,6 +15,7 @@ from scripts import accepted_risk_register, no_new_powers_guardrail
 
 ROOT = Path(__file__).resolve().parents[1]
 DECISION_DOC = ROOT / "docs/codex/v0.8-capability-design-decision.md"
+V09_IMPLEMENTATION_DOC = ROOT / "docs/codex/v0.9-git-commit-metadata-implementation.md"
 V08_BASELINE_COMMIT = "f993cec"
 FORBIDDEN_IMPLEMENTATION_SURFACE_PREFIXES = (
     "apps/api/",
@@ -84,13 +85,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     accepted_risks = accepted_risk_register.build_report(repo_root)
     failures.extend(no_new_powers["failures"])
     failures.extend(accepted_risks["failures"])
-    failures.extend(_forbidden_implementation_changes_since_baseline(repo_root))
+    if not (repo_root / V09_IMPLEMENTATION_DOC.relative_to(ROOT)).exists():
+        failures.extend(_forbidden_implementation_changes_since_baseline(repo_root))
 
     return _report(
         failures,
         {
             "tool_count": no_new_powers["tool_count"],
             "v08_baseline_commit": V08_BASELINE_COMMIT,
+            "superseded_by_v09_implementation": (
+                repo_root / V09_IMPLEMENTATION_DOC.relative_to(ROOT)
+            ).exists(),
             "accepted_deferred_risks": len(accepted_risks["accepted_deferred_ids"]),
             "accepted_risks_constraining_design": len(
                 accepted_risks["blocks_capability_design_ids"]

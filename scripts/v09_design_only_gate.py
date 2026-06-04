@@ -16,6 +16,7 @@ from scripts import no_new_powers_guardrail, v08_capability_design_gate
 
 ROOT = Path(__file__).resolve().parents[1]
 CHARTER_DOC = ROOT / "docs/codex/v0.9-design-only-boundary-charter.md"
+V09_IMPLEMENTATION_DOC = ROOT / "docs/codex/v0.9-git-commit-metadata-implementation.md"
 V09_BASELINE_COMMIT = "de32893"
 FORBIDDEN_SURFACE_PREFIXES = (
     "apps/api/",
@@ -68,7 +69,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     failures.extend(f"v0.8 gate: {failure}" for failure in v08_gate["failures"])
     failures.extend(f"no-new-powers: {failure}" for failure in no_new_powers["failures"])
-    failures.extend(_forbidden_design_only_surface_changes(repo_root))
+    implementation_doc_exists = (repo_root / V09_IMPLEMENTATION_DOC.relative_to(ROOT)).exists()
+    if not implementation_doc_exists:
+        failures.extend(_forbidden_design_only_surface_changes(repo_root))
 
     return _report(
         failures,
@@ -80,6 +83,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 "expected to be later clean commits"
             ),
             "tool_count": no_new_powers.get("tool_count"),
+            "superseded_by_v09_implementation": implementation_doc_exists,
             "capability_design_only": v08_gate.get("capability_design_only"),
             "capability_implementation": v08_gate.get("capability_implementation"),
         },

@@ -68,6 +68,21 @@ cases:
     session_id: parity-network
     expect_decision: allow
 
+  - id: git_commit_metadata_preview_matches_runtime
+    description: Commit metadata preview and runtime policy evidence agree on a scoped Git commit resource.
+    tool_name: git.show.commit_metadata
+    arguments:
+      ref:
+        kind: object_id
+        value: POLICY_PARITY_COMMIT
+    principal:
+      id: agent:mcp-local
+    session_id: parity-git-commit-metadata
+    expect_decision: allow
+    expect_runtime_status: completed
+    expect_resource_type: git_commit
+    expect_resource_in_scope: true
+
   - id: out_of_scope_network_preview_matches_runtime
     description: Unallowlisted network preview and runtime policy evidence agree on deny.
     tool_name: http.fetch

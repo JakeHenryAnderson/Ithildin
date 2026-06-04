@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import subprocess
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -203,10 +204,49 @@ input_schema:
     )
 
 
+def write_git_commit_metadata_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("git-show-commit-metadata.yaml").write_text(
+        """
+name: git.show.commit_metadata
+version: 1.0.0
+title: Show commit metadata
+risk: read
+category: git
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["ref"]
+  properties:
+    ref:
+      type: object
+      additionalProperties: false
+      required: ["kind", "value"]
+      properties:
+        kind:
+          type: string
+          enum: [object_id, branch, tag]
+        value:
+          type: string
+    include_body:
+      type: boolean
+    include_emails:
+      type: boolean
+    include_diffstat:
+      type: boolean
+""",
+        encoding="utf-8",
+    )
+
+
 @dataclass(frozen=True)
 class McpAdapterHarness:
     adapter: IthildinMcpAdapter
     audit_writer: AuditWriter
+    commit_hash: str
 
 
 def make_adapter(tmp_path: Path, *, http_body: bytes = b"mcp network") -> IthildinMcpAdapter:
@@ -225,6 +265,7 @@ def make_adapter_harness(
     write_patch_propose_manifest(manifest_dir)
     write_patch_apply_manifest(manifest_dir)
     write_http_fetch_manifest(manifest_dir)
+    write_git_commit_metadata_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
         """
 name: internal.hidden
@@ -245,6 +286,12 @@ input_schema:
     workspace_root = tmp_path / "workspace"
     workspace_root.mkdir()
     workspace_root.joinpath("README.md").write_text("hello from mcp\n", encoding="utf-8")
+    run_git(workspace_root, ["init"])
+    run_git(workspace_root, ["config", "user.email", "test@example.com"])
+    run_git(workspace_root, ["config", "user.name", "Test User"])
+    run_git(workspace_root, ["add", "README.md"])
+    run_git(workspace_root, ["commit", "-m", "mcp commit"])
+    commit_hash = git_output(workspace_root, ["rev-parse", "HEAD"])
     audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
     audit_writer.initialize()
     approval_store = ApprovalStore(db_path)
@@ -292,7 +339,21 @@ input_schema:
             principal_registry=principal_registry,
         ),
         audit_writer=audit_writer,
+        commit_hash=commit_hash,
     )
+
+
+def run_git(repo: Path, args: list[str]) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
+
+
+def git_output(repo: Path, args: list[str]) -> str:
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
 
 def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
@@ -305,6 +366,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "fs.patch.apply",
         "fs.patch.propose",
         "fs.read",
+        "git.show.commit_metadata",
         "http.fetch",
     ]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
@@ -331,7 +393,7 @@ principals:
 
     tools = asyncio.run(adapter.list_tools())
 
-    assert [tool.name for tool in tools] == ["fs.read"]
+    assert [tool.name for tool in tools] == ["fs.read", "git.show.commit_metadata"]
 
 
 def test_mcp_call_returns_safe_approval_required_response(tmp_path: Path) -> None:
@@ -375,6 +437,24 @@ def test_mcp_call_returns_real_http_fetch_output(tmp_path: Path) -> None:
     assert result.structuredContent["status"] == "completed"
     assert result.structuredContent["body_text"] == "mcp network"
     assert result.structuredContent["url"] == "https://example.com/data"
+
+
+def test_mcp_call_returns_real_git_commit_metadata_output(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "git.show.commit_metadata",
+            {"ref": {"kind": "object_id", "value": harness.commit_hash}},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert result.structuredContent["resolved_commit_hash"] == harness.commit_hash
+    assert result.structuredContent["subject"] == "mcp commit"
+    assert result.structuredContent["output_policy"]["file_contents_included"] is False
 
 
 def test_mcp_call_denies_registered_tool_not_exposed_over_mcp(tmp_path: Path) -> None:

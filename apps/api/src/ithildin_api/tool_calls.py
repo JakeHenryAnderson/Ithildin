@@ -187,6 +187,7 @@ class GovernedToolCallService:
         resource = resource_from_arguments(
             arguments,
             manifest.risk,
+            tool_name=manifest.name,
             http_allowlist=(
                 self.http_fetch_executor.allowlist if self.http_fetch_executor is not None else None
             ),
