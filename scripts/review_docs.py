@@ -128,6 +128,7 @@ REVIEW_DOCS = [
     "docs/codex/capability-proposals/git-show-ref-summary.md",
     "docs/codex/capability-proposals/project-manifest-summary.md",
     "docs/codex/capability-implementation-plans/project-manifest-summary.md",
+    "docs/codex/v3-project-manifest-summary-implementation.md",
     "docs/codex/capability-implementation-plans/git-show-ref-summary.md",
     "docs/codex/capability-implementation-plans/git-show-commit-metadata.md",
     "docs/codex/v0.9-git-commit-metadata-implementation.md",

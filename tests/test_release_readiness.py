@@ -38,6 +38,7 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    project_manifest_summary_implementation_gate,
     project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
     read_only_capability_inventory_gate,
@@ -733,6 +734,56 @@ def test_project_manifest_summary_implementation_plan_check_is_wired() -> None:
     assert "docs/codex/capability-implementation-plans/project-manifest-summary.md" in docs_site
 
 
+def test_project_manifest_summary_implementation_gate_is_wired() -> None:
+    report = project_manifest_summary_implementation_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/v3-project-manifest-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "project.manifest.summary"
+    assert report["implementation_status"] == "approved_limited_read_only"
+    assert report["tool_count"] == 12
+    assert report["new_power_classes_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    for required in [
+        "approved for later bounded read-only implementation",
+        "does not add a tool manifest",
+        "approved_limited_read_only",
+        "risk `read`",
+        "category `project`",
+        "workspace_id",
+        "root",
+        "manifest_kinds",
+        "limit",
+        "no shell",
+        "no package-manager execution",
+        "no registry or network access",
+        "no recursive discovery",
+        "no arbitrary manifest filenames",
+        "no file contents",
+        "no dependency names",
+        "no package script names or values",
+        "make project-manifest-summary-implementation-gate",
+    ]:
+        assert required in doc
+    assert "make project-manifest-summary-implementation-gate" in readme
+    assert "project-manifest-summary-implementation-gate:" in makefile
+    assert "project-manifest-summary-implementation-gate" in release_check_body
+    assert (
+        "project-manifest-summary-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "v3 project.manifest.summary Implementation Decision" in index
+    assert "docs/codex/v3-project-manifest-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-manifest-summary-implementation.md" in docs_site
+
+
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
     report = git_commit_metadata_implementation_plan_check.build_report(Path.cwd())
     doc = Path(
@@ -1340,6 +1391,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "v3-next-capability-candidate-check",
         "project-manifest-summary-proposal-check",
         "project-manifest-summary-implementation-plan-check",
+        "project-manifest-summary-implementation-gate",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1362,10 +1414,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "30. `make v3-next-capability-candidate-check`" in reproduction_map
     assert "31. `make project-manifest-summary-proposal-check`" in reproduction_map
     assert "32. `make project-manifest-summary-implementation-plan-check`" in reproduction_map
-    assert "33. `make review-packet-bundle`" in reproduction_map
-    assert "34. `make review-packet-consolidated`" in reproduction_map
-    assert "35. `make packet-redaction-scan`" in reproduction_map
-    assert "36. `make docs-site`" in reproduction_map
+    assert "33. `make project-manifest-summary-implementation-gate`" in reproduction_map
+    assert "34. `make review-packet-bundle`" in reproduction_map
+    assert "35. `make review-packet-consolidated`" in reproduction_map
+    assert "36. `make packet-redaction-scan`" in reproduction_map
+    assert "37. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 

@@ -144,6 +144,8 @@ tamper-evident audit log.
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
   `project.manifest.summary` implementation-planning packet without authorizing runtime work.
+- `make project-manifest-summary-implementation-gate` - validate the bounded read-only
+  implementation decision for `project.manifest.summary`.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
 - `make git-ref-summary-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.ref_summary` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
@@ -427,8 +429,10 @@ and is checked with `make v3-next-capability-candidate-check`. The proposal for 
 and is checked with `make project-manifest-summary-proposal-check`. The implementation-planning
 packet is
 [docs/codex/capability-implementation-plans/project-manifest-summary.md](docs/codex/capability-implementation-plans/project-manifest-summary.md)
-and is checked with `make project-manifest-summary-implementation-plan-check`; it does not authorize
-runtime work.
+and is checked with `make project-manifest-summary-implementation-plan-check`. The bounded
+implementation decision is
+[docs/codex/v3-project-manifest-summary-implementation.md](docs/codex/v3-project-manifest-summary-implementation.md)
+and is checked with `make project-manifest-summary-implementation-gate`.
 The existing `make v09-design-review-packet` target remains the historical
 `git.show.commit_metadata` design-review packet; use `make git-ref-summary-source-review-bundle`
 for the focused `git.show.ref_summary` source-review handoff.

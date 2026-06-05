@@ -66,6 +66,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v3-next-capability-candidate-check",
     "project-manifest-summary-proposal-check",
     "project-manifest-summary-implementation-plan-check",
+    "project-manifest-summary-implementation-gate",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",
