@@ -69,6 +69,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v09-design-only-gate",
     "git-commit-metadata-proposal-check",
     "git-ref-summary-proposal-check",
+    "git-ref-summary-implementation-plan-check",
     "git-commit-metadata-implementation-plan-check",
     "v06-lane-status",
     "v06-closure-readiness",

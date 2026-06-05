@@ -110,6 +110,7 @@ externally closed.
 - [v0.9 Design-Only Boundary Charter](v0.9-design-only-boundary-charter.md)
 - [Capability Proposal: git.show.commit_metadata](capability-proposals/git-show-commit-metadata.md)
 - [Capability Proposal: git.show.ref_summary](capability-proposals/git-show-ref-summary.md)
+- [Implementation-Planning Packet: git.show.ref_summary](capability-implementation-plans/git-show-ref-summary.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
 - [v0.9 git.show.commit_metadata Implementation](v0.9-git-commit-metadata-implementation.md)
 - [v0.9 git.show.commit_metadata Source Review Handoff](v0.9-git-commit-metadata-source-review.md)

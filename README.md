@@ -131,6 +131,7 @@ tamper-evident audit log.
 - `make v09-design-only-gate` - validate the historical v0.9 design-only packet and its superseding implementation record.
 - `make git-commit-metadata-proposal-check` - validate the first design-only capability proposal.
 - `make git-ref-summary-proposal-check` - validate the next read-only Git metadata proposal.
+- `make git-ref-summary-implementation-plan-check` - validate the `git.show.ref_summary` implementation-planning packet without authorizing runtime work.
 - `make git-commit-metadata-implementation-plan-check` - validate the historical implementation-planning packet.
 - `make git-commit-metadata-implementation-gate` - validate the approved read-only `git.show.commit_metadata` implementation boundary.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
@@ -390,6 +391,11 @@ and is checked with `make git-ref-summary-proposal-check`; it does not authorize
 executors, policy rules, MCP exposure, or runtime behavior.
 The proposal review/remediation note is
 [docs/codex/v0.9-git-ref-summary-proposal-review.md](docs/codex/v0.9-git-ref-summary-proposal-review.md).
+The implementation-planning packet is
+[docs/codex/capability-implementation-plans/git-show-ref-summary.md](docs/codex/capability-implementation-plans/git-show-ref-summary.md)
+and is checked with `make git-ref-summary-implementation-plan-check`; it prepares a later
+implementation decision without adding manifests, executors, policy rules, MCP exposure, or runtime
+behavior.
 The existing `make v09-design-review-packet` target remains the historical
 `git.show.commit_metadata` design-review packet; no focused handoff packet for
 `git.show.ref_summary` has been generated yet.

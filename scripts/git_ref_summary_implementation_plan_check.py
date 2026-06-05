@@ -1,4 +1,4 @@
-"""Validate the git.show.commit_metadata implementation-planning packet."""
+"""Validate the git.show.ref_summary implementation-planning packet."""
 
 from __future__ import annotations
 
@@ -11,33 +11,47 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import git_commit_metadata_proposal_check, v09_design_only_gate
+from scripts import git_ref_summary_proposal_check, v09_design_only_gate
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN_DOC = ROOT / "docs/codex/capability-implementation-plans/git-show-commit-metadata.md"
+PLAN_DOC = ROOT / "docs/codex/capability-implementation-plans/git-show-ref-summary.md"
 REQUIRED_PHRASES = [
     "Status: implementation-planning only",
     "does not add a tool manifest",
-    "implementation state: blocked",
+    "Implementation state: blocked",
     "Future Manifest Sketch",
     "Proposed Input Contract",
+    "Strict Schema Contract",
+    "additionalProperties: false",
     "Executor Contract Checklist",
-    "Ref Resolution Test Plan",
-    "Metadata Parsing Plan",
-    "Redaction And Sensitive Metadata Plan",
+    "Ref Enumeration And Validation Plan",
+    "Ref Privacy And Output Contract",
     "Policy Fixture Plan",
     "Audit Evidence Plan",
     "UI And Policy Preview Plan",
     "Negative Transcript Plan",
     "Resource Limits",
-    "GPT 5.5 Pro / Human External Source Review Requirement",
-    "refs/heads/<name>",
-    "refs/tags/<name>",
+    "Source Review And Implementation Decision Requirement",
+    "refs/heads/*",
+    "refs/tags/*",
     "--end-of-options",
-    "include_emails=false",
-    "include_body=false",
-    "sensitive-path classifier",
-    "no `include_sensitive_paths` escape hatch",
+    "internally controlled `git for-each-ref` format strings only",
+    "Git ref-format round trip",
+    "casefold-conflict detection",
+    "peeled safely",
+    "non-commit tag targets",
+    "response-local opaque `ref_id` values only",
+    "Future output schema validation must use `additionalProperties: false`",
+    "Allowed top-level output fields",
+    "Allowed branch entry fields",
+    "Allowed tag entry fields",
+    "No other response fields are allowed",
+    "Tag entries must not include `is_current_branch`",
+    "must not return raw ref names",
+    "must not return raw `sha256(refname)` values",
+    "domain-separated keyed HMAC",
+    "include_names",
+    "include_current_branch",
     "actual implementation remains blocked",
 ]
 FORBIDDEN_PHRASES = [
@@ -66,7 +80,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     plan_path = repo_root / PLAN_DOC.relative_to(ROOT)
     if not plan_path.exists():
-        return _report(["git.show.commit_metadata implementation plan is missing"], {})
+        return _report(["git.show.ref_summary implementation plan is missing"], {})
 
     text = plan_path.read_text(encoding="utf-8")
     lower = text.lower()
@@ -77,7 +91,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         if phrase.lower() in lower:
             failures.append(f"implementation plan contains forbidden phrase: {phrase}")
 
-    proposal = git_commit_metadata_proposal_check.build_report(repo_root)
+    proposal = git_ref_summary_proposal_check.build_report(repo_root)
     design_gate = v09_design_only_gate.build_report(repo_root)
     failures.extend(f"proposal check: {failure}" for failure in proposal["failures"])
     failures.extend(f"v0.9 design-only gate: {failure}" for failure in design_gate["failures"])
@@ -98,7 +112,7 @@ def _report(failures: list[str], evidence: dict[str, Any]) -> dict[str, Any]:
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
-        "proposal": "git.show.commit_metadata",
+        "proposal": "git.show.ref_summary",
         "scope": "implementation_planning_only",
         "implementation_allowed": False,
         "runtime_changes_allowed": False,
@@ -108,9 +122,9 @@ def _report(failures: list[str], evidence: dict[str, Any]) -> dict[str, Any]:
 
 def render_report(report: dict[str, Any]) -> str:
     lines = [
-        "Ithildin git.show.commit_metadata implementation-plan check",
+        "Ithildin git.show.ref_summary implementation-plan check",
         f"valid: {str(report['valid']).lower()}",
-        "proposal: git.show.commit_metadata",
+        "proposal: git.show.ref_summary",
         "scope: implementation_planning_only",
         "implementation_allowed: false",
         "runtime_changes_allowed: false",

@@ -84,7 +84,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         if phrase.lower() not in lower:
             failures.append(f"proposal is missing phrase: {phrase}")
     for phrase in FORBIDDEN_PHRASES:
-        if phrase in lower:
+        if phrase.lower() in lower:
             failures.append(f"proposal contains forbidden implementation phrase: {phrase}")
 
     design_gate = v09_design_only_gate.build_report(repo_root)

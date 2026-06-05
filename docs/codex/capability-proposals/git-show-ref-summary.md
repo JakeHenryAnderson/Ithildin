@@ -54,7 +54,6 @@ unknown fields.
     {
       "kind": "tag",
       "ref_id": "ref_0002",
-      "is_current_branch": false,
       "resolved_commit": "fedcba9876543210fedcba9876543210fedcba98",
       "peeled_from_tag_object": false
     }
@@ -224,8 +223,10 @@ Negative transcript sketches should be added before implementation:
 
 No UI surface is proposed in this design-only step. If implemented later, the review console may list
 the tool only as a read-only metadata capability and should label ref names as repository-supplied
-untrusted metadata. No approval workflow should be required for hash-only read metadata under the
-default read policy, but policy preview/runtime evidence must stay comparable.
+untrusted metadata. No approval workflow should be required for bounded name-free local-ref metadata
+under the default read policy, but policy preview/runtime evidence must stay comparable. Stable
+hashes, HMAC modes, salted digest modes, and raw-name modes remain out of scope pending separate
+review.
 
 ## Accepted-Risk Impact
 

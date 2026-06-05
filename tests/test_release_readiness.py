@@ -27,6 +27,7 @@ from scripts import (
     git_commit_metadata_implementation_plan_check,
     git_commit_metadata_proposal_check,
     git_commit_metadata_source_review_bundle,
+    git_ref_summary_implementation_plan_check,
     git_ref_summary_proposal_check,
     http_fetch_source_review_bundle,
     internal_review_packet,
@@ -403,6 +404,74 @@ def test_git_ref_summary_proposal_check_is_wired() -> None:
     assert "docs/codex/capability-proposals/git-show-ref-summary.md" in docs_site
     assert "docs/codex/v0.9-git-ref-summary-proposal-review.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.9-git-ref-summary-proposal-review.md" in docs_site
+
+
+def test_git_ref_summary_implementation_plan_check_is_wired() -> None:
+    report = git_ref_summary_implementation_plan_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/capability-implementation-plans/git-show-ref-summary.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "git.show.ref_summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 11
+    for required in [
+        "Status: implementation-planning only",
+        "does not add a tool manifest",
+        "Implementation state: blocked",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Strict Schema Contract",
+        "additionalProperties: false",
+        "Executor Contract Checklist",
+        "Ref Enumeration And Validation Plan",
+        "Ref Privacy And Output Contract",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Resource Limits",
+        "Source Review And Implementation Decision Requirement",
+        "refs/heads/*",
+        "refs/tags/*",
+        "--end-of-options",
+        "internally controlled `git for-each-ref` format strings only",
+        "Git ref-format round trip",
+        "casefold-conflict detection",
+        "peeled safely",
+        "non-commit tag targets",
+        "response-local opaque `ref_id` values only",
+        "Future output schema validation must use `additionalProperties: false`",
+        "Allowed top-level output fields",
+        "Allowed branch entry fields",
+        "Allowed tag entry fields",
+        "No other response fields are allowed",
+        "Tag entries must not include `is_current_branch`",
+        "must not return raw ref names",
+        "must not return raw `sha256(refname)` values",
+        "domain-separated keyed HMAC",
+        "include_names",
+        "include_current_branch",
+        "Actual implementation remains blocked",
+    ]:
+        assert required in doc
+    assert "make git-ref-summary-implementation-plan-check" in readme
+    assert "git-ref-summary-implementation-plan-check:" in makefile
+    assert "git-ref-summary-implementation-plan-check" in release_check_body
+    assert "Implementation-Planning Packet: git.show.ref_summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/git-show-ref-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/git-show-ref-summary.md" in docs_site
 
 
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
@@ -853,6 +922,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "filesystem-contract-check",
         "git-commit-metadata-source-review-bundle",
         "git-ref-summary-proposal-check",
+        "git-ref-summary-implementation-plan-check",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -867,10 +937,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "review-doc-hashes.json" in reproduction_map
     assert "23. `make git-commit-metadata-source-review-bundle`" in reproduction_map
     assert "24. `make git-ref-summary-proposal-check`" in reproduction_map
-    assert "25. `make review-packet-bundle`" in reproduction_map
-    assert "26. `make review-packet-consolidated`" in reproduction_map
-    assert "27. `make packet-redaction-scan`" in reproduction_map
-    assert "28. `make docs-site`" in reproduction_map
+    assert "25. `make git-ref-summary-implementation-plan-check`" in reproduction_map
+    assert "26. `make review-packet-bundle`" in reproduction_map
+    assert "27. `make review-packet-consolidated`" in reproduction_map
+    assert "28. `make packet-redaction-scan`" in reproduction_map
+    assert "29. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 

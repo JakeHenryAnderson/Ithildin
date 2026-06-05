@@ -31,4 +31,5 @@ tool planning remains blocked until external/source review closure, accepted-ris
 separate explicit capability decision are recorded. The bounded v0.9 `git.show.commit_metadata`
 implementation has its own separate gate and internal xhigh lane-closure summary; it does not unlock
 broader capability implementation. The follow-on `git.show.ref_summary` material is design-only and
-checked with `make git-ref-summary-proposal-check`; it does not authorize runtime implementation.
+checked with `make git-ref-summary-proposal-check` and
+`make git-ref-summary-implementation-plan-check`; it does not authorize runtime implementation.
