@@ -105,6 +105,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.9-next-read-only-capability-seed.md",
     "docs/codex/v0.9-git-ref-summary-proposal-review.md",
     "docs/codex/read-only-local-metadata-contract.md",
+    "docs/codex/read-only-capability-inventory.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",
     "docs/codex/read-only-capability-source-review-template.md",

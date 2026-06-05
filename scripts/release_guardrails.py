@@ -62,6 +62,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "tool-surface-invariant-gate",
     "no-new-powers-guardrail",
     "read-only-metadata-capability-check",
+    "read-only-capability-inventory-gate",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",

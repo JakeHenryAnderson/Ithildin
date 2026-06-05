@@ -120,6 +120,7 @@ externally closed.
 - [v0.9 Next Read-Only Capability Seed](v0.9-next-read-only-capability-seed.md)
 - [v0.9 git.show.ref_summary Proposal Review](v0.9-git-ref-summary-proposal-review.md)
 - [Read-Only Local Metadata Capability Contract](read-only-local-metadata-contract.md)
+- [Read-Only Capability Inventory](read-only-capability-inventory.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)
 - [Read-Only Capability Source Review Template](read-only-capability-source-review-template.md)

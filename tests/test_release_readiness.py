@@ -38,6 +38,7 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
     release_evidence,
@@ -511,6 +512,46 @@ def test_read_only_metadata_capability_check_is_wired() -> None:
         assert rel_path in review_docs.REVIEW_DOCS
         assert rel_path in docs_site
         assert title in index
+
+
+def test_read_only_capability_inventory_gate_is_wired() -> None:
+    report = read_only_capability_inventory_gate.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    doc = Path("docs/codex/read-only-capability-inventory.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["capability_count"] == 2
+    assert report["tool_count"] == 12
+    assert report["new_power_classes_allowed"] is False
+    assert {capability["tool_name"] for capability in report["capabilities"]} == {
+        "git.show.commit_metadata",
+        "git.show.ref_summary",
+    }
+    for phrase in [
+        "Status: approved read-only metadata inventory",
+        "git.show.commit_metadata",
+        "git.show.ref_summary",
+        "tool count `12`",
+        "no shell",
+        "no broad filesystem writes",
+        "no arbitrary Git command execution",
+        "Broader capability expansion remains blocked",
+    ]:
+        assert phrase in doc
+    assert "make read-only-capability-inventory-gate" in readme
+    assert "read-only-capability-inventory-gate:" in makefile
+    assert "read-only-capability-inventory-gate" in release_check_body
+    assert (
+        "read-only-capability-inventory-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Read-Only Capability Inventory" in index
+    assert "docs/codex/read-only-capability-inventory.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/read-only-capability-inventory.md" in docs_site
 
 
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
@@ -1116,6 +1157,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "git-ref-summary-implementation-gate",
         "git-ref-summary-source-review-bundle",
         "read-only-metadata-capability-check",
+        "read-only-capability-inventory-gate",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1134,10 +1176,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "26. `make git-ref-summary-implementation-gate`" in reproduction_map
     assert "27. `make git-ref-summary-source-review-bundle`" in reproduction_map
     assert "28. `make read-only-metadata-capability-check`" in reproduction_map
-    assert "29. `make review-packet-bundle`" in reproduction_map
-    assert "30. `make review-packet-consolidated`" in reproduction_map
-    assert "31. `make packet-redaction-scan`" in reproduction_map
-    assert "32. `make docs-site`" in reproduction_map
+    assert "29. `make read-only-capability-inventory-gate`" in reproduction_map
+    assert "30. `make review-packet-bundle`" in reproduction_map
+    assert "31. `make review-packet-consolidated`" in reproduction_map
+    assert "32. `make packet-redaction-scan`" in reproduction_map
+    assert "33. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
