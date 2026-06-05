@@ -11,7 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import read_only_capability_inventory_gate, v09_design_only_gate
+from scripts import tool_surface_invariant_gate, v09_design_only_gate
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_DOC = ROOT / "docs/codex/capability-proposals/project-manifest-summary.md"
@@ -88,17 +88,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"proposal contains forbidden implementation phrase: {phrase}")
 
     design_gate = v09_design_only_gate.build_report(repo_root)
-    inventory_gate = read_only_capability_inventory_gate.build_report(repo_root)
+    tool_surface = tool_surface_invariant_gate.build_report(repo_root)
     failures.extend(f"v0.9 design-only gate: {failure}" for failure in design_gate["failures"])
-    failures.extend(f"inventory gate: {failure}" for failure in inventory_gate["failures"])
+    failures.extend(f"tool-surface: {failure}" for failure in tool_surface["failures"])
 
     return _report(
         failures,
         {
             "proposal_path": PROPOSAL_DOC.relative_to(ROOT).as_posix(),
             "v09_baseline_commit": design_gate["evidence"].get("v09_baseline_commit"),
-            "approved_read_only_capabilities": inventory_gate.get("capability_count"),
-            "tool_count": inventory_gate.get("tool_count"),
+            "tool_count": tool_surface.get("tool_count"),
         },
     )
 

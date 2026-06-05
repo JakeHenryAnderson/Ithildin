@@ -277,6 +277,37 @@ input_schema:
     )
 
 
+def write_project_manifest_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("project-manifest-summary.yaml").write_text(
+        """
+name: project.manifest.summary
+version: 1.0.0
+title: Summarize project manifests
+risk: read
+category: project
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root:
+      type: string
+    manifest_kinds:
+      type: array
+      items:
+        type: string
+    limit:
+      type: integer
+    workspace_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 @dataclass(frozen=True)
 class McpAdapterHarness:
     adapter: IthildinMcpAdapter
@@ -302,6 +333,7 @@ def make_adapter_harness(
     write_http_fetch_manifest(manifest_dir)
     write_git_commit_metadata_manifest(manifest_dir)
     write_git_ref_summary_manifest(manifest_dir)
+    write_project_manifest_summary_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
         """
 name: internal.hidden
@@ -322,6 +354,15 @@ input_schema:
     workspace_root = tmp_path / "workspace"
     workspace_root.mkdir()
     workspace_root.joinpath("README.md").write_text("hello from mcp\n", encoding="utf-8")
+    workspace_root.joinpath("package.json").write_text(
+        json.dumps(
+            {
+                "scripts": {"deploy": "TOKEN=secret npm publish"},
+                "dependencies": {"internal-package": "1.0.0"},
+            }
+        ),
+        encoding="utf-8",
+    )
     run_git(workspace_root, ["init"])
     run_git(workspace_root, ["config", "user.email", "test@example.com"])
     run_git(workspace_root, ["config", "user.name", "Test User"])
@@ -406,6 +447,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "git.show.commit_metadata",
         "git.show.ref_summary",
         "http.fetch",
+        "project.manifest.summary",
     ]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
 
@@ -435,6 +477,7 @@ principals:
         "fs.read",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "project.manifest.summary",
     ]
 
 
@@ -518,6 +561,28 @@ def test_mcp_call_returns_real_git_ref_summary_output(tmp_path: Path) -> None:
     assert all(ref["resolved_commit_hash"] == harness.commit_hash for ref in refs)
     assert "safe/topic" not in json.dumps(result.structuredContent)
     assert "refs/heads" not in json.dumps(result.structuredContent)
+
+
+def test_mcp_call_returns_real_project_manifest_summary_output(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "project.manifest.summary",
+            {"manifest_kinds": ["package.json"], "limit": 5},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert result.structuredContent["manifest_count"] == 1
+    output_policy = cast(dict[str, object], result.structuredContent["output_policy"])
+    assert output_policy["dependency_names_included"] is False
+    assert output_policy["package_script_values_included"] is False
+    dumped = json.dumps(result.structuredContent)
+    assert "internal-package" not in dumped
+    assert "TOKEN=secret" not in dumped
 
 
 def test_mcp_call_denies_registered_tool_not_exposed_over_mcp(tmp_path: Path) -> None:

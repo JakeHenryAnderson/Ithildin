@@ -40,15 +40,29 @@ APPROVED_CAPABILITIES = [
         "implementation_gate": "git-ref-summary-implementation-gate",
         "source_review_bundle": "git-ref-summary-source-review-bundle",
     },
+    {
+        "tool_name": "project.manifest.summary",
+        "manifest": "tool-manifests/project-manifest-summary.yaml",
+        "proposal": "docs/codex/capability-proposals/project-manifest-summary.md",
+        "implementation_plan": (
+            "docs/codex/capability-implementation-plans/project-manifest-summary.md"
+        ),
+        "implementation": "docs/codex/v3-project-manifest-summary-implementation.md",
+        "source_review": "docs/codex/v3-project-manifest-summary-source-review.md",
+        "implementation_gate": "project-manifest-summary-implementation-gate",
+        "source_review_bundle": "project-manifest-summary-source-review-bundle",
+    },
 ]
 REQUIRED_INVENTORY_PHRASES = [
     "Status: approved read-only metadata inventory",
     "git.show.commit_metadata",
     "git.show.ref_summary",
-    "tool count `12`",
+    "project.manifest.summary",
+    "tool count `13`",
     "no shell",
     "no broad filesystem writes",
     "no arbitrary Git command execution",
+    "no package-manager execution",
     "Broader capability expansion remains blocked",
 ]
 
@@ -86,11 +100,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             if phrase not in text:
                 failures.append(f"inventory doc is missing phrase: {phrase}")
 
-    implemented_git_show_tools = sorted(_implemented_git_show_tools(repo_root))
+    implemented_git_show_tools = sorted(_implemented_read_only_metadata_tools(repo_root))
     approved_names = sorted(str(capability["tool_name"]) for capability in APPROVED_CAPABILITIES)
     if implemented_git_show_tools != approved_names:
         failures.append(
-            "implemented git.show inventory drifted: "
+            "implemented read-only metadata inventory drifted: "
             f"expected {approved_names}, found {implemented_git_show_tools}"
         )
 
@@ -125,14 +139,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     }
 
 
-def _implemented_git_show_tools(repo_root: Path) -> list[str]:
+def _implemented_read_only_metadata_tools(repo_root: Path) -> list[str]:
     names: list[str] = []
     for manifest_path in sorted((repo_root / "tool-manifests").glob("*.yaml")):
         loaded = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         if not isinstance(loaded, dict):
             continue
         name = loaded.get("name")
-        if isinstance(name, str) and name.startswith("git.show."):
+        if isinstance(name, str) and (
+            name.startswith("git.show.") or name == "project.manifest.summary"
+        ):
             names.append(name)
     return names
 
@@ -159,8 +175,9 @@ def _validate_capability(
                 failures.append(f"{tool_name}: manifest name drifted")
             if manifest.get("risk") != "read":
                 failures.append(f"{tool_name}: manifest risk must stay read")
-            if manifest.get("category") != "git":
-                failures.append(f"{tool_name}: manifest category must stay git")
+            expected_category = "project" if tool_name.startswith("project.") else "git"
+            if manifest.get("category") != expected_category:
+                failures.append(f"{tool_name}: manifest category must stay {expected_category}")
             if not bool((manifest.get("mcp") or {}).get("exposed")):
                 failures.append(f"{tool_name}: manifest MCP exposure must be explicit")
             schema = manifest.get("input_schema")

@@ -12,6 +12,7 @@ from ithildin_policy_core import PolicyEngine
 from ithildin_schemas import (
     AuditEventType,
     JsonObject,
+    JsonValue,
     PolicyDecisionValue,
     PolicyInput,
     sha256_digest,
@@ -870,6 +871,49 @@ def _with_redaction_summary(metadata: JsonObject, summary: RedactionSummary) -> 
 
 def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonObject:
     metadata: JsonObject = {"executor": "in_process_read"}
+    if tool_name == "project.manifest.summary":
+        output_policy = content.get("output_policy")
+        for key in ("manifest_count",):
+            value = content.get(key)
+            if isinstance(value, int) and not isinstance(value, bool):
+                metadata[key] = value
+        truncated = content.get("truncated")
+        if isinstance(truncated, bool):
+            metadata["truncated"] = truncated
+        root = content.get("root")
+        if isinstance(root, str):
+            metadata["root"] = root
+        manifests = content.get("manifests")
+        if isinstance(manifests, list):
+            kinds = []
+            parse_statuses = []
+            for item in manifests:
+                if isinstance(item, dict):
+                    kind = item.get("kind")
+                    parse_status = item.get("parse_status")
+                    if isinstance(kind, str):
+                        kinds.append(kind)
+                    if isinstance(parse_status, str):
+                        parse_statuses.append(parse_status)
+            metadata["manifest_kinds"] = cast(JsonValue, kinds)
+            metadata["parse_statuses"] = cast(JsonValue, parse_statuses)
+        if isinstance(output_policy, dict):
+            for key in (
+                "file_contents_included",
+                "dependency_names_included",
+                "dependency_versions_included",
+                "package_names_included",
+                "package_script_names_included",
+                "package_script_values_included",
+                "registry_or_network_access_used",
+                "package_manager_execution_used",
+                "recursive_discovery_used",
+            ):
+                value = output_policy.get(key)
+                if isinstance(value, bool):
+                    metadata[key] = value
+        return metadata
+
     if tool_name != "git.show.ref_summary":
         return metadata
 

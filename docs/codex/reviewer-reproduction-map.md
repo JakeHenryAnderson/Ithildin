@@ -202,7 +202,7 @@ work must stop for status, reassessment, or external consultation.
 
    Expected outcome: validates the approved bounded read-only `git.show.ref_summary`
    implementation boundary, including no raw ref names, no stable ref-name hashes, no remote refs,
-   no shell, no raw diffs, no file contents, and tool count `12`.
+   no shell, no raw diffs, no file contents, and tool count `13`.
 
 27. `make git-ref-summary-source-review-bundle`
 
@@ -249,26 +249,34 @@ work must stop for status, reassessment, or external consultation.
    `project.manifest.summary`, including no shell, no package-manager execution, no registry/network
    access, no dependency names, no script values, and no new powerful tool class.
 
-34. `make review-packet-bundle`
+34. `make project-manifest-summary-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.9/project-manifest-summary-source-review/`. This attaches the
+   `project.manifest.summary` manifest, implementation path, focused tests, policy-parity fixture,
+   implementation record, no-new-powers evidence, command evidence, and artifact hashes for
+   source-level review.
+
+35. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-35. `make review-packet-consolidated`
+36. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-36. `make packet-redaction-scan`
+37. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-37. `make docs-site`
+38. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -286,6 +294,7 @@ work must stop for status, reassessment, or external consultation.
 - Release/evidence automation source-review bundle: `var/review-packets/v0.7/release-automation-source-review/`
 - git.show.commit_metadata source-review bundle: `var/review-packets/v0.9/git-commit-metadata-source-review/`
 - git.show.ref_summary source-review bundle: `var/review-packets/v0.9/git-ref-summary-source-review/`
+- project.manifest.summary source-review bundle: `var/review-packets/v0.9/project-manifest-summary-source-review/`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

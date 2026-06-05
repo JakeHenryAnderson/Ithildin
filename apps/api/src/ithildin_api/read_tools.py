@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import re
 import selectors
@@ -9,7 +11,9 @@ import shlex
 import stat
 import subprocess
 import time
+import tomllib
 import unicodedata
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,11 +34,13 @@ READ_TOOL_NAMES = frozenset(
         "git.log",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "project.manifest.summary",
     }
 )
 
 _GIT_COMMIT_METADATA_TOOL = "git.show.commit_metadata"
 _GIT_REF_SUMMARY_TOOL = "git.show.ref_summary"
+_PROJECT_MANIFEST_SUMMARY_TOOL = "project.manifest.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
@@ -45,6 +51,42 @@ _COMMIT_METADATA_CHANGED_FILE_LIMIT = 100
 _REF_SUMMARY_DEFAULT_LIMIT = 100
 _REF_SUMMARY_MAX_LIMIT = 200
 _REF_SUMMARY_NAME_BYTE_LIMIT = 240
+_PROJECT_MANIFEST_DEFAULT_LIMIT = 20
+_PROJECT_MANIFEST_MAX_LIMIT = 20
+_PROJECT_MANIFEST_MAX_TOTAL_BYTES = 262144
+_PROJECT_MANIFEST_ALLOWLIST = (
+    "package.json",
+    "pyproject.toml",
+    "go.mod",
+    "Cargo.toml",
+    "pom.xml",
+    "build.gradle",
+    "requirements.txt",
+    "Gemfile",
+    "composer.json",
+)
+_PROJECT_MANIFEST_ECOSYSTEMS = {
+    "package.json": "node",
+    "pyproject.toml": "python",
+    "go.mod": "go",
+    "Cargo.toml": "rust",
+    "pom.xml": "java",
+    "build.gradle": "gradle",
+    "requirements.txt": "python",
+    "Gemfile": "ruby",
+    "composer.json": "php",
+}
+_LOCKFILE_PRESENCE = {
+    "package.json": ("package-lock.json", "pnpm-lock.yaml", "yarn.lock"),
+    "pyproject.toml": ("poetry.lock", "uv.lock", "pdm.lock"),
+    "go.mod": ("go.sum",),
+    "Cargo.toml": ("Cargo.lock",),
+    "pom.xml": (),
+    "build.gradle": ("gradle.lockfile",),
+    "requirements.txt": (),
+    "Gemfile": ("Gemfile.lock",),
+    "composer.json": ("composer.lock",),
+}
 _SENSITIVE_EXACT_PATH_PARTS = {
     ".env",
     "credentials.json",
@@ -159,6 +201,8 @@ class ReadToolExecutor:
             return self._commit_metadata_resource_from_arguments(arguments)
         if tool_name == _GIT_REF_SUMMARY_TOOL:
             return self._ref_summary_resource_from_arguments(arguments)
+        if tool_name == _PROJECT_MANIFEST_SUMMARY_TOOL:
+            return self._project_manifest_resource_from_arguments(arguments)
 
         path = _string_arg(arguments, "path", default=".")
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
@@ -229,6 +273,34 @@ class ReadToolExecutor:
         )
         return resource
 
+    def _project_manifest_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        root = _project_manifest_root(arguments)
+        resource: JsonObject = {
+            "type": "project_manifest",
+            "workspace_id": workspace_id,
+            "root": root,
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(root)
+            if not target.is_dir():
+                raise ReadToolError("project manifest root is not a directory")
+            _project_manifest_kinds(arguments)
+            _project_manifest_limit(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "root": filesystem.relative_path(target),
+                "manifest_kinds": cast(JsonValue, _project_manifest_kinds(arguments)),
+                "in_scope": True,
+            }
+        )
+        return resource
+
     def execute(self, tool_name: str, arguments: JsonObject) -> JsonObject:
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
         filesystem = self._filesystem(workspace_id)
@@ -257,6 +329,8 @@ class ReadToolExecutor:
             return git.commit_metadata(arguments)
         if tool_name == _GIT_REF_SUMMARY_TOOL:
             return git.ref_summary(arguments)
+        if tool_name == _PROJECT_MANIFEST_SUMMARY_TOOL:
+            return filesystem.project_manifest_summary(arguments)
         raise ReadToolError("unsupported read tool")
 
     def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
@@ -351,6 +425,66 @@ class FilesystemReadTools:
             "query": query,
             "matches": matches[: self.search_result_limit],
             "truncated": len(matches) >= self.search_result_limit,
+        }
+
+    def project_manifest_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_manifest_summary_arguments(arguments)
+        root_arg = _project_manifest_root(arguments)
+        manifest_kinds = _project_manifest_kinds(arguments)
+        limit = _project_manifest_limit(arguments)
+        root_path = self.resolve_existing_path(root_arg)
+        if not root_path.is_dir():
+            raise ReadToolError("project manifest root is not a directory")
+
+        root_relative = Path(self.relative_path(root_path))
+        found: list[tuple[str, Path]] = []
+        for kind in manifest_kinds:
+            candidate = root_path / kind
+            if not candidate.exists():
+                continue
+            relative = Path(kind) if self.relative_path(root_path) == "." else root_relative / kind
+            found.append((kind, self.resolve_existing_path(relative.as_posix())))
+
+        manifests: list[JsonValue] = []
+        total_bytes = 0
+        for kind, path in found[:limit]:
+            data = self.read_file_bytes(path)
+            total_bytes += len(data)
+            if total_bytes > _PROJECT_MANIFEST_MAX_TOTAL_BYTES:
+                raise ReadToolError("project manifest summary exceeds configured read limit")
+            manifests.append(
+                _project_manifest_record(
+                    manifest_id=f"manifest_{len(manifests) + 1:04d}",
+                    kind=kind,
+                    data=data,
+                    root_path=root_path,
+                )
+            )
+
+        return {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_MANIFEST_SUMMARY_TOOL,
+            "root": self.relative_path(root_path),
+            "manifest_count": len(manifests),
+            "truncated": len(found) > len(manifests),
+            "manifests": manifests,
+            "output_policy": {
+                "file_contents_included": False,
+                "dependency_names_included": False,
+                "dependency_versions_included": False,
+                "package_names_included": False,
+                "package_script_names_included": False,
+                "package_script_values_included": False,
+                "registry_or_network_access_used": False,
+                "package_manager_execution_used": False,
+                "recursive_discovery_used": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": {
+                "manifest_limit": limit,
+                "max_manifest_file_bytes": self.max_read_bytes,
+                "max_total_parsed_bytes": _PROJECT_MANIFEST_MAX_TOTAL_BYTES,
+            },
         }
 
     def resolve_existing_path(self, path: str) -> Path:
@@ -1021,6 +1155,322 @@ def _ref_summary_resolved_commit(
     if not _HEX_OBJECT_RE.fullmatch(candidate):
         raise ReadToolError("git ref summary commit metadata is invalid")
     return candidate.lower()
+
+
+def _validate_project_manifest_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "manifest_kinds", "limit"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project manifest summary received unsupported arguments")
+    _project_manifest_root(arguments)
+    _project_manifest_kinds(arguments)
+    _project_manifest_limit(arguments)
+
+
+def _project_manifest_root(arguments: JsonObject) -> str:
+    root = _string_arg(arguments, "root", default=".")
+    if not root:
+        raise ReadToolError("project manifest root must be a non-empty string")
+    return root
+
+
+def _project_manifest_kinds(arguments: JsonObject) -> list[str]:
+    raw = arguments.get("manifest_kinds")
+    if raw is None:
+        return list(_PROJECT_MANIFEST_ALLOWLIST)
+    if not isinstance(raw, list):
+        raise ReadToolError("manifest_kinds must be an array")
+    kinds: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            raise ReadToolError("manifest_kinds entries must be strings")
+        if item not in _PROJECT_MANIFEST_ALLOWLIST:
+            raise ReadToolError("manifest kind is not allowlisted")
+        if item in seen:
+            raise ReadToolError("manifest_kinds entries must be unique")
+        seen.add(item)
+        kinds.append(item)
+    if not kinds:
+        raise ReadToolError("manifest_kinds must not be empty")
+    return kinds
+
+
+def _project_manifest_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_PROJECT_MANIFEST_DEFAULT_LIMIT)
+    if limit < 1 or limit > _PROJECT_MANIFEST_MAX_LIMIT:
+        raise ReadToolError("project manifest summary limit is outside allowed bounds")
+    return limit
+
+
+def _project_manifest_record(
+    *,
+    manifest_id: str,
+    kind: str,
+    data: bytes,
+    root_path: Path,
+) -> JsonObject:
+    if b"\x00" in data:
+        raise ReadToolError("project manifest appears to be binary")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ReadToolError("project manifest is not valid UTF-8 text") from exc
+    digest = f"sha256:{hashlib.sha256(data).hexdigest()}"
+    parsed = _parse_project_manifest(kind, text)
+    lockfile_presence: JsonObject = {}
+    for lockfile in _LOCKFILE_PRESENCE.get(kind, ()):
+        lockfile_presence[lockfile] = (root_path / lockfile).is_file()
+    return {
+        "manifest_id": manifest_id,
+        "kind": kind,
+        "ecosystem": _PROJECT_MANIFEST_ECOSYSTEMS[kind],
+        "path_role": "root_manifest",
+        "size_bytes": len(data),
+        "sha256": digest,
+        "dependency_section_counts": parsed["dependency_section_counts"],
+        "script_count": parsed["script_count"],
+        "lockfile_presence": lockfile_presence,
+        "parse_status": parsed["parse_status"],
+        "parse_error_reason": parsed.get("parse_error_reason"),
+        "dependency_names_included": False,
+        "script_values_included": False,
+        "file_contents_included": False,
+    }
+
+
+def _parse_project_manifest(kind: str, text: str) -> JsonObject:
+    try:
+        if kind == "package.json":
+            return _parse_package_json_manifest(text)
+        if kind == "composer.json":
+            return _parse_composer_json_manifest(text)
+        if kind == "pyproject.toml":
+            return _parse_pyproject_manifest(text)
+        if kind == "Cargo.toml":
+            return _parse_cargo_manifest(text)
+        if kind == "go.mod":
+            return _parse_go_mod_manifest(text)
+        if kind == "pom.xml":
+            return _parse_pom_manifest(text)
+        if kind == "build.gradle":
+            return _parse_gradle_manifest(text)
+        if kind == "requirements.txt":
+            return _parse_requirements_manifest(text)
+        if kind == "Gemfile":
+            return _parse_gemfile_manifest(text)
+    except (ET.ParseError, json.JSONDecodeError, tomllib.TOMLDecodeError, ValueError):
+        return {
+            "dependency_section_counts": {},
+            "script_count": 0,
+            "parse_status": "parse_failed",
+            "parse_error_reason": "manifest parse failed safely",
+        }
+    raise ReadToolError("unsupported project manifest kind")
+
+
+def _parse_package_json_manifest(text: str) -> JsonObject:
+    payload = json.loads(text)
+    if not isinstance(payload, dict):
+        raise ValueError("package.json must be an object")
+    dependency_sections: JsonObject = {
+        section: _mapping_count(payload.get(section))
+        for section in (
+            "dependencies",
+            "devDependencies",
+            "peerDependencies",
+            "optionalDependencies",
+            "bundledDependencies",
+        )
+        if isinstance(payload.get(section), (dict, list))
+    }
+    return {
+        "dependency_section_counts": dependency_sections,
+        "script_count": _mapping_count(payload.get("scripts")),
+        "parse_status": "parsed",
+    }
+
+
+def _parse_composer_json_manifest(text: str) -> JsonObject:
+    payload = json.loads(text)
+    if not isinstance(payload, dict):
+        raise ValueError("composer.json must be an object")
+    return {
+        "dependency_section_counts": {
+            section: _mapping_count(payload.get(section))
+            for section in ("require", "require-dev")
+            if isinstance(payload.get(section), dict)
+        },
+        "script_count": _mapping_count(payload.get("scripts")),
+        "parse_status": "parsed",
+    }
+
+
+def _parse_pyproject_manifest(text: str) -> JsonObject:
+    payload = tomllib.loads(text)
+    project = payload.get("project")
+    tool = payload.get("tool")
+    dependency_counts: JsonObject = {}
+    if isinstance(project, dict):
+        dependencies = project.get("dependencies")
+        optional = project.get("optional-dependencies")
+        if isinstance(dependencies, list):
+            dependency_counts["project.dependencies"] = _string_list_count(dependencies)
+        if isinstance(optional, dict):
+            dependency_counts["project.optional-dependencies"] = sum(
+                _string_list_count(value) for value in optional.values() if isinstance(value, list)
+            )
+    if isinstance(payload.get("dependency-groups"), dict):
+        groups = payload["dependency-groups"]
+        dependency_counts["dependency-groups"] = sum(
+            _string_list_count(value) for value in groups.values() if isinstance(value, list)
+        )
+    script_count = 0
+    if isinstance(project, dict):
+        script_count += _mapping_count(project.get("scripts"))
+        script_count += _mapping_count(project.get("gui-scripts"))
+    if isinstance(tool, dict) and isinstance(tool.get("poetry"), dict):
+        poetry = tool["poetry"]
+        dependency_counts["tool.poetry.dependencies"] = _mapping_count(
+            poetry.get("dependencies")
+        )
+        dependency_counts["tool.poetry.group-dependencies"] = _poetry_group_dependency_count(
+            poetry.get("group")
+        )
+        script_count += _mapping_count(poetry.get("scripts"))
+    return {
+        "dependency_section_counts": dependency_counts,
+        "script_count": script_count,
+        "parse_status": "parsed",
+    }
+
+
+def _parse_cargo_manifest(text: str) -> JsonObject:
+    payload = tomllib.loads(text)
+    dependency_counts: JsonObject = {
+        section: _mapping_count(payload.get(section))
+        for section in ("dependencies", "dev-dependencies", "build-dependencies")
+        if isinstance(payload.get(section), dict)
+    }
+    return {
+        "dependency_section_counts": dependency_counts,
+        "script_count": 1 if _cargo_has_build_script(payload) else 0,
+        "parse_status": "parsed",
+    }
+
+
+def _parse_go_mod_manifest(text: str) -> JsonObject:
+    count = 0
+    in_require_block = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("//"):
+            continue
+        if line == "require (":
+            in_require_block = True
+            continue
+        if in_require_block and line == ")":
+            in_require_block = False
+            continue
+        if in_require_block:
+            count += 1
+        elif line.startswith("require "):
+            count += 1
+    return {
+        "dependency_section_counts": {"require": count} if count else {},
+        "script_count": 0,
+        "parse_status": "parsed",
+    }
+
+
+def _parse_pom_manifest(text: str) -> JsonObject:
+    root = ET.fromstring(text)
+    dependency_count = sum(
+        1 for element in root.iter() if _xml_local_name(element.tag) == "dependency"
+    )
+    return {
+        "dependency_section_counts": {"dependencies": dependency_count}
+        if dependency_count
+        else {},
+        "script_count": 0,
+        "parse_status": "parsed",
+    }
+
+
+def _parse_gradle_manifest(text: str) -> JsonObject:
+    dependency_markers = (
+        "implementation",
+        "api",
+        "compileOnly",
+        "runtimeOnly",
+        "testImplementation",
+        "testRuntimeOnly",
+    )
+    count = 0
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith(("//", "#")):
+            continue
+        if any(
+            line.startswith(marker + " ") or line.startswith(marker + "(")
+            for marker in dependency_markers
+        ):
+            count += 1
+    return {
+        "dependency_section_counts": {"dependencies": count} if count else {},
+        "script_count": 0,
+        "parse_status": "parsed",
+    }
+
+
+def _parse_requirements_manifest(text: str) -> JsonObject:
+    count = 0
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith(("#", "-")):
+            continue
+        count += 1
+    return {
+        "dependency_section_counts": {"requirements": count} if count else {},
+        "script_count": 0,
+        "parse_status": "parsed",
+    }
+
+
+def _parse_gemfile_manifest(text: str) -> JsonObject:
+    count = sum(1 for line in text.splitlines() if line.strip().startswith("gem "))
+    return {
+        "dependency_section_counts": {"gem": count} if count else {},
+        "script_count": 0,
+        "parse_status": "parsed",
+    }
+
+
+def _mapping_count(value: object) -> int:
+    return len(value) if isinstance(value, dict) else 0
+
+
+def _string_list_count(value: list[object]) -> int:
+    return sum(1 for item in value if isinstance(item, str))
+
+
+def _poetry_group_dependency_count(value: object) -> int:
+    if not isinstance(value, dict):
+        return 0
+    total = 0
+    for group in value.values():
+        if isinstance(group, dict):
+            total += _mapping_count(group.get("dependencies"))
+    return total
+
+
+def _cargo_has_build_script(payload: dict[str, object]) -> bool:
+    package = payload.get("package")
+    return isinstance(package, dict) and isinstance(package.get("build"), str)
+
+
+def _xml_local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
 
 
 def _path_type(path: Path) -> str:

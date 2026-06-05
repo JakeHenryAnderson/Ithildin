@@ -23,6 +23,7 @@ EXPECTED_TOOL_NAMES = [
     "git.show.ref_summary",
     "git.status",
     "http.fetch",
+    "project.manifest.summary",
 ]
 EXPECTED_TOOL_RISKS = {
     "fs.list": "read",
@@ -37,6 +38,7 @@ EXPECTED_TOOL_RISKS = {
     "git.show.ref_summary": "read",
     "git.status": "read",
     "http.fetch": "network",
+    "project.manifest.summary": "read",
 }
 FORBIDDEN_MANIFEST_MARKERS = [
     "shell",
@@ -114,6 +116,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(_check_git_commit_metadata_schema(manifest))
         if manifest_name == "git.show.ref_summary":
             failures.extend(_check_git_ref_summary_schema(manifest))
+        if manifest_name == "project.manifest.summary":
+            failures.extend(_check_project_manifest_summary_schema(manifest))
     if marker_hits:
         failures.append("manifest text references deferred or broad tool-power markers")
 
@@ -264,6 +268,68 @@ def _check_git_ref_summary_schema(manifest: dict[str, Any]) -> list[str]:
     if drift:
         failures.append(
             "git.show.ref_summary exposes forbidden caller-controlled fields: "
+            + ", ".join(drift)
+        )
+    return failures
+
+
+def _check_project_manifest_summary_schema(manifest: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    schema = manifest.get("input_schema")
+    if not isinstance(schema, dict):
+        return ["project.manifest.summary input_schema is missing or invalid"]
+    if schema.get("additionalProperties") is not False:
+        failures.append("project.manifest.summary must keep additionalProperties: false")
+    properties = schema.get("properties")
+    if not isinstance(properties, dict) or sorted(properties) != [
+        "limit",
+        "manifest_kinds",
+        "root",
+        "workspace_id",
+    ]:
+        failures.append("project.manifest.summary properties drifted")
+        return failures
+    kinds = properties.get("manifest_kinds")
+    if not isinstance(kinds, dict):
+        failures.append("project.manifest.summary manifest_kinds schema is invalid")
+    else:
+        items = kinds.get("items")
+        expected = [
+            "Cargo.toml",
+            "Gemfile",
+            "build.gradle",
+            "composer.json",
+            "go.mod",
+            "package.json",
+            "pom.xml",
+            "pyproject.toml",
+            "requirements.txt",
+        ]
+        if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected:
+            failures.append("project.manifest.summary manifest kind allowlist drifted")
+        if kinds.get("uniqueItems") is not True:
+            failures.append("project.manifest.summary manifest_kinds must stay unique")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("minimum") != 1 or limit.get("maximum") != 20:
+        failures.append("project.manifest.summary limit bounds drifted")
+    forbidden_inputs = {
+        "argv",
+        "args",
+        "command",
+        "glob",
+        "recursive",
+        "registry_url",
+        "include_file_contents",
+        "include_dependency_names",
+        "include_script_values",
+        "headers",
+        "body",
+    }
+    exposed = set(properties)
+    drift = sorted(exposed & forbidden_inputs)
+    if drift:
+        failures.append(
+            "project.manifest.summary exposes forbidden caller-controlled fields: "
             + ", ".join(drift)
         )
     return failures

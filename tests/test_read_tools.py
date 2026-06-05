@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import unicodedata
@@ -737,6 +738,146 @@ def test_git_ref_summary_resource_denies_parent_repo_outside_workspace(
 
     assert resource["in_scope"] is False
     assert resource["scope_error"] == "git repository escapes the workspace scope"
+
+
+def test_project_manifest_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("package.json").write_text(
+        json.dumps(
+            {
+                "name": "private-service",
+                "scripts": {"deploy": "TOKEN=secret npm publish"},
+                "dependencies": {"internal-package": "1.0.0"},
+                "devDependencies": {"test-helper": "2.0.0"},
+                "repository": "https://example.test/private/repo",
+            }
+        ),
+        encoding="utf-8",
+    )
+    root.joinpath("package-lock.json").write_text("{}", encoding="utf-8")
+
+    summary = filesystem.project_manifest_summary(
+        {"root": ".", "manifest_kinds": ["package.json"], "limit": 5}
+    )
+
+    assert summary["tool_name"] == "project.manifest.summary"
+    assert summary["manifest_count"] == 1
+    manifest = cast(list[dict[str, object]], summary["manifests"])[0]
+    assert manifest["kind"] == "package.json"
+    assert manifest["ecosystem"] == "node"
+    assert manifest["dependency_section_counts"] == {
+        "dependencies": 1,
+        "devDependencies": 1,
+    }
+    assert manifest["script_count"] == 1
+    assert manifest["dependency_names_included"] is False
+    assert manifest["script_values_included"] is False
+    assert manifest["file_contents_included"] is False
+    assert cast(dict[str, object], manifest["lockfile_presence"])["package-lock.json"] is True
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["dependency_names_included"] is False
+    assert output_policy["package_script_values_included"] is False
+    assert output_policy["registry_or_network_access_used"] is False
+    dumped = json_dump(summary)
+    assert "private-service" not in dumped
+    assert "internal-package" not in dumped
+    assert "deploy" not in dumped
+    assert "TOKEN=secret" not in dumped
+    assert "repository" not in dumped
+
+
+def test_project_manifest_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("pyproject.toml").write_text(
+        """
+[project]
+dependencies = ["private-lib==1.0", "another-lib"]
+[project.optional-dependencies]
+dev = ["pytest"]
+[project.scripts]
+private-cli = "private.module:main"
+""",
+        encoding="utf-8",
+    )
+    root.joinpath("requirements.txt").write_text(
+        "private-lib==1.0\n--index-url https://secret.example/simple\nvisible\n",
+        encoding="utf-8",
+    )
+
+    summary = filesystem.project_manifest_summary(
+        {"manifest_kinds": ["pyproject.toml", "requirements.txt"]}
+    )
+
+    manifests = cast(list[dict[str, object]], summary["manifests"])
+    assert [manifest["kind"] for manifest in manifests] == [
+        "pyproject.toml",
+        "requirements.txt",
+    ]
+    pyproject = manifests[0]
+    requirements = manifests[1]
+    assert pyproject["dependency_section_counts"] == {
+        "project.dependencies": 2,
+        "project.optional-dependencies": 1,
+    }
+    assert pyproject["script_count"] == 1
+    assert requirements["dependency_section_counts"] == {"requirements": 2}
+    dumped = json_dump(summary)
+    assert "private-lib" not in dumped
+    assert "secret.example" not in dumped
+    assert "private-cli" not in dumped
+
+
+def test_project_manifest_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "package.json"},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "bad\x1fpath"},
+        {"manifest_kinds": ["../../secrets.env"]},
+        {"manifest_kinds": ["package.json", "package.json"]},
+        {"manifest_kinds": []},
+        {"glob": "**/package.json"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_script_values": True},
+        {"include_dependency_names": True},
+        {"registry_url": "https://registry.example.test"},
+        {"command": "npm install"},
+        {"argv": ["npm", "ls"]},
+        {"limit": 0},
+        {"limit": 21},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_manifest_summary(cast(JsonObject, arguments))
+
+
+def test_project_manifest_summary_malformed_manifest_fails_safely(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    filesystem.workspace_root.joinpath("package.json").write_text(
+        '{"dependencies":{"private-package":"1.0"', encoding="utf-8"
+    )
+
+    summary = filesystem.project_manifest_summary({"manifest_kinds": ["package.json"]})
+
+    manifest = cast(list[dict[str, object]], summary["manifests"])[0]
+    assert manifest["parse_status"] == "parse_failed"
+    assert manifest["parse_error_reason"] == "manifest parse failed safely"
+    assert "private-package" not in json_dump(summary)
+
+
+def test_project_manifest_summary_denies_symlinked_manifest(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    outside = tmp_path / "outside-package.json"
+    outside.write_text("{}", encoding="utf-8")
+    filesystem.workspace_root.joinpath("package.json").symlink_to(outside)
+
+    with pytest.raises(ReadToolError, match="symlink"):
+        filesystem.project_manifest_summary({"manifest_kinds": ["package.json"]})
 
 
 def test_git_diff_denies_hidden_or_sensitive_tracked_paths(tmp_path: Path) -> None:

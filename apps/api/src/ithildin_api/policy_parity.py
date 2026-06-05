@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -193,6 +194,15 @@ class _PolicyParityHarness:
         workspace_root.mkdir(parents=True, exist_ok=True)
         workspace_root.joinpath("README.md").write_text(
             "policy parity fixture\n",
+            encoding="utf-8",
+        )
+        workspace_root.joinpath("package.json").write_text(
+            json.dumps(
+                {
+                    "scripts": {"test": "pytest"},
+                    "dependencies": {"private-package": "1.0.0"},
+                }
+            ),
             encoding="utf-8",
         )
         _run_git(workspace_root, ["init"])

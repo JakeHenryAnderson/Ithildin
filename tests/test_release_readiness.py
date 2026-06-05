@@ -41,6 +41,7 @@ from scripts import (
     project_manifest_summary_implementation_gate,
     project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
+    project_manifest_summary_source_review_bundle,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
@@ -255,7 +256,7 @@ def test_v08_capability_design_gate_is_wired() -> None:
     assert report["capability_design_only"] == "conditional_go"
     assert report["capability_implementation"] == "no_go"
     assert report["new_governed_tool_powers"] == "no_go"
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     assert report["evidence"]["superseded_by_v09_implementation"] is True
     assert report["evidence"]["v08_baseline_commit"] == "f993cec"
     assert report["evidence"]["accepted_risks_constraining_design"] == 1
@@ -287,7 +288,7 @@ def test_v09_design_only_charter_and_gate_are_wired() -> None:
     assert report["capability_implementation"] == "no_go"
     assert report["new_governed_tool_powers"] == "no_go"
     assert report["evidence"]["v09_baseline_commit"] == "de32893"
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     assert report["evidence"]["superseded_by_v09_implementation"] is True
     for required in [
         "v0.9 starts design-only capability planning",
@@ -323,7 +324,7 @@ def test_git_commit_metadata_proposal_check_is_wired() -> None:
     assert report["proposal"] == "git.show.commit_metadata"
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     for required in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -375,7 +376,7 @@ def test_git_ref_summary_proposal_check_is_wired() -> None:
     assert report["proposal"] == "git.show.ref_summary"
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     for required in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -430,7 +431,7 @@ def test_git_ref_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -491,7 +492,7 @@ def test_read_only_metadata_capability_check_is_wired() -> None:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True
-    assert report["tool_count"] == 12
+    assert report["tool_count"] == 13
     assert report["new_power_classes_allowed"] is False
     assert "make read-only-metadata-capability-check" in readme
     assert "read-only-metadata-capability-check:" in makefile
@@ -528,21 +529,24 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
     doc = Path("docs/codex/read-only-capability-inventory.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["capability_count"] == 2
-    assert report["tool_count"] == 12
+    assert report["capability_count"] == 3
+    assert report["tool_count"] == 13
     assert report["new_power_classes_allowed"] is False
     assert {capability["tool_name"] for capability in report["capabilities"]} == {
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "project.manifest.summary",
     }
     for phrase in [
         "Status: approved read-only metadata inventory",
         "git.show.commit_metadata",
         "git.show.ref_summary",
-        "tool count `12`",
+        "project.manifest.summary",
+        "tool count `13`",
         "no shell",
         "no broad filesystem writes",
         "no arbitrary Git command execution",
+        "no package-manager execution",
         "Broader capability expansion remains blocked",
     ]:
         assert phrase in doc
@@ -573,8 +577,8 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
     assert report["candidate"] == "project.manifest.summary"
     assert report["candidate_status"] == "design_only"
     assert report["implementation_allowed"] is False
-    assert report["tool_count"] == 12
-    assert report["approved_read_only_capabilities"] == 2
+    assert report["tool_count"] == 13
+    assert report["approved_read_only_capabilities"] == 3
     for phrase in [
         "Status: design-only candidate evaluation",
         "project.manifest.summary",
@@ -616,7 +620,7 @@ def test_project_manifest_summary_proposal_check_is_wired() -> None:
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     for phrase in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -674,7 +678,7 @@ def test_project_manifest_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -748,12 +752,13 @@ def test_project_manifest_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "project.manifest.summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 12
+    assert report["tool_count"] == 13
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implemented"] is True
     for required in [
-        "approved for later bounded read-only implementation",
-        "does not add a tool manifest",
+        "bounded read-only runtime implementation",
+        "adds one tool manifest",
         "approved_limited_read_only",
         "risk `read`",
         "category `project`",
@@ -784,6 +789,112 @@ def test_project_manifest_summary_implementation_gate_is_wired() -> None:
     assert "docs/codex/v3-project-manifest-summary-implementation.md" in docs_site
 
 
+def test_project_manifest_summary_source_review_bundle_is_wired(tmp_path: Path) -> None:
+    output_dir = project_manifest_summary_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=tmp_path / "project-manifest-summary-source-review",
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected_files = {
+        "00_PROJECT_MANIFEST_SUMMARY_SOURCE_REVIEW_INDEX.md",
+        "01_PROJECT_MANIFEST_SUMMARY_SOURCE_REVIEW_PROMPT.md",
+        "02_PROJECT_MANIFEST_SUMMARY_IMPLEMENTATION_PACKET.md",
+        "03_PROJECT_MANIFEST_SUMMARY_SOURCE_BUNDLE.md",
+        "04_PROJECT_MANIFEST_SUMMARY_TESTS_BUNDLE.md",
+        "05_PROJECT_MANIFEST_SUMMARY_CONTRACTS_BUNDLE.md",
+        "06_PROJECT_MANIFEST_SUMMARY_EVIDENCE.md",
+        "07_PROJECT_MANIFEST_SUMMARY_FOCUSED_TESTS.txt",
+        "08_PROJECT_MANIFEST_SUMMARY_INTAKE_COMMANDS.md",
+        "project-manifest-summary-source-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected_files
+
+    index = output_dir.joinpath(
+        "00_PROJECT_MANIFEST_SUMMARY_SOURCE_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_PROJECT_MANIFEST_SUMMARY_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    implementation_packet = output_dir.joinpath(
+        "02_PROJECT_MANIFEST_SUMMARY_IMPLEMENTATION_PACKET.md"
+    ).read_text(encoding="utf-8")
+    source_bundle = output_dir.joinpath(
+        "03_PROJECT_MANIFEST_SUMMARY_SOURCE_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    tests_bundle = output_dir.joinpath(
+        "04_PROJECT_MANIFEST_SUMMARY_TESTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    contracts_bundle = output_dir.joinpath(
+        "05_PROJECT_MANIFEST_SUMMARY_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    evidence = output_dir.joinpath("06_PROJECT_MANIFEST_SUMMARY_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    focused = output_dir.joinpath(
+        "07_PROJECT_MANIFEST_SUMMARY_FOCUSED_TESTS.txt"
+    ).read_text(encoding="utf-8")
+    intake = output_dir.joinpath(
+        "08_PROJECT_MANIFEST_SUMMARY_INTAKE_COMMANDS.md"
+    ).read_text(encoding="utf-8")
+
+    assert "`project.manifest.summary` lane" in index
+    assert "EXT-PMS-###" in prompt
+    assert "no package-manager execution" in prompt
+    assert "dependency-name disclosure" in index
+    assert "Implementation Gate JSON" in implementation_packet
+    assert "apps/api/src/ithildin_api/read_tools.py" in source_bundle
+    assert "apps/api/src/ithildin_api/tool_calls.py" in source_bundle
+    assert "apps/mcp-server/src/ithildin_mcp_server/server.py" in source_bundle
+    assert "tool-manifests/project-manifest-summary.yaml" in source_bundle
+    assert "policies/tests/parity.yaml" in tests_bundle
+    assert "tests/test_manifest_change_review.py" in tests_bundle
+    assert "docs/codex/v3-project-manifest-summary-implementation.md" in contracts_bundle
+    assert "docs/codex/metadata-privacy-policy.md" in contracts_bundle
+    assert "make project-manifest-summary-implementation-gate" in evidence
+    assert "make policy-parity" in evidence
+    assert "tests/test_read_tools.py" in focused
+    assert "tests/test_mcp_adapter.py" in focused
+    assert '--area "project-manifest-summary"' in intake
+
+    hashes = json.loads(
+        output_dir.joinpath(
+            "project-manifest-summary-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+    assert hashed_paths == expected_files - {
+        "project-manifest-summary-source-review-artifact-hashes.json"
+    }
+    assert all(entry["sha256"].startswith("sha256:") for entry in hashes)
+    assert all(entry["bytes"] > 0 for entry in hashes)
+    implementation_hash = next(
+        entry["sha256"]
+        for entry in hashes
+        if entry["path"] == "02_PROJECT_MANIFEST_SUMMARY_IMPLEMENTATION_PACKET.md"
+    )
+    assert f"Implementation packet SHA-256: `{implementation_hash}`" in index
+    assert f"Reviewed implementation packet hash: `{implementation_hash}`" in prompt
+    assert f'--reviewed-packet-hash "{implementation_hash}"' in intake
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    index_doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    assert "make project-manifest-summary-source-review-bundle" in readme
+    assert "project-manifest-summary-source-review-bundle:" in makefile
+    assert "make project-manifest-summary-source-review-bundle" in reproduction
+    assert "var/review-packets/v0.9/project-manifest-summary-source-review/" in reproduction
+    assert "v3 project.manifest.summary Source Review Handoff" in index_doc
+    assert "docs/codex/v3-project-manifest-summary-source-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-manifest-summary-source-review.md" in docs_site
+
+
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
     report = git_commit_metadata_implementation_plan_check.build_report(Path.cwd())
     doc = Path(
@@ -800,7 +911,7 @@ def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 12
+    assert report["evidence"]["tool_count"] == 13
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -858,7 +969,7 @@ def test_git_commit_metadata_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "git.show.commit_metadata"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 12
+    assert report["tool_count"] == 13
     assert report["new_power_classes_allowed"] is False
     for required in [
         "approved v0.9 implementation",
@@ -1003,7 +1114,7 @@ def test_git_ref_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "git.show.ref_summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 12
+    assert report["tool_count"] == 13
     assert report["new_power_classes_allowed"] is False
     for required in [
         "approved v0.9 implementation",
@@ -1194,7 +1305,7 @@ def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
         "Commit Evidence Reconciliation",
         "reviewed commit is what GPT 5.5 Pro / human reviewers inspect",
         "baseline commit is only the pre-v0.9 comparison point",
-        "Tool count: `12`",
+        "Tool count: `13`",
         "does not add or approve a tool manifest",
         "EXT-DESIGN-GIT-###",
         "implementation-planning sprint may be considered",
@@ -1392,6 +1503,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "project-manifest-summary-proposal-check",
         "project-manifest-summary-implementation-plan-check",
         "project-manifest-summary-implementation-gate",
+        "project-manifest-summary-source-review-bundle",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1415,10 +1527,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "31. `make project-manifest-summary-proposal-check`" in reproduction_map
     assert "32. `make project-manifest-summary-implementation-plan-check`" in reproduction_map
     assert "33. `make project-manifest-summary-implementation-gate`" in reproduction_map
-    assert "34. `make review-packet-bundle`" in reproduction_map
-    assert "35. `make review-packet-consolidated`" in reproduction_map
-    assert "36. `make packet-redaction-scan`" in reproduction_map
-    assert "37. `make docs-site`" in reproduction_map
+    assert "34. `make project-manifest-summary-source-review-bundle`" in reproduction_map
+    assert "35. `make review-packet-bundle`" in reproduction_map
+    assert "36. `make review-packet-consolidated`" in reproduction_map
+    assert "37. `make packet-redaction-scan`" in reproduction_map
+    assert "38. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
@@ -2402,7 +2515,7 @@ def test_capability_expansion_gate_reports_blocked_without_tool_drift() -> None:
     assert report["hard_failures"] == []
     assert report["capability_expansion_allowed"] is False
     assert report["decision"] == "blocked"
-    assert report["tool_count"] == 12
+    assert report["tool_count"] == 13
     assert "external_pending" in " ".join(report["blockers"])
     assert "make capability-expansion-gate" in readme
     assert "blocked result is healthy" in doc
@@ -2423,8 +2536,8 @@ def test_tool_surface_invariant_gate_is_wired_and_valid() -> None:
 
     assert report["valid"] is True
     assert report["failures"] == []
-    assert report["tool_count"] == 12
-    assert report["manifest_file_count"] == 12
+    assert report["tool_count"] == 13
+    assert report["manifest_file_count"] == 13
     assert report["tool_names"] == tool_surface_invariant_gate.EXPECTED_TOOL_NAMES
     assert report["forbidden_marker_hits"] == []
     assert any(
@@ -2908,7 +3021,7 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["valid"] is True
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
-    assert report["tool_count"] == 12
+    assert report["tool_count"] == 13
     assert report["completed_range"] == "152-180"
     assert report["planned_range"] == "none"
     assert report["open_accepted_risks"] == 0
@@ -2942,7 +3055,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
 
     assert report["valid"] is True
     assert report["failures"] == []
-    assert report["tool_count"] == 12
+    assert report["tool_count"] == 13
     assert report["new_power_classes_allowed"] is False
     assert report["deferred_boundaries_unchanged"] is True
     assert report["tool_names"] == [
@@ -2955,10 +3068,11 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
         "git.diff",
         "git.log",
         "git.show.commit_metadata",
-        "git.show.ref_summary",
-        "git.status",
-        "http.fetch",
-    ]
+            "git.show.ref_summary",
+            "git.status",
+            "http.fetch",
+            "project.manifest.summary",
+        ]
     assert "does not approve new powers" in doc
     assert "make no-new-powers-guardrail" in readme
     assert "170 - No-new-powers release guardrail v2 | Done" in backlog

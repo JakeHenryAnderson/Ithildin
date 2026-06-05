@@ -146,6 +146,8 @@ tamper-evident audit log.
   `project.manifest.summary` implementation-planning packet without authorizing runtime work.
 - `make project-manifest-summary-implementation-gate` - validate the bounded read-only
   implementation decision for `project.manifest.summary`.
+- `make project-manifest-summary-source-review-bundle` - build the focused source/test/evidence
+  handoff for the approved `project.manifest.summary` implementation.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
 - `make git-ref-summary-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.ref_summary` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
@@ -413,6 +415,14 @@ and is checked with `make git-ref-summary-implementation-gate`. It adds one boun
 ref metadata tool and does not unlock broader capability implementation. The focused source-review
 handoff is [docs/codex/v0.9-git-ref-summary-source-review.md](docs/codex/v0.9-git-ref-summary-source-review.md);
 the ignored output is `var/review-packets/v0.9/git-ref-summary-source-review/`.
+The `project.manifest.summary` implementation record is
+[docs/codex/v3-project-manifest-summary-implementation.md](docs/codex/v3-project-manifest-summary-implementation.md)
+and is checked with `make project-manifest-summary-implementation-gate`. It adds one bounded
+read-only project manifest metadata tool with no file contents, dependency names, script values,
+package-manager execution, registry/network access, or recursive discovery. The focused
+source-review handoff is
+[docs/codex/v3-project-manifest-summary-source-review.md](docs/codex/v3-project-manifest-summary-source-review.md);
+the ignored output is `var/review-packets/v0.9/project-manifest-summary-source-review/`.
 The shared expansion-prep hardening docs are
 [docs/codex/read-only-local-metadata-contract.md](docs/codex/read-only-local-metadata-contract.md),
 [docs/codex/read-only-capability-inventory.md](docs/codex/read-only-capability-inventory.md),

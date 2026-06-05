@@ -269,7 +269,9 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 250 - v3 next capability candidate evaluation | Done | [v3-next-capability-candidate-evaluation.md](v3-next-capability-candidate-evaluation.md), `make v3-next-capability-candidate-check`; selects `project.manifest.summary` as design-only candidate with implementation blocked. |
 | 251 - project.manifest.summary proposal | Done | [capability-proposals/project-manifest-summary.md](capability-proposals/project-manifest-summary.md), `make project-manifest-summary-proposal-check`; design-only, no runtime behavior. |
 | 252 - project.manifest.summary implementation plan | Done | [capability-implementation-plans/project-manifest-summary.md](capability-implementation-plans/project-manifest-summary.md), `make project-manifest-summary-implementation-plan-check`; implementation-planning only, no runtime behavior. |
-| 253 - project.manifest.summary implementation gate | Done | [v3-project-manifest-summary-implementation.md](v3-project-manifest-summary-implementation.md), `make project-manifest-summary-implementation-gate`; approves only a bounded read-only implementation decision. |
+| 253 - project.manifest.summary implementation gate | Done | [v3-project-manifest-summary-implementation.md](v3-project-manifest-summary-implementation.md), `make project-manifest-summary-implementation-gate`; records and validates the bounded read-only implementation boundary. |
+| 254 - project.manifest.summary implementation | Done | `project.manifest.summary` is implemented as a bounded read-only local project manifest metadata tool with no file contents, dependency names, script values, package-manager execution, registry/network access, recursive discovery, or broad filesystem powers. |
+| 255 - project.manifest.summary source-review handoff | Done | [v3-project-manifest-summary-source-review.md](v3-project-manifest-summary-source-review.md), `make project-manifest-summary-source-review-bundle`; prepares the focused source/test/evidence handoff for review. |
 
 ## Future Candidate Track
 

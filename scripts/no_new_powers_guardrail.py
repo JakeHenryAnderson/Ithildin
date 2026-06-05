@@ -17,10 +17,14 @@ from scripts.capability_expansion_gate import EXPECTED_DEFERRED_BOUNDARIES
 from scripts.tool_surface_invariant_gate import EXPECTED_TOOL_NAMES, EXPECTED_TOOL_RISKS
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED_CATEGORIES = {"filesystem", "git", "network"}
+ALLOWED_CATEGORIES = {"filesystem", "git", "network", "project"}
 ALLOWED_WRITE_TOOLS = {"fs.patch.apply", "fs.patch.propose"}
 ALLOWED_NETWORK_TOOLS = {"http.fetch"}
-ALLOWED_NEW_READ_TOOLS = {"git.show.commit_metadata", "git.show.ref_summary"}
+ALLOWED_NEW_READ_TOOLS = {
+    "git.show.commit_metadata",
+    "git.show.ref_summary",
+    "project.manifest.summary",
+}
 FORBIDDEN_TOOL_PREFIXES = (
     "shell.",
     "docker.",
@@ -170,6 +174,10 @@ def _validate_schema_fields(name: str, manifest: dict[str, Any]) -> list[str]:
         failures = _validate_git_ref_summary_schema(properties)
         if failures:
             return failures
+    if name == "project.manifest.summary":
+        failures = _validate_project_manifest_summary_schema(properties)
+        if failures:
+            return failures
     return []
 
 
@@ -201,6 +209,36 @@ def _validate_git_ref_summary_schema(properties: dict[str, Any]) -> list[str]:
             "git.show.ref_summary exposes forbidden selector fields: "
             + ", ".join(forbidden_nested)
         )
+    return failures
+
+
+def _validate_project_manifest_summary_schema(properties: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if sorted(properties) != ["limit", "manifest_kinds", "root", "workspace_id"]:
+        failures.append("project.manifest.summary must stay workspace/root/kinds/limit-only")
+        return failures
+    manifest_kinds = properties.get("manifest_kinds")
+    if not isinstance(manifest_kinds, dict):
+        return ["project.manifest.summary manifest_kinds schema is invalid"]
+    items = manifest_kinds.get("items")
+    if not isinstance(items, dict):
+        return ["project.manifest.summary manifest_kinds items schema is invalid"]
+    expected = [
+        "Cargo.toml",
+        "Gemfile",
+        "build.gradle",
+        "composer.json",
+        "go.mod",
+        "package.json",
+        "pom.xml",
+        "pyproject.toml",
+        "requirements.txt",
+    ]
+    if sorted(items.get("enum", [])) != expected:
+        failures.append("project.manifest.summary manifest kind allowlist drifted")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("maximum") != 20:
+        failures.append("project.manifest.summary limit must stay bounded to 20")
     return failures
 
 

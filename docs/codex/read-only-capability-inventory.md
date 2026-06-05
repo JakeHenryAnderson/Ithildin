@@ -4,7 +4,7 @@ Status: approved read-only metadata inventory. This document records the bounded
 capabilities that have moved beyond design-only planning through explicit implementation gates and
 source-review handoff artifacts.
 
-The inventory has tool count `12` and includes only local read-only developer metadata additions.
+The inventory has tool count `13` and includes only local read-only developer metadata additions.
 It authorizes no shell, no broad filesystem writes, no arbitrary Git command execution, no remote
 fetch, no browser automation, no Docker/Kubernetes tools, no production identity, no runtime
 Postgres, no hosted telemetry, no remote MCP, no plugin SDK work, no arbitrary HTTP, and no future
@@ -18,16 +18,19 @@ source-review handoff, explicit implementation decision, and release gates are r
 | --- | --- | --- | --- |
 | `git.show.commit_metadata` | approved bounded read-only Git commit metadata | `make git-commit-metadata-implementation-gate` | `make git-commit-metadata-source-review-bundle` |
 | `git.show.ref_summary` | approved bounded read-only Git ref metadata | `make git-ref-summary-implementation-gate` | `make git-ref-summary-source-review-bundle` |
+| `project.manifest.summary` | approved bounded read-only project manifest metadata | `make project-manifest-summary-implementation-gate` | `make project-manifest-summary-source-review-bundle` |
 
 ## Shared Boundary
 
 Every approved capability in this inventory must preserve:
 
-- `risk: read` and `category: git`;
+- `risk: read` and the reviewed category for the tool;
 - strict JSON Schema with `additionalProperties: false`;
 - fixed internal Git argv and no shell;
 - no caller-controlled Git argv, format strings, refspecs, pathspecs, remotes, or revisions beyond
   the reviewed structured input contract for that tool;
+- no package-manager execution, registry/network access, dependency names, package script values,
+  or recursive manifest discovery for project manifest metadata;
 - no file contents, raw diffs, patch hunks, raw stderr, credentials, or broad filesystem access;
 - policy preview/runtime parity for the normalized resource;
 - safe audit metadata without raw sensitive values;

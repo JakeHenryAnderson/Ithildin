@@ -1,19 +1,20 @@
 # v3 project.manifest.summary Implementation Decision
 
-Status: approved for later bounded read-only implementation. This decision document does not add a tool manifest,
-does not add an executor, does not add a policy rule, does not add MCP exposure,
-does not add approval behavior, does not add API behavior, does not add UI behavior, and does not
-add runtime behavior.
+Status: bounded read-only runtime implementation approved and implemented. This decision document
+records the narrow implementation boundary for `project.manifest.summary`; it adds one tool
+manifest and one read-only executor path under the existing governed registry, policy, audit, and
+MCP surfaces. It does not add a policy rule, approval behavior, new API endpoint, UI behavior, new
+power class, shell behavior, package-manager behavior, or network behavior.
 
 `project.manifest.summary` is approved only as a count-oriented local project manifest metadata
 capability. It remains a narrow continuation of the read-only local metadata lane, not a new
 powerful tool class.
 
-## Approved Boundary
+## Implemented Boundary
 
-The later implementation may:
+The implementation:
 
-- add one manifest named `project.manifest.summary`;
+- adds one tool manifest named `project.manifest.summary`;
 - keep risk `read`, category `project`, and MCP exposure under the existing registry/listing path;
 - accept only `workspace_id`, `root`, `manifest_kinds`, and `limit`;
 - resolve `root` through the existing workspace and filesystem safety contracts;
@@ -33,7 +34,7 @@ options, no file contents, no dependency names, no package names, no dependency 
 no package script names or values, no registry URLs, no repository URLs, no maintainer/author
 fields, no lockfile contents, no package-manager stdout/stderr, and no broad filesystem access.
 
-## Evidence Required Before Runtime Commit
+## Evidence Required For Runtime Commit
 
 - `make project-manifest-summary-implementation-plan-check`
 - `make project-manifest-summary-implementation-gate`
@@ -47,6 +48,7 @@ fields, no lockfile contents, no package-manager stdout/stderr, and no broad fil
 
 Implementation state: approved_limited_read_only.
 
-This decision authorizes only the later bounded read-only implementation described above. It does
-not unlock broader capability expansion, public/security-product positioning, arbitrary filesystem
-read expansion, package-manager execution, network access, or new powerful tool classes.
+This decision authorizes only the bounded read-only implementation described above. Runtime changes
+outside this fixed surface are not allowed without a new explicit gate. It does not unlock broader
+capability expansion, public/security-product positioning, arbitrary filesystem read expansion,
+package-manager execution, network access, or new powerful tool classes.

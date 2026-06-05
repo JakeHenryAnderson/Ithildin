@@ -21,8 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 IMPLEMENTATION_DOC = ROOT / "docs/codex/v3-project-manifest-summary-implementation.md"
 REQUIRED_DOC_PHRASES = [
     "project.manifest.summary",
-    "approved for later bounded read-only implementation",
-    "does not add a tool manifest",
+    "bounded read-only runtime implementation",
+    "adds one tool manifest",
     "approved_limited_read_only",
     "risk `read`",
     "category `project`",
@@ -39,6 +39,18 @@ REQUIRED_DOC_PHRASES = [
     "no dependency names",
     "no package script names or values",
     "make project-manifest-summary-implementation-gate",
+]
+REQUIRED_SOURCE_PHRASES = [
+    "_PROJECT_MANIFEST_SUMMARY_TOOL = \"project.manifest.summary\"",
+    "def project_manifest_summary(self, arguments: JsonObject) -> JsonObject:",
+    "_PROJECT_MANIFEST_ALLOWLIST",
+    "_PROJECT_MANIFEST_MAX_LIMIT = 20",
+    "_PROJECT_MANIFEST_MAX_TOTAL_BYTES",
+    "\"dependency_names_included\": False",
+    "\"package_script_values_included\": False",
+    "\"registry_or_network_access_used\": False",
+    "\"package_manager_execution_used\": False",
+    "\"recursive_discovery_used\": False",
 ]
 FORBIDDEN_DOC_PHRASES = [
     "broad filesystem access is approved",
@@ -83,6 +95,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             if phrase.lower() in lower:
                 failures.append(f"implementation decision doc contains forbidden phrase: {phrase}")
 
+    source_path = repo_root / "apps/api/src/ithildin_api/read_tools.py"
+    source = source_path.read_text(encoding="utf-8")
+    for phrase in REQUIRED_SOURCE_PHRASES:
+        if phrase not in source:
+            failures.append(f"project manifest summary source is missing phrase: {phrase}")
+
     return {
         "schema_version": "1",
         "valid": not failures,
@@ -92,6 +110,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": tool_surface.get("tool_count"),
         "new_power_classes_allowed": False,
         "runtime_changes_allowed": False,
+        "runtime_implemented": True,
         "deferred_boundaries_unchanged": no_new_powers.get("deferred_boundaries_unchanged"),
     }
 
@@ -105,6 +124,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         f"new_power_classes_allowed: {str(report['new_power_classes_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
+        f"runtime_implemented: {str(report['runtime_implemented']).lower()}",
     ]
     if report["failures"]:
         lines.append("failures:")
