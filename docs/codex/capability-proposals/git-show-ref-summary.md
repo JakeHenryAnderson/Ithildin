@@ -150,6 +150,9 @@ The future executor contract must specify a fixed parse-normalize-resolve flow:
 11. Enforce count, byte, and runtime limits before returning.
 12. Replace ref names with response-local `ref_id` values before policy/audit evidence and response
    construction.
+13. Treat `ref_id` values as response-local display handles only. They are not stable identifiers,
+    privacy-preserving randomness, or cross-response correlation guarantees; the privacy boundary is
+    that raw ref names and stable ref-name hashes are absent.
 
 The executor must never use shell execution, caller-controlled argv, caller-controlled format
 strings, checkout, branch creation/deletion, tag mutation, remote fetch/pull/push, credential access,

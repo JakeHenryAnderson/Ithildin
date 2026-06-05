@@ -9,9 +9,9 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `11`.
-- `git.show.commit_metadata` is the only approved v0.9 runtime capability addition.
-- `git.show.ref_summary` has proposal and implementation-planning packets only.
+- Tool count is `12`.
+- `git.show.commit_metadata` and `git.show.ref_summary` are the approved v0.9 runtime
+  capability additions.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
 

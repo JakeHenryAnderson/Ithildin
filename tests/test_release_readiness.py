@@ -248,7 +248,7 @@ def test_v08_capability_design_gate_is_wired() -> None:
     assert report["capability_design_only"] == "conditional_go"
     assert report["capability_implementation"] == "no_go"
     assert report["new_governed_tool_powers"] == "no_go"
-    assert report["evidence"]["tool_count"] == 11
+    assert report["evidence"]["tool_count"] == 12
     assert report["evidence"]["superseded_by_v09_implementation"] is True
     assert report["evidence"]["v08_baseline_commit"] == "f993cec"
     assert report["evidence"]["accepted_risks_constraining_design"] == 1
@@ -280,7 +280,7 @@ def test_v09_design_only_charter_and_gate_are_wired() -> None:
     assert report["capability_implementation"] == "no_go"
     assert report["new_governed_tool_powers"] == "no_go"
     assert report["evidence"]["v09_baseline_commit"] == "de32893"
-    assert report["evidence"]["tool_count"] == 11
+    assert report["evidence"]["tool_count"] == 12
     assert report["evidence"]["superseded_by_v09_implementation"] is True
     for required in [
         "v0.9 starts design-only capability planning",
@@ -316,7 +316,7 @@ def test_git_commit_metadata_proposal_check_is_wired() -> None:
     assert report["proposal"] == "git.show.commit_metadata"
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
-    assert report["evidence"]["tool_count"] == 11
+    assert report["evidence"]["tool_count"] == 12
     for required in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -368,7 +368,7 @@ def test_git_ref_summary_proposal_check_is_wired() -> None:
     assert report["proposal"] == "git.show.ref_summary"
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
-    assert report["evidence"]["tool_count"] == 11
+    assert report["evidence"]["tool_count"] == 12
     for required in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -423,7 +423,7 @@ def test_git_ref_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 11
+    assert report["evidence"]["tool_count"] == 12
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -484,7 +484,7 @@ def test_read_only_metadata_capability_check_is_wired() -> None:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True
-    assert report["tool_count"] == 11
+    assert report["tool_count"] == 12
     assert report["new_power_classes_allowed"] is False
     assert "make read-only-metadata-capability-check" in readme
     assert "read-only-metadata-capability-check:" in makefile
@@ -527,7 +527,7 @@ def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 11
+    assert report["evidence"]["tool_count"] == 12
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -585,7 +585,7 @@ def test_git_commit_metadata_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "git.show.commit_metadata"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 11
+    assert report["tool_count"] == 12
     assert report["new_power_classes_allowed"] is False
     for required in [
         "approved v0.9 implementation",
@@ -770,7 +770,7 @@ def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
         "Commit Evidence Reconciliation",
         "reviewed commit is what GPT 5.5 Pro / human reviewers inspect",
         "baseline commit is only the pre-v0.9 comparison point",
-        "Tool count: `11`",
+        "Tool count: `12`",
         "does not add or approve a tool manifest",
         "EXT-DESIGN-GIT-###",
         "implementation-planning sprint may be considered",
@@ -1964,7 +1964,7 @@ def test_capability_expansion_gate_reports_blocked_without_tool_drift() -> None:
     assert report["hard_failures"] == []
     assert report["capability_expansion_allowed"] is False
     assert report["decision"] == "blocked"
-    assert report["tool_count"] == 11
+    assert report["tool_count"] == 12
     assert "external_pending" in " ".join(report["blockers"])
     assert "make capability-expansion-gate" in readme
     assert "blocked result is healthy" in doc
@@ -1985,8 +1985,8 @@ def test_tool_surface_invariant_gate_is_wired_and_valid() -> None:
 
     assert report["valid"] is True
     assert report["failures"] == []
-    assert report["tool_count"] == 11
-    assert report["manifest_file_count"] == 11
+    assert report["tool_count"] == 12
+    assert report["manifest_file_count"] == 12
     assert report["tool_names"] == tool_surface_invariant_gate.EXPECTED_TOOL_NAMES
     assert report["forbidden_marker_hits"] == []
     assert any(
@@ -1995,6 +1995,10 @@ def test_tool_surface_invariant_gate_is_wired_and_valid() -> None:
     )
     assert any(
         summary["name"] == "git.show.commit_metadata" and summary["risk"] == "read"
+        for summary in report["manifest_summaries"]
+    )
+    assert any(
+        summary["name"] == "git.show.ref_summary" and summary["risk"] == "read"
         for summary in report["manifest_summaries"]
     )
     assert "make tool-surface-invariant-gate" in readme
@@ -2466,7 +2470,7 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["valid"] is True
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
-    assert report["tool_count"] == 11
+    assert report["tool_count"] == 12
     assert report["completed_range"] == "152-180"
     assert report["planned_range"] == "none"
     assert report["open_accepted_risks"] == 0
@@ -2500,7 +2504,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
 
     assert report["valid"] is True
     assert report["failures"] == []
-    assert report["tool_count"] == 11
+    assert report["tool_count"] == 12
     assert report["new_power_classes_allowed"] is False
     assert report["deferred_boundaries_unchanged"] is True
     assert report["tool_names"] == [
@@ -2513,6 +2517,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
         "git.diff",
         "git.log",
         "git.show.commit_metadata",
+        "git.show.ref_summary",
         "git.status",
         "http.fetch",
     ]

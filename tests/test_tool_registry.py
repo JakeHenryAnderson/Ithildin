@@ -243,6 +243,7 @@ def test_committed_read_tool_manifests_load() -> None:
         "git.diff",
         "git.log",
         "git.show.commit_metadata",
+        "git.show.ref_summary",
         "git.status",
         "http.fetch",
     ]

@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_CATEGORIES = {"filesystem", "git", "network"}
 ALLOWED_WRITE_TOOLS = {"fs.patch.apply", "fs.patch.propose"}
 ALLOWED_NETWORK_TOOLS = {"http.fetch"}
-ALLOWED_NEW_READ_TOOLS = {"git.show.commit_metadata"}
+ALLOWED_NEW_READ_TOOLS = {"git.show.commit_metadata", "git.show.ref_summary"}
 FORBIDDEN_TOOL_PREFIXES = (
     "shell.",
     "docker.",
@@ -166,7 +166,42 @@ def _validate_schema_fields(name: str, manifest: dict[str, Any]) -> list[str]:
         return [f"{name} exposes forbidden schema fields: {', '.join(forbidden)}"]
     if name == "http.fetch" and sorted(properties) != ["url"]:
         return ["http.fetch must stay URL-only"]
+    if name == "git.show.ref_summary":
+        failures = _validate_git_ref_summary_schema(properties)
+        if failures:
+            return failures
     return []
+
+
+def _validate_git_ref_summary_schema(properties: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if sorted(properties) != ["limit", "selector", "workspace_id"]:
+        failures.append("git.show.ref_summary must stay selector/limit/workspace-only")
+        return failures
+    selector = properties.get("selector")
+    if not isinstance(selector, dict):
+        return ["git.show.ref_summary selector schema is invalid"]
+    if selector.get("additionalProperties") is not False:
+        failures.append("git.show.ref_summary selector must reject unknown fields")
+    if selector.get("required") != ["kind"]:
+        failures.append("git.show.ref_summary selector required fields drifted")
+    selector_properties = selector.get("properties")
+    if not isinstance(selector_properties, dict):
+        return failures + ["git.show.ref_summary selector properties are invalid"]
+    kind = selector_properties.get("kind")
+    if not isinstance(kind, dict) or sorted(kind.get("enum", [])) != [
+        "all_local",
+        "branch",
+        "tag",
+    ]:
+        failures.append("git.show.ref_summary selector kind enum drifted")
+    forbidden_nested = sorted(set(selector_properties) & FORBIDDEN_SCHEMA_FIELDS)
+    if forbidden_nested:
+        failures.append(
+            "git.show.ref_summary exposes forbidden selector fields: "
+            + ", ".join(forbidden_nested)
+        )
+    return failures
 
 
 def render_report(report: dict[str, Any]) -> str:

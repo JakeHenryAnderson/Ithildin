@@ -83,6 +83,21 @@ cases:
     expect_resource_type: git_commit
     expect_resource_in_scope: true
 
+  - id: git_ref_summary_preview_matches_runtime
+    description: Ref summary preview and runtime policy evidence agree on a scoped Git refs resource.
+    tool_name: git.show.ref_summary
+    arguments:
+      selector:
+        kind: all_local
+      limit: 5
+    principal:
+      id: agent:mcp-local
+    session_id: parity-git-ref-summary
+    expect_decision: allow
+    expect_runtime_status: completed
+    expect_resource_type: git_refs
+    expect_resource_in_scope: true
+
   - id: out_of_scope_network_preview_matches_runtime
     description: Unallowlisted network preview and runtime policy evidence agree on deny.
     tool_name: http.fetch

@@ -588,6 +588,157 @@ def test_git_commit_metadata_resource_denies_parent_repo_outside_workspace(
     assert resource["scope_error"] == "git repository escapes the workspace scope"
 
 
+def test_git_ref_summary_returns_name_free_local_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    run_git(repo, ["branch", "safe/topic"])
+    run_git(repo, ["tag", "-a", "v1", "-m", "v1"])
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    summary = git.ref_summary({"selector": {"kind": "all_local"}, "limit": 10})
+
+    assert summary["tool_name"] == "git.show.ref_summary"
+    assert summary["selector"] == {"kind": "all_local"}
+    assert summary["truncated"] is False
+    refs = cast(list[dict[str, object]], summary["refs"])
+    assert {ref["kind"] for ref in refs} == {"branch", "tag"}
+    assert all(str(ref["ref_id"]).startswith("ref_") for ref in refs)
+    assert all(ref["resolved_commit_hash"] == commit_hash for ref in refs)
+    assert any(ref.get("is_current_branch") is True for ref in refs if ref["kind"] == "branch")
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["ref_names_included"] is False
+    assert output_policy["stable_ref_hashes_included"] is False
+    dumped = json_dump(summary)
+    assert "safe/topic" not in dumped
+    assert "refs/heads" not in dumped
+    assert "v1" not in dumped
+
+
+def test_git_ref_summary_selector_and_limit_are_bounded(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    run_git(repo, ["branch", "safe/topic"])
+    run_git(repo, ["tag", "v1"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    branch_summary = git.ref_summary({"selector": {"kind": "branch"}, "limit": 1})
+    tag_summary = git.ref_summary({"selector": {"kind": "tag"}, "limit": 10})
+
+    assert branch_summary["ref_count"] == 1
+    assert branch_summary["truncated"] is True
+    branch_refs = cast(list[dict[str, str]], branch_summary["refs"])
+    tag_refs = cast(list[dict[str, str]], tag_summary["refs"])
+    assert all(ref["kind"] == "branch" for ref in branch_refs)
+    assert tag_summary["ref_count"] == 1
+    assert all(ref["kind"] == "tag" for ref in tag_refs)
+
+
+def test_git_ref_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    denied_arguments = [
+        {"selector": {"kind": "all_local", "ref": "main"}},
+        {"selector": {"kind": "remote"}},
+        {"selector": {"kind": "branch"}, "include_names": True},
+        {"selector": {"kind": "branch"}, "include_current_branch": True},
+        {"selector": {"kind": "branch"}, "format": "%(refname)"},
+        {"selector": {"kind": "branch"}, "argv": ["for-each-ref"]},
+        {"selector": {"kind": "branch"}, "ref": "main"},
+        {"selector": {"kind": "branch"}, "remote": "origin"},
+        {"selector": {"kind": "branch"}, "limit": 0},
+        {"selector": {"kind": "branch"}, "limit": 201},
+    ]
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            git.ref_summary(cast(JsonObject, arguments))
+
+
+def test_git_ref_summary_skips_non_commit_refs(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    blob_hash = git_output(repo, ["hash-object", "tracked.txt"])
+    run_git(repo, ["tag", "blobtag", blob_hash])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    summary = git.ref_summary({"selector": {"kind": "tag"}})
+
+    assert summary["ref_count"] == 0
+    assert summary["refs"] == []
+
+
+def test_git_ref_summary_denies_parent_repo_outside_workspace(tmp_path: Path) -> None:
+    parent_repo = tmp_path / "parent"
+    parent_repo.mkdir()
+    workspace_root = parent_repo / "workspace"
+    workspace_root.mkdir()
+    run_git(parent_repo, ["init"])
+    run_git(parent_repo, ["config", "user.email", "test@example.com"])
+    run_git(parent_repo, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(parent_repo, ["add", "workspace/tracked.txt"])
+    run_git(parent_repo, ["commit", "-m", "parent repo commit"])
+    filesystem = FilesystemReadTools(
+        workspace_root=workspace_root,
+        max_read_bytes=4096,
+        search_result_limit=5,
+    )
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    with pytest.raises(ReadToolError, match="workspace scope"):
+        git.ref_summary({"selector": {"kind": "all_local"}})
+
+
+def test_git_ref_summary_resource_denies_parent_repo_outside_workspace(
+    tmp_path: Path,
+) -> None:
+    parent_repo = tmp_path / "parent"
+    parent_repo.mkdir()
+    workspace_root = parent_repo / "workspace"
+    workspace_root.mkdir()
+    run_git(parent_repo, ["init"])
+    run_git(parent_repo, ["config", "user.email", "test@example.com"])
+    run_git(parent_repo, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(parent_repo, ["add", "workspace/tracked.txt"])
+    run_git(parent_repo, ["commit", "-m", "parent repo commit"])
+    executor = ReadToolExecutor.from_settings(
+        workspace_root=workspace_root,
+        max_read_bytes=4096,
+        search_result_limit=5,
+        git_log_limit=10,
+    )
+
+    resource = executor.resource_from_arguments(
+        {"selector": {"kind": "all_local"}},
+        tool_name="git.show.ref_summary",
+    )
+
+    assert resource["in_scope"] is False
+    assert resource["scope_error"] == "git repository escapes the workspace scope"
+
+
 def test_git_diff_denies_hidden_or_sensitive_tracked_paths(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=2048)
     repo = filesystem.workspace_root / "repo"

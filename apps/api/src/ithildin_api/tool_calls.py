@@ -515,7 +515,7 @@ class GovernedToolCallService:
                 resource=resource,
                 input_hash=request_hash,
                 metadata=_with_redaction_summary(
-                    {"executor": "in_process_read"},
+                    _read_tool_execution_metadata(tool_name, content),
                     redacted.summary,
                 ),
             )
@@ -866,6 +866,34 @@ def _tool_call_hash(
 
 def _with_redaction_summary(metadata: JsonObject, summary: RedactionSummary) -> JsonObject:
     return {**metadata, **summary.as_metadata()}
+
+
+def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonObject:
+    metadata: JsonObject = {"executor": "in_process_read"}
+    if tool_name != "git.show.ref_summary":
+        return metadata
+
+    selector = content.get("selector")
+    output_policy = content.get("output_policy")
+    if isinstance(selector, dict) and isinstance(selector.get("kind"), str):
+        metadata["selector_kind"] = selector["kind"]
+    for key in ("ref_count", "total_ref_count"):
+        value = content.get(key)
+        if isinstance(value, int) and not isinstance(value, bool):
+            metadata[key] = value
+    truncated = content.get("truncated")
+    if isinstance(truncated, bool):
+        metadata["truncated"] = truncated
+    if isinstance(output_policy, dict):
+        for key in (
+            "ref_names_included",
+            "stable_ref_hashes_included",
+            "ref_ids_are_response_local",
+        ):
+            value = output_policy.get(key)
+            if isinstance(value, bool):
+                metadata[key] = value
+    return metadata
 
 
 def _redact_fields(obligations: JsonObject) -> set[str]:

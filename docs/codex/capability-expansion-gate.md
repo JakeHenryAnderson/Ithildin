@@ -21,7 +21,7 @@ begin. Today, that form should fail.
 ## Hard Invariants
 
 - tool count remains the approved local-preview set, including the bounded v0.9 read-only
-  `git.show.commit_metadata` addition;
+  `git.show.commit_metadata` and `git.show.ref_summary` additions;
 - tool names remain the approved local-preview set;
 - runtime boundary remains `v0.1 local-preview`;
 - deferred-power list remains unchanged;

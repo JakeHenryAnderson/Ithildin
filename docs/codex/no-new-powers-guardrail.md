@@ -13,7 +13,7 @@ uv run python scripts/no_new_powers_guardrail.py --json
 ## What It Checks
 
 - The governed tool list remains the approved local-preview tool set, including the bounded v0.9
-  read-only `git.show.commit_metadata` addition.
+  read-only `git.show.commit_metadata` and `git.show.ref_summary` additions.
 - The runtime boundary remains `v0.1 local-preview`.
 - The deferred-power list is unchanged.
 - No manifest introduces shell, Docker, Kubernetes, browser, secrets, broad-write, broad-network, or
@@ -22,6 +22,8 @@ uv run python scripts/no_new_powers_guardrail.py --json
   method, cookies, or proxy controls.
 - `git.show.commit_metadata` remains read-only by manifest shape: structured ref selectors only, no
   caller-controlled Git argv, format strings, pathspecs, raw diffs, or file contents.
+- `git.show.ref_summary` remains read-only by manifest shape: selector/limit inputs only, no caller
+  supplied ref names, format strings, remotes, refspecs, raw diffs, or file contents.
 - `fs.patch.apply` and `fs.patch.propose` remain the only write/write-proposal tools.
 
 ## Current Expected Result

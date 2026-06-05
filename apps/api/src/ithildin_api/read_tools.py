@@ -29,10 +29,12 @@ READ_TOOL_NAMES = frozenset(
         "git.diff",
         "git.log",
         "git.show.commit_metadata",
+        "git.show.ref_summary",
     }
 )
 
 _GIT_COMMIT_METADATA_TOOL = "git.show.commit_metadata"
+_GIT_REF_SUMMARY_TOOL = "git.show.ref_summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
@@ -40,6 +42,9 @@ _COMMIT_METADATA_SUBJECT_LIMIT = 240
 _COMMIT_METADATA_BODY_LIMIT = 2000
 _COMMIT_METADATA_IDENTITY_LIMIT = 240
 _COMMIT_METADATA_CHANGED_FILE_LIMIT = 100
+_REF_SUMMARY_DEFAULT_LIMIT = 100
+_REF_SUMMARY_MAX_LIMIT = 200
+_REF_SUMMARY_NAME_BYTE_LIMIT = 240
 _SENSITIVE_EXACT_PATH_PARTS = {
     ".env",
     "credentials.json",
@@ -152,6 +157,8 @@ class ReadToolExecutor:
     ) -> JsonObject:
         if tool_name == _GIT_COMMIT_METADATA_TOOL:
             return self._commit_metadata_resource_from_arguments(arguments)
+        if tool_name == _GIT_REF_SUMMARY_TOOL:
+            return self._ref_summary_resource_from_arguments(arguments)
 
         path = _string_arg(arguments, "path", default=".")
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
@@ -197,6 +204,31 @@ class ReadToolExecutor:
         )
         return resource
 
+    def _ref_summary_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        resource: JsonObject = {
+            "type": "git_refs",
+            "workspace_id": workspace_id,
+            "in_scope": False,
+        }
+        try:
+            self._filesystem(workspace_id)
+            git = self._git(workspace_id)
+            repo = git._repo_path(".")
+            git._ensure_repo_toplevel_in_workspace(repo)
+            selector_kind = _ref_summary_selector_kind(arguments)
+            _ref_summary_limit(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "selector_kind": selector_kind,
+                "in_scope": True,
+            }
+        )
+        return resource
+
     def execute(self, tool_name: str, arguments: JsonObject) -> JsonObject:
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
         filesystem = self._filesystem(workspace_id)
@@ -223,6 +255,8 @@ class ReadToolExecutor:
             )
         if tool_name == _GIT_COMMIT_METADATA_TOOL:
             return git.commit_metadata(arguments)
+        if tool_name == _GIT_REF_SUMMARY_TOOL:
+            return git.ref_summary(arguments)
         raise ReadToolError("unsupported read tool")
 
     def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
@@ -578,6 +612,46 @@ class GitReadTools:
             result["body_truncated"] = body_truncated
         return result
 
+    def ref_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_ref_summary_arguments(arguments)
+        selector_kind = _ref_summary_selector_kind(arguments)
+        limit = _ref_summary_limit(arguments)
+
+        repo = self._repo_path(".")
+        self._ensure_repo_toplevel_in_workspace(repo)
+        prefixes = _ref_summary_prefixes(selector_kind)
+        output = self._run_git(
+            repo,
+            [
+                "for-each-ref",
+                "--format=%(refname)%00%(objectname)%00%(objecttype)%00"
+                "%(*objectname)%00%(*objecttype)%00%(HEAD)%00%(symref)",
+                *prefixes,
+            ],
+        )
+        if output.truncated:
+            raise ReadToolError("git ref summary exceeds configured read limit")
+
+        refs = _parse_ref_summary_output(output.text, selector_kind)
+        selected_refs = refs[:limit]
+        return {
+            "workspace_id": self.filesystem.workspace_id,
+            "tool_name": _GIT_REF_SUMMARY_TOOL,
+            "selector": {"kind": selector_kind},
+            "ref_count": len(selected_refs),
+            "total_ref_count": len(refs),
+            "truncated": len(refs) > limit,
+            "refs": cast(list[JsonValue], selected_refs),
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_diff_included": False,
+                "ref_names_included": False,
+                "stable_ref_hashes_included": False,
+                "ref_ids_are_response_local": True,
+                "metadata_is_untrusted": True,
+            },
+        }
+
     def _repo_path(self, path: str) -> Path:
         repo = self.filesystem.resolve_existing_path(path)
         if not repo.is_dir():
@@ -822,6 +896,131 @@ def _validate_commit_ref_selector(selector: JsonObject) -> None:
         raise ReadToolError("ref value contains unsupported syntax")
     if not _SAFE_REF_RE.fullmatch(value):
         raise ReadToolError("ref value contains unsupported characters")
+
+
+def _validate_ref_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"selector", "limit", "workspace_id"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("git ref summary received unsupported arguments")
+    _ref_summary_selector_kind(arguments)
+    _ref_summary_limit(arguments)
+
+
+def _ref_summary_selector_kind(arguments: JsonObject) -> str:
+    raw = arguments.get("selector")
+    if not isinstance(raw, dict):
+        raise ReadToolError("selector must be an object")
+    unknown = sorted(set(raw) - {"kind"})
+    if unknown:
+        raise ReadToolError("git ref summary selector contains unsupported fields")
+    kind = raw.get("kind")
+    if not isinstance(kind, str):
+        raise ReadToolError("selector kind must be a string")
+    if kind not in {"all_local", "branch", "tag"}:
+        raise ReadToolError("unsupported ref summary selector")
+    return kind
+
+
+def _ref_summary_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_REF_SUMMARY_DEFAULT_LIMIT)
+    if limit < 1 or limit > _REF_SUMMARY_MAX_LIMIT:
+        raise ReadToolError("git ref summary limit is outside allowed bounds")
+    return limit
+
+
+def _ref_summary_prefixes(selector_kind: str) -> list[str]:
+    if selector_kind == "branch":
+        return ["refs/heads"]
+    if selector_kind == "tag":
+        return ["refs/tags"]
+    return ["refs/heads", "refs/tags"]
+
+
+def _parse_ref_summary_output(output: str, selector_kind: str) -> list[JsonObject]:
+    refs: list[JsonObject] = []
+    seen_casefolded: dict[tuple[str, str], str] = {}
+    for line in output.splitlines():
+        if not line:
+            continue
+        fields = line.split("\x00")
+        if len(fields) != 7:
+            raise ReadToolError("git ref summary metadata is invalid")
+        refname, object_id, object_type, peeled_object, peeled_type, head_marker, symref = fields
+        if symref:
+            continue
+        kind, name = _ref_summary_kind_and_name(refname, selector_kind)
+        _validate_ref_summary_name(name)
+        casefold_key = (kind, name.casefold())
+        existing = seen_casefolded.get(casefold_key)
+        if existing is not None and existing != name:
+            raise ReadToolError("git ref summary contains ambiguous ref names")
+        seen_casefolded[casefold_key] = name
+        commit_hash = _ref_summary_resolved_commit(
+            object_id=object_id,
+            object_type=object_type,
+            peeled_object=peeled_object,
+            peeled_type=peeled_type,
+        )
+        if commit_hash is None:
+            continue
+        record: JsonObject = {
+            "kind": kind,
+            "ref_id": f"ref_{len(refs) + 1:04d}",
+            "resolved_commit_hash": commit_hash,
+        }
+        if kind == "branch":
+            record["is_current_branch"] = head_marker == "*"
+        if kind == "tag":
+            record["peeled_from_tag_object"] = object_type == "tag"
+        refs.append(record)
+    return refs
+
+
+def _ref_summary_kind_and_name(refname: str, selector_kind: str) -> tuple[str, str]:
+    if refname.startswith("refs/heads/"):
+        if selector_kind == "tag":
+            raise ReadToolError("git ref summary selector returned an unexpected branch")
+        return "branch", refname.removeprefix("refs/heads/")
+    if refname.startswith("refs/tags/"):
+        if selector_kind == "branch":
+            raise ReadToolError("git ref summary selector returned an unexpected tag")
+        return "tag", refname.removeprefix("refs/tags/")
+    raise ReadToolError("git ref summary returned an unsupported ref namespace")
+
+
+def _validate_ref_summary_name(name: str) -> None:
+    if not name or len(name.encode("utf-8")) > _REF_SUMMARY_NAME_BYTE_LIMIT:
+        raise ReadToolError("git ref summary ref name is outside allowed bounds")
+    _reject_control_or_unnormalized_text(name, label="ref name")
+    if name.startswith("-") or name.startswith("/") or name.endswith("/") or "//" in name:
+        raise ReadToolError("git ref summary ref name is not allowed")
+    forbidden_tokens = ("..", "@{", "\\", "^", "~", ":", "?", "*", "[", " ")
+    if any(token in name for token in forbidden_tokens):
+        raise ReadToolError("git ref summary ref name contains unsupported syntax")
+    parts = name.split("/")
+    if any(not part or part.startswith(".") or part.endswith(".lock") for part in parts):
+        raise ReadToolError("git ref summary ref name contains unsupported syntax")
+    if not _SAFE_REF_RE.fullmatch(name):
+        raise ReadToolError("git ref summary ref name contains unsupported characters")
+
+
+def _ref_summary_resolved_commit(
+    *,
+    object_id: str,
+    object_type: str,
+    peeled_object: str,
+    peeled_type: str,
+) -> str | None:
+    if object_type == "commit":
+        candidate = object_id
+    elif object_type == "tag" and peeled_type == "commit":
+        candidate = peeled_object
+    else:
+        return None
+    if not _HEX_OBJECT_RE.fullmatch(candidate):
+        raise ReadToolError("git ref summary commit metadata is invalid")
+    return candidate.lower()
 
 
 def _path_type(path: Path) -> str:

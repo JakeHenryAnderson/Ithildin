@@ -57,6 +57,12 @@
       "version": "0.1.0"
     },
     {
+      "manifest_hash": "sha256:34759dcf38b816ab1342d7b0e435410ddc1829c934ca5ec91588d647a355ccbf",
+      "name": "git.show.ref_summary",
+      "path": "tool-manifests/git-show-ref-summary.yaml",
+      "version": "0.1.0"
+    },
+    {
       "manifest_hash": "sha256:76acc36b2acf49c0b4de73c4191eafa45693f19dae6448b60ae0187f553b20d6",
       "name": "git.status",
       "path": "tool-manifests/git-status.yaml",

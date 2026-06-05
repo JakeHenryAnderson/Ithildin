@@ -1,0 +1,35 @@
+name: git.show.ref_summary
+version: 0.1.0
+title: Show git ref summary
+risk: read
+category: git
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+    - selector
+  properties:
+    selector:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - all_local
+            - branch
+            - tag
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 200
+      default: 100
+    workspace_id:
+      type: string
+      default: default

@@ -252,6 +252,39 @@ input_schema:
     )
 
 
+def write_git_ref_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("git-show-ref-summary.yaml").write_text(
+        """
+name: git.show.ref_summary
+version: 1.0.0
+title: Show ref summary
+risk: read
+category: git
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["selector"]
+  properties:
+    selector:
+      type: object
+      additionalProperties: false
+      required: ["kind"]
+      properties:
+        kind:
+          type: string
+          enum: [all_local, branch, tag]
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 200
+""",
+        encoding="utf-8",
+    )
+
+
 def make_service(tmp_path: Path) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -350,6 +383,44 @@ def make_git_commit_metadata_service(tmp_path: Path) -> tuple[GovernedToolCallSe
     workspace_root.joinpath("README.md").write_text("hello\n", encoding="utf-8")
     run_git(workspace_root, ["add", "README.md"])
     run_git(workspace_root, ["commit", "-m", "initial"])
+    commit_hash = git_output(workspace_root, ["rev-parse", "HEAD"])
+    return (
+        GovernedToolCallService(
+            ToolRegistry.load(manifest_dir),
+            PolicyEvaluator.load(policy_path),
+            approval_service,
+            audit_writer,
+            ReadToolExecutor.from_settings(
+                workspace_root=workspace_root,
+                max_read_bytes=4096,
+                search_result_limit=10,
+                git_log_limit=10,
+            ),
+        ),
+        commit_hash,
+    )
+
+
+def make_git_ref_summary_service(tmp_path: Path) -> tuple[GovernedToolCallService, str]:
+    manifest_dir = tmp_path / "manifests"
+    write_git_ref_summary_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    run_git(workspace_root, ["init"])
+    run_git(workspace_root, ["config", "user.email", "test@example.com"])
+    run_git(workspace_root, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("README.md").write_text("hello\n", encoding="utf-8")
+    run_git(workspace_root, ["add", "README.md"])
+    run_git(workspace_root, ["commit", "-m", "initial"])
+    run_git(workspace_root, ["branch", "safe/topic"])
     commit_hash = git_output(workspace_root, ["rev-parse", "HEAD"])
     return (
         GovernedToolCallService(
@@ -686,6 +757,48 @@ def test_git_commit_metadata_unresolved_commit_fails_without_content_leak(
     assert payloads[2]["event_type"] == AuditEventType.TOOL_EXECUTION_FAILED.value
     resources = [payload["resource"] for payload in payloads]
     assert "0000000000000000000000000000000000000000" not in json.dumps(resources)
+
+
+def test_git_ref_summary_tool_executes_after_policy_allow_and_is_audited(
+    tmp_path: Path,
+) -> None:
+    service, commit_hash = make_git_ref_summary_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="git.show.ref_summary",
+        arguments={"selector": {"kind": "branch"}, "limit": 10},
+        principal=principal(),
+        session_id="sess_git_refs",
+    )
+
+    assert result.status == "completed"
+    refs = cast(list[JsonObject], result.content["refs"])
+    assert refs
+    assert all(ref["kind"] == "branch" for ref in refs)
+    assert all(ref["resolved_commit_hash"] == commit_hash for ref in refs)
+    assert "safe/topic" not in json.dumps(result.content)
+    assert "refs/heads" not in json.dumps(result.content)
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+    policy_metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert policy_metadata["resource_type"] == "git_refs"
+    assert policy_metadata["resource_in_scope"] is True
+    execution_resource = cast(JsonObject, payloads[1]["resource"])
+    assert execution_resource["type"] == "git_refs"
+    assert execution_resource["selector_kind"] == "branch"
+    completed_metadata = cast(JsonObject, payloads[2]["metadata"])
+    assert completed_metadata["selector_kind"] == "branch"
+    assert completed_metadata["ref_names_included"] is False
+    assert completed_metadata["stable_ref_hashes_included"] is False
+    assert completed_metadata["ref_ids_are_response_local"] is True
+    completed_ref_count = completed_metadata["ref_count"]
+    assert isinstance(completed_ref_count, int)
+    assert completed_ref_count >= 1
+    assert "safe/topic" not in json.dumps(completed_metadata)
 
 
 def test_read_tool_output_is_redacted_and_audit_summary_is_recorded(tmp_path: Path) -> None:

@@ -20,6 +20,7 @@ EXPECTED_TOOL_NAMES = [
     "git.diff",
     "git.log",
     "git.show.commit_metadata",
+    "git.show.ref_summary",
     "git.status",
     "http.fetch",
 ]
@@ -33,6 +34,7 @@ EXPECTED_TOOL_RISKS = {
     "git.diff": "read",
     "git.log": "read",
     "git.show.commit_metadata": "read",
+    "git.show.ref_summary": "read",
     "git.status": "read",
     "http.fetch": "network",
 }
@@ -110,6 +112,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(_check_http_fetch_schema(manifest))
         if manifest_name == "git.show.commit_metadata":
             failures.extend(_check_git_commit_metadata_schema(manifest))
+        if manifest_name == "git.show.ref_summary":
+            failures.extend(_check_git_ref_summary_schema(manifest))
     if marker_hits:
         failures.append("manifest text references deferred or broad tool-power markers")
 
@@ -198,6 +202,68 @@ def _check_git_commit_metadata_schema(manifest: dict[str, Any]) -> list[str]:
     if drift:
         failures.append(
             "git.show.commit_metadata exposes forbidden caller-controlled fields: "
+            + ", ".join(drift)
+        )
+    return failures
+
+
+def _check_git_ref_summary_schema(manifest: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    schema = manifest.get("input_schema")
+    if not isinstance(schema, dict):
+        return ["git.show.ref_summary input_schema is missing or invalid"]
+    if schema.get("additionalProperties") is not False:
+        failures.append("git.show.ref_summary must keep additionalProperties: false")
+    required = schema.get("required")
+    if required != ["selector"]:
+        failures.append("git.show.ref_summary required fields drifted")
+    properties = schema.get("properties")
+    allowed = ["limit", "selector", "workspace_id"]
+    if not isinstance(properties, dict) or sorted(properties) != allowed:
+        failures.append("git.show.ref_summary properties drifted")
+        return failures
+    selector_schema = properties.get("selector")
+    if not isinstance(selector_schema, dict):
+        return failures + ["git.show.ref_summary selector schema is invalid"]
+    if selector_schema.get("additionalProperties") is not False:
+        failures.append("git.show.ref_summary selector must keep additionalProperties: false")
+    if selector_schema.get("required") != ["kind"]:
+        failures.append("git.show.ref_summary selector required fields drifted")
+    selector_properties = selector_schema.get("properties")
+    if not isinstance(selector_properties, dict):
+        failures.append("git.show.ref_summary selector properties are invalid")
+        return failures
+    kind = selector_properties.get("kind")
+    if not isinstance(kind, dict) or sorted(kind.get("enum", [])) != [
+        "all_local",
+        "branch",
+        "tag",
+    ]:
+        failures.append("git.show.ref_summary selector kind enum drifted")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("minimum") != 1 or limit.get("maximum") != 200:
+        failures.append("git.show.ref_summary limit bounds drifted")
+    forbidden_inputs = {
+        "argv",
+        "args",
+        "command",
+        "format",
+        "pathspec",
+        "remote",
+        "checkout",
+        "diff",
+        "headers",
+        "body",
+        "include_names",
+        "include_current_branch",
+        "ref",
+        "refspec",
+    }
+    exposed = set(properties) | set(selector_properties)
+    drift = sorted(exposed & forbidden_inputs)
+    if drift:
+        failures.append(
+            "git.show.ref_summary exposes forbidden caller-controlled fields: "
             + ", ".join(drift)
         )
     return failures
