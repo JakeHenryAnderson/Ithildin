@@ -262,6 +262,7 @@ read-only Git metadata capability. Broad capability implementation remains block
 | 243 - Next read-only capability seed | Done | [v0.9-next-read-only-capability-seed.md](v0.9-next-read-only-capability-seed.md); planning only, no runtime behavior. |
 | 244 - git.show.ref_summary proposal | Done | [capability-proposals/git-show-ref-summary.md](capability-proposals/git-show-ref-summary.md), [v0.9-git-ref-summary-proposal-review.md](v0.9-git-ref-summary-proposal-review.md), `make git-ref-summary-proposal-check`; design-only, no runtime behavior. |
 | 245 - git.show.ref_summary implementation plan | Done | [capability-implementation-plans/git-show-ref-summary.md](capability-implementation-plans/git-show-ref-summary.md), `make git-ref-summary-implementation-plan-check`; implementation-planning only, no runtime behavior. |
+| 246 - Read-only metadata expansion hardening | Done | [read-only-local-metadata-contract.md](read-only-local-metadata-contract.md), [metadata-privacy-policy.md](metadata-privacy-policy.md), [read-only-metadata-capability-checklist.md](read-only-metadata-capability-checklist.md), [read-only-capability-source-review-template.md](read-only-capability-source-review-template.md), [v3-readiness-debt-register.md](v3-readiness-debt-register.md), `make read-only-metadata-capability-check`; no runtime behavior. |
 
 ## Future Candidate Track
 

@@ -36,6 +36,7 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    read_only_metadata_capability_check,
     release_automation_source_review_bundle,
     release_evidence,
     release_guardrails,
@@ -472,6 +473,42 @@ def test_git_ref_summary_implementation_plan_check_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/capability-implementation-plans/git-show-ref-summary.md" in docs_site
+
+
+def test_read_only_metadata_capability_check_is_wired() -> None:
+    report = read_only_metadata_capability_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 11
+    assert report["new_power_classes_allowed"] is False
+    assert "make read-only-metadata-capability-check" in readme
+    assert "read-only-metadata-capability-check:" in makefile
+    assert "read-only-metadata-capability-check" in release_check_body
+    for rel_path, title in [
+        (
+            "docs/codex/read-only-local-metadata-contract.md",
+            "Read-Only Local Metadata Capability Contract",
+        ),
+        ("docs/codex/metadata-privacy-policy.md", "Metadata Privacy Policy"),
+        (
+            "docs/codex/read-only-metadata-capability-checklist.md",
+            "Read-Only Metadata Capability Checklist",
+        ),
+        (
+            "docs/codex/read-only-capability-source-review-template.md",
+            "Read-Only Capability Source Review Template",
+        ),
+        ("docs/codex/v3-readiness-debt-register.md", "v3 Readiness Debt Register"),
+    ]:
+        assert rel_path in read_only_metadata_capability_check.DOC_REQUIREMENTS
+        assert rel_path in review_docs.REVIEW_DOCS
+        assert rel_path in docs_site
+        assert title in index
 
 
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
@@ -923,6 +960,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "git-commit-metadata-source-review-bundle",
         "git-ref-summary-proposal-check",
         "git-ref-summary-implementation-plan-check",
+        "read-only-metadata-capability-check",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -938,10 +976,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "23. `make git-commit-metadata-source-review-bundle`" in reproduction_map
     assert "24. `make git-ref-summary-proposal-check`" in reproduction_map
     assert "25. `make git-ref-summary-implementation-plan-check`" in reproduction_map
-    assert "26. `make review-packet-bundle`" in reproduction_map
-    assert "27. `make review-packet-consolidated`" in reproduction_map
-    assert "28. `make packet-redaction-scan`" in reproduction_map
-    assert "29. `make docs-site`" in reproduction_map
+    assert "26. `make read-only-metadata-capability-check`" in reproduction_map
+    assert "27. `make review-packet-bundle`" in reproduction_map
+    assert "28. `make review-packet-consolidated`" in reproduction_map
+    assert "29. `make packet-redaction-scan`" in reproduction_map
+    assert "30. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 

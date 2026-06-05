@@ -134,6 +134,7 @@ tamper-evident audit log.
 - `make git-ref-summary-implementation-plan-check` - validate the `git.show.ref_summary` implementation-planning packet without authorizing runtime work.
 - `make git-commit-metadata-implementation-plan-check` - validate the historical implementation-planning packet.
 - `make git-commit-metadata-implementation-gate` - validate the approved read-only `git.show.commit_metadata` implementation boundary.
+- `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
@@ -396,6 +397,13 @@ The implementation-planning packet is
 and is checked with `make git-ref-summary-implementation-plan-check`; it prepares a later
 implementation decision without adding manifests, executors, policy rules, MCP exposure, or runtime
 behavior.
+The shared expansion-prep hardening docs are
+[docs/codex/read-only-local-metadata-contract.md](docs/codex/read-only-local-metadata-contract.md),
+[docs/codex/metadata-privacy-policy.md](docs/codex/metadata-privacy-policy.md),
+[docs/codex/read-only-metadata-capability-checklist.md](docs/codex/read-only-metadata-capability-checklist.md),
+[docs/codex/read-only-capability-source-review-template.md](docs/codex/read-only-capability-source-review-template.md),
+and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-register.md); they are
+checked with `make read-only-metadata-capability-check`.
 The existing `make v09-design-review-packet` target remains the historical
 `git.show.commit_metadata` design-review packet; no focused handoff packet for
 `git.show.ref_summary` has been generated yet.

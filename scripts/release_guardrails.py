@@ -61,6 +61,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "filesystem-contract-check",
     "tool-surface-invariant-gate",
     "no-new-powers-guardrail",
+    "read-only-metadata-capability-check",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",
