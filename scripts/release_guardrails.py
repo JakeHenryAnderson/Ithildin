@@ -64,6 +64,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "read-only-metadata-capability-check",
     "read-only-capability-inventory-gate",
     "v3-next-capability-candidate-check",
+    "project-manifest-summary-proposal-check",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",

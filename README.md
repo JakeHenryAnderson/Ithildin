@@ -140,6 +140,8 @@ tamper-evident audit log.
   tool inventory, implementation gates, source-review handoffs, and release-check wiring.
 - `make v3-next-capability-candidate-check` - validate the design-only evaluation for the next
   candidate, `project.manifest.summary`, without authorizing runtime work.
+- `make project-manifest-summary-proposal-check` - validate the design-only
+  `project.manifest.summary` proposal without authorizing runtime work.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
 - `make git-ref-summary-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.ref_summary` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
@@ -418,7 +420,10 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)
-and is checked with `make v3-next-capability-candidate-check`.
+and is checked with `make v3-next-capability-candidate-check`. The proposal for that candidate is
+[docs/codex/capability-proposals/project-manifest-summary.md](docs/codex/capability-proposals/project-manifest-summary.md)
+and is checked with `make project-manifest-summary-proposal-check`; it does not authorize runtime
+work.
 The existing `make v09-design-review-packet` target remains the historical
 `git.show.commit_metadata` design-review packet; use `make git-ref-summary-source-review-bundle`
 for the focused `git.show.ref_summary` source-review handoff.

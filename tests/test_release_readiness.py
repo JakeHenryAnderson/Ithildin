@@ -38,6 +38,7 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    project_manifest_summary_proposal_check,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
@@ -595,6 +596,64 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
     assert "v3 Next Capability Candidate Evaluation" in index
     assert "docs/codex/v3-next-capability-candidate-evaluation.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-next-capability-candidate-evaluation.md" in docs_site
+
+
+def test_project_manifest_summary_proposal_check_is_wired() -> None:
+    report = project_manifest_summary_proposal_check.build_report(Path.cwd())
+    doc = Path("docs/codex/capability-proposals/project-manifest-summary.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.manifest.summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 12
+    for phrase in [
+        "Status: design-only proposal",
+        "does not add a tool manifest",
+        "does not add an executor",
+        "does not add MCP exposure",
+        "project.manifest.summary",
+        "Manifest Allowlist",
+        "package.json",
+        "pyproject.toml",
+        "go.mod",
+        "Cargo.toml",
+        "no file contents",
+        "no package script values",
+        "no dependency names by default",
+        "no registry or network access",
+        "no shell",
+        "Strict Schema Contract",
+        "Parser Contract Sketch",
+        "Privacy Policy",
+        "Policy Fixtures",
+        "Audit Fields",
+        "Resource Limits",
+        "Negative Transcripts",
+        "UI/review Evidence",
+        "Accepted-Risk Impact",
+        "No-New-Powers Analysis",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in doc
+    assert "make project-manifest-summary-proposal-check" in readme
+    assert "project-manifest-summary-proposal-check:" in makefile
+    assert "project-manifest-summary-proposal-check" in release_check_body
+    assert (
+        "project-manifest-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.manifest.summary" in index
+    assert "docs/codex/capability-proposals/project-manifest-summary.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/project-manifest-summary.md" in docs_site
 
 
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
@@ -1202,6 +1261,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "read-only-metadata-capability-check",
         "read-only-capability-inventory-gate",
         "v3-next-capability-candidate-check",
+        "project-manifest-summary-proposal-check",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1222,10 +1282,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "28. `make read-only-metadata-capability-check`" in reproduction_map
     assert "29. `make read-only-capability-inventory-gate`" in reproduction_map
     assert "30. `make v3-next-capability-candidate-check`" in reproduction_map
-    assert "31. `make review-packet-bundle`" in reproduction_map
-    assert "32. `make review-packet-consolidated`" in reproduction_map
-    assert "33. `make packet-redaction-scan`" in reproduction_map
-    assert "34. `make docs-site`" in reproduction_map
+    assert "31. `make project-manifest-summary-proposal-check`" in reproduction_map
+    assert "32. `make review-packet-bundle`" in reproduction_map
+    assert "33. `make review-packet-consolidated`" in reproduction_map
+    assert "34. `make packet-redaction-scan`" in reproduction_map
+    assert "35. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
