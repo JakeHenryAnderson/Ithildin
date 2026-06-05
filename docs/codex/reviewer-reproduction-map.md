@@ -236,26 +236,33 @@ work must stop for status, reassessment, or external consultation.
    manifest allowlist, strict schema contract, privacy policy, parser sketch, negative transcript
    plan, and explicit no-runtime-change boundary.
 
-32. `make review-packet-bundle`
+32. `make project-manifest-summary-implementation-plan-check`
+
+   Expected outcome: validates the implementation-planning packet for `project.manifest.summary`,
+   including the strict input/output schema, manifest allowlist, count-only parser plan,
+   privacy/redaction plan, negative transcript plan, resource limits, and continued blocked runtime
+   boundary.
+
+33. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-33. `make review-packet-consolidated`
+34. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-34. `make packet-redaction-scan`
+35. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-35. `make docs-site`
+36. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.

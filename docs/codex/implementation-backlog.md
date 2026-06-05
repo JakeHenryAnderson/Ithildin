@@ -268,6 +268,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 249 - Read-only capability inventory | Done | [read-only-capability-inventory.md](read-only-capability-inventory.md), `make read-only-capability-inventory-gate`; validates the approved bounded metadata tool inventory and release-check wiring. |
 | 250 - v3 next capability candidate evaluation | Done | [v3-next-capability-candidate-evaluation.md](v3-next-capability-candidate-evaluation.md), `make v3-next-capability-candidate-check`; selects `project.manifest.summary` as design-only candidate with implementation blocked. |
 | 251 - project.manifest.summary proposal | Done | [capability-proposals/project-manifest-summary.md](capability-proposals/project-manifest-summary.md), `make project-manifest-summary-proposal-check`; design-only, no runtime behavior. |
+| 252 - project.manifest.summary implementation plan | Done | [capability-implementation-plans/project-manifest-summary.md](capability-implementation-plans/project-manifest-summary.md), `make project-manifest-summary-implementation-plan-check`; implementation-planning only, no runtime behavior. |
 
 ## Future Candidate Track
 

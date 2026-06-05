@@ -38,6 +38,7 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
@@ -656,6 +657,82 @@ def test_project_manifest_summary_proposal_check_is_wired() -> None:
     assert "docs/codex/capability-proposals/project-manifest-summary.md" in docs_site
 
 
+def test_project_manifest_summary_implementation_plan_check_is_wired() -> None:
+    report = project_manifest_summary_implementation_plan_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/capability-implementation-plans/project-manifest-summary.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.manifest.summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 12
+    for required in [
+        "Status: implementation-planning only",
+        "does not add a tool manifest",
+        "Implementation state: blocked",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Strict Schema Contract",
+        "additionalProperties: false",
+        "Manifest Allowlist And Selection",
+        "Parser Contract Checklist",
+        "Proposed Output Contract",
+        "Ecosystem Parser Plan",
+        "Privacy And Redaction Plan",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Resource Limits",
+        "Source Review And Implementation Decision Requirement",
+        "package.json",
+        "pyproject.toml",
+        "go.mod",
+        "Cargo.toml",
+        "requirements.txt",
+        "workspace registry",
+        "existing filesystem path-safety rules",
+        "no file contents",
+        "no package script names or values",
+        "no dependency names",
+        "no package version constraints",
+        "no registry URLs",
+        "no repository URLs",
+        "no stable cross-response package identifiers",
+        "no recursive directory traversal",
+        "safe error output",
+        "Actual implementation remains blocked",
+    ]:
+        assert required in doc
+    for forbidden in [
+        "implementation is approved",
+        "runtime behavior is added",
+        "this planning sprint adds a manifest",
+    ]:
+        assert forbidden not in doc.lower()
+    assert "make project-manifest-summary-implementation-plan-check" in readme
+    assert "project-manifest-summary-implementation-plan-check:" in makefile
+    assert "project-manifest-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-manifest-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Implementation-Planning Packet: project.manifest.summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/project-manifest-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/project-manifest-summary.md" in docs_site
+
+
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
     report = git_commit_metadata_implementation_plan_check.build_report(Path.cwd())
     doc = Path(
@@ -1262,6 +1339,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "read-only-capability-inventory-gate",
         "v3-next-capability-candidate-check",
         "project-manifest-summary-proposal-check",
+        "project-manifest-summary-implementation-plan-check",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1283,10 +1361,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "29. `make read-only-capability-inventory-gate`" in reproduction_map
     assert "30. `make v3-next-capability-candidate-check`" in reproduction_map
     assert "31. `make project-manifest-summary-proposal-check`" in reproduction_map
-    assert "32. `make review-packet-bundle`" in reproduction_map
-    assert "33. `make review-packet-consolidated`" in reproduction_map
-    assert "34. `make packet-redaction-scan`" in reproduction_map
-    assert "35. `make docs-site`" in reproduction_map
+    assert "32. `make project-manifest-summary-implementation-plan-check`" in reproduction_map
+    assert "33. `make review-packet-bundle`" in reproduction_map
+    assert "34. `make review-packet-consolidated`" in reproduction_map
+    assert "35. `make packet-redaction-scan`" in reproduction_map
+    assert "36. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 

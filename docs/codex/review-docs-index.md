@@ -111,6 +111,7 @@ externally closed.
 - [Capability Proposal: git.show.commit_metadata](capability-proposals/git-show-commit-metadata.md)
 - [Capability Proposal: git.show.ref_summary](capability-proposals/git-show-ref-summary.md)
 - [Capability Proposal: project.manifest.summary](capability-proposals/project-manifest-summary.md)
+- [Implementation-Planning Packet: project.manifest.summary](capability-implementation-plans/project-manifest-summary.md)
 - [Implementation-Planning Packet: git.show.ref_summary](capability-implementation-plans/git-show-ref-summary.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
 - [v0.9 git.show.commit_metadata Implementation](v0.9-git-commit-metadata-implementation.md)
