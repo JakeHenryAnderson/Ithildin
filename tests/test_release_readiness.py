@@ -72,6 +72,7 @@ from scripts import (
     v08_status_reconciliation,
     v09_design_only_gate,
     v09_design_review_packet,
+    v3_next_capability_candidate_check,
 )
 
 
@@ -552,6 +553,48 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
     assert "Read-Only Capability Inventory" in index
     assert "docs/codex/read-only-capability-inventory.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/read-only-capability-inventory.md" in docs_site
+
+
+def test_v3_next_capability_candidate_check_is_wired() -> None:
+    report = v3_next_capability_candidate_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    doc = Path("docs/codex/v3-next-capability-candidate-evaluation.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["candidate"] == "project.manifest.summary"
+    assert report["candidate_status"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["tool_count"] == 12
+    assert report["approved_read_only_capabilities"] == 2
+    for phrase in [
+        "Status: design-only candidate evaluation",
+        "project.manifest.summary",
+        "implementation remains blocked",
+        "does not add a manifest",
+        "does not add an executor",
+        "no file contents",
+        "no package script values",
+        "no dependency names by default",
+        "no registry or network access",
+        "no shell",
+    ]:
+        assert phrase in doc
+    assert "make v3-next-capability-candidate-check" in readme
+    assert "v3-next-capability-candidate-check:" in makefile
+    assert "v3-next-capability-candidate-check" in release_check_body
+    assert (
+        "v3-next-capability-candidate-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "v3 Next Capability Candidate Evaluation" in index
+    assert "docs/codex/v3-next-capability-candidate-evaluation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-next-capability-candidate-evaluation.md" in docs_site
 
 
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
@@ -1158,6 +1201,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "git-ref-summary-source-review-bundle",
         "read-only-metadata-capability-check",
         "read-only-capability-inventory-gate",
+        "v3-next-capability-candidate-check",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1177,10 +1221,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "27. `make git-ref-summary-source-review-bundle`" in reproduction_map
     assert "28. `make read-only-metadata-capability-check`" in reproduction_map
     assert "29. `make read-only-capability-inventory-gate`" in reproduction_map
-    assert "30. `make review-packet-bundle`" in reproduction_map
-    assert "31. `make review-packet-consolidated`" in reproduction_map
-    assert "32. `make packet-redaction-scan`" in reproduction_map
-    assert "33. `make docs-site`" in reproduction_map
+    assert "30. `make v3-next-capability-candidate-check`" in reproduction_map
+    assert "31. `make review-packet-bundle`" in reproduction_map
+    assert "32. `make review-packet-consolidated`" in reproduction_map
+    assert "33. `make packet-redaction-scan`" in reproduction_map
+    assert "34. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 

@@ -265,6 +265,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 246 - Read-only metadata expansion hardening | Done | [read-only-local-metadata-contract.md](read-only-local-metadata-contract.md), [metadata-privacy-policy.md](metadata-privacy-policy.md), [read-only-metadata-capability-checklist.md](read-only-metadata-capability-checklist.md), [read-only-capability-source-review-template.md](read-only-capability-source-review-template.md), [v3-readiness-debt-register.md](v3-readiness-debt-register.md), `make read-only-metadata-capability-check`; no runtime behavior. |
 | 247 - git.show.ref_summary implementation | Done | `git.show.ref_summary` is implemented as a bounded read-only local Git metadata tool with no raw ref names, no stable ref-name hashes, no file contents, no shell, no remote refs, and no broader Git mutation powers. |
 | 248 - git.show.ref_summary source-review handoff | Done | [v0.9-git-ref-summary-implementation.md](v0.9-git-ref-summary-implementation.md), [v0.9-git-ref-summary-source-review.md](v0.9-git-ref-summary-source-review.md), `make git-ref-summary-implementation-gate`, and `make git-ref-summary-source-review-bundle`. |
+| 249 - Read-only capability inventory | Done | [read-only-capability-inventory.md](read-only-capability-inventory.md), `make read-only-capability-inventory-gate`; validates the approved bounded metadata tool inventory and release-check wiring. |
+| 250 - v3 next capability candidate evaluation | Done | [v3-next-capability-candidate-evaluation.md](v3-next-capability-candidate-evaluation.md), `make v3-next-capability-candidate-check`; selects `project.manifest.summary` as design-only candidate with implementation blocked. |
 
 ## Future Candidate Track
 

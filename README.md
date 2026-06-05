@@ -138,6 +138,8 @@ tamper-evident audit log.
 - `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
 - `make read-only-capability-inventory-gate` - validate the approved bounded read-only metadata
   tool inventory, implementation gates, source-review handoffs, and release-check wiring.
+- `make v3-next-capability-candidate-check` - validate the design-only evaluation for the next
+  candidate, `project.manifest.summary`, without authorizing runtime work.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
 - `make git-ref-summary-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.ref_summary` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
@@ -408,12 +410,15 @@ the ignored output is `var/review-packets/v0.9/git-ref-summary-source-review/`.
 The shared expansion-prep hardening docs are
 [docs/codex/read-only-local-metadata-contract.md](docs/codex/read-only-local-metadata-contract.md),
 [docs/codex/read-only-capability-inventory.md](docs/codex/read-only-capability-inventory.md),
+[docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md),
 [docs/codex/metadata-privacy-policy.md](docs/codex/metadata-privacy-policy.md),
 [docs/codex/read-only-metadata-capability-checklist.md](docs/codex/read-only-metadata-capability-checklist.md),
 [docs/codex/read-only-capability-source-review-template.md](docs/codex/read-only-capability-source-review-template.md),
 and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-register.md); they are
 checked with `make read-only-metadata-capability-check` and
-`make read-only-capability-inventory-gate`.
+`make read-only-capability-inventory-gate`. The next design-only candidate evaluation is
+[docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)
+and is checked with `make v3-next-capability-candidate-check`.
 The existing `make v09-design-review-packet` target remains the historical
 `git.show.commit_metadata` design-review packet; use `make git-ref-summary-source-review-bundle`
 for the focused `git.show.ref_summary` source-review handoff.

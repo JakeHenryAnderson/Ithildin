@@ -63,6 +63,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "no-new-powers-guardrail",
     "read-only-metadata-capability-check",
     "read-only-capability-inventory-gate",
+    "v3-next-capability-candidate-check",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",
