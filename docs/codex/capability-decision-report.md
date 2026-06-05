@@ -30,4 +30,5 @@ The report is suitable for handoff and planning. It is not a capability-expansio
 tool planning remains blocked until external/source review closure, accepted-risk disposition, and a
 separate explicit capability decision are recorded. The bounded v0.9 `git.show.commit_metadata`
 implementation has its own separate gate and internal xhigh lane-closure summary; it does not unlock
-broader capability implementation.
+broader capability implementation. The follow-on `git.show.ref_summary` material is design-only and
+checked with `make git-ref-summary-proposal-check`; it does not authorize runtime implementation.

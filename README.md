@@ -130,6 +130,7 @@ tamper-evident audit log.
 - `make v08-final-decision-packet` - validate the final v0.8 product-risk decision packet.
 - `make v09-design-only-gate` - validate the historical v0.9 design-only packet and its superseding implementation record.
 - `make git-commit-metadata-proposal-check` - validate the first design-only capability proposal.
+- `make git-ref-summary-proposal-check` - validate the next read-only Git metadata proposal.
 - `make git-commit-metadata-implementation-plan-check` - validate the historical implementation-planning packet.
 - `make git-commit-metadata-implementation-gate` - validate the approved read-only `git.show.commit_metadata` implementation boundary.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
@@ -383,10 +384,15 @@ unapproved.
 The next read-only capability seed is
 [docs/codex/v0.9-next-read-only-capability-seed.md](docs/codex/v0.9-next-read-only-capability-seed.md);
 it is planning material only and does not add runtime behavior.
-The focused design-review handoff for that proposal is generated with
-`make v09-design-review-packet`; it asks GPT 5.5 Pro / human review whether implementation
-planning may be considered later, without authorizing manifests, executors, policy rules, MCP
-exposure, or runtime behavior.
+The next design-only capability proposal is
+[docs/codex/capability-proposals/git-show-ref-summary.md](docs/codex/capability-proposals/git-show-ref-summary.md)
+and is checked with `make git-ref-summary-proposal-check`; it does not authorize manifests,
+executors, policy rules, MCP exposure, or runtime behavior.
+The proposal review/remediation note is
+[docs/codex/v0.9-git-ref-summary-proposal-review.md](docs/codex/v0.9-git-ref-summary-proposal-review.md).
+The existing `make v09-design-review-packet` target remains the historical
+`git.show.commit_metadata` design-review packet; no focused handoff packet for
+`git.show.ref_summary` has been generated yet.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

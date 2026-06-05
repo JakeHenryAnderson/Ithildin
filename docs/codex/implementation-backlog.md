@@ -260,6 +260,7 @@ read-only Git metadata capability. Broad capability implementation remains block
 | 241 - git.show.commit_metadata source-review handoff | Done | [v0.9-git-commit-metadata-source-review.md](v0.9-git-commit-metadata-source-review.md), `make git-commit-metadata-source-review-bundle` |
 | 242 - git.show.commit_metadata internal lane closure | Done | [v0.9-lane-closure-summary.md](v0.9-lane-closure-summary.md); internal xhigh review/remediation is sufficient to continue local-preview development for this bounded read-only lane. |
 | 243 - Next read-only capability seed | Done | [v0.9-next-read-only-capability-seed.md](v0.9-next-read-only-capability-seed.md); planning only, no runtime behavior. |
+| 244 - git.show.ref_summary proposal | Done | [capability-proposals/git-show-ref-summary.md](capability-proposals/git-show-ref-summary.md), [v0.9-git-ref-summary-proposal-review.md](v0.9-git-ref-summary-proposal-review.md), `make git-ref-summary-proposal-check`; design-only, no runtime behavior. |
 
 ## Future Candidate Track
 

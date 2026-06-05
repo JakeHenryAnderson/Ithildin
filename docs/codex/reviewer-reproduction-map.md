@@ -186,26 +186,32 @@ work must stop for status, reassessment, or external consultation.
    implementation record, no-new-powers evidence, command evidence, and artifact hashes for
    source-level external review.
 
-24. `make review-packet-bundle`
+24. `make git-ref-summary-proposal-check`
+
+   Expected outcome: validates the design-only `git.show.ref_summary` proposal, confirms the tool
+   count remains unchanged, and confirms the proposal does not authorize manifests, executors,
+   policy rules, MCP exposure, or runtime behavior.
+
+25. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-25. `make review-packet-consolidated`
+26. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-26. `make packet-redaction-scan`
+27. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-27. `make docs-site`
+28. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.

@@ -27,6 +27,7 @@ from scripts import (
     git_commit_metadata_implementation_plan_check,
     git_commit_metadata_proposal_check,
     git_commit_metadata_source_review_bundle,
+    git_ref_summary_proposal_check,
     http_fetch_source_review_bundle,
     internal_review_packet,
     mcp_ingress_source_review_bundle,
@@ -348,6 +349,60 @@ def test_git_commit_metadata_proposal_check_is_wired() -> None:
     assert "Capability Proposal: git.show.commit_metadata" in index
     assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-proposals/git-show-commit-metadata.md" in docs_site
+
+
+def test_git_ref_summary_proposal_check_is_wired() -> None:
+    report = git_ref_summary_proposal_check.build_report(Path.cwd())
+    doc = Path("docs/codex/capability-proposals/git-show-ref-summary.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "git.show.ref_summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["evidence"]["tool_count"] == 11
+    for required in [
+        "Status: design-only proposal",
+        "does not add a tool manifest",
+        "git.show.ref_summary",
+        "Ref Name Privacy Policy",
+        "Stable hashes are not anonymity guarantees",
+        "Ref Selection Policy",
+        "refs/heads/<name>",
+        "refs/tags/<name>",
+        "remote-tracking refs",
+        "HEAD@{1}",
+        "HEAD~1",
+        ":/message",
+        "main:README.md",
+        "Executor Contract Sketch",
+        "--end-of-options",
+        "internally controlled `git for-each-ref` format strings only",
+        "Policy Fixtures",
+        "Audit Fields",
+        "Resource Limits",
+        "Negative Transcripts",
+        "UI/review Evidence",
+        "Accepted-Risk Impact",
+        "No-New-Powers Analysis",
+        "External/source Review Requirement",
+    ]:
+        assert required in doc
+    assert "make git-ref-summary-proposal-check" in readme
+    assert "git-ref-summary-proposal-check:" in makefile
+    assert "git-ref-summary-proposal-check" in release_check_body
+    assert "Capability Proposal: git.show.ref_summary" in index
+    assert "v0.9 git.show.ref_summary Proposal Review" in index
+    assert "docs/codex/capability-proposals/git-show-ref-summary.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/git-show-ref-summary.md" in docs_site
+    assert "docs/codex/v0.9-git-ref-summary-proposal-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.9-git-ref-summary-proposal-review.md" in docs_site
 
 
 def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
@@ -797,6 +852,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "signed-evidence-demo-verify",
         "filesystem-contract-check",
         "git-commit-metadata-source-review-bundle",
+        "git-ref-summary-proposal-check",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -810,10 +866,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "consolidated-attachment-hashes.json" in reproduction_map
     assert "review-doc-hashes.json" in reproduction_map
     assert "23. `make git-commit-metadata-source-review-bundle`" in reproduction_map
-    assert "24. `make review-packet-bundle`" in reproduction_map
-    assert "25. `make review-packet-consolidated`" in reproduction_map
-    assert "26. `make packet-redaction-scan`" in reproduction_map
-    assert "27. `make docs-site`" in reproduction_map
+    assert "24. `make git-ref-summary-proposal-check`" in reproduction_map
+    assert "25. `make review-packet-bundle`" in reproduction_map
+    assert "26. `make review-packet-consolidated`" in reproduction_map
+    assert "27. `make packet-redaction-scan`" in reproduction_map
+    assert "28. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
