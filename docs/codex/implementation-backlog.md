@@ -249,8 +249,8 @@ does not approve public preview, capability design, capability implementation, o
 
 ## v0.9 Capability Implementation Track
 
-v0.9 begins from the v0.8 product-risk decision and implements only the first approved bounded
-read-only Git metadata capability. Broad capability implementation remains blocked.
+v0.9 begins from the v0.8 product-risk decision and implements only the approved bounded read-only
+Git metadata additions recorded below. Broad capability implementation remains blocked.
 
 | Task | Status | Spec |
 | --- | --- | --- |
@@ -260,10 +260,11 @@ read-only Git metadata capability. Broad capability implementation remains block
 | 241 - git.show.commit_metadata source-review handoff | Done | [v0.9-git-commit-metadata-source-review.md](v0.9-git-commit-metadata-source-review.md), `make git-commit-metadata-source-review-bundle` |
 | 242 - git.show.commit_metadata internal lane closure | Done | [v0.9-lane-closure-summary.md](v0.9-lane-closure-summary.md); internal xhigh review/remediation is sufficient to continue local-preview development for this bounded read-only lane. |
 | 243 - Next read-only capability seed | Done | [v0.9-next-read-only-capability-seed.md](v0.9-next-read-only-capability-seed.md); planning only, no runtime behavior. |
-| 244 - git.show.ref_summary proposal | Done | [capability-proposals/git-show-ref-summary.md](capability-proposals/git-show-ref-summary.md), [v0.9-git-ref-summary-proposal-review.md](v0.9-git-ref-summary-proposal-review.md), `make git-ref-summary-proposal-check`; design-only, no runtime behavior. |
-| 245 - git.show.ref_summary implementation plan | Done | [capability-implementation-plans/git-show-ref-summary.md](capability-implementation-plans/git-show-ref-summary.md), `make git-ref-summary-implementation-plan-check`; implementation-planning only, no runtime behavior. |
+| 244 - git.show.ref_summary proposal | Done | [capability-proposals/git-show-ref-summary.md](capability-proposals/git-show-ref-summary.md), [v0.9-git-ref-summary-proposal-review.md](v0.9-git-ref-summary-proposal-review.md), `make git-ref-summary-proposal-check`; historical proposal lineage for the later bounded implementation. |
+| 245 - git.show.ref_summary implementation plan | Done | [capability-implementation-plans/git-show-ref-summary.md](capability-implementation-plans/git-show-ref-summary.md), `make git-ref-summary-implementation-plan-check`; historical implementation-planning lineage for the later bounded implementation. |
 | 246 - Read-only metadata expansion hardening | Done | [read-only-local-metadata-contract.md](read-only-local-metadata-contract.md), [metadata-privacy-policy.md](metadata-privacy-policy.md), [read-only-metadata-capability-checklist.md](read-only-metadata-capability-checklist.md), [read-only-capability-source-review-template.md](read-only-capability-source-review-template.md), [v3-readiness-debt-register.md](v3-readiness-debt-register.md), `make read-only-metadata-capability-check`; no runtime behavior. |
 | 247 - git.show.ref_summary implementation | Done | `git.show.ref_summary` is implemented as a bounded read-only local Git metadata tool with no raw ref names, no stable ref-name hashes, no file contents, no shell, no remote refs, and no broader Git mutation powers. |
+| 248 - git.show.ref_summary source-review handoff | Done | [v0.9-git-ref-summary-implementation.md](v0.9-git-ref-summary-implementation.md), [v0.9-git-ref-summary-source-review.md](v0.9-git-ref-summary-source-review.md), `make git-ref-summary-implementation-gate`, and `make git-ref-summary-source-review-bundle`. |
 
 ## Future Candidate Track
 

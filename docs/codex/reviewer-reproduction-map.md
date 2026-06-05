@@ -195,34 +195,49 @@ work must stop for status, reassessment, or external consultation.
 25. `make git-ref-summary-implementation-plan-check`
 
    Expected outcome: validates the implementation-planning packet for `git.show.ref_summary`,
-   confirms implementation remains blocked, and confirms no runtime behavior is authorized.
+   records the historical implementation-planning checklist, and confirms the plan remains bounded
+   to one read-only local metadata capability.
 
-26. `make read-only-metadata-capability-check`
+26. `make git-ref-summary-implementation-gate`
+
+   Expected outcome: validates the approved bounded read-only `git.show.ref_summary`
+   implementation boundary, including no raw ref names, no stable ref-name hashes, no remote refs,
+   no shell, no raw diffs, no file contents, and tool count `12`.
+
+27. `make git-ref-summary-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.9/git-ref-summary-source-review/`. This attaches the
+   `git.show.ref_summary` manifest, implementation path, focused tests, policy-parity fixture,
+   implementation record, no-new-powers evidence, command evidence, and artifact hashes for
+   source-level review.
+
+28. `make read-only-metadata-capability-check`
 
    Expected outcome: validates the shared read-only metadata contract, metadata privacy policy,
    reusable capability checklist, source-review template, and v3 readiness debt register without
    authorizing runtime behavior or new power classes.
 
-27. `make review-packet-bundle`
+29. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-28. `make review-packet-consolidated`
+30. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-29. `make packet-redaction-scan`
+31. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-30. `make docs-site`
+32. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -239,6 +254,7 @@ work must stop for status, reassessment, or external consultation.
 - Review console/admin source-review bundle: `var/review-packets/v0.7/review-console-source-review/`
 - Release/evidence automation source-review bundle: `var/review-packets/v0.7/release-automation-source-review/`
 - git.show.commit_metadata source-review bundle: `var/review-packets/v0.9/git-commit-metadata-source-review/`
+- git.show.ref_summary source-review bundle: `var/review-packets/v0.9/git-ref-summary-source-review/`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

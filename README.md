@@ -132,10 +132,12 @@ tamper-evident audit log.
 - `make git-commit-metadata-proposal-check` - validate the first design-only capability proposal.
 - `make git-ref-summary-proposal-check` - validate the next read-only Git metadata proposal.
 - `make git-ref-summary-implementation-plan-check` - validate the `git.show.ref_summary` implementation-planning packet without authorizing runtime work.
+- `make git-ref-summary-implementation-gate` - validate the approved read-only `git.show.ref_summary` implementation boundary.
 - `make git-commit-metadata-implementation-plan-check` - validate the historical implementation-planning packet.
 - `make git-commit-metadata-implementation-gate` - validate the approved read-only `git.show.commit_metadata` implementation boundary.
 - `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
+- `make git-ref-summary-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.ref_summary` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
@@ -361,7 +363,8 @@ with `make v08-final-decision-packet`.
 The v0.9 design-only boundary charter is recorded in
 [docs/codex/v0.9-design-only-boundary-charter.md](docs/codex/v0.9-design-only-boundary-charter.md)
 and checked with `make v09-design-only-gate`; it remains the historical design-only boundary that
-was superseded only for the reviewed `git.show.commit_metadata` implementation.
+was superseded only for the reviewed bounded `git.show.commit_metadata` and `git.show.ref_summary`
+implementations.
 The first design-only capability proposal is
 [docs/codex/capability-proposals/git-show-commit-metadata.md](docs/codex/capability-proposals/git-show-commit-metadata.md)
 and is checked with `make git-commit-metadata-proposal-check`.
@@ -381,22 +384,25 @@ the ignored output is `var/review-packets/v0.9/git-commit-metadata-source-review
 The v0.9 lane-closure summary is recorded in
 [docs/codex/v0.9-lane-closure-summary.md](docs/codex/v0.9-lane-closure-summary.md): internal
 xhigh review is sufficient to continue local-preview development for this one bounded read-only Git
-metadata lane, while public/security-product positioning and broader capability expansion remain
+metadata track, while public/security-product positioning and broader capability expansion remain
 unapproved.
 The next read-only capability seed is
 [docs/codex/v0.9-next-read-only-capability-seed.md](docs/codex/v0.9-next-read-only-capability-seed.md);
-it is planning material only and does not add runtime behavior.
-The next design-only capability proposal is
+it is historical planning material for the now-implemented `git.show.ref_summary` lane.
+The next read-only capability proposal is
 [docs/codex/capability-proposals/git-show-ref-summary.md](docs/codex/capability-proposals/git-show-ref-summary.md)
-and is checked with `make git-ref-summary-proposal-check`; it does not authorize manifests,
-executors, policy rules, MCP exposure, or runtime behavior.
+and is checked with `make git-ref-summary-proposal-check`.
 The proposal review/remediation note is
 [docs/codex/v0.9-git-ref-summary-proposal-review.md](docs/codex/v0.9-git-ref-summary-proposal-review.md).
 The implementation-planning packet is
 [docs/codex/capability-implementation-plans/git-show-ref-summary.md](docs/codex/capability-implementation-plans/git-show-ref-summary.md)
-and is checked with `make git-ref-summary-implementation-plan-check`; it prepares a later
-implementation decision without adding manifests, executors, policy rules, MCP exposure, or runtime
-behavior.
+and is checked with `make git-ref-summary-implementation-plan-check`.
+The approved implementation record is
+[docs/codex/v0.9-git-ref-summary-implementation.md](docs/codex/v0.9-git-ref-summary-implementation.md)
+and is checked with `make git-ref-summary-implementation-gate`. It adds one bounded read-only Git
+ref metadata tool and does not unlock broader capability implementation. The focused source-review
+handoff is [docs/codex/v0.9-git-ref-summary-source-review.md](docs/codex/v0.9-git-ref-summary-source-review.md);
+the ignored output is `var/review-packets/v0.9/git-ref-summary-source-review/`.
 The shared expansion-prep hardening docs are
 [docs/codex/read-only-local-metadata-contract.md](docs/codex/read-only-local-metadata-contract.md),
 [docs/codex/metadata-privacy-policy.md](docs/codex/metadata-privacy-policy.md),
@@ -405,8 +411,8 @@ The shared expansion-prep hardening docs are
 and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-register.md); they are
 checked with `make read-only-metadata-capability-check`.
 The existing `make v09-design-review-packet` target remains the historical
-`git.show.commit_metadata` design-review packet; no focused handoff packet for
-`git.show.ref_summary` has been generated yet.
+`git.show.commit_metadata` design-review packet; use `make git-ref-summary-source-review-bundle`
+for the focused `git.show.ref_summary` source-review handoff.
 External responses can be normalized with `make external-response-normalize FILE=...`; the workflow is
 documented in
 [docs/codex/v0.6-external-response-normalization.md](docs/codex/v0.6-external-response-normalization.md).

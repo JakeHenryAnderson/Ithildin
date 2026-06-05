@@ -114,6 +114,8 @@ externally closed.
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
 - [v0.9 git.show.commit_metadata Implementation](v0.9-git-commit-metadata-implementation.md)
 - [v0.9 git.show.commit_metadata Source Review Handoff](v0.9-git-commit-metadata-source-review.md)
+- [v0.9 git.show.ref_summary Implementation](v0.9-git-ref-summary-implementation.md)
+- [v0.9 git.show.ref_summary Source Review Handoff](v0.9-git-ref-summary-source-review.md)
 - [v0.9 Lane Closure Summary](v0.9-lane-closure-summary.md)
 - [v0.9 Next Read-Only Capability Seed](v0.9-next-read-only-capability-seed.md)
 - [v0.9 git.show.ref_summary Proposal Review](v0.9-git-ref-summary-proposal-review.md)

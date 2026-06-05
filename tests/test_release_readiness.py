@@ -27,8 +27,10 @@ from scripts import (
     git_commit_metadata_implementation_plan_check,
     git_commit_metadata_proposal_check,
     git_commit_metadata_source_review_bundle,
+    git_ref_summary_implementation_gate,
     git_ref_summary_implementation_plan_check,
     git_ref_summary_proposal_check,
+    git_ref_summary_source_review_bundle,
     http_fetch_source_review_bundle,
     internal_review_packet,
     mcp_ingress_source_review_bundle,
@@ -716,6 +718,157 @@ def test_git_commit_metadata_source_review_bundle_is_wired(tmp_path: Path) -> No
     assert "docs/codex/v0.9-git-commit-metadata-source-review.md" in docs_site
 
 
+def test_git_ref_summary_implementation_gate_is_wired() -> None:
+    report = git_ref_summary_implementation_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/v0.9-git-ref-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "git.show.ref_summary"
+    assert report["implementation_status"] == "approved_limited_read_only"
+    assert report["tool_count"] == 12
+    assert report["new_power_classes_allowed"] is False
+    for required in [
+        "approved v0.9 implementation",
+        "read-only Git ref metadata",
+        "no shell",
+        "no caller-supplied Git format strings",
+        "no raw ref names",
+        "no stable ref-name hashes",
+        "no remote refs",
+        "no file contents",
+        "fixed argv",
+        "make git-ref-summary-implementation-gate",
+    ]:
+        assert required in doc
+    assert "make git-ref-summary-implementation-gate" in readme
+    assert "git-ref-summary-implementation-gate:" in makefile
+    assert "git-ref-summary-implementation-gate" in release_check_body
+    assert "v0.9 git.show.ref_summary Implementation" in index
+    assert "docs/codex/v0.9-git-ref-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.9-git-ref-summary-implementation.md" in docs_site
+
+
+def test_git_ref_summary_source_review_bundle_is_wired(tmp_path: Path) -> None:
+    output_dir = git_ref_summary_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=tmp_path / "git-ref-summary-source-review",
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected_files = {
+        "00_GIT_REF_SUMMARY_SOURCE_REVIEW_INDEX.md",
+        "01_GIT_REF_SUMMARY_SOURCE_REVIEW_PROMPT.md",
+        "02_GIT_REF_SUMMARY_IMPLEMENTATION_PACKET.md",
+        "03_GIT_REF_SUMMARY_SOURCE_BUNDLE.md",
+        "04_GIT_REF_SUMMARY_TESTS_BUNDLE.md",
+        "05_GIT_REF_SUMMARY_CONTRACTS_BUNDLE.md",
+        "06_GIT_REF_SUMMARY_EVIDENCE.md",
+        "07_GIT_REF_SUMMARY_FOCUSED_TESTS.txt",
+        "08_GIT_REF_SUMMARY_INTAKE_COMMANDS.md",
+        "git-ref-summary-source-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected_files
+
+    index = output_dir.joinpath("00_GIT_REF_SUMMARY_SOURCE_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = output_dir.joinpath("01_GIT_REF_SUMMARY_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    implementation_packet = output_dir.joinpath(
+        "02_GIT_REF_SUMMARY_IMPLEMENTATION_PACKET.md"
+    ).read_text(encoding="utf-8")
+    source_bundle = output_dir.joinpath("03_GIT_REF_SUMMARY_SOURCE_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    tests_bundle = output_dir.joinpath("04_GIT_REF_SUMMARY_TESTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    contracts_bundle = output_dir.joinpath(
+        "05_GIT_REF_SUMMARY_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    evidence = output_dir.joinpath("06_GIT_REF_SUMMARY_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    focused = output_dir.joinpath("07_GIT_REF_SUMMARY_FOCUSED_TESTS.txt").read_text(
+        encoding="utf-8"
+    )
+    intake = output_dir.joinpath("08_GIT_REF_SUMMARY_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "`git.show.ref_summary` lane" in index
+    assert "EXT-GITREF-###" in prompt
+    assert "no raw ref names" in prompt
+    assert "no stable ref-name hashes" in prompt
+    assert "Implementation Gate JSON" in implementation_packet
+    assert "Internal Checkpoint Note" in implementation_packet
+    assert "apps/api/src/ithildin_api/read_tools.py" in source_bundle
+    assert "apps/api/src/ithildin_api/tool_calls.py" in source_bundle
+    assert "apps/mcp-server/src/ithildin_mcp_server/server.py" in source_bundle
+    assert "tool-manifests/git-show-ref-summary.yaml" in source_bundle
+    assert "policies/tests/parity.yaml" in tests_bundle
+    assert "tests/test_manifest_change_review.py" in tests_bundle
+    assert "docs/codex/v0.9-git-ref-summary-implementation.md" in contracts_bundle
+    assert "docs/codex/metadata-privacy-policy.md" in contracts_bundle
+    assert "make git-ref-summary-implementation-gate" in evidence
+    assert "make policy-parity" in evidence
+    assert "tests/test_read_tools.py" in focused
+    assert "tests/test_mcp_adapter.py" in focused
+    assert "--area \"git-ref-summary\"" in intake
+
+    hashes = json.loads(
+        output_dir.joinpath(
+            "git-ref-summary-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+    assert hashed_paths == expected_files - {"git-ref-summary-source-review-artifact-hashes.json"}
+    assert all(entry["sha256"].startswith("sha256:") for entry in hashes)
+    assert all(entry["bytes"] > 0 for entry in hashes)
+    implementation_hash = next(
+        entry["sha256"]
+        for entry in hashes
+        if entry["path"] == "02_GIT_REF_SUMMARY_IMPLEMENTATION_PACKET.md"
+    )
+    assert f"Implementation packet SHA-256: `{implementation_hash}`" in index
+    assert f"Reviewed implementation packet hash: `{implementation_hash}`" in prompt
+    assert f'--reviewed-packet-hash "{implementation_hash}"' in intake
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    index_doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    assert "make git-ref-summary-source-review-bundle" in readme
+    assert "git-ref-summary-source-review-bundle:" in makefile
+    assert "make git-ref-summary-source-review-bundle" in reproduction
+    assert "var/review-packets/v0.9/git-ref-summary-source-review/" in reproduction
+    assert "v0.9 git.show.ref_summary Source Review Handoff" in index_doc
+    assert "docs/codex/v0.9-git-ref-summary-source-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.9-git-ref-summary-source-review.md" in docs_site
+
+
+def test_git_ref_summary_source_review_bundle_fails_closed_on_command_error() -> None:
+    with pytest.raises(
+        git_ref_summary_source_review_bundle.GitRefSummarySourceReviewBundleError,
+        match="review evidence command failed",
+    ):
+        git_ref_summary_source_review_bundle._command_output(
+            [sys.executable, "-c", "import sys; sys.exit(7)"],
+            run_commands=True,
+        )
 def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
     output_dir = v09_design_review_packet.build_packet(
         repo_root=Path.cwd(),
@@ -960,6 +1113,8 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "git-commit-metadata-source-review-bundle",
         "git-ref-summary-proposal-check",
         "git-ref-summary-implementation-plan-check",
+        "git-ref-summary-implementation-gate",
+        "git-ref-summary-source-review-bundle",
         "read-only-metadata-capability-check",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
@@ -976,11 +1131,13 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "23. `make git-commit-metadata-source-review-bundle`" in reproduction_map
     assert "24. `make git-ref-summary-proposal-check`" in reproduction_map
     assert "25. `make git-ref-summary-implementation-plan-check`" in reproduction_map
-    assert "26. `make read-only-metadata-capability-check`" in reproduction_map
-    assert "27. `make review-packet-bundle`" in reproduction_map
-    assert "28. `make review-packet-consolidated`" in reproduction_map
-    assert "29. `make packet-redaction-scan`" in reproduction_map
-    assert "30. `make docs-site`" in reproduction_map
+    assert "26. `make git-ref-summary-implementation-gate`" in reproduction_map
+    assert "27. `make git-ref-summary-source-review-bundle`" in reproduction_map
+    assert "28. `make read-only-metadata-capability-check`" in reproduction_map
+    assert "29. `make review-packet-bundle`" in reproduction_map
+    assert "30. `make review-packet-consolidated`" in reproduction_map
+    assert "31. `make packet-redaction-scan`" in reproduction_map
+    assert "32. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 

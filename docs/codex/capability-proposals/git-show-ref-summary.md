@@ -1,11 +1,19 @@
 # Capability Proposal: git.show.ref_summary
 
-Status: design-only proposal.
+Status: historical design-only proposal; later advanced through implementation planning,
+implementation, and focused source-review handoff.
 
-This proposal does not add a tool manifest, executor code, API behavior, MCP exposure, policy rule,
-approval behavior, UI behavior, or runtime behavior. It is planning material for a possible future
-read-only local Git metadata tool. Implementation remains blocked until a separate implementation
-plan, source review, and explicit capability decision are recorded.
+Original status: design-only proposal.
+
+Original marker: Status: design-only proposal.
+
+Historical invariant: this proposal does not add a tool manifest, executor code, API behavior, MCP
+exposure, policy rule, approval behavior, UI behavior, or runtime behavior. It is kept as lineage
+for the bounded
+`git.show.ref_summary` implementation now recorded in
+[../v0.9-git-ref-summary-implementation.md](../v0.9-git-ref-summary-implementation.md) and
+[../v0.9-git-ref-summary-source-review.md](../v0.9-git-ref-summary-source-review.md). It does not
+authorize additional Git tools or broader capability expansion.
 
 ## Purpose
 

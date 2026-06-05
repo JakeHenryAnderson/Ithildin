@@ -1,19 +1,31 @@
 # Implementation-Planning Packet: git.show.ref_summary
 
-Status: implementation-planning only. This document does not add a tool manifest, executor, policy
-rule, MCP exposure, approval behavior, API behavior, UI behavior, or runtime behavior. It converts
-the remediated design-only `git.show.ref_summary` proposal into an implementation checklist for a
-later explicit implementation decision.
+Status: historical implementation-planning packet; later advanced through the approved bounded
+`git.show.ref_summary` implementation and source-review handoff.
+
+Original status: implementation-planning only.
+
+Original marker: Status: implementation-planning only.
+
+Historical invariant: this document does not add a tool manifest, executor, policy rule, MCP
+exposure, approval behavior, API behavior, UI behavior, or runtime behavior. It is kept as lineage
+for the bounded
+implementation now recorded in
+[../v0.9-git-ref-summary-implementation.md](../v0.9-git-ref-summary-implementation.md) and
+[../v0.9-git-ref-summary-source-review.md](../v0.9-git-ref-summary-source-review.md). It does not
+authorize additional Git tools or broader capability expansion.
 
 ## Planning Decision
 
 - Capability: `git.show.ref_summary`.
-- Planning state: ready for implementation-planning review.
-- Implementation state: blocked.
-- Future implementation may be planned only after this packet passes
-  `make git-ref-summary-implementation-plan-check`.
-- Actual implementation remains blocked until a later internal xhigh source review, source-level
-  implementation packet, and explicit implementation go decision.
+- Planning state: completed as historical lineage.
+- Implementation state: completed for the one bounded read-only lane only.
+- Original implementation state: blocked.
+- Original marker: Implementation state: blocked.
+- Original assertion: Actual implementation remains blocked until a later internal xhigh source
+  review, source-level implementation packet, and explicit implementation go decision.
+- The original planning packet is still checked with `make git-ref-summary-implementation-plan-check`
+  so the lineage stays reviewable.
 
 ## Boundary
 
