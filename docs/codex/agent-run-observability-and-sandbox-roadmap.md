@@ -272,7 +272,11 @@ processes, model clients, containers, or OS activity outside Ithildin.
 
 Items 1 through 4 are now implemented for local-preview observability and are documented in
 [agent-run-model-contract.md](agent-run-model-contract.md). They do not add sandbox/process control
-or SIEM/compliance claims.
+or SIEM/compliance claims. The review console now includes a read-only Agent Run operations
+dashboard with bounded filters, query summaries, timeline evidence, warning chips, and run evidence
+export download. That surface is checked by
+[agent-run-operations-readiness-gate.md](agent-run-operations-readiness-gate.md) with
+`make agent-run-operations-readiness`.
 The future run-level export bundle shape is documented in
 [agent-run-evidence-export-design.md](agent-run-evidence-export-design.md) and checked with
 `make agent-run-evidence-export-check`; it remains design-only.

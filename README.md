@@ -61,8 +61,9 @@ hosted control-plane behavior, or broader tool powers.
 The first implemented slice is the read-only Agent Run model in
 [docs/codex/agent-run-model-contract.md](docs/codex/agent-run-model-contract.md): governed tool
 calls can be correlated with local run records, `/runs` and `/runs/{run_id}` expose admin-only
-read-only timelines, and the review console shows a compact Agent Runs panel. This is observability
-only, not sandbox/process control.
+read-only timelines, `/runs` supports bounded read-only filters/summaries, and the review console
+shows a compact Agent Run operations dashboard. This is observability only, not sandbox/process
+control.
 The secret-free timeline evidence contract is
 [docs/codex/agent-run-evidence-contract.md](docs/codex/agent-run-evidence-contract.md) and is
 checked with `make agent-run-evidence-contract-check`.
@@ -85,6 +86,10 @@ The Agent Run evidence readiness gate is
 [docs/codex/agent-run-evidence-readiness-gate.md](docs/codex/agent-run-evidence-readiness-gate.md)
 and is checked with `make agent-run-evidence-readiness`; it keeps run evidence/export design tied
 to timeline, incident reconstruction, dashboard evidence, and no-new-powers checks.
+The Agent Run operations readiness gate is
+[docs/codex/agent-run-operations-readiness-gate.md](docs/codex/agent-run-operations-readiness-gate.md)
+and is checked with `make agent-run-operations-readiness`; it validates the read-only run filter,
+summary, timeline, and export-dashboard surface without run controls or SIEM adapters.
 The operator action states proposal is
 [docs/codex/operator-action-states-design.md](docs/codex/operator-action-states-design.md) and is
 checked with `make operator-action-states-check`; it is design-only and does not add pause, abort,
@@ -186,6 +191,7 @@ checked with `make control-mapping-readiness`.
 - `make agent-run-evidence-export-implementation-gate` - validate the bounded admin-only Agent Run evidence export endpoint.
 - `make agent-run-evidence-packet` - generate an ignored focused Agent Run evidence export design review packet.
 - `make agent-run-evidence-readiness` - validate Agent Run evidence/export design, timeline, incident reconstruction, dashboard evidence, and no-new-powers wiring.
+- `make agent-run-operations-readiness` - validate the read-only Agent Run operations dashboard, filters, summaries, and no-new-powers wiring.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
 - `make dashboard-evidence-checklist-check` - validate the operator-facing evidence dashboard review checklist.

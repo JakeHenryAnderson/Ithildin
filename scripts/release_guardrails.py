@@ -73,6 +73,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "dashboard-evidence-checklist-check",
     "agent-run-timeline-readiness",
     "agent-run-evidence-readiness",
+    "agent-run-operations-readiness",
     "siem-evidence-design-check",
     "data-classification-design-check",
     "control-mapping-design-check",

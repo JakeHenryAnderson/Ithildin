@@ -44,6 +44,7 @@ CONTRACT_DOCS = [
     Path("docs/codex/agent-run-timeline-readiness-gate.md"),
     Path("docs/codex/incident-reconstruction-guide.md"),
     Path("docs/codex/dashboard-evidence-review-checklist.md"),
+    Path("docs/codex/agent-run-operations-readiness-gate.md"),
     Path("docs/codex/siem-shaped-evidence-design.md"),
     Path("docs/codex/signed-audit-exports.md"),
 ]
@@ -52,6 +53,7 @@ EVIDENCE_COMMANDS = [
     ["make", "agent-run-evidence-export-check"],
     ["make", "agent-run-evidence-export-plan-check"],
     ["make", "agent-run-evidence-export-implementation-gate"],
+    ["make", "agent-run-operations-readiness"],
     ["make", "incident-reconstruction-check"],
     ["make", "dashboard-evidence-checklist-check"],
     ["uv", "run", "pytest", "tests/test_governed_tool_calls.py", "tests/test_api_service.py", "-q"],
@@ -120,9 +122,10 @@ def build_packet(
 def _index(context: dict[str, Any]) -> str:
     return f"""# Agent Run Evidence Review Packet
 
-This packet prepares Ithildin's Agent Run evidence export design for focused review. It includes the
-read-only run model, governed-call correlation path, approval and patch diagnostic surfaces, signed
-audit export helper, review-console evidence surface, tests, contracts, and command evidence.
+This packet prepares Ithildin's Agent Run evidence and operations surface for focused review. It
+includes the read-only run model, governed-call correlation path, approval and patch diagnostic
+surfaces, signed audit export helper, bounded Agent Run evidence export endpoint, review-console
+operations dashboard, tests, contracts, and command evidence.
 
 ## Boundary
 
@@ -130,8 +133,9 @@ audit export helper, review-console evidence surface, tests, contracts, and comm
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
 - Tool count remains `13`.
-- Agent Run evidence export is design-only. This packet does not add an export endpoint, SIEM
-  adapter, sandbox control, production identity, run-control behavior, or new governed tool powers.
+- Agent Run evidence export and operations dashboard are bounded read-only local-preview surfaces.
+  This packet does not add a SIEM adapter, sandbox control, production identity, run-control
+  behavior, or new governed tool powers.
 
 ## Artifacts
 
@@ -148,8 +152,9 @@ audit export helper, review-console evidence surface, tests, contracts, and comm
 def _prompt(context: dict[str, Any]) -> str:
     return f"""# Agent Run Evidence Review Prompt
 
-You are reviewing Ithildin's Agent Run evidence export design. Treat this as source/evidence review
-only if you inspect the attached source bundle, focused tests, contracts, and command evidence.
+You are reviewing Ithildin's Agent Run evidence and operations surface. Treat this as
+source/evidence review only if you inspect the attached source bundle, focused tests, contracts, and
+command evidence.
 
 Reviewed commit: `{context["commit"]}`
 Area: `agent-run-evidence`
@@ -163,18 +168,20 @@ Please review:
 - governed-call correlation metadata and safe audit relationship;
 - approval and patch diagnostic evidence surfaces;
 - signed audit export helper relationship and local-only trust boundary;
-- dashboard evidence and incident reconstruction expectations;
-- the proposed export bundle fields, exclusions, hash fields, and warning states;
-- tests and gates that keep the export design-only and no-new-powers.
+- dashboard filters, query summary evidence, timeline status/warning evidence, and incident
+  reconstruction expectations;
+- the export bundle fields, exclusions, hash fields, and warning states;
+- tests and gates that keep the operations/export surface read-only and no-new-powers.
 
 ## Required Disposition
 
-Say whether the Agent Run evidence export design is coherent enough for future implementation
-planning. If not, identify the missing source/test/evidence item or ambiguous product claim.
+Say whether the Agent Run evidence export and read-only operations dashboard are coherent enough for
+local-preview observability. If not, identify the missing source/test/evidence item or ambiguous
+product claim.
 
-Do not approve runtime export implementation, SIEM adapters, sandbox orchestration, process
-supervision, compliance automation, production identity, remote MCP, hosted telemetry,
-shell/Docker/Kubernetes/browser tools, arbitrary HTTP, broad writes, or new governed tool powers.
+Do not approve SIEM adapters, sandbox orchestration, process supervision, compliance automation,
+production identity, remote MCP, hosted telemetry, shell/Docker/Kubernetes/browser tools, arbitrary
+HTTP, broad writes, run controls, or new governed tool powers.
 """
 
 

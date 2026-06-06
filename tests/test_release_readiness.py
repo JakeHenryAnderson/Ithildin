@@ -17,6 +17,7 @@ from scripts import (
     agent_run_evidence_export_plan_check,
     agent_run_evidence_packet,
     agent_run_evidence_readiness,
+    agent_run_operations_readiness,
     agent_run_timeline_packet,
     agent_run_timeline_readiness,
     capability_decision_report,
@@ -7220,13 +7221,15 @@ def test_agent_run_evidence_packet_is_wired(tmp_path: Path) -> None:
     assert "agent-run-evidence-packet:" in makefile
     assert "276 - Agent Run evidence review packet | Done" in backlog
     assert "Tool count remains `13`" in index
-    assert "design-only" in index
+    assert "bounded read-only local-preview surfaces" in index
     assert "EXT-RUN-EVID-###" in prompt
     assert "apps/api/src/ithildin_api/agent_runs.py" in source
     assert "packages/audit-core/src/ithildin_audit_core/signing.py" in source
     assert "tests/test_audit_writer.py" in tests
     assert "docs/codex/agent-run-evidence-export-design.md" in contracts
+    assert "docs/codex/agent-run-operations-readiness-gate.md" in contracts
     assert "docs/codex/signed-audit-exports.md" in contracts
+    assert "agent-run-operations-readiness" in evidence
     assert "command execution skipped" in evidence
 
 
@@ -7289,6 +7292,54 @@ def test_agent_run_evidence_readiness_gate_is_wired() -> None:
         "mediated actions only",
     ]:
         assert phrase in gate
+
+
+def test_agent_run_operations_readiness_gate_is_wired() -> None:
+    report = agent_run_operations_readiness.build_report(Path.cwd())
+    gate = Path("docs/codex/agent-run-operations-readiness-gate.md").read_text(encoding="utf-8")
+    model_contract = Path("docs/codex/agent-run-model-contract.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["run_control_behavior_allowed"] is False
+    assert "make agent-run-operations-readiness" in readme
+    assert "agent-run-operations-readiness:" in makefile
+    assert "agent-run-operations-readiness" in release_check_body
+    assert "agent-run-operations-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/agent-run-operations-readiness-gate.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/agent-run-operations-readiness-gate.md" in docs_site
+    assert "280 - Agent Run operations dashboard | Done" in backlog
+    for phrase in [
+        "Status: release-readiness gate",
+        "read-only operations dashboard",
+        "GET /runs",
+        "principal_id",
+        "workspace_id",
+        "status",
+        "tool_name",
+        "session_id",
+        "summary",
+        "Export Run Evidence",
+        "no run controls",
+        "no sandbox orchestration",
+        "no SIEM adapters",
+        "tool count remains `13`",
+    ]:
+        assert phrase in gate
+    for phrase in [
+        "bounded read-only filters",
+        "`summary` object",
+        "Agent Run operations dashboard",
+        "Export Run Evidence",
+    ]:
+        assert phrase in model_contract
 
 
 def test_agent_run_timeline_packet_is_wired(tmp_path: Path) -> None:

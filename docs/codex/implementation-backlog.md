@@ -296,12 +296,13 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 277 - Agent Run evidence readiness gate | Done | [agent-run-evidence-readiness-gate.md](agent-run-evidence-readiness-gate.md), `make agent-run-evidence-readiness`; composes Agent Run evidence/export, timeline, incident reconstruction, dashboard evidence, and no-new-powers checks. |
 | 278 - Agent Run evidence export implementation plan | Done | [agent-run-evidence-export-implementation-plan.md](agent-run-evidence-export-implementation-plan.md), `make agent-run-evidence-export-plan-check`; plans endpoint/schema/fixtures/negative cases without approving runtime implementation. |
 | 279 - Agent Run evidence export endpoint | Done | [agent-run-evidence-export-implementation.md](agent-run-evidence-export-implementation.md), `make agent-run-evidence-export-implementation-gate`; adds bounded admin-only read export for one secret-free Agent Run evidence bundle. |
+| 280 - Agent Run operations dashboard | Done | [agent-run-operations-readiness-gate.md](agent-run-operations-readiness-gate.md), `make agent-run-operations-readiness`; adds bounded read-only `/runs` filters/summaries and review-console operations evidence without run controls. |
 
 ## Future Candidate Track
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Agent run observability | Wave 1 done | [agent-run-model-contract.md](agent-run-model-contract.md) records the implemented run/session evidence and timeline dashboard foundation. |
+| Agent run observability | Operations dashboard done | [agent-run-model-contract.md](agent-run-model-contract.md) records the implemented run/session evidence, bounded run filters/summaries, timeline dashboard, and run evidence export foundation. |
 | Sandbox boundary and SIEM-shaped evidence | Roadmap | [agent-run-observability-and-sandbox-roadmap.md](agent-run-observability-and-sandbox-roadmap.md) records the next strategic direction: operator-managed sandbox contracts, SIEM-shaped export design, data classification, and control mapping without claiming current sandbox/SIEM/compliance behavior. |
 | Production identity | Deferred | OIDC, SAML, SCIM, hosted sessions, and multi-tenant stores. |
 | Runtime Postgres | Deferred | Real Postgres stores and migrations; current support is readiness-only. |

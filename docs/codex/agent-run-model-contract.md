@@ -61,16 +61,26 @@ The local admin API exposes:
 
 - `GET /runs`
 - `GET /runs/{run_id}`
+- `GET /runs/{run_id}/evidence-export`
 
-Both require the existing local admin bearer token. They are read-only. They do not create, mutate,
+All require the existing local admin bearer token. They are read-only. They do not create, mutate,
 cancel, replay, repair, approve, or execute anything.
+
+`GET /runs` supports bounded read-only filters for `principal_id`, `workspace_id`, `status`,
+`tool_name`, `session_id`, and `limit`. Responses include a `summary` object with returned count,
+applied filters, workspace/principal/status/tool counts, and latest update timestamp. Unknown query
+parameters, invalid limits, and unsafe filter values fail closed with safe errors.
 
 ## Review Console Surface
 
-The review console shows a compact Agent Runs panel:
+The review console shows a compact Agent Run operations dashboard:
 
 - recent runs by principal, workspace, session, status, and call count;
+- bounded filters for principal, workspace, status, and tool;
+- query summary chips for returned count, status, workspace, tool, filters, and latest update;
 - selected run timeline with correlated audit events;
+- timeline status and warning chips for fast evidence scanning;
+- read-only Export Run Evidence action for the selected run;
 - short IDs and hashes for scanning.
 
 The panel is a governance dashboard surface, not an execution control surface.
@@ -107,5 +117,7 @@ Focused verification includes:
 
 - governed-call tests proving run records are created and audit metadata carries `run_id`;
 - API tests proving `/runs` and `/runs/{run_id}` require admin auth and return safe timeline data;
-- UI tests proving the Agent Runs panel renders;
+- API tests proving `/runs` filters and summaries are bounded and safe;
+- UI tests proving the Agent Run operations dashboard renders filters, summaries, timeline evidence,
+  and export action;
 - full gates through `make release-check`.

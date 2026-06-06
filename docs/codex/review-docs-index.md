@@ -122,6 +122,7 @@ externally closed.
 - [Agent Run Evidence Export Implementation](agent-run-evidence-export-implementation.md)
 - [Agent Run Timeline Readiness Gate](agent-run-timeline-readiness-gate.md)
 - [Agent Run Evidence Readiness Gate](agent-run-evidence-readiness-gate.md)
+- [Agent Run Operations Readiness Gate](agent-run-operations-readiness-gate.md)
 - [Operator Action States Design](operator-action-states-design.md)
 - [Dashboard Evidence Review Checklist](dashboard-evidence-review-checklist.md)
 - [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md)
