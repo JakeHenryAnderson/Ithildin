@@ -116,6 +116,7 @@ externally closed.
 - [v3 project.manifest.summary Source Review Handoff](v3-project-manifest-summary-source-review.md)
 - [Agent Run Observability and Sandbox Boundary Roadmap](agent-run-observability-and-sandbox-roadmap.md)
 - [Agent Run Model Contract](agent-run-model-contract.md)
+- [Agent Run Evidence Contract](agent-run-evidence-contract.md)
 - [Implementation-Planning Packet: git.show.ref_summary](capability-implementation-plans/git-show-ref-summary.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
 - [v0.9 git.show.commit_metadata Implementation](v0.9-git-commit-metadata-implementation.md)

@@ -63,6 +63,9 @@ The first implemented slice is the read-only Agent Run model in
 calls can be correlated with local run records, `/runs` and `/runs/{run_id}` expose admin-only
 read-only timelines, and the review console shows a compact Agent Runs panel. This is observability
 only, not sandbox/process control.
+The secret-free timeline evidence contract is
+[docs/codex/agent-run-evidence-contract.md](docs/codex/agent-run-evidence-contract.md) and is
+checked with `make agent-run-evidence-contract-check`.
 
 ## Repo Map
 
@@ -126,6 +129,7 @@ only, not sandbox/process control.
 - `make review-console-source-review-bundle` - build the focused review-console/admin source/test/evidence handoff for source-level external review.
 - `make release-automation-source-review-bundle` - build the focused release/evidence automation source/test/evidence handoff for source-level external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
+- `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.

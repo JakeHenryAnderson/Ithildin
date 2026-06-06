@@ -277,6 +277,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 258 - Agent Run records and admin APIs | Done | `AgentRunStore`, `GET /runs`, and `GET /runs/{run_id}` add durable local run correlation without new execution controls or tool powers. |
 | 259 - Agent Run review-console panel | Done | Review console shows recent runs and a safe correlated audit timeline; UI tests cover the panel through the existing interaction harness. |
 | 260 - Next capability readiness gate | Done | [next-capability-readiness.md](next-capability-readiness.md), `make next-capability-readiness`; validates the current bounded metadata inventory and preflight requirements before selecting or implementing another capability. |
+| 261 - Agent Run evidence contract | Done | [agent-run-evidence-contract.md](agent-run-evidence-contract.md), `make agent-run-evidence-contract-check`; defines secret-free run timeline evidence fields without new runtime behavior. |
 
 ## Future Candidate Track
 

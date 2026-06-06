@@ -194,6 +194,7 @@ processes, model clients, containers, or OS activity outside Ithildin.
 
 - Record this roadmap.
 - Define run/session event contracts.
+- Link the secret-free [Agent Run Evidence Contract](agent-run-evidence-contract.md).
 - Define sandbox/workspace boundary contract.
 - Define SIEM-shaped export requirements without adapters.
 - Define data classification proposal.
