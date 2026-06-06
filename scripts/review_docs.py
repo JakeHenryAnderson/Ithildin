@@ -133,6 +133,7 @@ REVIEW_DOCS = [
     "docs/codex/agent-run-observability-and-sandbox-roadmap.md",
     "docs/codex/agent-run-model-contract.md",
     "docs/codex/agent-run-evidence-contract.md",
+    "docs/codex/agent-run-timeline-readiness-gate.md",
     "docs/codex/sandbox-workspace-boundary-contract.md",
     "docs/codex/siem-shaped-evidence-design.md",
     "docs/codex/data-classification-design.md",

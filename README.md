@@ -66,6 +66,9 @@ only, not sandbox/process control.
 The secret-free timeline evidence contract is
 [docs/codex/agent-run-evidence-contract.md](docs/codex/agent-run-evidence-contract.md) and is
 checked with `make agent-run-evidence-contract-check`.
+The Agent Run timeline readiness gate is
+[docs/codex/agent-run-timeline-readiness-gate.md](docs/codex/agent-run-timeline-readiness-gate.md)
+and is checked with `make agent-run-timeline-readiness`.
 The operator-managed sandbox/workspace boundary contract is
 [docs/codex/sandbox-workspace-boundary-contract.md](docs/codex/sandbox-workspace-boundary-contract.md);
 it is design/evidence-only and does not add sandbox orchestration or OS isolation claims.
@@ -155,6 +158,7 @@ checked with `make control-mapping-readiness`.
 - `make release-automation-source-review-bundle` - build the focused release/evidence automation source/test/evidence handoff for source-level external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
+- `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
 - `make siem-evidence-design-check` - validate the future SIEM-shaped evidence design without adding adapters.
 - `make data-classification-design-check` - validate the trusted local data classification proposal without adding runtime behavior.
 - `make control-mapping-design-check` - validate control mapping support boundaries without compliance claims.

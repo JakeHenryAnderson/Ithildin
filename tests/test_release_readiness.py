@@ -13,6 +13,7 @@ from scripts import (
     accepted_risk_register,
     agent_run_evidence_contract_check,
     agent_run_timeline_packet,
+    agent_run_timeline_readiness,
     capability_decision_report,
     capability_expansion_gate,
     closure_matrix_evidence_sync,
@@ -7072,6 +7073,49 @@ def test_agent_run_timeline_packet_is_wired(tmp_path: Path) -> None:
     assert "agent-run-model-contract.md" in contracts
     assert "agent-run-evidence-contract.md" in contracts
     assert "command execution skipped for fixture/test packet generation" in evidence
+
+
+def test_agent_run_timeline_readiness_gate_is_wired() -> None:
+    report = agent_run_timeline_readiness.build_report(Path.cwd())
+    gate = Path("docs/codex/agent-run-timeline-readiness-gate.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["agent_run_evidence_contract_valid"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["run_control_behavior_allowed"] is False
+    assert "make agent-run-timeline-readiness" in readme
+    assert "agent-run-timeline-readiness:" in makefile
+    assert "agent-run-timeline-readiness" in release_check_body
+    assert "agent-run-timeline-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/agent-run-timeline-readiness-gate.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/agent-run-timeline-readiness-gate.md" in docs_site
+    assert "271 - Agent Run timeline readiness gate | Done" in backlog
+    for phrase in [
+        "Status: release-readiness gate",
+        "does not add runtime behavior",
+        "agent-run-evidence-contract-check",
+        "agent-run-timeline-packet",
+        "AgentRunStore",
+        "GET /runs",
+        "GET /runs/{run_id}",
+        "governed-call audit correlation",
+        "approval correlation evidence",
+        "review-console Agent Runs panel",
+        "no-new-powers-guardrail",
+        "tool-surface-invariant-gate",
+        "tool count remains `13`",
+        "admin-only and read-only",
+        "secret-free",
+        "design-only",
+    ]:
+        assert phrase in gate
 
 
 def test_sandbox_workspace_boundary_contract_is_wired_and_scoped() -> None:
