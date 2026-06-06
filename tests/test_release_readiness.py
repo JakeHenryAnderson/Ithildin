@@ -37,6 +37,7 @@ from scripts import (
     mcp_ingress_source_review_bundle,
     next_capability_readiness,
     no_new_powers_guardrail,
+    observability_readiness,
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
@@ -7096,6 +7097,43 @@ def test_siem_evidence_design_check_is_wired() -> None:
         "response bodies",
     ]:
         assert phrase in design
+
+
+def test_observability_readiness_gate_is_wired() -> None:
+    report = observability_readiness.build_report(Path.cwd())
+    gate = Path("docs/codex/observability-readiness-gate.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["next_capability_candidate"] == "unselected"
+    assert report["next_candidate_implementation_allowed"] is False
+    assert report["broader_capability_expansion_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make observability-readiness" in readme
+    assert "observability-readiness:" in makefile
+    assert "observability-readiness" in release_check_body
+    assert "observability-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/observability-readiness-gate.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/observability-readiness-gate.md" in docs_site
+    for phrase in [
+        "Status: release-readiness gate",
+        "does not add runtime behavior",
+        "agent-run-evidence-contract-check",
+        "siem-evidence-design-check",
+        "next-capability-readiness",
+        "no-new-powers-guardrail",
+        "tool-surface-invariant-gate",
+        "tool count remains `13`",
+        "operator-managed",
+        "export-design-only",
+        "no new powerful tool classes",
+    ]:
+        assert phrase in gate
 
 
 def _write_project_markers(root: Path) -> None:

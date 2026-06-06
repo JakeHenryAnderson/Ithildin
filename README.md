@@ -72,6 +72,9 @@ it is design/evidence-only and does not add sandbox orchestration or OS isolatio
 The future JSONL/SIEM-shaped evidence design is
 [docs/codex/siem-shaped-evidence-design.md](docs/codex/siem-shaped-evidence-design.md) and is
 checked with `make siem-evidence-design-check`; it does not add SIEM adapters or hosted telemetry.
+The combined observability readiness gate is
+[docs/codex/observability-readiness-gate.md](docs/codex/observability-readiness-gate.md) and is
+checked with `make observability-readiness`.
 
 ## Repo Map
 
@@ -137,6 +140,7 @@ checked with `make siem-evidence-design-check`; it does not add SIEM adapters or
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
 - `make siem-evidence-design-check` - validate the future SIEM-shaped evidence design without adding adapters.
+- `make observability-readiness` - validate Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers readiness.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.

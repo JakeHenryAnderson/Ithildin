@@ -280,6 +280,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 261 - Agent Run evidence contract | Done | [agent-run-evidence-contract.md](agent-run-evidence-contract.md), `make agent-run-evidence-contract-check`; defines secret-free run timeline evidence fields without new runtime behavior. |
 | 262 - Sandbox workspace boundary contract | Done | [sandbox-workspace-boundary-contract.md](sandbox-workspace-boundary-contract.md); defines operator-managed sandbox/workspace posture evidence without sandbox orchestration. |
 | 263 - SIEM-shaped evidence design | Done | [siem-shaped-evidence-design.md](siem-shaped-evidence-design.md), `make siem-evidence-design-check`; defines future JSONL/SIEM-shaped evidence categories without adapters or hosted telemetry. |
+| 264 - Observability readiness gate | Done | [observability-readiness-gate.md](observability-readiness-gate.md), `make observability-readiness`; composes Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers checks. |
 
 ## Future Candidate Track
 
