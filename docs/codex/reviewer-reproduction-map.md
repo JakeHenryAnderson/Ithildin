@@ -221,35 +221,43 @@ work must stop for status, reassessment, or external consultation.
 29. `make read-only-capability-inventory-gate`
 
    Expected outcome: validates the current approved bounded read-only metadata capability inventory,
-   including the `git.show.commit_metadata` and `git.show.ref_summary` manifests, implementation
-   gates, source-review handoffs, and release-check wiring.
+   including the `git.show.commit_metadata`, `git.show.ref_summary`, and
+   `project.manifest.summary` manifests, implementation gates, source-review handoffs, and
+   release-check wiring.
 
 30. `make v3-next-capability-candidate-check`
 
-   Expected outcome: validates the design-only `project.manifest.summary` candidate evaluation and
-   confirms it does not authorize manifests, executors, policy rules, MCP/API/UI behavior, runtime
-   behavior, or new power classes.
+   Expected outcome: validates the historical design-only `project.manifest.summary` candidate
+   evaluation from before that candidate advanced through proposal, implementation planning,
+   bounded implementation, and source-review handoff.
 
-31. `make project-manifest-summary-proposal-check`
+31. `make next-capability-readiness`
+
+   Expected outcome: validates the current bounded metadata inventory, no-new-powers evidence,
+   historical candidate lineage, review-doc/docs-site inclusion, release-check wiring, and the
+   preflight requirements before selecting or implementing another capability. It reports the next
+   candidate as unselected and implementation as blocked.
+
+32. `make project-manifest-summary-proposal-check`
 
    Expected outcome: validates the design-only `project.manifest.summary` proposal, including its
    manifest allowlist, strict schema contract, privacy policy, parser sketch, negative transcript
    plan, and explicit no-runtime-change boundary.
 
-32. `make project-manifest-summary-implementation-plan-check`
+33. `make project-manifest-summary-implementation-plan-check`
 
    Expected outcome: validates the implementation-planning packet for `project.manifest.summary`,
    including the strict input/output schema, manifest allowlist, count-only parser plan,
    privacy/redaction plan, negative transcript plan, resource limits, and continued blocked runtime
    boundary.
 
-33. `make project-manifest-summary-implementation-gate`
+34. `make project-manifest-summary-implementation-gate`
 
    Expected outcome: validates the bounded read-only implementation decision for
    `project.manifest.summary`, including no shell, no package-manager execution, no registry/network
    access, no dependency names, no script values, and no new powerful tool class.
 
-34. `make project-manifest-summary-source-review-bundle`
+35. `make project-manifest-summary-source-review-bundle`
 
    Expected outcome: creates an ignored focused source-review handoff under
    `var/review-packets/v0.9/project-manifest-summary-source-review/`. This attaches the

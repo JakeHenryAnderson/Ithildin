@@ -127,6 +127,7 @@ externally closed.
 - [v0.9 git.show.ref_summary Proposal Review](v0.9-git-ref-summary-proposal-review.md)
 - [Read-Only Local Metadata Capability Contract](read-only-local-metadata-contract.md)
 - [Read-Only Capability Inventory](read-only-capability-inventory.md)
+- [Next Capability Readiness Check](next-capability-readiness.md)
 - [v3 Next Capability Candidate Evaluation](v3-next-capability-candidate-evaluation.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)

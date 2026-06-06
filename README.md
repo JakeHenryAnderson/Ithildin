@@ -153,7 +153,9 @@ only, not sandbox/process control.
 - `make read-only-capability-inventory-gate` - validate the approved bounded read-only metadata
   tool inventory, implementation gates, source-review handoffs, and release-check wiring.
 - `make v3-next-capability-candidate-check` - validate the design-only evaluation for the next
-  candidate, `project.manifest.summary`, without authorizing runtime work.
+  historical candidate, `project.manifest.summary`, from before it advanced through implementation.
+- `make next-capability-readiness` - validate the current bounded metadata inventory and the
+  preflight requirements before selecting or implementing another capability.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -440,15 +442,21 @@ the ignored output is `var/review-packets/v0.9/project-manifest-summary-source-r
 The shared expansion-prep hardening docs are
 [docs/codex/read-only-local-metadata-contract.md](docs/codex/read-only-local-metadata-contract.md),
 [docs/codex/read-only-capability-inventory.md](docs/codex/read-only-capability-inventory.md),
+[docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md),
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md),
 [docs/codex/metadata-privacy-policy.md](docs/codex/metadata-privacy-policy.md),
 [docs/codex/read-only-metadata-capability-checklist.md](docs/codex/read-only-metadata-capability-checklist.md),
 [docs/codex/read-only-capability-source-review-template.md](docs/codex/read-only-capability-source-review-template.md),
 and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-register.md); they are
 checked with `make read-only-metadata-capability-check` and
-`make read-only-capability-inventory-gate`. The next design-only candidate evaluation is
+`make read-only-capability-inventory-gate`. The next-capability preflight is
+[docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
+with `make next-capability-readiness`; it records that the next candidate is currently unselected
+and implementation remains blocked until a fresh proposal, implementation plan, source-review
+handoff, and explicit decision are recorded. The historical design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)
-and is checked with `make v3-next-capability-candidate-check`. The proposal for that candidate is
+and is checked with `make v3-next-capability-candidate-check`. The proposal for that now-implemented
+candidate is
 [docs/codex/capability-proposals/project-manifest-summary.md](docs/codex/capability-proposals/project-manifest-summary.md)
 and is checked with `make project-manifest-summary-proposal-check`. The implementation-planning
 packet is

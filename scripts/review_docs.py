@@ -143,6 +143,7 @@ REVIEW_DOCS = [
     "docs/codex/v0.9-git-ref-summary-proposal-review.md",
     "docs/codex/read-only-local-metadata-contract.md",
     "docs/codex/read-only-capability-inventory.md",
+    "docs/codex/next-capability-readiness.md",
     "docs/codex/v3-next-capability-candidate-evaluation.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",

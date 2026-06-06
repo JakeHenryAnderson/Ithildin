@@ -276,6 +276,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 257 - Agent Run model contract | Done | [agent-run-model-contract.md](agent-run-model-contract.md); defines read-only run/session observability boundaries and non-claims. |
 | 258 - Agent Run records and admin APIs | Done | `AgentRunStore`, `GET /runs`, and `GET /runs/{run_id}` add durable local run correlation without new execution controls or tool powers. |
 | 259 - Agent Run review-console panel | Done | Review console shows recent runs and a safe correlated audit timeline; UI tests cover the panel through the existing interaction harness. |
+| 260 - Next capability readiness gate | Done | [next-capability-readiness.md](next-capability-readiness.md), `make next-capability-readiness`; validates the current bounded metadata inventory and preflight requirements before selecting or implementing another capability. |
 
 ## Future Candidate Track
 

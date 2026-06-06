@@ -34,6 +34,7 @@ from scripts import (
     http_fetch_source_review_bundle,
     internal_review_packet,
     mcp_ingress_source_review_bundle,
+    next_capability_readiness,
     no_new_powers_guardrail,
     packet_redaction_scan,
     patch_apply_external_review_packet,
@@ -602,6 +603,42 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
     assert "v3 Next Capability Candidate Evaluation" in index
     assert "docs/codex/v3-next-capability-candidate-evaluation.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-next-capability-candidate-evaluation.md" in docs_site
+
+
+def test_next_capability_readiness_is_wired() -> None:
+    report = next_capability_readiness.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    doc = Path("docs/codex/next-capability-readiness.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["current_approved_read_only_capabilities"] == 3
+    assert report["next_candidate"] == "unselected"
+    assert report["next_candidate_implementation_allowed"] is False
+    assert report["broader_capability_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["historical_candidate"] == "project.manifest.summary"
+    for phrase in [
+        "Status: capability-expansion readiness checkpoint",
+        "Next candidate: unselected",
+        "Next candidate implementation: blocked",
+        "Broader capability expansion: blocked",
+        "New powerful tool classes: blocked",
+        "Required Preflight Before Another Capability",
+        "make next-capability-readiness",
+    ]:
+        assert phrase in doc
+    assert "make next-capability-readiness" in readme
+    assert "next-capability-readiness:" in makefile
+    assert "next-capability-readiness" in release_check_body
+    assert "next-capability-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "Next Capability Readiness Check" in index
+    assert "docs/codex/next-capability-readiness.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/next-capability-readiness.md" in docs_site
 
 
 def test_project_manifest_summary_proposal_check_is_wired() -> None:
@@ -1500,6 +1537,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "read-only-metadata-capability-check",
         "read-only-capability-inventory-gate",
         "v3-next-capability-candidate-check",
+        "next-capability-readiness",
         "project-manifest-summary-proposal-check",
         "project-manifest-summary-implementation-plan-check",
         "project-manifest-summary-implementation-gate",
@@ -1524,10 +1562,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "28. `make read-only-metadata-capability-check`" in reproduction_map
     assert "29. `make read-only-capability-inventory-gate`" in reproduction_map
     assert "30. `make v3-next-capability-candidate-check`" in reproduction_map
-    assert "31. `make project-manifest-summary-proposal-check`" in reproduction_map
-    assert "32. `make project-manifest-summary-implementation-plan-check`" in reproduction_map
-    assert "33. `make project-manifest-summary-implementation-gate`" in reproduction_map
-    assert "34. `make project-manifest-summary-source-review-bundle`" in reproduction_map
+    assert "31. `make next-capability-readiness`" in reproduction_map
+    assert "32. `make project-manifest-summary-proposal-check`" in reproduction_map
+    assert "33. `make project-manifest-summary-implementation-plan-check`" in reproduction_map
+    assert "34. `make project-manifest-summary-implementation-gate`" in reproduction_map
+    assert "35. `make project-manifest-summary-source-review-bundle`" in reproduction_map
     assert "35. `make review-packet-bundle`" in reproduction_map
     assert "36. `make review-packet-consolidated`" in reproduction_map
     assert "37. `make packet-redaction-scan`" in reproduction_map
