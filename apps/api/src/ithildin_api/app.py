@@ -29,7 +29,7 @@ from ithildin_schemas import (
 )
 from pydantic import BaseModel
 
-from ithildin_api.agent_runs import AgentRunError, AgentRunStore
+from ithildin_api.agent_runs import AgentRunError, AgentRunFilters, AgentRunStore
 from ithildin_api.approvals import (
     ApprovalError,
     ApprovalService,
@@ -315,9 +315,26 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         }
 
     @api.get("/runs", dependencies=[Depends(require_admin_token)])
-    def list_runs(limit: int = 50) -> dict[str, list[JsonObject]]:
+    def list_runs(request: Request) -> JsonObject:
+        unexpected = sorted(
+            set(request.query_params.keys())
+            - {"principal_id", "workspace_id", "status", "tool_name", "session_id", "limit"}
+        )
+        if unexpected:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported query parameter",
+            )
+        limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
+        filters = AgentRunFilters(
+            principal_id=_safe_query_filter(request.query_params.get("principal_id")),
+            workspace_id=_safe_query_filter(request.query_params.get("workspace_id")),
+            status=_safe_query_filter(request.query_params.get("status")),
+            tool_name=_safe_query_filter(request.query_params.get("tool_name")),
+            session_id=_safe_query_filter(request.query_params.get("session_id")),
+        )
         agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
-        return {"runs": agent_run_store.list_runs(limit=limit)}
+        return agent_run_store.query_runs(limit=limit, filters=filters)
 
     @api.get("/runs/{run_id}/evidence-export", dependencies=[Depends(require_admin_token)])
     def get_run_evidence_export(
@@ -633,6 +650,35 @@ def _valid_agent_run_id(run_id: str) -> bool:
     return run_id.startswith("run_") and len(run_id) == 36 and all(
         character in "0123456789abcdef" for character in run_id[4:]
     )
+
+
+def _bounded_query_limit(value: str | None, *, default: int, maximum: int) -> int:
+    if value is None or value == "":
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid limit",
+        ) from exc
+    if parsed < 1 or parsed > maximum:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid limit",
+        )
+    return parsed
+
+
+def _safe_query_filter(value: str | None) -> str | None:
+    if value is None or value == "":
+        return None
+    if len(value) > 128 or any(ord(character) < 32 for character in value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid filter value",
+        )
+    return value
 
 
 def _require_route_decision(

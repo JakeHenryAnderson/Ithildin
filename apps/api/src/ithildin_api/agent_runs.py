@@ -74,6 +74,28 @@ class AgentRunContext:
         }
 
 
+@dataclass(frozen=True)
+class AgentRunFilters:
+    principal_id: str | None = None
+    workspace_id: str | None = None
+    status: str | None = None
+    tool_name: str | None = None
+    session_id: str | None = None
+
+    def applied(self) -> JsonObject:
+        return {
+            key: value
+            for key, value in {
+                "principal_id": self.principal_id,
+                "workspace_id": self.workspace_id,
+                "status": self.status,
+                "tool_name": self.tool_name,
+                "session_id": self.session_id,
+            }.items()
+            if value is not None
+        }
+
+
 class AgentRunStore:
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
@@ -214,10 +236,34 @@ class AgentRunStore:
         )
 
     def list_runs(self, *, limit: int = 50) -> list[JsonObject]:
+        return cast(list[JsonObject], self.query_runs(limit=limit)["runs"])
+
+    def query_runs(
+        self,
+        *,
+        limit: int = 50,
+        filters: AgentRunFilters | None = None,
+    ) -> JsonObject:
         bounded_limit = max(1, min(limit, 200))
+        filters = filters or AgentRunFilters()
+        where_clauses: list[str] = []
+        params: list[str | int] = []
+        for column, value in [
+            ("principal_id", filters.principal_id),
+            ("workspace_id", filters.workspace_id),
+            ("status", filters.status),
+            ("last_tool_name", filters.tool_name),
+            ("session_id", filters.session_id),
+        ]:
+            if value is None:
+                continue
+            where_clauses.append(f"{column} = ?")
+            params.append(value)
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        params.append(bounded_limit)
         with sqlite3.connect(self.db_path) as connection:
             rows = connection.execute(
-                """
+                f"""
                 SELECT
                     run_id,
                     principal_id,
@@ -235,12 +281,17 @@ class AgentRunStore:
                     last_tool_manifest_hash,
                     metadata_json
                 FROM agent_runs
+                {where_sql}
                 ORDER BY updated_at DESC
                 LIMIT ?
                 """,
-                (bounded_limit,),
+                tuple(params),
             ).fetchall()
-        return [_record_from_row(row).summary() for row in rows]
+        runs = [_record_from_row(row).summary() for row in rows]
+        return {
+            "runs": cast(JsonValue, runs),
+            "summary": _runs_summary(runs, filters),
+        }
 
     def get_run(self, run_id: str) -> JsonObject:
         with sqlite3.connect(self.db_path) as connection:
@@ -398,6 +449,32 @@ def _record_from_row(row: tuple[object, ...]) -> AgentRunRecord:
         last_tool_manifest_hash=_optional_string(row[13]),
         metadata=cast(JsonObject, json.loads(str(row[14]))),
     )
+
+
+def _runs_summary(runs: list[JsonObject], filters: AgentRunFilters) -> JsonObject:
+    latest_update = None
+    for run in runs:
+        updated_at = run.get("updated_at")
+        if isinstance(updated_at, str) and (latest_update is None or updated_at > latest_update):
+            latest_update = updated_at
+    return {
+        "returned": len(runs),
+        "filters": filters.applied(),
+        "workspaces": _count_by_key(runs, "workspace_id"),
+        "principals": _count_by_key(runs, "principal_id"),
+        "statuses": _count_by_key(runs, "status"),
+        "tools": _count_by_key(runs, "last_tool_name"),
+        "latest_updated_at": latest_update,
+    }
+
+
+def _count_by_key(runs: list[JsonObject], key: str) -> JsonObject:
+    counts: dict[str, int] = {}
+    for run in runs:
+        value = run.get(key)
+        if isinstance(value, str) and value:
+            counts[value] = counts.get(value, 0) + 1
+    return cast(JsonObject, counts)
 
 
 def _timeline_event(payload: JsonObject) -> JsonObject:

@@ -420,9 +420,17 @@ def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> 
     assert unauthenticated.status_code == 401
     assert list_response.status_code == 200
     runs = list_response.json()["runs"]
+    summary = list_response.json()["summary"]
     assert len(runs) == 1
     assert runs[0]["run_id"] == run_context.run_id
     assert runs[0]["principal_id"] == "agent:local-dev"
+    assert summary["returned"] == 1
+    assert summary["filters"] == {}
+    assert summary["principals"] == {"agent:local-dev": 1}
+    assert summary["workspaces"] == {"default": 1}
+    assert summary["statuses"] == {"active": 1}
+    assert summary["tools"] == {"fs.read": 1}
+    assert summary["latest_updated_at"] == runs[0]["updated_at"]
     assert detail_response.status_code == 200
     detail = detail_response.json()
     assert detail["run"]["session_id"] == "sess_api_runs"
@@ -446,6 +454,73 @@ def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> 
         }
     ]
     assert missing_response.status_code == 404
+
+
+def test_run_list_filters_and_denies_bad_queries_safely(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        run_store = cast(AgentRunStore, app.state.agent_run_store)
+        first, _created = run_store.ensure_for_tool_call(
+            principal={"id": "agent:local-dev", "type": "agent", "roles": ["AgentDeveloper"]},
+            session_id="sess_filter_one",
+            workspace_id="default",
+            request_id="req_filter_one",
+            tool_name="fs.read",
+            policy_hash="sha256:" + ("1" * 64),
+            tool_manifest_hash="sha256:" + ("2" * 64),
+        )
+        second, _created = run_store.ensure_for_tool_call(
+            principal={"id": "agent:readonly", "type": "agent", "roles": ["AgentReadOnly"]},
+            session_id="sess_filter_two",
+            workspace_id="network",
+            request_id="req_filter_two",
+            tool_name="http.fetch",
+            policy_hash="sha256:" + ("3" * 64),
+            tool_manifest_hash="sha256:" + ("4" * 64),
+        )
+
+        filtered = client.get(
+            "/runs?principal_id=agent%3Alocal-dev&workspace_id=default&tool_name=fs.read",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        limited = client.get(
+            "/runs?limit=1",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        unknown_query = client.get(
+            "/runs?format=json",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        bad_limit = client.get(
+            "/runs?limit=201",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        bad_filter = client.get(
+            "/runs?workspace_id=" + ("a" * 129),
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert filtered.status_code == 200
+    filtered_payload = filtered.json()
+    assert [run["run_id"] for run in filtered_payload["runs"]] == [first.run_id]
+    assert filtered_payload["summary"]["returned"] == 1
+    assert filtered_payload["summary"]["filters"] == {
+        "principal_id": "agent:local-dev",
+        "workspace_id": "default",
+        "tool_name": "fs.read",
+    }
+    assert filtered_payload["summary"]["tools"] == {"fs.read": 1}
+    assert limited.status_code == 200
+    assert len(limited.json()["runs"]) == 1
+    assert limited.json()["runs"][0]["run_id"] in {first.run_id, second.run_id}
+    assert limited.json()["summary"]["returned"] == 1
+    assert unknown_query.status_code == 400
+    assert unknown_query.json()["detail"] == "unsupported query parameter"
+    assert bad_limit.status_code == 400
+    assert bad_limit.json()["detail"] == "invalid limit"
+    assert bad_filter.status_code == 400
+    assert bad_filter.json()["detail"] == "invalid filter value"
 
 
 def test_run_evidence_export_requires_auth_and_returns_secret_free_bundle(tmp_path: Path) -> None:
