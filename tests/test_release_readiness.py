@@ -35,6 +35,7 @@ from scripts import (
     git_ref_summary_proposal_check,
     git_ref_summary_source_review_bundle,
     http_fetch_source_review_bundle,
+    incident_reconstruction_check,
     internal_review_packet,
     mcp_ingress_source_review_bundle,
     next_capability_readiness,
@@ -7175,6 +7176,48 @@ def test_control_mapping_design_check_is_wired() -> None:
         "compliance automation",
     ]:
         assert phrase in design
+
+
+def test_incident_reconstruction_check_is_wired() -> None:
+    report = incident_reconstruction_check.build_report(Path.cwd())
+    guide = Path("docs/codex/incident-reconstruction-guide.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make incident-reconstruction-check" in readme
+    assert "incident-reconstruction-check:" in makefile
+    assert "docs/codex/incident-reconstruction-guide.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/incident-reconstruction-guide.md" in docs_site
+    assert "incident-reconstruction-guide.md" in roadmap
+    for phrase in [
+        "Status: operator/reviewer guide",
+        "mediated actions only",
+        "cannot prove activity outside Ithildin",
+        "Agent Run records",
+        "audit events",
+        "approvals",
+        "patch diagnostics",
+        "signed exports",
+        "future SIEM-shaped evidence",
+        "`run_id`",
+        "policy hash",
+        "manifest lock hash",
+        "approval ID",
+        "proposal hash",
+        "audit chain head",
+        "locally signed audit export bundle",
+        "What Can Be Proven",
+        "What Cannot Be Proven",
+    ]:
+        assert phrase in guide
 
 
 def test_observability_readiness_gate_is_wired() -> None:

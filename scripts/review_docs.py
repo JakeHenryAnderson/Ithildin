@@ -137,6 +137,7 @@ REVIEW_DOCS = [
     "docs/codex/siem-shaped-evidence-design.md",
     "docs/codex/data-classification-design.md",
     "docs/codex/control-mapping-design.md",
+    "docs/codex/incident-reconstruction-guide.md",
     "docs/codex/observability-readiness-gate.md",
     "docs/codex/capability-implementation-plans/git-show-ref-summary.md",
     "docs/codex/capability-implementation-plans/git-show-commit-metadata.md",

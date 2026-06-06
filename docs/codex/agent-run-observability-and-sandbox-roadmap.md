@@ -179,6 +179,9 @@ Operators should be able to answer:
 - what recovery diagnostics exist.
 
 This requires correlation and stable evidence more than more tool powers.
+The operator/reviewer guide is tracked in
+[incident-reconstruction-guide.md](incident-reconstruction-guide.md) and checked with
+`make incident-reconstruction-check`.
 
 ### 8. Pause, Disable, and Kill-Switch Semantics
 
@@ -206,6 +209,8 @@ processes, model clients, containers, or OS activity outside Ithildin.
 - Link the trusted local [Data Classification Design](data-classification-design.md) without
   runtime classification behavior.
 - Link the [Control Mapping Design](control-mapping-design.md) without compliance claims.
+- Link the [Incident Reconstruction Guide](incident-reconstruction-guide.md) for mediated actions
+  only.
 - Add gates that prevent these docs from becoming production/security claims.
 
 ### Wave B: Read-Only Run Model

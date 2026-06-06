@@ -70,6 +70,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/siem-shaped-evidence-design.md" in DEFAULT_DOCS
     assert "docs/codex/data-classification-design.md" in DEFAULT_DOCS
     assert "docs/codex/control-mapping-design.md" in DEFAULT_DOCS
+    assert "docs/codex/incident-reconstruction-guide.md" in DEFAULT_DOCS
     assert "docs/codex/observability-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/git-show-ref-summary.md" in DEFAULT_DOCS
     assert "docs/codex/capability-implementation-plans/git-show-ref-summary.md" in DEFAULT_DOCS

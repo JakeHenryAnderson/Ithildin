@@ -283,6 +283,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 264 - Observability readiness gate | Done | [observability-readiness-gate.md](observability-readiness-gate.md), `make observability-readiness`; composes Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers checks. |
 | 265 - Data classification proposal | Done | [data-classification-design.md](data-classification-design.md), `make data-classification-design-check`; defines trusted local labels as future policy inputs/UI warnings without discovery or runtime behavior. |
 | 266 - Control mapping design | Done | [control-mapping-design.md](control-mapping-design.md), `make control-mapping-design-check`; defines control mapping support without compliance automation or new runtime behavior. |
+| 267 - Incident reconstruction guide | Done | [incident-reconstruction-guide.md](incident-reconstruction-guide.md), `make incident-reconstruction-check`; documents how to reconstruct Ithildin-mediated actions without claiming proof outside Ithildin. |
 
 ## Future Candidate Track
 

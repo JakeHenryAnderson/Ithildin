@@ -121,6 +121,7 @@ externally closed.
 - [SIEM-Shaped Evidence Design](siem-shaped-evidence-design.md)
 - [Data Classification Design](data-classification-design.md)
 - [Control Mapping Design](control-mapping-design.md)
+- [Incident Reconstruction Guide](incident-reconstruction-guide.md)
 - [Observability Readiness Gate](observability-readiness-gate.md)
 - [Implementation-Planning Packet: git.show.ref_summary](capability-implementation-plans/git-show-ref-summary.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
