@@ -12,8 +12,9 @@ uv run python scripts/no_new_powers_guardrail.py --json
 
 ## What It Checks
 
-- The governed tool list remains the approved local-preview tool set, including the bounded v0.9
-  read-only `git.show.commit_metadata` and `git.show.ref_summary` additions.
+- The governed tool list remains the approved local-preview tool set, including the bounded
+  read-only `git.show.commit_metadata`, `git.show.ref_summary`, and `project.manifest.summary`
+  additions.
 - The runtime boundary remains `v0.1 local-preview`.
 - The deferred-power list is unchanged.
 - No manifest introduces shell, Docker, Kubernetes, browser, secrets, broad-write, broad-network, or

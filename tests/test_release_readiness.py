@@ -490,6 +490,9 @@ def test_read_only_metadata_capability_check_is_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    debt_register = Path("docs/codex/v3-readiness-debt-register.md").read_text(
+        encoding="utf-8"
+    )
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True
@@ -518,6 +521,10 @@ def test_read_only_metadata_capability_check_is_wired() -> None:
         assert rel_path in review_docs.REVIEW_DOCS
         assert rel_path in docs_site
         assert title in index
+    assert "Tool count is `13`" in debt_register
+    assert "Tool count is `12`" not in debt_register
+    assert "project.manifest.summary" in debt_register
+    assert "make next-capability-readiness" in debt_register
 
 
 def test_read_only_capability_inventory_gate_is_wired() -> None:

@@ -9,9 +9,12 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `12`.
-- `git.show.commit_metadata` and `git.show.ref_summary` are the approved v0.9 runtime
-  capability additions.
+- Tool count is `13`.
+- `git.show.commit_metadata`, `git.show.ref_summary`, and `project.manifest.summary` are the
+  approved bounded read-only metadata runtime capability additions.
+- `make next-capability-readiness` records that the next candidate is currently unselected and any
+  further implementation remains blocked until a fresh proposal, implementation plan,
+  source-review handoff, and explicit decision are recorded.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
 
@@ -44,9 +47,11 @@ without explicit review.
 
 ## Current Recommendation
 
-It is reasonable to continue preparing and implementing one narrow read-only local metadata
-capability at a time, provided each capability passes the shared contract, privacy policy, checklist,
-implementation gate, source-review packet, internal xhigh review, and release checks.
+It is reasonable to continue preparing one narrow read-only local metadata capability at a time,
+provided each candidate first passes `make next-capability-readiness`, the shared contract, privacy
+policy, checklist, implementation gate, source-review packet, internal xhigh review, and release
+checks. Implementation remains blocked until the explicit implementation decision for that one
+capability is recorded.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.
