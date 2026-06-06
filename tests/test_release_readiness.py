@@ -45,6 +45,7 @@ from scripts import (
     no_new_powers_guardrail,
     observability_control_packet,
     observability_readiness,
+    operator_action_states_check,
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
@@ -7116,6 +7117,51 @@ def test_agent_run_timeline_readiness_gate_is_wired() -> None:
         "design-only",
     ]:
         assert phrase in gate
+
+
+def test_operator_action_states_check_is_wired() -> None:
+    report = operator_action_states_check.build_report(Path.cwd())
+    design = Path("docs/codex/operator-action-states-design.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["run_control_behavior_allowed"] is False
+    assert "make operator-action-states-check" in readme
+    assert "operator-action-states-check:" in makefile
+    assert "docs/codex/operator-action-states-design.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/operator-action-states-design.md" in docs_site
+    assert "operator-action-states-design.md" in roadmap
+    assert "272 - Operator action states design | Done" in backlog
+    for phrase in [
+        "Status: design-only proposal",
+        "pause",
+        "abort",
+        "kill",
+        "disable",
+        "repair",
+        "replay",
+        "`active`",
+        "`paused`",
+        "`aborting`",
+        "`aborted`",
+        "`disabled`",
+        "`recovery_required`",
+        "`failed_closed`",
+        "`completed`",
+        "external/source review before implementation",
+        "control containers",
+        "add API or MCP actions",
+    ]:
+        assert phrase in design
 
 
 def test_sandbox_workspace_boundary_contract_is_wired_and_scoped() -> None:

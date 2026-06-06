@@ -288,6 +288,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 269 - Control mapping readiness gate | Done | [control-mapping-readiness-gate.md](control-mapping-readiness-gate.md), `make control-mapping-readiness`; composes observability, classification, mapping, reconstruction, no-new-powers, and tool-surface checks into `release-check`. |
 | 270 - Agent Run timeline packet | Done | `make agent-run-timeline-packet`; generates an ignored source/evidence review packet for Agent Run store/API, governed-call correlation, MCP wiring, UI panel, tests, and contracts. |
 | 271 - Agent Run timeline readiness gate | Done | [agent-run-timeline-readiness-gate.md](agent-run-timeline-readiness-gate.md), `make agent-run-timeline-readiness`; validates run store/API/UI timeline evidence and release-check wiring without run-control behavior. |
+| 272 - Operator action states design | Done | [operator-action-states-design.md](operator-action-states-design.md), `make operator-action-states-check`; defines future pause/abort/disable vocabulary without runtime controls. |
 
 ## Future Candidate Track
 

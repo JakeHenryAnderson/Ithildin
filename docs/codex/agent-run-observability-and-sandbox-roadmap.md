@@ -186,6 +186,9 @@ The operator/reviewer guide is tracked in
 ### 8. Pause, Disable, and Kill-Switch Semantics
 
 Future controls should be defined carefully:
+The design-only vocabulary is tracked in
+[operator-action-states-design.md](operator-action-states-design.md) and checked with
+`make operator-action-states-check`.
 
 - pause a run;
 - disable a principal;
