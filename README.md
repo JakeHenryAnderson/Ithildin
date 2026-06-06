@@ -73,6 +73,10 @@ export endpoint, SIEM adapter, sandbox control, or runtime behavior.
 The Agent Run timeline readiness gate is
 [docs/codex/agent-run-timeline-readiness-gate.md](docs/codex/agent-run-timeline-readiness-gate.md)
 and is checked with `make agent-run-timeline-readiness`.
+The Agent Run evidence readiness gate is
+[docs/codex/agent-run-evidence-readiness-gate.md](docs/codex/agent-run-evidence-readiness-gate.md)
+and is checked with `make agent-run-evidence-readiness`; it keeps run evidence/export design tied
+to timeline, incident reconstruction, dashboard evidence, and no-new-powers checks.
 The operator action states proposal is
 [docs/codex/operator-action-states-design.md](docs/codex/operator-action-states-design.md) and is
 checked with `make operator-action-states-check`; it is design-only and does not add pause, abort,
@@ -171,6 +175,7 @@ checked with `make control-mapping-readiness`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
 - `make agent-run-evidence-export-check` - validate the design-only Agent Run evidence export bundle shape.
 - `make agent-run-evidence-packet` - generate an ignored focused Agent Run evidence export design review packet.
+- `make agent-run-evidence-readiness` - validate Agent Run evidence/export design, timeline, incident reconstruction, dashboard evidence, and no-new-powers wiring.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
 - `make dashboard-evidence-checklist-check` - validate the operator-facing evidence dashboard review checklist.

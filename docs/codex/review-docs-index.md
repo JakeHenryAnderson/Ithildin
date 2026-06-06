@@ -119,6 +119,7 @@ externally closed.
 - [Agent Run Evidence Contract](agent-run-evidence-contract.md)
 - [Agent Run Evidence Export Design](agent-run-evidence-export-design.md)
 - [Agent Run Timeline Readiness Gate](agent-run-timeline-readiness-gate.md)
+- [Agent Run Evidence Readiness Gate](agent-run-evidence-readiness-gate.md)
 - [Operator Action States Design](operator-action-states-design.md)
 - [Dashboard Evidence Review Checklist](dashboard-evidence-review-checklist.md)
 - [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md)

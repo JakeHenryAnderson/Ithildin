@@ -135,6 +135,7 @@ REVIEW_DOCS = [
     "docs/codex/agent-run-evidence-contract.md",
     "docs/codex/agent-run-evidence-export-design.md",
     "docs/codex/agent-run-timeline-readiness-gate.md",
+    "docs/codex/agent-run-evidence-readiness-gate.md",
     "docs/codex/operator-action-states-design.md",
     "docs/codex/dashboard-evidence-review-checklist.md",
     "docs/codex/sandbox-workspace-boundary-contract.md",

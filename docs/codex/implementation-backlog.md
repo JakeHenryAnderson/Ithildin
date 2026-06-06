@@ -293,6 +293,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 274 - Agent Run dashboard readiness wiring | Done | `make agent-run-timeline-readiness` and `make release-check`; composes operator-action and dashboard-evidence checks into the Agent Run timeline readiness gate. |
 | 275 - Agent Run evidence export design | Done | [agent-run-evidence-export-design.md](agent-run-evidence-export-design.md), `make agent-run-evidence-export-check`; defines a future secret-free run export bundle without runtime export behavior. |
 | 276 - Agent Run evidence review packet | Done | `make agent-run-evidence-packet`; generates an ignored source/test/contract/evidence packet for the design-only run export surface. |
+| 277 - Agent Run evidence readiness gate | Done | [agent-run-evidence-readiness-gate.md](agent-run-evidence-readiness-gate.md), `make agent-run-evidence-readiness`; composes Agent Run evidence/export, timeline, incident reconstruction, dashboard evidence, and no-new-powers checks. |
 
 ## Future Candidate Track
 
