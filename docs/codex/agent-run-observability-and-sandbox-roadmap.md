@@ -143,6 +143,9 @@ Regulated-environment value comes from mapping agent behavior to control objecti
 
 These should be policy/control mappings, not compliance claims. A future policy pack may say
 “supports this control objective” only if tests and evidence prove the mapping.
+The design-only mapping support doc is tracked in
+[control-mapping-design.md](control-mapping-design.md) and checked with
+`make control-mapping-design-check`.
 
 ### 6. Data Classification
 
@@ -202,6 +205,7 @@ processes, model clients, containers, or OS activity outside Ithildin.
 - Link the future [SIEM-Shaped Evidence Design](siem-shaped-evidence-design.md) without adapters.
 - Link the trusted local [Data Classification Design](data-classification-design.md) without
   runtime classification behavior.
+- Link the [Control Mapping Design](control-mapping-design.md) without compliance claims.
 - Add gates that prevent these docs from becoming production/security claims.
 
 ### Wave B: Read-Only Run Model

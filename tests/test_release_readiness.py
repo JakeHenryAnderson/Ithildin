@@ -16,6 +16,7 @@ from scripts import (
     capability_expansion_gate,
     closure_matrix_evidence_sync,
     consolidate_review_packet,
+    control_mapping_design_check,
     data_classification_design_check,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -7135,6 +7136,43 @@ def test_data_classification_design_check_is_wired() -> None:
         "trusted local configuration",
         "not automatic classification",
         "not a compliance claim",
+    ]:
+        assert phrase in design
+
+
+def test_control_mapping_design_check_is_wired() -> None:
+    report = control_mapping_design_check.build_report(Path.cwd())
+    design = Path("docs/codex/control-mapping-design.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make control-mapping-design-check" in readme
+    assert "control-mapping-design-check:" in makefile
+    assert "docs/codex/control-mapping-design.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/control-mapping-design.md" in docs_site
+    assert "control-mapping-design.md" in roadmap
+    for phrase in [
+        "Status: design-only proposal",
+        "control mapping support",
+        "not HIPAA, GLBA, SOX, GDPR",
+        "least privilege",
+        "approval-required writes",
+        "restricted network destinations",
+        "sensitive-resource labeling",
+        "evidence export",
+        "denied destructive actions",
+        "incident reconstruction",
+        "what it cannot prove",
+        "Ithildin-mediated tools",
+        "compliance automation",
     ]:
         assert phrase in design
 

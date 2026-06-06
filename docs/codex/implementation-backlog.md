@@ -282,6 +282,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 263 - SIEM-shaped evidence design | Done | [siem-shaped-evidence-design.md](siem-shaped-evidence-design.md), `make siem-evidence-design-check`; defines future JSONL/SIEM-shaped evidence categories without adapters or hosted telemetry. |
 | 264 - Observability readiness gate | Done | [observability-readiness-gate.md](observability-readiness-gate.md), `make observability-readiness`; composes Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers checks. |
 | 265 - Data classification proposal | Done | [data-classification-design.md](data-classification-design.md), `make data-classification-design-check`; defines trusted local labels as future policy inputs/UI warnings without discovery or runtime behavior. |
+| 266 - Control mapping design | Done | [control-mapping-design.md](control-mapping-design.md), `make control-mapping-design-check`; defines control mapping support without compliance automation or new runtime behavior. |
 
 ## Future Candidate Track
 

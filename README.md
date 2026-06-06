@@ -76,6 +76,10 @@ The trusted local data classification proposal is
 [docs/codex/data-classification-design.md](docs/codex/data-classification-design.md) and is checked
 with `make data-classification-design-check`; it defines future policy inputs and UI warnings only,
 with no automatic discovery or runtime policy behavior.
+The policy/control mapping design is
+[docs/codex/control-mapping-design.md](docs/codex/control-mapping-design.md) and is checked with
+`make control-mapping-design-check`; it supports control-objective mapping only and does not make
+HIPAA, GLBA, SOX, GDPR, or other compliance claims.
 The combined observability readiness gate is
 [docs/codex/observability-readiness-gate.md](docs/codex/observability-readiness-gate.md) and is
 checked with `make observability-readiness`.
@@ -145,6 +149,7 @@ checked with `make observability-readiness`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
 - `make siem-evidence-design-check` - validate the future SIEM-shaped evidence design without adding adapters.
 - `make data-classification-design-check` - validate the trusted local data classification proposal without adding runtime behavior.
+- `make control-mapping-design-check` - validate control mapping support boundaries without compliance claims.
 - `make observability-readiness` - validate Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers readiness.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
