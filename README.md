@@ -170,6 +170,7 @@ checked with `make control-mapping-readiness`.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
 - `make agent-run-evidence-export-check` - validate the design-only Agent Run evidence export bundle shape.
+- `make agent-run-evidence-packet` - generate an ignored focused Agent Run evidence export design review packet.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
 - `make dashboard-evidence-checklist-check` - validate the operator-facing evidence dashboard review checklist.

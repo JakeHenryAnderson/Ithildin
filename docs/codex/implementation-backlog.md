@@ -292,6 +292,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 273 - Dashboard evidence review checklist | Done | [dashboard-evidence-review-checklist.md](dashboard-evidence-review-checklist.md), `make dashboard-evidence-checklist-check`; defines operator-facing Agent Run/timeline/approval/diagnostic evidence review expectations without UI behavior changes. |
 | 274 - Agent Run dashboard readiness wiring | Done | `make agent-run-timeline-readiness` and `make release-check`; composes operator-action and dashboard-evidence checks into the Agent Run timeline readiness gate. |
 | 275 - Agent Run evidence export design | Done | [agent-run-evidence-export-design.md](agent-run-evidence-export-design.md), `make agent-run-evidence-export-check`; defines a future secret-free run export bundle without runtime export behavior. |
+| 276 - Agent Run evidence review packet | Done | `make agent-run-evidence-packet`; generates an ignored source/test/contract/evidence packet for the design-only run export surface. |
 
 ## Future Candidate Track
 

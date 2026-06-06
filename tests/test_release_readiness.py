@@ -13,6 +13,7 @@ from scripts import (
     accepted_risk_register,
     agent_run_evidence_contract_check,
     agent_run_evidence_export_check,
+    agent_run_evidence_packet,
     agent_run_timeline_packet,
     agent_run_timeline_readiness,
     capability_decision_report,
@@ -7066,6 +7067,63 @@ def test_agent_run_evidence_export_check_is_wired() -> None:
         "not a claim of sandboxing",
     ]:
         assert phrase in design
+
+
+def test_agent_run_evidence_packet_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "agent-run-evidence"
+
+    agent_run_evidence_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_AGENT_RUN_EVIDENCE_INDEX.md",
+        "01_AGENT_RUN_EVIDENCE_REVIEW_PROMPT.md",
+        "02_AGENT_RUN_EVIDENCE_SOURCE_BUNDLE.md",
+        "03_AGENT_RUN_EVIDENCE_TESTS_BUNDLE.md",
+        "04_AGENT_RUN_EVIDENCE_CONTRACTS_BUNDLE.md",
+        "05_AGENT_RUN_EVIDENCE_COMMAND_EVIDENCE.md",
+        "agent-run-evidence-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected
+    hashes = json.loads(
+        (output_dir / "agent-run-evidence-artifact-hashes.json").read_text(encoding="utf-8")
+    )
+    assert {entry["path"] for entry in hashes} == expected - {
+        "agent-run-evidence-artifact-hashes.json"
+    }
+    index = (output_dir / "00_AGENT_RUN_EVIDENCE_INDEX.md").read_text(encoding="utf-8")
+    prompt = (output_dir / "01_AGENT_RUN_EVIDENCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    source = (output_dir / "02_AGENT_RUN_EVIDENCE_SOURCE_BUNDLE.md").read_text(encoding="utf-8")
+    tests = (output_dir / "03_AGENT_RUN_EVIDENCE_TESTS_BUNDLE.md").read_text(encoding="utf-8")
+    contracts = (output_dir / "04_AGENT_RUN_EVIDENCE_CONTRACTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "05_AGENT_RUN_EVIDENCE_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert "make agent-run-evidence-packet" in readme
+    assert "agent-run-evidence-packet:" in makefile
+    assert "276 - Agent Run evidence review packet | Done" in backlog
+    assert "Tool count remains `13`" in index
+    assert "design-only" in index
+    assert "EXT-RUN-EVID-###" in prompt
+    assert "apps/api/src/ithildin_api/agent_runs.py" in source
+    assert "packages/audit-core/src/ithildin_audit_core/signing.py" in source
+    assert "tests/test_audit_writer.py" in tests
+    assert "docs/codex/agent-run-evidence-export-design.md" in contracts
+    assert "docs/codex/signed-audit-exports.md" in contracts
+    assert "command execution skipped" in evidence
 
 
 def test_agent_run_timeline_packet_is_wired(tmp_path: Path) -> None:
