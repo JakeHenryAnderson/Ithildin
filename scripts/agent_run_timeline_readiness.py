@@ -13,7 +13,9 @@ if __package__ in {None, ""}:
 
 from scripts import (
     agent_run_evidence_contract_check,
+    dashboard_evidence_checklist_check,
     no_new_powers_guardrail,
+    operator_action_states_check,
     review_docs,
     tool_surface_invariant_gate,
 )
@@ -26,6 +28,8 @@ REQUIRED_GATE_PHRASES = [
     "make agent-run-timeline-readiness",
     "agent-run-evidence-contract-check",
     "agent-run-timeline-packet",
+    "operator-action-states-check",
+    "dashboard-evidence-checklist-check",
     "AgentRunStore",
     "GET /runs",
     "GET /runs/{run_id}",
@@ -63,9 +67,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     evidence = agent_run_evidence_contract_check.build_report(repo_root)
+    operator_actions = operator_action_states_check.build_report(repo_root)
+    dashboard = dashboard_evidence_checklist_check.build_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     tool_surface = tool_surface_invariant_gate.build_report(repo_root)
     failures.extend(f"agent-run-evidence: {failure}" for failure in evidence["failures"])
+    failures.extend(
+        f"operator-action-states: {failure}" for failure in operator_actions["failures"]
+    )
+    failures.extend(f"dashboard-evidence: {failure}" for failure in dashboard["failures"])
     failures.extend(f"no-new-powers: {failure}" for failure in no_new_powers["failures"])
     failures.extend(f"tool-surface: {failure}" for failure in tool_surface["failures"])
     failures.extend(_validate_doc(repo_root=repo_root, docs_site=docs_site, readme=readme))
@@ -82,6 +92,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "tool_count": tool_surface.get("tool_count"),
         "agent_run_evidence_contract_valid": evidence["valid"],
+        "operator_action_states_valid": operator_actions["valid"],
+        "dashboard_evidence_checklist_valid": dashboard["valid"],
         "runtime_changes_allowed": False,
         "new_power_classes_allowed": False,
         "run_control_behavior_allowed": False,

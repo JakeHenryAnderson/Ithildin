@@ -290,6 +290,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 271 - Agent Run timeline readiness gate | Done | [agent-run-timeline-readiness-gate.md](agent-run-timeline-readiness-gate.md), `make agent-run-timeline-readiness`; validates run store/API/UI timeline evidence and release-check wiring without run-control behavior. |
 | 272 - Operator action states design | Done | [operator-action-states-design.md](operator-action-states-design.md), `make operator-action-states-check`; defines future pause/abort/disable vocabulary without runtime controls. |
 | 273 - Dashboard evidence review checklist | Done | [dashboard-evidence-review-checklist.md](dashboard-evidence-review-checklist.md), `make dashboard-evidence-checklist-check`; defines operator-facing Agent Run/timeline/approval/diagnostic evidence review expectations without UI behavior changes. |
+| 274 - Agent Run dashboard readiness wiring | Done | `make agent-run-timeline-readiness` and `make release-check`; composes operator-action and dashboard-evidence checks into the Agent Run timeline readiness gate. |
 
 ## Future Candidate Track
 

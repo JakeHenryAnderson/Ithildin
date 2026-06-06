@@ -14,11 +14,15 @@ The gate validates:
 
 - `agent-run-evidence-contract-check`;
 - `agent-run-timeline-packet`;
+- `operator-action-states-check`;
+- `dashboard-evidence-checklist-check`;
 - `AgentRunStore` source presence;
 - `GET /runs` and `GET /runs/{run_id}` contract/API coverage;
 - governed-call audit correlation with `run_id`;
 - approval correlation evidence through safe metadata;
 - review-console Agent Runs panel coverage;
+- operator action states remain design-only vocabulary;
+- dashboard evidence review expectations remain checklist-only;
 - `no-new-powers-guardrail`;
 - `tool-surface-invariant-gate`.
 

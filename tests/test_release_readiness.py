@@ -7089,13 +7089,22 @@ def test_agent_run_timeline_readiness_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 13
     assert report["agent_run_evidence_contract_valid"] is True
+    assert report["operator_action_states_valid"] is True
+    assert report["dashboard_evidence_checklist_valid"] is True
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["run_control_behavior_allowed"] is False
     assert "make agent-run-timeline-readiness" in readme
     assert "agent-run-timeline-readiness:" in makefile
     assert "agent-run-timeline-readiness" in release_check_body
+    assert "operator-action-states-check" in release_check_body
+    assert "dashboard-evidence-checklist-check" in release_check_body
     assert "agent-run-timeline-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "operator-action-states-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert (
+        "dashboard-evidence-checklist-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
     assert "docs/codex/agent-run-timeline-readiness-gate.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/agent-run-timeline-readiness-gate.md" in docs_site
     assert "271 - Agent Run timeline readiness gate | Done" in backlog
@@ -7104,6 +7113,8 @@ def test_agent_run_timeline_readiness_gate_is_wired() -> None:
         "does not add runtime behavior",
         "agent-run-evidence-contract-check",
         "agent-run-timeline-packet",
+        "operator-action-states-check",
+        "dashboard-evidence-checklist-check",
         "AgentRunStore",
         "GET /runs",
         "GET /runs/{run_id}",

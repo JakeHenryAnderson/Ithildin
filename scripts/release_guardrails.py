@@ -66,6 +66,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v3-next-capability-candidate-check",
     "next-capability-readiness",
     "agent-run-evidence-contract-check",
+    "operator-action-states-check",
+    "dashboard-evidence-checklist-check",
     "agent-run-timeline-readiness",
     "siem-evidence-design-check",
     "data-classification-design-check",
