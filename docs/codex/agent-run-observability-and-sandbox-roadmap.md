@@ -88,6 +88,9 @@ The review console should evolve into an operations timeline:
 
 The first milestone should be read-only observability. Pause/kill controls can be planned later and
 must be explicit state transitions, not hidden process control.
+The dashboard evidence review target is tracked in
+[dashboard-evidence-review-checklist.md](dashboard-evidence-review-checklist.md) and checked with
+`make dashboard-evidence-checklist-check`.
 
 ### 3. Sandbox and Workspace Boundary Contract
 

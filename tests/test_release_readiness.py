@@ -20,6 +20,7 @@ from scripts import (
     consolidate_review_packet,
     control_mapping_design_check,
     control_mapping_readiness,
+    dashboard_evidence_checklist_check,
     data_classification_design_check,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -7162,6 +7163,48 @@ def test_operator_action_states_check_is_wired() -> None:
         "add API or MCP actions",
     ]:
         assert phrase in design
+
+
+def test_dashboard_evidence_checklist_check_is_wired() -> None:
+    report = dashboard_evidence_checklist_check.build_report(Path.cwd())
+    checklist = Path("docs/codex/dashboard-evidence-review-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make dashboard-evidence-checklist-check" in readme
+    assert "dashboard-evidence-checklist-check:" in makefile
+    assert "docs/codex/dashboard-evidence-review-checklist.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/dashboard-evidence-review-checklist.md" in docs_site
+    assert "dashboard-evidence-review-checklist.md" in roadmap
+    assert "273 - Dashboard evidence review checklist | Done" in backlog
+    for phrase in [
+        "Status: review checklist",
+        "Agent Run summary",
+        "timeline evidence",
+        "approval evidence",
+        "patch diagnostics",
+        "signed export evidence",
+        "data classification warnings",
+        "control mapping hints",
+        "unsupported posture warnings",
+        "binding evidence",
+        "safe metadata only",
+        "raw JSON",
+        "pause/abort/disable control",
+        "UI tests cover",
+    ]:
+        assert phrase in checklist
 
 
 def test_sandbox_workspace_boundary_contract_is_wired_and_scoped() -> None:

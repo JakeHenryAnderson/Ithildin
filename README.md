@@ -73,6 +73,9 @@ The operator action states proposal is
 [docs/codex/operator-action-states-design.md](docs/codex/operator-action-states-design.md) and is
 checked with `make operator-action-states-check`; it is design-only and does not add pause, abort,
 kill, repair, replay, or disable behavior.
+The dashboard evidence review checklist is
+[docs/codex/dashboard-evidence-review-checklist.md](docs/codex/dashboard-evidence-review-checklist.md)
+and is checked with `make dashboard-evidence-checklist-check`.
 The operator-managed sandbox/workspace boundary contract is
 [docs/codex/sandbox-workspace-boundary-contract.md](docs/codex/sandbox-workspace-boundary-contract.md);
 it is design/evidence-only and does not add sandbox orchestration or OS isolation claims.
@@ -164,6 +167,7 @@ checked with `make control-mapping-readiness`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
+- `make dashboard-evidence-checklist-check` - validate the operator-facing evidence dashboard review checklist.
 - `make siem-evidence-design-check` - validate the future SIEM-shaped evidence design without adding adapters.
 - `make data-classification-design-check` - validate the trusted local data classification proposal without adding runtime behavior.
 - `make control-mapping-design-check` - validate control mapping support boundaries without compliance claims.
