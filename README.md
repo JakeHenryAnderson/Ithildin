@@ -66,6 +66,9 @@ only, not sandbox/process control.
 The secret-free timeline evidence contract is
 [docs/codex/agent-run-evidence-contract.md](docs/codex/agent-run-evidence-contract.md) and is
 checked with `make agent-run-evidence-contract-check`.
+The operator-managed sandbox/workspace boundary contract is
+[docs/codex/sandbox-workspace-boundary-contract.md](docs/codex/sandbox-workspace-boundary-contract.md);
+it is design/evidence-only and does not add sandbox orchestration or OS isolation claims.
 
 ## Repo Map
 

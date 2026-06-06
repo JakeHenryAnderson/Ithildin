@@ -7016,6 +7016,41 @@ def test_agent_run_evidence_contract_check_is_wired() -> None:
         assert phrase in contract
 
 
+def test_sandbox_workspace_boundary_contract_is_wired_and_scoped() -> None:
+    contract_path = Path("docs/codex/sandbox-workspace-boundary-contract.md")
+    contract = contract_path.read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "docs/codex/sandbox-workspace-boundary-contract.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/sandbox-workspace-boundary-contract.md" in docs_site
+    assert "sandbox-workspace-boundary-contract.md" in readme
+    assert "sandbox-workspace-boundary-contract.md" in roadmap
+    for phrase in [
+        "Status: design/evidence contract",
+        "does not add runtime behavior",
+        "operator-managed sandbox",
+        "trusted local",
+        "configuration source",
+        "`sandbox_id`",
+        "`workspace_id`",
+        "trusted config source",
+        "mount/root label",
+        "support status",
+        "warning state",
+        "operator notes",
+        "start containers",
+        "mount the Docker socket",
+        "run shell commands",
+        "manage Kubernetes",
+        "kernel isolation",
+    ]:
+        assert phrase in contract
+
+
 def _write_project_markers(root: Path) -> None:
     directory_markers = {"apps/api", "apps/mcp-server"}
     for marker in review_packet_bundle.PROJECT_MARKERS:
