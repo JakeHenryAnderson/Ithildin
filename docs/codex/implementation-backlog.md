@@ -286,6 +286,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 267 - Incident reconstruction guide | Done | [incident-reconstruction-guide.md](incident-reconstruction-guide.md), `make incident-reconstruction-check`; documents how to reconstruct Ithildin-mediated actions without claiming proof outside Ithildin. |
 | 268 - Observability control packet | Done | `make observability-control-packet`; generates an ignored design-review packet for Agent Run, sandbox/workspace, SIEM-shaped evidence, data classification, control mapping, and incident reconstruction artifacts. |
 | 269 - Control mapping readiness gate | Done | [control-mapping-readiness-gate.md](control-mapping-readiness-gate.md), `make control-mapping-readiness`; composes observability, classification, mapping, reconstruction, no-new-powers, and tool-surface checks into `release-check`. |
+| 270 - Agent Run timeline packet | Done | `make agent-run-timeline-packet`; generates an ignored source/evidence review packet for Agent Run store/API, governed-call correlation, MCP wiring, UI panel, tests, and contracts. |
 
 ## Future Candidate Track
 

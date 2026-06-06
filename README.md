@@ -130,6 +130,7 @@ checked with `make control-mapping-readiness`.
 - `make v05-review-candidate` - run the v0.5 handoff gate plus source-review artifact prep.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
+- `make agent-run-timeline-packet` - generate an ignored Agent Run timeline source/evidence review packet.
 - `make review-packet-diff OLD=... NEW=...` - compare two review packet bundles by artifact hash.
 - `make review-packet-diff-gate OLD=... NEW=...` - require packet hashes and fail on removed artifacts.
 - `make review-packet-source-pointers` - validate source-file pointers used by reviewer packets.
