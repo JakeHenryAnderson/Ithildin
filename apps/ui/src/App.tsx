@@ -146,6 +146,16 @@ type AgentRun = {
   metadata: JsonObject;
 };
 
+type AgentRunSummary = {
+  returned: number;
+  filters: JsonObject;
+  workspaces: Record<string, number>;
+  principals: Record<string, number>;
+  statuses: Record<string, number>;
+  tools: Record<string, number>;
+  latest_updated_at: string | null;
+};
+
 type AgentRunTimelineEvent = {
   event_id: string;
   timestamp: string;
@@ -337,6 +347,7 @@ type DashboardData = {
   patches: PatchProposal[];
   patchDiagnostics: PatchApplyDiagnostics | null;
   runs: AgentRun[];
+  runSummary: AgentRunSummary | null;
   auditEvents: AuditEvent[];
   verification: AuditVerification | null;
 };
@@ -360,8 +371,15 @@ export function App() {
     patches: [],
     patchDiagnostics: null,
     runs: [],
+    runSummary: null,
     auditEvents: [],
     verification: null,
+  });
+  const [runFilters, setRunFilters] = useState({
+    principal_id: "",
+    workspace_id: "",
+    status: "",
+    tool_name: "",
   });
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<PatchProposal | null>(null);
@@ -406,7 +424,7 @@ export function App() {
     [data.tools, selectedToolName],
   );
 
-  async function loadDashboard(activeToken = token) {
+  async function loadDashboard(activeToken = token, activeRunFilters = runFilters) {
     if (!activeToken) {
       setData({
         systemStatus: null,
@@ -415,6 +433,7 @@ export function App() {
         patches: [],
         patchDiagnostics: null,
         runs: [],
+        runSummary: null,
         auditEvents: [],
         verification: null,
       });
@@ -444,7 +463,10 @@ export function App() {
         apiRequest<{ approvals: ApprovalReview[] }>("/approvals/review?status=pending", activeToken),
         apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
         apiRequest<PatchApplyDiagnostics>("/patch-apply-diagnostics", activeToken),
-        apiRequest<{ runs: AgentRun[] }>("/runs?limit=25", activeToken),
+        apiRequest<{ runs: AgentRun[]; summary: AgentRunSummary }>(
+          runListPath(activeRunFilters),
+          activeToken,
+        ),
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
         apiRequest<AuditVerification>("/audit-events/verify", activeToken),
       ]);
@@ -455,6 +477,7 @@ export function App() {
         patches: patchesResponse.patch_proposals,
         patchDiagnostics,
         runs: runsResponse.runs,
+        runSummary: runsResponse.summary,
         auditEvents: auditResponse.audit_events,
         verification: verificationResponse,
       });
@@ -525,6 +548,7 @@ export function App() {
         patches: [],
         patchDiagnostics: null,
         runs: [],
+        runSummary: null,
         auditEvents: [],
         verification: null,
       });
@@ -533,6 +557,21 @@ export function App() {
       setPreviewResult(null);
       setImpactResult(null);
     }
+  }
+
+  function updateRunFilter(name: keyof typeof runFilters, value: string) {
+    setRunFilters((current) => ({ ...current, [name]: value }));
+  }
+
+  function applyRunFilters(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void loadDashboard();
+  }
+
+  function clearRunFilters() {
+    const emptyFilters = { principal_id: "", workspace_id: "", status: "", tool_name: "" };
+    setRunFilters(emptyFilters);
+    void loadDashboard(token, emptyFilters);
   }
 
   async function runPolicyPreview(event: FormEvent<HTMLFormElement>) {
@@ -1354,6 +1393,48 @@ export function App() {
 
       <section className="run-section">
         <Panel title="Agent Runs" icon={<Activity size={18} />}>
+          <form className="run-filter-bar" onSubmit={applyRunFilters}>
+            <label>
+              <span>Principal</span>
+              <input
+                value={runFilters.principal_id}
+                onChange={(event) => updateRunFilter("principal_id", event.target.value)}
+                placeholder="agent:mcp-local"
+              />
+            </label>
+            <label>
+              <span>Workspace</span>
+              <input
+                value={runFilters.workspace_id}
+                onChange={(event) => updateRunFilter("workspace_id", event.target.value)}
+                placeholder="default"
+              />
+            </label>
+            <label>
+              <span>Status</span>
+              <input
+                value={runFilters.status}
+                onChange={(event) => updateRunFilter("status", event.target.value)}
+                placeholder="active"
+              />
+            </label>
+            <label>
+              <span>Tool</span>
+              <input
+                value={runFilters.tool_name}
+                onChange={(event) => updateRunFilter("tool_name", event.target.value)}
+                placeholder="fs.read"
+              />
+            </label>
+            <button className="secondary-action" type="submit" disabled={!token || loading}>
+              <RefreshCcw aria-hidden="true" size={16} />
+              Apply
+            </button>
+            <button className="secondary-action" type="button" disabled={!token || loading} onClick={clearRunFilters}>
+              Clear
+            </button>
+          </form>
+          {data.runSummary ? <RunSummary summary={data.runSummary} /> : null}
           <div className="run-layout">
             <div className="run-list">
               {data.runs.length === 0 ? (
@@ -1368,7 +1449,7 @@ export function App() {
                   >
                     <span>{run.principal_id}</span>
                     <small>
-                      {run.workspace_id} · {run.session_id}
+                      {run.workspace_id} · {run.last_tool_name ?? "no tool"}
                     </small>
                     <StatusPill status={run.status} />
                   </button>
@@ -1382,7 +1463,8 @@ export function App() {
                     <div>
                       <h3>{selectedRun.run.principal_id}</h3>
                       <p>
-                        {shortId(selectedRun.run.run_id)} · {selectedRun.run.tool_call_count} calls
+                        {shortId(selectedRun.run.run_id)} · {selectedRun.run.workspace_id} ·{" "}
+                        {selectedRun.run.tool_call_count} calls
                       </p>
                     </div>
                     <div className="run-actions">
@@ -1399,17 +1481,19 @@ export function App() {
                     </div>
                   </div>
                   {selectedRun.timeline.length === 0 ? (
-                    <EmptyState text="No correlated audit events." />
+                    <EmptyState text="No correlated audit events for this run." />
                   ) : (
                     <div className="table-wrap compact-table">
                       <table>
                         <thead>
                           <tr>
                             <th>Time</th>
-                            <th>Event</th>
+                            <th>Category</th>
+                            <th>Status</th>
                             <th>Tool</th>
                             <th>Decision</th>
                             <th>Request</th>
+                            <th>Warnings</th>
                             <th>Hash</th>
                           </tr>
                         </thead>
@@ -1418,9 +1502,13 @@ export function App() {
                             <tr key={event.event_id}>
                               <td>{formatDate(event.timestamp)}</td>
                               <td>{event.event_type}</td>
+                              <td><StatusPill status={timelineStatus(event)} /></td>
                               <td>{event.tool_name ?? ""}</td>
                               <td>{event.decision ?? ""}</td>
                               <td>{shortId(event.request_id)}</td>
+                              <td>{timelineWarnings(event).map((warning) => (
+                                <span className="warning-chip" key={warning}>{warning}</span>
+                              ))}</td>
                               <td>{shortHash(event.event_hash)}</td>
                             </tr>
                           ))}
@@ -1517,6 +1605,24 @@ function Panel({
 
 function EmptyState({ text }: { text: string }) {
   return <div className="empty-state">{text}</div>;
+}
+
+function RunSummary({ summary }: { summary: AgentRunSummary }) {
+  const filters = Object.entries(summary.filters)
+    .filter((entry): entry is [string, string] => typeof entry[1] === "string")
+    .map(([key, value]) => `${key}=${value}`);
+  return (
+    <div className="run-summary" aria-label="Agent run query summary">
+      <span>{summary.returned} runs</span>
+      <span>{countSummary(summary.statuses) || "no statuses"}</span>
+      <span>{countSummary(summary.workspaces) || "no workspaces"}</span>
+      <span>{countSummary(summary.tools) || "no tools"}</span>
+      <span>{filters.length > 0 ? filters.join(" · ") : "unfiltered"}</span>
+      <span>
+        {summary.latest_updated_at ? `latest ${formatDate(summary.latest_updated_at)}` : "no updates"}
+      </span>
+    </div>
+  );
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -1773,6 +1879,54 @@ async function copyApprovalEvidence(approval: Approval, review?: BindingReview) 
       : undefined,
   };
   await navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
+}
+
+function runListPath(filters: {
+  principal_id: string;
+  workspace_id: string;
+  status: string;
+  tool_name: string;
+}) {
+  const query = new URLSearchParams({ limit: "25" });
+  for (const [key, value] of Object.entries(filters)) {
+    const trimmed = value.trim();
+    if (trimmed) {
+      query.set(key, trimmed);
+    }
+  }
+  return `/runs?${query.toString()}`;
+}
+
+function countSummary(counts: Record<string, number>) {
+  const [first] = Object.entries(counts).sort((left, right) => right[1] - left[1]);
+  return first ? `${first[0]} (${first[1]})` : "";
+}
+
+function timelineStatus(event: AgentRunTimelineEvent) {
+  if (event.event_type.endsWith(".completed")) {
+    return "completed";
+  }
+  if (event.event_type.endsWith(".failed")) {
+    return "failed";
+  }
+  if (event.event_type.endsWith(".started")) {
+    return "started";
+  }
+  return event.decision ?? "recorded";
+}
+
+function timelineWarnings(event: AgentRunTimelineEvent) {
+  const warnings: string[] = [];
+  if (event.event_type.endsWith(".failed")) {
+    warnings.push("failure");
+  }
+  if (!event.event_hash) {
+    warnings.push("missing hash");
+  }
+  if (event.metadata.redaction_count && Number(event.metadata.redaction_count) > 0) {
+    warnings.push("redacted");
+  }
+  return warnings;
 }
 
 async function apiRequest<T>(

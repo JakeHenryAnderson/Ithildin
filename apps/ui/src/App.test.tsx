@@ -231,7 +231,7 @@ function installFetchMock(status = systemStatus()) {
     if (path === "/patch-apply-diagnostics") {
       return jsonResponse({ status: "clean", attempts: [], stuck_approvals: [], recommendations: [] });
     }
-    if (path === "/runs?limit=25") {
+    if (path === "/runs?limit=25" || path.startsWith("/runs?limit=25&")) {
       return jsonResponse({
         runs: [
           {
@@ -252,6 +252,17 @@ function installFetchMock(status = systemStatus()) {
             metadata: {},
           },
         ],
+        summary: {
+          returned: 1,
+          filters: path.includes("principal_id")
+            ? { principal_id: "agent:mcp-local", workspace_id: "demo", tool_name: "fs.read" }
+            : {},
+          workspaces: { demo: 1 },
+          principals: { "agent:mcp-local": 1 },
+          statuses: { active: 1 },
+          tools: { "fs.read": 1 },
+          latest_updated_at: "2026-06-03T12:01:00Z",
+        },
       });
     }
     if (path === "/runs/run_123456789") {
@@ -421,7 +432,10 @@ describe("Review console interactions", () => {
     expect(await screen.findByText(/sample admin token is active/)).toBeInTheDocument();
     expect(screen.getByText("Agent Runs")).toBeInTheDocument();
     expect(screen.getAllByText("agent:mcp-local").length).toBeGreaterThan(0);
+    expect(screen.getByText("1 runs")).toBeInTheDocument();
+    expect(screen.getByText("demo (1)")).toBeInTheDocument();
     expect(screen.getByText("policy.evaluated")).toBeInTheDocument();
+    expect(screen.getAllByText("allow").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));
     expect(screen.getByText("Apply demo patch")).toBeInTheDocument();
     expect(screen.getByText("Binding Evidence")).toBeInTheDocument();
@@ -447,6 +461,27 @@ describe("Review console interactions", () => {
       `${API_BASE}/approvals/appr_123456789/approve`,
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("filters agent runs with a bounded authenticated query", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    const runSection = screen.getByText("Agent Runs").closest("section")!;
+
+    await user.type(within(runSection).getByLabelText("Principal"), "agent:mcp-local");
+    await user.type(within(runSection).getByLabelText("Workspace"), "demo");
+    await user.type(within(runSection).getByLabelText("Tool"), "fs.read");
+    await user.click(within(runSection).getByRole("button", { name: /^Apply$/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/runs?limit=25&principal_id=agent%3Amcp-local&workspace_id=demo&tool_name=fs.read`,
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: "Bearer local-token" }),
+        }),
+      );
+    });
+    expect(screen.getByText(/principal_id=agent:mcp-local/)).toBeInTheDocument();
   });
 
   it("handles signed export and invalid policy-preview JSON", async () => {
