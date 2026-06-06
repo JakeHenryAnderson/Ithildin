@@ -613,6 +613,38 @@ export function App() {
     }
   }
 
+  async function exportRunEvidence(runId: string) {
+    if (!token) {
+      return;
+    }
+    setExportLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `${API_BASE}/runs/${encodeURIComponent(runId)}/evidence-export`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (!response.ok) {
+        throw await apiErrorFromResponse(response);
+      }
+      const bundle = await response.blob();
+      const objectUrl = URL.createObjectURL(bundle);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `ithildin-run-evidence-${shortId(runId)}.json`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
   async function decideApproval(approvalId: string, action: "approve" | "deny") {
     setError(null);
     try {
@@ -1353,7 +1385,18 @@ export function App() {
                         {shortId(selectedRun.run.run_id)} · {selectedRun.run.tool_call_count} calls
                       </p>
                     </div>
-                    <StatusPill status={selectedRun.run.status} />
+                    <div className="run-actions">
+                      <StatusPill status={selectedRun.run.status} />
+                      <button
+                        className="secondary-action"
+                        type="button"
+                        disabled={exportLoading}
+                        onClick={() => void exportRunEvidence(selectedRun.run.run_id)}
+                      >
+                        <Download aria-hidden="true" size={16} />
+                        Export Run Evidence
+                      </button>
+                    </div>
                   </div>
                   {selectedRun.timeline.length === 0 ? (
                     <EmptyState text="No correlated audit events." />

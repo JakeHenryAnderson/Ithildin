@@ -288,6 +288,21 @@ function installFetchMock(status = systemStatus()) {
         ],
       });
     }
+    if (path === "/runs/run_123456789/evidence-export") {
+      return jsonResponse({
+        schema_version: "1",
+        export_id: "runev_123456789",
+        exported_at: "2026-06-03T12:02:00Z",
+        run: { run_id: "run_123456789" },
+        timeline: [],
+        approvals: [],
+        patch_diagnostics: [],
+        signed_export_references: [],
+        evidence_hashes: { run_sha256: "sha256:runhash" },
+        redaction_summary: { excluded_categories: ["prompts"] },
+        warnings: [{ type: "signed_evidence_unavailable" }],
+      });
+    }
     if (path === "/audit-events?limit=100") {
       return jsonResponse({
         audit_events: [
@@ -407,6 +422,7 @@ describe("Review console interactions", () => {
     expect(screen.getByText("Agent Runs")).toBeInTheDocument();
     expect(screen.getAllByText("agent:mcp-local").length).toBeGreaterThan(0);
     expect(screen.getByText("policy.evaluated")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));
     expect(screen.getByText("Apply demo patch")).toBeInTheDocument();
     expect(screen.getByText("Binding Evidence")).toBeInTheDocument();
     expect(screen.getByText("Patch Artifact")).toBeInTheDocument();
@@ -417,6 +433,12 @@ describe("Review console interactions", () => {
     await user.click(screen.getByRole("button", { name: /^Deny$/i }));
     await user.click(screen.getByRole("button", { name: /^Approve$/i }));
 
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/runs/run_123456789/evidence-export`,
+      expect.objectContaining({
+        headers: { Authorization: "Bearer local-token" },
+      }),
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE}/approvals/appr_123456789/deny`,
       expect.objectContaining({ method: "POST" }),
