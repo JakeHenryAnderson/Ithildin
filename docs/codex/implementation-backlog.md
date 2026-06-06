@@ -281,6 +281,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 262 - Sandbox workspace boundary contract | Done | [sandbox-workspace-boundary-contract.md](sandbox-workspace-boundary-contract.md); defines operator-managed sandbox/workspace posture evidence without sandbox orchestration. |
 | 263 - SIEM-shaped evidence design | Done | [siem-shaped-evidence-design.md](siem-shaped-evidence-design.md), `make siem-evidence-design-check`; defines future JSONL/SIEM-shaped evidence categories without adapters or hosted telemetry. |
 | 264 - Observability readiness gate | Done | [observability-readiness-gate.md](observability-readiness-gate.md), `make observability-readiness`; composes Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers checks. |
+| 265 - Data classification proposal | Done | [data-classification-design.md](data-classification-design.md), `make data-classification-design-check`; defines trusted local labels as future policy inputs/UI warnings without discovery or runtime behavior. |
 
 ## Future Candidate Track
 

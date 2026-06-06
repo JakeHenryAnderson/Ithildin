@@ -159,6 +159,9 @@ Workspaces and resources should eventually carry labels such as:
 
 Data labels should feed policy decisions and dashboard warnings. The first pass can be trusted local
 configuration only; UI editing, discovery, and automatic classification are separate future tasks.
+The design-only proposal is tracked in
+[data-classification-design.md](data-classification-design.md) and checked with
+`make data-classification-design-check`.
 
 ### 7. Incident Reconstruction
 
@@ -197,7 +200,8 @@ processes, model clients, containers, or OS activity outside Ithildin.
 - Link the secret-free [Agent Run Evidence Contract](agent-run-evidence-contract.md).
 - Link the operator-managed [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md).
 - Link the future [SIEM-Shaped Evidence Design](siem-shaped-evidence-design.md) without adapters.
-- Define data classification proposal.
+- Link the trusted local [Data Classification Design](data-classification-design.md) without
+  runtime classification behavior.
 - Add gates that prevent these docs from becoming production/security claims.
 
 ### Wave B: Read-Only Run Model

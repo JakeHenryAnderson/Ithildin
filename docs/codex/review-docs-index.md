@@ -119,6 +119,7 @@ externally closed.
 - [Agent Run Evidence Contract](agent-run-evidence-contract.md)
 - [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md)
 - [SIEM-Shaped Evidence Design](siem-shaped-evidence-design.md)
+- [Data Classification Design](data-classification-design.md)
 - [Observability Readiness Gate](observability-readiness-gate.md)
 - [Implementation-Planning Packet: git.show.ref_summary](capability-implementation-plans/git-show-ref-summary.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)

@@ -104,6 +104,7 @@ DEFAULT_DOCS = [
     "docs/codex/agent-run-evidence-contract.md",
     "docs/codex/sandbox-workspace-boundary-contract.md",
     "docs/codex/siem-shaped-evidence-design.md",
+    "docs/codex/data-classification-design.md",
     "docs/codex/observability-readiness-gate.md",
     "docs/codex/capability-implementation-plans/git-show-ref-summary.md",
     "docs/codex/capability-implementation-plans/git-show-commit-metadata.md",

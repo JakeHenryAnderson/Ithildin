@@ -16,6 +16,7 @@ from scripts import (
     capability_expansion_gate,
     closure_matrix_evidence_sync,
     consolidate_review_packet,
+    data_classification_design_check,
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
@@ -7095,6 +7096,45 @@ def test_siem_evidence_design_check_is_wired() -> None:
         "file contents",
         "diffs",
         "response bodies",
+    ]:
+        assert phrase in design
+
+
+def test_data_classification_design_check_is_wired() -> None:
+    report = data_classification_design_check.build_report(Path.cwd())
+    design = Path("docs/codex/data-classification-design.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make data-classification-design-check" in readme
+    assert "data-classification-design-check:" in makefile
+    assert "docs/codex/data-classification-design.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/data-classification-design.md" in docs_site
+    assert "data-classification-design.md" in roadmap
+    for phrase in [
+        "Status: design-only proposal",
+        "policy inputs",
+        "UI warnings",
+        "automatic discovery",
+        "`public`",
+        "`internal`",
+        "`confidential`",
+        "`PII`",
+        "`PHI`",
+        "`client data`",
+        "`regulated financial data`",
+        "`secrets-adjacent`",
+        "trusted local configuration",
+        "not automatic classification",
+        "not a compliance claim",
     ]:
         assert phrase in design
 
