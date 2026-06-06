@@ -277,6 +277,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 
 | Area | Status | Notes |
 | --- | --- | --- |
+| Agent run observability and sandbox boundary | Roadmap | [agent-run-observability-and-sandbox-roadmap.md](agent-run-observability-and-sandbox-roadmap.md) records the next strategic direction: run/session evidence, timeline dashboard, operator-managed sandbox contracts, SIEM-shaped export design, data classification, and control mapping without claiming current sandbox/SIEM/compliance behavior. |
 | Production identity | Deferred | OIDC, SAML, SCIM, hosted sessions, and multi-tenant stores. |
 | Runtime Postgres | Deferred | Real Postgres stores and migrations; current support is readiness-only. |
 | Hosted observability | Deferred | Production collectors and dashboards; current OpenTelemetry is opt-in preview. |

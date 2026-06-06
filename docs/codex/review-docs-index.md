@@ -114,6 +114,7 @@ externally closed.
 - [Implementation-Planning Packet: project.manifest.summary](capability-implementation-plans/project-manifest-summary.md)
 - [v3 project.manifest.summary Implementation Decision](v3-project-manifest-summary-implementation.md)
 - [v3 project.manifest.summary Source Review Handoff](v3-project-manifest-summary-source-review.md)
+- [Agent Run Observability and Sandbox Boundary Roadmap](agent-run-observability-and-sandbox-roadmap.md)
 - [Implementation-Planning Packet: git.show.ref_summary](capability-implementation-plans/git-show-ref-summary.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
 - [v0.9 git.show.commit_metadata Implementation](v0.9-git-commit-metadata-implementation.md)

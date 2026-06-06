@@ -63,6 +63,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v0.8-roadmap-prompt.md" in DEFAULT_DOCS
     assert "docs/codex/v0.9-lane-closure-summary.md" in DEFAULT_DOCS
     assert "docs/codex/v0.9-next-read-only-capability-seed.md" in DEFAULT_DOCS
+    assert "docs/codex/agent-run-observability-and-sandbox-roadmap.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/git-show-ref-summary.md" in DEFAULT_DOCS
     assert "docs/codex/capability-implementation-plans/git-show-ref-summary.md" in DEFAULT_DOCS
     assert "docs/codex/v0.9-git-ref-summary-proposal-review.md" in DEFAULT_DOCS

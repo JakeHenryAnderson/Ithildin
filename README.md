@@ -50,6 +50,15 @@ A security-conscious developer can run Ithildin locally, connect an MCP-capable 
 safe file/git/http tools, require approval for writes, and inspect a locally verifiable
 tamper-evident audit log.
 
+## Strategic Direction
+
+The next product direction is agent-run observability around operator-managed sandboxes and
+workspaces: first-class run/session evidence, a live timeline dashboard, sandbox boundary contracts,
+SIEM-shaped export design, data classification, and policy/control mapping. This is documented in
+[docs/codex/agent-run-observability-and-sandbox-roadmap.md](docs/codex/agent-run-observability-and-sandbox-roadmap.md).
+It is a roadmap, not a current claim of sandboxing, SIEM-grade custody, production compliance,
+hosted control-plane behavior, or broader tool powers.
+
 ## Repo Map
 
 - `docs/obsidian/` - Obsidian-friendly strategy and architecture notes.
