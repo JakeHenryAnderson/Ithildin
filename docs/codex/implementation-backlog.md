@@ -294,6 +294,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 275 - Agent Run evidence export design | Done | [agent-run-evidence-export-design.md](agent-run-evidence-export-design.md), `make agent-run-evidence-export-check`; defines a future secret-free run export bundle without runtime export behavior. |
 | 276 - Agent Run evidence review packet | Done | `make agent-run-evidence-packet`; generates an ignored source/test/contract/evidence packet for the design-only run export surface. |
 | 277 - Agent Run evidence readiness gate | Done | [agent-run-evidence-readiness-gate.md](agent-run-evidence-readiness-gate.md), `make agent-run-evidence-readiness`; composes Agent Run evidence/export, timeline, incident reconstruction, dashboard evidence, and no-new-powers checks. |
+| 278 - Agent Run evidence export implementation plan | Done | [agent-run-evidence-export-implementation-plan.md](agent-run-evidence-export-implementation-plan.md), `make agent-run-evidence-export-plan-check`; plans endpoint/schema/fixtures/negative cases without approving runtime implementation. |
 
 ## Future Candidate Track
 

@@ -276,6 +276,9 @@ or SIEM/compliance claims.
 The future run-level export bundle shape is documented in
 [agent-run-evidence-export-design.md](agent-run-evidence-export-design.md) and checked with
 `make agent-run-evidence-export-check`; it remains design-only.
+The future admin-only export endpoint planning packet is documented in
+[agent-run-evidence-export-implementation-plan.md](agent-run-evidence-export-implementation-plan.md)
+and checked with `make agent-run-evidence-export-plan-check`; implementation remains blocked.
 The combined Agent Run evidence readiness gate is documented in
 [agent-run-evidence-readiness-gate.md](agent-run-evidence-readiness-gate.md) and checked with
 `make agent-run-evidence-readiness`.

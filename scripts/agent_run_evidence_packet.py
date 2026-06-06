@@ -39,6 +39,7 @@ CONTRACT_DOCS = [
     Path("docs/codex/agent-run-model-contract.md"),
     Path("docs/codex/agent-run-evidence-contract.md"),
     Path("docs/codex/agent-run-evidence-export-design.md"),
+    Path("docs/codex/agent-run-evidence-export-implementation-plan.md"),
     Path("docs/codex/agent-run-timeline-readiness-gate.md"),
     Path("docs/codex/incident-reconstruction-guide.md"),
     Path("docs/codex/dashboard-evidence-review-checklist.md"),
@@ -48,6 +49,7 @@ CONTRACT_DOCS = [
 EVIDENCE_COMMANDS = [
     ["make", "agent-run-evidence-contract-check"],
     ["make", "agent-run-evidence-export-check"],
+    ["make", "agent-run-evidence-export-plan-check"],
     ["make", "incident-reconstruction-check"],
     ["make", "dashboard-evidence-checklist-check"],
     ["uv", "run", "pytest", "tests/test_governed_tool_calls.py", "tests/test_api_service.py", "-q"],

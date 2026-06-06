@@ -13,6 +13,7 @@ from scripts import (
     accepted_risk_register,
     agent_run_evidence_contract_check,
     agent_run_evidence_export_check,
+    agent_run_evidence_export_plan_check,
     agent_run_evidence_packet,
     agent_run_evidence_readiness,
     agent_run_timeline_packet,
@@ -7070,6 +7071,59 @@ def test_agent_run_evidence_export_check_is_wired() -> None:
         assert phrase in design
 
 
+def test_agent_run_evidence_export_plan_check_is_wired() -> None:
+    report = agent_run_evidence_export_plan_check.build_report(Path.cwd())
+    plan = Path("docs/codex/agent-run-evidence-export-implementation-plan.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make agent-run-evidence-export-plan-check" in readme
+    assert "agent-run-evidence-export-plan-check:" in makefile
+    assert "agent-run-evidence-export-plan-check" in release_check_body
+    assert (
+        "agent-run-evidence-export-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/agent-run-evidence-export-implementation-plan.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/agent-run-evidence-export-implementation-plan.md" in docs_site
+    assert "agent-run-evidence-export-implementation-plan.md" in roadmap
+    assert "278 - Agent Run evidence export implementation plan | Done" in backlog
+    for phrase in [
+        "Status: implementation-planning only",
+        "Implementation state: blocked",
+        "GET /runs/{run_id}/evidence-export",
+        "admin bearer token only",
+        "additionalProperties: false",
+        "Fixture Plan",
+        "clean run",
+        "approval-required run",
+        "denied action run",
+        "patch-diagnostic run",
+        "signed-export-referenced run",
+        "Negative Case Plan",
+        "unknown `run_id`",
+        "oversized timeline",
+        "absent signed evidence",
+        "redaction boundary excludes prompts",
+        "EXT-RUN-EXPORT-###",
+        "does not approve implementation",
+    ]:
+        assert phrase in plan
+
+
 def test_agent_run_evidence_packet_is_wired(tmp_path: Path) -> None:
     output_dir = tmp_path / "agent-run-evidence"
 
@@ -7140,6 +7194,7 @@ def test_agent_run_evidence_readiness_gate_is_wired() -> None:
     assert report["tool_count"] == 13
     assert report["agent_run_evidence_contract_valid"] is True
     assert report["agent_run_evidence_export_valid"] is True
+    assert report["agent_run_evidence_export_plan_valid"] is True
     assert report["agent_run_timeline_readiness_valid"] is True
     assert report["incident_reconstruction_valid"] is True
     assert report["dashboard_evidence_checklist_valid"] is True
@@ -7150,8 +7205,13 @@ def test_agent_run_evidence_readiness_gate_is_wired() -> None:
     assert "agent-run-evidence-readiness:" in makefile
     assert "agent-run-evidence-readiness" in release_check_body
     assert "agent-run-evidence-export-check" in release_check_body
+    assert "agent-run-evidence-export-plan-check" in release_check_body
     assert "agent-run-evidence-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "agent-run-evidence-export-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert (
+        "agent-run-evidence-export-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
     assert "docs/codex/agent-run-evidence-readiness-gate.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/agent-run-evidence-readiness-gate.md" in docs_site
     assert "277 - Agent Run evidence readiness gate | Done" in backlog
@@ -7160,6 +7220,7 @@ def test_agent_run_evidence_readiness_gate_is_wired() -> None:
         "does not add runtime behavior",
         "agent-run-evidence-contract-check",
         "agent-run-evidence-export-check",
+        "agent-run-evidence-export-plan-check",
         "agent-run-timeline-readiness",
         "incident-reconstruction-check",
         "dashboard-evidence-checklist-check",
