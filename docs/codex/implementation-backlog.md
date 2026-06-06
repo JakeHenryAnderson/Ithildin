@@ -272,12 +272,17 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 253 - project.manifest.summary implementation gate | Done | [v3-project-manifest-summary-implementation.md](v3-project-manifest-summary-implementation.md), `make project-manifest-summary-implementation-gate`; records and validates the bounded read-only implementation boundary. |
 | 254 - project.manifest.summary implementation | Done | `project.manifest.summary` is implemented as a bounded read-only local project manifest metadata tool with no file contents, dependency names, script values, package-manager execution, registry/network access, recursive discovery, or broad filesystem powers. |
 | 255 - project.manifest.summary source-review handoff | Done | [v3-project-manifest-summary-source-review.md](v3-project-manifest-summary-source-review.md), `make project-manifest-summary-source-review-bundle`; prepares the focused source/test/evidence handoff for review. |
+| 256 - project.manifest.summary local lane closure | Done | [v3-project-manifest-summary-source-review.md](v3-project-manifest-summary-source-review.md); local Codex source inspection and focused gates found no blocking issues for continued local-preview development. |
+| 257 - Agent Run model contract | Done | [agent-run-model-contract.md](agent-run-model-contract.md); defines read-only run/session observability boundaries and non-claims. |
+| 258 - Agent Run records and admin APIs | Done | `AgentRunStore`, `GET /runs`, and `GET /runs/{run_id}` add durable local run correlation without new execution controls or tool powers. |
+| 259 - Agent Run review-console panel | Done | Review console shows recent runs and a safe correlated audit timeline; UI tests cover the panel through the existing interaction harness. |
 
 ## Future Candidate Track
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Agent run observability and sandbox boundary | Roadmap | [agent-run-observability-and-sandbox-roadmap.md](agent-run-observability-and-sandbox-roadmap.md) records the next strategic direction: run/session evidence, timeline dashboard, operator-managed sandbox contracts, SIEM-shaped export design, data classification, and control mapping without claiming current sandbox/SIEM/compliance behavior. |
+| Agent run observability | Wave 1 done | [agent-run-model-contract.md](agent-run-model-contract.md) records the implemented run/session evidence and timeline dashboard foundation. |
+| Sandbox boundary and SIEM-shaped evidence | Roadmap | [agent-run-observability-and-sandbox-roadmap.md](agent-run-observability-and-sandbox-roadmap.md) records the next strategic direction: operator-managed sandbox contracts, SIEM-shaped export design, data classification, and control mapping without claiming current sandbox/SIEM/compliance behavior. |
 | Production identity | Deferred | OIDC, SAML, SCIM, hosted sessions, and multi-tenant stores. |
 | Runtime Postgres | Deferred | Real Postgres stores and migrations; current support is readiness-only. |
 | Hosted observability | Deferred | Production collectors and dashboards; current OpenTelemetry is opt-in preview. |

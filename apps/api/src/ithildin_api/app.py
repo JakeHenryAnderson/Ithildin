@@ -29,6 +29,7 @@ from ithildin_schemas import (
 )
 from pydantic import BaseModel
 
+from ithildin_api.agent_runs import AgentRunError, AgentRunStore
 from ithildin_api.approvals import (
     ApprovalError,
     ApprovalService,
@@ -92,6 +93,9 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             audit_writer = AuditWriter(resolved_settings.db_path, resolved_settings.audit_log_path)
             audit_writer.initialize()
             app_instance.state.audit_writer = audit_writer
+            agent_run_store = AgentRunStore(resolved_settings.db_path)
+            agent_run_store.initialize()
+            app_instance.state.agent_run_store = agent_run_store
             approval_store = ApprovalStore(resolved_settings.db_path)
             approval_store.initialize()
             app_instance.state.approval_service = ApprovalService(
@@ -199,6 +203,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         telemetry = cast(Telemetry, api.state.telemetry)
         redaction_service = cast(RedactionService, api.state.redaction_service)
+        agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
         tools = registry.list_tools()
         verification = audit_writer.verify_chain().as_dict()
         current_manifest_lock_signature = manifest_lock_signature_status(
@@ -240,6 +245,11 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     "valid": verification["valid"],
                     "event_count": verification["event_count"],
                     "head_hash": verification["head_hash"],
+                },
+                "agent_runs": {
+                    "enabled": True,
+                    "count": len(agent_run_store.list_runs(limit=200)),
+                    "status": "read_only_observability",
                 },
                 "audit_signing": audit_signing_status(
                     settings_state.audit_signing_private_key_path,
@@ -303,6 +313,19 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 workspace.safe_summary() for workspace in workspace_registry.list_workspaces()
             ]
         }
+
+    @api.get("/runs", dependencies=[Depends(require_admin_token)])
+    def list_runs(limit: int = 50) -> dict[str, list[JsonObject]]:
+        agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
+        return {"runs": agent_run_store.list_runs(limit=limit)}
+
+    @api.get("/runs/{run_id}", dependencies=[Depends(require_admin_token)])
+    def get_run(run_id: str, timeline_limit: int = 200) -> JsonObject:
+        agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
+        try:
+            return agent_run_store.detail(run_id, timeline_limit=timeline_limit)
+        except AgentRunError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @api.post("/policy/preview", dependencies=[Depends(require_admin_token)])
     def preview_policy(payload: PolicyPreviewPayload) -> JsonObject:

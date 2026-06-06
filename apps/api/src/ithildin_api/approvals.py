@@ -342,6 +342,12 @@ class ApprovalService:
         )
 
     def _audit(self, event_type: AuditEventType, approval: ApprovalRequest) -> None:
+        run_metadata = {
+            key: value
+            for key, value in approval.metadata.items()
+            if key in {"run_id", "session_id", "workspace_id", "principal_id"}
+            and isinstance(value, str)
+        }
         self.audit_writer.write_event(
             event_id=_new_id("evt"),
             event_type=event_type,
@@ -358,6 +364,7 @@ class ApprovalService:
                     "summary": approval.summary,
                     "one_time_scope_hash": sha256_digest(approval.one_time_scope),
                     "one_time_scope_keys": sorted(approval.one_time_scope.keys()),
+                    **run_metadata,
                 },
             ),
         )

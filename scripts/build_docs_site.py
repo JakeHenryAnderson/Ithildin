@@ -100,6 +100,7 @@ DEFAULT_DOCS = [
     "docs/codex/v3-project-manifest-summary-implementation.md",
     "docs/codex/v3-project-manifest-summary-source-review.md",
     "docs/codex/agent-run-observability-and-sandbox-roadmap.md",
+    "docs/codex/agent-run-model-contract.md",
     "docs/codex/capability-implementation-plans/git-show-ref-summary.md",
     "docs/codex/capability-implementation-plans/git-show-commit-metadata.md",
     "docs/codex/v0.9-git-commit-metadata-implementation.md",

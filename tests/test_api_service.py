@@ -9,6 +9,7 @@ from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
+from ithildin_api.agent_runs import AgentRunStore
 from ithildin_api.app import create_app
 from ithildin_api.approvals import ApprovalService, CreateApprovalInput
 from ithildin_api.config import Settings
@@ -303,6 +304,11 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "event_count": 0,
         "head_hash": "sha256:" + ("0" * 64),
     }
+    assert payload["agent_runs"] == {
+        "enabled": True,
+        "count": 0,
+        "status": "read_only_observability",
+    }
     assert payload["redaction"] == {
         "baseline_enabled": True,
         "baseline_key_count": 10,
@@ -370,6 +376,76 @@ def test_workspace_endpoint_requires_auth_and_returns_records(tmp_path: Path) ->
             "metadata": {},
         }
     ]
+
+
+def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        run_store = cast(AgentRunStore, app.state.agent_run_store)
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        run_context, created = run_store.ensure_for_tool_call(
+            principal={"id": "agent:local-dev", "type": "agent", "roles": ["AgentDeveloper"]},
+            session_id="sess_api_runs",
+            workspace_id="default",
+            request_id="req_test_runs",
+            tool_name="fs.read",
+            policy_hash="sha256:" + ("1" * 64),
+            tool_manifest_hash="sha256:" + ("2" * 64),
+        )
+        assert created is True
+        audit_writer.write_event(
+            event_id="evt_test_runs",
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_test_runs",
+            principal={"id": "agent:local-dev", "type": "agent", "roles": ["AgentDeveloper"]},
+            tool_name="fs.read",
+            metadata={**run_context.metadata(), "reason": "allowed"},
+        )
+
+        unauthenticated = client.get("/runs")
+        list_response = client.get(
+            "/runs",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        detail_response = client.get(
+            f"/runs/{run_context.run_id}",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        missing_response = client.get(
+            "/runs/run_missing",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert list_response.status_code == 200
+    runs = list_response.json()["runs"]
+    assert len(runs) == 1
+    assert runs[0]["run_id"] == run_context.run_id
+    assert runs[0]["principal_id"] == "agent:local-dev"
+    assert detail_response.status_code == 200
+    detail = detail_response.json()
+    assert detail["run"]["session_id"] == "sess_api_runs"
+    assert detail["timeline"] == [
+        {
+            "event_id": "evt_test_runs",
+            "timestamp": detail["timeline"][0]["timestamp"],
+            "event_type": "policy.evaluated",
+            "request_id": "req_test_runs",
+            "tool_name": "fs.read",
+            "decision": None,
+            "event_hash": detail["timeline"][0]["event_hash"],
+            "resource": None,
+            "metadata": {
+                "run_id": run_context.run_id,
+                "session_id": "sess_api_runs",
+                "workspace_id": "default",
+                "principal_id": "agent:local-dev",
+                "reason": "allowed",
+            },
+        }
+    ]
+    assert missing_response.status_code == 404
 
 
 def test_sample_admin_token_requires_explicit_demo_flag(tmp_path: Path) -> None:

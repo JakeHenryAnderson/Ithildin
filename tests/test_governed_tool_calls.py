@@ -13,6 +13,7 @@ from typing import NoReturn, cast
 from urllib.request import Request
 
 import pytest
+from ithildin_api.agent_runs import AgentRunStore
 from ithildin_api.approvals import ApprovalService, ApprovalStore, CreateApprovalInput
 from ithildin_api.http_tools import HTTP_FETCH_TOOL, HttpAllowlist, HttpFetchExecutor
 from ithildin_api.identity import PrincipalRegistry
@@ -362,6 +363,7 @@ def make_read_service(
     *,
     content: str = "hello governed reads\n",
     policy_yaml: str | None = None,
+    track_runs: bool = False,
 ) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -377,6 +379,9 @@ def make_read_service(
     approval_store = ApprovalStore(db_path)
     approval_store.initialize()
     approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    agent_run_store = AgentRunStore(db_path) if track_runs else None
+    if agent_run_store is not None:
+        agent_run_store.initialize()
     workspace_root = tmp_path / "workspace"
     workspace_root.mkdir()
     workspace_root.joinpath("README.md").write_text(content, encoding="utf-8")
@@ -391,6 +396,7 @@ def make_read_service(
             search_result_limit=10,
             git_log_limit=10,
         ),
+        agent_run_store=agent_run_store,
     )
 
 
@@ -770,6 +776,44 @@ def test_read_tool_executes_after_policy_allow_and_is_audited(tmp_path: Path) ->
     metadata = cast(JsonObject, payloads[-1]["metadata"])
     assert metadata["redaction_applied"] is True
     assert metadata["redaction_count"] == 0
+
+
+def test_agent_run_store_correlates_governed_tool_call_audit_events(tmp_path: Path) -> None:
+    service = make_read_service(tmp_path, track_runs=True)
+
+    result = service.call_tool(
+        tool_name="fs.read",
+        arguments={"path": "README.md"},
+        principal=principal(),
+        session_id="sess_runs",
+    )
+
+    assert result.status == "completed"
+    run_store = AgentRunStore(tmp_path / "ithildin.sqlite3")
+    runs = run_store.list_runs()
+    assert len(runs) == 1
+    run = runs[0]
+    assert run["principal_id"] == "agent:local-dev"
+    assert run["workspace_id"] == "default"
+    assert run["session_id"] == "sess_runs"
+    assert run["tool_call_count"] == 1
+    assert run["last_tool_name"] == "fs.read"
+    run_id = cast(str, run["run_id"])
+
+    detail = run_store.detail(run_id)
+    timeline = cast(list[JsonObject], detail["timeline"])
+    assert [event["event_type"] for event in timeline] == [
+        "agent.session.started",
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+    for event in timeline:
+        metadata = cast(JsonObject, event["metadata"])
+        assert metadata["run_id"] == run_id
+        assert metadata["session_id"] == "sess_runs"
+    timeline_text = json.dumps(timeline)
+    assert "hello governed reads" not in timeline_text
 
 
 def test_git_commit_metadata_tool_executes_after_policy_allow_and_is_audited(

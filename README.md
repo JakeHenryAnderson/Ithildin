@@ -58,6 +58,11 @@ SIEM-shaped export design, data classification, and policy/control mapping. This
 [docs/codex/agent-run-observability-and-sandbox-roadmap.md](docs/codex/agent-run-observability-and-sandbox-roadmap.md).
 It is a roadmap, not a current claim of sandboxing, SIEM-grade custody, production compliance,
 hosted control-plane behavior, or broader tool powers.
+The first implemented slice is the read-only Agent Run model in
+[docs/codex/agent-run-model-contract.md](docs/codex/agent-run-model-contract.md): governed tool
+calls can be correlated with local run records, `/runs` and `/runs/{run_id}` expose admin-only
+read-only timelines, and the review console shows a compact Agent Runs panel. This is observability
+only, not sandbox/process control.
 
 ## Repo Map
 

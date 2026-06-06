@@ -49,7 +49,7 @@ Forbidden or premature wording:
 - kernel sandbox;
 - prevents model compromise;
 - immutable or notarized audit;
-- enterprise identity;
+- production identity or enterprise RBAC;
 - hosted control plane;
 - safely runs arbitrary tools.
 
@@ -240,13 +240,17 @@ processes, model clients, containers, or OS activity outside Ithildin.
 
 ## Near-Term Recommended Sprint Sequence
 
-1. Finish source-review disposition for `project.manifest.summary`.
+1. Finish source-review disposition for `project.manifest.summary` locally.
 2. Add an agent-run/session contract document and schema proposal.
 3. Add read-only run records and correlation IDs.
 4. Add a minimal run timeline API and review console panel.
 5. Add an operator-managed sandbox demo guide.
 6. Add SIEM-shaped evidence export design.
 7. Add data-classification design and policy fixtures.
+
+Items 1 through 4 are now implemented for local-preview observability and are documented in
+[agent-run-model-contract.md](agent-run-model-contract.md). They do not add sandbox/process control
+or SIEM/compliance claims.
 
 ## Stop Conditions
 

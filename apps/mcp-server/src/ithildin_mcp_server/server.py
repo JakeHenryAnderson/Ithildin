@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any, cast
 
+from ithildin_api.agent_runs import AgentRunStore
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.config import Settings, load_settings
 from ithildin_api.database import initialize_database
@@ -149,6 +150,8 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
     initialize_database(resolved_settings.db_path)
     audit_writer = AuditWriter(resolved_settings.db_path, resolved_settings.audit_log_path)
     audit_writer.initialize()
+    agent_run_store = AgentRunStore(resolved_settings.db_path)
+    agent_run_store.initialize()
     approval_store = ApprovalStore(resolved_settings.db_path)
     approval_store.initialize()
     approval_service = ApprovalService(
@@ -212,6 +215,7 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         redaction_service,
         principal_registry,
         telemetry,
+        agent_run_store,
     )
     return IthildinMcpAdapter(
         registry=registry,

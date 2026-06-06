@@ -128,6 +128,41 @@ type AuditEvent = {
   metadata: JsonObject;
 };
 
+type AgentRun = {
+  run_id: string;
+  principal_id: string;
+  principal_type: string;
+  principal_roles: string[];
+  workspace_id: string;
+  session_id: string;
+  status: string;
+  tool_call_count: number;
+  created_at: string;
+  updated_at: string;
+  last_request_id: string | null;
+  policy_hash: string | null;
+  last_tool_name: string | null;
+  last_tool_manifest_hash: string | null;
+  metadata: JsonObject;
+};
+
+type AgentRunTimelineEvent = {
+  event_id: string;
+  timestamp: string;
+  event_type: string;
+  request_id: string;
+  tool_name?: string | null;
+  decision?: string | null;
+  event_hash: string;
+  resource: JsonObject | null;
+  metadata: JsonObject;
+};
+
+type AgentRunDetail = {
+  run: AgentRun;
+  timeline: AgentRunTimelineEvent[];
+};
+
 type AuditVerificationFailure = {
   row_number: number;
   event_id: string | null;
@@ -183,6 +218,11 @@ type SystemStatus = {
     valid: boolean;
     event_count: number;
     head_hash: string;
+  };
+  agent_runs: {
+    enabled: boolean;
+    count: number;
+    status: string;
   };
   principals: {
     required: boolean;
@@ -296,6 +336,7 @@ type DashboardData = {
   approvals: ApprovalReview[];
   patches: PatchProposal[];
   patchDiagnostics: PatchApplyDiagnostics | null;
+  runs: AgentRun[];
   auditEvents: AuditEvent[];
   verification: AuditVerification | null;
 };
@@ -318,11 +359,14 @@ export function App() {
     approvals: [],
     patches: [],
     patchDiagnostics: null,
+    runs: [],
     auditEvents: [],
     verification: null,
   });
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<PatchProposal | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
   const [selectedToolName, setSelectedToolName] = useState("");
   const [argumentsJson, setArgumentsJson] = useState("{}");
   const [principalJson, setPrincipalJson] = useState(
@@ -370,10 +414,12 @@ export function App() {
         approvals: [],
         patches: [],
         patchDiagnostics: null,
+        runs: [],
         auditEvents: [],
         verification: null,
       });
       setSelectedProposal(null);
+      setSelectedRun(null);
       setPreviewResult(null);
       setImpactResult(null);
       setError(null);
@@ -389,6 +435,7 @@ export function App() {
         approvalsResponse,
         patchesResponse,
         patchDiagnostics,
+        runsResponse,
         auditResponse,
         verificationResponse,
       ] = await Promise.all([
@@ -397,6 +444,7 @@ export function App() {
         apiRequest<{ approvals: ApprovalReview[] }>("/approvals/review?status=pending", activeToken),
         apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
         apiRequest<PatchApplyDiagnostics>("/patch-apply-diagnostics", activeToken),
+        apiRequest<{ runs: AgentRun[] }>("/runs?limit=25", activeToken),
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
         apiRequest<AuditVerification>("/audit-events/verify", activeToken),
       ]);
@@ -406,6 +454,7 @@ export function App() {
         approvals: approvalsResponse.approvals,
         patches: patchesResponse.patch_proposals,
         patchDiagnostics,
+        runs: runsResponse.runs,
         auditEvents: auditResponse.audit_events,
         verification: verificationResponse,
       });
@@ -414,6 +463,9 @@ export function App() {
       }
       if (!selectedProposalId && patchesResponse.patch_proposals[0]) {
         setSelectedProposalId(patchesResponse.patch_proposals[0].proposal_id);
+      }
+      if (!selectedRunId && runsResponse.runs[0]) {
+        setSelectedRunId(runsResponse.runs[0].run_id);
       }
     } catch (caught) {
       setError(errorMessage(caught));
@@ -441,6 +493,22 @@ export function App() {
     }
   }
 
+  async function loadRunDetail(runId: string, activeToken = token) {
+    if (!activeToken) {
+      return;
+    }
+    setError(null);
+    try {
+      const run = await apiRequest<AgentRunDetail>(
+        `/runs/${encodeURIComponent(runId)}`,
+        activeToken,
+      );
+      setSelectedRun(run);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    }
+  }
+
   function saveToken(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextToken = draftToken.trim();
@@ -456,10 +524,12 @@ export function App() {
         approvals: [],
         patches: [],
         patchDiagnostics: null,
+        runs: [],
         auditEvents: [],
         verification: null,
       });
       setSelectedProposal(null);
+      setSelectedRun(null);
       setPreviewResult(null);
       setImpactResult(null);
     }
@@ -577,6 +647,14 @@ export function App() {
     }
   }, [selectedProposalId, token]);
 
+  useEffect(() => {
+    if (selectedRunId) {
+      void loadRunDetail(selectedRunId);
+    } else {
+      setSelectedRun(null);
+    }
+  }, [selectedRunId, token]);
+
   return (
     <main className="console-shell">
       <header className="topbar">
@@ -648,6 +726,7 @@ export function App() {
       <section className="summary-strip" aria-label="Review summary">
         <Metric icon={<ClipboardList size={20} />} label="Pending" value={pendingCount} />
         <Metric icon={<FileDiff size={20} />} label="Proposed patches" value={proposedPatchCount} />
+        <Metric icon={<Activity size={20} />} label="Agent runs" value={data.runs.length} />
         <Metric icon={<AlertTriangle size={20} />} label="Recent failures" value={recentFailures.length} />
         <Metric
           icon={<ShieldCheck size={20} />}
@@ -1235,6 +1314,80 @@ export function App() {
                 <EmptyState text={selectedPatchFromList.path} />
               ) : (
                 <EmptyState text={token ? "Select a proposal." : "Locked."} />
+              )}
+            </div>
+          </div>
+        </Panel>
+      </section>
+
+      <section className="run-section">
+        <Panel title="Agent Runs" icon={<Activity size={18} />}>
+          <div className="run-layout">
+            <div className="run-list">
+              {data.runs.length === 0 ? (
+                <EmptyState text={token ? "No recorded agent runs." : "Locked."} />
+              ) : (
+                data.runs.map((run) => (
+                  <button
+                    className={run.run_id === selectedRunId ? "run-row selected" : "run-row"}
+                    key={run.run_id}
+                    type="button"
+                    onClick={() => setSelectedRunId(run.run_id)}
+                  >
+                    <span>{run.principal_id}</span>
+                    <small>
+                      {run.workspace_id} · {run.session_id}
+                    </small>
+                    <StatusPill status={run.status} />
+                  </button>
+                ))
+              )}
+            </div>
+            <div className="timeline-view">
+              {selectedRun ? (
+                <>
+                  <div className="diff-heading">
+                    <div>
+                      <h3>{selectedRun.run.principal_id}</h3>
+                      <p>
+                        {shortId(selectedRun.run.run_id)} · {selectedRun.run.tool_call_count} calls
+                      </p>
+                    </div>
+                    <StatusPill status={selectedRun.run.status} />
+                  </div>
+                  {selectedRun.timeline.length === 0 ? (
+                    <EmptyState text="No correlated audit events." />
+                  ) : (
+                    <div className="table-wrap compact-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Time</th>
+                            <th>Event</th>
+                            <th>Tool</th>
+                            <th>Decision</th>
+                            <th>Request</th>
+                            <th>Hash</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedRun.timeline.map((event) => (
+                            <tr key={event.event_id}>
+                              <td>{formatDate(event.timestamp)}</td>
+                              <td>{event.event_type}</td>
+                              <td>{event.tool_name ?? ""}</td>
+                              <td>{event.decision ?? ""}</td>
+                              <td>{shortId(event.request_id)}</td>
+                              <td>{shortHash(event.event_hash)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <EmptyState text={token ? "Select a run." : "Locked."} />
               )}
             </div>
           </div>

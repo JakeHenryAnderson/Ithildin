@@ -34,6 +34,11 @@ function systemStatus(overrides = {}) {
       event_count: 2,
       head_hash: "sha256:audithead",
     },
+    agent_runs: {
+      enabled: true,
+      count: 1,
+      status: "read_only_observability",
+    },
     principals: { required: true, path: "principals/local.yaml", count: 2, enabled_count: 2 },
     workspaces: {
       required: true,
@@ -226,6 +231,63 @@ function installFetchMock(status = systemStatus()) {
     if (path === "/patch-apply-diagnostics") {
       return jsonResponse({ status: "clean", attempts: [], stuck_approvals: [], recommendations: [] });
     }
+    if (path === "/runs?limit=25") {
+      return jsonResponse({
+        runs: [
+          {
+            run_id: "run_123456789",
+            principal_id: "agent:mcp-local",
+            principal_type: "agent",
+            principal_roles: ["AgentDeveloper"],
+            workspace_id: "demo",
+            session_id: "mcp-stdio",
+            status: "active",
+            tool_call_count: 2,
+            created_at: "2026-06-03T12:00:00Z",
+            updated_at: "2026-06-03T12:01:00Z",
+            last_request_id: "req_123456789",
+            policy_hash: "sha256:policyhash",
+            last_tool_name: "fs.read",
+            last_tool_manifest_hash: "sha256:toolhash",
+            metadata: {},
+          },
+        ],
+      });
+    }
+    if (path === "/runs/run_123456789") {
+      return jsonResponse({
+        run: {
+          run_id: "run_123456789",
+          principal_id: "agent:mcp-local",
+          principal_type: "agent",
+          principal_roles: ["AgentDeveloper"],
+          workspace_id: "demo",
+          session_id: "mcp-stdio",
+          status: "active",
+          tool_call_count: 2,
+          created_at: "2026-06-03T12:00:00Z",
+          updated_at: "2026-06-03T12:01:00Z",
+          last_request_id: "req_123456789",
+          policy_hash: "sha256:policyhash",
+          last_tool_name: "fs.read",
+          last_tool_manifest_hash: "sha256:toolhash",
+          metadata: {},
+        },
+        timeline: [
+          {
+            event_id: "evt_run_1",
+            timestamp: "2026-06-03T12:00:00Z",
+            event_type: "policy.evaluated",
+            request_id: "req_123456789",
+            tool_name: "fs.read",
+            decision: "allow",
+            event_hash: "sha256:runeventhash",
+            resource: { path: "README.md" },
+            metadata: { run_id: "run_123456789" },
+          },
+        ],
+      });
+    }
     if (path === "/audit-events?limit=100") {
       return jsonResponse({
         audit_events: [
@@ -342,6 +404,9 @@ describe("Review console interactions", () => {
     const user = await saveToken();
 
     expect(await screen.findByText(/sample admin token is active/)).toBeInTheDocument();
+    expect(screen.getByText("Agent Runs")).toBeInTheDocument();
+    expect(screen.getAllByText("agent:mcp-local").length).toBeGreaterThan(0);
+    expect(screen.getByText("policy.evaluated")).toBeInTheDocument();
     expect(screen.getByText("Apply demo patch")).toBeInTheDocument();
     expect(screen.getByText("Binding Evidence")).toBeInTheDocument();
     expect(screen.getByText("Patch Artifact")).toBeInTheDocument();

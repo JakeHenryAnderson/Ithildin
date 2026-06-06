@@ -21,6 +21,7 @@ from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_json_schema
 from jsonschema.exceptions import SchemaError as JsonSchemaSchemaError
 
+from ithildin_api.agent_runs import AgentRunContext, AgentRunStore
 from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
 from ithildin_api.decision_evidence import policy_decision_evidence
 from ithildin_api.http_tools import HttpFetchError, HttpFetchExecutor
@@ -68,6 +69,7 @@ class GovernedToolCallService:
         redaction_service: RedactionService | None = None,
         principal_registry: PrincipalRegistry | None = None,
         telemetry: Telemetry | None = None,
+        agent_run_store: AgentRunStore | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
@@ -78,6 +80,7 @@ class GovernedToolCallService:
         self.http_fetch_executor = http_fetch_executor
         self.redaction_service = redaction_service or RedactionService()
         self.principal_registry = principal_registry
+        self.agent_run_store = agent_run_store
         self.telemetry = telemetry or Telemetry(
             enabled=False,
             service_name="ithildin-api",
@@ -95,6 +98,7 @@ class GovernedToolCallService:
     ) -> GovernedToolCallResult:
         request_id = _new_id("req")
         request_hash = _tool_call_hash(request_id, tool_name, arguments, principal, session_id)
+        agent_run: AgentRunContext | None = None
 
         try:
             registered_tool = self.registry.get_tool(tool_name)
@@ -194,6 +198,16 @@ class GovernedToolCallService:
             ),
             read_tool_executor=self.read_tool_executor,
         )
+        agent_run = self._ensure_agent_run(
+            principal=principal,
+            session_id=session_id,
+            workspace_id=_workspace_id_for_resource(resource, self.read_tool_executor),
+            request_id=request_id,
+            tool_name=tool_name,
+            resource=resource,
+            input_hash=request_hash,
+            tool_manifest_hash=registered_tool.manifest_hash,
+        )
         if resource.get("in_scope") is False:
             reason = _resource_scope_denial_reason(resource)
             self._audit_decision(
@@ -203,6 +217,7 @@ class GovernedToolCallService:
                 decision=PolicyDecisionValue.DENY,
                 input_hash=request_hash,
                 metadata={"reason": reason, "resource": resource},
+                agent_run=agent_run,
             )
             return GovernedToolCallResult(
                 status="denied",
@@ -248,6 +263,7 @@ class GovernedToolCallService:
             matched_rules=policy_decision.matched_rules,
             input_hash=request_hash,
             metadata=decision_evidence,
+            agent_run=agent_run,
         )
         redaction_keys = _redact_fields(policy_decision.obligations)
 
@@ -282,6 +298,7 @@ class GovernedToolCallService:
                         policy_document_version=self.policy_evaluator.document_version,
                         matched_rules=policy_decision.matched_rules,
                         redaction_keys=redaction_keys,
+                        agent_run=agent_run,
                     )
                 if "proposal_id" in arguments:
                     approval_expires_at = datetime.now(UTC) + self.approval_service.default_expiry
@@ -335,6 +352,7 @@ class GovernedToolCallService:
                                 "proposal_id": one_time_scope["proposal_id"],
                                 "proposal_hash": one_time_scope["proposal_hash"],
                                 "base_file_hash": one_time_scope["base_file_hash"],
+                                **_agent_run_metadata(agent_run),
                             }),
                         )
                     )
@@ -373,7 +391,10 @@ class GovernedToolCallService:
                         "arguments": arguments,
                         "manifest_hash": registered_tool.manifest_hash,
                     },
-                    metadata={"policy_reason": policy_decision.reason},
+                    metadata={
+                        "policy_reason": policy_decision.reason,
+                        **_agent_run_metadata(agent_run),
+                    },
                 )
             )
             content = self._redact_content(
@@ -403,6 +424,7 @@ class GovernedToolCallService:
                 resource=resource,
                 input_hash=request_hash,
                 metadata={"executor": "patch_proposal"},
+                agent_run=agent_run,
             )
             try:
                 with self.telemetry.start_span(
@@ -432,6 +454,7 @@ class GovernedToolCallService:
                         {"executor": "patch_proposal", "reason": exc.reason},
                         redacted.summary,
                     ),
+                    agent_run=agent_run,
                 )
                 return GovernedToolCallResult(
                     status="denied",
@@ -458,6 +481,7 @@ class GovernedToolCallService:
                     },
                     redacted.summary,
                 ),
+                agent_run=agent_run,
             )
             return GovernedToolCallResult(
                 status="completed",
@@ -475,6 +499,7 @@ class GovernedToolCallService:
                 resource=resource,
                 input_hash=request_hash,
                 metadata={"executor": "in_process_read"},
+                agent_run=agent_run,
             )
             try:
                 with self.telemetry.start_span(
@@ -498,6 +523,7 @@ class GovernedToolCallService:
                         {"executor": "in_process_read", "reason": exc.reason},
                         redacted.summary,
                     ),
+                    agent_run=agent_run,
                 )
                 return GovernedToolCallResult(
                     status="denied",
@@ -519,6 +545,7 @@ class GovernedToolCallService:
                     _read_tool_execution_metadata(tool_name, content),
                     redacted.summary,
                 ),
+                agent_run=agent_run,
             )
             return GovernedToolCallResult(
                 status="completed",
@@ -536,6 +563,7 @@ class GovernedToolCallService:
                 resource=resource,
                 input_hash=request_hash,
                 metadata={"executor": "in_process_http"},
+                agent_run=agent_run,
             )
             try:
                 with self.telemetry.start_span(
@@ -559,6 +587,7 @@ class GovernedToolCallService:
                         {"executor": "in_process_http", "reason": exc.reason},
                         redacted.summary,
                     ),
+                    agent_run=agent_run,
                 )
                 return GovernedToolCallResult(
                     status="denied",
@@ -580,6 +609,7 @@ class GovernedToolCallService:
                     {"executor": "in_process_http"},
                     redacted.summary,
                 ),
+                agent_run=agent_run,
             )
             return GovernedToolCallResult(
                 status="completed",
@@ -643,6 +673,7 @@ class GovernedToolCallService:
         metadata: JsonObject,
         policy_version: str | None = None,
         matched_rules: list[str] | None = None,
+        agent_run: AgentRunContext | None = None,
     ) -> None:
         self.audit_writer.write_event(
             event_id=_new_id("evt"),
@@ -654,8 +685,48 @@ class GovernedToolCallService:
             policy_version=policy_version,
             matched_rules=matched_rules or [],
             input_hash=input_hash,
-            metadata=metadata,
+            metadata=_metadata_with_agent_run(metadata, agent_run),
         )
+
+    def _ensure_agent_run(
+        self,
+        *,
+        principal: JsonObject,
+        session_id: str,
+        workspace_id: str,
+        request_id: str,
+        tool_name: str,
+        resource: JsonObject,
+        input_hash: str,
+        tool_manifest_hash: str,
+    ) -> AgentRunContext | None:
+        if self.agent_run_store is None:
+            return None
+        agent_run, created = self.agent_run_store.ensure_for_tool_call(
+            principal=principal,
+            session_id=session_id,
+            workspace_id=workspace_id,
+            request_id=request_id,
+            tool_name=tool_name,
+            policy_hash=self.policy_evaluator.policy_hash,
+            tool_manifest_hash=tool_manifest_hash,
+        )
+        if created:
+            self.audit_writer.write_event(
+                event_id=_new_id("evt"),
+                event_type=AuditEventType.AGENT_SESSION_STARTED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=input_hash,
+                metadata={
+                    **agent_run.metadata(),
+                    "status": "active",
+                    "created_by": "governed_tool_call",
+                },
+            )
+        return agent_run
 
     def _execute_approved_patch(
         self,
@@ -675,6 +746,7 @@ class GovernedToolCallService:
         policy_document_version: str,
         matched_rules: list[str],
         redaction_keys: set[str] | None = None,
+        agent_run: AgentRunContext | None = None,
     ) -> GovernedToolCallResult:
         if self.patch_proposal_service is None:
             return GovernedToolCallResult(
@@ -696,6 +768,7 @@ class GovernedToolCallService:
             resource=resource,
             input_hash=input_hash,
             metadata={"executor": "patch_apply", "approval_id": approval_id},
+            agent_run=agent_run,
         )
         completed_redacted: RedactionResult | None = None
 
@@ -742,6 +815,7 @@ class GovernedToolCallService:
                     },
                     completed_redacted.summary,
                 ),
+                agent_run=agent_run,
             )
 
         try:
@@ -784,6 +858,7 @@ class GovernedToolCallService:
                     },
                     redacted.summary,
                 ),
+                agent_run=agent_run,
             )
             return GovernedToolCallResult(
                 status="denied",
@@ -830,6 +905,7 @@ class GovernedToolCallService:
         resource: JsonObject,
         input_hash: str,
         metadata: JsonObject,
+        agent_run: AgentRunContext | None = None,
     ) -> None:
         self.audit_writer.write_event(
             event_id=_new_id("evt"),
@@ -839,7 +915,7 @@ class GovernedToolCallService:
             tool_name=tool_name,
             resource=resource,
             input_hash=input_hash,
-            metadata=metadata,
+            metadata=_metadata_with_agent_run(metadata, agent_run),
         )
 
 
@@ -867,6 +943,34 @@ def _tool_call_hash(
 
 def _with_redaction_summary(metadata: JsonObject, summary: RedactionSummary) -> JsonObject:
     return {**metadata, **summary.as_metadata()}
+
+
+def _metadata_with_agent_run(
+    metadata: JsonObject,
+    agent_run: AgentRunContext | None,
+) -> JsonObject:
+    if agent_run is None:
+        return metadata
+    return {**metadata, **agent_run.metadata()}
+
+
+def _agent_run_metadata(agent_run: AgentRunContext | None) -> JsonObject:
+    return agent_run.metadata() if agent_run is not None else {}
+
+
+def _workspace_id_for_resource(
+    resource: JsonObject,
+    read_tool_executor: ReadToolExecutor | None,
+) -> str:
+    workspace_id = resource.get("workspace_id")
+    if isinstance(workspace_id, str) and workspace_id:
+        return workspace_id
+    resource_type = resource.get("type")
+    if isinstance(resource_type, str) and resource_type in {"network", "http"}:
+        return "network"
+    if read_tool_executor is not None:
+        return read_tool_executor.default_workspace_id
+    return "unscoped"
 
 
 def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonObject:

@@ -159,7 +159,7 @@ h3 {
 .summary-strip {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
   margin-bottom: 16px;
 }
 
@@ -653,19 +653,22 @@ caption {
   font-weight: 800;
 }
 
-.patch-layout {
+.patch-layout,
+.run-layout {
   display: grid;
   grid-template-columns: minmax(220px, 0.7fr) minmax(300px, 1.3fr);
   min-height: 420px;
 }
 
-.patch-list {
+.patch-list,
+.run-list {
   border-right: 1px solid #edf2ef;
   display: grid;
   align-content: start;
 }
 
-.patch-row {
+.patch-row,
+.run-row {
   border: 0;
   border-bottom: 1px solid #edf2ef;
   border-radius: 0;
@@ -676,17 +679,20 @@ caption {
   text-align: left;
 }
 
-.patch-row span:first-child {
+.patch-row span:first-child,
+.run-row span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.patch-row.selected {
+.patch-row.selected,
+.run-row.selected {
   background: #eaf5f0;
 }
 
-.diff-view {
+.diff-view,
+.timeline-view {
   min-width: 0;
   padding: 14px;
 }
@@ -704,6 +710,7 @@ caption {
   white-space: pre;
 }
 
+.run-section,
 .audit-section {
   margin-bottom: 24px;
 }
@@ -751,6 +758,7 @@ th {
   .trust-grid,
   .summary-strip,
   .patch-layout,
+  .run-layout,
   .integrity-grid,
   .policy-controls,
   .json-editors,
@@ -763,7 +771,8 @@ th {
     display: grid;
   }
 
-  .patch-list {
+  .patch-list,
+  .run-list {
     border-right: 0;
     border-bottom: 1px solid #edf2ef;
   }

@@ -6915,6 +6915,22 @@ def test_release_evidence_schema_validator_requires_o_no_follow_evidence() -> No
         release_evidence.validate_release_evidence_snapshot(payload)
 
 
+def test_agent_run_model_contract_is_wired_and_scoped() -> None:
+    contract_path = Path("docs/codex/agent-run-model-contract.md")
+    contract = contract_path.read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    assert "docs/codex/agent-run-model-contract.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/agent-run-model-contract.md" in docs_site
+    assert "agent-run-model-contract.md" in readme
+    assert "GET /runs" in contract
+    assert "GET /runs/{run_id}" in contract
+    assert "does not add a sandbox" in contract
+    assert "does not authorize execution" in contract
+    assert "no new MCP tools" in contract
+
+
 def _write_project_markers(root: Path) -> None:
     directory_markers = {"apps/api", "apps/mcp-server"}
     for marker in review_packet_bundle.PROJECT_MARKERS:
