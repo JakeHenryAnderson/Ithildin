@@ -66,6 +66,10 @@ only, not sandbox/process control.
 The secret-free timeline evidence contract is
 [docs/codex/agent-run-evidence-contract.md](docs/codex/agent-run-evidence-contract.md) and is
 checked with `make agent-run-evidence-contract-check`.
+The future Agent Run evidence export bundle shape is
+[docs/codex/agent-run-evidence-export-design.md](docs/codex/agent-run-evidence-export-design.md)
+and is checked with `make agent-run-evidence-export-check`; it is design-only and does not add an
+export endpoint, SIEM adapter, sandbox control, or runtime behavior.
 The Agent Run timeline readiness gate is
 [docs/codex/agent-run-timeline-readiness-gate.md](docs/codex/agent-run-timeline-readiness-gate.md)
 and is checked with `make agent-run-timeline-readiness`.
@@ -165,6 +169,7 @@ checked with `make control-mapping-readiness`.
 - `make release-automation-source-review-bundle` - build the focused release/evidence automation source/test/evidence handoff for source-level external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
+- `make agent-run-evidence-export-check` - validate the design-only Agent Run evidence export bundle shape.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
 - `make dashboard-evidence-checklist-check` - validate the operator-facing evidence dashboard review checklist.

@@ -102,6 +102,7 @@ DEFAULT_DOCS = [
     "docs/codex/agent-run-observability-and-sandbox-roadmap.md",
     "docs/codex/agent-run-model-contract.md",
     "docs/codex/agent-run-evidence-contract.md",
+    "docs/codex/agent-run-evidence-export-design.md",
     "docs/codex/agent-run-timeline-readiness-gate.md",
     "docs/codex/operator-action-states-design.md",
     "docs/codex/dashboard-evidence-review-checklist.md",

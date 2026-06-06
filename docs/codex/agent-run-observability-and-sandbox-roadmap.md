@@ -210,6 +210,8 @@ processes, model clients, containers, or OS activity outside Ithildin.
 - Record this roadmap.
 - Define run/session event contracts.
 - Link the secret-free [Agent Run Evidence Contract](agent-run-evidence-contract.md).
+- Link the design-only [Agent Run Evidence Export Design](agent-run-evidence-export-design.md)
+  without adding export endpoints, SIEM adapters, or runtime behavior.
 - Link the operator-managed [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md).
 - Link the future [SIEM-Shaped Evidence Design](siem-shaped-evidence-design.md) without adapters.
 - Link the trusted local [Data Classification Design](data-classification-design.md) without
@@ -271,6 +273,9 @@ processes, model clients, containers, or OS activity outside Ithildin.
 Items 1 through 4 are now implemented for local-preview observability and are documented in
 [agent-run-model-contract.md](agent-run-model-contract.md). They do not add sandbox/process control
 or SIEM/compliance claims.
+The future run-level export bundle shape is documented in
+[agent-run-evidence-export-design.md](agent-run-evidence-export-design.md) and checked with
+`make agent-run-evidence-export-check`; it remains design-only.
 
 ## Stop Conditions
 

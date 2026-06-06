@@ -12,6 +12,7 @@ import pytest
 from scripts import (
     accepted_risk_register,
     agent_run_evidence_contract_check,
+    agent_run_evidence_export_check,
     agent_run_timeline_packet,
     agent_run_timeline_readiness,
     capability_decision_report,
@@ -7025,6 +7026,46 @@ def test_agent_run_evidence_contract_check_is_wired() -> None:
         "response bodies",
     ]:
         assert phrase in contract
+
+
+def test_agent_run_evidence_export_check_is_wired() -> None:
+    report = agent_run_evidence_export_check.build_report(Path.cwd())
+    design = Path("docs/codex/agent-run-evidence-export-design.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["run_export_runtime_behavior_allowed"] is False
+    assert "make agent-run-evidence-export-check" in readme
+    assert "agent-run-evidence-export-check:" in makefile
+    assert "docs/codex/agent-run-evidence-export-design.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/agent-run-evidence-export-design.md" in docs_site
+    assert "agent-run-evidence-export-design.md" in roadmap
+    assert "275 - Agent Run evidence export design | Done" in backlog
+    for phrase in [
+        "Status: design-only export contract",
+        "`run_id`",
+        "`principal_id`",
+        "`workspace_id`",
+        "optional `sandbox_id`",
+        "`signed_export_references`",
+        "`evidence_hashes`",
+        "prompts",
+        "raw tool arguments",
+        "file contents",
+        "diffs",
+        "response bodies",
+        "not a claim of sandboxing",
+    ]:
+        assert phrase in design
 
 
 def test_agent_run_timeline_packet_is_wired(tmp_path: Path) -> None:
