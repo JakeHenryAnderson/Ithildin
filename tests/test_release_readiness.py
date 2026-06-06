@@ -17,6 +17,7 @@ from scripts import (
     closure_matrix_evidence_sync,
     consolidate_review_packet,
     control_mapping_design_check,
+    control_mapping_readiness,
     data_classification_design_check,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -7266,6 +7267,48 @@ def test_observability_control_packet_is_wired(tmp_path: Path) -> None:
     assert "control-mapping-design.md" in contracts
     assert "incident-reconstruction-guide.md" in contracts
     assert "command execution skipped for fixture/test packet generation" in evidence
+
+
+def test_control_mapping_readiness_gate_is_wired() -> None:
+    report = control_mapping_readiness.build_report(Path.cwd())
+    gate = Path("docs/codex/control-mapping-readiness-gate.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["observability_readiness_valid"] is True
+    assert report["data_classification_design_valid"] is True
+    assert report["control_mapping_design_valid"] is True
+    assert report["incident_reconstruction_valid"] is True
+    assert report["broader_capability_expansion_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make control-mapping-readiness" in readme
+    assert "control-mapping-readiness:" in makefile
+    assert "control-mapping-readiness" in release_check_body
+    assert "control-mapping-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/control-mapping-readiness-gate.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/control-mapping-readiness-gate.md" in docs_site
+    assert "269 - Control mapping readiness gate | Done" in backlog
+    for phrase in [
+        "Status: release-readiness gate",
+        "does not add runtime behavior",
+        "observability-readiness",
+        "data-classification-design-check",
+        "control-mapping-design-check",
+        "incident-reconstruction-check",
+        "no-new-powers-guardrail",
+        "tool-surface-invariant-gate",
+        "tool count remains `13`",
+        "control mapping support",
+        "mediated actions only",
+        "no new powerful tool classes",
+    ]:
+        assert phrase in gate
 
 
 def test_observability_readiness_gate_is_wired() -> None:

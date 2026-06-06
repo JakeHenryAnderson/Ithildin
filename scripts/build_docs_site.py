@@ -108,6 +108,7 @@ DEFAULT_DOCS = [
     "docs/codex/control-mapping-design.md",
     "docs/codex/incident-reconstruction-guide.md",
     "docs/codex/observability-readiness-gate.md",
+    "docs/codex/control-mapping-readiness-gate.md",
     "docs/codex/capability-implementation-plans/git-show-ref-summary.md",
     "docs/codex/capability-implementation-plans/git-show-commit-metadata.md",
     "docs/codex/v0.9-git-commit-metadata-implementation.md",

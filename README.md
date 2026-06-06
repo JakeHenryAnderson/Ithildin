@@ -87,6 +87,9 @@ only, not activity outside Ithildin.
 The combined observability readiness gate is
 [docs/codex/observability-readiness-gate.md](docs/codex/observability-readiness-gate.md) and is
 checked with `make observability-readiness`.
+The observability/control mapping umbrella gate is
+[docs/codex/control-mapping-readiness-gate.md](docs/codex/control-mapping-readiness-gate.md) and is
+checked with `make control-mapping-readiness`.
 
 ## Repo Map
 
@@ -157,6 +160,7 @@ checked with `make observability-readiness`.
 - `make incident-reconstruction-check` - validate the mediated-action incident reconstruction guide.
 - `make observability-control-packet` - generate an ignored observability/control design-review packet with artifact hashes.
 - `make observability-readiness` - validate Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers readiness.
+- `make control-mapping-readiness` - validate observability, classification, control mapping, incident reconstruction, and no-new-powers readiness.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.

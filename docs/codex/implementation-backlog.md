@@ -285,6 +285,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 266 - Control mapping design | Done | [control-mapping-design.md](control-mapping-design.md), `make control-mapping-design-check`; defines control mapping support without compliance automation or new runtime behavior. |
 | 267 - Incident reconstruction guide | Done | [incident-reconstruction-guide.md](incident-reconstruction-guide.md), `make incident-reconstruction-check`; documents how to reconstruct Ithildin-mediated actions without claiming proof outside Ithildin. |
 | 268 - Observability control packet | Done | `make observability-control-packet`; generates an ignored design-review packet for Agent Run, sandbox/workspace, SIEM-shaped evidence, data classification, control mapping, and incident reconstruction artifacts. |
+| 269 - Control mapping readiness gate | Done | [control-mapping-readiness-gate.md](control-mapping-readiness-gate.md), `make control-mapping-readiness`; composes observability, classification, mapping, reconstruction, no-new-powers, and tool-surface checks into `release-check`. |
 
 ## Future Candidate Track
 

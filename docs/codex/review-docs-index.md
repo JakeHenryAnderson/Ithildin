@@ -123,6 +123,7 @@ externally closed.
 - [Control Mapping Design](control-mapping-design.md)
 - [Incident Reconstruction Guide](incident-reconstruction-guide.md)
 - [Observability Readiness Gate](observability-readiness-gate.md)
+- [Control Mapping Readiness Gate](control-mapping-readiness-gate.md)
 - [Implementation-Planning Packet: git.show.ref_summary](capability-implementation-plans/git-show-ref-summary.md)
 - [Implementation-Planning Packet: git.show.commit_metadata](capability-implementation-plans/git-show-commit-metadata.md)
 - [v0.9 git.show.commit_metadata Implementation](v0.9-git-commit-metadata-implementation.md)
