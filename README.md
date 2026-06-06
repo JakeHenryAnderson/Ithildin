@@ -155,6 +155,7 @@ checked with `make observability-readiness`.
 - `make data-classification-design-check` - validate the trusted local data classification proposal without adding runtime behavior.
 - `make control-mapping-design-check` - validate control mapping support boundaries without compliance claims.
 - `make incident-reconstruction-check` - validate the mediated-action incident reconstruction guide.
+- `make observability-control-packet` - generate an ignored observability/control design-review packet with artifact hashes.
 - `make observability-readiness` - validate Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers readiness.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.

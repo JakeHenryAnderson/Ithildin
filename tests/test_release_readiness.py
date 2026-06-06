@@ -40,6 +40,7 @@ from scripts import (
     mcp_ingress_source_review_bundle,
     next_capability_readiness,
     no_new_powers_guardrail,
+    observability_control_packet,
     observability_readiness,
     packet_redaction_scan,
     patch_apply_external_review_packet,
@@ -7218,6 +7219,53 @@ def test_incident_reconstruction_check_is_wired() -> None:
         "What Cannot Be Proven",
     ]:
         assert phrase in guide
+
+
+def test_observability_control_packet_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "observability-control"
+
+    observability_control_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_OBSERVABILITY_CONTROL_INDEX.md",
+        "01_OBSERVABILITY_CONTROL_PROMPT.md",
+        "02_OBSERVABILITY_CONTRACTS_BUNDLE.md",
+        "03_DATA_CLASSIFICATION_AND_CONTROL_MAPPING.md",
+        "04_INCIDENT_RECONSTRUCTION_GUIDE.md",
+        "05_OBSERVABILITY_COMMAND_EVIDENCE.md",
+        "observability-control-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected
+    hashes = json.loads(
+        (output_dir / "observability-control-artifact-hashes.json").read_text(encoding="utf-8")
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+    assert hashed_paths == expected - {"observability-control-artifact-hashes.json"}
+    index = (output_dir / "00_OBSERVABILITY_CONTROL_INDEX.md").read_text(encoding="utf-8")
+    prompt = (output_dir / "01_OBSERVABILITY_CONTROL_PROMPT.md").read_text(encoding="utf-8")
+    contracts = (output_dir / "02_OBSERVABILITY_CONTRACTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "05_OBSERVABILITY_COMMAND_EVIDENCE.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert "make observability-control-packet" in readme
+    assert "observability-control-packet:" in makefile
+    assert "268 - Observability control packet | Done" in backlog
+    assert "Tool count remains `13`" in index
+    assert "Finding namespace: `EXT-OBS-###`" in prompt
+    assert "data-classification-design.md" in contracts
+    assert "control-mapping-design.md" in contracts
+    assert "incident-reconstruction-guide.md" in contracts
+    assert "command execution skipped for fixture/test packet generation" in evidence
 
 
 def test_observability_readiness_gate_is_wired() -> None:
