@@ -51,6 +51,23 @@ Use [autonomous-sprint-guardrails.md](autonomous-sprint-guardrails.md) for the s
 wall-hit status format that apply when internal review or test failures expose a possible boundary
 problem.
 
+The default tiering model is:
+
+- Medium main driver for coordination, documentation, evidence, and gate execution.
+- Low subagents only for mechanical review chores such as link scans, stale wording checks, packet
+  inventory, and transcript summaries.
+- High agents for implementation or review that touches runtime behavior, tests, policy, registry,
+  audit, executor, release-gate, or UI trust surfaces.
+- XHigh agents for milestone risk review, ambiguous product-boundary decisions, threat-model
+  questions, and "should we proceed?" checkpoints.
+- GPT 5.5 Pro or human expert review remains the external and break-glass path for major boundary
+  decisions, new powerful tool classes, or unresolved critical/high findings.
+
+Low-tier subagents must not independently modify runtime code, policy semantics, executor behavior,
+approval or audit logic, manifests, MCP exposure, storage/auth boundaries, or public trust claims.
+All AI/subagent review remains internal pressure testing unless an external reviewer explicitly
+closes the relevant row.
+
 For the v0.6 lane-by-lane proxy-review cadence, use
 [v0.6-internal-proxy-review-operating-model.md](v0.6-internal-proxy-review-operating-model.md).
 

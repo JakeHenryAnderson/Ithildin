@@ -65,5 +65,24 @@ Run `make internal-review-packet` whenever a sprint touches a reviewed trust sur
 AI/subagent review can produce backlog candidates, but it cannot independently close external-review
 rows or authorize new tool powers.
 
+## Model Tiering
+
+Use this tiering model to keep autonomous work efficient without blurring review authority:
+
+- Medium main driver: sprint coordination, sequencing, documentation, gate execution, evidence
+  summaries, and escalation decisions.
+- Low subagents: mechanical chores such as link checks, stale-wording scans, artifact inventories,
+  packet sanity checks, and transcript summaries.
+- High agents: implementation or review that touches API/runtime behavior, tests, policy,
+  registries, audit evidence, executors, release gates, or review-console behavior.
+- XHigh agents: milestone risk review, ambiguous architecture or product-boundary decisions,
+  threat-model review, material disagreement resolution, and "should we proceed?" checkpoints.
+- GPT 5.5 Pro / human expert review: external or break-glass consultation for new powerful tool
+  classes, broader public/security-product positioning, unresolved critical/high findings, or
+  material disagreement that internal review cannot resolve cleanly.
+
+Low-tier agents must not independently change runtime code, policy semantics, executor behavior,
+approval or audit logic, manifests, MCP exposure, auth/storage boundaries, or public trust claims.
+
 Run `make review-candidate` before sending a new packet for external review. If it fails, treat the
 packet as draft evidence and report status before continuing.
