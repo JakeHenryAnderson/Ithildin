@@ -196,7 +196,7 @@ processes, model clients, containers, or OS activity outside Ithildin.
 - Define run/session event contracts.
 - Link the secret-free [Agent Run Evidence Contract](agent-run-evidence-contract.md).
 - Link the operator-managed [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md).
-- Define SIEM-shaped export requirements without adapters.
+- Link the future [SIEM-Shaped Evidence Design](siem-shaped-evidence-design.md) without adapters.
 - Define data classification proposal.
 - Add gates that prevent these docs from becoming production/security claims.
 

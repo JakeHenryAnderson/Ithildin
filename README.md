@@ -69,6 +69,9 @@ checked with `make agent-run-evidence-contract-check`.
 The operator-managed sandbox/workspace boundary contract is
 [docs/codex/sandbox-workspace-boundary-contract.md](docs/codex/sandbox-workspace-boundary-contract.md);
 it is design/evidence-only and does not add sandbox orchestration or OS isolation claims.
+The future JSONL/SIEM-shaped evidence design is
+[docs/codex/siem-shaped-evidence-design.md](docs/codex/siem-shaped-evidence-design.md) and is
+checked with `make siem-evidence-design-check`; it does not add SIEM adapters or hosted telemetry.
 
 ## Repo Map
 
@@ -133,6 +136,7 @@ it is design/evidence-only and does not add sandbox orchestration or OS isolatio
 - `make release-automation-source-review-bundle` - build the focused release/evidence automation source/test/evidence handoff for source-level external review.
 - `make review-run-manifest-check` - validate executed review-run manifests under ignored `var/review-runs/`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
+- `make siem-evidence-design-check` - validate the future SIEM-shaped evidence design without adding adapters.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.

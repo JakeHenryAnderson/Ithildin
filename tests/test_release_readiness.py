@@ -59,6 +59,7 @@ from scripts import (
     review_run_manifest,
     reviewer_artifact_manifest,
     reviewer_findings,
+    siem_evidence_design_check,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
     test_determinism_gate,
@@ -7049,6 +7050,52 @@ def test_sandbox_workspace_boundary_contract_is_wired_and_scoped() -> None:
         "kernel isolation",
     ]:
         assert phrase in contract
+
+
+def test_siem_evidence_design_check_is_wired() -> None:
+    report = siem_evidence_design_check.build_report(Path.cwd())
+    design = Path("docs/codex/siem-shaped-evidence-design.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    roadmap = Path("docs/codex/agent-run-observability-and-sandbox-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make siem-evidence-design-check" in readme
+    assert "siem-evidence-design-check:" in makefile
+    assert "docs/codex/siem-shaped-evidence-design.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/siem-shaped-evidence-design.md" in docs_site
+    assert "siem-shaped-evidence-design.md" in roadmap
+    for phrase in [
+        "Status: evidence-design preparation",
+        "does not add runtime behavior",
+        "SIEM adapters",
+        "run lifecycle",
+        "tool lifecycle",
+        "policy decision",
+        "approval lifecycle",
+        "executor result",
+        "audit verification",
+        "signed export",
+        "redaction summary",
+        "diagnostics",
+        "sandbox/workspace posture",
+        "event category",
+        "severity label",
+        "resource summary",
+        "evidence hash",
+        "prompts",
+        "secrets",
+        "file contents",
+        "diffs",
+        "response bodies",
+    ]:
+        assert phrase in design
 
 
 def _write_project_markers(root: Path) -> None:
