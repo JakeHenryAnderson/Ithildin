@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import Optional, cast
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from ithildin_audit_core import (
     AuditSigningError,
@@ -319,6 +319,33 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
         return {"runs": agent_run_store.list_runs(limit=limit)}
 
+    @api.get("/runs/{run_id}/evidence-export", dependencies=[Depends(require_admin_token)])
+    def get_run_evidence_export(
+        run_id: str,
+        request: Request,
+        timeline_limit: int = 200,
+    ) -> JsonObject:
+        unexpected = sorted(set(request.query_params.keys()) - {"timeline_limit"})
+        if unexpected:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported query parameter",
+            )
+        if not _valid_agent_run_id(run_id):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid run id")
+        agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
+        approval_service = cast(ApprovalService, api.state.approval_service)
+        patch_service = cast(PatchProposalService, api.state.patch_proposal_service)
+        try:
+            return agent_run_store.evidence_export(
+                run_id,
+                approvals=approval_service.list(),
+                patch_diagnostics=patch_service.patch_apply_diagnostics(approval_service),
+                timeline_limit=timeline_limit,
+            )
+        except AgentRunError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
     @api.get("/runs/{run_id}", dependencies=[Depends(require_admin_token)])
     def get_run(run_id: str, timeline_limit: int = 200) -> JsonObject:
         agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
@@ -600,6 +627,12 @@ def _current_manifest_lock_status(settings: Settings) -> JsonObject:
         "required": True,
         "error": None,
     }
+
+
+def _valid_agent_run_id(run_id: str) -> bool:
+    return run_id.startswith("run_") and len(run_id) == 36 and all(
+        character in "0123456789abcdef" for character in run_id[4:]
+    )
 
 
 def _require_route_decision(

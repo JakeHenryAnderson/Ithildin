@@ -7,10 +7,13 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
-from ithildin_schemas import JsonObject, JsonValue
+from ithildin_schemas import JsonObject, JsonValue, canonical_json, sha256_digest
+
+if TYPE_CHECKING:
+    from ithildin_schemas import ApprovalRequest
 
 
 class AgentRunError(RuntimeError):
@@ -298,6 +301,84 @@ class AgentRunStore:
             "timeline": cast(JsonValue, self.timeline(run_id, limit=timeline_limit)),
         }
 
+    def evidence_export(
+        self,
+        run_id: str,
+        *,
+        approvals: list[ApprovalRequest],
+        patch_diagnostics: JsonObject,
+        timeline_limit: int = 200,
+    ) -> JsonObject:
+        run = self.get_run(run_id)
+        timeline = [
+            _export_timeline_event(event)
+            for event in self.timeline(run_id, limit=timeline_limit)
+        ]
+        correlated_request_ids = {
+            str(event["request_id"])
+            for event in timeline
+            if isinstance(event.get("request_id"), str) and event.get("request_id")
+        }
+        correlated_approval_ids = {
+            str(event["approval_id"])
+            for event in timeline
+            if isinstance(event.get("approval_id"), str) and event.get("approval_id")
+        }
+        approval_summaries = [
+            _export_approval(approval)
+            for approval in approvals
+            if _approval_correlates_with_run(
+                approval,
+                run_id=run_id,
+                request_ids=correlated_request_ids,
+            )
+        ]
+        correlated_approval_ids.update(
+            str(approval["approval_id"])
+            for approval in approval_summaries
+            if isinstance(approval.get("approval_id"), str)
+        )
+        patch_summaries = _export_patch_diagnostics(
+            patch_diagnostics,
+            workspace_id=str(run["workspace_id"]),
+            approval_ids=correlated_approval_ids,
+        )
+        exported_at = datetime.now(UTC).isoformat()
+        warnings = _export_warnings(
+            run=run,
+            timeline=timeline,
+            approvals=approval_summaries,
+            patch_diagnostics=patch_summaries,
+            original_timeline_count=len(self.timeline(run_id, limit=500)),
+            timeline_limit=timeline_limit,
+        )
+        bundle: JsonObject = {
+            "schema_version": "1",
+            "export_id": _new_id("runev"),
+            "exported_at": exported_at,
+            "run": _export_run_summary(run),
+            "timeline": cast(JsonValue, timeline),
+            "approvals": cast(JsonValue, approval_summaries),
+            "patch_diagnostics": cast(JsonValue, patch_summaries),
+            "signed_export_references": [],
+            "evidence_hashes": {},
+            "redaction_summary": {
+                "excluded_categories": [
+                    "prompts",
+                    "model_output",
+                    "raw_tool_arguments",
+                    "file_contents",
+                    "diffs",
+                    "response_bodies",
+                    "secrets",
+                    "raw_sensitive_paths",
+                ]
+            },
+            "warnings": cast(JsonValue, warnings),
+        }
+        bundle["evidence_hashes"] = _section_hashes(bundle)
+        return bundle
+
 
 def _record_from_row(row: tuple[object, ...]) -> AgentRunRecord:
     return AgentRunRecord(
@@ -333,6 +414,293 @@ def _timeline_event(payload: JsonObject) -> JsonObject:
         "resource": payload.get("resource"),
         "metadata": safe_metadata,
     }
+
+
+def _export_run_summary(run: JsonObject) -> JsonObject:
+    metadata = run.get("metadata") if isinstance(run.get("metadata"), dict) else {}
+    model_client_label = metadata.get("model_client_label") if isinstance(metadata, dict) else None
+    sandbox_id = metadata.get("sandbox_id") if isinstance(metadata, dict) else None
+    return {
+        "run_id": run.get("run_id"),
+        "principal_id": run.get("principal_id"),
+        "workspace_id": run.get("workspace_id"),
+        "sandbox_id": sandbox_id if isinstance(sandbox_id, str) else None,
+        "session_id": run.get("session_id"),
+        "model_client_label": model_client_label if isinstance(model_client_label, str) else None,
+        "status": run.get("status"),
+        "policy_hash": run.get("policy_hash"),
+        "manifest_lock_hash": run.get("last_tool_manifest_hash"),
+        "tool_call_count": run.get("tool_call_count"),
+        "created_at": run.get("created_at"),
+        "updated_at": run.get("updated_at"),
+    }
+
+
+def _export_timeline_event(event: JsonObject) -> JsonObject:
+    metadata = _json_object_or_empty(event.get("metadata"))
+    approval_id = _metadata_string(metadata, "approval_id")
+    return {
+        "event_id": event.get("event_id"),
+        "run_id": _metadata_string(metadata, "run_id"),
+        "timestamp": event.get("timestamp"),
+        "category": event.get("event_type"),
+        "status": _timeline_status(event),
+        "correlation_id": event.get("request_id"),
+        "request_id": event.get("request_id"),
+        "tool_name": event.get("tool_name"),
+        "approval_id": approval_id,
+        "audit_event_id": event.get("event_id"),
+        "policy_hash": _metadata_string(metadata, "policy_hash"),
+        "manifest_hash": _metadata_string(metadata, "manifest_hash"),
+        "metadata": _safe_timeline_metadata(metadata),
+    }
+
+
+def _timeline_status(event: JsonObject) -> str:
+    event_type = event.get("event_type")
+    if isinstance(event_type, str):
+        if event_type.endswith(".completed"):
+            return "completed"
+        if event_type.endswith(".failed"):
+            return "failed"
+        if event_type.endswith(".started"):
+            return "started"
+        if event_type == "policy.evaluated":
+            decision = event.get("decision")
+            return decision if isinstance(decision, str) else "evaluated"
+    return "recorded"
+
+
+def _safe_timeline_metadata(metadata: JsonObject) -> JsonObject:
+    allowed = {
+        "run_id",
+        "session_id",
+        "workspace_id",
+        "principal_id",
+        "executor",
+        "approval_id",
+        "approval_binding_verified",
+        "proposal_id",
+        "proposal_hash",
+        "base_file_hash",
+        "policy_hash",
+        "policy_version",
+        "policy_engine",
+        "manifest_hash",
+        "manifest_version",
+        "redaction_count",
+        "redaction_categories",
+    }
+    return {key: value for key, value in metadata.items() if key in allowed}
+
+
+def _export_approval(approval: ApprovalRequest) -> JsonObject:
+    scope = approval.one_time_scope
+    return {
+        "approval_id": approval.approval_id,
+        "request_id": approval.request_id,
+        "request_hash": approval.request_hash,
+        "tool_name": approval.tool_name,
+        "status": approval.status.value,
+        "expires_at": approval.expires_at.isoformat(),
+        "summary_hash": sha256_digest(approval.summary),
+        "principal_id": _json_object_string(approval.principal, "id"),
+        "resource_type": _json_object_string(approval.resource, "type"),
+        "resource_hash": sha256_digest(_safe_resource_reference(approval.resource)),
+        "one_time_scope": _safe_approval_scope(scope),
+        "metadata": _safe_approval_metadata(approval.metadata),
+    }
+
+
+def _approval_correlates_with_run(
+    approval: ApprovalRequest,
+    *,
+    run_id: str,
+    request_ids: set[str],
+) -> bool:
+    metadata_run_id = _json_object_string(approval.metadata, "run_id")
+    return metadata_run_id == run_id or approval.request_id in request_ids
+
+
+def _safe_approval_scope(scope: JsonObject) -> JsonObject:
+    allowed = {
+        "proposal_id",
+        "proposal_hash",
+        "base_file_hash",
+        "expected_post_apply_file_hash",
+        "manifest_hash",
+        "manifest_version",
+        "policy_hash",
+        "policy_version",
+        "policy_engine",
+        "policy_document_version",
+        "request_hash",
+        "tool_input_schema_hash",
+        "workspace_id",
+    }
+    result = {key: value for key, value in scope.items() if key in allowed}
+    path = _json_object_string(scope, "path")
+    if path is not None:
+        result["path_hash"] = sha256_digest(path)
+    return result
+
+
+def _safe_approval_metadata(metadata: JsonObject) -> JsonObject:
+    allowed = {
+        "policy_engine",
+        "policy_hash",
+        "policy_version",
+        "policy_document_version",
+        "matched_rules",
+        "manifest_hash",
+        "manifest_version",
+        "tool_input_schema_hash",
+        "approval_scope_hash",
+        "proposal_id",
+        "proposal_hash",
+        "base_file_hash",
+        "run_id",
+        "session_id",
+        "workspace_id",
+        "principal_id",
+    }
+    return {key: value for key, value in metadata.items() if key in allowed}
+
+
+def _export_patch_diagnostics(
+    patch_diagnostics: JsonObject,
+    *,
+    workspace_id: str,
+    approval_ids: set[str],
+) -> list[JsonObject]:
+    attempts = patch_diagnostics.get("attempts")
+    if not isinstance(attempts, list):
+        return []
+    exported: list[JsonObject] = []
+    for item in attempts:
+        if not isinstance(item, dict):
+            continue
+        attempt: JsonObject = item
+        approval_id = _json_object_string(attempt, "approval_id")
+        attempt_workspace_id = _json_object_string(attempt, "workspace_id")
+        if approval_id not in approval_ids and attempt_workspace_id != workspace_id:
+            continue
+        exported.append(_safe_patch_attempt(attempt))
+    return exported
+
+
+def _safe_patch_attempt(attempt: JsonObject) -> JsonObject:
+    result = {
+        key: attempt.get(key)
+        for key in [
+            "attempt_id",
+            "approval_id",
+            "proposal_id",
+            "request_id",
+            "workspace_id",
+            "proposal_hash",
+            "base_file_hash",
+            "expected_post_apply_hash",
+            "status",
+            "failure_reason",
+            "created_at",
+            "updated_at",
+            "current_target_hash",
+            "current_matches_expected_post_apply_hash",
+            "current_matches_base_file_hash",
+            "diagnostic_status",
+            "diagnostic_reason",
+        ]
+    }
+    path = _json_object_string(attempt, "path")
+    if path is not None:
+        result["path_hash"] = sha256_digest(path)
+    return result
+
+
+def _export_warnings(
+    *,
+    run: JsonObject,
+    timeline: list[JsonObject],
+    approvals: list[JsonObject],
+    patch_diagnostics: list[JsonObject],
+    original_timeline_count: int,
+    timeline_limit: int,
+) -> list[JsonObject]:
+    warnings: list[JsonObject] = []
+    if original_timeline_count > len(timeline) or original_timeline_count > timeline_limit:
+        warnings.append(
+            {
+                "type": "timeline_truncated",
+                "message": "Timeline was bounded by the requested limit.",
+                "limit": timeline_limit,
+            }
+        )
+    if not timeline:
+        warnings.append(
+            {
+                "type": "missing_audit_correlation",
+                "message": "No correlated audit timeline events were found for this run.",
+            }
+        )
+    if run.get("tool_call_count") and not approvals:
+        warnings.append(
+            {
+                "type": "approval_correlation_unavailable",
+                "message": "No approval records correlated to this run.",
+            }
+        )
+    if not patch_diagnostics:
+        warnings.append(
+            {
+                "type": "patch_diagnostics_unavailable",
+                "message": "No incomplete patch apply diagnostics correlated to this run.",
+            }
+        )
+    warnings.append(
+        {
+            "type": "signed_evidence_unavailable",
+            "message": "No signed audit export reference is attached to this run export.",
+        }
+    )
+    return warnings
+
+
+def _section_hashes(bundle: JsonObject) -> JsonObject:
+    return {
+        "run_sha256": sha256_digest(bundle["run"]),
+        "timeline_sha256": sha256_digest(bundle["timeline"]),
+        "approvals_sha256": sha256_digest(bundle["approvals"]),
+        "patch_diagnostics_sha256": sha256_digest(bundle["patch_diagnostics"]),
+    }
+
+
+def _metadata_string(metadata: object, key: str) -> str | None:
+    if isinstance(metadata, dict):
+        value = metadata.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def _json_object_or_empty(value: object) -> JsonObject:
+    return value if isinstance(value, dict) else {}
+
+
+def _json_object_string(payload: JsonObject, key: str) -> str | None:
+    value = payload.get(key)
+    return value if isinstance(value, str) and value else None
+
+
+def _safe_resource_reference(resource: JsonObject) -> str:
+    safe: JsonObject = {}
+    resource_type = _json_object_string(resource, "type")
+    workspace_id = _json_object_string(resource, "workspace_id")
+    if resource_type is not None:
+        safe["type"] = resource_type
+    if workspace_id is not None:
+        safe["workspace_id"] = workspace_id
+    return canonical_json(safe)
 
 
 def _string_or_default(value: object, fallback: str) -> str:

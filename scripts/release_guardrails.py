@@ -68,6 +68,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "agent-run-evidence-contract-check",
     "agent-run-evidence-export-check",
     "agent-run-evidence-export-plan-check",
+    "agent-run-evidence-export-implementation-gate",
     "operator-action-states-check",
     "dashboard-evidence-checklist-check",
     "agent-run-timeline-readiness",

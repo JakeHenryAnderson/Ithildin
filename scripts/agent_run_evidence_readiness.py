@@ -14,6 +14,7 @@ if __package__ in {None, ""}:
 from scripts import (
     agent_run_evidence_contract_check,
     agent_run_evidence_export_check,
+    agent_run_evidence_export_implementation_gate,
     agent_run_evidence_export_plan_check,
     agent_run_timeline_readiness,
     dashboard_evidence_checklist_check,
@@ -32,6 +33,7 @@ REQUIRED_GATE_PHRASES = [
     "agent-run-evidence-contract-check",
     "agent-run-evidence-export-check",
     "agent-run-evidence-export-plan-check",
+    "agent-run-evidence-export-implementation-gate",
     "agent-run-timeline-readiness",
     "incident-reconstruction-check",
     "dashboard-evidence-checklist-check",
@@ -70,6 +72,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     contract = agent_run_evidence_contract_check.build_report(repo_root)
     export = agent_run_evidence_export_check.build_report(repo_root)
     export_plan = agent_run_evidence_export_plan_check.build_report(repo_root)
+    export_implementation = agent_run_evidence_export_implementation_gate.build_report(repo_root)
     timeline = agent_run_timeline_readiness.build_report(repo_root)
     reconstruction = incident_reconstruction_check.build_report(repo_root)
     dashboard = dashboard_evidence_checklist_check.build_report(repo_root)
@@ -80,6 +83,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(f"agent-run-evidence-export: {failure}" for failure in export["failures"])
     failures.extend(
         f"agent-run-evidence-export-plan: {failure}" for failure in export_plan["failures"]
+    )
+    failures.extend(
+        f"agent-run-evidence-export-implementation: {failure}"
+        for failure in export_implementation["failures"]
     )
     failures.extend(f"agent-run-timeline: {failure}" for failure in timeline["failures"])
     failures.extend(f"incident-reconstruction: {failure}" for failure in reconstruction["failures"])
@@ -101,6 +108,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "agent_run_evidence_contract_valid": contract["valid"],
         "agent_run_evidence_export_valid": export["valid"],
         "agent_run_evidence_export_plan_valid": export_plan["valid"],
+        "agent_run_evidence_export_implementation_valid": export_implementation["valid"],
         "agent_run_timeline_readiness_valid": timeline["valid"],
         "incident_reconstruction_valid": reconstruction["valid"],
         "dashboard_evidence_checklist_valid": dashboard["valid"],

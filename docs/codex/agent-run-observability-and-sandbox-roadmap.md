@@ -278,7 +278,12 @@ The future run-level export bundle shape is documented in
 `make agent-run-evidence-export-check`; it remains design-only.
 The future admin-only export endpoint planning packet is documented in
 [agent-run-evidence-export-implementation-plan.md](agent-run-evidence-export-implementation-plan.md)
-and checked with `make agent-run-evidence-export-plan-check`; implementation remains blocked.
+and checked with `make agent-run-evidence-export-plan-check`; it is retained as implementation
+lineage.
+The bounded admin-only read endpoint is documented in
+[agent-run-evidence-export-implementation.md](agent-run-evidence-export-implementation.md) and
+checked with `make agent-run-evidence-export-implementation-gate`; it exports one secret-free run
+evidence bundle without SIEM adapters, sandbox controls, or new tool powers.
 The combined Agent Run evidence readiness gate is documented in
 [agent-run-evidence-readiness-gate.md](agent-run-evidence-readiness-gate.md) and checked with
 `make agent-run-evidence-readiness`.

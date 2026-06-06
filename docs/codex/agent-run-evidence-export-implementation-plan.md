@@ -1,13 +1,22 @@
 # Agent Run Evidence Export Implementation Plan
 
-Status: implementation-planning only. This plan prepares a future admin-only read endpoint for
-Agent Run evidence export, but it does not add runtime behavior, API endpoints, MCP tools,
+Status: historical implementation-planning packet; later advanced through the approved bounded
+read-only Agent Run evidence export endpoint recorded in
+[agent-run-evidence-export-implementation.md](agent-run-evidence-export-implementation.md).
+
+Original status: implementation-planning only.
+
+Original marker: Status: implementation-planning only.
+
+Historical invariant: this document does not add runtime behavior, API endpoints, MCP tools,
 executors, policy rules, UI controls, SIEM adapters, sandbox controls, production identity, runtime
 Postgres, hosted telemetry, shell, Docker, Kubernetes, browser automation, arbitrary HTTP, broad
 filesystem writes, or plugin SDK work.
 
-Implementation state: blocked until a later explicit implementation decision, focused source review,
-and green implementation gates.
+Original implementation state: blocked until a later explicit implementation decision, focused
+source review, and green implementation gates.
+
+Original marker: Implementation state: blocked.
 
 ## Proposed Endpoint
 

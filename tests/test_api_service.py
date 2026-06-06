@@ -448,6 +448,111 @@ def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> 
     assert missing_response.status_code == 404
 
 
+def test_run_evidence_export_requires_auth_and_returns_secret_free_bundle(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        run_store = cast(AgentRunStore, app.state.agent_run_store)
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        approval_service = cast(ApprovalService, app.state.approval_service)
+        run_context, _created = run_store.ensure_for_tool_call(
+            principal={"id": "agent:local-dev", "type": "agent", "roles": ["AgentDeveloper"]},
+            session_id="sess_export_runs",
+            workspace_id="default",
+            request_id="req_export_runs",
+            tool_name="fs.patch.apply",
+            policy_hash="sha256:" + ("1" * 64),
+            tool_manifest_hash="sha256:" + ("2" * 64),
+        )
+        approval = approval_service.create_pending(
+            CreateApprovalInput(
+                principal={"id": "agent:local-dev", "type": "agent", "roles": ["AgentDeveloper"]},
+                tool_name="fs.patch.apply",
+                resource={"type": "file", "workspace_id": "default", "path": "secret.txt"},
+                summary="Apply patch containing secret text",
+                one_time_scope={
+                    "proposal_id": "patch_1",
+                    "proposal_hash": "sha256:" + ("3" * 64),
+                    "base_file_hash": "sha256:" + ("4" * 64),
+                    "workspace_id": "default",
+                    "path": "secret.txt",
+                },
+                request_id="req_export_runs",
+                metadata={**run_context.metadata(), "proposal_hash": "sha256:" + ("3" * 64)},
+            )
+        )
+        audit_writer.write_event(
+            event_id="evt_export_runs",
+            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+            request_id="req_export_runs",
+            principal={"id": "agent:local-dev", "type": "agent", "roles": ["AgentDeveloper"]},
+            tool_name="fs.patch.apply",
+            resource={"type": "file", "path": "secret.txt"},
+            metadata={
+                **run_context.metadata(),
+                "approval_id": approval.approval_id,
+                "proposal_id": "patch_1",
+                "proposal_hash": "sha256:" + ("3" * 64),
+                "path": "secret.txt",
+                "diff": "--- a/secret.txt\n+++ b/secret.txt\n",
+            },
+        )
+
+        unauthenticated = client.get(f"/runs/{run_context.run_id}/evidence-export")
+        response = client.get(
+            f"/runs/{run_context.run_id}/evidence-export",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert response.status_code == 200
+    body = response.text
+    payload = response.json()
+    assert payload["schema_version"] == "1"
+    assert payload["export_id"].startswith("runev_")
+    assert payload["run"]["run_id"] == run_context.run_id
+    assert payload["run"]["manifest_lock_hash"] == "sha256:" + ("2" * 64)
+    completed_events = [
+        event for event in payload["timeline"] if event["category"] == "tool.execution.completed"
+    ]
+    assert completed_events[0]["approval_id"] == approval.approval_id
+    assert "resource" not in completed_events[0]
+    assert payload["approvals"][0]["approval_id"] == approval.approval_id
+    assert payload["approvals"][0]["one_time_scope"]["path_hash"].startswith("sha256:")
+    assert "path" not in payload["approvals"][0]["one_time_scope"]
+    assert payload["signed_export_references"] == []
+    assert payload["evidence_hashes"]["run_sha256"].startswith("sha256:")
+    assert payload["redaction_summary"]["excluded_categories"]
+    assert any(warning["type"] == "signed_evidence_unavailable" for warning in payload["warnings"])
+    assert "secret.txt" not in body
+    assert "--- a/secret.txt" not in body
+    assert "Apply patch containing secret text" not in body
+
+
+def test_run_evidence_export_denies_bad_inputs_safely(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        malformed = client.get(
+            "/runs/not-a-run/evidence-export",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        unknown = client.get(
+            "/runs/run_11111111111111111111111111111111/evidence-export",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        unknown_query = client.get(
+            "/runs/run_11111111111111111111111111111111/evidence-export?format=json",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert malformed.status_code == 400
+    assert malformed.json()["detail"] == "invalid run id"
+    assert unknown.status_code == 404
+    assert unknown_query.status_code == 400
+    assert unknown_query.json()["detail"] == "unsupported query parameter"
+
+
 def test_sample_admin_token_requires_explicit_demo_flag(tmp_path: Path) -> None:
     settings = make_settings(tmp_path, token="dev-admin-token-change-me")
     app = create_app(settings)

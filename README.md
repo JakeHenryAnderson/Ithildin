@@ -74,6 +74,10 @@ The future Agent Run evidence export implementation plan is
 [docs/codex/agent-run-evidence-export-implementation-plan.md](docs/codex/agent-run-evidence-export-implementation-plan.md)
 and is checked with `make agent-run-evidence-export-plan-check`; it prepares endpoint/schema/tests
 only and does not approve implementation.
+The bounded Agent Run evidence export endpoint is
+[docs/codex/agent-run-evidence-export-implementation.md](docs/codex/agent-run-evidence-export-implementation.md)
+and is checked with `make agent-run-evidence-export-implementation-gate`; it is admin-only,
+read-only, secret-free, and does not add SIEM adapters or new tool powers.
 The Agent Run timeline readiness gate is
 [docs/codex/agent-run-timeline-readiness-gate.md](docs/codex/agent-run-timeline-readiness-gate.md)
 and is checked with `make agent-run-timeline-readiness`.
@@ -179,6 +183,7 @@ checked with `make control-mapping-readiness`.
 - `make agent-run-evidence-contract-check` - validate the Agent Run evidence contract and review-doc/docs-site wiring.
 - `make agent-run-evidence-export-check` - validate the design-only Agent Run evidence export bundle shape.
 - `make agent-run-evidence-export-plan-check` - validate the implementation-planning packet for the future admin-only Agent Run evidence export endpoint.
+- `make agent-run-evidence-export-implementation-gate` - validate the bounded admin-only Agent Run evidence export endpoint.
 - `make agent-run-evidence-packet` - generate an ignored focused Agent Run evidence export design review packet.
 - `make agent-run-evidence-readiness` - validate Agent Run evidence/export design, timeline, incident reconstruction, dashboard evidence, and no-new-powers wiring.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
