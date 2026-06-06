@@ -100,6 +100,10 @@ and is checked with `make dashboard-evidence-checklist-check`.
 The operator-managed sandbox/workspace boundary contract is
 [docs/codex/sandbox-workspace-boundary-contract.md](docs/codex/sandbox-workspace-boundary-contract.md);
 it is design/evidence-only and does not add sandbox orchestration or OS isolation claims.
+The operator-managed sandbox demo guide is
+[docs/codex/operator-managed-sandbox-demo-guide.md](docs/codex/operator-managed-sandbox-demo-guide.md);
+it shows how to demonstrate Ithildin around an operator-created workspace/sandbox label without
+Docker socket access, shell tools, lifecycle control, or sandbox claims.
 The future JSONL/SIEM-shaped evidence design is
 [docs/codex/siem-shaped-evidence-design.md](docs/codex/siem-shaped-evidence-design.md) and is
 checked with `make siem-evidence-design-check`; it does not add SIEM adapters or hosted telemetry.

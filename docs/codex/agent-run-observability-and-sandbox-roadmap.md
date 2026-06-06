@@ -245,6 +245,11 @@ processes, model clients, containers, or OS activity outside Ithildin.
 - Preserve no Docker socket, no shell governed tool, no Kubernetes assets, and no sandbox control
   claims.
 
+The current demo/readiness guide is
+[operator-managed-sandbox-demo-guide.md](operator-managed-sandbox-demo-guide.md). It documents the
+operator-managed flow without adding sandbox lifecycle APIs, Docker/Kubernetes integration, shell
+tools, or OS isolation claims.
+
 ### Wave E: SIEM-Shaped Evidence Export
 
 - Add an event export schema that is stable and secret-free.

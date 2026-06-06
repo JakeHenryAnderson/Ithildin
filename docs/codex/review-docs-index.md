@@ -126,6 +126,7 @@ externally closed.
 - [Operator Action States Design](operator-action-states-design.md)
 - [Dashboard Evidence Review Checklist](dashboard-evidence-review-checklist.md)
 - [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md)
+- [Operator-Managed Sandbox Demo Guide](operator-managed-sandbox-demo-guide.md)
 - [SIEM-Shaped Evidence Design](siem-shaped-evidence-design.md)
 - [Data Classification Design](data-classification-design.md)
 - [Control Mapping Design](control-mapping-design.md)

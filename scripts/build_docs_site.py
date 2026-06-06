@@ -111,6 +111,7 @@ DEFAULT_DOCS = [
     "docs/codex/operator-action-states-design.md",
     "docs/codex/dashboard-evidence-review-checklist.md",
     "docs/codex/sandbox-workspace-boundary-contract.md",
+    "docs/codex/operator-managed-sandbox-demo-guide.md",
     "docs/codex/siem-shaped-evidence-design.md",
     "docs/codex/data-classification-design.md",
     "docs/codex/control-mapping-design.md",
