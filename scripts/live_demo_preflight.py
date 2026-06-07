@@ -32,6 +32,7 @@ REQUIRED_MAKE_TARGETS = [
     "demo-flow",
     "live-demo-status",
     "live-demo-smoke",
+    "live-demo-evidence-summary",
     "live-demo-packet",
     "operator-sandbox-demo-packet",
     "agent-run-correlation-packet",

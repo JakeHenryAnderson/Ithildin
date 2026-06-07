@@ -43,6 +43,7 @@ OPERATOR_SEQUENCE = [
     "make negative-review-transcripts",
     "make signed-evidence-demo",
     "make signed-evidence-demo-verify",
+    "make live-demo-evidence-summary",
     "make live-demo-packet",
     "make review-candidate",
     "make compose-down",

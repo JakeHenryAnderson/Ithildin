@@ -92,6 +92,7 @@ Generate the local evidence packets:
 ```sh
 make live-demo-status
 make live-demo-smoke
+make live-demo-evidence-summary
 make operator-sandbox-demo-packet
 make agent-run-correlation-packet
 make negative-review-transcripts
@@ -112,6 +113,10 @@ Expected ignored outputs:
 operator index with paths, status, and cleanup reminders.
 `make live-demo-smoke` writes `var/review-packets/v3/live-demo/LIVE_DEMO_SMOKE.md`, a
 secret-free transcript of readiness checks plus the operator-run sequence.
+`make live-demo-evidence-summary` writes
+`var/review-packets/v3/live-demo/LIVE_DEMO_EVIDENCE_SUMMARY.md`, a secret-free digest of live-demo
+status, smoke evidence, signed fixture evidence, negative transcripts, Agent Run correlation,
+operator sandbox packet, and consolidated handoff artifact presence.
 
 For the full handoff bundle, run:
 

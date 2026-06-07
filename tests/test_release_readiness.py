@@ -49,6 +49,7 @@ from scripts import (
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
+    live_demo_evidence_summary,
     live_demo_packet,
     live_demo_preflight,
     live_demo_smoke,
@@ -1625,6 +1626,7 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) agent-run-correlation-packet",
         "$(MAKE) live-demo-status",
         "$(MAKE) live-demo-smoke",
+        "$(MAKE) live-demo-evidence-summary",
         "$(MAKE) live-demo-packet",
         "$(MAKE) v06-review-dispatch-packets",
         "$(MAKE) review-packet-bundle",
@@ -2398,6 +2400,7 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
         "make live-demo-preflight",
         "make live-demo-status",
         "make live-demo-smoke",
+        "make live-demo-evidence-summary",
         "make live-demo-packet",
         "make negative-review-transcripts",
         "make signed-evidence-demo",
@@ -2429,6 +2432,11 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         output=output_dir / "LIVE_DEMO_SMOKE.md",
         run_commands=False,
     )
+    summary_report = live_demo_evidence_summary.build_summary(
+        repo_root=Path.cwd(),
+        output=output_dir / "LIVE_DEMO_EVIDENCE_SUMMARY.md",
+        probe_endpoints=False,
+    )
 
     live_demo_packet.build_packet(
         repo_root=Path.cwd(),
@@ -2445,9 +2453,11 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         "04_LIVE_DEMO_COMMAND_EVIDENCE.md",
         "05_LIVE_DEMO_SMOKE.md",
         "06_LIVE_DEMO_OPERATOR_INDEX.md",
-        "07_LIVE_DEMO_ARTIFACT_POINTERS.md",
+        "07_LIVE_DEMO_EVIDENCE_SUMMARY.md",
+        "08_LIVE_DEMO_ARTIFACT_POINTERS.md",
         "LIVE_DEMO_SMOKE.md",
         "LIVE_DEMO_INDEX.md",
+        "LIVE_DEMO_EVIDENCE_SUMMARY.md",
         "live-demo-artifact-hashes.json",
     }
     generated = {path.name for path in output_dir.iterdir()}
@@ -2463,9 +2473,13 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     operator_index_bundle = (output_dir / "06_LIVE_DEMO_OPERATOR_INDEX.md").read_text(
         encoding="utf-8"
     )
-    pointers = (output_dir / "07_LIVE_DEMO_ARTIFACT_POINTERS.md").read_text(encoding="utf-8")
+    summary_bundle = (output_dir / "07_LIVE_DEMO_EVIDENCE_SUMMARY.md").read_text(
+        encoding="utf-8"
+    )
+    pointers = (output_dir / "08_LIVE_DEMO_ARTIFACT_POINTERS.md").read_text(encoding="utf-8")
     smoke = smoke_path.read_text(encoding="utf-8")
     operator_index = (output_dir / "LIVE_DEMO_INDEX.md").read_text(encoding="utf-8")
+    summary = (output_dir / "LIVE_DEMO_EVIDENCE_SUMMARY.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
@@ -2483,6 +2497,8 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert report["loopback_ports_valid"] is True
     assert status_report["valid"] is True
     assert status_report["endpoints"]["api_healthz"]["safe_error"] == "probe_skipped"
+    assert summary_report["valid"] is True
+    assert summary_report["preflight"]["tool_count"] == 13
     assert generated == expected
     assert {entry["path"] for entry in hashes} == expected - {"live-demo-artifact-hashes.json"}
     assert "Tool count remains `13`" in index
@@ -2494,6 +2510,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "make live-demo-status" in evidence
     assert "make live-demo-preflight" in evidence
     assert "make live-demo-smoke" in evidence
+    assert "make live-demo-evidence-summary" in evidence
     assert "make operator-sandbox-demo-packet" in evidence
     assert "make agent-run-correlation-packet" in evidence
     assert "command execution skipped for fixture/test packet generation" in evidence
@@ -2508,21 +2525,33 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "If Something Fails" in operator_index
     assert "cleanup needed" in operator_index
     assert "Live Demo Operator Index" in operator_index_bundle
+    assert "Live Demo Evidence Summary" in summary
+    assert "signed_evidence_demo_summary" in summary
+    assert "negative_review_transcripts" in summary
+    assert "agent_run_correlation_packet" in summary
+    assert "operator_sandbox_demo_packet" in summary
+    assert "consolidated_review_packet" in summary
+    assert "does not include tokens, private keys, raw tool arguments" in summary
+    assert "Live Demo Evidence Summary" in summary_bundle
     assert "live-demo-preflight:" in makefile
     assert "live-demo-status:" in makefile
     assert "live-demo-smoke:" in makefile
+    assert "live-demo-evidence-summary:" in makefile
     assert "live-demo-packet:" in makefile
     assert "$(MAKE) live-demo-status" in makefile.partition("review-candidate:")[2]
     assert "$(MAKE) live-demo-smoke" in makefile.partition("review-candidate:")[2]
+    assert "$(MAKE) live-demo-evidence-summary" in makefile.partition("review-candidate:")[2]
     assert "$(MAKE) live-demo-packet" in makefile.partition("review-candidate:")[2]
     assert "make live-demo-preflight" in readme
     assert "make live-demo-status" in readme
     assert "make live-demo-smoke" in readme
+    assert "make live-demo-evidence-summary" in readme
     assert "make live-demo-packet" in readme
     assert "287 - Live demo preflight | Done" in backlog
     assert "288 - Live demo packet | Done" in backlog
     assert "289 - Live demo smoke evidence | Done" in backlog
     assert "290 - Live demo operator status | Done" in backlog
+    assert "291 - Live demo evidence summary | Done" in backlog
     assert "docs/codex/live-demo-runbook.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/live-demo-runbook.md" in docs_site
     assert "Live Demo Runbook" in review_index
@@ -2530,6 +2559,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "make live-demo-preflight" in runbook
     assert "make live-demo-status" in runbook
     assert "make live-demo-smoke" in runbook
+    assert "make live-demo-evidence-summary" in runbook
     assert "make live-demo-packet" in runbook
     assert "Failure Paths" in runbook
     for forbidden in [
@@ -2542,6 +2572,11 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         assert forbidden not in smoke_bundle
         assert forbidden not in operator_index
         assert forbidden not in operator_index_bundle
+        assert forbidden not in summary
+        assert forbidden not in summary_bundle
+    for forbidden in ["diff --git", "response body:"]:
+        assert forbidden not in summary
+        assert forbidden not in summary_bundle
 
 
 def test_review_docs_index_is_documented_and_wired() -> None:

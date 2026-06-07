@@ -307,6 +307,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 288 - Live demo packet | Done | [live-demo-runbook.md](live-demo-runbook.md), `make live-demo-packet`; bundles preflight, operator sandbox demo, Agent Run correlation, and no-new-powers evidence for local demo handoff. |
 | 289 - Live demo smoke evidence | Done | `make live-demo-smoke`; generates a secret-free live-demo smoke transcript copied into the live-demo packet without starting services. |
 | 290 - Live demo operator status | Done | `make live-demo-status`; prints read-only demo status and writes `LIVE_DEMO_INDEX.md` with artifact paths, localhost reachability, next actions, and cleanup reminders. |
+| 291 - Live demo evidence summary | Done | `make live-demo-evidence-summary`; generates a secret-free digest of live-demo status, smoke evidence, signed fixture evidence, negative transcripts, Agent Run correlation, operator sandbox packet, and consolidated handoff artifact presence. |
 
 ## Future Candidate Track
 

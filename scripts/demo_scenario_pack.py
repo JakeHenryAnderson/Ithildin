@@ -25,6 +25,7 @@ REQUIRED_COMMANDS = [
     "make live-demo-preflight",
     "make live-demo-status",
     "make live-demo-smoke",
+    "make live-demo-evidence-summary",
     "make live-demo-packet",
     "make negative-review-transcripts",
     "make signed-evidence-demo",

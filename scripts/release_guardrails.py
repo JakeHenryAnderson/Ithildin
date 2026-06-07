@@ -123,6 +123,7 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) agent-run-correlation-packet",
     "$(MAKE) live-demo-status",
     "$(MAKE) live-demo-smoke",
+    "$(MAKE) live-demo-evidence-summary",
     "$(MAKE) live-demo-packet",
     "$(MAKE) v06-review-dispatch-packets",
     "$(MAKE) review-packet-bundle",
