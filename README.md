@@ -207,6 +207,7 @@ checked with `make control-mapping-readiness`.
 - `make observability-readiness` - validate Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers readiness.
 - `make control-mapping-readiness` - validate observability, classification, control mapping, incident reconstruction, and no-new-powers readiness.
 - `make operator-sandbox-demo-readiness` - validate the operator-managed sandbox/workbench demo guide without adding sandbox lifecycle control.
+- `make operator-sandbox-demo-packet` - generate an ignored operator-managed sandbox/workbench demo review packet.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.

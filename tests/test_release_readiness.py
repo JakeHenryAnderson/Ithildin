@@ -53,6 +53,7 @@ from scripts import (
     observability_control_packet,
     observability_readiness,
     operator_action_states_check,
+    operator_sandbox_demo_packet,
     operator_sandbox_demo_readiness,
     packet_redaction_scan,
     patch_apply_external_review_packet,
@@ -7777,6 +7778,69 @@ def test_observability_control_packet_is_wired(tmp_path: Path) -> None:
     assert "data-classification-design.md" in contracts
     assert "control-mapping-design.md" in contracts
     assert "incident-reconstruction-guide.md" in contracts
+    assert "command execution skipped for fixture/test packet generation" in evidence
+
+
+def test_operator_sandbox_demo_packet_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "operator-sandbox-demo"
+
+    operator_sandbox_demo_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_OPERATOR_SANDBOX_DEMO_INDEX.md",
+        "01_OPERATOR_SANDBOX_DEMO_PROMPT.md",
+        "02_OPERATOR_SANDBOX_DEMO_GUIDE.md",
+        "03_SANDBOX_AND_AGENT_RUN_CONTRACTS.md",
+        "04_DEMO_COMMANDS_AND_SCENARIOS.md",
+        "05_OPERATOR_SANDBOX_DEMO_EVIDENCE.md",
+        "operator-sandbox-demo-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected
+    hashes = json.loads(
+        (output_dir / "operator-sandbox-demo-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+    assert hashed_paths == expected - {"operator-sandbox-demo-artifact-hashes.json"}
+    index = (output_dir / "00_OPERATOR_SANDBOX_DEMO_INDEX.md").read_text(encoding="utf-8")
+    prompt = (output_dir / "01_OPERATOR_SANDBOX_DEMO_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    guide = (output_dir / "02_OPERATOR_SANDBOX_DEMO_GUIDE.md").read_text(encoding="utf-8")
+    contracts = (output_dir / "03_SANDBOX_AND_AGENT_RUN_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    scenarios = (output_dir / "04_DEMO_COMMANDS_AND_SCENARIOS.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "05_OPERATOR_SANDBOX_DEMO_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert "make operator-sandbox-demo-packet" in readme
+    assert "operator-sandbox-demo-packet:" in makefile
+    assert "283 - Operator sandbox demo packet | Done" in backlog
+    assert "Tool count remains `13`" in index
+    assert "does not add runtime behavior" in index
+    assert "Finding namespace: `EXT-SANDBOX-DEMO-###`" in prompt
+    assert "operator-managed sandbox/workbench local demo" in prompt
+    assert "operator-managed-sandbox-demo-guide.md" in guide
+    assert "demo-scenario-pack-v2.md" in guide
+    assert "sandbox-workspace-boundary-contract.md" in contracts
+    assert "agent-run-operations-readiness-gate.md" in contracts
+    assert "mcp-client-examples.md" in scenarios
+    assert "negative-review-recipes.md" in scenarios
+    assert "make operator-sandbox-demo-readiness" in evidence
     assert "command execution skipped for fixture/test packet generation" in evidence
 
 
