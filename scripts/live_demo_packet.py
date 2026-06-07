@@ -14,7 +14,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import live_demo_smoke
+from scripts import live_demo_smoke, live_demo_status
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/live-demo")
 HASH_MANIFEST = "live-demo-artifact-hashes.json"
@@ -38,6 +38,7 @@ EVIDENCE_DOCS = [
     Path("docs/codex/incident-reconstruction-guide.md"),
 ]
 COMMANDS = [
+    ["make", "live-demo-status"],
     ["make", "live-demo-smoke"],
     ["make", "live-demo-preflight"],
     ["make", "operator-sandbox-demo-packet"],
@@ -92,6 +93,11 @@ def build_packet(
         output=output_dir / "LIVE_DEMO_SMOKE.md",
         run_commands=run_commands,
     )
+    live_demo_status.build_status(
+        repo_root=repo_root,
+        output=output_dir / "LIVE_DEMO_INDEX.md",
+        probe_endpoints=run_commands,
+    )
 
     context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
     files = {
@@ -105,7 +111,8 @@ def build_packet(
         ),
         "04_LIVE_DEMO_COMMAND_EVIDENCE.md": _command_evidence(run_commands=run_commands),
         "05_LIVE_DEMO_SMOKE.md": _observed_smoke(output_dir),
-        "06_LIVE_DEMO_ARTIFACT_POINTERS.md": _artifact_pointers(),
+        "06_LIVE_DEMO_OPERATOR_INDEX.md": _observed_index(output_dir),
+        "07_LIVE_DEMO_ARTIFACT_POINTERS.md": _artifact_pointers(),
     }
     for relative, content in files.items():
         (output_dir / relative).write_text(content.rstrip() + "\n", encoding="utf-8")
@@ -139,9 +146,11 @@ demo-readiness packet only.
 4. `03_LIVE_DEMO_EVIDENCE_CONTRACTS.md`
 5. `04_LIVE_DEMO_COMMAND_EVIDENCE.md`
 6. `05_LIVE_DEMO_SMOKE.md`
-7. `06_LIVE_DEMO_ARTIFACT_POINTERS.md`
-8. `LIVE_DEMO_SMOKE.md`
-9. `live-demo-artifact-hashes.json`
+7. `06_LIVE_DEMO_OPERATOR_INDEX.md`
+8. `07_LIVE_DEMO_ARTIFACT_POINTERS.md`
+9. `LIVE_DEMO_SMOKE.md`
+10. `LIVE_DEMO_INDEX.md`
+11. `live-demo-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -260,6 +269,28 @@ def _observed_smoke(output_dir: Path) -> str:
     return "\n".join(
         [
             "# Live Demo Smoke Transcript",
+            "",
+            "```md",
+            path.read_text(encoding="utf-8").rstrip(),
+            "```",
+        ]
+    )
+
+
+def _observed_index(output_dir: Path) -> str:
+    path = output_dir / "LIVE_DEMO_INDEX.md"
+    if not path.exists():
+        return "\n".join(
+            [
+                "# Live Demo Operator Index",
+                "",
+                "Artifact not present. Run `make live-demo-status` before packet generation,",
+                "or let `make live-demo-packet` generate it through command evidence.",
+            ]
+        )
+    return "\n".join(
+        [
+            "# Live Demo Operator Index",
             "",
             "```md",
             path.read_text(encoding="utf-8").rstrip(),

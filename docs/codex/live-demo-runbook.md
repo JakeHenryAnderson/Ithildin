@@ -18,6 +18,16 @@ ports, no Docker socket mount, read-only Compose posture, SQLite storage, teleme
 workspace inputs, no-new-powers, and tool-surface invariants. Warnings may appear for optional
 runtime signing keys or missing Docker Compose.
 
+For an operator-oriented snapshot at any point, run:
+
+```sh
+make live-demo-status
+```
+
+This writes `var/review-packets/v3/live-demo/LIVE_DEMO_INDEX.md`. It summarizes preflight state,
+Compose visibility, local API/UI reachability if the stack is already running, generated packet
+paths, next actions, and cleanup reminders. It does not start or stop services.
+
 ## Setup
 
 Use a local token before sharing the demo outside your machine:
@@ -52,6 +62,9 @@ Run the smoke check:
 make compose-smoke
 ```
 
+If `compose-smoke` fails, run `make live-demo-status` before troubleshooting. The status report
+will show whether the API and UI are reachable on localhost.
+
 ## Demo Flow
 
 Run the governed flow:
@@ -77,6 +90,7 @@ Open the review console at `http://127.0.0.1:5173` and inspect:
 Generate the local evidence packets:
 
 ```sh
+make live-demo-status
 make live-demo-smoke
 make operator-sandbox-demo-packet
 make agent-run-correlation-packet
@@ -94,6 +108,8 @@ Expected ignored outputs:
 - `var/review-packets/v0.2/signed-evidence-demo/`
 - `var/review-packets/v3/live-demo/`
 
+`make live-demo-status` writes `var/review-packets/v3/live-demo/LIVE_DEMO_INDEX.md`, a compact
+operator index with paths, status, and cleanup reminders.
 `make live-demo-smoke` writes `var/review-packets/v3/live-demo/LIVE_DEMO_SMOKE.md`, a
 secret-free transcript of readiness checks plus the operator-run sequence.
 
@@ -124,6 +140,16 @@ make compose-down
 
 The demo does not require committing ignored runtime evidence, local keys, SQLite databases, audit
 JSONL files, generated review packets, or seeded workspaces.
+
+## Failure Paths
+
+- Preflight failure: fix listed failures before starting services.
+- Compose unavailable: run non-Compose evidence commands and skip the local API/UI demo.
+- API unreachable: run `make compose-up`, then `make compose-smoke`.
+- UI unreachable: confirm the UI service is published on `127.0.0.1:5173`.
+- Demo flow failure: keep generated diagnostics, run `make live-demo-status`, and avoid rerunning
+  mutating steps until the failure is understood.
+- Cleanup uncertainty: run `make compose-down`.
 
 ## What The Demo Proves
 

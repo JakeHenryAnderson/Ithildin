@@ -23,6 +23,7 @@ PROJECT_MARKERS = [
     Path("tool-manifests.lock.json"),
 ]
 OBSERVED_COMMANDS = [
+    ["make", "live-demo-status"],
     ["make", "live-demo-preflight"],
     ["make", "operator-sandbox-demo-readiness"],
     ["make", "agent-run-operations-readiness"],
