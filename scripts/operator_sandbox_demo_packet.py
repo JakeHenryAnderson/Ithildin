@@ -40,6 +40,8 @@ DEMO_DOCS = [
     Path("docs/codex/negative-review-recipes.md"),
 ]
 EVIDENCE_COMMANDS = [
+    ["make", "operator-sandbox-demo-smoke"],
+    ["make", "operator-sandbox-dashboard-checklist"],
     ["make", "operator-sandbox-demo-readiness"],
     ["make", "agent-run-operations-readiness"],
     ["make", "demo-scenario-pack"],
@@ -100,6 +102,7 @@ def build_packet(
         "03_SANDBOX_AND_AGENT_RUN_CONTRACTS.md": _bundle_docs(repo_root, CONTRACT_DOCS),
         "04_DEMO_COMMANDS_AND_SCENARIOS.md": _bundle_docs(repo_root, DEMO_DOCS),
         "05_OPERATOR_SANDBOX_DEMO_EVIDENCE.md": _evidence(run_commands=run_commands),
+        "06_OPERATOR_SANDBOX_DEMO_OBSERVED_ARTIFACTS.md": _observed_artifacts(output_dir),
     }
     for relative, content in files.items():
         (output_dir / relative).write_text(content.rstrip() + "\n", encoding="utf-8")
@@ -134,7 +137,10 @@ only.
 4. `03_SANDBOX_AND_AGENT_RUN_CONTRACTS.md`
 5. `04_DEMO_COMMANDS_AND_SCENARIOS.md`
 6. `05_OPERATOR_SANDBOX_DEMO_EVIDENCE.md`
-7. `operator-sandbox-demo-artifact-hashes.json`
+7. `06_OPERATOR_SANDBOX_DEMO_OBSERVED_ARTIFACTS.md`
+8. `OPERATOR_SANDBOX_DEMO_SMOKE.md`
+9. `OPERATOR_SANDBOX_DASHBOARD_CHECKLIST.md`
+10. `operator-sandbox-demo-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -223,6 +229,38 @@ def _evidence(*, run_commands: bool) -> str:
         if output["stderr"]:
             lines.extend(["", "stderr:", "", "```text", str(output["stderr"]).rstrip(), "```"])
     return "\n".join(lines)
+
+
+def _observed_artifacts(output_dir: Path) -> str:
+    paths = [
+        output_dir / "OPERATOR_SANDBOX_DEMO_SMOKE.md",
+        output_dir / "OPERATOR_SANDBOX_DASHBOARD_CHECKLIST.md",
+    ]
+    parts = ["# Operator-Managed Sandbox Demo Observed Artifacts"]
+    for path in paths:
+        if path.exists():
+            parts.extend(
+                [
+                    "",
+                    f"## {path.name}",
+                    "",
+                    "```md",
+                    path.read_text(encoding="utf-8").rstrip(),
+                    "```",
+                ]
+            )
+        else:
+            parts.extend(
+                [
+                    "",
+                    f"## {path.name}",
+                    "",
+                    "Artifact not present. Run `make operator-sandbox-demo-smoke` and",
+                    "`make operator-sandbox-dashboard-checklist` before packet generation, or let",
+                    "`make operator-sandbox-demo-packet` generate them through command evidence.",
+                ]
+            )
+    return "\n".join(parts)
 
 
 def _command_output(command: list[str], *, run_commands: bool) -> dict[str, Any]:

@@ -161,7 +161,7 @@ checked with `make control-mapping-readiness`.
 - `make release-evidence-validate FILE=...` - validate a saved release evidence JSON snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
 - `make v04-review-packet` - print a v0.4 review-candidate packet snapshot.
-- `make review-candidate` - run the full local handoff gate, including focused v0.6 dispatch packets, and regenerate review artifacts.
+- `make review-candidate` - run the full local handoff gate, including focused v0.6 dispatch packets, the operator-managed sandbox demo packet, and regenerated review artifacts.
 - `make v05-review-candidate` - run the v0.5 handoff gate plus source-review artifact prep.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
@@ -207,6 +207,8 @@ checked with `make control-mapping-readiness`.
 - `make observability-readiness` - validate Agent Run, sandbox/workspace, SIEM-shaped evidence, next-capability, and no-new-powers readiness.
 - `make control-mapping-readiness` - validate observability, classification, control mapping, incident reconstruction, and no-new-powers readiness.
 - `make operator-sandbox-demo-readiness` - validate the operator-managed sandbox/workbench demo guide without adding sandbox lifecycle control.
+- `make operator-sandbox-demo-smoke` - generate a secret-free operator-managed sandbox/workbench demo smoke transcript.
+- `make operator-sandbox-dashboard-checklist` - generate a static review-console demo checklist from committed UI source/tests.
 - `make operator-sandbox-demo-packet` - generate an ignored operator-managed sandbox/workbench demo review packet.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.

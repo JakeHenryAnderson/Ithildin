@@ -53,8 +53,10 @@ from scripts import (
     observability_control_packet,
     observability_readiness,
     operator_action_states_check,
+    operator_sandbox_dashboard_checklist,
     operator_sandbox_demo_packet,
     operator_sandbox_demo_readiness,
+    operator_sandbox_demo_smoke,
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
@@ -1613,6 +1615,7 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) signed-evidence-demo",
         "$(MAKE) signed-evidence-demo-verify",
         "$(MAKE) negative-review-transcripts",
+        "$(MAKE) operator-sandbox-demo-packet",
         "$(MAKE) v06-review-dispatch-packets",
         "$(MAKE) review-packet-bundle",
         "$(MAKE) review-packet-consolidated",
@@ -7798,6 +7801,7 @@ def test_operator_sandbox_demo_packet_is_wired(tmp_path: Path) -> None:
         "03_SANDBOX_AND_AGENT_RUN_CONTRACTS.md",
         "04_DEMO_COMMANDS_AND_SCENARIOS.md",
         "05_OPERATOR_SANDBOX_DEMO_EVIDENCE.md",
+        "06_OPERATOR_SANDBOX_DEMO_OBSERVED_ARTIFACTS.md",
         "operator-sandbox-demo-artifact-hashes.json",
     }
     generated = {path.name for path in output_dir.iterdir()}
@@ -7823,13 +7827,21 @@ def test_operator_sandbox_demo_packet_is_wired(tmp_path: Path) -> None:
     evidence = (output_dir / "05_OPERATOR_SANDBOX_DEMO_EVIDENCE.md").read_text(
         encoding="utf-8"
     )
+    observed = (output_dir / "06_OPERATOR_SANDBOX_DEMO_OBSERVED_ARTIFACTS.md").read_text(
+        encoding="utf-8"
+    )
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert "make operator-sandbox-demo-packet" in readme
+    assert "make operator-sandbox-demo-smoke" in readme
+    assert "make operator-sandbox-dashboard-checklist" in readme
     assert "operator-sandbox-demo-packet:" in makefile
+    assert "operator-sandbox-demo-smoke:" in makefile
+    assert "operator-sandbox-dashboard-checklist:" in makefile
     assert "283 - Operator sandbox demo packet | Done" in backlog
+    assert "284 - Operator sandbox demo smoke evidence | Done" in backlog
     assert "Tool count remains `13`" in index
     assert "does not add runtime behavior" in index
     assert "Finding namespace: `EXT-SANDBOX-DEMO-###`" in prompt
@@ -7840,8 +7852,45 @@ def test_operator_sandbox_demo_packet_is_wired(tmp_path: Path) -> None:
     assert "agent-run-operations-readiness-gate.md" in contracts
     assert "mcp-client-examples.md" in scenarios
     assert "negative-review-recipes.md" in scenarios
+    assert "make operator-sandbox-demo-smoke" in evidence
+    assert "make operator-sandbox-dashboard-checklist" in evidence
     assert "make operator-sandbox-demo-readiness" in evidence
     assert "command execution skipped for fixture/test packet generation" in evidence
+    assert "OPERATOR_SANDBOX_DEMO_SMOKE.md" in observed
+    assert "OPERATOR_SANDBOX_DASHBOARD_CHECKLIST.md" in observed
+
+
+def test_operator_sandbox_demo_smoke_and_dashboard_artifacts_are_secret_free(
+    tmp_path: Path,
+) -> None:
+    smoke_path = operator_sandbox_demo_smoke.build_transcript(
+        repo_root=Path.cwd(),
+        output=tmp_path / "OPERATOR_SANDBOX_DEMO_SMOKE.md",
+        run_commands=False,
+    )
+    checklist_path = operator_sandbox_dashboard_checklist.build_checklist(
+        repo_root=Path.cwd(),
+        output=tmp_path / "OPERATOR_SANDBOX_DASHBOARD_CHECKLIST.md",
+    )
+
+    smoke = smoke_path.read_text(encoding="utf-8")
+    checklist = checklist_path.read_text(encoding="utf-8")
+    assert "make demo-seed" in smoke
+    assert "make compose-up" in smoke
+    assert "make demo-flow" in smoke
+    assert "operator-managed workspace or sandbox" in smoke
+    assert "does not prove OS isolation" in smoke
+    assert "System Trust" in checklist
+    assert "Agent Runs" in checklist
+    assert "Export Run Evidence" in checklist
+    for forbidden in [
+        "PRIVATE KEY",
+        "ITHILDIN_ADMIN_TOKEN=",
+        "demo-secret-token",
+        "BEGIN OPENSSH",
+    ]:
+        assert forbidden not in smoke
+        assert forbidden not in checklist
 
 
 def test_control_mapping_readiness_gate_is_wired() -> None:

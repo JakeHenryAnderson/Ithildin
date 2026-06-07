@@ -119,6 +119,7 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) signed-evidence-demo",
     "$(MAKE) signed-evidence-demo-verify",
     "$(MAKE) negative-review-transcripts",
+    "$(MAKE) operator-sandbox-demo-packet",
     "$(MAKE) v06-review-dispatch-packets",
     "$(MAKE) review-packet-bundle",
     "$(MAKE) review-packet-consolidated",
