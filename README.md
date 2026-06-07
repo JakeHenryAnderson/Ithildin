@@ -194,6 +194,8 @@ checked with `make control-mapping-readiness`.
 - `make agent-run-evidence-export-plan-check` - validate the implementation-planning packet for the future admin-only Agent Run evidence export endpoint.
 - `make agent-run-evidence-export-implementation-gate` - validate the bounded admin-only Agent Run evidence export endpoint.
 - `make agent-run-evidence-packet` - generate an ignored focused Agent Run evidence export design review packet.
+- `make agent-run-correlation-smoke` - generate a secret-free Agent Run correlation smoke transcript.
+- `make agent-run-correlation-packet` - generate an ignored Agent Run correlation review packet.
 - `make agent-run-evidence-readiness` - validate Agent Run evidence/export design, timeline, incident reconstruction, dashboard evidence, and no-new-powers wiring.
 - `make agent-run-operations-readiness` - validate the read-only Agent Run operations dashboard, filters, summaries, and no-new-powers wiring.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.

@@ -301,6 +301,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 282 - Operator sandbox demo readiness gate | Done | `make operator-sandbox-demo-readiness`; validates the operator-managed sandbox/workbench demo guide, demo scenario pack, no-new-powers, and tool-surface wiring without sandbox orchestration. |
 | 283 - Operator sandbox demo packet | Done | `make operator-sandbox-demo-packet`; generates an ignored guide/contract/scenario/evidence review packet for the operator-managed sandbox/workbench demo boundary. |
 | 284 - Operator sandbox demo smoke evidence | Done | `make operator-sandbox-demo-smoke` and `make operator-sandbox-dashboard-checklist`; generate secret-free smoke/checklist artifacts that are copied into the operator sandbox demo packet. |
+| 285 - Agent Run correlation smoke | Done | `make agent-run-correlation-smoke`; generates a secret-free transcript mapping mediated actions across run, tool-call, policy, approval, audit, diagnostics, and export evidence. |
+| 286 - Agent Run correlation packet | Done | `make agent-run-correlation-packet`; bundles Agent Run contracts, source pointers, smoke evidence, and command evidence for correlation review. |
 
 ## Future Candidate Track
 

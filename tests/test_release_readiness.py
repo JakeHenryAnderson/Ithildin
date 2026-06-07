@@ -11,6 +11,8 @@ import pytest
 
 from scripts import (
     accepted_risk_register,
+    agent_run_correlation_packet,
+    agent_run_correlation_smoke,
     agent_run_evidence_contract_check,
     agent_run_evidence_export_check,
     agent_run_evidence_export_implementation_gate,
@@ -1616,6 +1618,7 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) signed-evidence-demo-verify",
         "$(MAKE) negative-review-transcripts",
         "$(MAKE) operator-sandbox-demo-packet",
+        "$(MAKE) agent-run-correlation-packet",
         "$(MAKE) v06-review-dispatch-packets",
         "$(MAKE) review-packet-bundle",
         "$(MAKE) review-packet-consolidated",
@@ -7236,6 +7239,94 @@ def test_agent_run_evidence_packet_is_wired(tmp_path: Path) -> None:
     assert "docs/codex/signed-audit-exports.md" in contracts
     assert "agent-run-operations-readiness" in evidence
     assert "command execution skipped" in evidence
+
+
+def test_agent_run_correlation_smoke_and_packet_are_wired(tmp_path: Path) -> None:
+    smoke_path = agent_run_correlation_smoke.build_transcript(
+        repo_root=Path.cwd(),
+        output=tmp_path / "AGENT_RUN_CORRELATION_SMOKE.md",
+        run_commands=False,
+    )
+    smoke = smoke_path.read_text(encoding="utf-8")
+
+    assert "Agent Run Correlation Smoke Transcript" in smoke
+    assert "run_id" in smoke
+    assert "tool_call_id" in smoke
+    assert "approval_id" in smoke
+    assert "audit_event_hash" in smoke
+    assert "GET /runs/{run_id}/evidence-export" in smoke
+    assert "does not prove production security" in smoke
+    for forbidden in [
+        "PRIVATE KEY",
+        "ITHILDIN_ADMIN_TOKEN=",
+        "demo-secret-token",
+        "BEGIN OPENSSH",
+    ]:
+        assert forbidden not in smoke
+
+    output_dir = tmp_path / "agent-run-correlation"
+    agent_run_correlation_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_AGENT_RUN_CORRELATION_INDEX.md",
+        "01_AGENT_RUN_CORRELATION_PROMPT.md",
+        "02_AGENT_RUN_CORRELATION_CONTRACTS.md",
+        "03_AGENT_RUN_CORRELATION_SOURCE_POINTERS.md",
+        "04_AGENT_RUN_CORRELATION_SMOKE.md",
+        "05_AGENT_RUN_CORRELATION_COMMAND_EVIDENCE.md",
+        "agent-run-correlation-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected
+    hashes = json.loads(
+        (output_dir / "agent-run-correlation-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert {entry["path"] for entry in hashes} == expected - {
+        "agent-run-correlation-artifact-hashes.json"
+    }
+    index = (output_dir / "00_AGENT_RUN_CORRELATION_INDEX.md").read_text(encoding="utf-8")
+    prompt = (output_dir / "01_AGENT_RUN_CORRELATION_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    contracts = (output_dir / "02_AGENT_RUN_CORRELATION_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    pointers = (output_dir / "03_AGENT_RUN_CORRELATION_SOURCE_POINTERS.md").read_text(
+        encoding="utf-8"
+    )
+    smoke_bundle = (output_dir / "04_AGENT_RUN_CORRELATION_SMOKE.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "05_AGENT_RUN_CORRELATION_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert "make agent-run-correlation-smoke" in readme
+    assert "make agent-run-correlation-packet" in readme
+    assert "agent-run-correlation-smoke:" in makefile
+    assert "agent-run-correlation-packet:" in makefile
+    assert "285 - Agent Run correlation smoke | Done" in backlog
+    assert "286 - Agent Run correlation packet | Done" in backlog
+    assert "Tool count remains `13`" in index
+    assert "Finding namespace: `EXT-RUN-CORR-###`" in prompt
+    assert "agent-run-evidence-contract.md" in contracts
+    assert "agent-run-evidence-export-implementation.md" in contracts
+    assert "incident-reconstruction-guide.md" in contracts
+    assert "apps/api/src/ithildin_api/agent_runs.py" in pointers
+    assert "apps/ui/src/App.tsx" in pointers
+    assert "AGENT_RUN_CORRELATION_SMOKE.md" in smoke_bundle
+    assert "make agent-run-correlation-smoke" in evidence
+    assert "command execution skipped for fixture/test packet generation" in evidence
 
 
 def test_agent_run_evidence_readiness_gate_is_wired() -> None:

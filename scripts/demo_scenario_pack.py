@@ -20,6 +20,8 @@ REQUIRED_COMMANDS = [
     "make operator-sandbox-demo-smoke",
     "make operator-sandbox-dashboard-checklist",
     "make operator-sandbox-demo-packet",
+    "make agent-run-correlation-smoke",
+    "make agent-run-correlation-packet",
     "make negative-review-transcripts",
     "make signed-evidence-demo",
     "make signed-evidence-demo-verify",
