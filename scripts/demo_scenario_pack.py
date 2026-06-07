@@ -23,6 +23,7 @@ REQUIRED_COMMANDS = [
     "make agent-run-correlation-smoke",
     "make agent-run-correlation-packet",
     "make live-demo-preflight",
+    "make live-demo-smoke",
     "make live-demo-packet",
     "make negative-review-transcripts",
     "make signed-evidence-demo",

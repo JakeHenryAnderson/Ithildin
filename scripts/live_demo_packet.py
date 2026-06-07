@@ -14,6 +14,8 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from scripts import live_demo_smoke
+
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/live-demo")
 HASH_MANIFEST = "live-demo-artifact-hashes.json"
 PROJECT_MARKERS = [
@@ -36,6 +38,7 @@ EVIDENCE_DOCS = [
     Path("docs/codex/incident-reconstruction-guide.md"),
 ]
 COMMANDS = [
+    ["make", "live-demo-smoke"],
     ["make", "live-demo-preflight"],
     ["make", "operator-sandbox-demo-packet"],
     ["make", "agent-run-correlation-packet"],
@@ -84,6 +87,11 @@ def build_packet(
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
+    live_demo_smoke.build_transcript(
+        repo_root=repo_root,
+        output=output_dir / "LIVE_DEMO_SMOKE.md",
+        run_commands=run_commands,
+    )
 
     context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
     files = {
@@ -96,7 +104,8 @@ def build_packet(
             repo_root, EVIDENCE_DOCS, "Live Demo Evidence Contract Bundle"
         ),
         "04_LIVE_DEMO_COMMAND_EVIDENCE.md": _command_evidence(run_commands=run_commands),
-        "05_LIVE_DEMO_ARTIFACT_POINTERS.md": _artifact_pointers(),
+        "05_LIVE_DEMO_SMOKE.md": _observed_smoke(output_dir),
+        "06_LIVE_DEMO_ARTIFACT_POINTERS.md": _artifact_pointers(),
     }
     for relative, content in files.items():
         (output_dir / relative).write_text(content.rstrip() + "\n", encoding="utf-8")
@@ -129,8 +138,10 @@ demo-readiness packet only.
 3. `02_LIVE_DEMO_RUNBOOK.md`
 4. `03_LIVE_DEMO_EVIDENCE_CONTRACTS.md`
 5. `04_LIVE_DEMO_COMMAND_EVIDENCE.md`
-6. `05_LIVE_DEMO_ARTIFACT_POINTERS.md`
-7. `live-demo-artifact-hashes.json`
+6. `05_LIVE_DEMO_SMOKE.md`
+7. `06_LIVE_DEMO_ARTIFACT_POINTERS.md`
+8. `LIVE_DEMO_SMOKE.md`
+9. `live-demo-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -233,6 +244,28 @@ Generate these ignored artifacts during a full handoff:
 These artifacts are local evidence and reviewer convenience only. They are not notarization, SIEM
 custody, production compliance evidence, or proof of activity outside Ithildin-mediated actions.
 """
+
+
+def _observed_smoke(output_dir: Path) -> str:
+    path = output_dir / "LIVE_DEMO_SMOKE.md"
+    if not path.exists():
+        return "\n".join(
+            [
+                "# Live Demo Smoke Transcript",
+                "",
+                "Artifact not present. Run `make live-demo-smoke` before packet generation,",
+                "or let `make live-demo-packet` generate it through command evidence.",
+            ]
+        )
+    return "\n".join(
+        [
+            "# Live Demo Smoke Transcript",
+            "",
+            "```md",
+            path.read_text(encoding="utf-8").rstrip(),
+            "```",
+        ]
+    )
 
 
 def _require_project_root(repo_root: Path) -> None:

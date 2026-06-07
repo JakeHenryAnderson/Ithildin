@@ -18,9 +18,9 @@ cd /Users/jake/Documents/Codex/Ithildin
 
 Run `make review-candidate` to execute the full local handoff sequence. It runs `release-check`,
 `filesystem-contract-check`, `signed-evidence-demo`, `negative-review-transcripts`,
-operator sandbox and live-demo packets, `v06-review-dispatch-packets`, `review-packet-bundle`,
-`review-packet-consolidated`, packet redaction scan, and `docs-site`, then prints the consolidated
-packet path. `release-check` includes
+operator sandbox packet, Agent Run correlation packet, `live-demo-smoke`, `live-demo-packet`,
+`v06-review-dispatch-packets`, `review-packet-bundle`, `review-packet-consolidated`, packet
+redaction scan, and `docs-site`, then prints the consolidated packet path. `release-check` includes
 `make adversarial-corpus-check`, `make resource-limit-check`, and `make demo-scenario-pack`. Use
 [demo-scenario-pack-v2.md](demo-scenario-pack-v2.md) as the concise scenario map for positive,
 negative, signing, filesystem, and review-packet demos.

@@ -213,6 +213,7 @@ checked with `make control-mapping-readiness`.
 - `make operator-sandbox-dashboard-checklist` - generate a static review-console demo checklist from committed UI source/tests.
 - `make operator-sandbox-demo-packet` - generate an ignored operator-managed sandbox/workbench demo review packet.
 - `make live-demo-preflight` - run a secret-free read-only preflight for the local workbench demo.
+- `make live-demo-smoke` - generate a secret-free live-demo smoke transcript without starting services.
 - `make live-demo-packet` - generate an ignored live-demo readiness packet tying together preflight, sandbox demo, Agent Run correlation, and no-new-powers evidence.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.

@@ -305,6 +305,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 286 - Agent Run correlation packet | Done | `make agent-run-correlation-packet`; bundles Agent Run contracts, source pointers, smoke evidence, and command evidence for correlation review. |
 | 287 - Live demo preflight | Done | `make live-demo-preflight`; validates secret-free local demo posture, loopback Compose bindings, no Docker socket mount, tool count, and no-new-powers evidence without starting services. |
 | 288 - Live demo packet | Done | [live-demo-runbook.md](live-demo-runbook.md), `make live-demo-packet`; bundles preflight, operator sandbox demo, Agent Run correlation, and no-new-powers evidence for local demo handoff. |
+| 289 - Live demo smoke evidence | Done | `make live-demo-smoke`; generates a secret-free live-demo smoke transcript copied into the live-demo packet without starting services. |
 
 ## Future Candidate Track
 

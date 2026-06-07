@@ -51,6 +51,7 @@ from scripts import (
     internal_review_packet,
     live_demo_packet,
     live_demo_preflight,
+    live_demo_smoke,
     mcp_ingress_source_review_bundle,
     next_capability_readiness,
     no_new_powers_guardrail,
@@ -1621,6 +1622,7 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) negative-review-transcripts",
         "$(MAKE) operator-sandbox-demo-packet",
         "$(MAKE) agent-run-correlation-packet",
+        "$(MAKE) live-demo-smoke",
         "$(MAKE) live-demo-packet",
         "$(MAKE) v06-review-dispatch-packets",
         "$(MAKE) review-packet-bundle",
@@ -2392,6 +2394,7 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
     for required in [
         "make demo-flow",
         "make live-demo-preflight",
+        "make live-demo-smoke",
         "make live-demo-packet",
         "make negative-review-transcripts",
         "make signed-evidence-demo",
@@ -2413,6 +2416,11 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
 def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     report = live_demo_preflight.build_report(Path.cwd())
     output_dir = tmp_path / "live-demo"
+    smoke_path = live_demo_smoke.build_transcript(
+        repo_root=Path.cwd(),
+        output=output_dir / "LIVE_DEMO_SMOKE.md",
+        run_commands=False,
+    )
 
     live_demo_packet.build_packet(
         repo_root=Path.cwd(),
@@ -2427,7 +2435,9 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         "02_LIVE_DEMO_RUNBOOK.md",
         "03_LIVE_DEMO_EVIDENCE_CONTRACTS.md",
         "04_LIVE_DEMO_COMMAND_EVIDENCE.md",
-        "05_LIVE_DEMO_ARTIFACT_POINTERS.md",
+        "05_LIVE_DEMO_SMOKE.md",
+        "06_LIVE_DEMO_ARTIFACT_POINTERS.md",
+        "LIVE_DEMO_SMOKE.md",
         "live-demo-artifact-hashes.json",
     }
     generated = {path.name for path in output_dir.iterdir()}
@@ -2439,7 +2449,9 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         encoding="utf-8"
     )
     evidence = (output_dir / "04_LIVE_DEMO_COMMAND_EVIDENCE.md").read_text(encoding="utf-8")
-    pointers = (output_dir / "05_LIVE_DEMO_ARTIFACT_POINTERS.md").read_text(encoding="utf-8")
+    smoke_bundle = (output_dir / "05_LIVE_DEMO_SMOKE.md").read_text(encoding="utf-8")
+    pointers = (output_dir / "06_LIVE_DEMO_ARTIFACT_POINTERS.md").read_text(encoding="utf-8")
+    smoke = smoke_path.read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
@@ -2464,24 +2476,42 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "operator-managed-sandbox-demo-guide.md" in contracts
     assert "agent-run-evidence-export-implementation.md" in contracts
     assert "make live-demo-preflight" in evidence
+    assert "make live-demo-smoke" in evidence
     assert "make operator-sandbox-demo-packet" in evidence
     assert "make agent-run-correlation-packet" in evidence
     assert "command execution skipped for fixture/test packet generation" in evidence
     assert "var/review-packets/v3/operator-sandbox-demo/" in pointers
     assert "var/review-packets/v3/agent-run-correlation/" in pointers
+    assert "Live Demo Smoke Transcript" in smoke
+    assert "make compose-up" in smoke
+    assert "does not prove OS isolation" in smoke
+    assert "Operator-Run Sequence" in smoke_bundle
     assert "live-demo-preflight:" in makefile
+    assert "live-demo-smoke:" in makefile
     assert "live-demo-packet:" in makefile
+    assert "$(MAKE) live-demo-smoke" in makefile.partition("review-candidate:")[2]
     assert "$(MAKE) live-demo-packet" in makefile.partition("review-candidate:")[2]
     assert "make live-demo-preflight" in readme
+    assert "make live-demo-smoke" in readme
     assert "make live-demo-packet" in readme
     assert "287 - Live demo preflight | Done" in backlog
     assert "288 - Live demo packet | Done" in backlog
+    assert "289 - Live demo smoke evidence | Done" in backlog
     assert "docs/codex/live-demo-runbook.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/live-demo-runbook.md" in docs_site
     assert "Live Demo Runbook" in review_index
     assert "live-demo-runbook.md" in reproduction_map
     assert "make live-demo-preflight" in runbook
+    assert "make live-demo-smoke" in runbook
     assert "make live-demo-packet" in runbook
+    for forbidden in [
+        "PRIVATE KEY",
+        "ITHILDIN_ADMIN_TOKEN=",
+        "dev-admin-token-change-me",
+        "BEGIN OPENSSH",
+    ]:
+        assert forbidden not in smoke
+        assert forbidden not in smoke_bundle
 
 
 def test_review_docs_index_is_documented_and_wired() -> None:

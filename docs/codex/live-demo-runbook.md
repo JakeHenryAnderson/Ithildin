@@ -77,6 +77,7 @@ Open the review console at `http://127.0.0.1:5173` and inspect:
 Generate the local evidence packets:
 
 ```sh
+make live-demo-smoke
 make operator-sandbox-demo-packet
 make agent-run-correlation-packet
 make negative-review-transcripts
@@ -92,6 +93,9 @@ Expected ignored outputs:
 - `var/review-packets/v0.2/negative-review-transcripts/`
 - `var/review-packets/v0.2/signed-evidence-demo/`
 - `var/review-packets/v3/live-demo/`
+
+`make live-demo-smoke` writes `var/review-packets/v3/live-demo/LIVE_DEMO_SMOKE.md`, a
+secret-free transcript of readiness checks plus the operator-run sequence.
 
 For the full handoff bundle, run:
 
