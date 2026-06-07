@@ -4,6 +4,7 @@ Status: demo/readiness guide. This guide does not add runtime behavior, API endp
 tool manifests, policy rules, executors, sandbox orchestration, SIEM adapters, production identity,
 runtime Postgres, hosted telemetry, shell, Docker, Kubernetes, browser automation, arbitrary HTTP,
 broad filesystem writes, or new governed tool powers.
+It does not add sandbox lifecycle control.
 
 This guide shows how to demonstrate Ithildin as the governed control panel around an
 operator-managed workspace or sandbox. The operator is responsible for starting, isolating,

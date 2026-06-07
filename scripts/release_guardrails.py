@@ -80,6 +80,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "incident-reconstruction-check",
     "observability-readiness",
     "control-mapping-readiness",
+    "operator-sandbox-demo-readiness",
     "project-manifest-summary-proposal-check",
     "project-manifest-summary-implementation-plan-check",
     "project-manifest-summary-implementation-gate",

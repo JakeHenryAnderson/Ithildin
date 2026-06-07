@@ -53,6 +53,7 @@ from scripts import (
     observability_control_packet,
     observability_readiness,
     operator_action_states_check,
+    operator_sandbox_demo_readiness,
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
@@ -7819,6 +7820,51 @@ def test_control_mapping_readiness_gate_is_wired() -> None:
         "no new powerful tool classes",
     ]:
         assert phrase in gate
+
+
+def test_operator_sandbox_demo_readiness_gate_is_wired() -> None:
+    report = operator_sandbox_demo_readiness.build_report(Path.cwd())
+    guide = Path("docs/codex/operator-managed-sandbox-demo-guide.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_behavior_allowed"] is False
+    assert "make operator-sandbox-demo-readiness" in readme
+    assert "operator-sandbox-demo-readiness:" in makefile
+    assert "operator-sandbox-demo-readiness" in release_check_body
+    assert "operator-sandbox-demo-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/operator-managed-sandbox-demo-guide.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/operator-managed-sandbox-demo-guide.md" in docs_site
+    assert "282 - Operator sandbox demo readiness gate | Done" in backlog
+    for phrase in [
+        "Status: demo/readiness guide",
+        "operator-managed workspace or sandbox",
+        "make demo-seed",
+        "make compose-up",
+        "make compose-smoke",
+        "uv run python -m ithildin_mcp_server",
+        "Agent Run filters and summary chips",
+        "Export Run Evidence",
+        "GET /runs/{run_id}/evidence-export",
+        "make negative-review-transcripts",
+        "make signed-evidence-demo",
+        "make signed-evidence-demo-verify",
+        "Ithildin only mediates",
+        "does not add runtime behavior",
+        "does not add sandbox lifecycle",
+        "The wrong conclusion",
+    ]:
+        assert phrase in guide
 
 
 def test_observability_readiness_gate_is_wired() -> None:

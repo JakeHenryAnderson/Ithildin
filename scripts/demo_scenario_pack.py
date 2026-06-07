@@ -16,6 +16,7 @@ REQUIRED_COMMANDS = [
     "make compose-up",
     "make compose-smoke",
     "make demo-flow",
+    "make operator-sandbox-demo-readiness",
     "make negative-review-transcripts",
     "make signed-evidence-demo",
     "make signed-evidence-demo-verify",

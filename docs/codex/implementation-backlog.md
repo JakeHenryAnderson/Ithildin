@@ -298,6 +298,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 279 - Agent Run evidence export endpoint | Done | [agent-run-evidence-export-implementation.md](agent-run-evidence-export-implementation.md), `make agent-run-evidence-export-implementation-gate`; adds bounded admin-only read export for one secret-free Agent Run evidence bundle. |
 | 280 - Agent Run operations dashboard | Done | [agent-run-operations-readiness-gate.md](agent-run-operations-readiness-gate.md), `make agent-run-operations-readiness`; adds bounded read-only `/runs` filters/summaries and review-console operations evidence without run controls. |
 | 281 - Operator-managed sandbox demo guide | Done | [operator-managed-sandbox-demo-guide.md](operator-managed-sandbox-demo-guide.md); documents the workbench demo flow around operator-managed workspace/sandbox posture without sandbox lifecycle control. |
+| 282 - Operator sandbox demo readiness gate | Done | `make operator-sandbox-demo-readiness`; validates the operator-managed sandbox/workbench demo guide, demo scenario pack, no-new-powers, and tool-surface wiring without sandbox orchestration. |
 
 ## Future Candidate Track
 
