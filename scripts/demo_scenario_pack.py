@@ -22,6 +22,8 @@ REQUIRED_COMMANDS = [
     "make operator-sandbox-demo-packet",
     "make agent-run-correlation-smoke",
     "make agent-run-correlation-packet",
+    "make live-demo-preflight",
+    "make live-demo-packet",
     "make negative-review-transcripts",
     "make signed-evidence-demo",
     "make signed-evidence-demo-verify",

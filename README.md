@@ -161,7 +161,7 @@ checked with `make control-mapping-readiness`.
 - `make release-evidence-validate FILE=...` - validate a saved release evidence JSON snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
 - `make v04-review-packet` - print a v0.4 review-candidate packet snapshot.
-- `make review-candidate` - run the full local handoff gate, including focused v0.6 dispatch packets, the operator-managed sandbox demo packet, and regenerated review artifacts.
+- `make review-candidate` - run the full local handoff gate, including focused v0.6 dispatch packets, operator-managed sandbox and live-demo packets, and regenerated review artifacts.
 - `make v05-review-candidate` - run the v0.5 handoff gate plus source-review artifact prep.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
@@ -212,6 +212,8 @@ checked with `make control-mapping-readiness`.
 - `make operator-sandbox-demo-smoke` - generate a secret-free operator-managed sandbox/workbench demo smoke transcript.
 - `make operator-sandbox-dashboard-checklist` - generate a static review-console demo checklist from committed UI source/tests.
 - `make operator-sandbox-demo-packet` - generate an ignored operator-managed sandbox/workbench demo review packet.
+- `make live-demo-preflight` - run a secret-free read-only preflight for the local workbench demo.
+- `make live-demo-packet` - generate an ignored live-demo readiness packet tying together preflight, sandbox demo, Agent Run correlation, and no-new-powers evidence.
 - `make signed-evidence-demo` - generate ignored non-production locally signed evidence fixtures.
 - `make signed-evidence-demo-verify` - verify the non-production signed-evidence demo artifacts.
 - `make negative-review-transcripts` - generate ignored observed denial transcripts for review.
@@ -354,8 +356,9 @@ make docs-site
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
 `make review-candidate` before tagging or external review handoff. It runs the release gate,
-filesystem contract check, signed evidence demo, negative transcripts, focused v0.6 dispatch
-packets, review bundle, consolidated packet, packet redaction scan, and docs site. Use
+filesystem contract check, signed evidence demo, negative transcripts, operator sandbox and
+live-demo packets, focused v0.6 dispatch packets, review bundle, consolidated packet, packet
+redaction scan, and docs site. Use
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
 the full evidence sequence and locate generated hashes/transcripts.
 The release-evidence schema and validation command are documented in

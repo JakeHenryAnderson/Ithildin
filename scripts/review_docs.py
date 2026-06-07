@@ -38,6 +38,7 @@ REVIEW_DOCS = [
     "docs/codex/resource-limit-sanity.md",
     "docs/codex/ci-platform-plan.md",
     "docs/codex/demo-scenario-pack-v2.md",
+    "docs/codex/live-demo-runbook.md",
     "docs/codex/audit-export-lifecycle-diagnostics.md",
     "docs/codex/manifest-validation-suite.md",
     "docs/codex/manifest-change-review-workflow.md",

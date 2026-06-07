@@ -303,6 +303,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 284 - Operator sandbox demo smoke evidence | Done | `make operator-sandbox-demo-smoke` and `make operator-sandbox-dashboard-checklist`; generate secret-free smoke/checklist artifacts that are copied into the operator sandbox demo packet. |
 | 285 - Agent Run correlation smoke | Done | `make agent-run-correlation-smoke`; generates a secret-free transcript mapping mediated actions across run, tool-call, policy, approval, audit, diagnostics, and export evidence. |
 | 286 - Agent Run correlation packet | Done | `make agent-run-correlation-packet`; bundles Agent Run contracts, source pointers, smoke evidence, and command evidence for correlation review. |
+| 287 - Live demo preflight | Done | `make live-demo-preflight`; validates secret-free local demo posture, loopback Compose bindings, no Docker socket mount, tool count, and no-new-powers evidence without starting services. |
+| 288 - Live demo packet | Done | [live-demo-runbook.md](live-demo-runbook.md), `make live-demo-packet`; bundles preflight, operator sandbox demo, Agent Run correlation, and no-new-powers evidence for local demo handoff. |
 
 ## Future Candidate Track
 

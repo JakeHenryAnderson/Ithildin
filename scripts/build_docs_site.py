@@ -169,6 +169,7 @@ DEFAULT_DOCS = [
     "docs/codex/resource-limit-sanity.md",
     "docs/codex/ci-platform-plan.md",
     "docs/codex/demo-scenario-pack-v2.md",
+    "docs/codex/live-demo-runbook.md",
     "docs/codex/manifest-validation-suite.md",
     "docs/codex/policy-parity-harness.md",
     "docs/codex/opa-parity-decision.md",

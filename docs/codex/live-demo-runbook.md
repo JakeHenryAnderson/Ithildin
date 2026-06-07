@@ -1,0 +1,134 @@
+# Live Demo Runbook
+
+This runbook prepares a local Ithildin demo that shows a governed control plane around an
+operator-managed workspace or sandbox. It is a local-preview demo only. Ithildin does not start
+containers, mount Docker sockets, run shell commands through governed tools, manage Kubernetes,
+provide OS isolation, provide SIEM custody, or claim production security.
+
+## Preflight
+
+Run the secret-free preflight first:
+
+```sh
+make live-demo-preflight
+```
+
+Expected result: the report passes core checks for repo markers, tool count `13`, loopback Compose
+ports, no Docker socket mount, read-only Compose posture, SQLite storage, telemetry disabled, demo
+workspace inputs, no-new-powers, and tool-surface invariants. Warnings may appear for optional
+runtime signing keys or missing Docker Compose.
+
+## Setup
+
+Use a local token before sharing the demo outside your machine:
+
+```sh
+make admin-token-generate
+```
+
+Copy the generated value into `.env` if needed. The sample `.env.example` token is acceptable only
+for a local private demo and should remain visibly treated as dev-token mode.
+
+Seed the ignored demo workspace:
+
+```sh
+make demo-seed
+```
+
+Start the local Compose stack:
+
+```sh
+make compose-up
+```
+
+Expected local endpoints:
+
+- API: `http://127.0.0.1:8000`
+- UI: `http://127.0.0.1:5173`
+
+Run the smoke check:
+
+```sh
+make compose-smoke
+```
+
+## Demo Flow
+
+Run the governed flow:
+
+```sh
+make demo-flow
+```
+
+This demonstrates MCP-mediated reads, redaction, patch proposal, approval-gated patch apply, audit
+verification, and export against the seeded demo workspace. It mutates only ignored demo workspace
+content.
+
+Open the review console at `http://127.0.0.1:5173` and inspect:
+
+- System Trust warnings and tool count;
+- registered tools and manifest evidence;
+- approval binding evidence;
+- Agent Runs filters, summary, selected timeline, and read-only evidence export;
+- signed export buttons and audit status.
+
+## Evidence Commands
+
+Generate the local evidence packets:
+
+```sh
+make operator-sandbox-demo-packet
+make agent-run-correlation-packet
+make negative-review-transcripts
+make signed-evidence-demo
+make signed-evidence-demo-verify
+make live-demo-packet
+```
+
+Expected ignored outputs:
+
+- `var/review-packets/v3/operator-sandbox-demo/`
+- `var/review-packets/v3/agent-run-correlation/`
+- `var/review-packets/v0.2/negative-review-transcripts/`
+- `var/review-packets/v0.2/signed-evidence-demo/`
+- `var/review-packets/v3/live-demo/`
+
+For the full handoff bundle, run:
+
+```sh
+make review-candidate
+```
+
+## MCP Client Companion
+
+For stdio MCP client demos, use:
+
+```sh
+uv run python -m ithildin_mcp_server
+```
+
+Use the local MCP recipes in [mcp-inspector-recipes.md](mcp-inspector-recipes.md). The MCP adapter
+stays an ingress adapter and does not own policy, execution, redaction, or audit semantics.
+
+## Cleanup
+
+Stop the local Compose stack:
+
+```sh
+make compose-down
+```
+
+The demo does not require committing ignored runtime evidence, local keys, SQLite databases, audit
+JSONL files, generated review packets, or seeded workspaces.
+
+## What The Demo Proves
+
+The demo can show that local-preview handoff artifacts are reproducible, the operator-managed
+workspace story is coherent, and observed mediated actions can be correlated across Ithildin's
+dashboard, Agent Run evidence, audit events, approvals, diagnostics, and local evidence packets.
+
+## What The Demo Does Not Prove
+
+The demo does not prove OS isolation, production deployment safety, compliance automation, SIEM
+custody, host compromise resistance, production identity, remote MCP safety, broad capability
+approval, or activity outside Ithildin-mediated actions.

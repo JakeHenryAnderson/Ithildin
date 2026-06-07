@@ -49,6 +49,8 @@ from scripts import (
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
+    live_demo_packet,
+    live_demo_preflight,
     mcp_ingress_source_review_bundle,
     next_capability_readiness,
     no_new_powers_guardrail,
@@ -1619,6 +1621,7 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) negative-review-transcripts",
         "$(MAKE) operator-sandbox-demo-packet",
         "$(MAKE) agent-run-correlation-packet",
+        "$(MAKE) live-demo-packet",
         "$(MAKE) v06-review-dispatch-packets",
         "$(MAKE) review-packet-bundle",
         "$(MAKE) review-packet-consolidated",
@@ -2388,6 +2391,8 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
 
     for required in [
         "make demo-flow",
+        "make live-demo-preflight",
+        "make live-demo-packet",
         "make negative-review-transcripts",
         "make signed-evidence-demo",
         "make review-candidate",
@@ -2403,6 +2408,80 @@ def test_demo_scenario_pack_is_documented_and_wired() -> None:
     assert "Task 146 scenario pack maps" in matrix
     assert "docs/codex/demo-scenario-pack-v2.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/demo-scenario-pack-v2.md" in docs_site
+
+
+def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
+    report = live_demo_preflight.build_report(Path.cwd())
+    output_dir = tmp_path / "live-demo"
+
+    live_demo_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_LIVE_DEMO_INDEX.md",
+        "01_LIVE_DEMO_REVIEW_PROMPT.md",
+        "02_LIVE_DEMO_RUNBOOK.md",
+        "03_LIVE_DEMO_EVIDENCE_CONTRACTS.md",
+        "04_LIVE_DEMO_COMMAND_EVIDENCE.md",
+        "05_LIVE_DEMO_ARTIFACT_POINTERS.md",
+        "live-demo-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads((output_dir / "live-demo-artifact-hashes.json").read_text(encoding="utf-8"))
+    index = (output_dir / "00_LIVE_DEMO_INDEX.md").read_text(encoding="utf-8")
+    prompt = (output_dir / "01_LIVE_DEMO_REVIEW_PROMPT.md").read_text(encoding="utf-8")
+    runbook_bundle = (output_dir / "02_LIVE_DEMO_RUNBOOK.md").read_text(encoding="utf-8")
+    contracts = (output_dir / "03_LIVE_DEMO_EVIDENCE_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "04_LIVE_DEMO_COMMAND_EVIDENCE.md").read_text(encoding="utf-8")
+    pointers = (output_dir / "05_LIVE_DEMO_ARTIFACT_POINTERS.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    runbook = Path("docs/codex/live-demo-runbook.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["new_power_classes_allowed"] is False
+    assert report["docker_socket_mounted"] is False
+    assert report["loopback_ports_valid"] is True
+    assert generated == expected
+    assert {entry["path"] for entry in hashes} == expected - {"live-demo-artifact-hashes.json"}
+    assert "Tool count remains `13`" in index
+    assert "Finding namespace: `EXT-LIVE-DEMO-###`" in prompt
+    assert "live-demo-runbook.md" in runbook_bundle
+    assert "demo-scenario-pack-v2.md" in runbook_bundle
+    assert "operator-managed-sandbox-demo-guide.md" in contracts
+    assert "agent-run-evidence-export-implementation.md" in contracts
+    assert "make live-demo-preflight" in evidence
+    assert "make operator-sandbox-demo-packet" in evidence
+    assert "make agent-run-correlation-packet" in evidence
+    assert "command execution skipped for fixture/test packet generation" in evidence
+    assert "var/review-packets/v3/operator-sandbox-demo/" in pointers
+    assert "var/review-packets/v3/agent-run-correlation/" in pointers
+    assert "live-demo-preflight:" in makefile
+    assert "live-demo-packet:" in makefile
+    assert "$(MAKE) live-demo-packet" in makefile.partition("review-candidate:")[2]
+    assert "make live-demo-preflight" in readme
+    assert "make live-demo-packet" in readme
+    assert "287 - Live demo preflight | Done" in backlog
+    assert "288 - Live demo packet | Done" in backlog
+    assert "docs/codex/live-demo-runbook.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/live-demo-runbook.md" in docs_site
+    assert "Live Demo Runbook" in review_index
+    assert "live-demo-runbook.md" in reproduction_map
+    assert "make live-demo-preflight" in runbook
+    assert "make live-demo-packet" in runbook
 
 
 def test_review_docs_index_is_documented_and_wired() -> None:

@@ -33,6 +33,7 @@ externally closed.
 - [Test Determinism Gate](test-determinism-gate.md)
 - [Resource Limit Sanity](resource-limit-sanity.md)
 - [Demo Scenario Pack v2](demo-scenario-pack-v2.md)
+- [Live Demo Runbook](live-demo-runbook.md)
 
 ## Review Closure
 
