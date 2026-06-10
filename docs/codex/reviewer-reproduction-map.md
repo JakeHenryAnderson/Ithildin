@@ -19,14 +19,21 @@ cd /Users/jake/Documents/Codex/Ithildin
 Run `make review-candidate` to execute the full local handoff sequence. It runs `release-check`,
 `filesystem-contract-check`, `signed-evidence-demo`, `negative-review-transcripts`,
 operator sandbox packet, Agent Run correlation packet, `live-demo-status`, `live-demo-smoke`,
-`live-demo-evidence-summary`, `live-demo-packet`, `v06-review-dispatch-packets`, `review-packet-bundle`,
+`live-demo-evidence-summary`, `live-demo-packet`, `workbench-evidence-packet`,
+`v06-review-dispatch-packets`, `review-packet-bundle`,
 `review-packet-consolidated`, packet redaction scan, and `docs-site`, then prints the consolidated
 packet path. `release-check` includes
-`make adversarial-corpus-check`, `make resource-limit-check`, and `make demo-scenario-pack`. Use
+`make workbench-readiness`, `make adversarial-corpus-check`, `make resource-limit-check`, and
+`make demo-scenario-pack`. Use
 [demo-scenario-pack-v2.md](demo-scenario-pack-v2.md) as the concise scenario map for positive,
 negative, signing, filesystem, and review-packet demos.
 Use [live-demo-runbook.md](live-demo-runbook.md) for the local workbench demo sequence and
 [review-docs-index.md](review-docs-index.md) to orient reviewers before attaching the packet.
+
+For an evidence-only local workbench wrapper, run `make demo-workbench`. It regenerates live-demo
+status/smoke/summary, operator sandbox, Agent Run correlation, and operator workbench packet
+artifacts without starting services or approving actions. Inspect the focused packet with
+`make workbench-evidence-packet`.
 
 Run `make internal-review-packet` when you want v2 local AI/subagent source-review prompts under
 `var/review-packets/v0.3/internal-ai-review-packet/`. That packet is internal pressure-test

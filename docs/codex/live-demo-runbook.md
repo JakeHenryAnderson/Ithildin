@@ -124,6 +124,16 @@ For the full handoff bundle, run:
 make review-candidate
 ```
 
+For an evidence-only operator workbench wrapper that does not start services, call governed tools,
+or approve actions, run:
+
+```sh
+make demo-workbench
+```
+
+This refreshes live-demo status, smoke, evidence summary, operator sandbox packet, Agent Run
+correlation packet, and the focused operator workbench packet.
+
 ## MCP Client Companion
 
 For stdio MCP client demos, use:

@@ -199,6 +199,9 @@ checked with `make control-mapping-readiness`.
 - `make agent-run-evidence-readiness` - validate Agent Run evidence/export design, timeline, incident reconstruction, dashboard evidence, and no-new-powers wiring.
 - `make agent-run-operations-readiness` - validate the read-only Agent Run operations dashboard, filters, summaries, and no-new-powers wiring.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
+- `make workbench-readiness` - validate the local operator workbench surface, docs, evidence packet wiring, and no-new-powers posture.
+- `make workbench-evidence-packet` - generate an ignored operator workbench evidence packet tying together Agent Runs, approvals, audit, live demo, sandbox/workspace posture, and handoff artifacts.
+- `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
 - `make dashboard-evidence-checklist-check` - validate the operator-facing evidence dashboard review checklist.
 - `make siem-evidence-design-check` - validate the future SIEM-shaped evidence design without adding adapters.
@@ -359,9 +362,9 @@ make docs-site
 The corrected public-preview release evidence is preserved in
 [docs/codex/v0.1-release-evidence.md](docs/codex/v0.1-release-evidence.md). Rerun
 `make review-candidate` before tagging or external review handoff. It runs the release gate,
-filesystem contract check, signed evidence demo, negative transcripts, operator sandbox and
-live-demo packets, focused v0.6 dispatch packets, review bundle, consolidated packet, packet
-redaction scan, and docs site. Use
+filesystem contract check, signed evidence demo, negative transcripts, operator sandbox,
+live-demo, and operator workbench packets, focused v0.6 dispatch packets, review bundle,
+consolidated packet, packet redaction scan, and docs site. Use
 [docs/codex/reviewer-reproduction-map.md](docs/codex/reviewer-reproduction-map.md) to reproduce
 the full evidence sequence and locate generated hashes/transcripts.
 The release-evidence schema and validation command are documented in

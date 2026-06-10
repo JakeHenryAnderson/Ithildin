@@ -308,6 +308,9 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 289 - Live demo smoke evidence | Done | `make live-demo-smoke`; generates a secret-free live-demo smoke transcript copied into the live-demo packet without starting services. |
 | 290 - Live demo operator status | Done | `make live-demo-status`; prints read-only demo status and writes `LIVE_DEMO_INDEX.md` with artifact paths, localhost reachability, next actions, and cleanup reminders. |
 | 291 - Live demo evidence summary | Done | `make live-demo-evidence-summary`; generates a secret-free digest of live-demo status, smoke evidence, signed fixture evidence, negative transcripts, Agent Run correlation, operator sandbox packet, and consolidated handoff artifact presence. |
+| 292 - Operator workbench readiness | Done | [operator-workbench-readiness.md](operator-workbench-readiness.md), `make workbench-readiness`; validates the read-only local operator workbench surface, docs, evidence packet wiring, and no-new-powers posture. |
+| 293 - Operator workbench evidence packet | Done | `make workbench-evidence-packet`; generates a focused ignored operator workbench packet tying Agent Runs, approval evidence, audit status, live-demo artifacts, sandbox/workspace posture, and handoff pointers together. |
+| 294 - Evidence-only workbench wrapper | Done | `make demo-workbench`; runs the read-only/ignored-output workbench evidence sequence without starting services, calling governed tools, approving actions, or adding run/sandbox controls. |
 
 ## Future Candidate Track
 

@@ -1,0 +1,291 @@
+"""Build a focused operator workbench evidence packet."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/operator-workbench")
+HASH_MANIFEST = "operator-workbench-artifact-hashes.json"
+PROJECT_MARKERS = [
+    Path("pyproject.toml"),
+    Path("Makefile"),
+    Path("apps/api"),
+    Path("apps/mcp-server"),
+    Path("tool-manifests.lock.json"),
+]
+DOCS = [
+    Path("docs/codex/operator-workbench-readiness.md"),
+    Path("docs/codex/agent-run-model-contract.md"),
+    Path("docs/codex/agent-run-evidence-contract.md"),
+    Path("docs/codex/agent-run-evidence-export-implementation.md"),
+    Path("docs/codex/operator-managed-sandbox-demo-guide.md"),
+    Path("docs/codex/live-demo-runbook.md"),
+    Path("docs/codex/incident-reconstruction-guide.md"),
+]
+COMMANDS = [
+    ["make", "workbench-readiness"],
+    ["make", "live-demo-preflight"],
+    ["make", "live-demo-status"],
+    ["make", "live-demo-smoke"],
+    ["make", "live-demo-evidence-summary"],
+    ["make", "operator-sandbox-demo-packet"],
+    ["make", "agent-run-correlation-packet"],
+    ["make", "no-new-powers-guardrail"],
+    ["make", "tool-surface-invariant-gate"],
+]
+POINTERS = [
+    Path("var/review-packets/v3/live-demo"),
+    Path("var/review-packets/v3/operator-sandbox-demo"),
+    Path("var/review-packets/v3/agent-run-correlation"),
+    Path("var/review-packets/v0.2/signed-evidence-demo"),
+    Path("var/review-packets/v0.2/negative-review-transcripts"),
+    Path("var/review-packets/v0.2/GPT-5.5-Pro-consolidated"),
+]
+
+
+class WorkbenchEvidencePacketError(RuntimeError):
+    """Raised when the operator workbench packet cannot be built."""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--allow-dirty", action="store_true")
+    parser.add_argument("--skip-commands", action="store_true")
+    args = parser.parse_args()
+    try:
+        output_dir = build_packet(
+            repo_root=Path.cwd().resolve(),
+            output_dir=args.output_dir,
+            allow_dirty=args.allow_dirty,
+            run_commands=not args.skip_commands,
+        )
+    except WorkbenchEvidencePacketError as exc:
+        print(f"operator workbench packet failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Built operator workbench evidence packet at {output_dir}")
+    return 0
+
+
+def build_packet(
+    *,
+    repo_root: Path,
+    output_dir: Path,
+    allow_dirty: bool = False,
+    run_commands: bool = True,
+) -> Path:
+    _require_project_root(repo_root)
+    commit = _git(repo_root, ["rev-parse", "HEAD"])
+    dirty = bool(_git(repo_root, ["status", "--short"]))
+    if dirty and not allow_dirty:
+        raise WorkbenchEvidencePacketError(
+            "working tree is dirty; commit before operator workbench handoff"
+        )
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
+
+    context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
+    files = {
+        "00_OPERATOR_WORKBENCH_INDEX.md": _index(context),
+        "01_OPERATOR_WORKBENCH_REVIEW_PROMPT.md": _prompt(context),
+        "02_OPERATOR_WORKBENCH_DOCS.md": _bundle_docs(repo_root),
+        "03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md": _command_evidence(run_commands),
+        "04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md": _artifact_pointers(repo_root),
+    }
+    for relative, content in files.items():
+        (output_dir / relative).write_text(content.rstrip() + "\n", encoding="utf-8")
+    _write_json(output_dir / HASH_MANIFEST, _hashes(output_dir))
+    return output_dir
+
+
+def _index(context: dict[str, Any]) -> str:
+    return f"""# Operator Workbench Evidence Packet
+
+This packet packages the local-preview operator workbench story: System Trust, registered tools,
+approval evidence, Agent Run operations, audit status, live-demo artifacts, operator-managed
+sandbox/workspace posture, and read-only evidence export.
+
+## Boundary
+
+- Reviewed commit: `{context["commit"]}`.
+- Dirty at generation: `{str(context["dirty"]).lower()}`.
+- Command evidence executed: `{str(context["run_commands"]).lower()}`.
+- Tool count remains `13`.
+- No run controls, sandbox orchestration, SIEM adapters, production identity, runtime Postgres,
+  hosted telemetry, remote MCP, shell, Docker, Kubernetes, browser automation, arbitrary HTTP,
+  broad filesystem writes, plugin SDK work, or new governed tool powers are added or approved.
+
+## Artifacts
+
+1. `00_OPERATOR_WORKBENCH_INDEX.md`
+2. `01_OPERATOR_WORKBENCH_REVIEW_PROMPT.md`
+3. `02_OPERATOR_WORKBENCH_DOCS.md`
+4. `03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md`
+5. `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md`
+6. `operator-workbench-artifact-hashes.json`
+
+## What This Packet Does Not Prove
+
+This packet does not prove OS isolation, host compromise resistance, production deployment safety,
+compliance automation, SIEM custody, production identity, remote MCP safety, external notarization,
+or activity outside Ithildin-mediated actions.
+"""
+
+
+def _prompt(context: dict[str, Any]) -> str:
+    return f"""# Operator Workbench Evidence Review Prompt
+
+You are reviewing Ithildin's operator workbench evidence packet. Treat this as a local-preview
+operator-demo and evidence-surface review, not as production security approval.
+
+Reviewed commit: `{context["commit"]}`
+Area: `operator-workbench`
+Finding namespace: `EXT-WORKBENCH-###`
+
+## Scope
+
+Please review whether the packet coherently shows how a local operator can:
+
+- inspect trust posture and registered tool evidence;
+- follow mediated Agent Run timelines and summaries;
+- inspect approval binding and audit status;
+- export bounded read-only run evidence;
+- connect live-demo, operator-managed sandbox, Agent Run correlation, signed fixture evidence, and
+  negative transcript artifacts.
+
+## Required Disposition
+
+Say whether this is coherent enough for a local operator workbench demo. If not, name the missing
+artifact, ambiguous claim, or required follow-up.
+
+Do not approve new governed tool powers, run controls, sandbox orchestration, SIEM adapters,
+production identity, remote MCP, hosted telemetry, shell/Docker/Kubernetes/browser tools, arbitrary
+HTTP, broad writes, public/security-product positioning, or plugin SDK work.
+"""
+
+
+def _bundle_docs(repo_root: Path) -> str:
+    parts = ["# Operator Workbench Document Bundle"]
+    for path in DOCS:
+        parts.extend(["", f"## {path.as_posix()}", "", "```md", _read(repo_root / path), "```"])
+    return "\n".join(parts)
+
+
+def _command_evidence(run_commands: bool) -> str:
+    outputs = [_command_output(command, run_commands=run_commands) for command in COMMANDS]
+    failures = [output for output in outputs if output["returncode"] != 0]
+    if failures and run_commands:
+        failed = ", ".join(" ".join(output["command"]) for output in failures)
+        raise WorkbenchEvidencePacketError(f"evidence command failed: {failed}")
+    lines = [
+        "# Operator Workbench Command Evidence",
+        "",
+        "These commands are local readiness/evidence commands. They do not call governed tools,",
+        "approve actions, repair diagnostics, or start services.",
+    ]
+    for output in outputs:
+        lines.extend(
+            [
+                "",
+                f"## {' '.join(output['command'])}",
+                "",
+                f"- exit code: `{output['returncode']}`",
+                "",
+                "```text",
+                str(output["stdout"]).rstrip(),
+                "```",
+            ]
+        )
+        if output["stderr"]:
+            lines.extend(["", "stderr:", "", "```text", str(output["stderr"]).rstrip(), "```"])
+    return "\n".join(lines)
+
+
+def _artifact_pointers(repo_root: Path) -> str:
+    lines = ["# Operator Workbench Artifact Pointers", ""]
+    for path in POINTERS:
+        full_path = repo_root / path
+        lines.append(f"- `{path.as_posix()}` exists=`{str(full_path.exists()).lower()}`")
+    lines.extend(
+        [
+            "",
+            "These artifacts are local evidence and reviewer convenience only. They are not",
+            "notarization, SIEM custody, production compliance evidence, or proof of activity",
+            "outside Ithildin-mediated actions.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _require_project_root(repo_root: Path) -> None:
+    missing = [path.as_posix() for path in PROJECT_MARKERS if not (repo_root / path).exists()]
+    if missing:
+        raise WorkbenchEvidencePacketError(
+            f"must be run from Ithildin repo root; missing {', '.join(missing)}"
+        )
+
+
+def _read(path: Path) -> str:
+    if not path.exists():
+        raise WorkbenchEvidencePacketError(f"missing packet input: {path}")
+    return path.read_text(encoding="utf-8").rstrip()
+
+
+def _command_output(command: list[str], *, run_commands: bool) -> dict[str, Any]:
+    if not run_commands:
+        return {
+            "command": command,
+            "returncode": 0,
+            "stdout": "command execution skipped for fixture/test packet generation",
+            "stderr": "",
+        }
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    return {
+        "command": command,
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
+
+
+def _git(repo_root: Path, args: list[str]) -> str:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _hashes(output_dir: Path) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    for path in sorted(output_dir.iterdir()):
+        if path.name == HASH_MANIFEST or not path.is_file():
+            continue
+        content = path.read_bytes()
+        entries.append(
+            {
+                "path": path.name,
+                "sha256": "sha256:" + hashlib.sha256(content).hexdigest(),
+                "bytes": len(content),
+            }
+        )
+    return entries
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,149 @@
+"""Validate the local operator workbench readiness surface."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import no_new_powers_guardrail, review_docs, tool_surface_invariant_gate
+
+ROOT = Path(__file__).resolve().parents[1]
+DOC = ROOT / "docs/codex/operator-workbench-readiness.md"
+REQUIRED_DOC_PHRASES = [
+    "Status: release-readiness gate",
+    "operator workbench",
+    "GET /runs",
+    "GET /runs/{run_id}",
+    "GET /runs/{run_id}/evidence-export",
+    "make demo-workbench",
+    "make workbench-evidence-packet",
+    "make live-demo-evidence-summary",
+    "does not start services",
+    "does not add run controls",
+    "tool count remains `13`",
+    "no-new-powers",
+]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    report = build_report(ROOT)
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print(render_report(report))
+    return 0 if report["valid"] else 1
+
+
+def build_report(repo_root: Path) -> dict[str, Any]:
+    failures: list[str] = []
+    makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+    reproduction_map = (repo_root / "docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = (repo_root / "scripts/build_docs_site.py").read_text(encoding="utf-8")
+    ui = (repo_root / "apps/ui/src/App.tsx").read_text(encoding="utf-8")
+    ui_tests = (repo_root / "apps/ui/src/App.test.tsx").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    no_new_powers = no_new_powers_guardrail.build_report(repo_root)
+    tool_surface = tool_surface_invariant_gate.build_report(repo_root)
+    failures.extend(f"no-new-powers: {failure}" for failure in no_new_powers["failures"])
+    failures.extend(f"tool-surface: {failure}" for failure in tool_surface["failures"])
+
+    failures.extend(
+        _validate_doc(readme=readme, reproduction_map=reproduction_map, docs_site=docs_site)
+    )
+    for target in ["workbench-readiness:", "workbench-evidence-packet:", "demo-workbench:"]:
+        if target not in makefile:
+            failures.append(f"Make target is missing: {target.rstrip(':')}")
+    if "workbench-readiness" not in release_check_body:
+        failures.append("workbench-readiness is missing from release-check")
+    if "$(MAKE) workbench-evidence-packet" not in makefile.partition("review-candidate:")[2]:
+        failures.append("workbench-evidence-packet is missing from review-candidate")
+
+    for phrase in [
+        "Agent Runs",
+        "RunSummary",
+        "Export Run Evidence",
+        "timelineStatus",
+        "timelineWarnings",
+        "run-filter-bar",
+    ]:
+        if phrase not in ui:
+            failures.append(f"Review console workbench surface is missing phrase: {phrase}")
+    for phrase in [
+        "filters agent runs with a bounded authenticated query",
+        "Export Run Evidence",
+        "summary",
+    ]:
+        if phrase not in ui_tests:
+            failures.append(f"UI workbench tests are missing phrase: {phrase}")
+
+    return {
+        "schema_version": "1",
+        "valid": not failures,
+        "failures": failures,
+        "tool_count": tool_surface.get("tool_count"),
+        "runtime_changes_allowed": False,
+        "new_power_classes_allowed": False,
+        "run_control_behavior_allowed": False,
+        "sandbox_orchestration_allowed": False,
+        "siem_adapter_behavior_allowed": False,
+    }
+
+
+def _validate_doc(*, readme: str, reproduction_map: str, docs_site: str) -> list[str]:
+    failures: list[str] = []
+    rel_path = DOC.relative_to(ROOT).as_posix()
+    if not DOC.exists():
+        return ["operator workbench readiness doc is missing"]
+    text = DOC.read_text(encoding="utf-8")
+    for phrase in REQUIRED_DOC_PHRASES:
+        if phrase not in text:
+            failures.append(f"operator workbench readiness doc is missing phrase: {phrase}")
+    if rel_path not in review_docs.REVIEW_DOCS:
+        failures.append("operator workbench readiness doc is missing from review docs")
+    if rel_path not in docs_site:
+        failures.append("operator workbench readiness doc is missing from docs-site inputs")
+    for phrase in [
+        "make workbench-readiness",
+        "make workbench-evidence-packet",
+        "make demo-workbench",
+    ]:
+        if phrase not in readme:
+            failures.append(f"README is missing command: {phrase}")
+        if phrase not in reproduction_map:
+            failures.append(f"reproduction map is missing command: {phrase}")
+    return failures
+
+
+def render_report(report: dict[str, Any]) -> str:
+    lines = [
+        "Ithildin operator workbench readiness gate",
+        f"valid: {str(report['valid']).lower()}",
+        f"tool_count: {report.get('tool_count', 'unknown')}",
+        "runtime_changes_allowed: false",
+        "new_power_classes_allowed: false",
+        "run_control_behavior_allowed: false",
+        "sandbox_orchestration_allowed: false",
+        "siem_adapter_behavior_allowed: false",
+    ]
+    if report["failures"]:
+        lines.append("failures:")
+        lines.extend(f"- {failure}" for failure in report["failures"])
+    return "\n".join(lines)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

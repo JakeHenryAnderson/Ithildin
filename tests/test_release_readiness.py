@@ -107,6 +107,8 @@ from scripts import (
     v09_design_only_gate,
     v09_design_review_packet,
     v3_next_capability_candidate_check,
+    workbench_evidence_packet,
+    workbench_readiness,
 )
 
 
@@ -8156,6 +8158,120 @@ def test_operator_sandbox_demo_smoke_and_dashboard_artifacts_are_secret_free(
     ]:
         assert forbidden not in smoke
         assert forbidden not in checklist
+
+
+def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> None:
+    report = workbench_readiness.build_report(Path.cwd())
+    output_dir = tmp_path / "operator-workbench"
+    workbench_evidence_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_OPERATOR_WORKBENCH_INDEX.md",
+        "01_OPERATOR_WORKBENCH_REVIEW_PROMPT.md",
+        "02_OPERATOR_WORKBENCH_DOCS.md",
+        "03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md",
+        "04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md",
+        "operator-workbench-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (output_dir / "operator-workbench-artifact-hashes.json").read_text(encoding="utf-8")
+    )
+    index = (output_dir / "00_OPERATOR_WORKBENCH_INDEX.md").read_text(encoding="utf-8")
+    prompt = (output_dir / "01_OPERATOR_WORKBENCH_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    docs_bundle = (output_dir / "02_OPERATOR_WORKBENCH_DOCS.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    pointers = (output_dir / "04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md").read_text(
+        encoding="utf-8"
+    )
+    gate = Path("docs/codex/operator-workbench-readiness.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["run_control_behavior_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_behavior_allowed"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes} == expected - {
+        "operator-workbench-artifact-hashes.json"
+    }
+    assert "Tool count remains `13`" in index
+    assert "Finding namespace: `EXT-WORKBENCH-###`" in prompt
+    assert "operator-workbench-readiness.md" in docs_bundle
+    assert "agent-run-model-contract.md" in docs_bundle
+    assert "agent-run-evidence-export-implementation.md" in docs_bundle
+    assert "operator-managed-sandbox-demo-guide.md" in docs_bundle
+    assert "live-demo-runbook.md" in docs_bundle
+    assert "make workbench-readiness" in evidence
+    assert "make live-demo-evidence-summary" in evidence
+    assert "make operator-sandbox-demo-packet" in evidence
+    assert "make agent-run-correlation-packet" in evidence
+    assert "command execution skipped for fixture/test packet generation" in evidence
+    assert "var/review-packets/v3/live-demo" in pointers
+    assert "var/review-packets/v3/operator-sandbox-demo" in pointers
+    assert "var/review-packets/v3/agent-run-correlation" in pointers
+    assert "make workbench-readiness" in readme
+    assert "make workbench-evidence-packet" in readme
+    assert "make demo-workbench" in readme
+    assert "workbench-readiness:" in makefile
+    assert "workbench-evidence-packet:" in makefile
+    assert "demo-workbench:" in makefile
+    assert "workbench-readiness" in release_check_body
+    assert "$(MAKE) workbench-evidence-packet" in review_candidate_body
+    assert "workbench-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "$(MAKE) workbench-evidence-packet" in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    assert "docs/codex/operator-workbench-readiness.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/operator-workbench-readiness.md" in docs_site
+    assert "make demo-workbench" in reproduction_map
+    assert "292 - Operator workbench readiness | Done" in backlog
+    assert "293 - Operator workbench evidence packet | Done" in backlog
+    assert "294 - Evidence-only workbench wrapper | Done" in backlog
+    for phrase in [
+        "Status: release-readiness gate",
+        "operator workbench",
+        "GET /runs",
+        "GET /runs/{run_id}/evidence-export",
+        "make demo-workbench",
+        "does not start services",
+        "does not add run controls",
+        "tool count remains `13`",
+        "no-new-powers",
+    ]:
+        assert phrase in gate
+    for forbidden in [
+        "PRIVATE KEY",
+        "ITHILDIN_ADMIN_TOKEN=",
+        "dev-admin-token-change-me",
+        "BEGIN OPENSSH",
+        "diff --git",
+        "response body:",
+    ]:
+        assert forbidden not in index
+        assert forbidden not in docs_bundle
+        assert forbidden not in evidence
+        assert forbidden not in pointers
 
 
 def test_control_mapping_readiness_gate_is_wired() -> None:

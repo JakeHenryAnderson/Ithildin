@@ -1,0 +1,84 @@
+# Operator Workbench Readiness Gate
+
+Status: release-readiness gate.
+
+The operator workbench is Ithildin's local-preview control-plane view for a mediated agent
+workspace. It combines the existing System Trust panel, registered tools, approval evidence, Agent
+Run operations dashboard, audit status, live-demo artifacts, operator-managed sandbox/workspace
+posture, and read-only evidence export. It does not add run controls, sandbox orchestration, SIEM
+adapters, production identity, runtime Postgres, hosted telemetry, remote MCP, shell, Docker,
+Kubernetes, browser automation, arbitrary HTTP, broad filesystem writes, plugin SDK work, or new
+governed tool powers.
+
+## Operator Goal
+
+The workbench should let a local operator answer four questions without reading every review doc:
+
+1. What is the current trust posture?
+2. What did the mediated agent do?
+3. Which approvals, policy decisions, audit events, and diagnostics correlate with the run?
+4. Which local evidence artifacts can be exported or handed to a reviewer?
+
+## Current Surfaces
+
+- `GET /runs` and the review-console Agent Runs panel provide read-only filters and summaries.
+- `GET /runs/{run_id}` reconstructs the selected run timeline from audit events.
+- `GET /runs/{run_id}/evidence-export` exports a bounded, read-only run evidence bundle.
+- `make operator-sandbox-demo-packet` records the operator-managed sandbox/workspace story.
+- `make agent-run-correlation-packet` records the run-to-tool/audit/approval correlation story.
+- `make live-demo-status`, `make live-demo-smoke`, `make live-demo-evidence-summary`, and
+  `make live-demo-packet` record live-demo handoff evidence.
+- `make workbench-evidence-packet` packages the operator workbench story into one focused review
+  packet.
+
+## Demo Wrapper
+
+`make demo-workbench` is a local evidence wrapper. It runs only existing read-only or ignored-output
+demo evidence commands:
+
+- `make live-demo-preflight`;
+- `make live-demo-status`;
+- `make live-demo-smoke`;
+- `make live-demo-evidence-summary`;
+- `make operator-sandbox-demo-packet`;
+- `make agent-run-correlation-packet`;
+- `make workbench-evidence-packet`.
+
+It does not start services, stop services, mutate governed workspaces, call governed tools, approve
+actions, repair diagnostics, or manage containers.
+
+## Evidence Bundle
+
+`make workbench-evidence-packet` writes ignored artifacts under
+`var/review-packets/v3/operator-workbench/`:
+
+- workbench index;
+- reviewer prompt;
+- bundled operator docs;
+- command evidence;
+- artifact pointers;
+- artifact hashes.
+
+The packet points to existing live-demo, operator sandbox, Agent Run correlation, signed evidence,
+negative transcript, and consolidated review artifacts. It is a reviewer convenience artifact, not
+notarization, SIEM custody, compliance automation, production security, or proof of activity outside
+Ithildin-mediated actions.
+
+## Readiness Gate
+
+`make workbench-readiness` validates:
+
+- the workbench readiness doc is in the review docs and docs site;
+- README and reproduction-map command lists mention the workbench commands;
+- `make demo-workbench` and `make workbench-evidence-packet` are wired;
+- release-check includes the workbench readiness gate;
+- tool count remains `13`;
+- no-new-powers and tool-surface guardrails still pass;
+- the review console still exposes Agent Runs, summaries, timeline evidence, and Export Run
+  Evidence.
+
+## Non-Goals
+
+The operator workbench does not prove OS isolation, host compromise resistance, production
+deployment safety, compliance automation, SIEM custody, production identity, remote MCP safety,
+container/VM lifecycle control, or activity outside Ithildin-mediated actions.
