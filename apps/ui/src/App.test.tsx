@@ -446,10 +446,14 @@ describe("Review console interactions", () => {
 
     expect(await screen.findByText(/sample admin token is active/)).toBeInTheDocument();
     expect(screen.getByText("Agent Runs")).toBeInTheDocument();
+    expect(screen.getByText("Demo Path")).toBeInTheDocument();
+    expect(screen.getByText("Filter runs")).toBeInTheDocument();
     expect(screen.getAllByText("agent:mcp-local").length).toBeGreaterThan(0);
     expect(screen.getByText("1 runs")).toBeInTheDocument();
     expect(screen.getByText("demo (1)")).toBeInTheDocument();
     expect(screen.getByText("Run Evidence")).toBeInTheDocument();
+    expect(screen.getByText("Evidence Types")).toBeInTheDocument();
+    expect(screen.getByText("policy (1)")).toBeInTheDocument();
     expect(screen.getByText("2 tool calls")).toBeInTheDocument();
     expect(screen.getByText("1 audit events")).toBeInTheDocument();
     expect(screen.getByText("policy.evaluated")).toBeInTheDocument();

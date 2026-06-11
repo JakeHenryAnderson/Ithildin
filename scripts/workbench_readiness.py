@@ -85,8 +85,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     for phrase in [
         "Agent Runs",
+        "Demo Path",
         "RunSummary",
         "Run Evidence",
+        "Grouped run evidence",
         "Export Run Evidence",
         "timelineStatus",
         "timelineWarnings",
@@ -96,6 +98,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"Review console workbench surface is missing phrase: {phrase}")
     for phrase in [
         "filters agent runs with a bounded authenticated query",
+        "Demo Path",
+        "Evidence Types",
         "Export Run Evidence",
         "runev_123456789",
         "summary",

@@ -171,7 +171,7 @@ Finding namespace: `EXT-WORKBENCH-###`
 Please review whether the packet coherently shows how a local operator can:
 
 - inspect trust posture and registered tool evidence;
-- follow mediated Agent Run timelines and summaries;
+- follow the Agent Runs `Demo Path`, filters, grouped timeline evidence, and summaries;
 - inspect approval binding and audit status;
 - export bounded read-only run evidence;
 - connect live-demo, operator-managed sandbox, Agent Run correlation, signed fixture evidence, and

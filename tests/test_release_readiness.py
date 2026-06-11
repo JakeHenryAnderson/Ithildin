@@ -8233,6 +8233,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     }
     assert "Tool count remains `13`" in index
     assert "Finding namespace: `EXT-WORKBENCH-###`" in prompt
+    assert "Agent Runs `Demo Path`, filters, grouped timeline evidence" in prompt
     assert "operator-workbench-readiness.md" in docs_bundle
     assert "agent-run-model-contract.md" in docs_bundle
     assert "agent-run-evidence-export-implementation.md" in docs_bundle
@@ -8272,6 +8273,8 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "docs/codex/operator-workbench-readiness.md" in docs_site
     assert "make demo-workbench" in reproduction_map
     assert "make demo-workbench-smoke" in reproduction_map
+    assert "Demo Path" in gate
+    assert "grouped run evidence overview" in gate
     assert "292 - Operator workbench readiness | Done" in backlog
     assert "293 - Operator workbench evidence packet | Done" in backlog
     assert "294 - Evidence-only workbench wrapper | Done" in backlog

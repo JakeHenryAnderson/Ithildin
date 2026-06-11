@@ -741,6 +741,58 @@ caption {
   padding: 8px 10px;
 }
 
+.operator-demo-guide {
+  align-items: center;
+  border-bottom: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  padding: 12px 14px;
+}
+
+.operator-demo-guide strong {
+  display: block;
+  font-size: 0.86rem;
+}
+
+.operator-demo-guide span {
+  color: #607168;
+  display: block;
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
+
+.operator-demo-guide ol {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.operator-demo-guide li {
+  align-items: center;
+  color: #41544b;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.operator-demo-guide li span {
+  align-items: center;
+  background: #e4f5ed;
+  border: 1px solid #cbe3d7;
+  color: #185a42;
+  display: inline-flex;
+  font-size: 0.72rem;
+  height: 22px;
+  justify-content: center;
+  margin: 0;
+  width: 22px;
+}
+
 .run-summary {
   align-items: center;
   border-bottom: 1px solid #edf2ef;
@@ -752,8 +804,37 @@ caption {
   padding: 10px 14px;
 }
 
+.run-evidence-overview {
+  border-bottom: 1px solid #edf2ef;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 12px 14px;
+}
+
+.evidence-group {
+  border: 1px solid #dbe8e2;
+  background: #fbfdfc;
+  min-width: 0;
+  padding: 10px;
+}
+
+.evidence-group h4 {
+  color: #607168;
+  font-size: 0.72rem;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.evidence-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .run-summary span,
-.warning-chip {
+.warning-chip,
+.evidence-chip-list span {
   background: #eef6f2;
   border: 1px solid #d9e9e1;
   border-radius: 999px;
@@ -813,9 +894,15 @@ th {
   .integrity-grid,
   .policy-controls,
   .run-filter-bar,
+  .operator-demo-guide,
+  .run-evidence-overview,
   .json-editors,
   .preview-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .operator-demo-guide ol {
+    flex-wrap: wrap;
   }
 
   .topbar {

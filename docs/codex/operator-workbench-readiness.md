@@ -22,6 +22,10 @@ The workbench should let a local operator answer four questions without reading 
 ## Current Surfaces
 
 - `GET /runs` and the review-console Agent Runs panel provide read-only filters and summaries.
+- The Agent Runs panel starts with a compact `Demo Path` strip so an operator can follow the
+  intended read-only flow: filter runs, inspect evidence, and export a bundle.
+- The selected run view groups existing timeline rows into evidence types, statuses, decisions, and
+  correlation counts before the raw table, making the demo screen understandable without raw JSON.
 - `GET /runs/{run_id}` reconstructs the selected run timeline from audit events.
 - `GET /runs/{run_id}/evidence-export` exports a bounded, read-only run evidence bundle.
 - `make operator-sandbox-demo-packet` records the operator-managed sandbox/workspace story.
@@ -85,7 +89,8 @@ Ithildin-mediated actions.
 - tool count remains `13`;
 - no-new-powers and tool-surface guardrails still pass;
 - the review console still exposes Agent Runs, summaries, timeline evidence, and Export Run
-  Evidence.
+  Evidence;
+- the review console includes the `Demo Path` guide and grouped run evidence overview.
 
 ## Non-Goals
 

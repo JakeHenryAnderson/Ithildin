@@ -82,7 +82,8 @@ Open the review console at `http://127.0.0.1:5173` and inspect:
 - System Trust warnings and tool count;
 - registered tools and manifest evidence;
 - approval binding evidence;
-- Agent Runs filters, summary, selected timeline, and read-only evidence export;
+- Agent Runs `Demo Path`, filters, summary, grouped timeline evidence, and read-only evidence
+  export;
 - signed export buttons and audit status.
 
 ## Evidence Commands

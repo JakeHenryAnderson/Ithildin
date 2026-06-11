@@ -1393,6 +1393,7 @@ export function App() {
 
       <section className="run-section">
         <Panel title="Agent Runs" icon={<Activity size={18} />}>
+          <OperatorWorkbenchGuide />
           <form className="run-filter-bar" onSubmit={applyRunFilters}>
             <label>
               <span>Principal</span>
@@ -1481,10 +1482,14 @@ export function App() {
                     </div>
                   </div>
                   {selectedRun.timeline.length === 0 ? (
-                    <EmptyState text="No correlated audit events for this run." />
+                    <>
+                      <RunEvidenceSummary run={selectedRun.run} eventCount={0} />
+                      <EmptyState text="No correlated audit events yet. Export Run Evidence still returns the safe run summary for this selected run." />
+                    </>
                   ) : (
                     <>
                       <RunEvidenceSummary run={selectedRun.run} eventCount={selectedRun.timeline.length} />
+                      <RunEvidenceOverview timeline={selectedRun.timeline} />
                       <div className="table-wrap compact-table">
                         <table>
                           <thead>
@@ -1610,6 +1615,30 @@ function EmptyState({ text }: { text: string }) {
   return <div className="empty-state">{text}</div>;
 }
 
+function OperatorWorkbenchGuide() {
+  const steps = [
+    ["1", "Filter runs"],
+    ["2", "Inspect evidence"],
+    ["3", "Export bundle"],
+  ];
+  return (
+    <div className="operator-demo-guide" aria-label="Operator workbench demo path">
+      <div>
+        <strong>Demo Path</strong>
+        <span>Read-only view: filters, timeline evidence, and export. No run controls.</span>
+      </div>
+      <ol>
+        {steps.map(([number, label]) => (
+          <li key={number}>
+            <span>{number}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function RunSummary({ summary }: { summary: AgentRunSummary }) {
   const filters = Object.entries(summary.filters)
     .filter((entry): entry is [string, string] => typeof entry[1] === "string")
@@ -1637,6 +1666,55 @@ function RunEvidenceSummary({ run, eventCount }: { run: AgentRun; eventCount: nu
       <span>{run.last_tool_name ?? "no tool"}</span>
       <span>{run.policy_hash ? shortHash(run.policy_hash) : "no policy"}</span>
       <span>{run.last_tool_manifest_hash ? shortHash(run.last_tool_manifest_hash) : "no manifest"}</span>
+    </div>
+  );
+}
+
+function RunEvidenceOverview({ timeline }: { timeline: AgentRunTimelineEvent[] }) {
+  const categories = countTimelineValues(timeline, timelineCategory);
+  const statuses = countTimelineValues(timeline, timelineStatus);
+  const decisions = countTimelineValues(timeline, (event) => event.decision ?? "");
+  const requests = new Set(timeline.map((event) => event.request_id).filter(Boolean));
+  const warningCount = timeline.reduce(
+    (count, event) => count + timelineWarnings(event).length,
+    0,
+  );
+  return (
+    <div className="run-evidence-overview" aria-label="Grouped run evidence">
+      <EvidenceGroup title="Evidence Types" items={categories} empty="no categories" />
+      <EvidenceGroup title="Statuses" items={statuses} empty="no statuses" />
+      <EvidenceGroup title="Decisions" items={decisions} empty="no decisions" />
+      <div className="evidence-group">
+        <h4>Correlation</h4>
+        <div className="evidence-chip-list">
+          <span>{requests.size} requests</span>
+          <span>{warningCount} warnings</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EvidenceGroup({
+  title,
+  items,
+  empty,
+}: {
+  title: string;
+  items: Record<string, number>;
+  empty: string;
+}) {
+  const entries = Object.entries(items).sort((left, right) => right[1] - left[1]);
+  return (
+    <div className="evidence-group">
+      <h4>{title}</h4>
+      <div className="evidence-chip-list">
+        {entries.length === 0 ? (
+          <span>{empty}</span>
+        ) : (
+          entries.map(([label, count]) => <span key={label}>{label} ({count})</span>)
+        )}
+      </div>
     </div>
   );
 }
@@ -1916,6 +1994,40 @@ function runListPath(filters: {
 function countSummary(counts: Record<string, number>) {
   const [first] = Object.entries(counts).sort((left, right) => right[1] - left[1]);
   return first ? `${first[0]} (${first[1]})` : "";
+}
+
+function countTimelineValues(
+  timeline: AgentRunTimelineEvent[],
+  getValue: (event: AgentRunTimelineEvent) => string,
+) {
+  const counts: Record<string, number> = {};
+  for (const event of timeline) {
+    const value = getValue(event);
+    if (value) {
+      counts[value] = (counts[value] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+function timelineCategory(event: AgentRunTimelineEvent) {
+  const eventType = event.event_type;
+  if (eventType.startsWith("policy.")) {
+    return "policy";
+  }
+  if (eventType.startsWith("approval.")) {
+    return "approval";
+  }
+  if (eventType.startsWith("tool.")) {
+    return "tool";
+  }
+  if (eventType.includes("export")) {
+    return "export";
+  }
+  if (eventType.includes("diagnostic") || eventType.includes("recovery")) {
+    return "diagnostic";
+  }
+  return "audit";
 }
 
 function timelineStatus(event: AgentRunTimelineEvent) {
