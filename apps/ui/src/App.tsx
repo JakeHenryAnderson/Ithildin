@@ -1483,38 +1483,41 @@ export function App() {
                   {selectedRun.timeline.length === 0 ? (
                     <EmptyState text="No correlated audit events for this run." />
                   ) : (
-                    <div className="table-wrap compact-table">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Time</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Tool</th>
-                            <th>Decision</th>
-                            <th>Request</th>
-                            <th>Warnings</th>
-                            <th>Hash</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedRun.timeline.map((event) => (
-                            <tr key={event.event_id}>
-                              <td>{formatDate(event.timestamp)}</td>
-                              <td>{event.event_type}</td>
-                              <td><StatusPill status={timelineStatus(event)} /></td>
-                              <td>{event.tool_name ?? ""}</td>
-                              <td>{event.decision ?? ""}</td>
-                              <td>{shortId(event.request_id)}</td>
-                              <td>{timelineWarnings(event).map((warning) => (
-                                <span className="warning-chip" key={warning}>{warning}</span>
-                              ))}</td>
-                              <td>{shortHash(event.event_hash)}</td>
+                    <>
+                      <RunEvidenceSummary run={selectedRun.run} eventCount={selectedRun.timeline.length} />
+                      <div className="table-wrap compact-table">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Time</th>
+                              <th>Category</th>
+                              <th>Status</th>
+                              <th>Tool</th>
+                              <th>Decision</th>
+                              <th>Request</th>
+                              <th>Warnings</th>
+                              <th>Hash</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {selectedRun.timeline.map((event) => (
+                              <tr key={event.event_id}>
+                                <td>{formatDate(event.timestamp)}</td>
+                                <td>{event.event_type}</td>
+                                <td><StatusPill status={timelineStatus(event)} /></td>
+                                <td>{event.tool_name ?? ""}</td>
+                                <td>{event.decision ?? ""}</td>
+                                <td>{shortId(event.request_id)}</td>
+                                <td>{timelineWarnings(event).map((warning) => (
+                                  <span className="warning-chip" key={warning}>{warning}</span>
+                                ))}</td>
+                                <td>{shortHash(event.event_hash)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
                   )}
                 </>
               ) : (
@@ -1621,6 +1624,19 @@ function RunSummary({ summary }: { summary: AgentRunSummary }) {
       <span>
         {summary.latest_updated_at ? `latest ${formatDate(summary.latest_updated_at)}` : "no updates"}
       </span>
+    </div>
+  );
+}
+
+function RunEvidenceSummary({ run, eventCount }: { run: AgentRun; eventCount: number }) {
+  return (
+    <div className="run-summary" aria-label="Run evidence summary">
+      <span>Run Evidence</span>
+      <span>{run.tool_call_count} tool calls</span>
+      <span>{eventCount} audit events</span>
+      <span>{run.last_tool_name ?? "no tool"}</span>
+      <span>{run.policy_hash ? shortHash(run.policy_hash) : "no policy"}</span>
+      <span>{run.last_tool_manifest_hash ? shortHash(run.last_tool_manifest_hash) : "no manifest"}</span>
     </div>
   );
 }

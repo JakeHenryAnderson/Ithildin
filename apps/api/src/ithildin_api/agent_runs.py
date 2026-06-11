@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -408,6 +409,13 @@ class AgentRunStore:
             "export_id": _new_id("runev"),
             "exported_at": exported_at,
             "run": _export_run_summary(run),
+            "summary": _export_human_summary(
+                run=run,
+                timeline=timeline,
+                approvals=approval_summaries,
+                patch_diagnostics=patch_summaries,
+                warnings=warnings,
+            ),
             "timeline": cast(JsonValue, timeline),
             "approvals": cast(JsonValue, approval_summaries),
             "patch_diagnostics": cast(JsonValue, patch_summaries),
@@ -531,6 +539,63 @@ def _export_timeline_event(event: JsonObject) -> JsonObject:
         "manifest_hash": _metadata_string(metadata, "manifest_hash"),
         "metadata": _safe_timeline_metadata(metadata),
     }
+
+
+def _export_human_summary(
+    *,
+    run: JsonObject,
+    timeline: list[JsonObject],
+    approvals: list[JsonObject],
+    patch_diagnostics: list[JsonObject],
+    warnings: list[JsonObject],
+) -> JsonObject:
+    tools_used = sorted(
+        {
+            tool
+            for event in timeline
+            if isinstance((tool := event.get("tool_name")), str) and tool
+        }
+    )
+    decisions = _count_values(_timeline_decision(event) for event in timeline)
+    decisions.update(
+        _count_values(
+            event.get("status")
+            for event in timeline
+            if event.get("category") == "policy.evaluated"
+        )
+    )
+    return {
+        "principal_id": run.get("principal_id"),
+        "workspace_id": run.get("workspace_id"),
+        "session_id": run.get("session_id"),
+        "status": run.get("status"),
+        "tool_call_count": run.get("tool_call_count"),
+        "tools_used": cast(JsonValue, tools_used),
+        "decision_counts": cast(JsonValue, decisions),
+        "approval_count": len(approvals),
+        "patch_diagnostic_count": len(patch_diagnostics),
+        "audit_event_count": len(timeline),
+        "warning_count": len(warnings),
+        "latest_policy_hash": run.get("policy_hash"),
+        "manifest_lock_hash": run.get("last_tool_manifest_hash"),
+    }
+
+
+def _count_values(values: Iterable[object]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        if isinstance(value, str) and value:
+            counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
+def _timeline_decision(event: JsonObject) -> str | None:
+    metadata = event.get("metadata")
+    if isinstance(metadata, dict):
+        decision = metadata.get("decision")
+        if isinstance(decision, str) and decision:
+            return decision
+    return None
 
 
 def _timeline_status(event: JsonObject) -> str:

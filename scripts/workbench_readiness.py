@@ -22,8 +22,12 @@ REQUIRED_DOC_PHRASES = [
     "GET /runs/{run_id}",
     "GET /runs/{run_id}/evidence-export",
     "make demo-workbench",
+    "make demo-workbench-smoke",
     "make workbench-evidence-packet",
     "make live-demo-evidence-summary",
+    "WORKBENCH_DEMO_INDEX.md",
+    "WORKBENCH_DEMO_SMOKE.md",
+    "summary",
     "does not start services",
     "does not add run controls",
     "tool count remains `13`",
@@ -64,17 +68,25 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(
         _validate_doc(readme=readme, reproduction_map=reproduction_map, docs_site=docs_site)
     )
-    for target in ["workbench-readiness:", "workbench-evidence-packet:", "demo-workbench:"]:
+    for target in [
+        "workbench-readiness:",
+        "workbench-evidence-packet:",
+        "demo-workbench-smoke:",
+        "demo-workbench:",
+    ]:
         if target not in makefile:
             failures.append(f"Make target is missing: {target.rstrip(':')}")
     if "workbench-readiness" not in release_check_body:
         failures.append("workbench-readiness is missing from release-check")
     if "$(MAKE) workbench-evidence-packet" not in makefile.partition("review-candidate:")[2]:
         failures.append("workbench-evidence-packet is missing from review-candidate")
+    if "$(MAKE) demo-workbench-smoke" not in makefile.partition("demo-workbench:")[2]:
+        failures.append("demo-workbench-smoke is missing from demo-workbench")
 
     for phrase in [
         "Agent Runs",
         "RunSummary",
+        "Run Evidence",
         "Export Run Evidence",
         "timelineStatus",
         "timelineWarnings",
@@ -85,6 +97,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "filters agent runs with a bounded authenticated query",
         "Export Run Evidence",
+        "runev_123456789",
         "summary",
     ]:
         if phrase not in ui_tests:
@@ -119,6 +132,7 @@ def _validate_doc(*, readme: str, reproduction_map: str, docs_site: str) -> list
     for phrase in [
         "make workbench-readiness",
         "make workbench-evidence-packet",
+        "make demo-workbench-smoke",
         "make demo-workbench",
     ]:
         if phrase not in readme:

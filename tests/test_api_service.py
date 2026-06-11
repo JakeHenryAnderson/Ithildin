@@ -587,6 +587,21 @@ def test_run_evidence_export_requires_auth_and_returns_secret_free_bundle(tmp_pa
     assert payload["export_id"].startswith("runev_")
     assert payload["run"]["run_id"] == run_context.run_id
     assert payload["run"]["manifest_lock_hash"] == "sha256:" + ("2" * 64)
+    assert payload["summary"] == {
+        "principal_id": "agent:local-dev",
+        "workspace_id": "default",
+        "session_id": "sess_export_runs",
+        "status": "active",
+        "tool_call_count": 1,
+        "tools_used": ["fs.patch.apply"],
+        "decision_counts": {},
+        "approval_count": 1,
+        "patch_diagnostic_count": 0,
+        "audit_event_count": 2,
+        "warning_count": 2,
+        "latest_policy_hash": "sha256:" + ("1" * 64),
+        "manifest_lock_hash": "sha256:" + ("2" * 64),
+    }
     completed_events = [
         event for event in payload["timeline"] if event["category"] == "tool.execution.completed"
     ]

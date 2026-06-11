@@ -31,9 +31,11 @@ Use [live-demo-runbook.md](live-demo-runbook.md) for the local workbench demo se
 [review-docs-index.md](review-docs-index.md) to orient reviewers before attaching the packet.
 
 For an evidence-only local workbench wrapper, run `make demo-workbench`. It regenerates live-demo
-status/smoke/summary, operator sandbox, Agent Run correlation, and operator workbench packet
-artifacts without starting services or approving actions. Inspect the focused packet with
-`make workbench-evidence-packet`.
+status/smoke/summary, operator sandbox, Agent Run correlation, workbench smoke, and operator
+workbench packet artifacts without starting services or approving actions. Inspect the focused
+packet with `make workbench-evidence-packet`; open
+`var/review-packets/v3/operator-workbench/WORKBENCH_DEMO_INDEX.md` first. For only the
+deterministic operator-flow transcript, run `make demo-workbench-smoke`.
 
 Run `make internal-review-packet` when you want v2 local AI/subagent source-review prompts under
 `var/review-packets/v0.3/internal-ai-review-packet/`. That packet is internal pressure-test

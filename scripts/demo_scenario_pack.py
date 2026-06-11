@@ -29,6 +29,7 @@ REQUIRED_COMMANDS = [
     "make live-demo-packet",
     "make workbench-readiness",
     "make workbench-evidence-packet",
+    "make demo-workbench-smoke",
     "make demo-workbench",
     "make negative-review-transcripts",
     "make signed-evidence-demo",

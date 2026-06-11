@@ -28,6 +28,7 @@ The workbench should let a local operator answer four questions without reading 
 - `make agent-run-correlation-packet` records the run-to-tool/audit/approval correlation story.
 - `make live-demo-status`, `make live-demo-smoke`, `make live-demo-evidence-summary`, and
   `make live-demo-packet` record live-demo handoff evidence.
+- `make demo-workbench-smoke` records a deterministic operator-flow smoke transcript.
 - `make workbench-evidence-packet` packages the operator workbench story into one focused review
   packet.
 
@@ -40,6 +41,7 @@ demo evidence commands:
 - `make live-demo-status`;
 - `make live-demo-smoke`;
 - `make live-demo-evidence-summary`;
+- `make demo-workbench-smoke`;
 - `make operator-sandbox-demo-packet`;
 - `make agent-run-correlation-packet`;
 - `make workbench-evidence-packet`.
@@ -53,11 +55,18 @@ actions, repair diagnostics, or manage containers.
 `var/review-packets/v3/operator-workbench/`:
 
 - workbench index;
+- top-level `WORKBENCH_DEMO_INDEX.md`;
+- top-level `WORKBENCH_DEMO_SMOKE.md`;
 - reviewer prompt;
 - bundled operator docs;
 - command evidence;
 - artifact pointers;
 - artifact hashes.
+
+`WORKBENCH_DEMO_INDEX.md` is the first file to open. It includes the reviewed commit, dirty state,
+tool count, reading order, and artifact hashes. The run evidence export includes a safe `summary`
+object with principal, workspace, session, status, tools used, decision counts, approval count,
+patch diagnostic count, audit event count, warning count, policy hash, and manifest-lock hash.
 
 The packet points to existing live-demo, operator sandbox, Agent Run correlation, signed evidence,
 negative transcript, and consolidated review artifacts. It is a reviewer convenience artifact, not
@@ -71,6 +80,7 @@ Ithildin-mediated actions.
 - the workbench readiness doc is in the review docs and docs site;
 - README and reproduction-map command lists mention the workbench commands;
 - `make demo-workbench` and `make workbench-evidence-packet` are wired;
+- `make demo-workbench-smoke`, `WORKBENCH_DEMO_INDEX.md`, and `WORKBENCH_DEMO_SMOKE.md` are wired;
 - release-check includes the workbench readiness gate;
 - tool count remains `13`;
 - no-new-powers and tool-surface guardrails still pass;

@@ -305,6 +305,21 @@ function installFetchMock(status = systemStatus()) {
         export_id: "runev_123456789",
         exported_at: "2026-06-03T12:02:00Z",
         run: { run_id: "run_123456789" },
+        summary: {
+          principal_id: "agent:mcp-local",
+          workspace_id: "demo",
+          session_id: "mcp-stdio",
+          status: "active",
+          tool_call_count: 2,
+          tools_used: ["fs.read"],
+          decision_counts: { allow: 1 },
+          approval_count: 0,
+          patch_diagnostic_count: 0,
+          audit_event_count: 1,
+          warning_count: 1,
+          latest_policy_hash: "sha256:policyhash",
+          manifest_lock_hash: "sha256:toolhash",
+        },
         timeline: [],
         approvals: [],
         patch_diagnostics: [],
@@ -434,6 +449,9 @@ describe("Review console interactions", () => {
     expect(screen.getAllByText("agent:mcp-local").length).toBeGreaterThan(0);
     expect(screen.getByText("1 runs")).toBeInTheDocument();
     expect(screen.getByText("demo (1)")).toBeInTheDocument();
+    expect(screen.getByText("Run Evidence")).toBeInTheDocument();
+    expect(screen.getByText("2 tool calls")).toBeInTheDocument();
+    expect(screen.getByText("1 audit events")).toBeInTheDocument();
     expect(screen.getByText("policy.evaluated")).toBeInTheDocument();
     expect(screen.getAllByText("allow").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));

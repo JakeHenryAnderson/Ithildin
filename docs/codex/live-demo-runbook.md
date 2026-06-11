@@ -134,6 +134,16 @@ make demo-workbench
 This refreshes live-demo status, smoke, evidence summary, operator sandbox packet, Agent Run
 correlation packet, and the focused operator workbench packet.
 
+For only the deterministic operator-flow transcript, run:
+
+```sh
+make demo-workbench-smoke
+```
+
+The focused workbench packet also writes
+`var/review-packets/v3/operator-workbench/WORKBENCH_DEMO_INDEX.md`, the first file to open for the
+operator workbench handoff.
+
 ## MCP Client Companion
 
 For stdio MCP client demos, use:

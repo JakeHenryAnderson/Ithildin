@@ -11,6 +11,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import workbench_demo_smoke
+
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/operator-workbench")
 HASH_MANIFEST = "operator-workbench-artifact-hashes.json"
 PROJECT_MARKERS = [
@@ -31,6 +36,7 @@ DOCS = [
 ]
 COMMANDS = [
     ["make", "workbench-readiness"],
+    ["make", "demo-workbench-smoke"],
     ["make", "live-demo-preflight"],
     ["make", "live-demo-status"],
     ["make", "live-demo-smoke"],
@@ -91,6 +97,11 @@ def build_packet(
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
+    workbench_demo_smoke.build_transcript(
+        repo_root=repo_root,
+        output=output_dir / "WORKBENCH_DEMO_SMOKE.md",
+        run_commands=run_commands,
+    )
 
     context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
     files = {
@@ -99,6 +110,8 @@ def build_packet(
         "02_OPERATOR_WORKBENCH_DOCS.md": _bundle_docs(repo_root),
         "03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md": _command_evidence(run_commands),
         "04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md": _artifact_pointers(repo_root),
+        "05_OPERATOR_WORKBENCH_SMOKE.md": _observed_smoke(output_dir),
+        "WORKBENCH_DEMO_INDEX.md": _demo_index(output_dir, context),
     }
     for relative, content in files.items():
         (output_dir / relative).write_text(content.rstrip() + "\n", encoding="utf-8")
@@ -130,7 +143,10 @@ sandbox/workspace posture, and read-only evidence export.
 3. `02_OPERATOR_WORKBENCH_DOCS.md`
 4. `03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md`
 5. `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md`
-6. `operator-workbench-artifact-hashes.json`
+6. `05_OPERATOR_WORKBENCH_SMOKE.md`
+7. `WORKBENCH_DEMO_SMOKE.md`
+8. `WORKBENCH_DEMO_INDEX.md`
+9. `operator-workbench-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -220,6 +236,67 @@ def _artifact_pointers(repo_root: Path) -> str:
             "These artifacts are local evidence and reviewer convenience only. They are not",
             "notarization, SIEM custody, production compliance evidence, or proof of activity",
             "outside Ithildin-mediated actions.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _observed_smoke(output_dir: Path) -> str:
+    path = output_dir / "WORKBENCH_DEMO_SMOKE.md"
+    if not path.exists():
+        return "\n".join(
+            [
+                "# Workbench Demo Smoke Transcript",
+                "",
+                "Artifact not present. Run `make demo-workbench-smoke` before packet",
+                "generation, or let `make workbench-evidence-packet` generate it.",
+            ]
+        )
+    return "\n".join(
+        [
+            "# Workbench Demo Smoke Transcript",
+            "",
+            "```md",
+            path.read_text(encoding="utf-8").rstrip(),
+            "```",
+        ]
+    )
+
+
+def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
+    hashes = _hashes(output_dir)
+    lines = [
+        "# Workbench Demo Index",
+        "",
+        "This is the first file to open for the local operator workbench demo. It points to",
+        "the generated packet artifacts and summarizes the intended reading order.",
+        "",
+        "## Status",
+        "",
+        f"- commit: `{context['commit']}`",
+        f"- dirty: `{str(context['dirty']).lower()}`",
+        f"- command_evidence_executed: `{str(context['run_commands']).lower()}`",
+        "- tool_count: `13`",
+        "",
+        "## Open First",
+        "",
+        "1. `00_OPERATOR_WORKBENCH_INDEX.md` for the packet boundary.",
+        "2. `05_OPERATOR_WORKBENCH_SMOKE.md` for the operator flow transcript.",
+        "3. `02_OPERATOR_WORKBENCH_DOCS.md` for the underlying contracts.",
+        "4. `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md` for generated evidence paths.",
+        "",
+        "## Artifact Hashes",
+        "",
+    ]
+    for entry in hashes:
+        lines.append(f"- `{entry['path']}`: `{entry['sha256']}` bytes=`{entry['bytes']}`")
+    lines.extend(
+        [
+            "",
+            "## Boundary",
+            "",
+            "This index does not prove OS isolation, SIEM custody, compliance automation,",
+            "production security, or activity outside Ithildin-mediated actions.",
         ]
     )
     return "\n".join(lines)
