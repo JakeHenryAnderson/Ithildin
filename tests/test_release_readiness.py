@@ -79,6 +79,9 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    project_dependency_summary_design_review_packet,
+    project_dependency_summary_implementation_plan_check,
+    project_dependency_summary_proposal_check,
     project_manifest_summary_implementation_gate,
     project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
@@ -621,27 +624,31 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
     index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
-    doc = Path("docs/codex/v3-next-capability-candidate-evaluation.md").read_text(
+    doc = Path("docs/codex/v3-project-dependency-summary-selection.md").read_text(
         encoding="utf-8"
     )
 
     assert report["valid"] is True
-    assert report["candidate"] == "project.manifest.summary"
-    assert report["candidate_status"] == "design_only"
+    assert report["candidate"] == "project.dependency.summary"
+    assert report["candidate_status"] == "design_only_selected"
     assert report["implementation_allowed"] is False
     assert report["tool_count"] == 13
     assert report["approved_read_only_capabilities"] == 3
     for phrase in [
-        "Status: design-only candidate evaluation",
-        "project.manifest.summary",
-        "implementation remains blocked",
+        "Status: design-only candidate selection",
+        "project.dependency.summary",
+        "Implementation remains blocked",
         "does not add a manifest",
         "does not add an executor",
+        "does not add runtime behavior",
+        "count-only",
+        "Tool count remains `13`",
         "no file contents",
         "no package script values",
-        "no dependency names by default",
+        "no dependency names",
         "no registry or network access",
         "no shell",
+        "explicit implementation decision",
     ]:
         assert phrase in doc
     assert "make v3-next-capability-candidate-check" in readme
@@ -651,9 +658,9 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
         "v3-next-capability-candidate-check"
         in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
-    assert "v3 Next Capability Candidate Evaluation" in index
-    assert "docs/codex/v3-next-capability-candidate-evaluation.md" in review_docs.REVIEW_DOCS
-    assert "docs/codex/v3-next-capability-candidate-evaluation.md" in docs_site
+    assert "v3 project.dependency.summary Selection" in index
+    assert "docs/codex/v3-project-dependency-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-dependency-summary-selection.md" in docs_site
 
 
 def test_next_capability_readiness_is_wired() -> None:
@@ -668,14 +675,14 @@ def test_next_capability_readiness_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 13
     assert report["current_approved_read_only_capabilities"] == 3
-    assert report["next_candidate"] == "unselected"
+    assert report["next_candidate"] == "project.dependency.summary"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
-    assert report["historical_candidate"] == "project.manifest.summary"
+    assert report["historical_candidate"] == "project.dependency.summary"
     for phrase in [
         "Status: capability-expansion readiness checkpoint",
-        "Next candidate: unselected",
+        "Next candidate: `project.dependency.summary`",
         "Next candidate implementation: blocked",
         "Broader capability expansion: blocked",
         "New powerful tool classes: blocked",
@@ -690,6 +697,163 @@ def test_next_capability_readiness_is_wired() -> None:
     assert "Next Capability Readiness Check" in index
     assert "docs/codex/next-capability-readiness.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/next-capability-readiness.md" in docs_site
+
+
+def test_project_dependency_summary_proposal_check_is_wired() -> None:
+    report = project_dependency_summary_proposal_check.build_report(Path.cwd())
+    doc = Path("docs/codex/capability-proposals/project-dependency-summary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = Path("docs/codex/v3-project-dependency-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.dependency.summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 13
+    for phrase in [
+        "Status: design-only proposal",
+        "does not add a tool manifest",
+        "does not add an executor",
+        "project.dependency.summary",
+        "direct dependency counts only",
+        "no dependency names",
+        "no package names",
+        "no package version constraints",
+        "no package script names or values",
+        "no file contents",
+        "no lockfile contents",
+        "no transitive dependency resolution",
+        "no license, vulnerability, SBOM, or compliance claims",
+        "no package-manager execution",
+        "no registry or network access",
+        "no shell",
+        "additionalProperties: false",
+        "Policy And Audit Evidence",
+        "UI/review evidence",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in doc
+    assert "Status: design-only candidate selection" in selection
+    assert "Tool count remains `13`" in selection
+    assert "make project-dependency-summary-proposal-check" in readme
+    assert "project-dependency-summary-proposal-check:" in makefile
+    assert "project-dependency-summary-proposal-check" in release_check_body
+    assert (
+        "project-dependency-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.dependency.summary" in index
+    assert (
+        "docs/codex/capability-proposals/project-dependency-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-proposals/project-dependency-summary.md" in docs_site
+    assert "docs/codex/v3-project-dependency-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-dependency-summary-selection.md" in docs_site
+
+
+def test_project_dependency_summary_implementation_plan_check_is_wired() -> None:
+    report = project_dependency_summary_implementation_plan_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/capability-implementation-plans/project-dependency-summary.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.dependency.summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 13
+    for phrase in [
+        "Status: implementation-planning only",
+        "does not add a tool manifest",
+        "Implementation state: blocked",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Proposed Output Contract",
+        "Parser Contract Checklist",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Resource Limits",
+        "Source Review And Implementation Decision Requirement",
+        "no dependency names",
+        "no package-manager execution",
+        "no network access",
+        "Actual implementation remains blocked",
+    ]:
+        assert phrase in doc
+    assert "make project-dependency-summary-implementation-plan-check" in readme
+    assert "project-dependency-summary-implementation-plan-check:" in makefile
+    assert "project-dependency-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-dependency-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Implementation-Planning Packet: project.dependency.summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/project-dependency-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/project-dependency-summary.md" in docs_site
+
+
+def test_project_dependency_summary_design_review_packet_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-dependency-summary-design-review"
+
+    built = project_dependency_summary_design_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    assert built == output_dir
+    expected = {
+        "00_PROJECT_DEPENDENCY_SUMMARY_DESIGN_REVIEW_INDEX.md",
+        "01_PROJECT_DEPENDENCY_SUMMARY_DESIGN_REVIEW_PROMPT.md",
+        "02_NEXT_CAPABILITY_READINESS.md",
+        "03_PROJECT_DEPENDENCY_SUMMARY_SELECTION.md",
+        "04_PROJECT_DEPENDENCY_SUMMARY_PROPOSAL.md",
+        "05_PROJECT_DEPENDENCY_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "06_GATE_AND_RISK_EVIDENCE.md",
+        "07_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "project-dependency-summary-design-review-artifact-hashes.json",
+    }
+    assert {path.name for path in output_dir.iterdir()} == expected
+    index = output_dir.joinpath("00_PROJECT_DEPENDENCY_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = output_dir.joinpath(
+        "01_PROJECT_DEPENDENCY_SUMMARY_DESIGN_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "project-dependency-summary-design-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert "Tool count: `13`" in index
+    assert "EXT-DESIGN-PDS-###" in prompt
+    assert "Do not approve implementation" in prompt
+    assert {entry["path"] for entry in hashes} == expected - {
+        "project-dependency-summary-design-review-artifact-hashes.json"
+    }
 
 
 def test_project_manifest_summary_proposal_check_is_wired() -> None:
@@ -1593,6 +1757,9 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "project-manifest-summary-implementation-plan-check",
         "project-manifest-summary-implementation-gate",
         "project-manifest-summary-source-review-bundle",
+        "project-dependency-summary-proposal-check",
+        "project-dependency-summary-implementation-plan-check",
+        "project-dependency-summary-design-review-packet",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1618,10 +1785,13 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "33. `make project-manifest-summary-implementation-plan-check`" in reproduction_map
     assert "34. `make project-manifest-summary-implementation-gate`" in reproduction_map
     assert "35. `make project-manifest-summary-source-review-bundle`" in reproduction_map
-    assert "35. `make review-packet-bundle`" in reproduction_map
-    assert "36. `make review-packet-consolidated`" in reproduction_map
-    assert "37. `make packet-redaction-scan`" in reproduction_map
-    assert "38. `make docs-site`" in reproduction_map
+    assert "36. `make project-dependency-summary-proposal-check`" in reproduction_map
+    assert "37. `make project-dependency-summary-implementation-plan-check`" in reproduction_map
+    assert "38. `make project-dependency-summary-design-review-packet`" in reproduction_map
+    assert "39. `make review-packet-bundle`" in reproduction_map
+    assert "40. `make review-packet-consolidated`" in reproduction_map
+    assert "41. `make packet-redaction-scan`" in reproduction_map
+    assert "42. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
@@ -8824,7 +8994,7 @@ def test_observability_readiness_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 13
-    assert report["next_capability_candidate"] == "unselected"
+    assert report["next_capability_candidate"] == "project.dependency.summary"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["runtime_changes_allowed"] is False

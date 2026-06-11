@@ -250,16 +250,14 @@ work must stop for status, reassessment, or external consultation.
 
 30. `make v3-next-capability-candidate-check`
 
-   Expected outcome: validates the historical design-only `project.manifest.summary` candidate
-   evaluation from before that candidate advanced through proposal, implementation planning,
-   bounded implementation, and source-review handoff.
+   Expected outcome: validates the design-only `project.dependency.summary` candidate selection.
 
 31. `make next-capability-readiness`
 
    Expected outcome: validates the current bounded metadata inventory, no-new-powers evidence,
-   historical candidate lineage, review-doc/docs-site inclusion, release-check wiring, and the
-   preflight requirements before selecting or implementing another capability. It reports the next
-   candidate as unselected and implementation as blocked.
+   candidate lineage, review-doc/docs-site inclusion, release-check wiring, and the preflight
+   requirements before implementing another capability. It reports the next candidate as
+   `project.dependency.summary` and implementation as blocked.
 
 32. `make project-manifest-summary-proposal-check`
 
@@ -288,26 +286,41 @@ work must stop for status, reassessment, or external consultation.
    implementation record, no-new-powers evidence, command evidence, and artifact hashes for
    source-level review.
 
-35. `make review-packet-bundle`
+36. `make project-dependency-summary-proposal-check`
+
+   Expected outcome: validates the design-only count-only `project.dependency.summary` proposal
+   without authorizing runtime work.
+
+37. `make project-dependency-summary-implementation-plan-check`
+
+   Expected outcome: validates the implementation-planning packet for `project.dependency.summary`
+   while keeping manifests, executors, policy rules, MCP exposure, and runtime behavior blocked.
+
+38. `make project-dependency-summary-design-review-packet`
+
+   Expected outcome: creates an ignored focused design-review handoff under
+   `var/review-packets/v3/project-dependency-summary-design-review/`.
+
+39. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-36. `make review-packet-consolidated`
+40. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-37. `make packet-redaction-scan`
+41. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-38. `make docs-site`
+42. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -326,6 +339,7 @@ work must stop for status, reassessment, or external consultation.
 - git.show.commit_metadata source-review bundle: `var/review-packets/v0.9/git-commit-metadata-source-review/`
 - git.show.ref_summary source-review bundle: `var/review-packets/v0.9/git-ref-summary-source-review/`
 - project.manifest.summary source-review bundle: `var/review-packets/v0.9/project-manifest-summary-source-review/`
+- project.dependency.summary design-review packet: `var/review-packets/v3/project-dependency-summary-design-review/`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

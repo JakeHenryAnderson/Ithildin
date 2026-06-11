@@ -14,7 +14,7 @@ implementation decision, source-review handoff, and local lane closure.
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
   `git.show.ref_summary`, and `project.manifest.summary`.
 - Current tool count: `13`.
-- Next candidate: unselected.
+- Next candidate: `project.dependency.summary`.
 - Next candidate implementation: blocked.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
@@ -48,6 +48,10 @@ identity, runtime Postgres, hosted telemetry, plugin SDK work, package-manager e
 or network access, raw diffs, file contents by default, or unbounded repository-controlled text.
 
 ## Gate
+
+The selected next design candidate is
+[v3 project.dependency.summary Selection](v3-project-dependency-summary-selection.md). It remains
+design-only, count-only, and implementation-blocked until a future explicit decision.
 
 Run:
 

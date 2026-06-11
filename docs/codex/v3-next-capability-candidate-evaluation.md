@@ -1,9 +1,9 @@
 # v3 Next Capability Candidate Evaluation
 
-Status: design-only candidate evaluation. This document evaluates the next narrow read-only
-metadata candidate after `git.show.commit_metadata` and `git.show.ref_summary`.
+Status: historical design-only candidate evaluation. This document records the earlier narrow
+read-only metadata candidate after `git.show.commit_metadata` and `git.show.ref_summary`.
 
-Selected candidate: `project.manifest.summary`.
+Historical selected candidate: `project.manifest.summary`.
 
 This evaluation does not add a manifest, does not add an executor, and does not add policy rules.
 It does not add MCP exposure, does not add API behavior, does not add UI behavior, and does not add

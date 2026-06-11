@@ -12,8 +12,8 @@ without explicit review.
 - Tool count is `13`.
 - `git.show.commit_metadata`, `git.show.ref_summary`, and `project.manifest.summary` are the
   approved bounded read-only metadata runtime capability additions.
-- `make next-capability-readiness` records that the next candidate is currently unselected and any
-  further implementation remains blocked until a fresh proposal, implementation plan,
+- `make next-capability-readiness` records that the next candidate is `project.dependency.summary`
+  and any further implementation remains blocked until a fresh proposal, implementation plan,
   source-review handoff, and explicit decision are recorded.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
@@ -47,11 +47,11 @@ without explicit review.
 
 ## Current Recommendation
 
-It is reasonable to continue preparing one narrow read-only local metadata capability at a time,
-provided each candidate first passes `make next-capability-readiness`, the shared contract, privacy
-policy, checklist, implementation gate, source-review packet, internal xhigh review, and release
-checks. Implementation remains blocked until the explicit implementation decision for that one
-capability is recorded.
+It is reasonable to continue preparing `project.dependency.summary` as the next narrow read-only
+local metadata candidate, provided it first passes `make next-capability-readiness`, the shared
+contract, privacy policy, checklist, implementation gate, source-review packet, internal xhigh
+review, and release checks. Implementation remains blocked until the explicit implementation
+decision for that one capability is recorded.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

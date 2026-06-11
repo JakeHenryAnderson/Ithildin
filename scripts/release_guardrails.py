@@ -89,6 +89,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "project-manifest-summary-proposal-check",
     "project-manifest-summary-implementation-plan-check",
     "project-manifest-summary-implementation-gate",
+    "project-dependency-summary-proposal-check",
+    "project-dependency-summary-implementation-plan-check",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",

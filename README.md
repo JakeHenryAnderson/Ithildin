@@ -260,10 +260,16 @@ checked with `make control-mapping-readiness`.
 - `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
 - `make read-only-capability-inventory-gate` - validate the approved bounded read-only metadata
   tool inventory, implementation gates, source-review handoffs, and release-check wiring.
-- `make v3-next-capability-candidate-check` - validate the design-only evaluation for the next
-  historical candidate, `project.manifest.summary`, from before it advanced through implementation.
+- `make v3-next-capability-candidate-check` - validate the design-only selection for the next
+  candidate, `project.dependency.summary`.
 - `make next-capability-readiness` - validate the current bounded metadata inventory and the
   preflight requirements before selecting or implementing another capability.
+- `make project-dependency-summary-proposal-check` - validate the design-only
+  `project.dependency.summary` proposal without authorizing runtime work.
+- `make project-dependency-summary-implementation-plan-check` - validate the
+  `project.dependency.summary` implementation-planning packet without authorizing runtime work.
+- `make project-dependency-summary-design-review-packet` - generate the design-only review packet
+  for `project.dependency.summary`.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -565,11 +571,21 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next-capability preflight is
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
-with `make next-capability-readiness`; it records that the next candidate is currently unselected
-and implementation remains blocked until a fresh proposal, implementation plan, source-review
+with `make next-capability-readiness`; it records that the next candidate is
+`project.dependency.summary` and implementation remains blocked until a fresh proposal,
+implementation plan, source-review
 handoff, and explicit decision are recorded. The historical design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)
-and is checked with `make v3-next-capability-candidate-check`. The proposal for that now-implemented
+and the active design-only selection is
+[docs/codex/v3-project-dependency-summary-selection.md](docs/codex/v3-project-dependency-summary-selection.md),
+checked with `make v3-next-capability-candidate-check`. The proposal for that active candidate is
+[docs/codex/capability-proposals/project-dependency-summary.md](docs/codex/capability-proposals/project-dependency-summary.md)
+and is checked with `make project-dependency-summary-proposal-check`; the implementation-planning
+packet is
+[docs/codex/capability-implementation-plans/project-dependency-summary.md](docs/codex/capability-implementation-plans/project-dependency-summary.md)
+and is checked with `make project-dependency-summary-implementation-plan-check`; the design-review
+packet is generated with `make project-dependency-summary-design-review-packet`. The proposal for
+the now-implemented historical
 candidate is
 [docs/codex/capability-proposals/project-manifest-summary.md](docs/codex/capability-proposals/project-manifest-summary.md)
 and is checked with `make project-manifest-summary-proposal-check`. The implementation-planning

@@ -14,22 +14,26 @@ if __package__ in {None, ""}:
 from scripts import read_only_capability_inventory_gate
 
 ROOT = Path(__file__).resolve().parents[1]
-DOC_PATH = ROOT / "docs/codex/v3-next-capability-candidate-evaluation.md"
+DOC_PATH = ROOT / "docs/codex/v3-project-dependency-summary-selection.md"
 REQUIRED_PHRASES = [
-    "Status: design-only candidate evaluation",
-    "project.manifest.summary",
-    "implementation remains blocked",
+    "Status: design-only candidate selection",
+    "project.dependency.summary",
+    "Implementation remains blocked",
     "does not add a manifest",
     "does not add an executor",
     "does not add policy rules",
     "does not add MCP exposure",
     "does not add API behavior",
     "does not add UI behavior",
+    "does not add runtime behavior",
+    "count-only",
+    "Tool count remains `13`",
     "no file contents",
     "no package script values",
-    "no dependency names by default",
+    "no dependency names",
     "no registry or network access",
     "no shell",
+    "make project-dependency-summary-proposal-check",
     "explicit implementation decision",
 ]
 
@@ -51,13 +55,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     path = repo_root / DOC_PATH.relative_to(ROOT)
     if not path.exists():
-        failures.append("v3 next capability candidate evaluation doc is missing")
+        failures.append("v3 project.dependency.summary selection doc is missing")
         text = ""
     else:
         text = path.read_text(encoding="utf-8")
     for phrase in REQUIRED_PHRASES:
         if phrase not in text:
-            failures.append(f"candidate evaluation is missing phrase: {phrase}")
+            failures.append(f"candidate selection is missing phrase: {phrase}")
 
     inventory = read_only_capability_inventory_gate.build_report(repo_root)
     failures.extend(f"inventory: {failure}" for failure in inventory["failures"])
@@ -66,8 +70,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
-        "candidate": "project.manifest.summary",
-        "candidate_status": "design_only",
+        "candidate": "project.dependency.summary",
+        "candidate_status": "design_only_selected",
         "implementation_allowed": False,
         "tool_count": inventory.get("tool_count"),
         "approved_read_only_capabilities": inventory.get("capability_count"),
