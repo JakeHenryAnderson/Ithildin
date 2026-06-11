@@ -202,6 +202,7 @@ checked with `make control-mapping-readiness`.
 - `make workbench-readiness` - validate the local operator workbench surface, docs, evidence packet wiring, and no-new-powers posture.
 - `make workbench-evidence-packet` - generate an ignored operator workbench evidence packet tying together Agent Runs, approvals, audit, live demo, sandbox/workspace posture, and handoff artifacts.
 - `make demo-readiness-summary` - generate a secret-free operator demo readiness summary with ready, missing, optional/manual, deferred, and next-command sections.
+- `make operator-demo-guide` - generate a secret-free preflight-to-cleanup operator demo guide for the local workbench path.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.

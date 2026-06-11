@@ -316,6 +316,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 297 - Workbench demo UX polish | Done | Review console Agent Runs now include a `Demo Path` guide and grouped run evidence overview while preserving read-only, no-run-control behavior. |
 | 298 - Demo readiness summary | Done | `make demo-readiness-summary`; generates a secret-free ready/missing/optional/deferred operator demo digest without starting services or calling governed tools. |
 | 299 - Workbench happy path story | Done | `07_WORKBENCH_DEMO_STORY.md`; generated in the workbench packet as a preflight-to-cleanup narrative without runtime fixture loading. |
+| 300 - Operator demo guide | Done | `make operator-demo-guide`; generates a secret-free preflight-to-cleanup operator stage table and bundles it into the workbench packet without starting services or adding runtime controls. |
 
 ## Future Candidate Track
 

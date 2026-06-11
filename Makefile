@@ -82,11 +82,15 @@ demo-workbench-smoke:
 demo-readiness-summary:
 	uv run python scripts/demo_readiness_summary.py
 
+operator-demo-guide:
+	uv run python scripts/operator_demo_guide.py
+
 demo-workbench:
 	$(MAKE) live-demo-preflight
 	$(MAKE) live-demo-status
 	$(MAKE) live-demo-smoke
 	$(MAKE) live-demo-evidence-summary
+	$(MAKE) operator-demo-guide
 	$(MAKE) demo-workbench-smoke
 	$(MAKE) demo-readiness-summary
 	$(MAKE) operator-sandbox-demo-packet

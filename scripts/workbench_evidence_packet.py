@@ -14,7 +14,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import demo_readiness_summary, workbench_demo_smoke
+from scripts import demo_readiness_summary, operator_demo_guide, workbench_demo_smoke
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/operator-workbench")
 HASH_MANIFEST = "operator-workbench-artifact-hashes.json"
@@ -35,6 +35,7 @@ DOCS = [
     Path("docs/codex/incident-reconstruction-guide.md"),
 ]
 COMMANDS = [
+    ["make", "operator-demo-guide"],
     ["make", "demo-readiness-summary"],
     ["make", "workbench-readiness"],
     ["make", "demo-workbench-smoke"],
@@ -108,6 +109,11 @@ def build_packet(
         output=output_dir / "DEMO_READINESS_SUMMARY.md",
         probe_endpoints=run_commands,
     )
+    operator_demo_guide.build_guide(
+        repo_root=repo_root,
+        output=output_dir / "OPERATOR_DEMO_GUIDE.md",
+        probe_endpoints=run_commands,
+    )
 
     context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
     files = {
@@ -119,6 +125,7 @@ def build_packet(
         "05_OPERATOR_WORKBENCH_SMOKE.md": _observed_smoke(output_dir),
         "06_DEMO_READINESS_SUMMARY.md": _observed_readiness(output_dir),
         "07_WORKBENCH_DEMO_STORY.md": _demo_story(context),
+        "08_OPERATOR_DEMO_GUIDE.md": _observed_operator_guide(output_dir),
         "WORKBENCH_DEMO_INDEX.md": _demo_index(output_dir, context),
     }
     for relative, content in files.items():
@@ -154,10 +161,12 @@ sandbox/workspace posture, and read-only evidence export.
 6. `05_OPERATOR_WORKBENCH_SMOKE.md`
 7. `06_DEMO_READINESS_SUMMARY.md`
 8. `07_WORKBENCH_DEMO_STORY.md`
-9. `WORKBENCH_DEMO_SMOKE.md`
-10. `DEMO_READINESS_SUMMARY.md`
-11. `WORKBENCH_DEMO_INDEX.md`
-12. `operator-workbench-artifact-hashes.json`
+9. `08_OPERATOR_DEMO_GUIDE.md`
+10. `WORKBENCH_DEMO_SMOKE.md`
+11. `DEMO_READINESS_SUMMARY.md`
+12. `OPERATOR_DEMO_GUIDE.md`
+13. `WORKBENCH_DEMO_INDEX.md`
+14. `operator-workbench-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -298,6 +307,28 @@ def _observed_readiness(output_dir: Path) -> str:
     )
 
 
+def _observed_operator_guide(output_dir: Path) -> str:
+    path = output_dir / "OPERATOR_DEMO_GUIDE.md"
+    if not path.exists():
+        return "\n".join(
+            [
+                "# Operator Demo Guide",
+                "",
+                "Artifact not present. Run `make operator-demo-guide` before packet",
+                "generation, or let `make workbench-evidence-packet` generate it.",
+            ]
+        )
+    return "\n".join(
+        [
+            "# Operator Demo Guide",
+            "",
+            "```md",
+            path.read_text(encoding="utf-8").rstrip(),
+            "```",
+        ]
+    )
+
+
 def _demo_story(context: dict[str, Any]) -> str:
     return f"""# Workbench Demo Happy Path Story
 
@@ -327,6 +358,7 @@ workspaces, or manage sandbox lifecycle.
 ## Evidence To Point At
 
 - `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.
+- `OPERATOR_DEMO_GUIDE.md` for the operator-facing preflight-to-cleanup walkthrough.
 - `WORKBENCH_DEMO_SMOKE.md` for observed readiness commands and manual demo sequence.
 - `02_OPERATOR_WORKBENCH_DOCS.md` for Agent Run and export contracts.
 - `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md` for live-demo and correlation packet locations.
@@ -357,11 +389,12 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         "## Newest Reading Order",
         "",
         "1. `WORKBENCH_DEMO_INDEX.md` for this newest reading order.",
-        "2. `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.",
-        "3. `WORKBENCH_DEMO_SMOKE.md` for the operator flow transcript.",
-        "4. `00_OPERATOR_WORKBENCH_INDEX.md` for the workbench packet boundary.",
-        "5. `var/review-packets/v3/live-demo/` for the live-demo packet.",
-        "6. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
+        "2. `OPERATOR_DEMO_GUIDE.md` for the preflight-to-cleanup walkthrough.",
+        "3. `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.",
+        "4. `WORKBENCH_DEMO_SMOKE.md` for the operator flow transcript.",
+        "5. `00_OPERATOR_WORKBENCH_INDEX.md` for the workbench packet boundary.",
+        "6. `var/review-packets/v3/live-demo/` for the live-demo packet.",
+        "7. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
         "",
         "## Supporting Artifacts",
         "",

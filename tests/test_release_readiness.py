@@ -61,6 +61,7 @@ from scripts import (
     observability_control_packet,
     observability_readiness,
     operator_action_states_check,
+    operator_demo_guide,
     operator_sandbox_dashboard_checklist,
     operator_sandbox_demo_packet,
     operator_sandbox_demo_readiness,
@@ -8176,6 +8177,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         output=readiness_path,
         probe_endpoints=False,
     )
+    operator_guide_path = output_dir / "OPERATOR_DEMO_GUIDE.md"
+    operator_demo_guide.build_guide(
+        repo_root=Path.cwd(),
+        output=operator_guide_path,
+        probe_endpoints=False,
+    )
     workbench_evidence_packet.build_packet(
         repo_root=Path.cwd(),
         output_dir=output_dir,
@@ -8192,8 +8199,10 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "05_OPERATOR_WORKBENCH_SMOKE.md",
         "06_DEMO_READINESS_SUMMARY.md",
         "07_WORKBENCH_DEMO_STORY.md",
+        "08_OPERATOR_DEMO_GUIDE.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "DEMO_READINESS_SUMMARY.md",
+        "OPERATOR_DEMO_GUIDE.md",
         "WORKBENCH_DEMO_INDEX.md",
         "operator-workbench-artifact-hashes.json",
     }
@@ -8221,8 +8230,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         encoding="utf-8"
     )
     story = (output_dir / "07_WORKBENCH_DEMO_STORY.md").read_text(encoding="utf-8")
+    operator_guide_bundle = (output_dir / "08_OPERATOR_DEMO_GUIDE.md").read_text(
+        encoding="utf-8"
+    )
     smoke = smoke_path.read_text(encoding="utf-8")
     readiness_summary = readiness_path.read_text(encoding="utf-8")
+    operator_guide = operator_guide_path.read_text(encoding="utf-8")
     demo_index = (output_dir / "WORKBENCH_DEMO_INDEX.md").read_text(encoding="utf-8")
     gate = Path("docs/codex/operator-workbench-readiness.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -8255,6 +8268,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "operator-managed-sandbox-demo-guide.md" in docs_bundle
     assert "live-demo-runbook.md" in docs_bundle
     assert "make workbench-readiness" in evidence
+    assert "make operator-demo-guide" in evidence
     assert "make demo-readiness-summary" in evidence
     assert "make demo-workbench-smoke" in evidence
     assert "make live-demo-evidence-summary" in evidence
@@ -8275,8 +8289,15 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "Workbench Demo Happy Path Story" in story
     assert "make demo-flow" in story
     assert "not a runtime fixture loader" in story
+    assert "Operator Demo Guide" in operator_guide
+    assert "Demo Path" in operator_guide
+    assert "Preflight" in operator_guide
+    assert "Mediated Run" in operator_guide
+    assert "make compose-down" in operator_guide
+    assert "Operator Demo Guide" in operator_guide_bundle
     assert "Workbench Demo Index" in demo_index
     assert "Newest Reading Order" in demo_index
+    assert "OPERATOR_DEMO_GUIDE.md" in demo_index
     assert "DEMO_READINESS_SUMMARY.md" in demo_index
     assert "WORKBENCH_DEMO_SMOKE.md" in demo_index
     assert "var/review-packets/v3/live-demo/" in demo_index
@@ -8285,15 +8306,18 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make workbench-readiness" in readme
     assert "make workbench-evidence-packet" in readme
     assert "make demo-readiness-summary" in readme
+    assert "make operator-demo-guide" in readme
     assert "make demo-workbench-smoke" in readme
     assert "make demo-workbench" in readme
     assert "workbench-readiness:" in makefile
     assert "workbench-evidence-packet:" in makefile
     assert "demo-readiness-summary:" in makefile
+    assert "operator-demo-guide:" in makefile
     assert "demo-workbench-smoke:" in makefile
     assert "demo-workbench:" in makefile
     assert "workbench-readiness" in release_check_body
     assert "$(MAKE) demo-readiness-summary" in makefile.partition("demo-workbench:")[2]
+    assert "$(MAKE) operator-demo-guide" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-workbench-smoke" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) workbench-evidence-packet" in review_candidate_body
     assert "workbench-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
@@ -8302,6 +8326,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "docs/codex/operator-workbench-readiness.md" in docs_site
     assert "make demo-workbench" in reproduction_map
     assert "make demo-readiness-summary" in reproduction_map
+    assert "make operator-demo-guide" in reproduction_map
     assert "make demo-workbench-smoke" in reproduction_map
     assert "Demo Path" in gate
     assert "grouped run evidence overview" in gate
@@ -8313,6 +8338,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "297 - Workbench demo UX polish | Done" in backlog
     assert "298 - Demo readiness summary | Done" in backlog
     assert "299 - Workbench happy path story | Done" in backlog
+    assert "300 - Operator demo guide | Done" in backlog
     for phrase in [
         "Status: release-readiness gate",
         "operator workbench",
@@ -8320,9 +8346,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "GET /runs/{run_id}/evidence-export",
         "make demo-workbench",
         "make demo-readiness-summary",
+        "make operator-demo-guide",
         "make demo-workbench-smoke",
         "WORKBENCH_DEMO_INDEX.md",
         "DEMO_READINESS_SUMMARY.md",
+        "OPERATOR_DEMO_GUIDE.md",
+        "08_OPERATOR_DEMO_GUIDE.md",
         "07_WORKBENCH_DEMO_STORY.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "newest reading order",
