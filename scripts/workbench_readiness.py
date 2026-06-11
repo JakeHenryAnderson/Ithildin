@@ -98,6 +98,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Agent Runs",
         "Demo Path",
+        "Preflight",
+        "Seed/run",
+        "Cleanup",
         "RunSummary",
         "Run Evidence",
         "Grouped run evidence",

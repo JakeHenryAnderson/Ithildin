@@ -764,6 +764,7 @@ caption {
 
 .operator-demo-guide ol {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   list-style: none;
   margin: 0;

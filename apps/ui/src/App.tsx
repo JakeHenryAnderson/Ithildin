@@ -1617,15 +1617,17 @@ function EmptyState({ text }: { text: string }) {
 
 function OperatorWorkbenchGuide() {
   const steps = [
-    ["1", "Filter runs"],
-    ["2", "Inspect evidence"],
-    ["3", "Export bundle"],
+    ["1", "Preflight"],
+    ["2", "Seed/run"],
+    ["3", "Inspect"],
+    ["4", "Export"],
+    ["5", "Cleanup"],
   ];
   return (
     <div className="operator-demo-guide" aria-label="Operator workbench demo path">
       <div>
         <strong>Demo Path</strong>
-        <span>Read-only view: filters, timeline evidence, and export. No run controls.</span>
+        <span>Local path: preflight, demo run, evidence review, export, cleanup. No run controls.</span>
       </div>
       <ol>
         {steps.map(([number, label]) => (
