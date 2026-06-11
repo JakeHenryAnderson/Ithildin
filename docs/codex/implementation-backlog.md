@@ -319,6 +319,9 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 300 - Operator demo guide | Done | `make operator-demo-guide`; generates a secret-free preflight-to-cleanup operator stage table and bundles it into the workbench packet without starting services or adding runtime controls. |
 | 301 - Guided demo state report | Done | `make demo-state-report`; generates `DEMO_STATE_REPORT.md` with seed status, localhost reachability, warnings, artifact paths, and next demo commands without governed tool calls. |
 | 302 - Guided demo wrapper | Done | `make guided-demo` and `make guided-demo-readiness`; refresh the non-service-starting local demo evidence path, transcript, packet wiring, and no-new-powers gate. |
+| 303 - Demo flow result summary | Done | `make demo-flow`; writes `DEMO_FLOW_RESULT.md` with proposal, approval, candidate run ID, audit verification, export pointer, and reset guidance after the optional mediated local demo. |
+| 304 - Demo reset guide | Done | `make demo-reset-guide`; writes `DEMO_RESET_GUIDE.md` with read-only repeat/recovery guidance and no automatic repair, rollback, cleanup, or sandbox control. |
+| 305 - Demo flow readiness gate | Done | [demo-flow-readiness.md](demo-flow-readiness.md), `make demo-flow-readiness`; validates demo result/reset artifacts, UI demo labels, workbench packet wiring, and no-new-powers posture. |
 
 ## Future Candidate Track
 

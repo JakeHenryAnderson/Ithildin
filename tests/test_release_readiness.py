@@ -30,7 +30,9 @@ from scripts import (
     control_mapping_readiness,
     dashboard_evidence_checklist_check,
     data_classification_design_check,
+    demo_flow_readiness,
     demo_readiness_summary,
+    demo_reset_guide,
     demo_state_report,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -8168,6 +8170,7 @@ def test_operator_sandbox_demo_smoke_and_dashboard_artifacts_are_secret_free(
 
 def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> None:
     report = workbench_readiness.build_report(Path.cwd())
+    demo_flow_report = demo_flow_readiness.build_report(Path.cwd())
     output_dir = tmp_path / "operator-workbench"
     smoke_path = workbench_demo_smoke.build_transcript(
         repo_root=Path.cwd(),
@@ -8192,6 +8195,8 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         output=state_report_path,
         probe_endpoints=False,
     )
+    reset_guide_path = output_dir / "DEMO_RESET_GUIDE.md"
+    demo_reset_guide.build_guide(repo_root=Path.cwd(), output=reset_guide_path)
     workbench_evidence_packet.build_packet(
         repo_root=Path.cwd(),
         output_dir=output_dir,
@@ -8210,10 +8215,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "07_WORKBENCH_DEMO_STORY.md",
         "08_OPERATOR_DEMO_GUIDE.md",
         "09_DEMO_STATE_REPORT.md",
+        "10_DEMO_RESET_GUIDE.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "DEMO_READINESS_SUMMARY.md",
         "OPERATOR_DEMO_GUIDE.md",
         "DEMO_STATE_REPORT.md",
+        "DEMO_RESET_GUIDE.md",
         "WORKBENCH_DEMO_INDEX.md",
         "operator-workbench-artifact-hashes.json",
     }
@@ -8245,10 +8252,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         encoding="utf-8"
     )
     state_report_bundle = (output_dir / "09_DEMO_STATE_REPORT.md").read_text(encoding="utf-8")
+    reset_guide_bundle = (output_dir / "10_DEMO_RESET_GUIDE.md").read_text(encoding="utf-8")
     smoke = smoke_path.read_text(encoding="utf-8")
     readiness_summary = readiness_path.read_text(encoding="utf-8")
     operator_guide = operator_guide_path.read_text(encoding="utf-8")
     state_report = state_report_path.read_text(encoding="utf-8")
+    reset_guide = reset_guide_path.read_text(encoding="utf-8")
     demo_index = (output_dir / "WORKBENCH_DEMO_INDEX.md").read_text(encoding="utf-8")
     gate = Path("docs/codex/operator-workbench-readiness.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -8262,6 +8271,11 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     )
 
     assert report["valid"] is True
+    assert demo_flow_report["valid"] is True
+    assert demo_flow_report["tool_count"] == 13
+    assert demo_flow_report["runtime_changes_allowed"] is False
+    assert demo_flow_report["new_power_classes_allowed"] is False
+    assert demo_flow_report["run_control_behavior_allowed"] is False
     assert report["tool_count"] == 13
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
@@ -8283,6 +8297,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make workbench-readiness" in evidence
     assert "make operator-demo-guide" in evidence
     assert "make demo-state-report" in evidence
+    assert "make demo-reset-guide" in evidence
     assert "make demo-readiness-summary" in evidence
     assert "make demo-workbench-smoke" in evidence
     assert "make live-demo-evidence-summary" in evidence
@@ -8313,10 +8328,17 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "seeded_workspace_exists" in state_report
     assert "Recommended Next Demo Commands" in state_report
     assert "Demo State Report" in state_report_bundle
+    assert "Demo Reset Guide" in reset_guide
+    assert "does not delete databases" in reset_guide
+    assert "DEMO_FLOW_RESULT.md" in reset_guide
+    assert "Demo Reset Guide" in reset_guide_bundle
+    assert "does not provide automatic repair" in reset_guide_bundle
     assert "Workbench Demo Index" in demo_index
     assert "Newest Reading Order" in demo_index
     assert "OPERATOR_DEMO_GUIDE.md" in demo_index
     assert "DEMO_STATE_REPORT.md" in demo_index
+    assert "DEMO_FLOW_RESULT.md" in demo_index
+    assert "DEMO_RESET_GUIDE.md" in demo_index
     assert "DEMO_READINESS_SUMMARY.md" in demo_index
     assert "WORKBENCH_DEMO_SMOKE.md" in demo_index
     assert "var/review-packets/v3/live-demo/" in demo_index
@@ -8327,6 +8349,8 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make demo-readiness-summary" in readme
     assert "make operator-demo-guide" in readme
     assert "make demo-state-report" in readme
+    assert "make demo-reset-guide" in readme
+    assert "make demo-flow-readiness" in readme
     assert "make guided-demo" in readme
     assert "make guided-demo-readiness" in readme
     assert "make demo-workbench-smoke" in readme
@@ -8336,27 +8360,37 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "demo-readiness-summary:" in makefile
     assert "operator-demo-guide:" in makefile
     assert "demo-state-report:" in makefile
+    assert "demo-reset-guide:" in makefile
+    assert "demo-flow-readiness:" in makefile
     assert "guided-demo:" in makefile
     assert "guided-demo-readiness:" in makefile
     assert "demo-workbench-smoke:" in makefile
     assert "demo-workbench:" in makefile
     assert "workbench-readiness" in release_check_body
+    assert "demo-flow-readiness" in release_check_body
     assert "$(MAKE) demo-readiness-summary" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) operator-demo-guide" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-state-report" in makefile.partition("demo-workbench:")[2]
+    assert "$(MAKE) demo-reset-guide" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-workbench-smoke" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) guided-demo" in review_candidate_body
     assert "$(MAKE) workbench-evidence-packet" in review_candidate_body
+    assert "$(MAKE) demo-flow-readiness" in review_candidate_body
     assert "workbench-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "guided-demo-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "demo-flow-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert "$(MAKE) guided-demo" in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     assert "$(MAKE) workbench-evidence-packet" in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     assert "docs/codex/operator-workbench-readiness.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/demo-flow-readiness.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/operator-workbench-readiness.md" in docs_site
+    assert "docs/codex/demo-flow-readiness.md" in docs_site
     assert "make demo-workbench" in reproduction_map
     assert "make demo-readiness-summary" in reproduction_map
     assert "make operator-demo-guide" in reproduction_map
     assert "make demo-state-report" in reproduction_map
+    assert "make demo-reset-guide" in reproduction_map
+    assert "make demo-flow-readiness" in reproduction_map
     assert "make guided-demo" in reproduction_map
     assert "make guided-demo-readiness" in reproduction_map
     assert "make demo-workbench-smoke" in reproduction_map
@@ -8373,6 +8407,9 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "300 - Operator demo guide | Done" in backlog
     assert "301 - Guided demo state report | Done" in backlog
     assert "302 - Guided demo wrapper | Done" in backlog
+    assert "303 - Demo flow result summary | Done" in backlog
+    assert "304 - Demo reset guide | Done" in backlog
+    assert "305 - Demo flow readiness gate | Done" in backlog
     for phrase in [
         "Status: release-readiness gate",
         "operator workbench",
@@ -8382,13 +8419,18 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "make demo-readiness-summary",
         "make operator-demo-guide",
         "make demo-state-report",
+        "make demo-reset-guide",
+        "make demo-flow-readiness",
         "make demo-workbench-smoke",
         "WORKBENCH_DEMO_INDEX.md",
         "DEMO_READINESS_SUMMARY.md",
         "OPERATOR_DEMO_GUIDE.md",
         "DEMO_STATE_REPORT.md",
+        "DEMO_FLOW_RESULT.md",
+        "DEMO_RESET_GUIDE.md",
         "08_OPERATOR_DEMO_GUIDE.md",
         "09_DEMO_STATE_REPORT.md",
+        "10_DEMO_RESET_GUIDE.md",
         "07_WORKBENCH_DEMO_STORY.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "newest reading order",

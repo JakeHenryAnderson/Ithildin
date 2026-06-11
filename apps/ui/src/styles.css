@@ -686,6 +686,20 @@ caption {
   white-space: nowrap;
 }
 
+.demo-label {
+  background: #e9f3ff;
+  border: 1px solid #cfe0f5;
+  border-radius: 999px;
+  color: #24547f;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 6px;
+  padding: 3px 6px;
+  text-transform: uppercase;
+}
+
 .patch-row.selected,
 .run-row.selected {
   background: #eaf5f0;
@@ -834,6 +848,7 @@ caption {
 }
 
 .run-summary span,
+.run-summary .demo-label,
 .warning-chip,
 .evidence-chip-list span {
   background: #eef6f2;

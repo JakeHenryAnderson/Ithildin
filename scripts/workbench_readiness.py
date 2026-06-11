@@ -25,6 +25,7 @@ REQUIRED_DOC_PHRASES = [
     "make demo-readiness-summary",
     "make operator-demo-guide",
     "make demo-state-report",
+    "make demo-reset-guide",
     "make demo-workbench-smoke",
     "make workbench-evidence-packet",
     "make live-demo-evidence-summary",
@@ -32,7 +33,10 @@ REQUIRED_DOC_PHRASES = [
     "DEMO_READINESS_SUMMARY.md",
     "OPERATOR_DEMO_GUIDE.md",
     "DEMO_STATE_REPORT.md",
+    "DEMO_FLOW_RESULT.md",
+    "DEMO_RESET_GUIDE.md",
     "07_WORKBENCH_DEMO_STORY.md",
+    "10_DEMO_RESET_GUIDE.md",
     "WORKBENCH_DEMO_SMOKE.md",
     "newest reading order",
     "summary",
@@ -82,6 +86,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "demo-readiness-summary:",
         "operator-demo-guide:",
         "demo-state-report:",
+        "demo-reset-guide:",
         "demo-workbench-smoke:",
         "demo-workbench:",
     ]:
@@ -99,6 +104,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("operator-demo-guide is missing from demo-workbench")
     if "$(MAKE) demo-state-report" not in makefile.partition("demo-workbench:")[2]:
         failures.append("demo-state-report is missing from demo-workbench")
+    if "$(MAKE) demo-reset-guide" not in makefile.partition("demo-workbench:")[2]:
+        failures.append("demo-reset-guide is missing from demo-workbench")
 
     for phrase in [
         "Agent Runs",
@@ -108,6 +115,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "Cleanup",
         "RunSummary",
         "Run Evidence",
+        "DemoLabel",
         "Grouped run evidence",
         "Export Run Evidence",
         "timelineStatus",
@@ -122,6 +130,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "Evidence Types",
         "Export Run Evidence",
         "runev_123456789",
+        "guided_local_demo",
         "summary",
     ]:
         if phrase not in ui_tests:
@@ -159,6 +168,7 @@ def _validate_doc(*, readme: str, reproduction_map: str, docs_site: str) -> list
         "make demo-readiness-summary",
         "make operator-demo-guide",
         "make demo-state-report",
+        "make demo-reset-guide",
         "make demo-workbench-smoke",
         "make demo-workbench",
     ]:

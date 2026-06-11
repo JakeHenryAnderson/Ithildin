@@ -268,7 +268,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             policy_hash: "sha256:policyhash",
             last_tool_name: "fs.read",
             last_tool_manifest_hash: "sha256:toolhash",
-            metadata: {},
+            metadata: { scenario: "guided_local_demo", demo_step: "mediated_patch_flow" },
           },
         ],
         summary: {
@@ -301,7 +301,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
           policy_hash: "sha256:policyhash",
           last_tool_name: "fs.read",
           last_tool_manifest_hash: "sha256:toolhash",
-          metadata: {},
+          metadata: { scenario: "guided_local_demo", demo_step: "mediated_patch_flow" },
         },
         timeline: options.emptyTimeline
           ? []
@@ -498,6 +498,8 @@ describe("Review console interactions", () => {
     expect(screen.getByText("1 runs")).toBeInTheDocument();
     expect(screen.getByText("demo (1)")).toBeInTheDocument();
     expect(screen.getByText("Run Evidence")).toBeInTheDocument();
+    expect(screen.getAllByText("demo").length).toBeGreaterThan(0);
+    expect(document.querySelector(".demo-label")).not.toBeNull();
     expect(screen.getByText("Evidence Types")).toBeInTheDocument();
     expect(screen.getByText("policy (1)")).toBeInTheDocument();
     expect(screen.getByText("Statuses")).toBeInTheDocument();

@@ -32,12 +32,15 @@ Use [live-demo-runbook.md](live-demo-runbook.md) for the local workbench demo se
 
 For an evidence-only local workbench wrapper, run `make demo-workbench`. It regenerates live-demo
 status/smoke/summary, operator sandbox, Agent Run correlation, demo readiness summary, operator demo
-guide, workbench smoke, and operator workbench packet artifacts without starting services or approving
-actions. For only the ready/missing/optional/deferred digest, run `make demo-readiness-summary`; for
+guide, reset guidance, workbench smoke, and operator workbench packet artifacts without starting
+services or approving actions. For only the ready/missing/optional/deferred digest, run
+`make demo-readiness-summary`; for
 the preflight-to-cleanup walkthrough, run `make operator-demo-guide`. For current seed/reachability
-and next-command status, run `make demo-state-report`. To refresh the whole non-service-starting
-demo handoff, run `make guided-demo`, then validate it with `make guided-demo-readiness`. Inspect the
-focused packet with `make workbench-evidence-packet`; open
+and next-command status, run `make demo-state-report`. For read-only repeat/recovery guidance, run
+`make demo-reset-guide`. After an optional mediated `make demo-flow`, inspect
+`DEMO_FLOW_RESULT.md`, then validate the wiring with `make demo-flow-readiness`. To refresh the
+whole non-service-starting demo handoff, run `make guided-demo`, then validate it with
+`make guided-demo-readiness`. Inspect the focused packet with `make workbench-evidence-packet`; open
 `var/review-packets/v3/operator-workbench/WORKBENCH_DEMO_INDEX.md` first. For only the
 deterministic operator-flow transcript, run `make demo-workbench-smoke`.
 

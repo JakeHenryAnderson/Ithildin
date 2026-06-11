@@ -16,6 +16,7 @@ if __package__ in {None, ""}:
 
 from scripts import (
     demo_readiness_summary,
+    demo_reset_guide,
     demo_state_report,
     operator_demo_guide,
     workbench_demo_smoke,
@@ -42,6 +43,7 @@ DOCS = [
 COMMANDS = [
     ["make", "operator-demo-guide"],
     ["make", "demo-state-report"],
+    ["make", "demo-reset-guide"],
     ["make", "demo-readiness-summary"],
     ["make", "workbench-readiness"],
     ["make", "demo-workbench-smoke"],
@@ -125,6 +127,10 @@ def build_packet(
         output=output_dir / "DEMO_STATE_REPORT.md",
         probe_endpoints=run_commands,
     )
+    demo_reset_guide.build_guide(
+        repo_root=repo_root,
+        output=output_dir / "DEMO_RESET_GUIDE.md",
+    )
 
     context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
     files = {
@@ -138,6 +144,7 @@ def build_packet(
         "07_WORKBENCH_DEMO_STORY.md": _demo_story(context),
         "08_OPERATOR_DEMO_GUIDE.md": _observed_operator_guide(output_dir),
         "09_DEMO_STATE_REPORT.md": _observed_state_report(output_dir),
+        "10_DEMO_RESET_GUIDE.md": _observed_reset_guide(output_dir),
         "WORKBENCH_DEMO_INDEX.md": _demo_index(output_dir, context),
     }
     for relative, content in files.items():
@@ -179,8 +186,9 @@ sandbox/workspace posture, and read-only evidence export.
 12. `DEMO_READINESS_SUMMARY.md`
 13. `OPERATOR_DEMO_GUIDE.md`
 14. `DEMO_STATE_REPORT.md`
-15. `WORKBENCH_DEMO_INDEX.md`
-16. `operator-workbench-artifact-hashes.json`
+15. `DEMO_RESET_GUIDE.md`
+16. `WORKBENCH_DEMO_INDEX.md`
+17. `operator-workbench-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -210,6 +218,7 @@ Please review whether the packet coherently shows how a local operator can:
 - export bounded read-only run evidence;
 - inspect demo readiness status, missing/optional steps, and deferred boundaries;
 - follow the happy path from preflight through cleanup without reading raw JSON first;
+- inspect `DEMO_FLOW_RESULT.md` and `DEMO_RESET_GUIDE.md` after the optional mediated flow;
 - connect live-demo, operator-managed sandbox, Agent Run correlation, signed fixture evidence, and
   negative transcript artifacts.
 
@@ -266,6 +275,16 @@ def _artifact_pointers(repo_root: Path) -> str:
     for path in POINTERS:
         full_path = repo_root / path
         lines.append(f"- `{path.as_posix()}` exists=`{str(full_path.exists()).lower()}`")
+    demo_result = Path("var/review-packets/v3/operator-workbench/DEMO_FLOW_RESULT.md")
+    demo_reset = Path("var/review-packets/v3/operator-workbench/DEMO_RESET_GUIDE.md")
+    lines.extend(
+        [
+            f"- `{demo_result.as_posix()}` exists="
+            f"`{str((repo_root / demo_result).exists()).lower()}`",
+            f"- `{demo_reset.as_posix()}` exists="
+            f"`{str((repo_root / demo_reset).exists()).lower()}`",
+        ]
+    )
     lines.extend(
         [
             "",
@@ -365,6 +384,28 @@ def _observed_state_report(output_dir: Path) -> str:
     )
 
 
+def _observed_reset_guide(output_dir: Path) -> str:
+    path = output_dir / "DEMO_RESET_GUIDE.md"
+    if not path.exists():
+        return "\n".join(
+            [
+                "# Demo Reset Guide",
+                "",
+                "Artifact not present. Run `make demo-reset-guide` before packet",
+                "generation, or let `make workbench-evidence-packet` generate it.",
+            ]
+        )
+    return "\n".join(
+        [
+            "# Demo Reset Guide",
+            "",
+            "```md",
+            path.read_text(encoding="utf-8").rstrip(),
+            "```",
+        ]
+    )
+
+
 def _demo_story(context: dict[str, Any]) -> str:
     return f"""# Workbench Demo Happy Path Story
 
@@ -386,16 +427,21 @@ workspaces, or manage sandbox lifecycle.
 3. Run `make compose-up && make compose-smoke` for the optional local UI/API path.
 4. Launch an MCP stdio client with `uv run python -m ithildin_mcp_server`.
 5. Run `make demo-flow` to create a mediated local-preview run in the ignored demo workspace.
-6. Open `http://127.0.0.1:5173` and inspect System Trust, approvals, Agent Runs, and audit status.
-7. Use Agent Runs `Demo Path`: filter runs, inspect grouped evidence, then Export Run Evidence.
-8. Run `make demo-workbench` to refresh packet evidence after the demo.
-9. Run `make compose-down` if Compose was started.
+6. Inspect `DEMO_FLOW_RESULT.md` for proposal, approval, audit, and candidate run IDs.
+7. Open `http://127.0.0.1:5173` and inspect System Trust, approvals, Agent Runs, and audit status.
+8. Use Agent Runs `Demo Path`: filter runs, inspect grouped evidence, then Export Run Evidence.
+9. Run `make demo-reset-guide` if the flow stops early or needs a clean repeat.
+10. Run `make demo-workbench` to refresh packet evidence after the demo.
+11. Run `make compose-down` if Compose was started.
 
 ## Evidence To Point At
 
 - `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.
 - `OPERATOR_DEMO_GUIDE.md` for the operator-facing preflight-to-cleanup walkthrough.
 - `DEMO_STATE_REPORT.md` for current seed/reachability/artifact state and next commands.
+- `DEMO_FLOW_RESULT.md` for proposal, approval, audit, candidate run ID, and cleanup evidence
+  after `make demo-flow`.
+- `DEMO_RESET_GUIDE.md` for read-only reset/recovery guidance.
 - `WORKBENCH_DEMO_SMOKE.md` for observed readiness commands and manual demo sequence.
 - `02_OPERATOR_WORKBENCH_DOCS.md` for Agent Run and export contracts.
 - `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md` for live-demo and correlation packet locations.
@@ -430,14 +476,17 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         "3. `DEMO_STATE_REPORT.md` for current seed/reachability/artifact state.",
         "4. `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.",
         "5. `WORKBENCH_DEMO_SMOKE.md` for the operator flow transcript.",
-        "6. `00_OPERATOR_WORKBENCH_INDEX.md` for the workbench packet boundary.",
-        "7. `var/review-packets/v3/live-demo/` for the live-demo packet.",
-        "8. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
+        "6. `DEMO_FLOW_RESULT.md` after `make demo-flow` for run/proposal/approval/audit pointers.",
+        "7. `DEMO_RESET_GUIDE.md` for safe reset/recovery guidance.",
+        "8. `00_OPERATOR_WORKBENCH_INDEX.md` for the workbench packet boundary.",
+        "9. `var/review-packets/v3/live-demo/` for the live-demo packet.",
+        "10. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
         "",
         "## Supporting Artifacts",
         "",
         "- `07_WORKBENCH_DEMO_STORY.md` for the happy path narrative.",
         "- `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md` for generated evidence paths.",
+        "- `10_DEMO_RESET_GUIDE.md` for the bundled reset guide.",
         "",
         "## Artifact Hashes",
         "",

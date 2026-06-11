@@ -110,6 +110,7 @@ DEFAULT_DOCS = [
     "docs/codex/agent-run-operations-readiness-gate.md",
     "docs/codex/operator-workbench-readiness.md",
     "docs/codex/guided-demo-readiness.md",
+    "docs/codex/demo-flow-readiness.md",
     "docs/codex/operator-action-states-design.md",
     "docs/codex/dashboard-evidence-review-checklist.md",
     "docs/codex/sandbox-workspace-boundary-contract.md",

@@ -206,6 +206,8 @@ checked with `make control-mapping-readiness`.
 - `make demo-state-report` - generate a secret-free current-state report for seed status, localhost reachability, artifact paths, warnings, and next demo commands.
 - `make guided-demo` - run the non-service-starting guided local demo evidence path and write `GUIDED_DEMO_TRANSCRIPT.md`.
 - `make guided-demo-readiness` - validate guided-demo command, docs, UI, packet, and no-new-powers wiring.
+- `make demo-reset-guide` - write read-only reset/recovery guidance for repeating or diagnosing the local demo.
+- `make demo-flow-readiness` - validate demo-flow result, reset guide, UI demo labels, packet, and no-new-powers wiring.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -285,7 +287,8 @@ The local Docker Compose demo runs the API and review console with a seeded work
 - `make demo-seed` - copy tracked demo files into ignored `workspaces/demo/`.
 - `make compose-up` - build and start the local API/UI stack.
 - `make compose-smoke` - check API health, authenticated tool listing, and UI reachability.
-- `make demo-flow` - run governed reads, redaction, patch proposal, approval, apply, and audit checks.
+- `make demo-flow` - run governed reads, redaction, patch proposal, approval, apply, audit checks, and write `DEMO_FLOW_RESULT.md`.
+- `make demo-reset-guide` - generate `DEMO_RESET_GUIDE.md` with read-only reset/recovery guidance.
 - `make demo-scenario-pack` - validate the reviewer-facing demo scenario map.
 - `make compose-down` - stop the stack.
 

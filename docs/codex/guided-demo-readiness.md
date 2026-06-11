@@ -11,6 +11,8 @@ Docker/Kubernetes powers, arbitrary HTTP, broad filesystem writes, or plugin SDK
 
 - `make guided-demo` runs the non-service-starting guided demo path.
 - `make demo-state-report` writes `DEMO_STATE_REPORT.md` with current demo state.
+- `make demo-reset-guide` writes `DEMO_RESET_GUIDE.md` with read-only reset guidance.
+- `make demo-flow-readiness` validates the result/reset/UI demo label wiring.
 - `make guided-demo-readiness` validates command, docs, UI, packet, and no-new-powers wiring.
 
 `make guided-demo` runs preflight, seeds the ignored demo workspace, writes the demo state report,
@@ -24,6 +26,8 @@ Boundary shorthand: `make guided-demo` does not call governed tools.
 
 - `var/review-packets/v3/guided-demo/GUIDED_DEMO_TRANSCRIPT.md`
 - `var/review-packets/v3/operator-workbench/DEMO_STATE_REPORT.md`
+- `var/review-packets/v3/operator-workbench/DEMO_FLOW_RESULT.md`
+- `var/review-packets/v3/operator-workbench/DEMO_RESET_GUIDE.md`
 - `var/review-packets/v3/operator-workbench/OPERATOR_DEMO_GUIDE.md`
 - `var/review-packets/v3/operator-workbench/WORKBENCH_DEMO_INDEX.md`
 
@@ -34,9 +38,11 @@ Boundary shorthand: `make guided-demo` does not call governed tools.
 3. Start local services manually only if intended: `make compose-up && make compose-smoke`.
 4. Launch the local MCP server with `uv run python -m ithildin_mcp_server`.
 5. Run `make demo-flow` to create a mediated local demo run.
-6. Open `http://127.0.0.1:5173` and inspect Agent Runs.
-7. Select a run and use Export Run Evidence.
-8. Run `make compose-down` if Compose was started.
+6. Inspect `DEMO_FLOW_RESULT.md` for proposal, approval, audit, and candidate run IDs.
+7. Open `http://127.0.0.1:5173` and inspect Agent Runs.
+8. Select a run and use Export Run Evidence.
+9. Run `make demo-reset-guide` if the demo needs repeat/recovery guidance.
+10. Run `make compose-down` if Compose was started.
 
 ## Gate
 

@@ -1454,7 +1454,10 @@ export function App() {
                     type="button"
                     onClick={() => setSelectedRunId(run.run_id)}
                   >
-                    <span>{run.principal_id}</span>
+                    <span>
+                      {run.principal_id}
+                      <DemoLabel run={run} />
+                    </span>
                     <small>
                       {run.workspace_id} · {run.last_tool_name ?? "no tool"}
                     </small>
@@ -1472,6 +1475,7 @@ export function App() {
                       <p>
                         {shortId(selectedRun.run.run_id)} · {selectedRun.run.workspace_id} ·{" "}
                         {selectedRun.run.tool_call_count} calls
+                        <DemoLabel run={selectedRun.run} />
                       </p>
                     </div>
                     <div className="run-actions">
@@ -1675,12 +1679,30 @@ function RunEvidenceSummary({ run, eventCount }: { run: AgentRun; eventCount: nu
   return (
     <div className="run-summary" aria-label="Run evidence summary">
       <span>Run Evidence</span>
+      {isDemoRun(run) ? <span className="demo-label">demo</span> : null}
       <span>{run.tool_call_count} tool calls</span>
       <span>{eventCount} audit events</span>
       <span>{run.last_tool_name ?? "no tool"}</span>
       <span>{run.policy_hash ? shortHash(run.policy_hash) : "no policy"}</span>
       <span>{run.last_tool_manifest_hash ? shortHash(run.last_tool_manifest_hash) : "no manifest"}</span>
     </div>
+  );
+}
+
+function DemoLabel({ run }: { run: AgentRun }) {
+  return isDemoRun(run) ? (
+    <span className="demo-label" title="Guided local demo evidence">
+      demo
+    </span>
+  ) : null;
+}
+
+function isDemoRun(run: AgentRun) {
+  return (
+    run.metadata.scenario === "guided_local_demo" ||
+    run.metadata.demo_step === "mediated_patch_flow" ||
+    run.metadata.model_client_label === "guided_local_demo" ||
+    run.session_id.includes("demo")
   );
 }
 
