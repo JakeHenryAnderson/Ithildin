@@ -9,7 +9,7 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `13`.
+- Tool count is `14`.
 - `git.show.commit_metadata`, `git.show.ref_summary`, and `project.manifest.summary` are the
   approved bounded read-only metadata runtime capability additions.
 - `make next-capability-readiness` records that the next candidate is `project.dependency.summary`

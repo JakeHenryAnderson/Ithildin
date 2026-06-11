@@ -975,12 +975,16 @@ def _workspace_id_for_resource(
 
 def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonObject:
     metadata: JsonObject = {"executor": "in_process_read"}
-    if tool_name == "project.manifest.summary":
+    if tool_name in {"project.dependency.summary", "project.manifest.summary"}:
         output_policy = content.get("output_policy")
         for key in ("manifest_count",):
             value = content.get(key)
             if isinstance(value, int) and not isinstance(value, bool):
                 metadata[key] = value
+        if tool_name == "project.dependency.summary":
+            value = content.get("total_direct_dependency_count")
+            if isinstance(value, int) and not isinstance(value, bool):
+                metadata["total_direct_dependency_count"] = value
         truncated = content.get("truncated")
         if isinstance(truncated, bool):
             metadata["truncated"] = truncated
@@ -1009,9 +1013,12 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                 "package_names_included",
                 "package_script_names_included",
                 "package_script_values_included",
+                "lockfile_contents_included",
                 "registry_or_network_access_used",
                 "package_manager_execution_used",
                 "recursive_discovery_used",
+                "transitive_dependencies_resolved",
+                "license_vulnerability_or_compliance_claims_included",
             ):
                 value = output_policy.get(key)
                 if isinstance(value, bool):

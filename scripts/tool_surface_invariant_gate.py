@@ -23,6 +23,7 @@ EXPECTED_TOOL_NAMES = [
     "git.show.ref_summary",
     "git.status",
     "http.fetch",
+    "project.dependency.summary",
     "project.manifest.summary",
 ]
 EXPECTED_TOOL_RISKS = {
@@ -38,6 +39,7 @@ EXPECTED_TOOL_RISKS = {
     "git.show.ref_summary": "read",
     "git.status": "read",
     "http.fetch": "network",
+    "project.dependency.summary": "read",
     "project.manifest.summary": "read",
 }
 FORBIDDEN_MANIFEST_MARKERS = [
@@ -118,6 +120,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(_check_git_ref_summary_schema(manifest))
         if manifest_name == "project.manifest.summary":
             failures.extend(_check_project_manifest_summary_schema(manifest))
+        if manifest_name == "project.dependency.summary":
+            failures.extend(_check_project_dependency_summary_schema(manifest))
     if marker_hits:
         failures.append("manifest text references deferred or broad tool-power markers")
 
@@ -333,6 +337,14 @@ def _check_project_manifest_summary_schema(manifest: dict[str, Any]) -> list[str
             + ", ".join(drift)
         )
     return failures
+
+
+def _check_project_dependency_summary_schema(manifest: dict[str, Any]) -> list[str]:
+    failures = _check_project_manifest_summary_schema(manifest)
+    return [
+        failure.replace("project.manifest.summary", "project.dependency.summary")
+        for failure in failures
+    ]
 
 
 def render_report(report: dict[str, Any]) -> str:

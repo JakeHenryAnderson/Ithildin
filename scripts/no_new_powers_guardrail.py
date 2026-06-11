@@ -23,6 +23,7 @@ ALLOWED_NETWORK_TOOLS = {"http.fetch"}
 ALLOWED_NEW_READ_TOOLS = {
     "git.show.commit_metadata",
     "git.show.ref_summary",
+    "project.dependency.summary",
     "project.manifest.summary",
 }
 FORBIDDEN_TOOL_PREFIXES = (
@@ -178,6 +179,10 @@ def _validate_schema_fields(name: str, manifest: dict[str, Any]) -> list[str]:
         failures = _validate_project_manifest_summary_schema(properties)
         if failures:
             return failures
+    if name == "project.dependency.summary":
+        failures = _validate_project_dependency_summary_schema(properties)
+        if failures:
+            return failures
     return []
 
 
@@ -240,6 +245,13 @@ def _validate_project_manifest_summary_schema(properties: dict[str, Any]) -> lis
     if not isinstance(limit, dict) or limit.get("maximum") != 20:
         failures.append("project.manifest.summary limit must stay bounded to 20")
     return failures
+
+
+def _validate_project_dependency_summary_schema(properties: dict[str, Any]) -> list[str]:
+    return [
+        failure.replace("project.manifest.summary", "project.dependency.summary")
+        for failure in _validate_project_manifest_summary_schema(properties)
+    ]
 
 
 def render_report(report: dict[str, Any]) -> str:

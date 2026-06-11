@@ -270,6 +270,10 @@ checked with `make control-mapping-readiness`.
   `project.dependency.summary` implementation-planning packet without authorizing runtime work.
 - `make project-dependency-summary-design-review-packet` - generate the design-only review packet
   for `project.dependency.summary`.
+- `make project-dependency-summary-implementation-gate` - validate the bounded read-only
+  implementation decision for `project.dependency.summary`.
+- `make project-dependency-summary-source-review-bundle` - build the focused source/test/evidence
+  handoff for the approved `project.dependency.summary` implementation.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the

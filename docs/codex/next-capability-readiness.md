@@ -4,17 +4,17 @@ Status: capability-expansion readiness checkpoint. This document does not add ru
 tool manifests, policy rules, MCP exposure, API behavior, UI behavior, or new governed tool powers.
 
 This checkpoint exists because the first bounded read-only metadata lanes are now implemented:
-`git.show.commit_metadata`, `git.show.ref_summary`, and `project.manifest.summary`. The historical
-`v3-next-capability-candidate-evaluation.md` still records how `project.manifest.summary` was chosen
-as a design-only candidate before it advanced through proposal, implementation planning,
-implementation decision, source-review handoff, and local lane closure.
+`git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`, and
+`project.dependency.summary`. The historical candidate records still show how each bounded
+metadata tool advanced through proposal, implementation planning, implementation decision,
+source-review handoff, and local lane closure.
 
 ## Current State
 
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
-  `git.show.ref_summary`, and `project.manifest.summary`.
-- Current tool count: `13`.
-- Next candidate: `project.dependency.summary`.
+  `git.show.ref_summary`, `project.manifest.summary`, and `project.dependency.summary`.
+- Current tool count: `14`.
+- Next candidate: unselected.
 - Next candidate implementation: blocked.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.

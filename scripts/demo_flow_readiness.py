@@ -25,7 +25,7 @@ REQUIRED_DOC_PHRASES = [
     "guided_local_demo",
     "candidate run IDs",
     "does not add run controls",
-    "tool count remains `13`",
+    "tool count remains `14`",
     "no-new-powers",
 ]
 

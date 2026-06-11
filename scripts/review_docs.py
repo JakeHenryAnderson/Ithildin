@@ -131,6 +131,8 @@ REVIEW_DOCS = [
     "docs/codex/capability-implementation-plans/project-manifest-summary.md",
     "docs/codex/v3-project-manifest-summary-implementation.md",
     "docs/codex/v3-project-manifest-summary-source-review.md",
+    "docs/codex/v3-project-dependency-summary-implementation.md",
+    "docs/codex/v3-project-dependency-summary-source-review.md",
     "docs/codex/agent-run-observability-and-sandbox-roadmap.md",
     "docs/codex/agent-run-model-contract.md",
     "docs/codex/agent-run-evidence-contract.md",

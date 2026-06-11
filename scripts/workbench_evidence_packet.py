@@ -195,7 +195,7 @@ sandbox/workspace posture, and read-only evidence export.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- Tool count remains `13`.
+- Tool count remains `14`.
 - No run controls, sandbox orchestration, SIEM adapters, production identity, runtime Postgres,
   hosted telemetry, remote MCP, shell, Docker, Kubernetes, browser automation, arbitrary HTTP,
   broad filesystem writes, plugin SDK work, or new governed tool powers are added or approved.
@@ -506,7 +506,7 @@ workspaces, or manage sandbox lifecycle.
 - commit: `{context["commit"]}`
 - dirty: `{str(context["dirty"]).lower()}`
 - command_evidence_executed: `{str(context["run_commands"]).lower()}`
-- tool_count: `13`
+- tool_count: `14`
 
 ## Happy Path Narrative
 
@@ -560,7 +560,7 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         f"- commit: `{context['commit']}`",
         f"- dirty: `{str(context['dirty']).lower()}`",
         f"- command_evidence_executed: `{str(context['run_commands']).lower()}`",
-        "- tool_count: `13`",
+        "- tool_count: `14`",
         "",
         "## Newest Reading Order",
         "",

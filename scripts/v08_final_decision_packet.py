@@ -105,8 +105,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("capability design-only decision is not conditional_go")
     if capability.get("capability_implementation") != "no_go":
         failures.append("capability implementation is not no_go")
-    if no_new_powers.get("tool_count") != 13:
-        failures.append("tool count drifted from the approved 13-tool read-only metadata surface")
+    if no_new_powers.get("tool_count") != 14:
+        failures.append("tool count drifted from the approved 14-tool read-only metadata surface")
 
     return _report(
         failures,

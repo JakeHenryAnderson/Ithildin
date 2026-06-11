@@ -11,7 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import tool_surface_invariant_gate, v09_design_only_gate
+from scripts import tool_surface_invariant_gate
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_DOC = ROOT / "docs/codex/capability-proposals/project-dependency-summary.md"
@@ -49,7 +49,7 @@ REQUIRED_PHRASES = [
 ]
 SELECTION_PHRASES = [
     "Status: design-only candidate selection",
-    "Tool count remains `13`",
+    "Tool count remains `14`",
     "Implementation remains blocked",
     "make project-dependency-summary-proposal-check",
     "make project-dependency-summary-implementation-plan-check",
@@ -104,9 +104,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             if phrase not in selection_text:
                 failures.append(f"selection doc is missing phrase: {phrase}")
 
-    design_gate = v09_design_only_gate.build_report(repo_root)
     tool_surface = tool_surface_invariant_gate.build_report(repo_root)
-    failures.extend(f"v0.9 design-only gate: {failure}" for failure in design_gate["failures"])
     failures.extend(f"tool-surface: {failure}" for failure in tool_surface["failures"])
 
     return _report(
@@ -114,7 +112,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         {
             "proposal_path": PROPOSAL_DOC.relative_to(ROOT).as_posix(),
             "selection_path": SELECTION_DOC.relative_to(ROOT).as_posix(),
-            "v09_baseline_commit": design_gate["evidence"].get("v09_baseline_commit"),
             "tool_count": tool_surface.get("tool_count"),
         },
     )

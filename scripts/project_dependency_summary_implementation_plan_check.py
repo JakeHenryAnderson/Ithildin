@@ -11,7 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import project_dependency_summary_proposal_check, v09_design_only_gate
+from scripts import project_dependency_summary_proposal_check, tool_surface_invariant_gate
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN_DOC = ROOT / "docs/codex/capability-implementation-plans/project-dependency-summary.md"
@@ -84,17 +84,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"implementation plan contains forbidden phrase: {phrase}")
 
     proposal = project_dependency_summary_proposal_check.build_report(repo_root)
-    design_gate = v09_design_only_gate.build_report(repo_root)
     failures.extend(f"proposal check: {failure}" for failure in proposal["failures"])
-    failures.extend(f"v0.9 design-only gate: {failure}" for failure in design_gate["failures"])
+    tool_surface = tool_surface_invariant_gate.build_report(repo_root)
+    failures.extend(f"tool-surface: {failure}" for failure in tool_surface["failures"])
 
     return _report(
         failures,
         {
             "plan_path": PLAN_DOC.relative_to(ROOT).as_posix(),
             "proposal_valid": proposal["valid"],
-            "v09_baseline_commit": design_gate["evidence"].get("v09_baseline_commit"),
-            "tool_count": design_gate["evidence"].get("tool_count"),
+            "tool_count": tool_surface.get("tool_count"),
         },
     )
 

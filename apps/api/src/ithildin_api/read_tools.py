@@ -34,12 +34,14 @@ READ_TOOL_NAMES = frozenset(
         "git.log",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "project.dependency.summary",
         "project.manifest.summary",
     }
 )
 
 _GIT_COMMIT_METADATA_TOOL = "git.show.commit_metadata"
 _GIT_REF_SUMMARY_TOOL = "git.show.ref_summary"
+_PROJECT_DEPENDENCY_SUMMARY_TOOL = "project.dependency.summary"
 _PROJECT_MANIFEST_SUMMARY_TOOL = "project.manifest.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
@@ -201,8 +203,11 @@ class ReadToolExecutor:
             return self._commit_metadata_resource_from_arguments(arguments)
         if tool_name == _GIT_REF_SUMMARY_TOOL:
             return self._ref_summary_resource_from_arguments(arguments)
-        if tool_name == _PROJECT_MANIFEST_SUMMARY_TOOL:
-            return self._project_manifest_resource_from_arguments(arguments)
+        if tool_name in {
+            _PROJECT_DEPENDENCY_SUMMARY_TOOL,
+            _PROJECT_MANIFEST_SUMMARY_TOOL,
+        }:
+            return self._project_manifest_resource_from_arguments(arguments, tool_name=tool_name)
 
         path = _string_arg(arguments, "path", default=".")
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
@@ -273,11 +278,18 @@ class ReadToolExecutor:
         )
         return resource
 
-    def _project_manifest_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+    def _project_manifest_resource_from_arguments(
+        self, arguments: JsonObject, *, tool_name: str
+    ) -> JsonObject:
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
         root = _project_manifest_root(arguments)
+        resource_type = (
+            "project_dependencies"
+            if tool_name == _PROJECT_DEPENDENCY_SUMMARY_TOOL
+            else "project_manifest"
+        )
         resource: JsonObject = {
-            "type": "project_manifest",
+            "type": resource_type,
             "workspace_id": workspace_id,
             "root": root,
             "in_scope": False,
@@ -329,6 +341,8 @@ class ReadToolExecutor:
             return git.commit_metadata(arguments)
         if tool_name == _GIT_REF_SUMMARY_TOOL:
             return git.ref_summary(arguments)
+        if tool_name == _PROJECT_DEPENDENCY_SUMMARY_TOOL:
+            return filesystem.project_dependency_summary(arguments)
         if tool_name == _PROJECT_MANIFEST_SUMMARY_TOOL:
             return filesystem.project_manifest_summary(arguments)
         raise ReadToolError("unsupported read tool")
@@ -485,6 +499,75 @@ class FilesystemReadTools:
                 "max_manifest_file_bytes": self.max_read_bytes,
                 "max_total_parsed_bytes": _PROJECT_MANIFEST_MAX_TOTAL_BYTES,
             },
+        }
+
+    def project_dependency_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_dependency_summary_arguments(arguments)
+        manifest_summary = self.project_manifest_summary(arguments)
+        manifests: list[JsonValue] = []
+        section_totals: dict[str, int] = {}
+        ecosystem_counts: dict[str, int] = {}
+        kind_counts: dict[str, int] = {}
+        total_direct_dependencies = 0
+        for item in cast(list[JsonObject], manifest_summary.get("manifests", [])):
+            dependency_counts = _safe_int_mapping(item.get("dependency_section_counts"))
+            direct_dependency_count = sum(dependency_counts.values())
+            total_direct_dependencies += direct_dependency_count
+            for section, count in dependency_counts.items():
+                section_totals[section] = section_totals.get(section, 0) + count
+            kind = item.get("kind")
+            ecosystem = item.get("ecosystem")
+            if isinstance(kind, str):
+                kind_counts[kind] = kind_counts.get(kind, 0) + 1
+            if isinstance(ecosystem, str):
+                ecosystem_counts[ecosystem] = ecosystem_counts.get(ecosystem, 0) + 1
+            manifests.append(
+                {
+                    "manifest_id": item.get("manifest_id"),
+                    "kind": kind,
+                    "ecosystem": ecosystem,
+                    "path_role": item.get("path_role"),
+                    "dependency_section_counts": cast(JsonObject, dependency_counts),
+                    "direct_dependency_count": direct_dependency_count,
+                    "parse_status": item.get("parse_status"),
+                    "parse_error_reason": item.get("parse_error_reason"),
+                    "dependency_names_included": False,
+                    "dependency_versions_included": False,
+                    "package_names_included": False,
+                    "package_script_names_included": False,
+                    "package_script_values_included": False,
+                    "file_contents_included": False,
+                    "lockfile_contents_included": False,
+                }
+            )
+
+        return {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_DEPENDENCY_SUMMARY_TOOL,
+            "root": manifest_summary["root"],
+            "manifest_count": manifest_summary["manifest_count"],
+            "truncated": manifest_summary["truncated"],
+            "total_direct_dependency_count": total_direct_dependencies,
+            "dependency_section_totals": cast(JsonObject, section_totals),
+            "ecosystem_counts": cast(JsonObject, ecosystem_counts),
+            "manifest_kind_counts": cast(JsonObject, kind_counts),
+            "manifests": manifests,
+            "output_policy": {
+                "file_contents_included": False,
+                "dependency_names_included": False,
+                "dependency_versions_included": False,
+                "package_names_included": False,
+                "package_script_names_included": False,
+                "package_script_values_included": False,
+                "lockfile_contents_included": False,
+                "registry_or_network_access_used": False,
+                "package_manager_execution_used": False,
+                "recursive_discovery_used": False,
+                "transitive_dependencies_resolved": False,
+                "license_vulnerability_or_compliance_claims_included": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": manifest_summary["limits"],
         }
 
     def resolve_existing_path(self, path: str) -> Path:
@@ -1167,6 +1250,16 @@ def _validate_project_manifest_summary_arguments(arguments: JsonObject) -> None:
     _project_manifest_limit(arguments)
 
 
+def _validate_project_dependency_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "manifest_kinds", "limit"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project dependency summary received unsupported arguments")
+    _project_manifest_root(arguments)
+    _project_manifest_kinds(arguments)
+    _project_manifest_limit(arguments)
+
+
 def _project_manifest_root(arguments: JsonObject) -> str:
     root = _string_arg(arguments, "root", default=".")
     if not root:
@@ -1237,6 +1330,16 @@ def _project_manifest_record(
         "script_values_included": False,
         "file_contents_included": False,
     }
+
+
+def _safe_int_mapping(value: object) -> dict[str, int]:
+    if not isinstance(value, dict):
+        return {}
+    safe: dict[str, int] = {}
+    for key, count in value.items():
+        if isinstance(key, str) and isinstance(count, int) and not isinstance(count, bool):
+            safe[key] = count
+    return safe
 
 
 def _parse_project_manifest(kind: str, text: str) -> JsonObject:

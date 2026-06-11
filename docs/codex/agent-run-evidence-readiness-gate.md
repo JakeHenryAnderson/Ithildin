@@ -22,7 +22,7 @@ Kubernetes, browser automation, arbitrary HTTP, broad filesystem writes, or plug
 
 ## Claims
 
-- tool count remains `13`;
+- tool count remains `14`;
 - runtime changes are not allowed;
 - run export runtime behavior is not allowed;
 - new powerful tool classes are not allowed;

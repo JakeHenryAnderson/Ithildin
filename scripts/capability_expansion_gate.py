@@ -27,6 +27,7 @@ EXPECTED_TOOL_NAMES = [
     "git.show.ref_summary",
     "git.status",
     "http.fetch",
+    "project.dependency.summary",
     "project.manifest.summary",
 ]
 EXPECTED_DEFERRED_BOUNDARIES = [

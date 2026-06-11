@@ -28,7 +28,7 @@ The gate validates:
 
 ## Expected Result
 
-- tool count remains `13`;
+- tool count remains `14`;
 - Agent Runs remain admin-only and read-only;
 - `/runs` and `/runs/{run_id}` do not create, mutate, replay, repair, approve, or execute actions;
 - timeline evidence remains secret-free;

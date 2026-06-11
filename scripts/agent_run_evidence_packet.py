@@ -132,7 +132,7 @@ operations dashboard, tests, contracts, and command evidence.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- Tool count remains `13`.
+- Tool count remains `14`.
 - Agent Run evidence export and operations dashboard are bounded read-only local-preview surfaces.
   This packet does not add a SIEM adapter, sandbox control, production identity, run-control
   behavior, or new governed tool powers.
