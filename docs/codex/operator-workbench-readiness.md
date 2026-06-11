@@ -65,6 +65,7 @@ actions, repair diagnostics, or manage containers.
 - top-level `WORKBENCH_DEMO_INDEX.md`;
 - top-level `DEMO_READINESS_SUMMARY.md`;
 - top-level `WORKBENCH_DEMO_SMOKE.md`;
+- `07_WORKBENCH_DEMO_STORY.md` happy-path narrative;
 - reviewer prompt;
 - bundled operator docs;
 - command evidence;
@@ -73,10 +74,11 @@ actions, repair diagnostics, or manage containers.
 
 `WORKBENCH_DEMO_INDEX.md` is the first file to open. It includes the reviewed commit, dirty state,
 tool count, reading order, and artifact hashes. `DEMO_READINESS_SUMMARY.md` is the second file to
-open; it records ready, missing, optional/manual, deferred, and recommended next-command status. The
-run evidence export includes a safe `summary` object with principal, workspace, session, status,
-tools used, decision counts, approval count, patch diagnostic count, audit event count, warning
-count, policy hash, and manifest-lock hash.
+open; it records ready, missing, optional/manual, deferred, and recommended next-command status.
+`07_WORKBENCH_DEMO_STORY.md` gives the happy path from preflight through cleanup. The run evidence
+export includes a safe `summary` object with principal, workspace, session, status, tools used,
+decision counts, approval count, patch diagnostic count, audit event count, warning count, policy
+hash, and manifest-lock hash.
 
 The packet points to existing live-demo, operator sandbox, Agent Run correlation, signed evidence,
 negative transcript, and consolidated review artifacts. It is a reviewer convenience artifact, not
@@ -91,7 +93,8 @@ Ithildin-mediated actions.
 - README and reproduction-map command lists mention the workbench commands;
 - `make demo-workbench` and `make workbench-evidence-packet` are wired;
 - `make demo-readiness-summary`, `make demo-workbench-smoke`, `WORKBENCH_DEMO_INDEX.md`,
-  `DEMO_READINESS_SUMMARY.md`, and `WORKBENCH_DEMO_SMOKE.md` are wired;
+  `DEMO_READINESS_SUMMARY.md`, `07_WORKBENCH_DEMO_STORY.md`, and `WORKBENCH_DEMO_SMOKE.md` are
+  wired;
 - release-check includes the workbench readiness gate;
 - tool count remains `13`;
 - no-new-powers and tool-surface guardrails still pass;

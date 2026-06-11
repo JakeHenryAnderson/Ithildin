@@ -28,6 +28,7 @@ REQUIRED_DOC_PHRASES = [
     "make live-demo-evidence-summary",
     "WORKBENCH_DEMO_INDEX.md",
     "DEMO_READINESS_SUMMARY.md",
+    "07_WORKBENCH_DEMO_STORY.md",
     "WORKBENCH_DEMO_SMOKE.md",
     "summary",
     "does not start services",

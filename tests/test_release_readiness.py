@@ -8191,6 +8191,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md",
         "05_OPERATOR_WORKBENCH_SMOKE.md",
         "06_DEMO_READINESS_SUMMARY.md",
+        "07_WORKBENCH_DEMO_STORY.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "DEMO_READINESS_SUMMARY.md",
         "WORKBENCH_DEMO_INDEX.md",
@@ -8219,6 +8220,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     readiness_bundle = (output_dir / "06_DEMO_READINESS_SUMMARY.md").read_text(
         encoding="utf-8"
     )
+    story = (output_dir / "07_WORKBENCH_DEMO_STORY.md").read_text(encoding="utf-8")
     smoke = smoke_path.read_text(encoding="utf-8")
     readiness_summary = readiness_path.read_text(encoding="utf-8")
     demo_index = (output_dir / "WORKBENCH_DEMO_INDEX.md").read_text(encoding="utf-8")
@@ -8270,6 +8272,9 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "Demo Readiness Summary" in readiness_bundle
     assert "Demo Readiness Summary" in readiness_summary
     assert "ready/missing/optional/deferred" in readiness_summary
+    assert "Workbench Demo Happy Path Story" in story
+    assert "make demo-flow" in story
+    assert "not a runtime fixture loader" in story
     assert "Workbench Demo Index" in demo_index
     assert "Open First" in demo_index
     assert "Artifact Hashes" in demo_index
@@ -8303,6 +8308,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "296 - Workbench demo index v2 | Done" in backlog
     assert "297 - Workbench demo UX polish | Done" in backlog
     assert "298 - Demo readiness summary | Done" in backlog
+    assert "299 - Workbench happy path story | Done" in backlog
     for phrase in [
         "Status: release-readiness gate",
         "operator workbench",
@@ -8313,6 +8319,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "make demo-workbench-smoke",
         "WORKBENCH_DEMO_INDEX.md",
         "DEMO_READINESS_SUMMARY.md",
+        "07_WORKBENCH_DEMO_STORY.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "summary",
         "does not start services",

@@ -150,7 +150,8 @@ make demo-workbench-smoke
 The focused workbench packet also writes
 `var/review-packets/v3/operator-workbench/WORKBENCH_DEMO_INDEX.md`, the first file to open for the
 operator workbench handoff, and `DEMO_READINESS_SUMMARY.md` as the ready/missing/optional/deferred
-status page.
+status page. The same packet includes `07_WORKBENCH_DEMO_STORY.md` as the happy-path narrative from
+preflight through cleanup.
 
 ## MCP Client Companion
 
