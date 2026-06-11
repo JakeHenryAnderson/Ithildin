@@ -327,6 +327,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 307 - Demo evidence closure packet | Done | [demo-evidence-closure.md](demo-evidence-closure.md), `make demo-evidence-packet`; bundles demo readiness, state, reset, artifact pointers, result-check output, and hashes. |
 | 308 - Demo evidence readiness gate | Done | `make demo-evidence-readiness`; validates demo evidence packet/docs/review-candidate/release-check wiring while preserving the no-new-powers boundary. |
 | 309 - Operator demo walkthrough | Done | [operator-demo-walkthrough.md](operator-demo-walkthrough.md), `make demo-operator-walkthrough`; generates the front-door expected screens, evidence files, next human steps, and reset guidance without starting services or adding runtime controls. |
+| 310 - Read-only project intelligence consolidation | Done | [read-only-project-intelligence.md](read-only-project-intelligence.md), `make read-only-project-intelligence`; records the four-tool project intelligence slice, keeps the next candidate unselected, and preserves no-new-powers boundaries. |
 
 ## Future Candidate Track
 

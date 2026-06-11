@@ -49,9 +49,10 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 
 ## Gate
 
-The selected next design candidate is
-[v3 project.dependency.summary Selection](v3-project-dependency-summary-selection.md). It remains
-design-only, count-only, and implementation-blocked until a future explicit decision.
+No next design candidate is currently selected. The most recent historical candidate,
+[v3 project.dependency.summary Selection](v3-project-dependency-summary-selection.md), has advanced
+through proposal, implementation planning, implementation decision, runtime implementation, and
+source-review handoff as one bounded read-only metadata tool.
 
 Run:
 

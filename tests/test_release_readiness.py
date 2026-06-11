@@ -84,6 +84,7 @@ from scripts import (
     project_dependency_summary_implementation_plan_check,
     project_dependency_summary_proposal_check,
     project_dependency_summary_source_review_bundle,
+    project_intelligence_readiness,
     project_manifest_summary_implementation_gate,
     project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
@@ -700,6 +701,56 @@ def test_next_capability_readiness_is_wired() -> None:
     assert "Next Capability Readiness Check" in index
     assert "docs/codex/next-capability-readiness.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/next-capability-readiness.md" in docs_site
+
+
+def test_read_only_project_intelligence_is_wired() -> None:
+    report = project_intelligence_readiness.build_report(Path.cwd())
+    doc = Path("docs/codex/read-only-project-intelligence.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 14
+    assert report["approved_tool_count"] == 4
+    assert report["approved_tools"] == [
+        "git.show.commit_metadata",
+        "git.show.ref_summary",
+        "project.manifest.summary",
+        "project.dependency.summary",
+    ]
+    assert report["next_candidate"] == "unselected"
+    assert report["broader_capability_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    for phrase in [
+        "Status: consolidated local-preview product slice",
+        "does not add runtime behavior",
+        "git.show.commit_metadata",
+        "git.show.ref_summary",
+        "project.manifest.summary",
+        "project.dependency.summary",
+        "Tool count: `14`",
+        "Next candidate: unselected",
+        "Broader capability expansion remains blocked",
+        "New powerful tool classes remain blocked",
+        "No file contents",
+        "No dependency names",
+        "no package-manager execution",
+        "no registry/network access",
+        "policy preview/runtime parity",
+        "make read-only-project-intelligence",
+    ]:
+        assert phrase in doc
+    assert "make read-only-project-intelligence" in readme
+    assert "read-only-project-intelligence:" in makefile
+    assert "read-only-project-intelligence" in release_check_body
+    assert "read-only-project-intelligence" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "Read-Only Project Intelligence" in index
+    assert "docs/codex/read-only-project-intelligence.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/read-only-project-intelligence.md" in docs_site
 
 
 def test_project_dependency_summary_proposal_check_is_wired() -> None:

@@ -63,6 +63,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "no-new-powers-guardrail",
     "read-only-metadata-capability-check",
     "read-only-capability-inventory-gate",
+    "read-only-project-intelligence",
     "v3-next-capability-candidate-check",
     "next-capability-readiness",
     "agent-run-evidence-contract-check",

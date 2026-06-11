@@ -256,8 +256,8 @@ work must stop for status, reassessment, or external consultation.
 
    Expected outcome: validates the current bounded metadata inventory, no-new-powers evidence,
    candidate lineage, review-doc/docs-site inclusion, release-check wiring, and the preflight
-   requirements before implementing another capability. It reports the next candidate as
-   `project.dependency.summary` and implementation as blocked.
+   requirements before implementing another capability. It reports the next candidate as unselected
+   and implementation as blocked.
 
 32. `make project-manifest-summary-proposal-check`
 
