@@ -22,10 +22,12 @@ REQUIRED_DOC_PHRASES = [
     "GET /runs/{run_id}",
     "GET /runs/{run_id}/evidence-export",
     "make demo-workbench",
+    "make demo-readiness-summary",
     "make demo-workbench-smoke",
     "make workbench-evidence-packet",
     "make live-demo-evidence-summary",
     "WORKBENCH_DEMO_INDEX.md",
+    "DEMO_READINESS_SUMMARY.md",
     "WORKBENCH_DEMO_SMOKE.md",
     "summary",
     "does not start services",
@@ -71,6 +73,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for target in [
         "workbench-readiness:",
         "workbench-evidence-packet:",
+        "demo-readiness-summary:",
         "demo-workbench-smoke:",
         "demo-workbench:",
     ]:
@@ -82,6 +85,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("workbench-evidence-packet is missing from review-candidate")
     if "$(MAKE) demo-workbench-smoke" not in makefile.partition("demo-workbench:")[2]:
         failures.append("demo-workbench-smoke is missing from demo-workbench")
+    if "$(MAKE) demo-readiness-summary" not in makefile.partition("demo-workbench:")[2]:
+        failures.append("demo-readiness-summary is missing from demo-workbench")
 
     for phrase in [
         "Agent Runs",
@@ -136,6 +141,7 @@ def _validate_doc(*, readme: str, reproduction_map: str, docs_site: str) -> list
     for phrase in [
         "make workbench-readiness",
         "make workbench-evidence-packet",
+        "make demo-readiness-summary",
         "make demo-workbench-smoke",
         "make demo-workbench",
     ]:

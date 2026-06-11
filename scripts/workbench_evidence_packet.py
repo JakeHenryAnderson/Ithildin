@@ -14,7 +14,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import workbench_demo_smoke
+from scripts import demo_readiness_summary, workbench_demo_smoke
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/operator-workbench")
 HASH_MANIFEST = "operator-workbench-artifact-hashes.json"
@@ -35,6 +35,7 @@ DOCS = [
     Path("docs/codex/incident-reconstruction-guide.md"),
 ]
 COMMANDS = [
+    ["make", "demo-readiness-summary"],
     ["make", "workbench-readiness"],
     ["make", "demo-workbench-smoke"],
     ["make", "live-demo-preflight"],
@@ -102,6 +103,11 @@ def build_packet(
         output=output_dir / "WORKBENCH_DEMO_SMOKE.md",
         run_commands=run_commands,
     )
+    demo_readiness_summary.build_summary(
+        repo_root=repo_root,
+        output=output_dir / "DEMO_READINESS_SUMMARY.md",
+        probe_endpoints=run_commands,
+    )
 
     context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
     files = {
@@ -111,6 +117,7 @@ def build_packet(
         "03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md": _command_evidence(run_commands),
         "04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md": _artifact_pointers(repo_root),
         "05_OPERATOR_WORKBENCH_SMOKE.md": _observed_smoke(output_dir),
+        "06_DEMO_READINESS_SUMMARY.md": _observed_readiness(output_dir),
         "WORKBENCH_DEMO_INDEX.md": _demo_index(output_dir, context),
     }
     for relative, content in files.items():
@@ -144,9 +151,11 @@ sandbox/workspace posture, and read-only evidence export.
 4. `03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md`
 5. `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md`
 6. `05_OPERATOR_WORKBENCH_SMOKE.md`
-7. `WORKBENCH_DEMO_SMOKE.md`
-8. `WORKBENCH_DEMO_INDEX.md`
-9. `operator-workbench-artifact-hashes.json`
+7. `06_DEMO_READINESS_SUMMARY.md`
+8. `WORKBENCH_DEMO_SMOKE.md`
+9. `DEMO_READINESS_SUMMARY.md`
+10. `WORKBENCH_DEMO_INDEX.md`
+11. `operator-workbench-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -174,6 +183,7 @@ Please review whether the packet coherently shows how a local operator can:
 - follow the Agent Runs `Demo Path`, filters, grouped timeline evidence, and summaries;
 - inspect approval binding and audit status;
 - export bounded read-only run evidence;
+- inspect demo readiness status, missing/optional steps, and deferred boundaries;
 - connect live-demo, operator-managed sandbox, Agent Run correlation, signed fixture evidence, and
   negative transcript artifacts.
 
@@ -263,6 +273,28 @@ def _observed_smoke(output_dir: Path) -> str:
     )
 
 
+def _observed_readiness(output_dir: Path) -> str:
+    path = output_dir / "DEMO_READINESS_SUMMARY.md"
+    if not path.exists():
+        return "\n".join(
+            [
+                "# Demo Readiness Summary",
+                "",
+                "Artifact not present. Run `make demo-readiness-summary` before packet",
+                "generation, or let `make workbench-evidence-packet` generate it.",
+            ]
+        )
+    return "\n".join(
+        [
+            "# Demo Readiness Summary",
+            "",
+            "```md",
+            path.read_text(encoding="utf-8").rstrip(),
+            "```",
+        ]
+    )
+
+
 def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
     hashes = _hashes(output_dir)
     lines = [
@@ -280,10 +312,12 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         "",
         "## Open First",
         "",
-        "1. `00_OPERATOR_WORKBENCH_INDEX.md` for the packet boundary.",
-        "2. `05_OPERATOR_WORKBENCH_SMOKE.md` for the operator flow transcript.",
-        "3. `02_OPERATOR_WORKBENCH_DOCS.md` for the underlying contracts.",
-        "4. `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md` for generated evidence paths.",
+        "1. `WORKBENCH_DEMO_INDEX.md` for this reading order.",
+        "2. `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.",
+        "3. `WORKBENCH_DEMO_SMOKE.md` for the operator flow transcript.",
+        "4. `00_OPERATOR_WORKBENCH_INDEX.md` for the packet boundary.",
+        "5. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
+        "6. `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md` for live-demo packet pointers.",
         "",
         "## Artifact Hashes",
         "",

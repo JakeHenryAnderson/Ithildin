@@ -1,0 +1,235 @@
+"""Generate a secret-free operator demo readiness summary."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+import tempfile
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import live_demo_status, workbench_readiness
+
+DEFAULT_OUTPUT = Path("var/review-packets/v3/operator-workbench/DEMO_READINESS_SUMMARY.md")
+PROJECT_MARKERS = [
+    Path("pyproject.toml"),
+    Path("Makefile"),
+    Path("apps/api"),
+    Path("apps/mcp-server"),
+    Path("tool-manifests.lock.json"),
+]
+WORKBENCH_PACKET = Path("var/review-packets/v3/operator-workbench")
+CONSOLIDATED_PACKET = Path("var/review-packets/v0.2/GPT-5.5-Pro-consolidated")
+DEFERRED = [
+    "run controls",
+    "sandbox orchestration",
+    "SIEM adapters",
+    "production identity",
+    "runtime Postgres",
+    "hosted telemetry",
+    "remote MCP",
+    "shell/Docker/Kubernetes/browser powers",
+    "arbitrary HTTP",
+    "broad filesystem writes",
+    "plugin SDK behavior",
+]
+RECOMMENDED_COMMANDS = [
+    "make live-demo-preflight",
+    "make demo-seed",
+    "make compose-up && make compose-smoke",
+    "uv run python -m ithildin_mcp_server",
+    "make demo-flow",
+    "open http://127.0.0.1:5173",
+    "Export Run Evidence",
+    "make demo-workbench",
+    "make compose-down",
+]
+
+
+class DemoReadinessSummaryError(RuntimeError):
+    """Raised when demo readiness summary generation fails."""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--json", action="store_true", dest="json_output")
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--skip-probes", action="store_true")
+    args = parser.parse_args()
+    try:
+        report = build_summary(
+            repo_root=Path.cwd().resolve(),
+            output=args.output,
+            probe_endpoints=not args.skip_probes,
+        )
+    except DemoReadinessSummaryError as exc:
+        print(f"demo readiness summary failed: {exc}", file=sys.stderr)
+        return 1
+    if args.json_output:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        _print_human(report)
+    return 0 if report["valid"] else 1
+
+
+def build_summary(
+    *,
+    repo_root: Path,
+    output: Path,
+    probe_endpoints: bool = True,
+) -> dict[str, Any]:
+    _require_project_root(repo_root)
+    workbench = workbench_readiness.build_report(repo_root)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        live_status = live_demo_status.build_status(
+            repo_root=repo_root,
+            output=Path(temp_dir) / "LIVE_DEMO_INDEX_FOR_READINESS.md",
+            probe_endpoints=probe_endpoints,
+        )
+    commit = _git(repo_root, ["rev-parse", "HEAD"])
+    dirty = bool(_git(repo_root, ["status", "--short"]))
+    ready = [
+        "workbench readiness gate" if workbench["valid"] else "",
+        "live demo preflight" if live_status["preflight"]["valid"] else "",
+        "operator workbench packet path" if (repo_root / WORKBENCH_PACKET).exists() else "",
+        "consolidated review packet" if (repo_root / CONSOLIDATED_PACKET).exists() else "",
+    ]
+    missing = [
+        label
+        for label, ok in [
+            ("workbench readiness gate", workbench["valid"]),
+            ("live demo preflight", live_status["preflight"]["valid"]),
+            ("operator workbench packet", (repo_root / WORKBENCH_PACKET).exists()),
+            ("consolidated review packet", (repo_root / CONSOLIDATED_PACKET).exists()),
+        ]
+        if not ok
+    ]
+    report = {
+        "schema_version": "1",
+        "valid": bool(workbench["valid"] and live_status["preflight"]["valid"]),
+        "generated_at": datetime.now(UTC).isoformat(),
+        "repo_root": str(repo_root),
+        "commit": commit,
+        "dirty": dirty,
+        "tool_count": workbench.get("tool_count"),
+        "workbench_packet_path": WORKBENCH_PACKET.as_posix(),
+        "ready": [item for item in ready if item],
+        "missing": missing,
+        "optional_manual": [
+            "Compose local UI/API demo",
+            "MCP stdio client launch",
+            "demo-flow in ignored demo workspace",
+            "manual browser inspection",
+            "manual Export Run Evidence download",
+        ],
+        "deferred": DEFERRED,
+        "recommended_next_demo_commands": RECOMMENDED_COMMANDS,
+        "does_not_do": [
+            "start services",
+            "call governed tools",
+            "approve actions",
+            "mutate workspaces",
+            "manage sandbox lifecycle",
+            "export secrets",
+        ],
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(render_summary(report), encoding="utf-8")
+    return report
+
+
+def render_summary(report: dict[str, Any]) -> str:
+    lines = [
+        "# Demo Readiness Summary",
+        "",
+        "Generated by `make demo-readiness-summary`. This artifact is secret-free and does",
+        "not start services, call governed tools, approve actions, mutate workspaces, or",
+        "manage sandbox lifecycle.",
+        "It is a ready/missing/optional/deferred digest for the local operator demo.",
+        "",
+        "## Status",
+        "",
+        f"- generated_at: `{report['generated_at']}`",
+        f"- commit: `{report['commit']}`",
+        f"- dirty: `{str(report['dirty']).lower()}`",
+        f"- tool_count: `{report['tool_count']}`",
+        f"- valid: `{str(report['valid']).lower()}`",
+        f"- workbench_packet_path: `{report['workbench_packet_path']}`",
+        "",
+        "## Ready",
+        "",
+    ]
+    lines.extend(f"- {item}" for item in report["ready"])
+    lines.extend(["", "## Missing", ""])
+    if report["missing"]:
+        lines.extend(f"- {item}" for item in report["missing"])
+    else:
+        lines.append("- none")
+    lines.extend(["", "## Optional Manual Demo Steps", ""])
+    lines.extend(f"- {item}" for item in report["optional_manual"])
+    lines.extend(["", "## Recommended Next Demo Commands", ""])
+    lines.extend(
+        f"{index}. `{command}`"
+        for index, command in enumerate(report["recommended_next_demo_commands"], 1)
+    )
+    lines.extend(["", "## Deferred", ""])
+    lines.extend(f"- {item}" for item in report["deferred"])
+    lines.extend(
+        [
+            "",
+            "## Boundary",
+            "",
+            "This summary does not prove OS isolation, SIEM custody, compliance automation,",
+            "production security, host compromise resistance, external notarization, or",
+            "activity outside Ithildin-mediated actions.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _print_human(report: dict[str, Any]) -> None:
+    print("Ithildin demo readiness summary")
+    print(f"valid: {str(report['valid']).lower()}")
+    print(f"commit: {report['commit']}")
+    print(f"dirty: {str(report['dirty']).lower()}")
+    print(f"tool_count: {report['tool_count']}")
+    print(f"workbench_packet_path: {report['workbench_packet_path']}")
+    print("ready:")
+    for item in report["ready"]:
+        print(f"- {item}")
+    print("missing:")
+    if report["missing"]:
+        for item in report["missing"]:
+            print(f"- {item}")
+    else:
+        print("- none")
+
+
+def _require_project_root(repo_root: Path) -> None:
+    missing = [marker.as_posix() for marker in PROJECT_MARKERS if not (repo_root / marker).exists()]
+    if missing:
+        raise DemoReadinessSummaryError(
+            "must be run from the Ithildin repo root; missing markers: " + ", ".join(missing)
+        )
+
+
+def _git(repo_root: Path, args: list[str]) -> str:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

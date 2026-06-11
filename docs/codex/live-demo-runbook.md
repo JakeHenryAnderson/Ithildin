@@ -133,7 +133,13 @@ make demo-workbench
 ```
 
 This refreshes live-demo status, smoke, evidence summary, operator sandbox packet, Agent Run
-correlation packet, and the focused operator workbench packet.
+correlation packet, demo readiness summary, and the focused operator workbench packet.
+
+For a one-page readiness digest without regenerating the full packet, run:
+
+```sh
+make demo-readiness-summary
+```
 
 For only the deterministic operator-flow transcript, run:
 
@@ -143,7 +149,8 @@ make demo-workbench-smoke
 
 The focused workbench packet also writes
 `var/review-packets/v3/operator-workbench/WORKBENCH_DEMO_INDEX.md`, the first file to open for the
-operator workbench handoff.
+operator workbench handoff, and `DEMO_READINESS_SUMMARY.md` as the ready/missing/optional/deferred
+status page.
 
 ## MCP Client Companion
 

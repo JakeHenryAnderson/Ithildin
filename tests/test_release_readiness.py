@@ -30,6 +30,7 @@ from scripts import (
     control_mapping_readiness,
     dashboard_evidence_checklist_check,
     data_classification_design_check,
+    demo_readiness_summary,
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
@@ -8169,6 +8170,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         output=output_dir / "WORKBENCH_DEMO_SMOKE.md",
         run_commands=False,
     )
+    readiness_path = output_dir / "DEMO_READINESS_SUMMARY.md"
+    demo_readiness_summary.build_summary(
+        repo_root=Path.cwd(),
+        output=readiness_path,
+        probe_endpoints=False,
+    )
     workbench_evidence_packet.build_packet(
         repo_root=Path.cwd(),
         output_dir=output_dir,
@@ -8183,7 +8190,9 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "03_OPERATOR_WORKBENCH_COMMAND_EVIDENCE.md",
         "04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md",
         "05_OPERATOR_WORKBENCH_SMOKE.md",
+        "06_DEMO_READINESS_SUMMARY.md",
         "WORKBENCH_DEMO_SMOKE.md",
+        "DEMO_READINESS_SUMMARY.md",
         "WORKBENCH_DEMO_INDEX.md",
         "operator-workbench-artifact-hashes.json",
     }
@@ -8207,7 +8216,11 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     smoke_bundle = (output_dir / "05_OPERATOR_WORKBENCH_SMOKE.md").read_text(
         encoding="utf-8"
     )
+    readiness_bundle = (output_dir / "06_DEMO_READINESS_SUMMARY.md").read_text(
+        encoding="utf-8"
+    )
     smoke = smoke_path.read_text(encoding="utf-8")
+    readiness_summary = readiness_path.read_text(encoding="utf-8")
     demo_index = (output_dir / "WORKBENCH_DEMO_INDEX.md").read_text(encoding="utf-8")
     gate = Path("docs/codex/operator-workbench-readiness.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -8240,6 +8253,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "operator-managed-sandbox-demo-guide.md" in docs_bundle
     assert "live-demo-runbook.md" in docs_bundle
     assert "make workbench-readiness" in evidence
+    assert "make demo-readiness-summary" in evidence
     assert "make demo-workbench-smoke" in evidence
     assert "make live-demo-evidence-summary" in evidence
     assert "make operator-sandbox-demo-packet" in evidence
@@ -8253,18 +8267,24 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "Export Run Evidence" in smoke
     assert "does not prove OS isolation" in smoke
     assert "Workbench Demo Smoke Transcript" in smoke_bundle
+    assert "Demo Readiness Summary" in readiness_bundle
+    assert "Demo Readiness Summary" in readiness_summary
+    assert "ready/missing/optional/deferred" in readiness_summary
     assert "Workbench Demo Index" in demo_index
     assert "Open First" in demo_index
     assert "Artifact Hashes" in demo_index
     assert "make workbench-readiness" in readme
     assert "make workbench-evidence-packet" in readme
+    assert "make demo-readiness-summary" in readme
     assert "make demo-workbench-smoke" in readme
     assert "make demo-workbench" in readme
     assert "workbench-readiness:" in makefile
     assert "workbench-evidence-packet:" in makefile
+    assert "demo-readiness-summary:" in makefile
     assert "demo-workbench-smoke:" in makefile
     assert "demo-workbench:" in makefile
     assert "workbench-readiness" in release_check_body
+    assert "$(MAKE) demo-readiness-summary" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-workbench-smoke" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) workbench-evidence-packet" in review_candidate_body
     assert "workbench-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
@@ -8272,6 +8292,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "docs/codex/operator-workbench-readiness.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/operator-workbench-readiness.md" in docs_site
     assert "make demo-workbench" in reproduction_map
+    assert "make demo-readiness-summary" in reproduction_map
     assert "make demo-workbench-smoke" in reproduction_map
     assert "Demo Path" in gate
     assert "grouped run evidence overview" in gate
@@ -8280,14 +8301,18 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "294 - Evidence-only workbench wrapper | Done" in backlog
     assert "295 - Workbench demo smoke v2 | Done" in backlog
     assert "296 - Workbench demo index v2 | Done" in backlog
+    assert "297 - Workbench demo UX polish | Done" in backlog
+    assert "298 - Demo readiness summary | Done" in backlog
     for phrase in [
         "Status: release-readiness gate",
         "operator workbench",
         "GET /runs",
         "GET /runs/{run_id}/evidence-export",
         "make demo-workbench",
+        "make demo-readiness-summary",
         "make demo-workbench-smoke",
         "WORKBENCH_DEMO_INDEX.md",
+        "DEMO_READINESS_SUMMARY.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "summary",
         "does not start services",
