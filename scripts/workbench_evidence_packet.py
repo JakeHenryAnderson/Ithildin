@@ -104,9 +104,11 @@ def build_packet(
         raise WorkbenchEvidencePacketError(
             "working tree is dirty; commit before operator workbench handoff"
         )
+    preserved_observed_artifacts = _preserve_observed_artifacts(output_dir)
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
+    _restore_observed_artifacts(output_dir, preserved_observed_artifacts)
     workbench_demo_smoke.build_transcript(
         repo_root=repo_root,
         output=output_dir / "WORKBENCH_DEMO_SMOKE.md",
@@ -151,6 +153,20 @@ def build_packet(
         (output_dir / relative).write_text(content.rstrip() + "\n", encoding="utf-8")
     _write_json(output_dir / HASH_MANIFEST, _hashes(output_dir))
     return output_dir
+
+
+def _preserve_observed_artifacts(output_dir: Path) -> dict[str, str]:
+    preserved: dict[str, str] = {}
+    for name in ["DEMO_FLOW_RESULT.md", "RUN_EVIDENCE_EXPORT.json"]:
+        path = output_dir / name
+        if path.is_file():
+            preserved[name] = path.read_text(encoding="utf-8")
+    return preserved
+
+
+def _restore_observed_artifacts(output_dir: Path, artifacts: dict[str, str]) -> None:
+    for name, content in artifacts.items():
+        (output_dir / name).write_text(content, encoding="utf-8")
 
 
 def _index(context: dict[str, Any]) -> str:

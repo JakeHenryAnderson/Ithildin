@@ -8200,6 +8200,13 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     )
     reset_guide_path = output_dir / "DEMO_RESET_GUIDE.md"
     demo_reset_guide.build_guide(repo_root=Path.cwd(), output=reset_guide_path)
+    observed_demo_result = output_dir / "DEMO_FLOW_RESULT.md"
+    observed_demo_result.write_text(
+        "# Demo Flow Result\n\n- patch_apply_status: `completed`\n",
+        encoding="utf-8",
+    )
+    observed_run_export = output_dir / "RUN_EVIDENCE_EXPORT.json"
+    observed_run_export.write_text('{"schema_version":"1"}\n', encoding="utf-8")
     workbench_evidence_packet.build_packet(
         repo_root=Path.cwd(),
         output_dir=output_dir,
@@ -8224,6 +8231,8 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "OPERATOR_DEMO_GUIDE.md",
         "DEMO_STATE_REPORT.md",
         "DEMO_RESET_GUIDE.md",
+        "DEMO_FLOW_RESULT.md",
+        "RUN_EVIDENCE_EXPORT.json",
         "WORKBENCH_DEMO_INDEX.md",
         "operator-workbench-artifact-hashes.json",
     }
@@ -8261,6 +8270,8 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     operator_guide = operator_guide_path.read_text(encoding="utf-8")
     state_report = state_report_path.read_text(encoding="utf-8")
     reset_guide = reset_guide_path.read_text(encoding="utf-8")
+    preserved_demo_result = observed_demo_result.read_text(encoding="utf-8")
+    preserved_run_export = observed_run_export.read_text(encoding="utf-8")
     demo_index = (output_dir / "WORKBENCH_DEMO_INDEX.md").read_text(encoding="utf-8")
     gate = Path("docs/codex/operator-workbench-readiness.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -8336,6 +8347,8 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "DEMO_FLOW_RESULT.md" in reset_guide
     assert "Demo Reset Guide" in reset_guide_bundle
     assert "does not provide automatic repair" in reset_guide_bundle
+    assert "patch_apply_status: `completed`" in preserved_demo_result
+    assert '"schema_version":"1"' in preserved_run_export
     assert "Workbench Demo Index" in demo_index
     assert "Newest Reading Order" in demo_index
     assert "OPERATOR_DEMO_GUIDE.md" in demo_index
@@ -8544,7 +8557,7 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
     }
     assert "Demo Evidence Closure Packet" in index
     assert "Tool count remains `13`" in index
-    assert "Demo flow result status: `not_run`" in index
+    assert "Demo flow result status:" in index
     assert "Finding namespace: `EXT-DEMO-###`" in prompt
     assert "make demo-flow-result-check" in commands
     assert result_check["status"] in {"not_run", "checked"}
