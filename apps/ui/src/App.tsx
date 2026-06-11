@@ -1439,7 +1439,13 @@ export function App() {
           <div className="run-layout">
             <div className="run-list">
               {data.runs.length === 0 ? (
-                <EmptyState text={token ? "No recorded agent runs." : "Locked."} />
+                <EmptyState
+                  text={
+                    token
+                      ? "No recorded agent runs. Run make demo-seed, start the local stack, then run make demo-flow to create a mediated demo run."
+                      : "Locked."
+                  }
+                />
               ) : (
                 data.runs.map((run) => (
                   <button
@@ -1526,7 +1532,13 @@ export function App() {
                   )}
                 </>
               ) : (
-                <EmptyState text={token ? "Select a run." : "Locked."} />
+                <EmptyState
+                  text={
+                    token
+                      ? "Select a run. Export appears after selecting a run with recorded evidence."
+                      : "Locked."
+                  }
+                />
               )}
             </div>
           </div>

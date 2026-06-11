@@ -24,12 +24,14 @@ REQUIRED_DOC_PHRASES = [
     "make demo-workbench",
     "make demo-readiness-summary",
     "make operator-demo-guide",
+    "make demo-state-report",
     "make demo-workbench-smoke",
     "make workbench-evidence-packet",
     "make live-demo-evidence-summary",
     "WORKBENCH_DEMO_INDEX.md",
     "DEMO_READINESS_SUMMARY.md",
     "OPERATOR_DEMO_GUIDE.md",
+    "DEMO_STATE_REPORT.md",
     "07_WORKBENCH_DEMO_STORY.md",
     "WORKBENCH_DEMO_SMOKE.md",
     "newest reading order",
@@ -79,6 +81,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "workbench-evidence-packet:",
         "demo-readiness-summary:",
         "operator-demo-guide:",
+        "demo-state-report:",
         "demo-workbench-smoke:",
         "demo-workbench:",
     ]:
@@ -94,6 +97,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("demo-readiness-summary is missing from demo-workbench")
     if "$(MAKE) operator-demo-guide" not in makefile.partition("demo-workbench:")[2]:
         failures.append("operator-demo-guide is missing from demo-workbench")
+    if "$(MAKE) demo-state-report" not in makefile.partition("demo-workbench:")[2]:
+        failures.append("demo-state-report is missing from demo-workbench")
 
     for phrase in [
         "Agent Runs",
@@ -153,6 +158,7 @@ def _validate_doc(*, readme: str, reproduction_map: str, docs_site: str) -> list
         "make workbench-evidence-packet",
         "make demo-readiness-summary",
         "make operator-demo-guide",
+        "make demo-state-report",
         "make demo-workbench-smoke",
         "make demo-workbench",
     ]:

@@ -85,11 +85,21 @@ demo-readiness-summary:
 operator-demo-guide:
 	uv run python scripts/operator_demo_guide.py
 
+demo-state-report:
+	uv run python scripts/demo_state_report.py
+
+guided-demo:
+	uv run python scripts/guided_demo.py
+
+guided-demo-readiness:
+	uv run python scripts/guided_demo_readiness.py
+
 demo-workbench:
 	$(MAKE) live-demo-preflight
 	$(MAKE) live-demo-status
 	$(MAKE) live-demo-smoke
 	$(MAKE) live-demo-evidence-summary
+	$(MAKE) demo-state-report
 	$(MAKE) operator-demo-guide
 	$(MAKE) demo-workbench-smoke
 	$(MAKE) demo-readiness-summary
@@ -414,6 +424,7 @@ review-candidate:
 	$(MAKE) live-demo-smoke
 	$(MAKE) live-demo-evidence-summary
 	$(MAKE) live-demo-packet
+	$(MAKE) guided-demo
 	$(MAKE) workbench-evidence-packet
 	$(MAKE) v06-review-dispatch-packets
 	$(MAKE) review-packet-bundle
@@ -456,7 +467,7 @@ release-context:
 	@echo "git_commit=$$(git rev-parse HEAD)"
 	@echo "git_dirty=$$(test -z "$$(git status --short)" && echo false || echo true)"
 
-release-check: release-context manifest-lock-check release-guardrails release-evidence-gate reviewer-findings-check review-findings-summary review-run-manifest-check filesystem-contract-check external-findings-intake-dry-run tool-surface-invariant-gate no-new-powers-guardrail read-only-metadata-capability-check read-only-capability-inventory-gate v3-next-capability-candidate-check next-capability-readiness agent-run-evidence-contract-check agent-run-evidence-export-check agent-run-evidence-export-plan-check agent-run-evidence-export-implementation-gate operator-action-states-check dashboard-evidence-checklist-check agent-run-timeline-readiness agent-run-evidence-readiness agent-run-operations-readiness workbench-readiness siem-evidence-design-check data-classification-design-check control-mapping-design-check incident-reconstruction-check observability-readiness control-mapping-readiness operator-sandbox-demo-readiness project-manifest-summary-proposal-check project-manifest-summary-implementation-plan-check project-manifest-summary-implementation-gate evidence-confusion-gate external-review-closure-gate closure-matrix-evidence-sync accepted-risk-register-check capability-decision-report v08-status-reconciliation v08-public-preview-decision v08-capability-design-gate v08-final-decision-packet v09-design-only-gate git-commit-metadata-proposal-check git-ref-summary-proposal-check git-ref-summary-implementation-plan-check git-ref-summary-implementation-gate git-commit-metadata-implementation-plan-check git-commit-metadata-implementation-gate v06-lane-status v06-closure-readiness v06-final-handoff v07-closure-prep v07-patch-apply-recheck-prep v05-threat-model-delta-check v05-boundary-decision-draft-check v05-handoff-packet-check manifest-change-review determinism-check adversarial-corpus-check resource-limit-check demo-scenario-pack evidence-contracts-check policy-test policy-parity test lint typecheck ui-test docs-site
+release-check: release-context manifest-lock-check release-guardrails release-evidence-gate reviewer-findings-check review-findings-summary review-run-manifest-check filesystem-contract-check external-findings-intake-dry-run tool-surface-invariant-gate no-new-powers-guardrail read-only-metadata-capability-check read-only-capability-inventory-gate v3-next-capability-candidate-check next-capability-readiness agent-run-evidence-contract-check agent-run-evidence-export-check agent-run-evidence-export-plan-check agent-run-evidence-export-implementation-gate operator-action-states-check dashboard-evidence-checklist-check agent-run-timeline-readiness agent-run-evidence-readiness agent-run-operations-readiness workbench-readiness guided-demo-readiness siem-evidence-design-check data-classification-design-check control-mapping-design-check incident-reconstruction-check observability-readiness control-mapping-readiness operator-sandbox-demo-readiness project-manifest-summary-proposal-check project-manifest-summary-implementation-plan-check project-manifest-summary-implementation-gate evidence-confusion-gate external-review-closure-gate closure-matrix-evidence-sync accepted-risk-register-check capability-decision-report v08-status-reconciliation v08-public-preview-decision v08-capability-design-gate v08-final-decision-packet v09-design-only-gate git-commit-metadata-proposal-check git-ref-summary-proposal-check git-ref-summary-implementation-plan-check git-ref-summary-implementation-gate git-commit-metadata-implementation-plan-check git-commit-metadata-implementation-gate v06-lane-status v06-closure-readiness v06-final-handoff v07-closure-prep v07-patch-apply-recheck-prep v05-threat-model-delta-check v05-boundary-decision-draft-check v05-handoff-packet-check manifest-change-review determinism-check adversarial-corpus-check resource-limit-check demo-scenario-pack evidence-contracts-check policy-test policy-parity test lint typecheck ui-test docs-site
 	npm run build --prefix apps/ui
 
 ui-dev:

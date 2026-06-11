@@ -461,7 +461,8 @@ describe("Review console interactions", () => {
 
     await user.type(screen.getByLabelText("Admin token"), "local-token");
     await user.click(screen.getByRole("button", { name: /save/i }));
-    await screen.findByText("No recorded agent runs.");
+    await screen.findByText(/No recorded agent runs. Run make demo-seed/);
+    expect(screen.getByText(/Export appears after selecting a run/)).toBeInTheDocument();
     expect(screen.getByText("0 runs")).toBeInTheDocument();
     expect(screen.getByText("no statuses")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(

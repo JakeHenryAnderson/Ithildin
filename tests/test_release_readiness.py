@@ -31,6 +31,7 @@ from scripts import (
     dashboard_evidence_checklist_check,
     data_classification_design_check,
     demo_readiness_summary,
+    demo_state_report,
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
@@ -47,6 +48,8 @@ from scripts import (
     git_ref_summary_implementation_plan_check,
     git_ref_summary_proposal_check,
     git_ref_summary_source_review_bundle,
+    guided_demo,
+    guided_demo_readiness,
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
@@ -8183,6 +8186,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         output=operator_guide_path,
         probe_endpoints=False,
     )
+    state_report_path = output_dir / "DEMO_STATE_REPORT.md"
+    demo_state_report.build_report(
+        repo_root=Path.cwd(),
+        output=state_report_path,
+        probe_endpoints=False,
+    )
     workbench_evidence_packet.build_packet(
         repo_root=Path.cwd(),
         output_dir=output_dir,
@@ -8200,9 +8209,11 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "06_DEMO_READINESS_SUMMARY.md",
         "07_WORKBENCH_DEMO_STORY.md",
         "08_OPERATOR_DEMO_GUIDE.md",
+        "09_DEMO_STATE_REPORT.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "DEMO_READINESS_SUMMARY.md",
         "OPERATOR_DEMO_GUIDE.md",
+        "DEMO_STATE_REPORT.md",
         "WORKBENCH_DEMO_INDEX.md",
         "operator-workbench-artifact-hashes.json",
     }
@@ -8233,9 +8244,11 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     operator_guide_bundle = (output_dir / "08_OPERATOR_DEMO_GUIDE.md").read_text(
         encoding="utf-8"
     )
+    state_report_bundle = (output_dir / "09_DEMO_STATE_REPORT.md").read_text(encoding="utf-8")
     smoke = smoke_path.read_text(encoding="utf-8")
     readiness_summary = readiness_path.read_text(encoding="utf-8")
     operator_guide = operator_guide_path.read_text(encoding="utf-8")
+    state_report = state_report_path.read_text(encoding="utf-8")
     demo_index = (output_dir / "WORKBENCH_DEMO_INDEX.md").read_text(encoding="utf-8")
     gate = Path("docs/codex/operator-workbench-readiness.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -8269,6 +8282,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "live-demo-runbook.md" in docs_bundle
     assert "make workbench-readiness" in evidence
     assert "make operator-demo-guide" in evidence
+    assert "make demo-state-report" in evidence
     assert "make demo-readiness-summary" in evidence
     assert "make demo-workbench-smoke" in evidence
     assert "make live-demo-evidence-summary" in evidence
@@ -8295,9 +8309,14 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "Mediated Run" in operator_guide
     assert "make compose-down" in operator_guide
     assert "Operator Demo Guide" in operator_guide_bundle
+    assert "Demo State Report" in state_report
+    assert "seeded_workspace_exists" in state_report
+    assert "Recommended Next Demo Commands" in state_report
+    assert "Demo State Report" in state_report_bundle
     assert "Workbench Demo Index" in demo_index
     assert "Newest Reading Order" in demo_index
     assert "OPERATOR_DEMO_GUIDE.md" in demo_index
+    assert "DEMO_STATE_REPORT.md" in demo_index
     assert "DEMO_READINESS_SUMMARY.md" in demo_index
     assert "WORKBENCH_DEMO_SMOKE.md" in demo_index
     assert "var/review-packets/v3/live-demo/" in demo_index
@@ -8307,26 +8326,39 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make workbench-evidence-packet" in readme
     assert "make demo-readiness-summary" in readme
     assert "make operator-demo-guide" in readme
+    assert "make demo-state-report" in readme
+    assert "make guided-demo" in readme
+    assert "make guided-demo-readiness" in readme
     assert "make demo-workbench-smoke" in readme
     assert "make demo-workbench" in readme
     assert "workbench-readiness:" in makefile
     assert "workbench-evidence-packet:" in makefile
     assert "demo-readiness-summary:" in makefile
     assert "operator-demo-guide:" in makefile
+    assert "demo-state-report:" in makefile
+    assert "guided-demo:" in makefile
+    assert "guided-demo-readiness:" in makefile
     assert "demo-workbench-smoke:" in makefile
     assert "demo-workbench:" in makefile
     assert "workbench-readiness" in release_check_body
     assert "$(MAKE) demo-readiness-summary" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) operator-demo-guide" in makefile.partition("demo-workbench:")[2]
+    assert "$(MAKE) demo-state-report" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-workbench-smoke" in makefile.partition("demo-workbench:")[2]
+    assert "$(MAKE) guided-demo" in review_candidate_body
     assert "$(MAKE) workbench-evidence-packet" in review_candidate_body
     assert "workbench-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "guided-demo-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "$(MAKE) guided-demo" in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     assert "$(MAKE) workbench-evidence-packet" in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     assert "docs/codex/operator-workbench-readiness.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/operator-workbench-readiness.md" in docs_site
     assert "make demo-workbench" in reproduction_map
     assert "make demo-readiness-summary" in reproduction_map
     assert "make operator-demo-guide" in reproduction_map
+    assert "make demo-state-report" in reproduction_map
+    assert "make guided-demo" in reproduction_map
+    assert "make guided-demo-readiness" in reproduction_map
     assert "make demo-workbench-smoke" in reproduction_map
     assert "Demo Path" in gate
     assert "grouped run evidence overview" in gate
@@ -8339,6 +8371,8 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "298 - Demo readiness summary | Done" in backlog
     assert "299 - Workbench happy path story | Done" in backlog
     assert "300 - Operator demo guide | Done" in backlog
+    assert "301 - Guided demo state report | Done" in backlog
+    assert "302 - Guided demo wrapper | Done" in backlog
     for phrase in [
         "Status: release-readiness gate",
         "operator workbench",
@@ -8347,11 +8381,14 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "make demo-workbench",
         "make demo-readiness-summary",
         "make operator-demo-guide",
+        "make demo-state-report",
         "make demo-workbench-smoke",
         "WORKBENCH_DEMO_INDEX.md",
         "DEMO_READINESS_SUMMARY.md",
         "OPERATOR_DEMO_GUIDE.md",
+        "DEMO_STATE_REPORT.md",
         "08_OPERATOR_DEMO_GUIDE.md",
+        "09_DEMO_STATE_REPORT.md",
         "07_WORKBENCH_DEMO_STORY.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "newest reading order",
@@ -8377,6 +8414,32 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         assert forbidden not in smoke
         assert forbidden not in smoke_bundle
         assert forbidden not in demo_index
+
+
+def test_guided_demo_wrapper_and_readiness_are_wired(tmp_path: Path) -> None:
+    transcript = tmp_path / "GUIDED_DEMO_TRANSCRIPT.md"
+    results = guided_demo.run_guided_demo(
+        repo_root=Path.cwd(),
+        transcript=transcript,
+        run_commands=False,
+    )
+    report = guided_demo_readiness.build_report(Path.cwd())
+    content = transcript.read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 13
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["run_control_behavior_allowed"] is False
+    assert len(results) >= 5
+    assert "Guided Demo Transcript" in content
+    assert "make live-demo-preflight" in content
+    assert "make demo-seed" in content
+    assert "make demo-state-report" in content
+    assert "scripts/workbench_evidence_packet.py --allow-dirty" in content
+    assert "make compose-up && make compose-smoke" in content
+    assert "does not prove OS isolation" in content
+    assert "command execution skipped for fixture/test transcript generation" in content
 
 
 def test_control_mapping_readiness_gate_is_wired() -> None:

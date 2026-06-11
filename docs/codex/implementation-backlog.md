@@ -317,6 +317,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 298 - Demo readiness summary | Done | `make demo-readiness-summary`; generates a secret-free ready/missing/optional/deferred operator demo digest without starting services or calling governed tools. |
 | 299 - Workbench happy path story | Done | `07_WORKBENCH_DEMO_STORY.md`; generated in the workbench packet as a preflight-to-cleanup narrative without runtime fixture loading. |
 | 300 - Operator demo guide | Done | `make operator-demo-guide`; generates a secret-free preflight-to-cleanup operator stage table and bundles it into the workbench packet without starting services or adding runtime controls. |
+| 301 - Guided demo state report | Done | `make demo-state-report`; generates `DEMO_STATE_REPORT.md` with seed status, localhost reachability, warnings, artifact paths, and next demo commands without governed tool calls. |
+| 302 - Guided demo wrapper | Done | `make guided-demo` and `make guided-demo-readiness`; refresh the non-service-starting local demo evidence path, transcript, packet wiring, and no-new-powers gate. |
 
 ## Future Candidate Track
 
