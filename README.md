@@ -209,6 +209,7 @@ checked with `make control-mapping-readiness`.
 - `make demo-reset-guide` - write read-only reset/recovery guidance for repeating or diagnosing the local demo.
 - `make demo-flow-readiness` - validate demo-flow result, reset guide, UI demo labels, packet, and no-new-powers wiring.
 - `make demo-flow-result-check` - validate `DEMO_FLOW_RESULT.md` if an optional mediated demo run has produced it.
+- `make demo-observed-summary` - summarize observed demo IDs, audit heads, and run evidence export pointers without file contents or diffs.
 - `make demo-evidence-packet` - generate a focused demo evidence closure packet under `var/review-packets/v3/demo-evidence/`.
 - `make demo-evidence-readiness` - validate demo evidence packet, result-check, docs, review-candidate, and no-new-powers wiring.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
@@ -293,6 +294,7 @@ The local Docker Compose demo runs the API and review console with a seeded work
 - `make demo-flow` - run governed reads, redaction, patch proposal, approval, apply, audit checks, and write `DEMO_FLOW_RESULT.md`.
 - `make demo-reset-guide` - generate `DEMO_RESET_GUIDE.md` with read-only reset/recovery guidance.
 - `make demo-flow-result-check` - validate the optional demo result artifact if present.
+- `make demo-observed-summary` - generate `DEMO_OBSERVED_SUMMARY.md` after an observed local demo.
 - `make demo-evidence-packet` - package demo readiness, state, reset, and result-check evidence.
 - `make demo-scenario-pack` - validate the reviewer-facing demo scenario map.
 - `make compose-down` - stop the stack.

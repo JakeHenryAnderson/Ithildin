@@ -39,7 +39,8 @@ the preflight-to-cleanup walkthrough, run `make operator-demo-guide`. For curren
 and next-command status, run `make demo-state-report`. For read-only repeat/recovery guidance, run
 `make demo-reset-guide`. After an optional mediated `make demo-flow`, inspect
 `DEMO_FLOW_RESULT.md`, then validate the result with `make demo-flow-result-check` and the wiring
-with `make demo-flow-readiness`. For a focused demo evidence closure packet, run
+with `make demo-flow-readiness`. After exporting run evidence, run `make demo-observed-summary`
+for the compact observed-demo entry point. For a focused demo evidence closure packet, run
 `make demo-evidence-packet` and validate it with `make demo-evidence-readiness`. To refresh the
 whole non-service-starting demo handoff, run `make guided-demo`, then validate it with
 `make guided-demo-readiness`. Inspect the focused packet with `make workbench-evidence-packet`; open

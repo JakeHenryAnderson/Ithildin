@@ -14,6 +14,8 @@ Boundary shorthand: this sprint does not add run controls.
 ## Commands
 
 - `make demo-flow-result-check` validates `DEMO_FLOW_RESULT.md` if it exists.
+- `make demo-observed-summary` writes a compact post-demo summary with proposal, approval, run,
+  audit, and run-evidence export pointers when observed artifacts exist.
 - `make demo-evidence-packet` writes a focused packet under `var/review-packets/v3/demo-evidence/`.
 - `make demo-evidence-readiness` validates command, docs, packet, release, and no-new-powers wiring.
 
@@ -36,6 +38,7 @@ guidance, and obvious secret/diff exclusion.
 - `DEMO_STATE_REPORT.md`
 - `DEMO_RESET_GUIDE.md`
 - `DEMO_FLOW_RESULT_CHECK.json`
+- `DEMO_OBSERVED_SUMMARY.md`
 - `demo-evidence-artifact-hashes.json`
 
 ## Gate

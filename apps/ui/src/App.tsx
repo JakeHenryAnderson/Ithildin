@@ -1500,6 +1500,7 @@ export function App() {
                     <>
                       <RunEvidenceSummary run={selectedRun.run} eventCount={selectedRun.timeline.length} />
                       <RunEvidenceOverview timeline={selectedRun.timeline} />
+                      <RunReconstruction timeline={selectedRun.timeline} />
                       <div className="table-wrap compact-table">
                         <table>
                           <thead>
@@ -1727,6 +1728,32 @@ function RunEvidenceOverview({ timeline }: { timeline: AgentRunTimelineEvent[] }
           <span>{warningCount} warnings</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RunReconstruction({ timeline }: { timeline: AgentRunTimelineEvent[] }) {
+  const observed = new Set(timeline.map(timelineCategory));
+  const completed = timeline.some((event) => timelineStatus(event) === "completed");
+  const failed = timeline.some((event) => timelineStatus(event) === "failed");
+  const steps = [
+    ["tool", "Tool Call", observed.has("tool") || timeline.some((event) => event.tool_name)],
+    ["policy", "Policy Decision", observed.has("policy") || timeline.some((event) => event.decision)],
+    ["approval", "Approval", observed.has("approval")],
+    ["executor", "Executor Result", completed || failed],
+    ["export", "Audit/Export", observed.has("export") || timeline.some((event) => event.event_hash)],
+  ] as const;
+  return (
+    <div className="run-reconstruction" aria-label="Observed run reconstruction">
+      <strong>Observed Reconstruction</strong>
+      <ol>
+        {steps.map(([key, label, isObserved]) => (
+          <li className={isObserved ? "observed" : "pending"} key={key}>
+            <span>{isObserved ? "observed" : "pending"}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

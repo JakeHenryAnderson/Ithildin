@@ -36,6 +36,8 @@ The workbench should let a local operator answer four questions without reading 
   demo flows.
 - `make demo-flow` writes `DEMO_FLOW_RESULT.md` with proposal, approval, audit, and candidate run
   ID evidence after the optional mediated local demo.
+- `make demo-observed-summary` writes `DEMO_OBSERVED_SUMMARY.md` as the compact post-demo entry
+  point for observed proposal, approval, audit, run, and export evidence.
 - `make demo-flow-readiness` validates the demo-flow result, reset guide, UI demo labels, packet
   wiring, and no-new-powers posture.
 - `make demo-flow-result-check`, `make demo-evidence-packet`, and
@@ -58,6 +60,7 @@ demo evidence commands:
 - `make demo-readiness-summary`;
 - `make operator-demo-guide`;
 - `make demo-state-report`;
+- `make demo-observed-summary`;
 - `make demo-reset-guide`;
 - `make demo-evidence-packet`;
 - `make demo-workbench-smoke`;
@@ -114,10 +117,11 @@ Ithildin-mediated actions.
 - README and reproduction-map command lists mention the workbench commands;
 - `make demo-workbench` and `make workbench-evidence-packet` are wired;
 - `make demo-readiness-summary`, `make operator-demo-guide`, `make demo-workbench-smoke`,
-  `make demo-state-report`, `make demo-reset-guide`, `WORKBENCH_DEMO_INDEX.md`,
+  `make demo-state-report`, `make demo-observed-summary`, `make demo-reset-guide`, `WORKBENCH_DEMO_INDEX.md`,
   `DEMO_READINESS_SUMMARY.md`, `OPERATOR_DEMO_GUIDE.md`, `DEMO_STATE_REPORT.md`,
-  `DEMO_FLOW_RESULT.md`, `DEMO_RESET_GUIDE.md`, `07_WORKBENCH_DEMO_STORY.md`,
-  `10_DEMO_RESET_GUIDE.md`, and `WORKBENCH_DEMO_SMOKE.md` are wired;
+  `DEMO_FLOW_RESULT.md`, `DEMO_OBSERVED_SUMMARY.md`, `DEMO_RESET_GUIDE.md`,
+  `07_WORKBENCH_DEMO_STORY.md`, `10_DEMO_RESET_GUIDE.md`, `11_DEMO_OBSERVED_SUMMARY.md`,
+  and `WORKBENCH_DEMO_SMOKE.md` are wired;
 - release-check includes the workbench readiness gate;
 - review-candidate includes the focused demo evidence closure packet;
 - tool count remains `13`;

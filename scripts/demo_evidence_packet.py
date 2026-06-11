@@ -16,6 +16,7 @@ if __package__ in {None, ""}:
 
 from scripts import (
     demo_flow_result_check,
+    demo_observed_summary,
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
@@ -90,6 +91,11 @@ def build_packet(
         repo_root / demo_flow_result_check.DEFAULT_RESULT
     )
     _write_json(output_dir / "DEMO_FLOW_RESULT_CHECK.json", result_check)
+    observed = demo_observed_summary.build_summary(
+        result=repo_root / demo_observed_summary.DEFAULT_RESULT,
+        run_export=repo_root / demo_observed_summary.DEFAULT_RUN_EXPORT,
+        output=output_dir / "DEMO_OBSERVED_SUMMARY.md",
+    )
 
     context = {
         "commit": commit,
@@ -98,6 +104,7 @@ def build_packet(
         "state": state,
         "reset": reset,
         "result_check": result_check,
+        "observed": observed,
         "probe_endpoints": probe_endpoints,
     }
     files = {
@@ -140,7 +147,8 @@ or reviewer should inspect after the optional mediated flow.
 7. `DEMO_STATE_REPORT.md`
 8. `DEMO_RESET_GUIDE.md`
 9. `DEMO_FLOW_RESULT_CHECK.json`
-10. `demo-evidence-artifact-hashes.json`
+10. `DEMO_OBSERVED_SUMMARY.md`
+11. `demo-evidence-artifact-hashes.json`
 
 ## Boundary
 
@@ -222,6 +230,8 @@ def _result_check_markdown(report: dict[str, Any]) -> str:
 def _artifact_pointers(repo_root: Path) -> str:
     paths = [
         Path("var/review-packets/v3/operator-workbench/DEMO_FLOW_RESULT.md"),
+        Path("var/review-packets/v3/operator-workbench/DEMO_OBSERVED_SUMMARY.md"),
+        Path("var/review-packets/v3/operator-workbench/RUN_EVIDENCE_EXPORT.json"),
         Path("var/review-packets/v3/operator-workbench/DEMO_RESET_GUIDE.md"),
         Path("var/review-packets/v3/operator-workbench/WORKBENCH_DEMO_INDEX.md"),
         Path("var/review-packets/v3/live-demo"),

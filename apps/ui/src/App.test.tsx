@@ -505,6 +505,10 @@ describe("Review console interactions", () => {
     expect(screen.getByText("Statuses")).toBeInTheDocument();
     expect(screen.getByText("Decisions")).toBeInTheDocument();
     expect(screen.getByText("Correlation")).toBeInTheDocument();
+    expect(screen.getByText("Observed Reconstruction")).toBeInTheDocument();
+    expect(screen.getByText("Tool Call")).toBeInTheDocument();
+    expect(screen.getAllByText("Policy Decision").length).toBeGreaterThan(0);
+    expect(screen.getByText("Audit/Export")).toBeInTheDocument();
     expect(screen.getByText("1 requests")).toBeInTheDocument();
     expect(screen.getByText("2 tool calls")).toBeInTheDocument();
     expect(screen.getByText("1 audit events")).toBeInTheDocument();
@@ -514,7 +518,7 @@ describe("Review console interactions", () => {
     expect(screen.getByText("Apply demo patch")).toBeInTheDocument();
     expect(screen.getByText("Binding Evidence")).toBeInTheDocument();
     expect(screen.getByText("Patch Artifact")).toBeInTheDocument();
-    expect(screen.getByText("Policy Decision")).toBeInTheDocument();
+    expect(screen.getAllByText("Policy Decision").length).toBeGreaterThan(0);
     expect(screen.getByText("basehash")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Deny reason for appr_123456789"), "not today");

@@ -34,6 +34,7 @@ from scripts import (
     demo_evidence_readiness,
     demo_flow_readiness,
     demo_flow_result_check,
+    demo_observed_summary,
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
@@ -8207,6 +8208,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     )
     observed_run_export = output_dir / "RUN_EVIDENCE_EXPORT.json"
     observed_run_export.write_text('{"schema_version":"1"}\n', encoding="utf-8")
+    observed_summary = output_dir / "DEMO_OBSERVED_SUMMARY.md"
+    demo_observed_summary.build_summary(
+        result=observed_demo_result,
+        run_export=observed_run_export,
+        output=observed_summary,
+    )
     workbench_evidence_packet.build_packet(
         repo_root=Path.cwd(),
         output_dir=output_dir,
@@ -8226,6 +8233,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "08_OPERATOR_DEMO_GUIDE.md",
         "09_DEMO_STATE_REPORT.md",
         "10_DEMO_RESET_GUIDE.md",
+        "11_DEMO_OBSERVED_SUMMARY.md",
         "WORKBENCH_DEMO_SMOKE.md",
         "DEMO_READINESS_SUMMARY.md",
         "OPERATOR_DEMO_GUIDE.md",
@@ -8233,6 +8241,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "DEMO_RESET_GUIDE.md",
         "DEMO_FLOW_RESULT.md",
         "RUN_EVIDENCE_EXPORT.json",
+        "DEMO_OBSERVED_SUMMARY.md",
         "WORKBENCH_DEMO_INDEX.md",
         "operator-workbench-artifact-hashes.json",
     }
@@ -8265,6 +8274,9 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     )
     state_report_bundle = (output_dir / "09_DEMO_STATE_REPORT.md").read_text(encoding="utf-8")
     reset_guide_bundle = (output_dir / "10_DEMO_RESET_GUIDE.md").read_text(encoding="utf-8")
+    observed_summary_bundle = (output_dir / "11_DEMO_OBSERVED_SUMMARY.md").read_text(
+        encoding="utf-8"
+    )
     smoke = smoke_path.read_text(encoding="utf-8")
     readiness_summary = readiness_path.read_text(encoding="utf-8")
     operator_guide = operator_guide_path.read_text(encoding="utf-8")
@@ -8272,6 +8284,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     reset_guide = reset_guide_path.read_text(encoding="utf-8")
     preserved_demo_result = observed_demo_result.read_text(encoding="utf-8")
     preserved_run_export = observed_run_export.read_text(encoding="utf-8")
+    preserved_observed_summary = observed_summary.read_text(encoding="utf-8")
     demo_index = (output_dir / "WORKBENCH_DEMO_INDEX.md").read_text(encoding="utf-8")
     gate = Path("docs/codex/operator-workbench-readiness.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -8349,8 +8362,12 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "does not provide automatic repair" in reset_guide_bundle
     assert "patch_apply_status: `completed`" in preserved_demo_result
     assert '"schema_version":"1"' in preserved_run_export
+    assert "Demo Observed Summary" in preserved_observed_summary
+    assert "Demo Observed Summary" in observed_summary_bundle
     assert "Workbench Demo Index" in demo_index
     assert "Newest Reading Order" in demo_index
+    assert "DEMO_OBSERVED_SUMMARY.md" in demo_index
+    assert "RUN_EVIDENCE_EXPORT.json" in demo_index
     assert "OPERATOR_DEMO_GUIDE.md" in demo_index
     assert "DEMO_STATE_REPORT.md" in demo_index
     assert "DEMO_FLOW_RESULT.md" in demo_index
@@ -8366,6 +8383,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make operator-demo-guide" in readme
     assert "make demo-state-report" in readme
     assert "make demo-reset-guide" in readme
+    assert "demo-observed-summary:" in makefile
     assert "make demo-flow-readiness" in readme
     assert "make guided-demo" in readme
     assert "make guided-demo-readiness" in readme
@@ -8387,6 +8405,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "$(MAKE) demo-readiness-summary" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) operator-demo-guide" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-state-report" in makefile.partition("demo-workbench:")[2]
+    assert "$(MAKE) demo-observed-summary" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-reset-guide" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-workbench-smoke" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) guided-demo" in review_candidate_body
@@ -8503,13 +8522,55 @@ def test_guided_demo_wrapper_and_readiness_are_wired(tmp_path: Path) -> None:
 def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) -> None:
     result_report = demo_flow_result_check.build_report(tmp_path / "missing-result.md")
     readiness = demo_evidence_readiness.build_report(Path.cwd())
-    output_dir = tmp_path / "demo-evidence"
-    demo_evidence_packet.build_packet(
-        repo_root=Path.cwd(),
-        output_dir=output_dir,
-        allow_dirty=True,
-        probe_endpoints=False,
+    observed_root = tmp_path / "observed"
+    observed_root.mkdir()
+    observed_result = observed_root / "DEMO_FLOW_RESULT.md"
+    observed_result.write_text(
+        "\n".join(
+            [
+                "# Demo Flow Result",
+                "",
+                "- proposal_id: `patch_123`",
+                "- approval_id: `appr_123`",
+                "- candidate_run_ids: `run_123`",
+                "- patch_apply_status: `completed`",
+                "- audit_verification_valid: `true`",
+                "- audit_event_count: `2`",
+                "- audit_head_hash: `sha256:head`",
+                "- audit_export_event_count: `3`",
+                "- audit_export_head_hash: `sha256:export`",
+                "",
+            ]
+        ),
+        encoding="utf-8",
     )
+    observed_export = observed_root / "RUN_EVIDENCE_EXPORT.json"
+    observed_export.write_text(
+        json.dumps(
+            {
+                "schema_version": "1",
+                "export_id": "runev_123",
+                "summary": {"warning_count": 0},
+                "timeline": [{"event_id": "evt_123"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    default_result = demo_observed_summary.DEFAULT_RESULT
+    default_export = demo_observed_summary.DEFAULT_RUN_EXPORT
+    demo_observed_summary.DEFAULT_RESULT = observed_result
+    demo_observed_summary.DEFAULT_RUN_EXPORT = observed_export
+    output_dir = tmp_path / "demo-evidence"
+    try:
+        demo_evidence_packet.build_packet(
+            repo_root=Path.cwd(),
+            output_dir=output_dir,
+            allow_dirty=True,
+            probe_endpoints=False,
+        )
+    finally:
+        demo_observed_summary.DEFAULT_RESULT = default_result
+        demo_observed_summary.DEFAULT_RUN_EXPORT = default_export
 
     expected = {
         "00_DEMO_EVIDENCE_INDEX.md",
@@ -8521,6 +8582,7 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
         "DEMO_STATE_REPORT.md",
         "DEMO_RESET_GUIDE.md",
         "DEMO_FLOW_RESULT_CHECK.json",
+        "DEMO_OBSERVED_SUMMARY.md",
         "demo-evidence-artifact-hashes.json",
     }
     generated = {path.name for path in output_dir.iterdir()}
@@ -8533,6 +8595,7 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
     result_check = json.loads(
         (output_dir / "DEMO_FLOW_RESULT_CHECK.json").read_text(encoding="utf-8")
     )
+    observed_summary = (output_dir / "DEMO_OBSERVED_SUMMARY.md").read_text(encoding="utf-8")
     closure_doc = Path("docs/codex/demo-evidence-closure.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
@@ -8558,12 +8621,16 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
     assert "Demo Evidence Closure Packet" in index
     assert "Tool count remains `13`" in index
     assert "Demo flow result status:" in index
+    assert "DEMO_OBSERVED_SUMMARY.md" in index
     assert "Finding namespace: `EXT-DEMO-###`" in prompt
     assert "make demo-flow-result-check" in commands
     assert result_check["status"] in {"not_run", "checked"}
+    assert "Status: `observed`" in observed_summary
+    assert "runev_123" in observed_summary
     assert "make demo-flow-result-check" in readme
     assert "make demo-evidence-packet" in readme
     assert "make demo-evidence-readiness" in readme
+    assert "demo-observed-summary:" in makefile
     assert "demo-flow-result-check:" in makefile
     assert "demo-evidence-packet:" in makefile
     assert "demo-evidence-readiness:" in makefile

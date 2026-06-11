@@ -15,6 +15,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    demo_observed_summary,
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
@@ -133,6 +134,11 @@ def build_packet(
         repo_root=repo_root,
         output=output_dir / "DEMO_RESET_GUIDE.md",
     )
+    demo_observed_summary.build_summary(
+        result=output_dir / "DEMO_FLOW_RESULT.md",
+        run_export=output_dir / "RUN_EVIDENCE_EXPORT.json",
+        output=output_dir / "DEMO_OBSERVED_SUMMARY.md",
+    )
 
     context = {"commit": commit, "dirty": dirty, "run_commands": run_commands}
     files = {
@@ -147,6 +153,7 @@ def build_packet(
         "08_OPERATOR_DEMO_GUIDE.md": _observed_operator_guide(output_dir),
         "09_DEMO_STATE_REPORT.md": _observed_state_report(output_dir),
         "10_DEMO_RESET_GUIDE.md": _observed_reset_guide(output_dir),
+        "11_DEMO_OBSERVED_SUMMARY.md": _observed_demo_summary(output_dir),
         "WORKBENCH_DEMO_INDEX.md": _demo_index(output_dir, context),
     }
     for relative, content in files.items():
@@ -157,7 +164,7 @@ def build_packet(
 
 def _preserve_observed_artifacts(output_dir: Path) -> dict[str, str]:
     preserved: dict[str, str] = {}
-    for name in ["DEMO_FLOW_RESULT.md", "RUN_EVIDENCE_EXPORT.json"]:
+    for name in ["DEMO_FLOW_RESULT.md", "RUN_EVIDENCE_EXPORT.json", "DEMO_OBSERVED_SUMMARY.md"]:
         path = output_dir / name
         if path.is_file():
             preserved[name] = path.read_text(encoding="utf-8")
@@ -203,8 +210,9 @@ sandbox/workspace posture, and read-only evidence export.
 13. `OPERATOR_DEMO_GUIDE.md`
 14. `DEMO_STATE_REPORT.md`
 15. `DEMO_RESET_GUIDE.md`
-16. `WORKBENCH_DEMO_INDEX.md`
-17. `operator-workbench-artifact-hashes.json`
+16. `DEMO_OBSERVED_SUMMARY.md`
+17. `WORKBENCH_DEMO_INDEX.md`
+18. `operator-workbench-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -292,11 +300,17 @@ def _artifact_pointers(repo_root: Path) -> str:
         full_path = repo_root / path
         lines.append(f"- `{path.as_posix()}` exists=`{str(full_path.exists()).lower()}`")
     demo_result = Path("var/review-packets/v3/operator-workbench/DEMO_FLOW_RESULT.md")
+    demo_observed = Path("var/review-packets/v3/operator-workbench/DEMO_OBSERVED_SUMMARY.md")
+    run_export = Path("var/review-packets/v3/operator-workbench/RUN_EVIDENCE_EXPORT.json")
     demo_reset = Path("var/review-packets/v3/operator-workbench/DEMO_RESET_GUIDE.md")
     lines.extend(
         [
             f"- `{demo_result.as_posix()}` exists="
             f"`{str((repo_root / demo_result).exists()).lower()}`",
+            f"- `{demo_observed.as_posix()}` exists="
+            f"`{str((repo_root / demo_observed).exists()).lower()}`",
+            f"- `{run_export.as_posix()}` exists="
+            f"`{str((repo_root / run_export).exists()).lower()}`",
             f"- `{demo_reset.as_posix()}` exists="
             f"`{str((repo_root / demo_reset).exists()).lower()}`",
         ]
@@ -422,6 +436,28 @@ def _observed_reset_guide(output_dir: Path) -> str:
     )
 
 
+def _observed_demo_summary(output_dir: Path) -> str:
+    path = output_dir / "DEMO_OBSERVED_SUMMARY.md"
+    if not path.exists():
+        return "\n".join(
+            [
+                "# Demo Observed Summary",
+                "",
+                "Artifact not present. Run `make demo-observed-summary` after an",
+                "intentional demo flow, or let `make workbench-evidence-packet` generate it.",
+            ]
+        )
+    return "\n".join(
+        [
+            "# Demo Observed Summary",
+            "",
+            "```md",
+            path.read_text(encoding="utf-8").rstrip(),
+            "```",
+        ]
+    )
+
+
 def _demo_story(context: dict[str, Any]) -> str:
     return f"""# Workbench Demo Happy Path Story
 
@@ -457,6 +493,9 @@ workspaces, or manage sandbox lifecycle.
 - `DEMO_STATE_REPORT.md` for current seed/reachability/artifact state and next commands.
 - `DEMO_FLOW_RESULT.md` for proposal, approval, audit, candidate run ID, and cleanup evidence
   after `make demo-flow`.
+- `DEMO_OBSERVED_SUMMARY.md` for the compact result, run evidence export pointer, and quickest
+  post-demo reading order.
+- `RUN_EVIDENCE_EXPORT.json` for the selected run's safe run evidence export when captured.
 - `DEMO_RESET_GUIDE.md` for read-only reset/recovery guidance.
 - `WORKBENCH_DEMO_SMOKE.md` for observed readiness commands and manual demo sequence.
 - `02_OPERATOR_WORKBENCH_DOCS.md` for Agent Run and export contracts.
@@ -488,19 +527,22 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         "## Newest Reading Order",
         "",
         "1. `WORKBENCH_DEMO_INDEX.md` for this newest reading order.",
-        "2. `OPERATOR_DEMO_GUIDE.md` for the preflight-to-cleanup walkthrough.",
-        "3. `DEMO_STATE_REPORT.md` for current seed/reachability/artifact state.",
-        "4. `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.",
-        "5. `WORKBENCH_DEMO_SMOKE.md` for the operator flow transcript.",
-        "6. `DEMO_FLOW_RESULT.md` after `make demo-flow` for run/proposal/approval/audit pointers.",
-        "7. `DEMO_RESET_GUIDE.md` for safe reset/recovery guidance.",
-        "8. `00_OPERATOR_WORKBENCH_INDEX.md` for the workbench packet boundary.",
-        "9. `var/review-packets/v3/live-demo/` for the live-demo packet.",
-        "10. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
+        "2. `DEMO_OBSERVED_SUMMARY.md` for the compact observed result when the demo has run.",
+        "3. `DEMO_FLOW_RESULT.md` after `make demo-flow` for run/proposal/approval/audit pointers.",
+        "4. `RUN_EVIDENCE_EXPORT.json` after Export Run Evidence for selected-run evidence.",
+        "5. `OPERATOR_DEMO_GUIDE.md` for the preflight-to-cleanup walkthrough.",
+        "6. `DEMO_STATE_REPORT.md` for current seed/reachability/artifact state.",
+        "7. `DEMO_READINESS_SUMMARY.md` for ready/missing/optional/deferred status.",
+        "8. `WORKBENCH_DEMO_SMOKE.md` for the operator flow transcript.",
+        "9. `DEMO_RESET_GUIDE.md` for safe reset/recovery guidance.",
+        "10. `00_OPERATOR_WORKBENCH_INDEX.md` for the workbench packet boundary.",
+        "11. `var/review-packets/v3/live-demo/` for the live-demo packet.",
+        "12. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
         "",
         "## Supporting Artifacts",
         "",
         "- `07_WORKBENCH_DEMO_STORY.md` for the happy path narrative.",
+        "- `11_DEMO_OBSERVED_SUMMARY.md` for the bundled observed-summary copy.",
         "- `04_OPERATOR_WORKBENCH_ARTIFACT_POINTERS.md` for generated evidence paths.",
         "- `10_DEMO_RESET_GUIDE.md` for the bundled reset guide.",
         "",
