@@ -171,7 +171,12 @@ function jsonResponse(payload: unknown, init: ResponseInit = {}) {
   });
 }
 
-function installFetchMock(status = systemStatus()) {
+type FetchMockOptions = {
+  emptyRuns?: boolean;
+  emptyTimeline?: boolean;
+};
+
+function installFetchMock(status = systemStatus(), options: FetchMockOptions = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = url.replace(API_BASE, "");
@@ -232,6 +237,20 @@ function installFetchMock(status = systemStatus()) {
       return jsonResponse({ status: "clean", attempts: [], stuck_approvals: [], recommendations: [] });
     }
     if (path === "/runs?limit=25" || path.startsWith("/runs?limit=25&")) {
+      if (options.emptyRuns) {
+        return jsonResponse({
+          runs: [],
+          summary: {
+            returned: 0,
+            filters: {},
+            workspaces: {},
+            principals: {},
+            statuses: {},
+            tools: {},
+            latest_updated_at: null,
+          },
+        });
+      }
       return jsonResponse({
         runs: [
           {
@@ -284,19 +303,21 @@ function installFetchMock(status = systemStatus()) {
           last_tool_manifest_hash: "sha256:toolhash",
           metadata: {},
         },
-        timeline: [
-          {
-            event_id: "evt_run_1",
-            timestamp: "2026-06-03T12:00:00Z",
-            event_type: "policy.evaluated",
-            request_id: "req_123456789",
-            tool_name: "fs.read",
-            decision: "allow",
-            event_hash: "sha256:runeventhash",
-            resource: { path: "README.md" },
-            metadata: { run_id: "run_123456789" },
-          },
-        ],
+        timeline: options.emptyTimeline
+          ? []
+          : [
+              {
+                event_id: "evt_run_1",
+                timestamp: "2026-06-03T12:00:00Z",
+                event_type: "policy.evaluated",
+                request_id: "req_123456789",
+                tool_name: "fs.read",
+                decision: "allow",
+                event_hash: "sha256:runeventhash",
+                resource: { path: "README.md" },
+                metadata: { run_id: "run_123456789" },
+              },
+            ],
       });
     }
     if (path === "/runs/run_123456789/evidence-export") {
@@ -429,6 +450,28 @@ describe("Review console interactions", () => {
     });
   });
 
+  it("shows locked and empty Agent Run states without run controls", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetchMock(systemStatus(), { emptyRuns: true });
+    render(<App />);
+
+    expect(screen.getAllByText("Locked.").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /abort/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pause/i })).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Admin token"), "local-token");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await screen.findByText("No recorded agent runs.");
+    expect(screen.getByText("0 runs")).toBeInTheDocument();
+    expect(screen.getByText("no statuses")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/runs?limit=25`,
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer local-token" }),
+      }),
+    );
+  });
+
   it("renders trust warnings, approval evidence, and approve/deny actions", async () => {
     const fetchMock = installFetchMock(
       systemStatus({
@@ -454,6 +497,10 @@ describe("Review console interactions", () => {
     expect(screen.getByText("Run Evidence")).toBeInTheDocument();
     expect(screen.getByText("Evidence Types")).toBeInTheDocument();
     expect(screen.getByText("policy (1)")).toBeInTheDocument();
+    expect(screen.getByText("Statuses")).toBeInTheDocument();
+    expect(screen.getByText("Decisions")).toBeInTheDocument();
+    expect(screen.getByText("Correlation")).toBeInTheDocument();
+    expect(screen.getByText("1 requests")).toBeInTheDocument();
     expect(screen.getByText("2 tool calls")).toBeInTheDocument();
     expect(screen.getByText("1 audit events")).toBeInTheDocument();
     expect(screen.getByText("policy.evaluated")).toBeInTheDocument();
@@ -483,6 +530,18 @@ describe("Review console interactions", () => {
       `${API_BASE}/approvals/appr_123456789/approve`,
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("shows a safe selected-run state when no correlated timeline exists", async () => {
+    installFetchMock(systemStatus(), { emptyTimeline: true });
+    await saveToken();
+
+    expect(screen.getByText("Run Evidence")).toBeInTheDocument();
+    expect(screen.getByText("0 audit events")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Export Run Evidence still returns the safe run summary/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Evidence Types")).not.toBeInTheDocument();
   });
 
   it("filters agent runs with a bounded authenticated query", async () => {
