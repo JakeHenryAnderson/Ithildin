@@ -38,6 +38,8 @@ The workbench should let a local operator answer four questions without reading 
   ID evidence after the optional mediated local demo.
 - `make demo-flow-readiness` validates the demo-flow result, reset guide, UI demo labels, packet
   wiring, and no-new-powers posture.
+- `make demo-flow-result-check`, `make demo-evidence-packet`, and
+  `make demo-evidence-readiness` validate and package the optional demo result evidence for review.
 - `make live-demo-status`, `make live-demo-smoke`, `make live-demo-evidence-summary`, and
   `make live-demo-packet` record live-demo handoff evidence.
 - `make demo-workbench-smoke` records a deterministic operator-flow smoke transcript.
@@ -57,6 +59,7 @@ demo evidence commands:
 - `make operator-demo-guide`;
 - `make demo-state-report`;
 - `make demo-reset-guide`;
+- `make demo-evidence-packet`;
 - `make demo-workbench-smoke`;
 - `make operator-sandbox-demo-packet`;
 - `make agent-run-correlation-packet`;
@@ -116,6 +119,7 @@ Ithildin-mediated actions.
   `DEMO_FLOW_RESULT.md`, `DEMO_RESET_GUIDE.md`, `07_WORKBENCH_DEMO_STORY.md`,
   `10_DEMO_RESET_GUIDE.md`, and `WORKBENCH_DEMO_SMOKE.md` are wired;
 - release-check includes the workbench readiness gate;
+- review-candidate includes the focused demo evidence closure packet;
 - tool count remains `13`;
 - no-new-powers and tool-surface guardrails still pass;
 - the review console still exposes Agent Runs, summaries, timeline evidence, and Export Run

@@ -13,6 +13,8 @@ Docker/Kubernetes powers, arbitrary HTTP, broad filesystem writes, or plugin SDK
 - `make demo-state-report` writes `DEMO_STATE_REPORT.md` with current demo state.
 - `make demo-reset-guide` writes `DEMO_RESET_GUIDE.md` with read-only reset guidance.
 - `make demo-flow-readiness` validates the result/reset/UI demo label wiring.
+- `make demo-flow-result-check`, `make demo-evidence-packet`, and
+  `make demo-evidence-readiness` validate and package optional mediated demo evidence.
 - `make guided-demo-readiness` validates command, docs, UI, packet, and no-new-powers wiring.
 
 `make guided-demo` runs preflight, seeds the ignored demo workspace, writes the demo state report,

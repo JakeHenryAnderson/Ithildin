@@ -30,7 +30,10 @@ from scripts import (
     control_mapping_readiness,
     dashboard_evidence_checklist_check,
     data_classification_design_check,
+    demo_evidence_packet,
+    demo_evidence_readiness,
     demo_flow_readiness,
+    demo_flow_result_check,
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
@@ -8482,6 +8485,109 @@ def test_guided_demo_wrapper_and_readiness_are_wired(tmp_path: Path) -> None:
     assert "make compose-up && make compose-smoke" in content
     assert "does not prove OS isolation" in content
     assert "command execution skipped for fixture/test transcript generation" in content
+
+
+def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) -> None:
+    result_report = demo_flow_result_check.build_report(tmp_path / "missing-result.md")
+    readiness = demo_evidence_readiness.build_report(Path.cwd())
+    output_dir = tmp_path / "demo-evidence"
+    demo_evidence_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        probe_endpoints=False,
+    )
+
+    expected = {
+        "00_DEMO_EVIDENCE_INDEX.md",
+        "01_DEMO_EVIDENCE_REVIEW_PROMPT.md",
+        "02_DEMO_COMMAND_SEQUENCE.md",
+        "03_DEMO_RESULT_CHECK.md",
+        "04_DEMO_ARTIFACT_POINTERS.md",
+        "DEMO_READINESS_SUMMARY.md",
+        "DEMO_STATE_REPORT.md",
+        "DEMO_RESET_GUIDE.md",
+        "DEMO_FLOW_RESULT_CHECK.json",
+        "demo-evidence-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (output_dir / "demo-evidence-artifact-hashes.json").read_text(encoding="utf-8")
+    )
+    index = (output_dir / "00_DEMO_EVIDENCE_INDEX.md").read_text(encoding="utf-8")
+    prompt = (output_dir / "01_DEMO_EVIDENCE_REVIEW_PROMPT.md").read_text(encoding="utf-8")
+    commands = (output_dir / "02_DEMO_COMMAND_SEQUENCE.md").read_text(encoding="utf-8")
+    result_check = json.loads(
+        (output_dir / "DEMO_FLOW_RESULT_CHECK.json").read_text(encoding="utf-8")
+    )
+    closure_doc = Path("docs/codex/demo-evidence-closure.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    assert result_report["valid"] is True
+    assert result_report["status"] == "not_run"
+    assert readiness["valid"] is True
+    assert readiness["tool_count"] == 13
+    assert readiness["runtime_changes_allowed"] is False
+    assert readiness["new_power_classes_allowed"] is False
+    assert readiness["run_control_behavior_allowed"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes} == expected - {
+        "demo-evidence-artifact-hashes.json"
+    }
+    assert "Demo Evidence Closure Packet" in index
+    assert "Tool count remains `13`" in index
+    assert "Demo flow result status: `not_run`" in index
+    assert "Finding namespace: `EXT-DEMO-###`" in prompt
+    assert "make demo-flow-result-check" in commands
+    assert result_check["status"] in {"not_run", "checked"}
+    assert "make demo-flow-result-check" in readme
+    assert "make demo-evidence-packet" in readme
+    assert "make demo-evidence-readiness" in readme
+    assert "demo-flow-result-check:" in makefile
+    assert "demo-evidence-packet:" in makefile
+    assert "demo-evidence-readiness:" in makefile
+    assert "demo-evidence-readiness" in release_check_body
+    assert "$(MAKE) demo-evidence-packet" in review_candidate_body
+    assert "$(MAKE) demo-evidence-readiness" in review_candidate_body
+    assert "demo-evidence-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "$(MAKE) demo-evidence-packet" in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    assert "docs/codex/demo-evidence-closure.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/demo-evidence-closure.md" in docs_site
+    assert "make demo-flow-result-check" in reproduction_map
+    assert "make demo-evidence-packet" in reproduction_map
+    assert "make demo-evidence-readiness" in reproduction_map
+    assert "306 - Demo flow result checker | Done" in backlog
+    assert "307 - Demo evidence closure packet | Done" in backlog
+    assert "308 - Demo evidence readiness gate | Done" in backlog
+    for phrase in [
+        "Status: release-readiness gate",
+        "DEMO_FLOW_RESULT_CHECK.json",
+        "demo-evidence-artifact-hashes.json",
+        "not_run",
+        "does not add run controls",
+        "tool count remains `13`",
+        "no-new-powers",
+    ]:
+        assert phrase in closure_doc
+    for forbidden in [
+        "PRIVATE KEY",
+        "ITHILDIN_ADMIN_TOKEN=",
+        "demo-secret-token",
+        "BEGIN OPENSSH",
+        "diff --git",
+        "response body:",
+    ]:
+        assert forbidden not in index
+        assert forbidden not in prompt
+        assert forbidden not in commands
 
 
 def test_control_mapping_readiness_gate_is_wired() -> None:

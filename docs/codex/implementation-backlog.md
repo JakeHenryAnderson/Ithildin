@@ -322,6 +322,9 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 303 - Demo flow result summary | Done | `make demo-flow`; writes `DEMO_FLOW_RESULT.md` with proposal, approval, candidate run ID, audit verification, export pointer, and reset guidance after the optional mediated local demo. |
 | 304 - Demo reset guide | Done | `make demo-reset-guide`; writes `DEMO_RESET_GUIDE.md` with read-only repeat/recovery guidance and no automatic repair, rollback, cleanup, or sandbox control. |
 | 305 - Demo flow readiness gate | Done | [demo-flow-readiness.md](demo-flow-readiness.md), `make demo-flow-readiness`; validates demo result/reset artifacts, UI demo labels, workbench packet wiring, and no-new-powers posture. |
+| 306 - Demo flow result checker | Done | `make demo-flow-result-check`; validates `DEMO_FLOW_RESULT.md` when present and passes with `not_run` status when the optional mediated local demo has not been executed. |
+| 307 - Demo evidence closure packet | Done | [demo-evidence-closure.md](demo-evidence-closure.md), `make demo-evidence-packet`; bundles demo readiness, state, reset, artifact pointers, result-check output, and hashes. |
+| 308 - Demo evidence readiness gate | Done | `make demo-evidence-readiness`; validates demo evidence packet/docs/review-candidate/release-check wiring while preserving the no-new-powers boundary. |
 
 ## Future Candidate Track
 
