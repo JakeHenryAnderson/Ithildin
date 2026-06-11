@@ -91,6 +91,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/read-only-metadata-capability-checklist.md" in DEFAULT_DOCS
     assert "docs/codex/read-only-capability-source-review-template.md" in DEFAULT_DOCS
     assert "docs/codex/v3-readiness-debt-register.md" in DEFAULT_DOCS
+    assert "docs/codex/local-prompt-triage.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS
     assert "docs/codex/source-review-closure-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/internal-source-review-pass-1.md" in DEFAULT_DOCS

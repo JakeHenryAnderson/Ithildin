@@ -39,6 +39,7 @@ externally closed.
 
 - [Source Review Closure Matrix](source-review-closure-matrix.md)
 - [Internal Source Review Pass 1](internal-source-review-pass-1.md)
+- [Local Prompt Triage](local-prompt-triage.md)
 - [Reviewer Finding Template](reviewer-finding-template.md)
 - [Reviewer Finding Intake](reviewer-finding-intake.md)
 - [External Review Intake and Closure](external-review-intake-and-closure.md)

@@ -34,6 +34,7 @@
 | 028 - Role-aware tool visibility | Done | Sprint checkpoint |
 | 029 - Ops backbone readiness | Done | Sprint checkpoint |
 | 030 - Local model demo | Done | Sprint checkpoint |
+| 030a - Local prompt triage | Done | [local-prompt-triage.md](local-prompt-triage.md), `make local-prompt-triage` |
 | 031 - v0.1 release packaging | Done | Sprint checkpoint |
 | 032 - Public boundary hardening | Done | [threat-model-and-non-goals.md](threat-model-and-non-goals.md) |
 | 033 - Approval and evidence binding | Done | Sprint checkpoint |

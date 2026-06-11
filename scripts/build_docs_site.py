@@ -145,6 +145,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.6-internal-proxy-review-operating-model.md",
     "docs/codex/v0.6-closure-handoff.md",
     "docs/codex/v0.6-gpt-55-pro-handoff-prompt.md",
+    "docs/codex/local-prompt-triage.md",
     "docs/codex/capability-expansion-gate.md",
     "docs/codex/tool-surface-invariant-gate.md",
     "docs/codex/no-new-powers-guardrail.md",

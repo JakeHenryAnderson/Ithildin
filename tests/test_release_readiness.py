@@ -6391,6 +6391,32 @@ def test_internal_review_packet_v2_is_documented() -> None:
     assert "docs/codex/internal-review-packet-v2.md" in review_docs.REVIEW_DOCS
 
 
+def test_local_prompt_triage_is_documented_and_wired() -> None:
+    doc = Path("docs/codex/local-prompt-triage.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+
+    for required in [
+        "deterministic local",
+        "does not call an LLM",
+        "open a network connection",
+        "grant new governed tool powers",
+        "strong_review",
+        "uv run python scripts/local_prompt_triage.py",
+    ]:
+        assert required in doc
+    assert "make local-prompt-triage" in readme
+    assert "local-prompt-triage:" in makefile
+    assert "local-prompt-triage" in makefile.partition(".PHONY:")[2].partition("\n\n")[0]
+    assert "docs/codex/local-prompt-triage.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/local-prompt-triage.md" in docs_site
+    assert "Local Prompt Triage" in index
+    assert "030a - Local prompt triage | Done" in backlog
+
+
 def test_v03_external_review_packet_is_documented() -> None:
     packet = Path("docs/codex/v0.3-review-packet.md").read_text(encoding="utf-8")
     prompt = Path("docs/codex/v0.3-external-review-prompt.md").read_text(encoding="utf-8")
