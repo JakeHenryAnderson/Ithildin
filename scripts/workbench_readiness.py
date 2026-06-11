@@ -15,6 +15,7 @@ from scripts import no_new_powers_guardrail, review_docs, tool_surface_invariant
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC = ROOT / "docs/codex/operator-workbench-readiness.md"
+WALKTHROUGH_DOC = ROOT / "docs/codex/operator-demo-walkthrough.md"
 REQUIRED_DOC_PHRASES = [
     "Status: release-readiness gate",
     "operator workbench",
@@ -23,6 +24,7 @@ REQUIRED_DOC_PHRASES = [
     "GET /runs/{run_id}/evidence-export",
     "make demo-workbench",
     "make demo-readiness-summary",
+    "make demo-operator-walkthrough",
     "make operator-demo-guide",
     "make demo-state-report",
     "make demo-reset-guide",
@@ -31,12 +33,14 @@ REQUIRED_DOC_PHRASES = [
     "make live-demo-evidence-summary",
     "WORKBENCH_DEMO_INDEX.md",
     "DEMO_READINESS_SUMMARY.md",
+    "OPERATOR_DEMO_WALKTHROUGH.md",
     "OPERATOR_DEMO_GUIDE.md",
     "DEMO_STATE_REPORT.md",
     "DEMO_FLOW_RESULT.md",
     "DEMO_RESET_GUIDE.md",
     "07_WORKBENCH_DEMO_STORY.md",
     "10_DEMO_RESET_GUIDE.md",
+    "12_OPERATOR_DEMO_WALKTHROUGH.md",
     "WORKBENCH_DEMO_SMOKE.md",
     "newest reading order",
     "summary",
@@ -84,6 +88,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "workbench-readiness:",
         "workbench-evidence-packet:",
         "demo-readiness-summary:",
+        "demo-operator-walkthrough:",
         "operator-demo-guide:",
         "demo-state-report:",
         "demo-reset-guide:",
@@ -100,6 +105,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("demo-workbench-smoke is missing from demo-workbench")
     if "$(MAKE) demo-readiness-summary" not in makefile.partition("demo-workbench:")[2]:
         failures.append("demo-readiness-summary is missing from demo-workbench")
+    if "$(MAKE) demo-operator-walkthrough" not in makefile.partition("demo-workbench:")[2]:
+        failures.append("demo-operator-walkthrough is missing from demo-workbench")
     if "$(MAKE) operator-demo-guide" not in makefile.partition("demo-workbench:")[2]:
         failures.append("operator-demo-guide is missing from demo-workbench")
     if "$(MAKE) demo-state-report" not in makefile.partition("demo-workbench:")[2]:
@@ -162,10 +169,29 @@ def _validate_doc(*, readme: str, reproduction_map: str, docs_site: str) -> list
         failures.append("operator workbench readiness doc is missing from review docs")
     if rel_path not in docs_site:
         failures.append("operator workbench readiness doc is missing from docs-site inputs")
+    walkthrough_rel = WALKTHROUGH_DOC.relative_to(ROOT).as_posix()
+    if not WALKTHROUGH_DOC.exists():
+        failures.append("operator demo walkthrough doc is missing")
+    else:
+        walkthrough_text = WALKTHROUGH_DOC.read_text(encoding="utf-8")
+        for phrase in [
+            "make demo-operator-walkthrough",
+            "OPERATOR_DEMO_WALKTHROUGH.md",
+            "expected review-console screens",
+            "does not start services",
+            "does not add run controls",
+        ]:
+            if phrase not in walkthrough_text:
+                failures.append(f"operator demo walkthrough doc is missing phrase: {phrase}")
+    if walkthrough_rel not in review_docs.REVIEW_DOCS:
+        failures.append("operator demo walkthrough doc is missing from review docs")
+    if walkthrough_rel not in docs_site:
+        failures.append("operator demo walkthrough doc is missing from docs-site inputs")
     for phrase in [
         "make workbench-readiness",
         "make workbench-evidence-packet",
         "make demo-readiness-summary",
+        "make demo-operator-walkthrough",
         "make operator-demo-guide",
         "make demo-state-report",
         "make demo-reset-guide",

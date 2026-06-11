@@ -73,6 +73,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/agent-run-evidence-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/agent-run-operations-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/operator-workbench-readiness.md" in DEFAULT_DOCS
+    assert "docs/codex/operator-demo-walkthrough.md" in DEFAULT_DOCS
     assert "docs/codex/operator-action-states-design.md" in DEFAULT_DOCS
     assert "docs/codex/dashboard-evidence-review-checklist.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-workspace-boundary-contract.md" in DEFAULT_DOCS

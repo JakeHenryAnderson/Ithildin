@@ -125,6 +125,7 @@ externally closed.
 - [Agent Run Evidence Readiness Gate](agent-run-evidence-readiness-gate.md)
 - [Agent Run Operations Readiness Gate](agent-run-operations-readiness-gate.md)
 - [Operator Workbench Readiness Gate](operator-workbench-readiness.md)
+- [Operator Demo Walkthrough](operator-demo-walkthrough.md)
 - [Operator Action States Design](operator-action-states-design.md)
 - [Dashboard Evidence Review Checklist](dashboard-evidence-review-checklist.md)
 - [Sandbox Workspace Boundary Contract](sandbox-workspace-boundary-contract.md)

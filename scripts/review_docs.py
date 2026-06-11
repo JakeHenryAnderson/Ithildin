@@ -141,6 +141,7 @@ REVIEW_DOCS = [
     "docs/codex/agent-run-evidence-readiness-gate.md",
     "docs/codex/agent-run-operations-readiness-gate.md",
     "docs/codex/operator-workbench-readiness.md",
+    "docs/codex/operator-demo-walkthrough.md",
     "docs/codex/guided-demo-readiness.md",
     "docs/codex/demo-flow-readiness.md",
     "docs/codex/demo-evidence-closure.md",

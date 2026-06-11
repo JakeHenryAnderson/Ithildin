@@ -1,0 +1,265 @@
+"""Generate the front-door operator demo walkthrough artifact."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import live_demo_preflight, workbench_readiness
+
+DEFAULT_OUTPUT = Path("var/review-packets/v3/operator-workbench/OPERATOR_DEMO_WALKTHROUGH.md")
+PROJECT_MARKERS = [
+    Path("pyproject.toml"),
+    Path("Makefile"),
+    Path("apps/api"),
+    Path("apps/mcp-server"),
+    Path("tool-manifests.lock.json"),
+]
+
+NEXT_STEPS = [
+    {
+        "label": "Preflight",
+        "commands": ["make live-demo-preflight", "make demo-readiness-summary"],
+        "expected": "local-preview posture passes or prints safe missing/manual items",
+    },
+    {
+        "label": "Seed",
+        "commands": ["make demo-seed"],
+        "expected": "ignored demo workspace is populated from tracked demo inputs",
+    },
+    {
+        "label": "Local UI/API",
+        "commands": ["make compose-up && make compose-smoke"],
+        "expected": "loopback API/UI are reachable for local manual inspection",
+    },
+    {
+        "label": "MCP Client",
+        "commands": ["uv run python -m ithildin_mcp_server"],
+        "expected": "stdio MCP server exposes the governed local tool list",
+    },
+    {
+        "label": "Mediated Run",
+        "commands": ["make demo-flow"],
+        "expected": (
+            "proposal, approval, patch apply, audit, and candidate run evidence are recorded"
+        ),
+    },
+    {
+        "label": "Inspect Dashboard",
+        "commands": ["open http://127.0.0.1:5173"],
+        "expected": "System Trust, approvals, Agent Runs, and audit status are visible",
+    },
+    {
+        "label": "Export Evidence",
+        "commands": ["Export Run Evidence", "make demo-observed-summary"],
+        "expected": "run evidence export and observed summary point to safe correlated artifacts",
+    },
+    {
+        "label": "Refresh Packet",
+        "commands": ["make demo-workbench"],
+        "expected": (
+            "workbench packet reading order includes the observed summary and export pointers"
+        ),
+    },
+    {
+        "label": "Cleanup",
+        "commands": ["make compose-down"],
+        "expected": "optional Compose services stop cleanly",
+    },
+]
+
+
+class OperatorDemoWalkthroughError(RuntimeError):
+    """Raised when the operator demo walkthrough cannot be generated."""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--json", action="store_true", dest="json_output")
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    args = parser.parse_args()
+    try:
+        report = build_walkthrough(repo_root=Path.cwd().resolve(), output=args.output)
+    except OperatorDemoWalkthroughError as exc:
+        print(f"operator demo walkthrough failed: {exc}", file=sys.stderr)
+        return 1
+    if args.json_output:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        _print_human(report)
+    return 0 if report["valid"] else 1
+
+
+def build_walkthrough(*, repo_root: Path, output: Path) -> dict[str, Any]:
+    _require_project_root(repo_root)
+    preflight = live_demo_preflight.build_report(repo_root)
+    workbench = workbench_readiness.build_report(repo_root)
+    commit = _git(repo_root, ["rev-parse", "HEAD"])
+    dirty = bool(_git(repo_root, ["status", "--short"]))
+    failures = [
+        *(f"preflight: {failure}" for failure in preflight["failures"]),
+        *(f"workbench: {failure}" for failure in workbench["failures"]),
+    ]
+    warnings = list(preflight["warnings"])
+    report = {
+        "schema_version": "1",
+        "valid": not failures,
+        "generated_at": datetime.now(UTC).isoformat(),
+        "repo_root": str(repo_root),
+        "commit": commit,
+        "dirty": dirty,
+        "tool_count": workbench.get("tool_count"),
+        "workbench_packet_path": "var/review-packets/v3/operator-workbench",
+        "warnings": warnings,
+        "failures": failures,
+        "next_steps": NEXT_STEPS,
+        "manual_steps": [
+            "Compose local UI/API startup",
+            "MCP stdio client launch",
+            "manual browser inspection",
+            "manual Export Run Evidence download",
+        ],
+        "does_not_do": [
+            "start services",
+            "call governed tools",
+            "approve actions",
+            "mutate workspaces",
+            "manage sandbox lifecycle",
+            "export secrets",
+        ],
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(render_walkthrough(report), encoding="utf-8")
+    return report
+
+
+def render_walkthrough(report: dict[str, Any]) -> str:
+    lines = [
+        "# Operator Demo Walkthrough",
+        "",
+        "Generated by `make demo-operator-walkthrough`. This is the front-door",
+        "operator path for the local workbench demo. The command is read-only: it",
+        "does not start services, call governed tools, approve actions, mutate",
+        "workspaces, manage sandbox lifecycle, or export secrets.",
+        "",
+        "## Status",
+        "",
+        f"- generated_at: `{report['generated_at']}`",
+        f"- commit: `{report['commit']}`",
+        f"- dirty: `{str(report['dirty']).lower()}`",
+        f"- valid: `{str(report['valid']).lower()}`",
+        f"- tool_count: `{report['tool_count']}`",
+        f"- workbench_packet_path: `{report['workbench_packet_path']}`",
+        "",
+        "## Expected Screens",
+        "",
+        "- System Trust panel",
+        "- Registered tools table",
+        "- Approval binding evidence panel",
+        "- Agent Runs operations dashboard",
+        "- Grouped run evidence overview",
+        "- Observed Reconstruction timeline",
+        "- Audit status and export controls",
+        "",
+        "## Expected Evidence Files",
+        "",
+        "- `WORKBENCH_DEMO_INDEX.md`",
+        "- `OPERATOR_DEMO_WALKTHROUGH.md`",
+        "- `DEMO_READINESS_SUMMARY.md`",
+        "- `DEMO_FLOW_RESULT.md`",
+        "- `DEMO_OBSERVED_SUMMARY.md`",
+        "- `RUN_EVIDENCE_EXPORT.json`",
+        "- `WORKBENCH_DEMO_SMOKE.md`",
+        "- `OPERATOR_DEMO_GUIDE.md`",
+        "- `DEMO_STATE_REPORT.md`",
+        "- `DEMO_RESET_GUIDE.md`",
+        "",
+        "## Next Human Steps",
+        "",
+    ]
+    for index, step in enumerate(report["next_steps"], 1):
+        lines.append(f"{index}. {step['label']}")
+        lines.extend(f"   - `{command}`" for command in step["commands"])
+        lines.append(f"   - expected: {step['expected']}")
+    lines.extend(["", "## Manual Or Optional Steps", ""])
+    lines.extend(f"- {step}" for step in report["manual_steps"])
+    lines.extend(["", "## Warnings", ""])
+    if report["warnings"]:
+        lines.extend(f"- {warning}" for warning in report["warnings"])
+    else:
+        lines.append("- none")
+    lines.extend(["", "## Failures", ""])
+    if report["failures"]:
+        lines.extend(f"- {failure}" for failure in report["failures"])
+    else:
+        lines.append("- none")
+    lines.extend(
+        [
+            "",
+            "## Reset Guidance",
+            "",
+            "- Use `make demo-reset-guide` for read-only repeat/recovery guidance.",
+            "- Use `make compose-down` after any Compose-backed demo.",
+            "- Use `make demo-state-report` to inspect seed and artifact state before rerunning.",
+            "- Do not delete audit databases, patch proposals, or run evidence as part of this",
+            "  walkthrough.",
+            "",
+            "## Boundary",
+            "",
+            "This walkthrough does not add run controls, sandbox orchestration, SIEM adapters,",
+            "new governed tools, production identity, remote MCP, hosted telemetry, shell,",
+            "Docker, Kubernetes, browser automation, arbitrary HTTP, broad filesystem writes,",
+            "plugin SDK behavior, OS isolation proof, SIEM custody, compliance automation,",
+            "or activity evidence outside Ithildin-mediated actions.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _print_human(report: dict[str, Any]) -> None:
+    print("Ithildin operator demo walkthrough")
+    print(f"valid: {str(report['valid']).lower()}")
+    print(f"commit: {report['commit']}")
+    print(f"dirty: {str(report['dirty']).lower()}")
+    print(f"tool_count: {report['tool_count']}")
+    print(f"workbench_packet_path: {report['workbench_packet_path']}")
+    print("next human steps:")
+    for index, step in enumerate(report["next_steps"], 1):
+        commands = "; ".join(step["commands"])
+        print(f"{index}. {step['label']}: {commands}")
+    if report["failures"]:
+        print("failures:")
+        for failure in report["failures"]:
+            print(f"- {failure}")
+
+
+def _require_project_root(repo_root: Path) -> None:
+    missing = [marker.as_posix() for marker in PROJECT_MARKERS if not (repo_root / marker).exists()]
+    if missing:
+        raise OperatorDemoWalkthroughError(
+            "must be run from the Ithildin repo root; missing markers: " + ", ".join(missing)
+        )
+
+
+def _git(repo_root: Path, args: list[str]) -> str:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -202,6 +202,7 @@ checked with `make control-mapping-readiness`.
 - `make workbench-readiness` - validate the local operator workbench surface, docs, evidence packet wiring, and no-new-powers posture.
 - `make workbench-evidence-packet` - generate an ignored operator workbench evidence packet tying together Agent Runs, approvals, audit, live demo, sandbox/workspace posture, and handoff artifacts.
 - `make demo-readiness-summary` - generate a secret-free operator demo readiness summary with ready, missing, optional/manual, deferred, and next-command sections.
+- `make demo-operator-walkthrough` - generate the front-door operator demo walkthrough with expected screens, evidence files, next human steps, and reset guidance.
 - `make operator-demo-guide` - generate a secret-free preflight-to-cleanup operator demo guide for the local workbench path.
 - `make demo-state-report` - generate a secret-free current-state report for seed status, localhost reachability, artifact paths, warnings, and next demo commands.
 - `make guided-demo` - run the non-service-starting guided local demo evidence path and write `GUIDED_DEMO_TRANSCRIPT.md`.
@@ -295,6 +296,7 @@ The local Docker Compose demo runs the API and review console with a seeded work
 - `make demo-reset-guide` - generate `DEMO_RESET_GUIDE.md` with read-only reset/recovery guidance.
 - `make demo-flow-result-check` - validate the optional demo result artifact if present.
 - `make demo-observed-summary` - generate `DEMO_OBSERVED_SUMMARY.md` after an observed local demo.
+- `make demo-operator-walkthrough` - generate `OPERATOR_DEMO_WALKTHROUGH.md` with expected screens, evidence files, next human steps, and reset guidance.
 - `make demo-evidence-packet` - package demo readiness, state, reset, and result-check evidence.
 - `make demo-scenario-pack` - validate the reviewer-facing demo scenario map.
 - `make compose-down` - stop the stack.

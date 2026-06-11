@@ -32,10 +32,11 @@ Use [live-demo-runbook.md](live-demo-runbook.md) for the local workbench demo se
 
 For an evidence-only local workbench wrapper, run `make demo-workbench`. It regenerates live-demo
 status/smoke/summary, operator sandbox, Agent Run correlation, demo readiness summary, operator demo
-guide, reset guidance, workbench smoke, and operator workbench packet artifacts without starting
-services or approving actions. For only the ready/missing/optional/deferred digest, run
-`make demo-readiness-summary`; for
-the preflight-to-cleanup walkthrough, run `make operator-demo-guide`. For current seed/reachability
+walkthrough, guide, reset guidance, workbench smoke, and operator workbench packet artifacts without
+starting services or approving actions. For only the ready/missing/optional/deferred digest, run
+`make demo-readiness-summary`; for the front-door expected screens, evidence files, next human
+steps, and reset guidance, run `make demo-operator-walkthrough`; for the detailed
+preflight-to-cleanup stage table, run `make operator-demo-guide`. For current seed/reachability
 and next-command status, run `make demo-state-report`. For read-only repeat/recovery guidance, run
 `make demo-reset-guide`. After an optional mediated `make demo-flow`, inspect
 `DEMO_FLOW_RESULT.md`, then validate the result with `make demo-flow-result-check` and the wiring

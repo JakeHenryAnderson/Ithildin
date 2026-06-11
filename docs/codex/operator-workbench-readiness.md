@@ -32,6 +32,9 @@ The workbench should let a local operator answer four questions without reading 
 - `make agent-run-correlation-packet` records the run-to-tool/audit/approval correlation story.
 - `make demo-readiness-summary` records ready, missing, optional/manual, deferred, and recommended
   next-command status for the local demo handoff.
+- `make demo-operator-walkthrough` writes `OPERATOR_DEMO_WALKTHROUGH.md` as the front-door
+  operator path with expected screens, expected evidence files, next human steps, and reset
+  guidance.
 - `make demo-reset-guide` records read-only reset/recovery guidance for repeated or incomplete
   demo flows.
 - `make demo-flow` writes `DEMO_FLOW_RESULT.md` with proposal, approval, audit, and candidate run
@@ -58,6 +61,7 @@ demo evidence commands:
 - `make live-demo-smoke`;
 - `make live-demo-evidence-summary`;
 - `make demo-readiness-summary`;
+- `make demo-operator-walkthrough`;
 - `make operator-demo-guide`;
 - `make demo-state-report`;
 - `make demo-observed-summary`;
@@ -79,6 +83,7 @@ actions, repair diagnostics, or manage containers.
 - workbench index;
 - top-level `WORKBENCH_DEMO_INDEX.md`;
 - top-level `DEMO_READINESS_SUMMARY.md`;
+- top-level `OPERATOR_DEMO_WALKTHROUGH.md`;
 - top-level `OPERATOR_DEMO_GUIDE.md`;
 - top-level `DEMO_STATE_REPORT.md`;
 - top-level `DEMO_RESET_GUIDE.md`;
@@ -87,6 +92,7 @@ actions, repair diagnostics, or manage containers.
 - `08_OPERATOR_DEMO_GUIDE.md` bundled guide copy;
 - `09_DEMO_STATE_REPORT.md` bundled state report copy;
 - `10_DEMO_RESET_GUIDE.md` bundled reset guide copy;
+- `12_OPERATOR_DEMO_WALKTHROUGH.md` bundled walkthrough copy;
 - reviewer prompt;
 - bundled operator docs;
 - command evidence;
@@ -94,13 +100,16 @@ actions, repair diagnostics, or manage containers.
 - artifact hashes.
 
 `WORKBENCH_DEMO_INDEX.md` is the first file to open. Its newest reading order is:
-`WORKBENCH_DEMO_INDEX.md`, `OPERATOR_DEMO_GUIDE.md`, `DEMO_STATE_REPORT.md`,
-`DEMO_READINESS_SUMMARY.md`, `WORKBENCH_DEMO_SMOKE.md`, `DEMO_FLOW_RESULT.md` after `make demo-flow`,
-`DEMO_RESET_GUIDE.md`, the workbench packet boundary, the live-demo packet, and the run
-evidence/export docs. `07_WORKBENCH_DEMO_STORY.md` gives the happy path from preflight through
-cleanup, `OPERATOR_DEMO_GUIDE.md` gives the operator-facing stage table, `DEMO_STATE_REPORT.md`
-records seed/reachability/artifact status plus next commands, and `DEMO_RESET_GUIDE.md` records
-read-only recovery guidance. The run evidence export includes a safe
+`WORKBENCH_DEMO_INDEX.md`, `OPERATOR_DEMO_WALKTHROUGH.md`, `DEMO_OBSERVED_SUMMARY.md`,
+`DEMO_FLOW_RESULT.md` after `make demo-flow`, `RUN_EVIDENCE_EXPORT.json`,
+`OPERATOR_DEMO_GUIDE.md`, `DEMO_STATE_REPORT.md`, `DEMO_READINESS_SUMMARY.md`,
+`WORKBENCH_DEMO_SMOKE.md`, `DEMO_RESET_GUIDE.md`, the workbench packet boundary, the live-demo
+packet, and the run evidence/export docs. `OPERATOR_DEMO_WALKTHROUGH.md` gives the first human
+path with expected screens, expected evidence files, next steps, and reset guidance.
+`07_WORKBENCH_DEMO_STORY.md` gives the happy path from preflight through cleanup,
+`OPERATOR_DEMO_GUIDE.md` gives the operator-facing stage table, `DEMO_STATE_REPORT.md` records
+seed/reachability/artifact status plus next commands, and `DEMO_RESET_GUIDE.md` records read-only
+recovery guidance. The run evidence export includes a safe
 `summary` object with principal, workspace, session, status, tools used, decision counts, approval
 count, patch diagnostic count, audit event count, warning count, policy hash, and manifest-lock hash.
 
@@ -116,12 +125,13 @@ Ithildin-mediated actions.
 - the workbench readiness doc is in the review docs and docs site;
 - README and reproduction-map command lists mention the workbench commands;
 - `make demo-workbench` and `make workbench-evidence-packet` are wired;
-- `make demo-readiness-summary`, `make operator-demo-guide`, `make demo-workbench-smoke`,
+- `make demo-readiness-summary`, `make demo-operator-walkthrough`, `make operator-demo-guide`, `make demo-workbench-smoke`,
   `make demo-state-report`, `make demo-observed-summary`, `make demo-reset-guide`, `WORKBENCH_DEMO_INDEX.md`,
   `DEMO_READINESS_SUMMARY.md`, `OPERATOR_DEMO_GUIDE.md`, `DEMO_STATE_REPORT.md`,
   `DEMO_FLOW_RESULT.md`, `DEMO_OBSERVED_SUMMARY.md`, `DEMO_RESET_GUIDE.md`,
-  `07_WORKBENCH_DEMO_STORY.md`, `10_DEMO_RESET_GUIDE.md`, `11_DEMO_OBSERVED_SUMMARY.md`,
-  and `WORKBENCH_DEMO_SMOKE.md` are wired;
+  `OPERATOR_DEMO_WALKTHROUGH.md`, `07_WORKBENCH_DEMO_STORY.md`, `10_DEMO_RESET_GUIDE.md`,
+  `11_DEMO_OBSERVED_SUMMARY.md`, `12_OPERATOR_DEMO_WALKTHROUGH.md`, and
+  `WORKBENCH_DEMO_SMOKE.md` are wired;
 - release-check includes the workbench readiness gate;
 - review-candidate includes the focused demo evidence closure packet;
 - tool count remains `13`;
