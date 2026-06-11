@@ -72,13 +72,12 @@ actions, repair diagnostics, or manage containers.
 - artifact pointers;
 - artifact hashes.
 
-`WORKBENCH_DEMO_INDEX.md` is the first file to open. It includes the reviewed commit, dirty state,
-tool count, reading order, and artifact hashes. `DEMO_READINESS_SUMMARY.md` is the second file to
-open; it records ready, missing, optional/manual, deferred, and recommended next-command status.
-`07_WORKBENCH_DEMO_STORY.md` gives the happy path from preflight through cleanup. The run evidence
-export includes a safe `summary` object with principal, workspace, session, status, tools used,
-decision counts, approval count, patch diagnostic count, audit event count, warning count, policy
-hash, and manifest-lock hash.
+`WORKBENCH_DEMO_INDEX.md` is the first file to open. Its newest reading order is:
+`WORKBENCH_DEMO_INDEX.md`, `DEMO_READINESS_SUMMARY.md`, `WORKBENCH_DEMO_SMOKE.md`, the workbench
+packet boundary, the live-demo packet, and the run evidence/export docs. `07_WORKBENCH_DEMO_STORY.md`
+gives the happy path from preflight through cleanup. The run evidence export includes a safe
+`summary` object with principal, workspace, session, status, tools used, decision counts, approval
+count, patch diagnostic count, audit event count, warning count, policy hash, and manifest-lock hash.
 
 The packet points to existing live-demo, operator sandbox, Agent Run correlation, signed evidence,
 negative transcript, and consolidated review artifacts. It is a reviewer convenience artifact, not

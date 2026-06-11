@@ -8276,7 +8276,11 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make demo-flow" in story
     assert "not a runtime fixture loader" in story
     assert "Workbench Demo Index" in demo_index
-    assert "Open First" in demo_index
+    assert "Newest Reading Order" in demo_index
+    assert "DEMO_READINESS_SUMMARY.md" in demo_index
+    assert "WORKBENCH_DEMO_SMOKE.md" in demo_index
+    assert "var/review-packets/v3/live-demo/" in demo_index
+    assert "run evidence/export docs" in demo_index
     assert "Artifact Hashes" in demo_index
     assert "make workbench-readiness" in readme
     assert "make workbench-evidence-packet" in readme
@@ -8321,6 +8325,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "DEMO_READINESS_SUMMARY.md",
         "07_WORKBENCH_DEMO_STORY.md",
         "WORKBENCH_DEMO_SMOKE.md",
+        "newest reading order",
         "summary",
         "does not start services",
         "does not add run controls",

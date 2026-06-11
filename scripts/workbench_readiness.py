@@ -30,6 +30,7 @@ REQUIRED_DOC_PHRASES = [
     "DEMO_READINESS_SUMMARY.md",
     "07_WORKBENCH_DEMO_STORY.md",
     "WORKBENCH_DEMO_SMOKE.md",
+    "newest reading order",
     "summary",
     "does not start services",
     "does not add run controls",
