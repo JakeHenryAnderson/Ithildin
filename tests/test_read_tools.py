@@ -938,6 +938,133 @@ def test_project_dependency_summary_returns_count_only_metadata(tmp_path: Path) 
     assert "package-lock.json" not in dumped
 
 
+def test_project_structure_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("src").mkdir()
+    root.joinpath("src", "secret_feature.py").write_text("TOKEN = 'secret'\n", encoding="utf-8")
+    root.joinpath("tests").mkdir()
+    root.joinpath("tests", "test_secret_feature.ts").write_text("secret\n", encoding="utf-8")
+    root.joinpath("docs").mkdir()
+    root.joinpath("docs", "Private Roadmap.md").write_text("private\n", encoding="utf-8")
+    root.joinpath("package-lock.json").write_text("{}", encoding="utf-8")
+    root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
+    root.joinpath(".git").mkdir()
+    root.joinpath(".git", "config").write_text("[remote]\n", encoding="utf-8")
+
+    summary = filesystem.project_structure_summary({"root": ".", "max_depth": 2, "limit": 20})
+
+    assert summary["tool_name"] == "project.structure.summary"
+    assert summary["summary"] == {
+        "visible_directory_count": 3,
+        "visible_file_count": 4,
+        "max_observed_depth": 2,
+        "inspected_entry_count": 9,
+    }
+    assert cast(dict[str, int], summary["directory_categories"])["source"] == 1
+    assert cast(dict[str, int], summary["directory_categories"])["tests"] == 1
+    assert cast(dict[str, int], summary["directory_categories"])["docs"] == 1
+    assert cast(dict[str, int], summary["file_kinds"])["python"] == 1
+    assert cast(dict[str, int], summary["file_kinds"])["typescript"] == 1
+    assert cast(dict[str, int], summary["file_kinds"])["markdown"] == 1
+    assert cast(dict[str, int], summary["file_kinds"])["lockfile_present"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["hidden_or_sensitive"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["git_internal"] == 1
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["raw_recursive_listing_included"] is False
+    assert output_policy["raw_file_names_included"] is False
+    assert output_policy["dependency_names_included"] is False
+    assert output_policy["package_manager_execution_used"] is False
+    assert output_policy["registry_or_network_access_used"] is False
+    dumped = json_dump(summary)
+    assert "secret_feature" not in dumped
+    assert "Private Roadmap" not in dumped
+    assert "TOKEN" not in dumped
+    assert ".env" not in dumped
+    assert ".git" not in dumped
+
+
+def test_project_structure_summary_honors_limits_and_include_categories(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("src").mkdir()
+    root.joinpath("src", "deep").mkdir()
+    root.joinpath("src", "deep", "private.py").write_text("secret\n", encoding="utf-8")
+    root.joinpath("README.md").write_text("hello\n", encoding="utf-8")
+
+    summary = filesystem.project_structure_summary(
+        {
+            "root": ".",
+            "max_depth": 1,
+            "limit": 1,
+            "include_categories": ["skipped_counts"],
+        }
+    )
+
+    assert "directory_categories" not in summary
+    assert "file_kinds" not in summary
+    assert "skipped_counts" in summary
+    assert summary["truncated"] is True
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["item_limit"] >= 1
+
+
+def test_project_structure_summary_skips_symlink_and_hardlink_entries(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    target = root / "private.txt"
+    target.write_text("private\n", encoding="utf-8")
+    try:
+        os.link(target, root / "private-copy.txt")
+    except OSError:
+        pytest.skip("hardlinks are not supported on this filesystem")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root.joinpath("outside-link").symlink_to(outside)
+
+    summary = filesystem.project_structure_summary({"root": ".", "max_depth": 1, "limit": 20})
+
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hardlink"] == 2
+    assert skipped["symlink"] == 1
+    dumped = json_dump(summary)
+    assert "private" not in dumped
+    assert "outside" not in dumped
+
+
+def test_project_structure_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "."},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "bad\x1fpath"},
+        {"max_depth": -1},
+        {"max_depth": 5},
+        {"limit": 0},
+        {"limit": 251},
+        {"include_categories": []},
+        {"include_categories": ["file_kinds", "file_kinds"]},
+        {"include_categories": ["raw_names"]},
+        {"glob": "**/*"},
+        {"regex": ".*"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_file_names": True},
+        {"include_dependency_names": True},
+        {"include_package_names": True},
+        {"include_script_values": True},
+        {"registry_url": "https://registry.example.test"},
+        {"command": "find ."},
+        {"argv": ["find", "."]},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_structure_summary(cast(JsonObject, arguments))
+
+
 def test_project_dependency_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

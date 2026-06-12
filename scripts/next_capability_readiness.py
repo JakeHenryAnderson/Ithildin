@@ -28,9 +28,10 @@ REQUIRED_DOC_PHRASES = [
     "git.show.ref_summary",
     "project.dependency.summary",
     "project.manifest.summary",
-    "Current tool count: `14`",
-    "Next candidate: `project.structure.summary`",
-    "Next candidate status: design-only selected",
+    "project.structure.summary",
+    "Current tool count: `15`",
+    "Next candidate: not selected",
+    "Next candidate status: pending selection",
     "Next candidate implementation: blocked",
     "Broader capability expansion: blocked",
     "New powerful tool classes: blocked",
@@ -44,7 +45,7 @@ REQUIRED_DOC_PHRASES = [
     "negative transcript coverage",
     "no-new-powers evidence",
     "make next-capability-readiness",
-    "make project-structure-summary-proposal-check",
+    "make project-structure-summary-source-review-bundle",
 ]
 
 
@@ -102,8 +103,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "current_approved_read_only_capabilities": inventory.get("capability_count"),
         "tool_count": inventory.get("tool_count"),
-        "next_candidate": "project.structure.summary",
-        "next_candidate_status": "design_only_selected",
+        "next_candidate": "not_selected",
+        "next_candidate_status": "pending_selection",
         "next_candidate_implementation_allowed": False,
         "broader_capability_expansion_allowed": False,
         "new_power_classes_allowed": False,

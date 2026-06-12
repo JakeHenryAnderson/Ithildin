@@ -25,6 +25,7 @@ ALLOWED_NEW_READ_TOOLS = {
     "git.show.ref_summary",
     "project.dependency.summary",
     "project.manifest.summary",
+    "project.structure.summary",
 }
 FORBIDDEN_TOOL_PREFIXES = (
     "shell.",

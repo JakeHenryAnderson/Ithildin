@@ -21,12 +21,10 @@ ROOT = Path(__file__).resolve().parents[1]
 IMPLEMENTATION_DOC = ROOT / "docs/codex/v3-project-structure-summary-implementation.md"
 REQUIRED_DOC_PHRASES = [
     "project.structure.summary",
-    "approved_limited_read_only future implementation",
-    "Runtime implementation is not present in this sprint",
-    "does not add a tool manifest",
-    "does not add an executor",
-    "does not add runtime behavior",
-    "later implementation sprint may add exactly one bounded read-only tool manifest",
+    "approved_limited_read_only runtime implementation",
+    "adds one tool manifest",
+    "adds one executor dispatch path",
+    "runtime behavior is bounded read-only",
     "risk `read`",
     "category `project`",
     "workspace_id",
@@ -96,20 +94,20 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(f"implementation decision doc contains forbidden phrase: {phrase}")
 
     manifest_path = repo_root / "tool-manifests/project-structure-summary.yaml"
-    if manifest_path.exists():
-        failures.append("project.structure.summary manifest must not exist in this planning sprint")
+    if not manifest_path.exists():
+        failures.append("project.structure.summary manifest is missing")
 
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "tool_name": "project.structure.summary",
-        "implementation_status": "approved_limited_read_only_future_implementation",
+        "implementation_status": "approved_limited_read_only",
         "tool_count": tool_surface.get("tool_count"),
         "new_power_classes_allowed": False,
         "runtime_changes_allowed": False,
-        "runtime_implemented": False,
-        "future_runtime_implementation_allowed": True,
+        "runtime_implemented": True,
+        "future_runtime_implementation_allowed": False,
         "deferred_boundaries_unchanged": no_new_powers.get("deferred_boundaries_unchanged"),
     }
 
@@ -124,7 +122,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"new_power_classes_allowed: {str(report['new_power_classes_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"runtime_implemented: {str(report['runtime_implemented']).lower()}",
-        "future_runtime_implementation_allowed: true",
+        "future_runtime_implementation_allowed: false",
     ]
     if report["failures"]:
         lines.append("failures:")

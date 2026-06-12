@@ -31,7 +31,7 @@ mixed project?" without disclosing raw source.
 
 ## Boundary
 
-- Tool count remains `14`.
+- Tool count remains `15`.
 - Implementation remains blocked.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.

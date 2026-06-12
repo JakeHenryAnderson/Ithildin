@@ -27,7 +27,7 @@ REQUIRED_PHRASES = [
     "does not add UI behavior",
     "does not add runtime behavior",
     "count-only",
-    "Tool count remains `14`",
+    "Tool count remains `15`",
     "no file contents",
     "no package script values",
     "no dependency names",

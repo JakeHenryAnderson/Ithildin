@@ -20,6 +20,7 @@ are part of this product slice.
 | `git.show.ref_summary` | Summarize local branches/tags using safe counts and response-local IDs. | No ref names in output by default, no remote refs, no checkout, and no arbitrary Git command. |
 | `project.manifest.summary` | Summarize root project manifests with count-oriented metadata. | No file contents, dependency names, package names, script names or values, package-manager execution, registry/network access, recursive discovery, or arbitrary manifest filenames. |
 | `project.dependency.summary` | Summarize direct dependency counts from allowlisted root manifests. | No dependency names, dependency versions, package names, script names or values, lockfile contents, transitive resolution, package-manager execution, registry/network access, SBOM, vulnerability, license, or compliance claims. |
+| `project.structure.summary` | Summarize bounded workspace structure using counts and allowlisted labels. | No raw recursive listings, raw file names, raw sensitive paths, file contents, package-manager execution, registry/network access, or broad filesystem powers. |
 
 ## Evidence Model
 
@@ -37,11 +38,12 @@ Every tool in this family must preserve:
 
 ## Current Position
 
-- Tool count: `14`.
+- Tool count: `15`.
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
-  `git.show.ref_summary`, `project.manifest.summary`, and `project.dependency.summary`.
-- Next candidate: `project.structure.summary`.
-- Next candidate status: design-only selected.
+  `git.show.ref_summary`, `project.manifest.summary`, `project.dependency.summary`, and
+  `project.structure.summary`.
+- Next candidate: not selected.
+- Next candidate status: pending selection.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -51,8 +53,9 @@ This slice is not a code-search engine, package analyzer, dependency scanner, SB
 vulnerability scanner, compliance engine, shell replacement, project build runner, network package
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
-The next selected candidate is design-only
-[project.structure.summary](capability-proposals/project-structure-summary.md). It remains
-implementation-blocked. Future read-only metadata tools must start again from a design-only
-candidate, proposal, implementation plan, explicit implementation decision, source-review handoff,
-policy fixtures, negative transcripts, no-new-powers evidence, and release gates.
+The most recent candidate,
+[project.structure.summary](capability-proposals/project-structure-summary.md), has advanced
+through implementation as a bounded read-only metadata tool. Future read-only metadata tools must
+start again from a design-only candidate, proposal, implementation plan, explicit implementation
+decision, source-review handoff, policy fixtures, negative transcripts, no-new-powers evidence, and
+release gates.

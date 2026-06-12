@@ -1,15 +1,12 @@
 # v3 project.structure.summary Implementation Decision
 
-Status: approved_limited_read_only future implementation. Runtime implementation is not present in
-this sprint.
+Status: approved_limited_read_only runtime implementation.
 
-Runtime implementation is not present in this sprint.
-
-This record approves the narrow future implementation boundary for `project.structure.summary`. It
-does not add a tool manifest, does not add an executor, does not add policy rules, does not add MCP
-exposure, does not add API behavior, does not add UI behavior, and does not add runtime behavior in
-this sprint. A later implementation sprint may add exactly one bounded read-only tool manifest and
-one executor dispatch path if it preserves this decision record.
+This record approves the narrow runtime implementation boundary for `project.structure.summary`.
+It adds one tool manifest and adds one executor dispatch path through the existing governed read
+tool pipeline. runtime behavior is bounded read-only. It adds no policy rule class, no new API
+endpoint, no new MCP transport, no approval behavior, no shell, no package-manager execution, no
+registry/network access, no broad filesystem writes, and no new power class.
 
 ## Approved Future Surface
 
@@ -19,11 +16,11 @@ one executor dispatch path if it preserves this decision record.
 - MCP exposure: read-only through the existing governed pipeline only after runtime implementation;
 - inputs: `workspace_id`, `root`, `max_depth`, `limit`, and `include_categories`;
 - output: structural counts and allowlisted labels only;
-- implementation status: approved for a later bounded runtime sprint, not implemented here.
+- implementation status: implemented as one bounded read-only runtime tool.
 
 ## Output Boundary
 
-The future tool may return total visible directory/file counts, safe directory category counts,
+The tool may return total visible directory/file counts, safe directory category counts,
 safe file-kind category counts, skipped count keys, truncation evidence, limit evidence, and output
 policy booleans.
 
@@ -35,7 +32,7 @@ claims, no package-manager execution, and no network access.
 
 ## Runtime Boundary
 
-The future implementation must use the existing workspace registry and filesystem path-safety
+The implementation uses the existing workspace registry and filesystem path-safety
 rules. It must perform no shell, no package-manager execution, no registry or network access, no
 arbitrary recursive listing disclosure, no symlink traversal, no hardlink ambiguity, no hidden or
 sensitive path disclosure, no `.git` internals exposure, no caller-controlled glob or regex
@@ -43,17 +40,17 @@ execution, and no broad filesystem writes.
 
 The implementation specifically preserves no raw recursive listing and no raw file names.
 
-## Evidence Required Before Runtime Commit
+## Evidence Required For Runtime Commit
 
-- Manifest sketch remains limited to `risk: read` and category `project`.
+- Manifest remains limited to `risk: read` and category `project`.
 - Executor source must be reviewed against the filesystem traversal contract.
 - Resource type: `project_structure`.
-- Policy parity case: future preview/runtime resource construction must match.
+- Policy parity case: preview/runtime resource construction must match.
 - Negative transcripts: traversal, hidden/sensitive path, `.git`, symlink, hardlink, glob/regex,
   broad listing request, file-content request, package-manager request, network request, and
   unknown principal.
 - Implementation gate: `make project-structure-summary-implementation-gate`.
-- Source-review handoff: a later `project-structure-summary-source-review-bundle` or equivalent
-  focused source/test/evidence packet before local lane closure.
+- Source-review handoff: `make project-structure-summary-source-review-bundle` prepares the focused
+  source/test/evidence packet before local lane closure.
 
 Broader capability expansion remains blocked.

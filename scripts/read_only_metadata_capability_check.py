@@ -60,7 +60,7 @@ DOC_REQUIREMENTS = {
     ],
     "docs/codex/v3-readiness-debt-register.md": [
         "Status: planning and hardening register",
-        "Tool count is `14`",
+        "Tool count is `15`",
         "project.manifest.summary",
         "make next-capability-readiness",
         "Public/security-product positioning remains blocked",

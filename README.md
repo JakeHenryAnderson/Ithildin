@@ -276,14 +276,16 @@ checked with `make control-mapping-readiness`.
   implementation decision for `project.dependency.summary`.
 - `make project-dependency-summary-source-review-bundle` - build the focused source/test/evidence
   handoff for the approved `project.dependency.summary` implementation.
-- `make project-structure-summary-proposal-check` - validate the next design-only
-  `project.structure.summary` proposal without authorizing runtime work.
-- `make project-structure-summary-implementation-plan-check` - validate the implementation-planning
-  packet for `project.structure.summary` without authorizing runtime work.
-- `make project-structure-summary-implementation-gate` - validate the bounded future
-  implementation decision for `project.structure.summary` without adding runtime work.
-- `make project-structure-summary-design-review-packet` - generate the design-review packet for
-  the selected `project.structure.summary` proposal.
+- `make project-structure-summary-proposal-check` - validate the historical design-only
+  `project.structure.summary` proposal artifact.
+- `make project-structure-summary-implementation-plan-check` - validate the historical
+  implementation-planning packet for `project.structure.summary`.
+- `make project-structure-summary-implementation-gate` - validate the bounded read-only
+  implementation decision for `project.structure.summary`.
+- `make project-structure-summary-source-review-bundle` - build the focused source/test/evidence
+  handoff for the approved `project.structure.summary` implementation.
+- `make project-structure-summary-design-review-packet` - generate the historical design-review
+  packet for the selected `project.structure.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -585,20 +587,19 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next-capability preflight is
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
-with `make next-capability-readiness`; it records that the next candidate is
-`project.structure.summary`, design-only selected, and any future implementation remains blocked
-until a fresh implementation plan, source-review handoff, and explicit decision are recorded. The
-current selected design-only candidate is
+with `make next-capability-readiness`; it records that `project.structure.summary` has advanced
+through a bounded read-only implementation decision and source-review handoff while broader
+capability expansion remains blocked. The historical selected design-only candidate is
 [docs/codex/capability-proposals/project-structure-summary.md](docs/codex/capability-proposals/project-structure-summary.md)
 and is checked with `make project-structure-summary-proposal-check`; its implementation-planning
 packet is
 [docs/codex/capability-implementation-plans/project-structure-summary.md](docs/codex/capability-implementation-plans/project-structure-summary.md)
-and is checked with `make project-structure-summary-implementation-plan-check`; the bounded future
+and is checked with `make project-structure-summary-implementation-plan-check`; the bounded
 implementation decision is
 [docs/codex/v3-project-structure-summary-implementation.md](docs/codex/v3-project-structure-summary-implementation.md)
 and is checked with `make project-structure-summary-implementation-gate`; generate its focused
-design-review handoff with `make project-structure-summary-design-review-packet`. The consolidated
-four-tool project intelligence slice is
+source-review handoff with `make project-structure-summary-source-review-bundle`. The consolidated
+five-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is
 checked with `make read-only-project-intelligence`. The historical design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)

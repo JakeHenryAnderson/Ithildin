@@ -36,6 +36,7 @@ READ_TOOL_NAMES = frozenset(
         "git.show.ref_summary",
         "project.dependency.summary",
         "project.manifest.summary",
+        "project.structure.summary",
     }
 )
 
@@ -43,6 +44,7 @@ _GIT_COMMIT_METADATA_TOOL = "git.show.commit_metadata"
 _GIT_REF_SUMMARY_TOOL = "git.show.ref_summary"
 _PROJECT_DEPENDENCY_SUMMARY_TOOL = "project.dependency.summary"
 _PROJECT_MANIFEST_SUMMARY_TOOL = "project.manifest.summary"
+_PROJECT_STRUCTURE_SUMMARY_TOOL = "project.structure.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
@@ -56,6 +58,47 @@ _REF_SUMMARY_NAME_BYTE_LIMIT = 240
 _PROJECT_MANIFEST_DEFAULT_LIMIT = 20
 _PROJECT_MANIFEST_MAX_LIMIT = 20
 _PROJECT_MANIFEST_MAX_TOTAL_BYTES = 262144
+_PROJECT_STRUCTURE_DEFAULT_DEPTH = 2
+_PROJECT_STRUCTURE_MAX_DEPTH = 4
+_PROJECT_STRUCTURE_DEFAULT_LIMIT = 150
+_PROJECT_STRUCTURE_MAX_LIMIT = 250
+_PROJECT_STRUCTURE_SECTIONS = (
+    "directory_categories",
+    "file_kinds",
+    "skipped_counts",
+)
+_PROJECT_STRUCTURE_DIRECTORY_CATEGORIES = (
+    "source",
+    "tests",
+    "docs",
+    "config",
+    "generated",
+    "vendor",
+    "build_output",
+    "unknown",
+)
+_PROJECT_STRUCTURE_FILE_KINDS = (
+    "markdown",
+    "python",
+    "typescript",
+    "javascript",
+    "json",
+    "toml",
+    "yaml",
+    "lockfile_present",
+    "config",
+    "unknown",
+)
+_PROJECT_STRUCTURE_SKIPPED_KEYS = (
+    "hidden_or_sensitive",
+    "git_internal",
+    "symlink",
+    "hardlink",
+    "unsupported_type",
+    "depth_limit",
+    "item_limit",
+    "safe_error",
+)
 _PROJECT_MANIFEST_ALLOWLIST = (
     "package.json",
     "pyproject.toml",
@@ -208,6 +251,8 @@ class ReadToolExecutor:
             _PROJECT_MANIFEST_SUMMARY_TOOL,
         }:
             return self._project_manifest_resource_from_arguments(arguments, tool_name=tool_name)
+        if tool_name == _PROJECT_STRUCTURE_SUMMARY_TOOL:
+            return self._project_structure_resource_from_arguments(arguments)
 
         path = _string_arg(arguments, "path", default=".")
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
@@ -313,6 +358,36 @@ class ReadToolExecutor:
         )
         return resource
 
+    def _project_structure_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        root = _project_structure_root(arguments)
+        resource: JsonObject = {
+            "type": "project_structure",
+            "workspace_id": workspace_id,
+            "root": root,
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(root)
+            if not target.is_dir():
+                raise ReadToolError("project structure root is not a directory")
+            _project_structure_max_depth(arguments)
+            _project_structure_limit(arguments)
+            _project_structure_include_categories(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "root": filesystem.relative_path(target),
+                "max_depth": _project_structure_max_depth(arguments),
+                "limit": _project_structure_limit(arguments),
+                "in_scope": True,
+            }
+        )
+        return resource
+
     def execute(self, tool_name: str, arguments: JsonObject) -> JsonObject:
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
         filesystem = self._filesystem(workspace_id)
@@ -345,6 +420,8 @@ class ReadToolExecutor:
             return filesystem.project_dependency_summary(arguments)
         if tool_name == _PROJECT_MANIFEST_SUMMARY_TOOL:
             return filesystem.project_manifest_summary(arguments)
+        if tool_name == _PROJECT_STRUCTURE_SUMMARY_TOOL:
+            return filesystem.project_structure_summary(arguments)
         raise ReadToolError("unsupported read tool")
 
     def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
@@ -569,6 +646,122 @@ class FilesystemReadTools:
             },
             "limits": manifest_summary["limits"],
         }
+
+    def project_structure_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_structure_summary_arguments(arguments)
+        root_arg = _project_structure_root(arguments)
+        max_depth = _project_structure_max_depth(arguments)
+        limit = _project_structure_limit(arguments)
+        include_categories = _project_structure_include_categories(arguments)
+        root_path = self.resolve_existing_path(root_arg)
+        if not root_path.is_dir():
+            raise ReadToolError("project structure root is not a directory")
+
+        directory_categories = _zero_count_mapping(_PROJECT_STRUCTURE_DIRECTORY_CATEGORIES)
+        file_kinds = _zero_count_mapping(_PROJECT_STRUCTURE_FILE_KINDS)
+        skipped_counts = _zero_count_mapping(_PROJECT_STRUCTURE_SKIPPED_KEYS)
+        summary: JsonObject = {
+            "visible_directory_count": 0,
+            "visible_file_count": 0,
+            "max_observed_depth": 0,
+            "inspected_entry_count": 0,
+        }
+        truncated = False
+        queue: list[tuple[Path, int]] = [(root_path, 0)]
+
+        while queue:
+            directory, depth = queue.pop(0)
+            try:
+                children = sorted(directory.iterdir(), key=lambda item: item.name)
+            except OSError:
+                skipped_counts["safe_error"] += 1
+                continue
+            for child in children:
+                inspected = cast(int, summary["inspected_entry_count"])
+                if inspected >= limit:
+                    skipped_counts["item_limit"] += 1
+                    truncated = True
+                    continue
+                entry_depth = depth + 1
+                if entry_depth > max_depth:
+                    skipped_counts["depth_limit"] += 1
+                    truncated = True
+                    continue
+                summary["inspected_entry_count"] = inspected + 1
+                try:
+                    child.relative_to(self.workspace_root)
+                except ValueError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+                if child.is_symlink():
+                    skipped_counts["symlink"] += 1
+                    continue
+                try:
+                    relative = child.relative_to(self.workspace_root)
+                    if _relative_has_git_internal(relative):
+                        skipped_counts["git_internal"] += 1
+                        continue
+                    _ensure_relative_parts_not_sensitive(relative)
+                    resolved = self.resolve_existing_path(relative.as_posix())
+                    stat_result = resolved.stat()
+                except ReadToolError as exc:
+                    _record_project_structure_skip(skipped_counts, exc.reason)
+                    continue
+                except OSError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+
+                summary["max_observed_depth"] = max(
+                    cast(int, summary["max_observed_depth"]),
+                    entry_depth,
+                )
+                if stat.S_ISDIR(stat_result.st_mode):
+                    summary["visible_directory_count"] = (
+                        cast(int, summary["visible_directory_count"]) + 1
+                    )
+                    directory_categories[_project_structure_directory_category(resolved)] += 1
+                    queue.append((resolved, entry_depth))
+                elif stat.S_ISREG(stat_result.st_mode):
+                    if stat_result.st_nlink > 1:
+                        skipped_counts["hardlink"] += 1
+                        continue
+                    summary["visible_file_count"] = cast(int, summary["visible_file_count"]) + 1
+                    file_kinds[_project_structure_file_kind(resolved)] += 1
+                else:
+                    skipped_counts["unsupported_type"] += 1
+
+        result: JsonObject = {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_STRUCTURE_SUMMARY_TOOL,
+            "root": self.relative_path(root_path),
+            "summary": summary,
+            "truncated": truncated,
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_recursive_listing_included": False,
+                "raw_file_names_included": False,
+                "raw_sensitive_paths_included": False,
+                "stable_path_ids_included": False,
+                "dependency_names_included": False,
+                "package_names_included": False,
+                "package_script_values_included": False,
+                "registry_or_network_access_used": False,
+                "package_manager_execution_used": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": {
+                "max_depth": max_depth,
+                "entry_limit": limit,
+                "category_keys_are_allowlisted": True,
+            },
+        }
+        if "directory_categories" in include_categories:
+            result["directory_categories"] = cast(JsonObject, directory_categories)
+        if "file_kinds" in include_categories:
+            result["file_kinds"] = cast(JsonObject, file_kinds)
+        if "skipped_counts" in include_categories:
+            result["skipped_counts"] = cast(JsonObject, skipped_counts)
+        return result
 
     def resolve_existing_path(self, path: str) -> Path:
         if not path:
@@ -1260,6 +1453,17 @@ def _validate_project_dependency_summary_arguments(arguments: JsonObject) -> Non
     _project_manifest_limit(arguments)
 
 
+def _validate_project_structure_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "max_depth", "limit", "include_categories"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project structure summary received unsupported arguments")
+    _project_structure_root(arguments)
+    _project_structure_max_depth(arguments)
+    _project_structure_limit(arguments)
+    _project_structure_include_categories(arguments)
+
+
 def _project_manifest_root(arguments: JsonObject) -> str:
     root = _string_arg(arguments, "root", default=".")
     if not root:
@@ -1294,6 +1498,122 @@ def _project_manifest_limit(arguments: JsonObject) -> int:
     if limit < 1 or limit > _PROJECT_MANIFEST_MAX_LIMIT:
         raise ReadToolError("project manifest summary limit is outside allowed bounds")
     return limit
+
+
+def _project_structure_root(arguments: JsonObject) -> str:
+    root = _string_arg(arguments, "root", default=".")
+    if not root:
+        raise ReadToolError("project structure root must be a non-empty string")
+    return root
+
+
+def _project_structure_max_depth(arguments: JsonObject) -> int:
+    max_depth = _int_arg(arguments, "max_depth", default=_PROJECT_STRUCTURE_DEFAULT_DEPTH)
+    if max_depth < 0 or max_depth > _PROJECT_STRUCTURE_MAX_DEPTH:
+        raise ReadToolError("project structure max_depth is outside allowed bounds")
+    return max_depth
+
+
+def _project_structure_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_PROJECT_STRUCTURE_DEFAULT_LIMIT)
+    if limit < 1 or limit > _PROJECT_STRUCTURE_MAX_LIMIT:
+        raise ReadToolError("project structure limit is outside allowed bounds")
+    return limit
+
+
+def _project_structure_include_categories(arguments: JsonObject) -> list[str]:
+    raw = arguments.get("include_categories")
+    if raw is None:
+        return list(_PROJECT_STRUCTURE_SECTIONS)
+    if not isinstance(raw, list):
+        raise ReadToolError("include_categories must be an array")
+    categories: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            raise ReadToolError("include_categories entries must be strings")
+        if item not in _PROJECT_STRUCTURE_SECTIONS:
+            raise ReadToolError("project structure category is not allowlisted")
+        if item in seen:
+            raise ReadToolError("include_categories entries must be unique")
+        seen.add(item)
+        categories.append(item)
+    if not categories:
+        raise ReadToolError("include_categories must not be empty")
+    return categories
+
+
+def _zero_count_mapping(keys: tuple[str, ...]) -> dict[str, int]:
+    return {key: 0 for key in keys}
+
+
+def _relative_has_git_internal(relative: Path) -> bool:
+    return any(part == ".git" for part in relative.parts)
+
+
+def _record_project_structure_skip(skipped_counts: dict[str, int], reason: str) -> None:
+    if "hidden or sensitive" in reason:
+        skipped_counts["hidden_or_sensitive"] += 1
+    elif "symlink" in reason:
+        skipped_counts["symlink"] += 1
+    elif "hardlinked" in reason:
+        skipped_counts["hardlink"] += 1
+    else:
+        skipped_counts["safe_error"] += 1
+
+
+def _project_structure_directory_category(path: Path) -> str:
+    lowered = path.name.lower()
+    if lowered in {"src", "source", "app", "apps", "lib", "libs", "pkg", "packages"}:
+        return "source"
+    if lowered in {"test", "tests", "spec", "specs", "__tests__"}:
+        return "tests"
+    if lowered in {"doc", "docs", "documentation"}:
+        return "docs"
+    if lowered in {"config", "configs", "conf", "settings"}:
+        return "config"
+    if lowered in {"generated", "gen", "coverage"}:
+        return "generated"
+    if lowered in {"vendor", "vendors", "third_party", "node_modules"}:
+        return "vendor"
+    if lowered in {"build", "dist", "target", "out"}:
+        return "build_output"
+    return "unknown"
+
+
+def _project_structure_file_kind(path: Path) -> str:
+    lowered = path.name.lower()
+    suffix = path.suffix.lower()
+    if lowered in {
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "poetry.lock",
+        "uv.lock",
+        "pdm.lock",
+        "go.sum",
+        "cargo.lock",
+        "gemfile.lock",
+        "composer.lock",
+    }:
+        return "lockfile_present"
+    if suffix in {".md", ".markdown", ".rst"}:
+        return "markdown"
+    if suffix == ".py":
+        return "python"
+    if suffix in {".ts", ".tsx"}:
+        return "typescript"
+    if suffix in {".js", ".jsx", ".mjs", ".cjs"}:
+        return "javascript"
+    if suffix == ".json":
+        return "json"
+    if suffix == ".toml":
+        return "toml"
+    if suffix in {".yaml", ".yml"}:
+        return "yaml"
+    if lowered in {"makefile", "dockerfile"} or suffix in {".ini", ".cfg", ".conf"}:
+        return "config"
+    return "unknown"
 
 
 def _project_manifest_record(

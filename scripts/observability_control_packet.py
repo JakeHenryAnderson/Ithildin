@@ -117,7 +117,7 @@ review/design packet only and does not add runtime powers.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- Tool count remains `14`.
+- Tool count remains `15`.
 - No new manifests, executors, policy rules, API endpoints, MCP tools, sandbox controls, SIEM
   adapters, production identity, runtime Postgres, hosted telemetry, shell, Docker, Kubernetes,
   browser automation, arbitrary HTTP, broad writes, or plugin SDK work are approved by this packet.

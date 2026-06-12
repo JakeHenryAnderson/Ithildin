@@ -975,7 +975,11 @@ def _workspace_id_for_resource(
 
 def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonObject:
     metadata: JsonObject = {"executor": "in_process_read"}
-    if tool_name in {"project.dependency.summary", "project.manifest.summary"}:
+    if tool_name in {
+        "project.dependency.summary",
+        "project.manifest.summary",
+        "project.structure.summary",
+    }:
         output_policy = content.get("output_policy")
         for key in ("manifest_count",):
             value = content.get(key)
@@ -985,6 +989,25 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
             value = content.get("total_direct_dependency_count")
             if isinstance(value, int) and not isinstance(value, bool):
                 metadata["total_direct_dependency_count"] = value
+        if tool_name == "project.structure.summary":
+            summary = content.get("summary")
+            if isinstance(summary, dict):
+                for key in (
+                    "visible_directory_count",
+                    "visible_file_count",
+                    "max_observed_depth",
+                    "inspected_entry_count",
+                ):
+                    value = summary.get(key)
+                    if isinstance(value, int) and not isinstance(value, bool):
+                        metadata[key] = value
+            for section_key in ("directory_categories", "file_kinds", "skipped_counts"):
+                section = content.get(section_key)
+                if isinstance(section, dict):
+                    metadata[f"{section_key}_keys"] = cast(
+                        JsonValue,
+                        sorted(key for key in section if isinstance(key, str)),
+                    )
         truncated = content.get("truncated")
         if isinstance(truncated, bool):
             metadata["truncated"] = truncated
@@ -1008,6 +1031,10 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
         if isinstance(output_policy, dict):
             for key in (
                 "file_contents_included",
+                "raw_recursive_listing_included",
+                "raw_file_names_included",
+                "raw_sensitive_paths_included",
+                "stable_path_ids_included",
                 "dependency_names_included",
                 "dependency_versions_included",
                 "package_names_included",

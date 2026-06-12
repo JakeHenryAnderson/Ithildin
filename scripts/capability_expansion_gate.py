@@ -29,6 +29,7 @@ EXPECTED_TOOL_NAMES = [
     "http.fetch",
     "project.dependency.summary",
     "project.manifest.summary",
+    "project.structure.summary",
 ]
 EXPECTED_DEFERRED_BOUNDARIES = [
     "shell execution",

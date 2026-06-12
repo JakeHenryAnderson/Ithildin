@@ -64,6 +64,18 @@ APPROVED_CAPABILITIES = [
         "implementation_gate": "project-dependency-summary-implementation-gate",
         "source_review_bundle": "project-dependency-summary-source-review-bundle",
     },
+    {
+        "tool_name": "project.structure.summary",
+        "manifest": "tool-manifests/project-structure-summary.yaml",
+        "proposal": "docs/codex/capability-proposals/project-structure-summary.md",
+        "implementation_plan": (
+            "docs/codex/capability-implementation-plans/project-structure-summary.md"
+        ),
+        "implementation": "docs/codex/v3-project-structure-summary-implementation.md",
+        "source_review": "docs/codex/v3-project-structure-summary-source-review.md",
+        "implementation_gate": "project-structure-summary-implementation-gate",
+        "source_review_bundle": "project-structure-summary-source-review-bundle",
+    },
 ]
 REQUIRED_INVENTORY_PHRASES = [
     "Status: approved read-only metadata inventory",
@@ -71,7 +83,8 @@ REQUIRED_INVENTORY_PHRASES = [
     "git.show.ref_summary",
     "project.dependency.summary",
     "project.manifest.summary",
-    "tool count `14`",
+    "project.structure.summary",
+    "tool count `15`",
     "no shell",
     "no broad filesystem writes",
     "no arbitrary Git command execution",
@@ -161,7 +174,12 @@ def _implemented_read_only_metadata_tools(repo_root: Path) -> list[str]:
         name = loaded.get("name")
         if isinstance(name, str) and (
             name.startswith("git.show.")
-            or name in {"project.dependency.summary", "project.manifest.summary"}
+            or name
+            in {
+                "project.dependency.summary",
+                "project.manifest.summary",
+                "project.structure.summary",
+            }
         ):
             names.append(name)
     return names
