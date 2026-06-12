@@ -90,6 +90,7 @@ from scripts import (
     project_docs_summary_proposal_check,
     project_docs_summary_source_review_bundle,
     project_intelligence_readiness,
+    project_language_summary_proposal_check,
     project_manifest_summary_implementation_gate,
     project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
@@ -1550,6 +1551,56 @@ def test_project_docs_summary_source_review_bundle_builds_from_fixture(
     assert "v3 project.docs.summary Source Review Handoff" in index_doc
     assert "docs/codex/v3-project-docs-summary-source-review.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-project-docs-summary-source-review.md" in docs_site
+
+
+def test_project_language_summary_proposal_check_is_wired() -> None:
+    report = project_language_summary_proposal_check.build_report(Path.cwd())
+    proposal = Path("docs/codex/capability-proposals/project-language-summary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = Path("docs/codex/v3-project-language-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.language.summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 17
+    for phrase in [
+        "Status: design-only proposal",
+        "count-only language metadata and allowlisted labels only",
+        "no language file names",
+        "no raw paths",
+        "no file contents",
+        "no raw extensions",
+        "no language detector execution",
+        "no command discovery",
+        "no package-manager execution",
+        "Policy And Audit Evidence",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in proposal
+    assert "tool count remains `17`" in selection
+    assert "Implementation remains blocked" in selection
+    assert "make project-language-summary-proposal-check" in readme
+    assert "project-language-summary-proposal-check:" in makefile
+    assert "project-language-summary-proposal-check" in release_check_body
+    assert (
+        "project-language-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.language.summary" in index
+    assert "docs/codex/capability-proposals/project-language-summary.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-language-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/project-language-summary.md" in docs_site
+    assert "docs/codex/v3-project-language-summary-selection.md" in docs_site
 
 
 def test_project_test_summary_implementation_plan_check_is_wired() -> None:
