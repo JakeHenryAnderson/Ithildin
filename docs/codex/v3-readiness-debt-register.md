@@ -54,9 +54,11 @@ The current four-tool read-only project intelligence slice is consolidated. The 
 candidate is `project.structure.summary`, recorded in
 [v3 project.structure.summary Selection](v3-project-structure-summary-selection.md) and
 [Capability Proposal: project.structure.summary](capability-proposals/project-structure-summary.md).
+Its implementation-planning packet is
+[Implementation-Planning Packet: project.structure.summary](capability-implementation-plans/project-structure-summary.md).
 Implementation remains blocked until it first passes `make next-capability-readiness`, the shared
-contract, privacy policy, checklist, implementation-planning packet, implementation gate,
-source-review packet, internal review, and release checks.
+contract, privacy policy, checklist, implementation gate, source-review packet, internal review,
+and release checks.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

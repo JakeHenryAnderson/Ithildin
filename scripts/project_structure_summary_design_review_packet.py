@@ -17,6 +17,7 @@ if __package__ in {None, ""}:
 from scripts import (
     next_capability_readiness,
     no_new_powers_guardrail,
+    project_structure_summary_implementation_plan_check,
     project_structure_summary_proposal_check,
 )
 
@@ -30,7 +31,10 @@ DOCS = {
     "04_PROJECT_STRUCTURE_SUMMARY_PROPOSAL.md": Path(
         "docs/codex/capability-proposals/project-structure-summary.md"
     ),
-    "05_READ_ONLY_LOCAL_METADATA_CONTRACT.md": Path(
+    "05_PROJECT_STRUCTURE_SUMMARY_IMPLEMENTATION_PLAN.md": Path(
+        "docs/codex/capability-implementation-plans/project-structure-summary.md"
+    ),
+    "06_READ_ONLY_LOCAL_METADATA_CONTRACT.md": Path(
         "docs/codex/read-only-local-metadata-contract.md"
     ),
 }
@@ -70,10 +74,12 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         )
 
     proposal = project_structure_summary_proposal_check.build_report(repo_root)
+    plan = project_structure_summary_implementation_plan_check.build_report(repo_root)
     readiness = next_capability_readiness.build_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     failures = [
         *(f"proposal check: {failure}" for failure in proposal["failures"]),
+        *(f"implementation-plan check: {failure}" for failure in plan["failures"]),
         *(f"next-capability readiness: {failure}" for failure in readiness["failures"]),
         *(f"no-new-powers guardrail: {failure}" for failure in no_new_powers["failures"]),
     ]
@@ -88,14 +94,15 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "commit": commit,
         "dirty": dirty,
         "proposal": proposal,
+        "plan": plan,
         "readiness": readiness,
         "no_new_powers": no_new_powers,
     }
     files = {
         "00_PROJECT_STRUCTURE_SUMMARY_DESIGN_REVIEW_INDEX.md": _index(context),
         "01_PROJECT_STRUCTURE_SUMMARY_DESIGN_REVIEW_PROMPT.md": _prompt(context),
-        "06_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
-        "07_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
+        "07_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
+        "08_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
     }
     for name, source in DOCS.items():
         files[name] = (repo_root / source).read_text(encoding="utf-8")
@@ -139,17 +146,18 @@ does not approve implementation.
 3. `02_NEXT_CAPABILITY_READINESS.md`
 4. `03_PROJECT_STRUCTURE_SUMMARY_SELECTION.md`
 5. `04_PROJECT_STRUCTURE_SUMMARY_PROPOSAL.md`
-6. `05_READ_ONLY_LOCAL_METADATA_CONTRACT.md`
-7. `06_GATE_AND_RISK_EVIDENCE.md`
-8. `07_REVIEW_INTAKE_AND_NEXT_STEPS.md`
-9. `project-structure-summary-design-review-artifact-hashes.json`
+6. `05_PROJECT_STRUCTURE_SUMMARY_IMPLEMENTATION_PLAN.md`
+7. `06_READ_ONLY_LOCAL_METADATA_CONTRACT.md`
+8. `07_GATE_AND_RISK_EVIDENCE.md`
+9. `08_REVIEW_INTAKE_AND_NEXT_STEPS.md`
+10. `project-structure-summary-design-review-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
 This packet does not add or approve a manifest, executor, policy rule, MCP exposure, API behavior,
 UI behavior, runtime behavior, recursive listing disclosure, file-content access, package-manager
 execution, registry/network access, source-code analysis, compliance claims, or future governed
-tool powers.
+tool powers. The implementation-planning packet is included for design review only.
 """
 
 
@@ -171,8 +179,9 @@ Please review:
   file contents, raw sensitive paths, package names, dependency names, or code search;
 - whether the filesystem-derived parser contract preserves existing workspace, symlink, hardlink,
   hidden/sensitive path, and safe-error boundaries;
-- whether policy, audit, UI/review, negative transcript, resource-limit, accepted-risk, and
-  no-new-powers evidence are sufficient for a future implementation-planning decision;
+- whether the implementation-planning packet defines enough policy, audit, UI/review, negative
+  transcript, resource-limit, accepted-risk, and no-new-powers evidence for a future implementation
+  decision;
 - whether this candidate should remain next, be narrowed further, or be replaced.
 
 Required answer:
@@ -194,6 +203,12 @@ def _gate_evidence(context: dict[str, Any]) -> str:
 
 ```json
 {json.dumps(context["proposal"], indent=2, sort_keys=True)}
+```
+
+## Implementation-Plan Check
+
+```json
+{json.dumps(context["plan"], indent=2, sort_keys=True)}
 ```
 
 ## Next-Capability Readiness
@@ -219,15 +234,16 @@ implementation blocked until a later explicit decision.
 Suggested command context:
 
 - `make project-structure-summary-proposal-check`
+- `make project-structure-summary-implementation-plan-check`
 - `make project-structure-summary-design-review-packet`
 - `make release-check`
 
 Current reviewed commit: `{context["commit"]}`.
 
-If review finds no blocking design issues, the next sprint may draft an implementation-planning
-packet. It still must not add a manifest, executor, policy rule, MCP exposure, or runtime behavior
-unless that later sprint explicitly records approval for this one bounded structure-summary
-capability.
+If review finds no blocking design issues, the next sprint may draft an explicit implementation
+decision. It still must not add a manifest, executor, policy rule, MCP exposure, or runtime
+behavior unless that later sprint explicitly records approval for this one bounded
+structure-summary capability.
 """
 
 

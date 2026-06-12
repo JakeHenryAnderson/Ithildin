@@ -329,6 +329,7 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 309 - Operator demo walkthrough | Done | [operator-demo-walkthrough.md](operator-demo-walkthrough.md), `make demo-operator-walkthrough`; generates the front-door expected screens, evidence files, next human steps, and reset guidance without starting services or adding runtime controls. |
 | 310 - Read-only project intelligence consolidation | Done | [read-only-project-intelligence.md](read-only-project-intelligence.md), `make read-only-project-intelligence`; records the four-tool project intelligence slice, selects `project.structure.summary` for design-only review, and preserves no-new-powers boundaries. |
 | 311 - project.structure.summary design selection | Done | [v3-project-structure-summary-selection.md](v3-project-structure-summary-selection.md), [capability-proposals/project-structure-summary.md](capability-proposals/project-structure-summary.md), `make project-structure-summary-proposal-check`; design-only, implementation blocked. |
+| 312 - project.structure.summary implementation plan | Done | [capability-implementation-plans/project-structure-summary.md](capability-implementation-plans/project-structure-summary.md), `make project-structure-summary-implementation-plan-check`; implementation-planning only, runtime blocked. |
 
 ## Future Candidate Track
 

@@ -307,31 +307,36 @@ work must stop for status, reassessment, or external consultation.
    manifest, executor, policy rule, MCP exposure, API behavior, UI behavior, or runtime behavior is
    added.
 
-40. `make project-structure-summary-design-review-packet`
+40. `make project-structure-summary-implementation-plan-check`
+
+   Expected outcome: validates the implementation-planning packet for `project.structure.summary`
+   while keeping manifests, executors, policy rules, MCP exposure, and runtime behavior blocked.
+
+41. `make project-structure-summary-design-review-packet`
 
    Expected outcome: creates an ignored focused design-review handoff under
    `var/review-packets/v3/project-structure-summary-design-review/`.
 
-41. `make review-packet-bundle`
+42. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-42. `make review-packet-consolidated`
+43. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-43. `make packet-redaction-scan`
+44. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-44. `make docs-site`
+45. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.

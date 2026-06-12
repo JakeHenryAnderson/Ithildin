@@ -278,6 +278,8 @@ checked with `make control-mapping-readiness`.
   handoff for the approved `project.dependency.summary` implementation.
 - `make project-structure-summary-proposal-check` - validate the next design-only
   `project.structure.summary` proposal without authorizing runtime work.
+- `make project-structure-summary-implementation-plan-check` - validate the implementation-planning
+  packet for `project.structure.summary` without authorizing runtime work.
 - `make project-structure-summary-design-review-packet` - generate the design-review packet for
   the selected `project.structure.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
@@ -586,7 +588,10 @@ with `make next-capability-readiness`; it records that the next candidate is
 until a fresh implementation plan, source-review handoff, and explicit decision are recorded. The
 current selected design-only candidate is
 [docs/codex/capability-proposals/project-structure-summary.md](docs/codex/capability-proposals/project-structure-summary.md)
-and is checked with `make project-structure-summary-proposal-check`; generate its focused
+and is checked with `make project-structure-summary-proposal-check`; its implementation-planning
+packet is
+[docs/codex/capability-implementation-plans/project-structure-summary.md](docs/codex/capability-implementation-plans/project-structure-summary.md)
+and is checked with `make project-structure-summary-implementation-plan-check`; generate its focused
 design-review handoff with `make project-structure-summary-design-review-packet`. The consolidated
 four-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is
