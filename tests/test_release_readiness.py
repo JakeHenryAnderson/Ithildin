@@ -85,6 +85,7 @@ from scripts import (
     project_dependency_summary_proposal_check,
     project_dependency_summary_source_review_bundle,
     project_docs_summary_design_review_packet,
+    project_docs_summary_implementation_gate,
     project_docs_summary_implementation_plan_check,
     project_docs_summary_proposal_check,
     project_intelligence_readiness,
@@ -1442,6 +1443,54 @@ def test_project_docs_summary_implementation_plan_check_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/capability-implementation-plans/project-docs-summary.md" in docs_site
+
+
+def test_project_docs_summary_implementation_gate_is_wired_pre_runtime() -> None:
+    report = project_docs_summary_implementation_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/v3-project-docs-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "project.docs.summary"
+    assert report["implementation_status"] == "approved_limited_read_only"
+    assert report["tool_count"] == 16
+    assert report["new_power_classes_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implemented"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    for phrase in [
+        "approved_limited_read_only runtime implementation",
+        "project.docs.summary",
+        "risk `read`",
+        "category `project`",
+        "count-only documentation metadata and allowlisted labels only",
+        "no documentation file names",
+        "no raw paths",
+        "no file contents",
+        "no documentation headings",
+        "no documentation build execution",
+        "no package-manager execution",
+        "project_docs",
+        "make project-docs-summary-implementation-gate",
+        "Broader capability expansion remains blocked",
+    ]:
+        assert phrase in doc
+    assert "make project-docs-summary-implementation-gate" in readme
+    assert "project-docs-summary-implementation-gate:" in makefile
+    assert "project-docs-summary-implementation-gate" in release_check_body
+    assert (
+        "project-docs-summary-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "v3 project.docs.summary Implementation Decision" in index
+    assert "docs/codex/v3-project-docs-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-docs-summary-implementation.md" in docs_site
 
 
 def test_project_test_summary_implementation_plan_check_is_wired() -> None:

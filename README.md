@@ -290,6 +290,8 @@ checked with `make control-mapping-readiness`.
   `project.docs.summary` proposal without authorizing runtime work.
 - `make project-docs-summary-implementation-plan-check` - validate the
   `project.docs.summary` implementation-planning packet without authorizing runtime work.
+- `make project-docs-summary-implementation-gate` - validate the bounded read-only
+  implementation decision for `project.docs.summary`.
 - `make project-docs-summary-design-review-packet` - generate the design-review packet for the
   selected `project.docs.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
@@ -599,9 +601,12 @@ expansion remains blocked. The current selected design-only candidate is
 [docs/codex/capability-proposals/project-docs-summary.md](docs/codex/capability-proposals/project-docs-summary.md),
 checked with `make project-docs-summary-proposal-check`. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-docs-summary.md](docs/codex/capability-implementation-plans/project-docs-summary.md)
-and is checked with `make project-docs-summary-implementation-plan-check`; generate its
-design-review packet with `make project-docs-summary-design-review-packet`. Implementation remains
-blocked until a later explicit implementation decision exists. The historical test-summary proposal is
+and is checked with `make project-docs-summary-implementation-plan-check`; the bounded
+implementation decision is
+[docs/codex/v3-project-docs-summary-implementation.md](docs/codex/v3-project-docs-summary-implementation.md)
+and is checked with `make project-docs-summary-implementation-gate`; generate its design-review
+packet with `make project-docs-summary-design-review-packet`. Runtime implementation remains
+limited to that explicit decision. The historical test-summary proposal is
 [docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
 checked with `make project-test-summary-proposal-check`. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-test-summary.md](docs/codex/capability-implementation-plans/project-test-summary.md)
