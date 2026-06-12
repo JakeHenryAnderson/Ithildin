@@ -29,6 +29,7 @@ EXPECTED_TOOL_NAMES = [
     "http.fetch",
     "project.dependency.summary",
     "project.docs.summary",
+    "project.language.summary",
     "project.manifest.summary",
     "project.structure.summary",
     "project.test.summary",

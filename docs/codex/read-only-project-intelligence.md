@@ -9,8 +9,8 @@ package-manager execution, broad filesystem writes, raw diffs, dependency names,
 package versions, package script names or values, file contents, lockfile contents, registry output,
 language detector execution, or network-derived package metadata.
 
-No file contents, no dependency names, no package-manager execution, and no registry/network access
-are part of this product slice.
+No file contents, no dependency names, no language detector execution, no package-manager execution,
+and no registry/network access are part of this product slice.
 
 ## Current Tool Family
 

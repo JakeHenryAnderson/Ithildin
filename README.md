@@ -302,6 +302,8 @@ checked with `make control-mapping-readiness`.
   `project.language.summary` implementation-planning packet without authorizing runtime work.
 - `make project-language-summary-implementation-gate` - validate the bounded read-only
   implementation decision for `project.language.summary`.
+- `make project-language-summary-source-review-bundle` - build the focused source/test/evidence
+  handoff for the approved `project.language.summary` implementation.
 - `make project-language-summary-design-review-packet` - generate the design-review packet for
   the selected `project.language.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
@@ -614,8 +616,9 @@ checked with `make project-language-summary-proposal-check`. Its implementation-
 and is checked with `make project-language-summary-implementation-plan-check`; the bounded
 implementation decision is
 [docs/codex/v3-project-language-summary-implementation.md](docs/codex/v3-project-language-summary-implementation.md)
-and is checked with `make project-language-summary-implementation-gate`. Runtime implementation
-remains limited to that explicit decision until the source-review handoff is prepared. The
+and is checked with `make project-language-summary-implementation-gate`; generate its focused
+source-review handoff with `make project-language-summary-source-review-bundle`. Runtime
+implementation remains limited to that explicit decision. The
 historical test-summary proposal is
 [docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
 checked with `make project-test-summary-proposal-check`. Its implementation-planning packet is
