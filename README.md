@@ -594,7 +594,9 @@ capability expansion remains blocked. Its internal local review is
 The next selected design-only candidate is
 [docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
 checked with `make project-test-summary-proposal-check`; generate its design-review packet with
-`make project-test-summary-design-review-packet`. The historical selected design-only candidate is
+`make project-test-summary-design-review-packet`. Its implementation-planning packet is
+[docs/codex/capability-implementation-plans/project-test-summary.md](docs/codex/capability-implementation-plans/project-test-summary.md)
+and is checked with `make project-test-summary-implementation-plan-check`. The historical selected design-only candidate is
 [docs/codex/capability-proposals/project-structure-summary.md](docs/codex/capability-proposals/project-structure-summary.md)
 and is checked with `make project-structure-summary-proposal-check`; its implementation-planning
 packet is

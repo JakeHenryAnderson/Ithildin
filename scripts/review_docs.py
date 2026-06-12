@@ -182,6 +182,7 @@ REVIEW_DOCS = [
     "docs/codex/v3-project-structure-summary-internal-review.md",
     "docs/codex/v3-project-test-summary-selection.md",
     "docs/codex/capability-proposals/project-test-summary.md",
+    "docs/codex/capability-implementation-plans/project-test-summary.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",
     "docs/codex/read-only-capability-source-review-template.md",

@@ -95,6 +95,7 @@ from scripts import (
     project_structure_summary_proposal_check,
     project_structure_summary_source_review_bundle,
     project_test_summary_design_review_packet,
+    project_test_summary_implementation_plan_check,
     project_test_summary_proposal_check,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
@@ -1286,6 +1287,52 @@ def test_project_test_summary_design_review_packet_builds_from_fixture(
     assert {entry["path"] for entry in hashes} == expected - {
         "project-test-summary-design-review-artifact-hashes.json"
     }
+
+
+def test_project_test_summary_implementation_plan_check_is_wired() -> None:
+    report = project_test_summary_implementation_plan_check.build_report(Path.cwd())
+    plan = Path("docs/codex/capability-implementation-plans/project-test-summary.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.test.summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 15
+    for phrase in [
+        "Status: implementation-planning only",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Proposed Output Contract",
+        "Filesystem Traversal Contract",
+        "Category And Extension Allowlist",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "no test file names",
+        "no test execution",
+        "Actual implementation remains blocked",
+    ]:
+        assert phrase in plan
+    assert "make project-test-summary-implementation-plan-check" in readme
+    assert "project-test-summary-implementation-plan-check:" in makefile
+    assert "project-test-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-test-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Implementation-Planning Packet: project.test.summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/project-test-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/project-test-summary.md" in docs_site
 
 
 def test_project_dependency_summary_implementation_gate_is_wired() -> None:
