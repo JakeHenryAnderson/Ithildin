@@ -301,26 +301,37 @@ work must stop for status, reassessment, or external consultation.
    Expected outcome: creates an ignored focused design-review handoff under
    `var/review-packets/v3/project-dependency-summary-design-review/`.
 
-39. `make review-packet-bundle`
+39. `make project-structure-summary-proposal-check`
+
+   Expected outcome: validates the design-only `project.structure.summary` proposal and confirms no
+   manifest, executor, policy rule, MCP exposure, API behavior, UI behavior, or runtime behavior is
+   added.
+
+40. `make project-structure-summary-design-review-packet`
+
+   Expected outcome: creates an ignored focused design-review handoff under
+   `var/review-packets/v3/project-structure-summary-design-review/`.
+
+41. `make review-packet-bundle`
 
    Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
    command outputs, `filesystem-contract-check.txt`, copied review docs,
    `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
    step 9 was run first.
 
-40. `make review-packet-consolidated`
+42. `make review-packet-consolidated`
 
    Expected outcome: creates the 10-attachment-friendly packet under
    `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`, plus
    `consolidated-attachment-hashes.json` for the eight markdown attachments.
 
-41. `make packet-redaction-scan`
+43. `make packet-redaction-scan`
 
    Expected outcome: scans the latest generated review bundle and consolidated packet for obvious
    private-key material, concrete admin-token assignments, sample development tokens, forbidden
    runtime file types, and non-text packet artifacts.
 
-42. `make docs-site`
+44. `make docs-site`
 
    Expected outcome: builds the ignored local docs site under `site/`, including this reproduction
    map and the security/evidence review docs.
@@ -340,6 +351,7 @@ work must stop for status, reassessment, or external consultation.
 - git.show.ref_summary source-review bundle: `var/review-packets/v0.9/git-ref-summary-source-review/`
 - project.manifest.summary source-review bundle: `var/review-packets/v0.9/project-manifest-summary-source-review/`
 - project.dependency.summary design-review packet: `var/review-packets/v3/project-dependency-summary-design-review/`
+- project.structure.summary design-review packet: `var/review-packets/v3/project-structure-summary-design-review/`
 - Release evidence JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-evidence.json`
 - Review packet markdown: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.md`
 - Review packet JSON: `var/review-packets/v0.2/ithildin-v0.2-review-packet-*/release-packet.json`

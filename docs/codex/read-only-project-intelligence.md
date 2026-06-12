@@ -40,7 +40,8 @@ Every tool in this family must preserve:
 - Tool count: `14`.
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
   `git.show.ref_summary`, `project.manifest.summary`, and `project.dependency.summary`.
-- Next candidate: unselected.
+- Next candidate: `project.structure.summary`.
+- Next candidate status: design-only selected.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -50,6 +51,8 @@ This slice is not a code-search engine, package analyzer, dependency scanner, SB
 vulnerability scanner, compliance engine, shell replacement, project build runner, network package
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
-Future read-only metadata tools must start again from a design-only candidate, proposal,
-implementation plan, explicit implementation decision, source-review handoff, policy fixtures,
-negative transcripts, no-new-powers evidence, and release gates.
+The next selected candidate is design-only
+[project.structure.summary](capability-proposals/project-structure-summary.md). It remains
+implementation-blocked. Future read-only metadata tools must start again from a design-only
+candidate, proposal, implementation plan, explicit implementation decision, source-review handoff,
+policy fixtures, negative transcripts, no-new-powers evidence, and release gates.

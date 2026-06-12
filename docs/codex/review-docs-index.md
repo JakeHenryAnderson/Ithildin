@@ -158,6 +158,8 @@ externally closed.
 - [v3 project.dependency.summary Selection](v3-project-dependency-summary-selection.md)
 - [Capability Proposal: project.dependency.summary](capability-proposals/project-dependency-summary.md)
 - [Implementation-Planning Packet: project.dependency.summary](capability-implementation-plans/project-dependency-summary.md)
+- [v3 project.structure.summary Selection](v3-project-structure-summary-selection.md)
+- [Capability Proposal: project.structure.summary](capability-proposals/project-structure-summary.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)
 - [Read-Only Capability Source Review Template](read-only-capability-source-review-template.md)

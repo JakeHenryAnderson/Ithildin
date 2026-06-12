@@ -15,9 +15,9 @@ without explicit review.
   additions.
 - `make read-only-project-intelligence` records the consolidated four-tool project intelligence
   slice.
-- `make next-capability-readiness` records that the next candidate is unselected and any further
-  implementation remains blocked until a fresh proposal, implementation plan, source-review handoff,
-  and explicit decision are recorded.
+- `make next-capability-readiness` records that the next candidate is
+  `project.structure.summary`, design-only selected, and any further implementation remains blocked
+  until a fresh implementation plan, source-review handoff, and explicit decision are recorded.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
 
@@ -50,10 +50,13 @@ without explicit review.
 
 ## Current Recommendation
 
-It is reasonable to consolidate the current four-tool read-only project intelligence slice before
-choosing another candidate. Any future capability remains blocked until it first passes
-`make next-capability-readiness`, the shared contract, privacy policy, checklist, implementation
-gate, source-review packet, internal review, and release checks.
+The current four-tool read-only project intelligence slice is consolidated. The next design-only
+candidate is `project.structure.summary`, recorded in
+[v3 project.structure.summary Selection](v3-project-structure-summary-selection.md) and
+[Capability Proposal: project.structure.summary](capability-proposals/project-structure-summary.md).
+Implementation remains blocked until it first passes `make next-capability-readiness`, the shared
+contract, privacy policy, checklist, implementation-planning packet, implementation gate,
+source-review packet, internal review, and release checks.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

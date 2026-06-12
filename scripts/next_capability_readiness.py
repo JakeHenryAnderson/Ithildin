@@ -29,7 +29,8 @@ REQUIRED_DOC_PHRASES = [
     "project.dependency.summary",
     "project.manifest.summary",
     "Current tool count: `14`",
-    "Next candidate: unselected",
+    "Next candidate: `project.structure.summary`",
+    "Next candidate status: design-only selected",
     "Next candidate implementation: blocked",
     "Broader capability expansion: blocked",
     "New powerful tool classes: blocked",
@@ -43,6 +44,7 @@ REQUIRED_DOC_PHRASES = [
     "negative transcript coverage",
     "no-new-powers evidence",
     "make next-capability-readiness",
+    "make project-structure-summary-proposal-check",
 ]
 
 
@@ -100,7 +102,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "current_approved_read_only_capabilities": inventory.get("capability_count"),
         "tool_count": inventory.get("tool_count"),
-        "next_candidate": "unselected",
+        "next_candidate": "project.structure.summary",
+        "next_candidate_status": "design_only_selected",
         "next_candidate_implementation_allowed": False,
         "broader_capability_expansion_allowed": False,
         "new_power_classes_allowed": False,
@@ -115,6 +118,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"tool_count: {report.get('tool_count', 'unknown')}",
         f"next_candidate: {report['next_candidate']}",
+        f"next_candidate_status: {report.get('next_candidate_status', 'unknown')}",
         "next_candidate_implementation_allowed: false",
         "broader_capability_expansion_allowed: false",
         "new_power_classes_allowed: false",

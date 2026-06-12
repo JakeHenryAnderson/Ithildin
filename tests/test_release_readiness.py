@@ -89,6 +89,8 @@ from scripts import (
     project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
     project_manifest_summary_source_review_bundle,
+    project_structure_summary_design_review_packet,
+    project_structure_summary_proposal_check,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
@@ -679,14 +681,16 @@ def test_next_capability_readiness_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 14
     assert report["current_approved_read_only_capabilities"] == 4
-    assert report["next_candidate"] == "unselected"
+    assert report["next_candidate"] == "project.structure.summary"
+    assert report["next_candidate_status"] == "design_only_selected"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["historical_candidate"] == "project.dependency.summary"
     for phrase in [
         "Status: capability-expansion readiness checkpoint",
-        "Next candidate: unselected",
+        "Next candidate: `project.structure.summary`",
+        "Next candidate status: design-only selected",
         "Next candidate implementation: blocked",
         "Broader capability expansion: blocked",
         "New powerful tool classes: blocked",
@@ -695,6 +699,7 @@ def test_next_capability_readiness_is_wired() -> None:
     ]:
         assert phrase in doc
     assert "make next-capability-readiness" in readme
+    assert "make project-structure-summary-proposal-check" in readme
     assert "next-capability-readiness:" in makefile
     assert "next-capability-readiness" in release_check_body
     assert "next-capability-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
@@ -721,7 +726,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.manifest.summary",
         "project.dependency.summary",
     ]
-    assert report["next_candidate"] == "unselected"
+    assert report["next_candidate"] == "project.structure.summary"
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
@@ -733,7 +738,8 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.manifest.summary",
         "project.dependency.summary",
         "Tool count: `14`",
-        "Next candidate: unselected",
+        "Next candidate: `project.structure.summary`",
+        "Next candidate status: design-only selected",
         "Broader capability expansion remains blocked",
         "New powerful tool classes remain blocked",
         "No file contents",
@@ -907,6 +913,113 @@ def test_project_dependency_summary_design_review_packet_builds_from_fixture(
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
         "project-dependency-summary-design-review-artifact-hashes.json"
+    }
+
+
+def test_project_structure_summary_proposal_check_is_wired() -> None:
+    report = project_structure_summary_proposal_check.build_report(Path.cwd())
+    doc = Path("docs/codex/capability-proposals/project-structure-summary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = Path("docs/codex/v3-project-structure-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.structure.summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 14
+    for phrase in [
+        "Status: design-only proposal",
+        "does not add a tool manifest",
+        "does not add an executor",
+        "project.structure.summary",
+        "structural counts and allowlisted labels only",
+        "no file contents",
+        "no raw recursive listing",
+        "no raw sensitive paths",
+        "no dependency names",
+        "no package names",
+        "no code search",
+        "no package-manager execution",
+        "no registry or network access",
+        "no shell",
+        "additionalProperties: false",
+        "Policy And Audit Evidence",
+        "UI/review evidence",
+        "Negative Transcripts",
+        "Resource limits",
+        "Accepted-risk impact",
+        "No-new-powers analysis",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in doc
+    assert "Status: design-only candidate selection" in selection
+    assert "Tool count remains `14`" in selection
+    assert "make project-structure-summary-proposal-check" in readme
+    assert "project-structure-summary-proposal-check:" in makefile
+    assert "project-structure-summary-proposal-check" in release_check_body
+    assert (
+        "project-structure-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.structure.summary" in index
+    assert (
+        "docs/codex/capability-proposals/project-structure-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-proposals/project-structure-summary.md" in docs_site
+    assert "docs/codex/v3-project-structure-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-structure-summary-selection.md" in docs_site
+
+
+def test_project_structure_summary_design_review_packet_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-structure-summary-design-review"
+
+    built = project_structure_summary_design_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    assert built == output_dir
+    expected = {
+        "00_PROJECT_STRUCTURE_SUMMARY_DESIGN_REVIEW_INDEX.md",
+        "01_PROJECT_STRUCTURE_SUMMARY_DESIGN_REVIEW_PROMPT.md",
+        "02_NEXT_CAPABILITY_READINESS.md",
+        "03_PROJECT_STRUCTURE_SUMMARY_SELECTION.md",
+        "04_PROJECT_STRUCTURE_SUMMARY_PROPOSAL.md",
+        "05_READ_ONLY_LOCAL_METADATA_CONTRACT.md",
+        "06_GATE_AND_RISK_EVIDENCE.md",
+        "07_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "project-structure-summary-design-review-artifact-hashes.json",
+    }
+    assert {path.name for path in output_dir.iterdir()} == expected
+    index = output_dir.joinpath("00_PROJECT_STRUCTURE_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = output_dir.joinpath(
+        "01_PROJECT_STRUCTURE_SUMMARY_DESIGN_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "project-structure-summary-design-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert "Tool count: `14`" in index
+    assert "EXT-DESIGN-PSS-###" in prompt
+    assert "Do not approve implementation" in prompt
+    assert {entry["path"] for entry in hashes} == expected - {
+        "project-structure-summary-design-review-artifact-hashes.json"
     }
 
 
@@ -1906,6 +2019,8 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "project-dependency-summary-proposal-check",
         "project-dependency-summary-implementation-plan-check",
         "project-dependency-summary-design-review-packet",
+        "project-structure-summary-proposal-check",
+        "project-structure-summary-design-review-packet",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
         "review-packet-bundle",
@@ -1934,10 +2049,12 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "36. `make project-dependency-summary-proposal-check`" in reproduction_map
     assert "37. `make project-dependency-summary-implementation-plan-check`" in reproduction_map
     assert "38. `make project-dependency-summary-design-review-packet`" in reproduction_map
-    assert "39. `make review-packet-bundle`" in reproduction_map
-    assert "40. `make review-packet-consolidated`" in reproduction_map
-    assert "41. `make packet-redaction-scan`" in reproduction_map
-    assert "42. `make docs-site`" in reproduction_map
+    assert "39. `make project-structure-summary-proposal-check`" in reproduction_map
+    assert "40. `make project-structure-summary-design-review-packet`" in reproduction_map
+    assert "41. `make review-packet-bundle`" in reproduction_map
+    assert "42. `make review-packet-consolidated`" in reproduction_map
+    assert "43. `make packet-redaction-scan`" in reproduction_map
+    assert "44. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
@@ -9141,7 +9258,7 @@ def test_observability_readiness_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 14
-    assert report["next_capability_candidate"] == "unselected"
+    assert report["next_capability_candidate"] == "project.structure.summary"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["runtime_changes_allowed"] is False

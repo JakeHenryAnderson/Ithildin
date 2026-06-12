@@ -276,6 +276,10 @@ checked with `make control-mapping-readiness`.
   implementation decision for `project.dependency.summary`.
 - `make project-dependency-summary-source-review-bundle` - build the focused source/test/evidence
   handoff for the approved `project.dependency.summary` implementation.
+- `make project-structure-summary-proposal-check` - validate the next design-only
+  `project.structure.summary` proposal without authorizing runtime work.
+- `make project-structure-summary-design-review-packet` - generate the design-review packet for
+  the selected `project.structure.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -577,9 +581,14 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next-capability preflight is
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
-with `make next-capability-readiness`; it records that the next candidate is unselected and any
-future implementation remains blocked until a fresh proposal, implementation plan, source-review
-handoff, and explicit decision are recorded. The consolidated four-tool project intelligence slice is
+with `make next-capability-readiness`; it records that the next candidate is
+`project.structure.summary`, design-only selected, and any future implementation remains blocked
+until a fresh implementation plan, source-review handoff, and explicit decision are recorded. The
+current selected design-only candidate is
+[docs/codex/capability-proposals/project-structure-summary.md](docs/codex/capability-proposals/project-structure-summary.md)
+and is checked with `make project-structure-summary-proposal-check`; generate its focused
+design-review handoff with `make project-structure-summary-design-review-packet`. The consolidated
+four-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is
 checked with `make read-only-project-intelligence`. The historical design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)

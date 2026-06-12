@@ -14,7 +14,8 @@ source-review handoff, and local lane closure.
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
   `git.show.ref_summary`, `project.manifest.summary`, and `project.dependency.summary`.
 - Current tool count: `14`.
-- Next candidate: unselected.
+- Next candidate: `project.structure.summary`.
+- Next candidate status: design-only selected.
 - Next candidate implementation: blocked.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
@@ -49,7 +50,11 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 
 ## Gate
 
-No next design candidate is currently selected. The most recent historical candidate,
+The next design candidate is
+[v3 project.structure.summary Selection](v3-project-structure-summary-selection.md), with proposal
+details in
+[Capability Proposal: project.structure.summary](capability-proposals/project-structure-summary.md).
+The most recent historical candidate,
 [v3 project.dependency.summary Selection](v3-project-dependency-summary-selection.md), has advanced
 through proposal, implementation planning, implementation decision, runtime implementation, and
 source-review handoff as one bounded read-only metadata tool.
@@ -58,8 +63,10 @@ Run:
 
 ```bash
 make next-capability-readiness
+make project-structure-summary-proposal-check
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata
-inventory, no-new-powers evidence, the historical candidate lineage, release-check wiring, review-doc
-inclusion, and docs-site inclusion. It does not approve another implementation by itself.
+inventory, no-new-powers evidence, the historical candidate lineage, the new design-only candidate,
+release-check wiring, review-doc inclusion, and docs-site inclusion. It does not approve another
+implementation by itself.
