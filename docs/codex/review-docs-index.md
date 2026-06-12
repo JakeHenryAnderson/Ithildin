@@ -169,6 +169,8 @@ externally closed.
 - [Implementation-Planning Packet: project.test.summary](capability-implementation-plans/project-test-summary.md)
 - [v3 project.test.summary Implementation Decision](v3-project-test-summary-implementation.md)
 - [v3 project.test.summary Source Review Handoff](v3-project-test-summary-source-review.md)
+- [v3 project.docs.summary Selection](v3-project-docs-summary-selection.md)
+- [Capability Proposal: project.docs.summary](capability-proposals/project-docs-summary.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)
 - [Read-Only Capability Source Review Template](read-only-capability-source-review-template.md)

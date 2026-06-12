@@ -286,6 +286,10 @@ checked with `make control-mapping-readiness`.
   handoff for the approved `project.structure.summary` implementation.
 - `make project-structure-summary-design-review-packet` - generate the historical design-review
   packet for the selected `project.structure.summary` proposal.
+- `make project-docs-summary-proposal-check` - validate the current design-only
+  `project.docs.summary` proposal without authorizing runtime work.
+- `make project-docs-summary-design-review-packet` - generate the design-review packet for the
+  selected `project.docs.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -589,7 +593,12 @@ checked with `make read-only-metadata-capability-check` and
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
 with `make next-capability-readiness`; it records that `project.test.summary` has advanced through
 a bounded read-only implementation decision and source-review handoff while broader capability
-expansion remains blocked. The test-summary proposal is
+expansion remains blocked. The current selected design-only candidate is
+[docs/codex/capability-proposals/project-docs-summary.md](docs/codex/capability-proposals/project-docs-summary.md),
+checked with `make project-docs-summary-proposal-check`; generate its design-review packet with
+`make project-docs-summary-design-review-packet`. Implementation remains blocked until a later
+implementation-planning packet and explicit implementation decision exist. The historical
+test-summary proposal is
 [docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
 checked with `make project-test-summary-proposal-check`. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-test-summary.md](docs/codex/capability-implementation-plans/project-test-summary.md)
