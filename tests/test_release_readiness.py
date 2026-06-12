@@ -90,6 +90,8 @@ from scripts import (
     project_docs_summary_proposal_check,
     project_docs_summary_source_review_bundle,
     project_intelligence_readiness,
+    project_language_summary_design_review_packet,
+    project_language_summary_implementation_plan_check,
     project_language_summary_proposal_check,
     project_manifest_summary_implementation_gate,
     project_manifest_summary_implementation_plan_check,
@@ -1601,6 +1603,104 @@ def test_project_language_summary_proposal_check_is_wired() -> None:
     assert "docs/codex/v3-project-language-summary-selection.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-proposals/project-language-summary.md" in docs_site
     assert "docs/codex/v3-project-language-summary-selection.md" in docs_site
+
+
+def test_project_language_summary_implementation_plan_check_is_wired() -> None:
+    report = project_language_summary_implementation_plan_check.build_report(Path.cwd())
+    plan = Path(
+        "docs/codex/capability-implementation-plans/project-language-summary.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.language.summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 17
+    for phrase in [
+        "Status: implementation-planning only",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Proposed Output Contract",
+        "Filesystem Traversal Contract",
+        "Category And Extension Allowlist",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Resource Limits",
+        "Source Review And Implementation Decision Requirement",
+        "no language file names",
+        "no raw extensions",
+        "no file contents",
+        "no language detector execution",
+        "no package-manager execution",
+        "Actual implementation remains blocked",
+    ]:
+        assert phrase in plan
+    assert "make project-language-summary-implementation-plan-check" in readme
+    assert "project-language-summary-implementation-plan-check:" in makefile
+    assert "project-language-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-language-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Implementation-Planning Packet: project.language.summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/project-language-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/project-language-summary.md" in docs_site
+
+
+def test_project_language_summary_design_review_packet_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-language-summary-design-review"
+
+    built = project_language_summary_design_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    assert built == output_dir
+    expected = {
+        "00_PROJECT_LANGUAGE_SUMMARY_DESIGN_REVIEW_INDEX.md",
+        "01_PROJECT_LANGUAGE_SUMMARY_DESIGN_REVIEW_PROMPT.md",
+        "02_NEXT_CAPABILITY_READINESS.md",
+        "03_PROJECT_LANGUAGE_SUMMARY_SELECTION.md",
+        "04_PROJECT_LANGUAGE_SUMMARY_PROPOSAL.md",
+        "05_PROJECT_LANGUAGE_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "06_READ_ONLY_LOCAL_METADATA_CONTRACT.md",
+        "07_METADATA_PRIVACY_POLICY.md",
+        "08_GATE_AND_RISK_EVIDENCE.md",
+        "09_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "project-language-summary-design-review-artifact-hashes.json",
+    }
+    assert {path.name for path in output_dir.iterdir()} == expected
+    index = output_dir.joinpath(
+        "00_PROJECT_LANGUAGE_SUMMARY_DESIGN_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_PROJECT_LANGUAGE_SUMMARY_DESIGN_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "project-language-summary-design-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert "Tool count: `17`" in index
+    assert "EXT-DESIGN-PLS-###" in prompt
+    assert "Do not approve implementation" in prompt
+    assert {entry["path"] for entry in hashes} == expected - {
+        "project-language-summary-design-review-artifact-hashes.json"
+    }
 
 
 def test_project_test_summary_implementation_plan_check_is_wired() -> None:

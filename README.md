@@ -298,6 +298,10 @@ checked with `make control-mapping-readiness`.
   selected `project.docs.summary` proposal.
 - `make project-language-summary-proposal-check` - validate the current design-only
   `project.language.summary` proposal without authorizing runtime work.
+- `make project-language-summary-implementation-plan-check` - validate the
+  `project.language.summary` implementation-planning packet without authorizing runtime work.
+- `make project-language-summary-design-review-packet` - generate the design-review packet for
+  the selected `project.language.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the

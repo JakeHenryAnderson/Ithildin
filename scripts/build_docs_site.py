@@ -160,6 +160,7 @@ DEFAULT_DOCS = [
     "docs/codex/v3-project-docs-summary-source-review.md",
     "docs/codex/v3-project-language-summary-selection.md",
     "docs/codex/capability-proposals/project-language-summary.md",
+    "docs/codex/capability-implementation-plans/project-language-summary.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",
     "docs/codex/read-only-capability-source-review-template.md",
