@@ -177,6 +177,7 @@ externally closed.
 - [v3 project.language.summary Selection](v3-project-language-summary-selection.md)
 - [Capability Proposal: project.language.summary](capability-proposals/project-language-summary.md)
 - [Implementation-Planning Packet: project.language.summary](capability-implementation-plans/project-language-summary.md)
+- [v3 project.language.summary Implementation Decision](v3-project-language-summary-implementation.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)
 - [Read-Only Capability Source Review Template](read-only-capability-source-review-template.md)

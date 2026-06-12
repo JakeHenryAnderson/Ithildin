@@ -300,6 +300,8 @@ checked with `make control-mapping-readiness`.
   `project.language.summary` proposal without authorizing runtime work.
 - `make project-language-summary-implementation-plan-check` - validate the
   `project.language.summary` implementation-planning packet without authorizing runtime work.
+- `make project-language-summary-implementation-gate` - validate the bounded read-only
+  implementation decision for `project.language.summary`.
 - `make project-language-summary-design-review-packet` - generate the design-review packet for
   the selected `project.language.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
@@ -603,18 +605,18 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next-capability preflight is
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
-with `make next-capability-readiness`; it records that `project.test.summary` has advanced through
+with `make next-capability-readiness`; it records that `project.docs.summary` has advanced through
 a bounded read-only implementation decision and source-review handoff while broader capability
-expansion remains blocked. The current selected design-only candidate is
-[docs/codex/capability-proposals/project-docs-summary.md](docs/codex/capability-proposals/project-docs-summary.md),
-checked with `make project-docs-summary-proposal-check`. Its implementation-planning packet is
-[docs/codex/capability-implementation-plans/project-docs-summary.md](docs/codex/capability-implementation-plans/project-docs-summary.md)
-and is checked with `make project-docs-summary-implementation-plan-check`; the bounded
+expansion remains blocked. The current selected candidate is
+[docs/codex/capability-proposals/project-language-summary.md](docs/codex/capability-proposals/project-language-summary.md),
+checked with `make project-language-summary-proposal-check`. Its implementation-planning packet is
+[docs/codex/capability-implementation-plans/project-language-summary.md](docs/codex/capability-implementation-plans/project-language-summary.md)
+and is checked with `make project-language-summary-implementation-plan-check`; the bounded
 implementation decision is
-[docs/codex/v3-project-docs-summary-implementation.md](docs/codex/v3-project-docs-summary-implementation.md)
-and is checked with `make project-docs-summary-implementation-gate`; generate its focused
-source-review handoff with `make project-docs-summary-source-review-bundle`. Runtime
-implementation remains limited to that explicit decision. The historical test-summary proposal is
+[docs/codex/v3-project-language-summary-implementation.md](docs/codex/v3-project-language-summary-implementation.md)
+and is checked with `make project-language-summary-implementation-gate`. Runtime implementation
+remains limited to that explicit decision until the source-review handoff is prepared. The
+historical test-summary proposal is
 [docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
 checked with `make project-test-summary-proposal-check`. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-test-summary.md](docs/codex/capability-implementation-plans/project-test-summary.md)
