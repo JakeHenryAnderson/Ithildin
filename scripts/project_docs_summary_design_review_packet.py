@@ -17,6 +17,7 @@ if __package__ in {None, ""}:
 from scripts import (
     next_capability_readiness,
     no_new_powers_guardrail,
+    project_docs_summary_implementation_plan_check,
     project_docs_summary_proposal_check,
 )
 
@@ -28,10 +29,13 @@ DOCS = {
     "04_PROJECT_DOCS_SUMMARY_PROPOSAL.md": Path(
         "docs/codex/capability-proposals/project-docs-summary.md"
     ),
-    "05_READ_ONLY_LOCAL_METADATA_CONTRACT.md": Path(
+    "05_PROJECT_DOCS_SUMMARY_IMPLEMENTATION_PLAN.md": Path(
+        "docs/codex/capability-implementation-plans/project-docs-summary.md"
+    ),
+    "06_READ_ONLY_LOCAL_METADATA_CONTRACT.md": Path(
         "docs/codex/read-only-local-metadata-contract.md"
     ),
-    "06_METADATA_PRIVACY_POLICY.md": Path("docs/codex/metadata-privacy-policy.md"),
+    "07_METADATA_PRIVACY_POLICY.md": Path("docs/codex/metadata-privacy-policy.md"),
 }
 
 
@@ -69,10 +73,12 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         )
 
     proposal = project_docs_summary_proposal_check.build_report(repo_root)
+    plan = project_docs_summary_implementation_plan_check.build_report(repo_root)
     readiness = next_capability_readiness.build_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     failures = [
         *(f"proposal check: {failure}" for failure in proposal["failures"]),
+        *(f"implementation plan check: {failure}" for failure in plan["failures"]),
         *(f"next-capability readiness: {failure}" for failure in readiness["failures"]),
         *(f"no-new-powers guardrail: {failure}" for failure in no_new_powers["failures"]),
     ]
@@ -87,14 +93,15 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "commit": commit,
         "dirty": dirty,
         "proposal": proposal,
+        "plan": plan,
         "readiness": readiness,
         "no_new_powers": no_new_powers,
     }
     files = {
         "00_PROJECT_DOCS_SUMMARY_DESIGN_REVIEW_INDEX.md": _index(context),
         "01_PROJECT_DOCS_SUMMARY_DESIGN_REVIEW_PROMPT.md": _prompt(context),
-        "07_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
-        "08_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(),
+        "08_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
+        "09_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(),
     }
     for name, source in DOCS.items():
         files[name] = (repo_root / source).read_text(encoding="utf-8")
@@ -138,11 +145,12 @@ does not approve implementation.
 3. `02_NEXT_CAPABILITY_READINESS.md`
 4. `03_PROJECT_DOCS_SUMMARY_SELECTION.md`
 5. `04_PROJECT_DOCS_SUMMARY_PROPOSAL.md`
-6. `05_READ_ONLY_LOCAL_METADATA_CONTRACT.md`
-7. `06_METADATA_PRIVACY_POLICY.md`
-8. `07_GATE_AND_RISK_EVIDENCE.md`
-9. `08_REVIEW_INTAKE_AND_NEXT_STEPS.md`
-10. `project-docs-summary-design-review-artifact-hashes.json`
+6. `05_PROJECT_DOCS_SUMMARY_IMPLEMENTATION_PLAN.md`
+7. `06_READ_ONLY_LOCAL_METADATA_CONTRACT.md`
+8. `07_METADATA_PRIVACY_POLICY.md`
+9. `08_GATE_AND_RISK_EVIDENCE.md`
+10. `09_REVIEW_INTAKE_AND_NEXT_STEPS.md`
+11. `project-docs-summary-design-review-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -195,6 +203,12 @@ def _gate_evidence(context: dict[str, Any]) -> str:
 
 ```json
 {json.dumps(context["proposal"], indent=2, sort_keys=True)}
+```
+
+## Implementation Plan Check
+
+```json
+{json.dumps(context["plan"], indent=2, sort_keys=True)}
 ```
 
 ## Next-Capability Readiness

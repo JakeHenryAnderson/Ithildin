@@ -85,6 +85,7 @@ from scripts import (
     project_dependency_summary_proposal_check,
     project_dependency_summary_source_review_bundle,
     project_docs_summary_design_review_packet,
+    project_docs_summary_implementation_plan_check,
     project_docs_summary_proposal_check,
     project_intelligence_readiness,
     project_manifest_summary_implementation_gate,
@@ -1363,10 +1364,11 @@ def test_project_docs_summary_design_review_packet_builds_from_fixture(
         "02_NEXT_CAPABILITY_READINESS.md",
         "03_PROJECT_DOCS_SUMMARY_SELECTION.md",
         "04_PROJECT_DOCS_SUMMARY_PROPOSAL.md",
-        "05_READ_ONLY_LOCAL_METADATA_CONTRACT.md",
-        "06_METADATA_PRIVACY_POLICY.md",
-        "07_GATE_AND_RISK_EVIDENCE.md",
-        "08_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "05_PROJECT_DOCS_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "06_READ_ONLY_LOCAL_METADATA_CONTRACT.md",
+        "07_METADATA_PRIVACY_POLICY.md",
+        "08_GATE_AND_RISK_EVIDENCE.md",
+        "09_REVIEW_INTAKE_AND_NEXT_STEPS.md",
         "project-docs-summary-design-review-artifact-hashes.json",
     }
     assert {path.name for path in output_dir.iterdir()} == expected
@@ -1387,6 +1389,59 @@ def test_project_docs_summary_design_review_packet_builds_from_fixture(
     assert {entry["path"] for entry in hashes} == expected - {
         "project-docs-summary-design-review-artifact-hashes.json"
     }
+
+
+def test_project_docs_summary_implementation_plan_check_is_wired() -> None:
+    report = project_docs_summary_implementation_plan_check.build_report(Path.cwd())
+    plan = Path("docs/codex/capability-implementation-plans/project-docs-summary.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.docs.summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 16
+    for phrase in [
+        "Status: implementation-planning only",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Proposed Output Contract",
+        "Filesystem Traversal Contract",
+        "Category And Extension Allowlist",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Resource Limits",
+        "Source Review And Implementation Decision Requirement",
+        "no documentation file names",
+        "no documentation headings",
+        "no file contents",
+        "no documentation build execution",
+        "no package-manager execution",
+        "Actual implementation remains blocked",
+    ]:
+        assert phrase in plan
+    assert "make project-docs-summary-implementation-plan-check" in readme
+    assert "project-docs-summary-implementation-plan-check:" in makefile
+    assert "project-docs-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-docs-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Implementation-Planning Packet: project.docs.summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/project-docs-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/project-docs-summary.md" in docs_site
 
 
 def test_project_test_summary_implementation_plan_check_is_wired() -> None:

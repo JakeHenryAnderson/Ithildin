@@ -56,8 +56,9 @@ The most recent capability,
 implementation planning, implementation decision, runtime implementation, and source-review handoff
 as one bounded read-only metadata tool. The next design-only candidate is
 [project.docs.summary](capability-proposals/project-docs-summary.md); implementation remains
-blocked until implementation planning, explicit implementation decision, and focused source-review
-handoff are recorded.
+blocked until explicit implementation decision and focused source-review handoff are recorded. Its
+implementation-planning packet is
+[project.docs.summary](capability-implementation-plans/project-docs-summary.md).
 
 Run:
 
@@ -65,6 +66,7 @@ Run:
 make next-capability-readiness
 make project-test-summary-source-review-bundle
 make project-docs-summary-proposal-check
+make project-docs-summary-implementation-plan-check
 make project-docs-summary-design-review-packet
 ```
 

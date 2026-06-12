@@ -60,5 +60,6 @@ implementation as a bounded read-only metadata tool. Future read-only metadata t
 again from a design-only candidate, proposal, implementation plan, explicit implementation decision,
 source-review handoff, policy fixtures, negative transcripts, no-new-powers evidence, and release
 gates. The next design-only candidate is
-[project.docs.summary](capability-proposals/project-docs-summary.md); implementation remains
-blocked.
+[project.docs.summary](capability-proposals/project-docs-summary.md), with implementation-planning
+recorded in [project.docs.summary](capability-implementation-plans/project-docs-summary.md);
+implementation remains blocked.

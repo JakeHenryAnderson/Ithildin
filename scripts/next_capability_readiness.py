@@ -48,6 +48,7 @@ REQUIRED_DOC_PHRASES = [
     "make next-capability-readiness",
     "make project-test-summary-source-review-bundle",
     "make project-docs-summary-proposal-check",
+    "make project-docs-summary-implementation-plan-check",
     "make project-docs-summary-design-review-packet",
 ]
 
