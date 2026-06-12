@@ -38,6 +38,7 @@ READ_TOOL_NAMES = frozenset(
         "project.manifest.summary",
         "project.structure.summary",
         "project.test.summary",
+        "project.docs.summary",
     }
 )
 
@@ -47,6 +48,7 @@ _PROJECT_DEPENDENCY_SUMMARY_TOOL = "project.dependency.summary"
 _PROJECT_MANIFEST_SUMMARY_TOOL = "project.manifest.summary"
 _PROJECT_STRUCTURE_SUMMARY_TOOL = "project.structure.summary"
 _PROJECT_TEST_SUMMARY_TOOL = "project.test.summary"
+_PROJECT_DOCS_SUMMARY_TOOL = "project.docs.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
@@ -138,6 +140,43 @@ _PROJECT_TEST_LANGUAGE_FAMILIES = (
     "markdown",
     "unknown",
 )
+_PROJECT_DOCS_DEFAULT_DEPTH = 3
+_PROJECT_DOCS_MAX_DEPTH = 5
+_PROJECT_DOCS_DEFAULT_LIMIT = 200
+_PROJECT_DOCS_MAX_LIMIT = 300
+_PROJECT_DOCS_SECTIONS = (
+    "documentation_type_counts",
+    "documentation_location_counts",
+    "language_family_counts",
+    "skipped_counts",
+)
+_PROJECT_DOCS_TYPES = (
+    "readme_docs",
+    "reference_docs",
+    "api_docs",
+    "tutorial_docs",
+    "how_to_docs",
+    "changelog_docs",
+    "license_docs",
+    "contributing_docs",
+    "unknown_docs",
+)
+_PROJECT_DOCS_LOCATIONS = (
+    "dedicated_docs_directory",
+    "root_documentation",
+    "source_adjacent_documentation",
+    "documentation_example",
+    "unknown_location",
+)
+_PROJECT_DOCS_LANGUAGE_FAMILIES = (
+    "markdown",
+    "restructured_text",
+    "asciidoc",
+    "plain_text",
+    "html",
+    "unknown",
+)
+_PROJECT_SOURCE_DIR_NAMES = {"src", "source", "app", "apps", "lib", "libs", "pkg"}
 _PROJECT_MANIFEST_ALLOWLIST = (
     "package.json",
     "pyproject.toml",
@@ -294,6 +333,8 @@ class ReadToolExecutor:
             return self._project_structure_resource_from_arguments(arguments)
         if tool_name == _PROJECT_TEST_SUMMARY_TOOL:
             return self._project_test_resource_from_arguments(arguments)
+        if tool_name == _PROJECT_DOCS_SUMMARY_TOOL:
+            return self._project_docs_resource_from_arguments(arguments)
 
         path = _string_arg(arguments, "path", default=".")
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
@@ -338,6 +379,36 @@ class ReadToolExecutor:
                 "root_label": _project_test_root_label(filesystem, target),
                 "max_depth": _project_test_max_depth(arguments),
                 "limit": _project_test_limit(arguments),
+                "in_scope": True,
+            }
+        )
+        return resource
+
+    def _project_docs_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        root = _project_docs_root(arguments)
+        resource: JsonObject = {
+            "type": "project_docs",
+            "workspace_id": workspace_id,
+            "root_label": "unresolved",
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(root)
+            if not target.is_dir():
+                raise ReadToolError("project docs root is not a directory")
+            _project_docs_max_depth(arguments)
+            _project_docs_limit(arguments)
+            _project_docs_include_categories(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "root_label": _project_docs_root_label(filesystem, target),
+                "max_depth": _project_docs_max_depth(arguments),
+                "limit": _project_docs_limit(arguments),
                 "in_scope": True,
             }
         )
@@ -495,6 +566,8 @@ class ReadToolExecutor:
             return filesystem.project_structure_summary(arguments)
         if tool_name == _PROJECT_TEST_SUMMARY_TOOL:
             return filesystem.project_test_summary(arguments)
+        if tool_name == _PROJECT_DOCS_SUMMARY_TOOL:
+            return filesystem.project_docs_summary(arguments)
         raise ReadToolError("unsupported read tool")
 
     def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
@@ -961,6 +1034,137 @@ class FilesystemReadTools:
             result["framework_hints"] = cast(JsonObject, framework_hints)
         if "test_location_counts" in include_categories:
             result["test_location_counts"] = cast(JsonObject, test_locations)
+        if "language_family_counts" in include_categories:
+            result["language_family_counts"] = cast(JsonObject, language_families)
+        if "skipped_counts" in include_categories:
+            result["skipped_counts"] = cast(JsonObject, skipped_counts)
+        return result
+
+    def project_docs_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_docs_summary_arguments(arguments)
+        root_arg = _project_docs_root(arguments)
+        max_depth = _project_docs_max_depth(arguments)
+        limit = _project_docs_limit(arguments)
+        include_categories = _project_docs_include_categories(arguments)
+        root_path = self.resolve_existing_path(root_arg)
+        if not root_path.is_dir():
+            raise ReadToolError("project docs root is not a directory")
+
+        documentation_types = _zero_count_mapping(_PROJECT_DOCS_TYPES)
+        documentation_locations = _zero_count_mapping(_PROJECT_DOCS_LOCATIONS)
+        language_families = _zero_count_mapping(_PROJECT_DOCS_LANGUAGE_FAMILIES)
+        skipped_counts = _zero_count_mapping(_PROJECT_STRUCTURE_SKIPPED_KEYS)
+        summary: JsonObject = {
+            "visible_documentation_directory_count": 0,
+            "visible_documentation_file_count": 0,
+            "max_observed_depth": 0,
+            "inspected_entry_count": 0,
+        }
+        truncated = False
+        queue: list[tuple[Path, int]] = [(root_path, 0)]
+
+        while queue:
+            directory, depth = queue.pop(0)
+            try:
+                children = sorted(directory.iterdir(), key=lambda item: item.name)
+            except OSError:
+                skipped_counts["safe_error"] += 1
+                continue
+            for child in children:
+                inspected = cast(int, summary["inspected_entry_count"])
+                if inspected >= limit:
+                    skipped_counts["item_limit"] += 1
+                    truncated = True
+                    continue
+                entry_depth = depth + 1
+                if entry_depth > max_depth:
+                    skipped_counts["depth_limit"] += 1
+                    truncated = True
+                    continue
+                summary["inspected_entry_count"] = inspected + 1
+                try:
+                    child.relative_to(self.workspace_root)
+                except ValueError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+                if child.is_symlink():
+                    skipped_counts["symlink"] += 1
+                    continue
+                try:
+                    relative = child.relative_to(self.workspace_root)
+                    if _relative_has_git_internal(relative):
+                        skipped_counts["git_internal"] += 1
+                        continue
+                    _ensure_relative_parts_not_sensitive(relative)
+                    resolved = self.resolve_existing_path(relative.as_posix())
+                    stat_result = resolved.stat()
+                except ReadToolError as exc:
+                    _record_project_structure_skip(skipped_counts, exc.reason)
+                    continue
+                except OSError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+
+                summary["max_observed_depth"] = max(
+                    cast(int, summary["max_observed_depth"]),
+                    entry_depth,
+                )
+                if stat.S_ISDIR(stat_result.st_mode):
+                    if _is_docs_like_directory(resolved):
+                        summary["visible_documentation_directory_count"] = (
+                            cast(int, summary["visible_documentation_directory_count"]) + 1
+                        )
+                        documentation_locations["dedicated_docs_directory"] += 1
+                    queue.append((resolved, entry_depth))
+                elif stat.S_ISREG(stat_result.st_mode):
+                    if stat_result.st_nlink > 1:
+                        skipped_counts["hardlink"] += 1
+                        continue
+                    if _is_docs_like_file(resolved):
+                        summary["visible_documentation_file_count"] = (
+                            cast(int, summary["visible_documentation_file_count"]) + 1
+                        )
+                        documentation_types[_project_docs_type(resolved)] += 1
+                        documentation_locations[_project_docs_location(self, resolved)] += 1
+                        language_families[_project_docs_language_family(resolved)] += 1
+                else:
+                    skipped_counts["unsupported_type"] += 1
+
+        result: JsonObject = {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_DOCS_SUMMARY_TOOL,
+            "root_label": _project_docs_root_label(self, root_path),
+            "summary": summary,
+            "truncated": truncated,
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_recursive_listing_included": False,
+                "raw_paths_included": False,
+                "raw_file_names_included": False,
+                "documentation_file_names_included": False,
+                "documentation_headings_included": False,
+                "stable_path_ids_included": False,
+                "dependency_names_included": False,
+                "package_names_included": False,
+                "package_script_values_included": False,
+                "coverage_data_included": False,
+                "documentation_build_claims_included": False,
+                "command_output_included": False,
+                "registry_or_network_access_used": False,
+                "package_manager_execution_used": False,
+                "documentation_build_execution_used": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": {
+                "max_depth": max_depth,
+                "entry_limit": limit,
+                "category_keys_are_allowlisted": True,
+            },
+        }
+        if "documentation_type_counts" in include_categories:
+            result["documentation_type_counts"] = cast(JsonObject, documentation_types)
+        if "documentation_location_counts" in include_categories:
+            result["documentation_location_counts"] = cast(JsonObject, documentation_locations)
         if "language_family_counts" in include_categories:
             result["language_family_counts"] = cast(JsonObject, language_families)
         if "skipped_counts" in include_categories:
@@ -1679,6 +1883,17 @@ def _validate_project_test_summary_arguments(arguments: JsonObject) -> None:
     _project_test_include_categories(arguments)
 
 
+def _validate_project_docs_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "max_depth", "limit", "include_categories"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project docs summary received unsupported arguments")
+    _project_docs_root(arguments)
+    _project_docs_max_depth(arguments)
+    _project_docs_limit(arguments)
+    _project_docs_include_categories(arguments)
+
+
 def _project_manifest_root(arguments: JsonObject) -> str:
     root = _string_arg(arguments, "root", default=".")
     if not root:
@@ -1801,7 +2016,56 @@ def _project_test_include_categories(arguments: JsonObject) -> list[str]:
     return categories
 
 
+def _project_docs_root(arguments: JsonObject) -> str:
+    root = _string_arg(arguments, "root", default=".")
+    if not root:
+        raise ReadToolError("project docs root must be a non-empty string")
+    return root
+
+
+def _project_docs_max_depth(arguments: JsonObject) -> int:
+    max_depth = _int_arg(arguments, "max_depth", default=_PROJECT_DOCS_DEFAULT_DEPTH)
+    if max_depth < 0 or max_depth > _PROJECT_DOCS_MAX_DEPTH:
+        raise ReadToolError("project docs max_depth is outside allowed bounds")
+    return max_depth
+
+
+def _project_docs_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_PROJECT_DOCS_DEFAULT_LIMIT)
+    if limit < 1 or limit > _PROJECT_DOCS_MAX_LIMIT:
+        raise ReadToolError("project docs limit is outside allowed bounds")
+    return limit
+
+
+def _project_docs_include_categories(arguments: JsonObject) -> list[str]:
+    raw = arguments.get("include_categories")
+    if raw is None:
+        return list(_PROJECT_DOCS_SECTIONS)
+    if not isinstance(raw, list):
+        raise ReadToolError("include_categories must be an array")
+    categories: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            raise ReadToolError("include_categories entries must be strings")
+        if item not in _PROJECT_DOCS_SECTIONS:
+            raise ReadToolError("project docs category is not allowlisted")
+        if item in seen:
+            raise ReadToolError("include_categories entries must be unique")
+        seen.add(item)
+        categories.append(item)
+    if not categories:
+        raise ReadToolError("include_categories must not be empty")
+    return categories
+
+
 def _project_test_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
+    if root_path == filesystem.workspace_root:
+        return "workspace_root"
+    return "scoped_root"
+
+
+def _project_docs_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
     if root_path == filesystem.workspace_root:
         return "workspace_root"
     return "scoped_root"
@@ -1964,6 +2228,101 @@ def _project_test_language_family(path: Path) -> str:
         return "shell"
     if suffix in {".md", ".markdown", ".rst"}:
         return "markdown"
+    return "unknown"
+
+
+def _is_docs_like_directory(path: Path) -> bool:
+    return path.name.lower() in {"doc", "docs", "documentation", "guide", "guides"}
+
+
+def _is_docs_like_file(path: Path) -> bool:
+    lowered = path.name.lower()
+    if lowered in {
+        "readme",
+        "readme.md",
+        "readme.markdown",
+        "readme.rst",
+        "changelog",
+        "changelog.md",
+        "contributing",
+        "contributing.md",
+        "license",
+        "license.md",
+        "notice",
+        "notice.md",
+        "security",
+        "security.md",
+    }:
+        return True
+    if _project_docs_language_family(path) != "unknown" and any(
+        part.lower() in {"doc", "docs", "documentation", "guide", "guides"} for part in path.parts
+    ):
+        return True
+    if _project_docs_language_family(path) != "unknown" and any(
+        part.lower() in _PROJECT_SOURCE_DIR_NAMES for part in path.parts
+    ):
+        return True
+    return False
+
+
+def _project_docs_type(path: Path) -> str:
+    lowered = path.name.lower()
+    lowered_parts = [part.lower() for part in path.parts]
+    if lowered.startswith("readme"):
+        return "readme_docs"
+    if lowered.startswith("changelog") or lowered in {"changes", "changes.md"}:
+        return "changelog_docs"
+    if lowered.startswith("license") or lowered.startswith("notice"):
+        return "license_docs"
+    if lowered.startswith("contributing") or lowered.startswith("code_of_conduct"):
+        return "contributing_docs"
+    if "api" in lowered_parts or "api" in lowered:
+        return "api_docs"
+    if "reference" in lowered_parts or "reference" in lowered or "refs" in lowered_parts:
+        return "reference_docs"
+    if "tutorial" in lowered_parts or "tutorial" in lowered:
+        return "tutorial_docs"
+    if (
+        "how-to" in lowered
+        or "how_to" in lowered
+        or "howto" in lowered
+        or any(part in {"how-to", "how_to", "howto"} for part in lowered_parts)
+    ):
+        return "how_to_docs"
+    return "unknown_docs"
+
+
+def _project_docs_location(filesystem: FilesystemReadTools, path: Path) -> str:
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return "unknown_location"
+    lowered_parts = [part.lower() for part in relative.parts]
+    if len(relative.parts) == 1:
+        return "root_documentation"
+    if any(part in {"doc", "docs", "documentation", "guide", "guides"} for part in lowered_parts):
+        if any("example" in part for part in lowered_parts):
+            return "documentation_example"
+        return "dedicated_docs_directory"
+    if any(part in _PROJECT_SOURCE_DIR_NAMES for part in lowered_parts):
+        return "source_adjacent_documentation"
+    if any("example" in part for part in lowered_parts):
+        return "documentation_example"
+    return "unknown_location"
+
+
+def _project_docs_language_family(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix in {".md", ".markdown"}:
+        return "markdown"
+    if suffix == ".rst":
+        return "restructured_text"
+    if suffix in {".adoc", ".asciidoc"}:
+        return "asciidoc"
+    if suffix == ".txt" or not suffix:
+        return "plain_text"
+    if suffix in {".html", ".htm"}:
+        return "html"
     return "unknown"
 
 

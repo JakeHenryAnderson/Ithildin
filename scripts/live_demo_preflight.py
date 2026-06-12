@@ -151,7 +151,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "telemetry_enabled": telemetry_enabled,
         "http_allowlist_count": http_allowlist_count,
         "tool_count": tool_count,
-        "expected_tool_count": 16,
+        "expected_tool_count": 17,
         "tool_surface_valid": bool(tool_surface_report["valid"]),
         "new_power_classes_allowed": bool(no_new_power_failures),
         "compose_available": compose_available,

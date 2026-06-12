@@ -420,6 +420,47 @@ input_schema:
     )
 
 
+def write_project_docs_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("project-docs-summary.yaml").write_text(
+        """
+name: project.docs.summary
+version: 1.0.0
+title: Summarize project documentation
+risk: read
+category: project
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root:
+      type: string
+    max_depth:
+      type: integer
+      minimum: 0
+      maximum: 5
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 300
+    include_categories:
+      type: array
+      items:
+        type: string
+        enum:
+          - documentation_type_counts
+          - documentation_location_counts
+          - language_family_counts
+          - skipped_counts
+    workspace_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 def make_service(tmp_path: Path) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -710,6 +751,38 @@ def make_project_test_summary_service(tmp_path: Path) -> GovernedToolCallService
     workspace_root.joinpath("src", "feature.test.ts").write_text(
         "TOKEN=secret\n", encoding="utf-8"
     )
+    return GovernedToolCallService(
+        ToolRegistry.load(manifest_dir),
+        PolicyEvaluator.load(policy_path),
+        approval_service,
+        audit_writer,
+        ReadToolExecutor.from_settings(
+            workspace_root=workspace_root,
+            max_read_bytes=4096,
+            search_result_limit=10,
+            git_log_limit=10,
+        ),
+    )
+
+
+def make_project_docs_summary_service(tmp_path: Path) -> GovernedToolCallService:
+    manifest_dir = tmp_path / "manifests"
+    write_project_docs_summary_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    workspace_root.joinpath("README.md").write_text("# Secret Project\n", encoding="utf-8")
+    workspace_root.joinpath("docs").mkdir()
+    workspace_root.joinpath("docs", "api.md").write_text("TOKEN=secret\n", encoding="utf-8")
+    workspace_root.joinpath("src").mkdir()
+    workspace_root.joinpath("src", "usage.md").write_text("TOKEN=secret\n", encoding="utf-8")
     return GovernedToolCallService(
         ToolRegistry.load(manifest_dir),
         PolicyEvaluator.load(policy_path),
@@ -1311,6 +1384,66 @@ def test_project_test_summary_tool_executes_after_policy_allow_and_is_audited(
     assert completed_metadata["test_file_names_included"] is False
     assert completed_metadata["raw_paths_included"] is False
     assert completed_metadata["test_execution_used"] is False
+
+
+def test_project_docs_summary_tool_executes_after_policy_allow_and_is_audited(
+    tmp_path: Path,
+) -> None:
+    service = make_project_docs_summary_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="project.docs.summary",
+        arguments={"root": ".", "max_depth": 3, "limit": 30},
+        principal=principal(),
+        session_id="sess_project_docs",
+    )
+
+    assert result.status == "completed"
+    assert result.content["tool_name"] == "project.docs.summary"
+    assert (
+        cast(JsonObject, result.content["summary"])["visible_documentation_directory_count"] == 1
+    )
+    assert cast(JsonObject, result.content["summary"])["visible_documentation_file_count"] == 3
+    output_policy = cast(JsonObject, result.content["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["documentation_file_names_included"] is False
+    assert output_policy["documentation_headings_included"] is False
+    assert output_policy["raw_paths_included"] is False
+    assert output_policy["documentation_build_execution_used"] is False
+    assert "README" not in json.dumps(result.content)
+    assert "api.md" not in json.dumps(result.content)
+    assert "Secret Project" not in json.dumps(result.content)
+    assert "TOKEN=secret" not in json.dumps(result.content)
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+    policy_metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert policy_metadata["resource_type"] == "project_docs"
+    assert policy_metadata["resource_in_scope"] is True
+    execution_resource = cast(JsonObject, payloads[1]["resource"])
+    assert execution_resource["type"] == "project_docs"
+    completed_metadata = cast(JsonObject, payloads[2]["metadata"])
+    assert completed_metadata["visible_documentation_directory_count"] == 1
+    assert completed_metadata["visible_documentation_file_count"] == 3
+    assert completed_metadata["documentation_type_counts_keys"] == [
+        "api_docs",
+        "changelog_docs",
+        "contributing_docs",
+        "how_to_docs",
+        "license_docs",
+        "readme_docs",
+        "reference_docs",
+        "tutorial_docs",
+        "unknown_docs",
+    ]
+    assert completed_metadata["file_contents_included"] is False
+    assert completed_metadata["documentation_file_names_included"] is False
+    assert completed_metadata["documentation_headings_included"] is False
+    assert completed_metadata["raw_paths_included"] is False
+    assert completed_metadata["documentation_build_execution_used"] is False
 
 
 def test_read_tool_output_is_redacted_and_audit_summary_is_recorded(tmp_path: Path) -> None:

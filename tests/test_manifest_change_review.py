@@ -56,10 +56,11 @@ def test_manifest_change_review_json_shape_for_current_repo() -> None:
     tool_names = payload.get("tool_names")
 
     assert result.passed is True
-    assert payload["tool_count"] == 16
+    assert payload["tool_count"] == 17
     assert isinstance(tool_names, list)
     assert "git.show.commit_metadata" in tool_names
     assert "http.fetch" in tool_names
     assert "project.structure.summary" in tool_names
     assert "project.test.summary" in tool_names
+    assert "project.docs.summary" in tool_names
     json.dumps(payload)

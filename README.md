@@ -260,7 +260,7 @@ checked with `make control-mapping-readiness`.
 - `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
 - `make read-only-capability-inventory-gate` - validate the approved bounded read-only metadata
   tool inventory, implementation gates, source-review handoffs, and release-check wiring.
-- `make read-only-project-intelligence` - validate the consolidated four-tool read-only project
+- `make read-only-project-intelligence` - validate the consolidated seven-tool read-only project
   intelligence slice without adding runtime powers.
 - `make v3-next-capability-candidate-check` - validate the historical design-only selection that led
   to the now-implemented `project.dependency.summary`.
@@ -292,6 +292,8 @@ checked with `make control-mapping-readiness`.
   `project.docs.summary` implementation-planning packet without authorizing runtime work.
 - `make project-docs-summary-implementation-gate` - validate the bounded read-only
   implementation decision for `project.docs.summary`.
+- `make project-docs-summary-source-review-bundle` - build the focused source/test/evidence
+  handoff for the approved `project.docs.summary` implementation.
 - `make project-docs-summary-design-review-packet` - generate the design-review packet for the
   selected `project.docs.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
@@ -604,9 +606,9 @@ checked with `make project-docs-summary-proposal-check`. Its implementation-plan
 and is checked with `make project-docs-summary-implementation-plan-check`; the bounded
 implementation decision is
 [docs/codex/v3-project-docs-summary-implementation.md](docs/codex/v3-project-docs-summary-implementation.md)
-and is checked with `make project-docs-summary-implementation-gate`; generate its design-review
-packet with `make project-docs-summary-design-review-packet`. Runtime implementation remains
-limited to that explicit decision. The historical test-summary proposal is
+and is checked with `make project-docs-summary-implementation-gate`; generate its focused
+source-review handoff with `make project-docs-summary-source-review-bundle`. Runtime
+implementation remains limited to that explicit decision. The historical test-summary proposal is
 [docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
 checked with `make project-test-summary-proposal-check`. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-test-summary.md](docs/codex/capability-implementation-plans/project-test-summary.md)
@@ -624,7 +626,7 @@ implementation decision is
 [docs/codex/v3-project-structure-summary-implementation.md](docs/codex/v3-project-structure-summary-implementation.md)
 and is checked with `make project-structure-summary-implementation-gate`; generate its focused
 source-review handoff with `make project-structure-summary-source-review-bundle`. The consolidated
-six-tool project intelligence slice is
+seven-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is
 checked with `make read-only-project-intelligence`. The historical design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)

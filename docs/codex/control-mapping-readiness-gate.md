@@ -22,7 +22,7 @@ The gate runs or validates:
 
 ## Expected Result
 
-- tool count remains `16`;
+- tool count remains `17`;
 - data classification remains future policy input/UI warning design only;
 - control mapping remains control mapping support, not HIPAA/GLBA/SOX/GDPR compliance automation;
 - incident reconstruction covers mediated actions only;

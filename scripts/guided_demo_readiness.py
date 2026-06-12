@@ -23,7 +23,7 @@ REQUIRED_DOC_PHRASES = [
     "DEMO_STATE_REPORT.md",
     "does not start Compose",
     "does not call governed tools",
-    "tool count remains `16`",
+    "tool count remains `17`",
     "no-new-powers",
 ]
 

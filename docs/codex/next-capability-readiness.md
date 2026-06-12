@@ -5,7 +5,8 @@ tool manifests, policy rules, MCP exposure, API behavior, UI behavior, or new go
 
 This checkpoint exists because the first bounded read-only metadata lanes are now implemented:
 `git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`,
-`project.dependency.summary`, `project.structure.summary`, and `project.test.summary`. The
+`project.dependency.summary`, `project.structure.summary`, `project.test.summary`, and
+`project.docs.summary`. The
 historical candidate records still show how each bounded metadata tool advanced through proposal,
 implementation planning, implementation decision, source-review handoff, and local lane closure.
 
@@ -13,10 +14,10 @@ implementation planning, implementation decision, source-review handoff, and loc
 
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
   `git.show.ref_summary`, `project.manifest.summary`, `project.dependency.summary`, and
-  `project.structure.summary`, and `project.test.summary`.
-- Current tool count: `16`.
-- Next candidate: `project.docs.summary`.
-- Next candidate status: design-only selected.
+  `project.structure.summary`, `project.test.summary`, and `project.docs.summary`.
+- Current tool count: `17`.
+- Next candidate: not selected.
+- Next candidate status: pending selection.
 - Next candidate implementation: blocked.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
@@ -52,22 +53,15 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 ## Gate
 
 The most recent capability,
-[project.test.summary](capability-proposals/project-test-summary.md), has advanced through proposal,
+[project.docs.summary](capability-proposals/project-docs-summary.md), has advanced through proposal,
 implementation planning, implementation decision, runtime implementation, and source-review handoff
-as one bounded read-only metadata tool. The next design-only candidate is
-[project.docs.summary](capability-proposals/project-docs-summary.md); implementation remains
-blocked until explicit implementation decision and focused source-review handoff are recorded. Its
-implementation-planning packet is
-[project.docs.summary](capability-implementation-plans/project-docs-summary.md).
+as one bounded read-only metadata tool. No next design-only candidate is currently selected.
 
 Run:
 
 ```bash
 make next-capability-readiness
-make project-test-summary-source-review-bundle
-make project-docs-summary-proposal-check
-make project-docs-summary-implementation-plan-check
-make project-docs-summary-design-review-packet
+make project-docs-summary-source-review-bundle
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata

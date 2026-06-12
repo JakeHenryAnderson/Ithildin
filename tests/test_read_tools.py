@@ -1200,6 +1200,153 @@ def test_project_test_summary_rejects_unsupported_arguments(tmp_path: Path) -> N
             filesystem.project_test_summary(cast(JsonObject, arguments))
 
 
+def test_project_docs_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("README.md").write_text("# Secret Project\n", encoding="utf-8")
+    root.joinpath("docs").mkdir()
+    root.joinpath("docs", "api.md").write_text("TOKEN = secret\n", encoding="utf-8")
+    root.joinpath("docs", "tutorial.rst").write_text("private\n", encoding="utf-8")
+    root.joinpath("src").mkdir()
+    root.joinpath("src", "usage.md").write_text("internal\n", encoding="utf-8")
+    root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
+    root.joinpath(".git").mkdir()
+    root.joinpath(".git", "config").write_text("[remote]\n", encoding="utf-8")
+
+    summary = filesystem.project_docs_summary({"root": ".", "max_depth": 3, "limit": 30})
+
+    assert summary["tool_name"] == "project.docs.summary"
+    assert summary["summary"] == {
+        "visible_documentation_directory_count": 1,
+        "visible_documentation_file_count": 4,
+        "max_observed_depth": 2,
+        "inspected_entry_count": 8,
+    }
+    assert cast(dict[str, int], summary["documentation_type_counts"])["readme_docs"] == 1
+    assert cast(dict[str, int], summary["documentation_type_counts"])["api_docs"] == 1
+    assert cast(dict[str, int], summary["documentation_type_counts"])["tutorial_docs"] == 1
+    assert cast(dict[str, int], summary["documentation_type_counts"])["unknown_docs"] == 1
+    assert (
+        cast(dict[str, int], summary["documentation_location_counts"])["root_documentation"] == 1
+    )
+    assert (
+        cast(dict[str, int], summary["documentation_location_counts"])[
+            "dedicated_docs_directory"
+        ]
+        == 3
+    )
+    assert (
+        cast(dict[str, int], summary["documentation_location_counts"])[
+            "source_adjacent_documentation"
+        ]
+        == 1
+    )
+    assert cast(dict[str, int], summary["language_family_counts"])["markdown"] == 3
+    assert cast(dict[str, int], summary["language_family_counts"])["restructured_text"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["hidden_or_sensitive"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["git_internal"] == 1
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["documentation_file_names_included"] is False
+    assert output_policy["documentation_headings_included"] is False
+    assert output_policy["raw_paths_included"] is False
+    assert output_policy["documentation_build_execution_used"] is False
+    assert output_policy["package_manager_execution_used"] is False
+    dumped = json_dump(summary)
+    assert "README" not in dumped
+    assert "api.md" not in dumped
+    assert "Secret Project" not in dumped
+    assert "TOKEN" not in dumped
+    assert ".env" not in dumped
+    assert ".git" not in dumped
+
+
+def test_project_docs_summary_honors_limits_and_include_categories(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("docs").mkdir()
+    root.joinpath("docs", "api.md").write_text("secret\n", encoding="utf-8")
+    root.joinpath("README.md").write_text("secret\n", encoding="utf-8")
+
+    summary = filesystem.project_docs_summary(
+        {
+            "root": ".",
+            "max_depth": 1,
+            "limit": 1,
+            "include_categories": ["skipped_counts"],
+        }
+    )
+
+    assert "documentation_type_counts" not in summary
+    assert "documentation_location_counts" not in summary
+    assert "language_family_counts" not in summary
+    assert "skipped_counts" in summary
+    assert summary["truncated"] is True
+    assert cast(dict[str, int], summary["skipped_counts"])["item_limit"] >= 1
+
+
+def test_project_docs_summary_skips_symlink_and_hardlink_entries(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    docs = root / "docs"
+    docs.mkdir()
+    target = docs / "api.md"
+    target.write_text("private\n", encoding="utf-8")
+    try:
+        os.link(target, docs / "api-copy.md")
+    except OSError:
+        pytest.skip("hardlinks are not supported on this filesystem")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root.joinpath("outside-link").symlink_to(outside)
+
+    summary = filesystem.project_docs_summary({"root": ".", "max_depth": 2, "limit": 20})
+
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hardlink"] == 2
+    assert skipped["symlink"] == 1
+    dumped = json_dump(summary)
+    assert "private" not in dumped
+    assert "outside" not in dumped
+
+
+def test_project_docs_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "."},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "bad\x1fpath"},
+        {"max_depth": -1},
+        {"max_depth": 6},
+        {"limit": 0},
+        {"limit": 301},
+        {"include_categories": []},
+        {"include_categories": ["documentation_type_counts", "documentation_type_counts"]},
+        {"include_categories": ["raw_names"]},
+        {"glob": "**/*"},
+        {"regex": ".*"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_file_names": True},
+        {"include_documentation_file_names": True},
+        {"include_documentation_headings": True},
+        {"include_dependency_names": True},
+        {"include_package_names": True},
+        {"include_script_values": True},
+        {"include_coverage": True},
+        {"build_docs": True},
+        {"execute_docs": True},
+        {"registry_url": "https://registry.example.test"},
+        {"command": "mkdocs build"},
+        {"argv": ["mkdocs", "build"]},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_docs_summary(cast(JsonObject, arguments))
+
+
 def test_project_dependency_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

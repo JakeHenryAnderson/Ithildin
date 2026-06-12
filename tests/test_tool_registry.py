@@ -247,6 +247,7 @@ def test_committed_read_tool_manifests_load() -> None:
         "git.status",
         "http.fetch",
         "project.dependency.summary",
+        "project.docs.summary",
         "project.manifest.summary",
         "project.structure.summary",
         "project.test.summary",

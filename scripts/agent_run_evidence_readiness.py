@@ -39,7 +39,7 @@ REQUIRED_GATE_PHRASES = [
     "dashboard-evidence-checklist-check",
     "no-new-powers-guardrail",
     "tool-surface-invariant-gate",
-    "tool count remains `16`",
+    "tool count remains `17`",
     "run export runtime behavior is not allowed",
     "secret-free",
     "design-only",

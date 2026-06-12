@@ -13,7 +13,7 @@ without explicit review.
 - `git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, and `project.test.summary` are the
   approved bounded read-only metadata runtime capability additions.
-- `make read-only-project-intelligence` records the consolidated six-tool project intelligence
+- `make read-only-project-intelligence` records the consolidated seven-tool project intelligence
   slice.
 - `make next-capability-readiness` records that no next capability is currently selected and that
   future implementation remains blocked until fresh selection, implementation planning,
@@ -50,7 +50,7 @@ without explicit review.
 
 ## Current Recommendation
 
-The current six-tool read-only project intelligence slice is consolidated. The most recent
+The current seven-tool read-only project intelligence slice is consolidated. The most recent
 candidate is `project.test.summary`, recorded in
 [v3 project.test.summary Selection](v3-project-test-summary-selection.md) and
 [Capability Proposal: project.test.summary](capability-proposals/project-test-summary.md). Its
