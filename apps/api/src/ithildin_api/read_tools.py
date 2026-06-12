@@ -37,6 +37,7 @@ READ_TOOL_NAMES = frozenset(
         "project.dependency.summary",
         "project.manifest.summary",
         "project.structure.summary",
+        "project.test.summary",
     }
 )
 
@@ -45,6 +46,7 @@ _GIT_REF_SUMMARY_TOOL = "git.show.ref_summary"
 _PROJECT_DEPENDENCY_SUMMARY_TOOL = "project.dependency.summary"
 _PROJECT_MANIFEST_SUMMARY_TOOL = "project.manifest.summary"
 _PROJECT_STRUCTURE_SUMMARY_TOOL = "project.structure.summary"
+_PROJECT_TEST_SUMMARY_TOOL = "project.test.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
@@ -98,6 +100,43 @@ _PROJECT_STRUCTURE_SKIPPED_KEYS = (
     "depth_limit",
     "item_limit",
     "safe_error",
+)
+_PROJECT_TEST_DEFAULT_DEPTH = 3
+_PROJECT_TEST_MAX_DEPTH = 5
+_PROJECT_TEST_DEFAULT_LIMIT = 200
+_PROJECT_TEST_MAX_LIMIT = 300
+_PROJECT_TEST_SECTIONS = (
+    "framework_hints",
+    "test_location_counts",
+    "language_family_counts",
+    "skipped_counts",
+)
+_PROJECT_TEST_FRAMEWORK_HINTS = (
+    "python_pytest_hint",
+    "python_unittest_hint",
+    "javascript_test_hint",
+    "typescript_test_hint",
+    "go_test_hint",
+    "rust_test_hint",
+    "java_test_hint",
+    "unknown_test_hint",
+)
+_PROJECT_TEST_LOCATIONS = (
+    "dedicated_test_directory",
+    "source_adjacent_test",
+    "documentation_example",
+    "unknown_location",
+)
+_PROJECT_TEST_LANGUAGE_FAMILIES = (
+    "python",
+    "typescript",
+    "javascript",
+    "go",
+    "rust",
+    "java",
+    "shell",
+    "markdown",
+    "unknown",
 )
 _PROJECT_MANIFEST_ALLOWLIST = (
     "package.json",
@@ -253,6 +292,8 @@ class ReadToolExecutor:
             return self._project_manifest_resource_from_arguments(arguments, tool_name=tool_name)
         if tool_name == _PROJECT_STRUCTURE_SUMMARY_TOOL:
             return self._project_structure_resource_from_arguments(arguments)
+        if tool_name == _PROJECT_TEST_SUMMARY_TOOL:
+            return self._project_test_resource_from_arguments(arguments)
 
         path = _string_arg(arguments, "path", default=".")
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
@@ -270,6 +311,36 @@ class ReadToolExecutor:
             return resource
         resource["path"] = filesystem.relative_path(target)
         resource["in_scope"] = True
+        return resource
+
+    def _project_test_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        root = _project_test_root(arguments)
+        resource: JsonObject = {
+            "type": "project_tests",
+            "workspace_id": workspace_id,
+            "root_label": "unresolved",
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(root)
+            if not target.is_dir():
+                raise ReadToolError("project test root is not a directory")
+            _project_test_max_depth(arguments)
+            _project_test_limit(arguments)
+            _project_test_include_categories(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "root_label": _project_test_root_label(filesystem, target),
+                "max_depth": _project_test_max_depth(arguments),
+                "limit": _project_test_limit(arguments),
+                "in_scope": True,
+            }
+        )
         return resource
 
     def _commit_metadata_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
@@ -422,6 +493,8 @@ class ReadToolExecutor:
             return filesystem.project_manifest_summary(arguments)
         if tool_name == _PROJECT_STRUCTURE_SUMMARY_TOOL:
             return filesystem.project_structure_summary(arguments)
+        if tool_name == _PROJECT_TEST_SUMMARY_TOOL:
+            return filesystem.project_test_summary(arguments)
         raise ReadToolError("unsupported read tool")
 
     def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
@@ -759,6 +832,137 @@ class FilesystemReadTools:
             result["directory_categories"] = cast(JsonObject, directory_categories)
         if "file_kinds" in include_categories:
             result["file_kinds"] = cast(JsonObject, file_kinds)
+        if "skipped_counts" in include_categories:
+            result["skipped_counts"] = cast(JsonObject, skipped_counts)
+        return result
+
+    def project_test_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_test_summary_arguments(arguments)
+        root_arg = _project_test_root(arguments)
+        max_depth = _project_test_max_depth(arguments)
+        limit = _project_test_limit(arguments)
+        include_categories = _project_test_include_categories(arguments)
+        root_path = self.resolve_existing_path(root_arg)
+        if not root_path.is_dir():
+            raise ReadToolError("project test root is not a directory")
+
+        framework_hints = _zero_count_mapping(_PROJECT_TEST_FRAMEWORK_HINTS)
+        test_locations = _zero_count_mapping(_PROJECT_TEST_LOCATIONS)
+        language_families = _zero_count_mapping(_PROJECT_TEST_LANGUAGE_FAMILIES)
+        skipped_counts = _zero_count_mapping(_PROJECT_STRUCTURE_SKIPPED_KEYS)
+        summary: JsonObject = {
+            "visible_test_directory_count": 0,
+            "visible_test_file_count": 0,
+            "max_observed_depth": 0,
+            "inspected_entry_count": 0,
+        }
+        truncated = False
+        queue: list[tuple[Path, int]] = [(root_path, 0)]
+
+        while queue:
+            directory, depth = queue.pop(0)
+            try:
+                children = sorted(directory.iterdir(), key=lambda item: item.name)
+            except OSError:
+                skipped_counts["safe_error"] += 1
+                continue
+            for child in children:
+                inspected = cast(int, summary["inspected_entry_count"])
+                if inspected >= limit:
+                    skipped_counts["item_limit"] += 1
+                    truncated = True
+                    continue
+                entry_depth = depth + 1
+                if entry_depth > max_depth:
+                    skipped_counts["depth_limit"] += 1
+                    truncated = True
+                    continue
+                summary["inspected_entry_count"] = inspected + 1
+                try:
+                    child.relative_to(self.workspace_root)
+                except ValueError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+                if child.is_symlink():
+                    skipped_counts["symlink"] += 1
+                    continue
+                try:
+                    relative = child.relative_to(self.workspace_root)
+                    if _relative_has_git_internal(relative):
+                        skipped_counts["git_internal"] += 1
+                        continue
+                    _ensure_relative_parts_not_sensitive(relative)
+                    resolved = self.resolve_existing_path(relative.as_posix())
+                    stat_result = resolved.stat()
+                except ReadToolError as exc:
+                    _record_project_structure_skip(skipped_counts, exc.reason)
+                    continue
+                except OSError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+
+                summary["max_observed_depth"] = max(
+                    cast(int, summary["max_observed_depth"]),
+                    entry_depth,
+                )
+                if stat.S_ISDIR(stat_result.st_mode):
+                    if _is_test_like_directory(resolved):
+                        summary["visible_test_directory_count"] = (
+                            cast(int, summary["visible_test_directory_count"]) + 1
+                        )
+                        test_locations["dedicated_test_directory"] += 1
+                    queue.append((resolved, entry_depth))
+                elif stat.S_ISREG(stat_result.st_mode):
+                    if stat_result.st_nlink > 1:
+                        skipped_counts["hardlink"] += 1
+                        continue
+                    if _is_test_like_file(resolved):
+                        summary["visible_test_file_count"] = (
+                            cast(int, summary["visible_test_file_count"]) + 1
+                        )
+                        framework_hints[_project_test_framework_hint(resolved)] += 1
+                        test_locations[_project_test_location(resolved)] += 1
+                        language_families[_project_test_language_family(resolved)] += 1
+                else:
+                    skipped_counts["unsupported_type"] += 1
+
+        result: JsonObject = {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_TEST_SUMMARY_TOOL,
+            "root_label": _project_test_root_label(self, root_path),
+            "summary": summary,
+            "truncated": truncated,
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_recursive_listing_included": False,
+                "raw_paths_included": False,
+                "raw_file_names_included": False,
+                "test_file_names_included": False,
+                "test_case_names_included": False,
+                "stable_path_ids_included": False,
+                "dependency_names_included": False,
+                "package_names_included": False,
+                "package_script_values_included": False,
+                "coverage_data_included": False,
+                "test_pass_fail_claims_included": False,
+                "command_output_included": False,
+                "registry_or_network_access_used": False,
+                "package_manager_execution_used": False,
+                "test_execution_used": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": {
+                "max_depth": max_depth,
+                "entry_limit": limit,
+                "category_keys_are_allowlisted": True,
+            },
+        }
+        if "framework_hints" in include_categories:
+            result["framework_hints"] = cast(JsonObject, framework_hints)
+        if "test_location_counts" in include_categories:
+            result["test_location_counts"] = cast(JsonObject, test_locations)
+        if "language_family_counts" in include_categories:
+            result["language_family_counts"] = cast(JsonObject, language_families)
         if "skipped_counts" in include_categories:
             result["skipped_counts"] = cast(JsonObject, skipped_counts)
         return result
@@ -1464,6 +1668,17 @@ def _validate_project_structure_summary_arguments(arguments: JsonObject) -> None
     _project_structure_include_categories(arguments)
 
 
+def _validate_project_test_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "max_depth", "limit", "include_categories"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project test summary received unsupported arguments")
+    _project_test_root(arguments)
+    _project_test_max_depth(arguments)
+    _project_test_limit(arguments)
+    _project_test_include_categories(arguments)
+
+
 def _project_manifest_root(arguments: JsonObject) -> str:
     root = _string_arg(arguments, "root", default=".")
     if not root:
@@ -1543,6 +1758,55 @@ def _project_structure_include_categories(arguments: JsonObject) -> list[str]:
     return categories
 
 
+def _project_test_root(arguments: JsonObject) -> str:
+    root = _string_arg(arguments, "root", default=".")
+    if not root:
+        raise ReadToolError("project test root must be a non-empty string")
+    return root
+
+
+def _project_test_max_depth(arguments: JsonObject) -> int:
+    max_depth = _int_arg(arguments, "max_depth", default=_PROJECT_TEST_DEFAULT_DEPTH)
+    if max_depth < 0 or max_depth > _PROJECT_TEST_MAX_DEPTH:
+        raise ReadToolError("project test max_depth is outside allowed bounds")
+    return max_depth
+
+
+def _project_test_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_PROJECT_TEST_DEFAULT_LIMIT)
+    if limit < 1 or limit > _PROJECT_TEST_MAX_LIMIT:
+        raise ReadToolError("project test limit is outside allowed bounds")
+    return limit
+
+
+def _project_test_include_categories(arguments: JsonObject) -> list[str]:
+    raw = arguments.get("include_categories")
+    if raw is None:
+        return list(_PROJECT_TEST_SECTIONS)
+    if not isinstance(raw, list):
+        raise ReadToolError("include_categories must be an array")
+    categories: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            raise ReadToolError("include_categories entries must be strings")
+        if item not in _PROJECT_TEST_SECTIONS:
+            raise ReadToolError("project test category is not allowlisted")
+        if item in seen:
+            raise ReadToolError("include_categories entries must be unique")
+        seen.add(item)
+        categories.append(item)
+    if not categories:
+        raise ReadToolError("include_categories must not be empty")
+    return categories
+
+
+def _project_test_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
+    if root_path == filesystem.workspace_root:
+        return "workspace_root"
+    return "scoped_root"
+
+
 def _zero_count_mapping(keys: tuple[str, ...]) -> dict[str, int]:
     return {key: 0 for key in keys}
 
@@ -1613,6 +1877,93 @@ def _project_structure_file_kind(path: Path) -> str:
         return "yaml"
     if lowered in {"makefile", "dockerfile"} or suffix in {".ini", ".cfg", ".conf"}:
         return "config"
+    return "unknown"
+
+
+def _is_test_like_directory(path: Path) -> bool:
+    return path.name.lower() in {"test", "tests", "spec", "specs", "__tests__"}
+
+
+def _is_test_like_file(path: Path) -> bool:
+    lowered = path.name.lower()
+    suffixes = [suffix.lower() for suffix in path.suffixes]
+    if lowered in {"conftest.py", "pytest.ini", "tox.ini"}:
+        return True
+    if any(part.lower() in {"test", "tests", "spec", "specs", "__tests__"} for part in path.parts):
+        return _project_test_language_family(path) != "unknown"
+    if lowered.startswith("test_") or lowered.endswith("_test.py"):
+        return True
+    if ".test." in lowered or ".spec." in lowered or "_test." in lowered:
+        return _project_test_language_family(path) != "unknown"
+    if suffixes[-2:] == [".test", ".ts"] or suffixes[-2:] == [".spec", ".ts"]:
+        return True
+    return False
+
+
+def _project_test_framework_hint(path: Path) -> str:
+    lowered = path.name.lower()
+    family = _project_test_language_family(path)
+    if family == "python":
+        if lowered == "conftest.py" or lowered.startswith("test_"):
+            return "python_pytest_hint"
+        return "python_unittest_hint"
+    if family == "typescript":
+        return "typescript_test_hint"
+    if family == "javascript":
+        return "javascript_test_hint"
+    if family == "go":
+        return "go_test_hint"
+    if family == "rust":
+        return "rust_test_hint"
+    if family == "java":
+        return "java_test_hint"
+    return "unknown_test_hint"
+
+
+def _project_test_location(path: Path) -> str:
+    lowered_parts = [part.lower() for part in path.parts]
+    if any(part in {"test", "tests", "spec", "specs", "__tests__"} for part in lowered_parts):
+        return "dedicated_test_directory"
+    lowered = path.name.lower()
+    if "example" in lowered or any(
+        part in {"doc", "docs", "documentation"} for part in lowered_parts
+    ):
+        return "documentation_example"
+    if (
+        lowered.startswith("test_")
+        or "_test." in lowered
+        or ".test." in lowered
+        or ".spec." in lowered
+    ):
+        return "source_adjacent_test"
+    return "unknown_location"
+
+
+def _project_test_language_family(path: Path) -> str:
+    lowered = path.name.lower()
+    suffix = path.suffix.lower()
+    suffixes = [item.lower() for item in path.suffixes]
+    if suffix == ".py":
+        return "python"
+    if suffix in {".ts", ".tsx"} or tuple(suffixes[-2:]) in {
+        (".test", ".ts"),
+        (".spec", ".ts"),
+        (".test", ".tsx"),
+        (".spec", ".tsx"),
+    }:
+        return "typescript"
+    if suffix in {".js", ".jsx", ".mjs", ".cjs"}:
+        return "javascript"
+    if lowered.endswith("_test.go"):
+        return "go"
+    if lowered.endswith("_test.rs") or suffix == ".rs":
+        return "rust"
+    if suffix == ".java":
+        return "java"
+    if suffix in {".sh", ".bash", ".zsh"}:
+        return "shell"
+    if suffix in {".md", ".markdown", ".rst"}:
+        return "markdown"
     return "unknown"
 
 

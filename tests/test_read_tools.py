@@ -1065,6 +1065,141 @@ def test_project_structure_summary_rejects_unsupported_arguments(tmp_path: Path)
             filesystem.project_structure_summary(cast(JsonObject, arguments))
 
 
+def test_project_test_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("tests").mkdir()
+    root.joinpath("tests", "test_secret_feature.py").write_text(
+        "TOKEN = 'secret'\n", encoding="utf-8"
+    )
+    root.joinpath("src").mkdir()
+    root.joinpath("src", "feature.test.ts").write_text("secret\n", encoding="utf-8")
+    root.joinpath("docs").mkdir()
+    root.joinpath("docs", "example_test.md").write_text("private\n", encoding="utf-8")
+    root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
+    root.joinpath(".git").mkdir()
+    root.joinpath(".git", "config").write_text("[remote]\n", encoding="utf-8")
+
+    summary = filesystem.project_test_summary({"root": ".", "max_depth": 3, "limit": 30})
+
+    assert summary["tool_name"] == "project.test.summary"
+    assert summary["summary"] == {
+        "visible_test_directory_count": 1,
+        "visible_test_file_count": 3,
+        "max_observed_depth": 2,
+        "inspected_entry_count": 8,
+    }
+    assert cast(dict[str, int], summary["framework_hints"])["python_pytest_hint"] == 1
+    assert cast(dict[str, int], summary["framework_hints"])["typescript_test_hint"] == 1
+    assert cast(dict[str, int], summary["framework_hints"])["unknown_test_hint"] == 1
+    assert cast(dict[str, int], summary["test_location_counts"])["dedicated_test_directory"] == 2
+    assert cast(dict[str, int], summary["test_location_counts"])["source_adjacent_test"] == 1
+    assert cast(dict[str, int], summary["test_location_counts"])["documentation_example"] == 1
+    assert cast(dict[str, int], summary["language_family_counts"])["python"] == 1
+    assert cast(dict[str, int], summary["language_family_counts"])["typescript"] == 1
+    assert cast(dict[str, int], summary["language_family_counts"])["markdown"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["hidden_or_sensitive"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["git_internal"] == 1
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["test_file_names_included"] is False
+    assert output_policy["raw_paths_included"] is False
+    assert output_policy["test_execution_used"] is False
+    assert output_policy["package_manager_execution_used"] is False
+    dumped = json_dump(summary)
+    assert "test_secret_feature" not in dumped
+    assert "feature.test" not in dumped
+    assert "example_test" not in dumped
+    assert "TOKEN" not in dumped
+    assert ".env" not in dumped
+    assert ".git" not in dumped
+
+
+def test_project_test_summary_honors_limits_and_include_categories(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("tests").mkdir()
+    root.joinpath("tests", "test_private.py").write_text("secret\n", encoding="utf-8")
+    root.joinpath("src").mkdir()
+    root.joinpath("src", "feature.test.ts").write_text("secret\n", encoding="utf-8")
+
+    summary = filesystem.project_test_summary(
+        {
+            "root": ".",
+            "max_depth": 1,
+            "limit": 1,
+            "include_categories": ["skipped_counts"],
+        }
+    )
+
+    assert "framework_hints" not in summary
+    assert "test_location_counts" not in summary
+    assert "language_family_counts" not in summary
+    assert "skipped_counts" in summary
+    assert summary["truncated"] is True
+    assert cast(dict[str, int], summary["skipped_counts"])["item_limit"] >= 1
+
+
+def test_project_test_summary_skips_symlink_and_hardlink_entries(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    tests = root / "tests"
+    tests.mkdir()
+    target = tests / "test_private.py"
+    target.write_text("private\n", encoding="utf-8")
+    try:
+        os.link(target, tests / "test_private_copy.py")
+    except OSError:
+        pytest.skip("hardlinks are not supported on this filesystem")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root.joinpath("outside-link").symlink_to(outside)
+
+    summary = filesystem.project_test_summary({"root": ".", "max_depth": 2, "limit": 20})
+
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hardlink"] == 2
+    assert skipped["symlink"] == 1
+    dumped = json_dump(summary)
+    assert "private" not in dumped
+    assert "outside" not in dumped
+
+
+def test_project_test_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "."},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "bad\x1fpath"},
+        {"max_depth": -1},
+        {"max_depth": 6},
+        {"limit": 0},
+        {"limit": 301},
+        {"include_categories": []},
+        {"include_categories": ["framework_hints", "framework_hints"]},
+        {"include_categories": ["raw_names"]},
+        {"glob": "**/*"},
+        {"regex": ".*"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_file_names": True},
+        {"include_test_names": True},
+        {"include_dependency_names": True},
+        {"include_package_names": True},
+        {"include_script_values": True},
+        {"include_coverage": True},
+        {"execute_tests": True},
+        {"registry_url": "https://registry.example.test"},
+        {"command": "pytest"},
+        {"argv": ["pytest"]},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_test_summary(cast(JsonObject, arguments))
+
+
 def test_project_dependency_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

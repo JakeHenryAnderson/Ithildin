@@ -134,7 +134,7 @@ Ithildin-mediated actions.
   `WORKBENCH_DEMO_SMOKE.md` are wired;
 - release-check includes the workbench readiness gate;
 - review-candidate includes the focused demo evidence closure packet;
-- tool count remains `15`;
+- tool count remains `16`;
 - no-new-powers and tool-surface guardrails still pass;
 - the review console still exposes Agent Runs, summaries, timeline evidence, and Export Run
   Evidence;

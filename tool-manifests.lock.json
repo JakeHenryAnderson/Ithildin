@@ -91,6 +91,12 @@
       "name": "project.structure.summary",
       "path": "tool-manifests/project-structure-summary.yaml",
       "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:ac3c7af2deab8076967a0149b420709bbab8ad37db2930e3ae99aaadeab58df0",
+      "name": "project.test.summary",
+      "path": "tool-manifests/project-test-summary.yaml",
+      "version": "0.1.0"
     }
   ]
 }

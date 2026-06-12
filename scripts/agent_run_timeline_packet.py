@@ -120,7 +120,7 @@ panel, tests, contracts, and command evidence.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- Tool count remains `15`.
+- tool count remains `16`.
 - Agent Run timelines are read-only observability. They do not add pause, abort, kill, repair,
   replay, sandbox orchestration, SIEM adapters, production identity, or new governed tool powers.
 

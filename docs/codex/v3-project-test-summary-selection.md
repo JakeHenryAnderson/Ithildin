@@ -9,7 +9,7 @@ It is selected for proposal review only; implementation remains blocked.
 Implementation remains blocked until a later implementation-planning packet and explicit
 implementation decision exist.
 
-Tool count remains `15`.
+tool count remains `16`.
 
 ## Rationale
 

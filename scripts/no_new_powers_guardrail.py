@@ -26,6 +26,7 @@ ALLOWED_NEW_READ_TOOLS = {
     "project.dependency.summary",
     "project.manifest.summary",
     "project.structure.summary",
+    "project.test.summary",
 }
 FORBIDDEN_TOOL_PREFIXES = (
     "shell.",
@@ -184,6 +185,10 @@ def _validate_schema_fields(name: str, manifest: dict[str, Any]) -> list[str]:
         failures = _validate_project_dependency_summary_schema(properties)
         if failures:
             return failures
+    if name == "project.test.summary":
+        failures = _validate_project_test_summary_schema(properties)
+        if failures:
+            return failures
     return []
 
 
@@ -253,6 +258,32 @@ def _validate_project_dependency_summary_schema(properties: dict[str, Any]) -> l
         failure.replace("project.manifest.summary", "project.dependency.summary")
         for failure in _validate_project_manifest_summary_schema(properties)
     ]
+
+
+def _validate_project_test_summary_schema(properties: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if sorted(properties) != ["include_categories", "limit", "max_depth", "root", "workspace_id"]:
+        failures.append("project.test.summary must stay workspace/root/categories/depth/limit-only")
+        return failures
+    max_depth = properties.get("max_depth")
+    if not isinstance(max_depth, dict) or max_depth.get("maximum") != 5:
+        failures.append("project.test.summary max_depth must stay bounded to 5")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("maximum") != 300:
+        failures.append("project.test.summary limit must stay bounded to 300")
+    categories = properties.get("include_categories")
+    if not isinstance(categories, dict):
+        return failures + ["project.test.summary include_categories schema is invalid"]
+    items = categories.get("items")
+    expected = [
+        "framework_hints",
+        "language_family_counts",
+        "skipped_counts",
+        "test_location_counts",
+    ]
+    if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected:
+        failures.append("project.test.summary include_categories allowlist drifted")
+    return failures
 
 
 def render_report(report: dict[str, Any]) -> str:

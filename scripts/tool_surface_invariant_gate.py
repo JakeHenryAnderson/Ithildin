@@ -26,6 +26,7 @@ EXPECTED_TOOL_NAMES = [
     "project.dependency.summary",
     "project.manifest.summary",
     "project.structure.summary",
+    "project.test.summary",
 ]
 EXPECTED_TOOL_RISKS = {
     "fs.list": "read",
@@ -43,6 +44,7 @@ EXPECTED_TOOL_RISKS = {
     "project.dependency.summary": "read",
     "project.manifest.summary": "read",
     "project.structure.summary": "read",
+    "project.test.summary": "read",
 }
 FORBIDDEN_MANIFEST_MARKERS = [
     "shell",
@@ -126,6 +128,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(_check_project_dependency_summary_schema(manifest))
         if manifest_name == "project.structure.summary":
             failures.extend(_check_project_structure_summary_schema(manifest))
+        if manifest_name == "project.test.summary":
+            failures.extend(_check_project_test_summary_schema(manifest))
     if marker_hits:
         failures.append("manifest text references deferred or broad tool-power markers")
 
@@ -404,6 +408,72 @@ def _check_project_structure_summary_schema(manifest: dict[str, Any]) -> list[st
     if drift:
         failures.append(
             "project.structure.summary exposes forbidden caller-controlled fields: "
+            + ", ".join(drift)
+        )
+    return failures
+
+
+def _check_project_test_summary_schema(manifest: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    schema = manifest.get("input_schema")
+    if not isinstance(schema, dict):
+        return ["project.test.summary input_schema is missing or invalid"]
+    if schema.get("additionalProperties") is not False:
+        failures.append("project.test.summary must keep additionalProperties: false")
+    properties = schema.get("properties")
+    expected_properties = ["include_categories", "limit", "max_depth", "root", "workspace_id"]
+    if not isinstance(properties, dict) or sorted(properties) != expected_properties:
+        failures.append("project.test.summary properties drifted")
+        return failures
+    max_depth = properties.get("max_depth")
+    if (
+        not isinstance(max_depth, dict)
+        or max_depth.get("minimum") != 0
+        or max_depth.get("maximum") != 5
+    ):
+        failures.append("project.test.summary max_depth bounds drifted")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("minimum") != 1 or limit.get("maximum") != 300:
+        failures.append("project.test.summary limit bounds drifted")
+    categories = properties.get("include_categories")
+    expected_categories = [
+        "framework_hints",
+        "language_family_counts",
+        "skipped_counts",
+        "test_location_counts",
+    ]
+    if not isinstance(categories, dict):
+        failures.append("project.test.summary include_categories schema is invalid")
+    else:
+        items = categories.get("items")
+        if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected_categories:
+            failures.append("project.test.summary include_categories allowlist drifted")
+        if categories.get("uniqueItems") is not True:
+            failures.append("project.test.summary include_categories must stay unique")
+    forbidden_inputs = {
+        "argv",
+        "args",
+        "command",
+        "glob",
+        "regex",
+        "recursive",
+        "registry_url",
+        "include_file_contents",
+        "include_file_names",
+        "include_paths",
+        "include_test_names",
+        "include_dependency_names",
+        "include_package_names",
+        "include_script_values",
+        "include_coverage",
+        "execute_tests",
+        "headers",
+        "body",
+    }
+    drift = sorted(set(properties) & forbidden_inputs)
+    if drift:
+        failures.append(
+            "project.test.summary exposes forbidden caller-controlled fields: "
             + ", ".join(drift)
         )
     return failures

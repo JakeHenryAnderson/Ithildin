@@ -249,6 +249,7 @@ def test_committed_read_tool_manifests_load() -> None:
         "project.dependency.summary",
         "project.manifest.summary",
         "project.structure.summary",
+        "project.test.summary",
     ]
 
 

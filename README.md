@@ -587,16 +587,17 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next-capability preflight is
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
-with `make next-capability-readiness`; it records that `project.structure.summary` has advanced
-through a bounded read-only implementation decision and source-review handoff while broader
-capability expansion remains blocked. Its internal local review is
-[docs/codex/v3-project-structure-summary-internal-review.md](docs/codex/v3-project-structure-summary-internal-review.md).
-The next selected design-only candidate is
+with `make next-capability-readiness`; it records that `project.test.summary` has advanced through
+a bounded read-only implementation decision and source-review handoff while broader capability
+expansion remains blocked. The test-summary proposal is
 [docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
-checked with `make project-test-summary-proposal-check`; generate its design-review packet with
-`make project-test-summary-design-review-packet`. Its implementation-planning packet is
+checked with `make project-test-summary-proposal-check`. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-test-summary.md](docs/codex/capability-implementation-plans/project-test-summary.md)
-and is checked with `make project-test-summary-implementation-plan-check`. The historical selected design-only candidate is
+and is checked with `make project-test-summary-implementation-plan-check`; the bounded
+implementation decision is
+[docs/codex/v3-project-test-summary-implementation.md](docs/codex/v3-project-test-summary-implementation.md)
+and is checked with `make project-test-summary-implementation-gate`; generate its focused
+source-review handoff with `make project-test-summary-source-review-bundle`. The historical selected design-only candidate is
 [docs/codex/capability-proposals/project-structure-summary.md](docs/codex/capability-proposals/project-structure-summary.md)
 and is checked with `make project-structure-summary-proposal-check`; its implementation-planning
 packet is
@@ -606,7 +607,7 @@ implementation decision is
 [docs/codex/v3-project-structure-summary-implementation.md](docs/codex/v3-project-structure-summary-implementation.md)
 and is checked with `make project-structure-summary-implementation-gate`; generate its focused
 source-review handoff with `make project-structure-summary-source-review-bundle`. The consolidated
-five-tool project intelligence slice is
+six-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is
 checked with `make read-only-project-intelligence`. The historical design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)

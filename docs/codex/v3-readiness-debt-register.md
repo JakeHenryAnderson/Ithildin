@@ -9,14 +9,14 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `15`.
-- `git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`, and
-  `project.dependency.summary`, and `project.structure.summary` are the approved bounded read-only
-  metadata runtime capability additions.
-- `make read-only-project-intelligence` records the consolidated five-tool project intelligence
+- Tool count is `16`.
+- `git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`,
+  `project.dependency.summary`, `project.structure.summary`, and `project.test.summary` are the
+  approved bounded read-only metadata runtime capability additions.
+- `make read-only-project-intelligence` records the consolidated six-tool project intelligence
   slice.
-- `make next-capability-readiness` records that `project.test.summary` is selected for design
-  review only and any implementation remains blocked until a fresh implementation plan,
+- `make next-capability-readiness` records that no next capability is currently selected and that
+  future implementation remains blocked until fresh selection, implementation planning,
   source-review handoff, and explicit decision are recorded.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
@@ -50,14 +50,14 @@ without explicit review.
 
 ## Current Recommendation
 
-The current five-tool read-only project intelligence slice is consolidated. The most recent
-candidate is `project.structure.summary`, recorded in
-[v3 project.structure.summary Selection](v3-project-structure-summary-selection.md) and
-[Capability Proposal: project.structure.summary](capability-proposals/project-structure-summary.md).
-Its implementation-planning packet is
-[Implementation-Planning Packet: project.structure.summary](capability-implementation-plans/project-structure-summary.md).
-It has advanced through bounded read-only implementation and source-review handoff. The next
-design-only candidate is `project.test.summary`; implementation remains blocked.
+The current six-tool read-only project intelligence slice is consolidated. The most recent
+candidate is `project.test.summary`, recorded in
+[v3 project.test.summary Selection](v3-project-test-summary-selection.md) and
+[Capability Proposal: project.test.summary](capability-proposals/project-test-summary.md). Its
+implementation-planning packet is
+[Implementation-Planning Packet: project.test.summary](capability-implementation-plans/project-test-summary.md).
+It has advanced through bounded read-only implementation and source-review handoff. No next
+design-only candidate is currently selected.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

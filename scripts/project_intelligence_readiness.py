@@ -27,6 +27,7 @@ APPROVED_TOOLS = [
     "project.manifest.summary",
     "project.dependency.summary",
     "project.structure.summary",
+    "project.test.summary",
 ]
 REQUIRED_DOC_PHRASES = [
     "Status: consolidated local-preview product slice",
@@ -36,9 +37,10 @@ REQUIRED_DOC_PHRASES = [
     "project.manifest.summary",
     "project.dependency.summary",
     "project.structure.summary",
-    "Tool count: `15`",
-    "Next candidate: `project.test.summary`",
-    "Next candidate status: design-only selected",
+    "project.test.summary",
+    "Tool count: `16`",
+    "Next candidate: not selected",
+    "Next candidate status: pending selection",
     "Broader capability expansion remains blocked",
     "New powerful tool classes remain blocked",
     "No file contents",

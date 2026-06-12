@@ -42,6 +42,8 @@ execution, no coverage collection, and no broad filesystem writes.
 The implementation specifically preserves no raw paths, no raw recursive listing, no raw file
 names, no test file names, and no test names.
 
+It also preserves no coverage data and no command output.
+
 ## Evidence Required For Runtime Commit
 
 - Manifest remains limited to `risk: read` and category `project`.

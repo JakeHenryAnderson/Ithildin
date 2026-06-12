@@ -120,7 +120,7 @@ def _render(
         f"- Commit: `{commit}`.",
         f"- Dirty at generation: `{str(dirty).lower()}`.",
         f"- Observed readiness commands executed: `{str(run_commands).lower()}`.",
-        "- Tool count remains `15`.",
+        "- tool count remains `16`.",
         "- The local workbench is operator-managed; Ithildin mediates only registered tool calls.",
         "",
         "## Preflight Snapshot",

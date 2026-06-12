@@ -53,7 +53,7 @@ REQUIRED_PHRASES = [
 SELECTION_PHRASES = [
     "Status: design-only candidate selection",
     "project.test.summary",
-    "Tool count remains `15`",
+    "tool count remains `16`",
     "implementation remains blocked",
     "make project-test-summary-proposal-check",
     "make project-test-summary-design-review-packet",
@@ -111,10 +111,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     tool_surface = tool_surface_invariant_gate.build_report(repo_root)
     failures.extend(f"tool-surface: {failure}" for failure in tool_surface["failures"])
-
-    manifest_path = repo_root / "tool-manifests/project-test-summary.yaml"
-    if manifest_path.exists():
-        failures.append("project.test.summary manifest must not exist during proposal-only stage")
 
     return _report(
         failures,

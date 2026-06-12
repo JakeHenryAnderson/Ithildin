@@ -151,7 +151,7 @@ def _render_transcript(results: list[dict[str, object]], *, run_commands: bool) 
         "",
         f"- generated_at: `{datetime.now(UTC).isoformat()}`",
         f"- command_execution_enabled: `{str(run_commands).lower()}`",
-        "- tool_count_expected: `15`",
+        "- tool_count_expected: `16`",
         "- new_power_classes_allowed: `false`",
         "",
         "## Steps",

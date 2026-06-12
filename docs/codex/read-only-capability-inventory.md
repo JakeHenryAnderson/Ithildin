@@ -4,7 +4,7 @@ Status: approved read-only metadata inventory. This document records the bounded
 capabilities that have moved beyond design-only planning through explicit implementation gates and
 source-review handoff artifacts.
 
-The inventory has tool count `15` and includes only local read-only developer metadata additions.
+The inventory has tool count `16` and includes only local read-only developer metadata additions.
 It authorizes no shell, no broad filesystem writes, no arbitrary Git command execution, no remote
 fetch, no browser automation, no Docker/Kubernetes tools, no production identity, no runtime
 Postgres, no hosted telemetry, no remote MCP, no plugin SDK work, no arbitrary HTTP, and no future
@@ -21,6 +21,7 @@ source-review handoff, explicit implementation decision, and release gates are r
 | `project.manifest.summary` | approved bounded read-only project manifest metadata | `make project-manifest-summary-implementation-gate` | `make project-manifest-summary-source-review-bundle` |
 | `project.dependency.summary` | approved bounded read-only direct dependency count metadata | `make project-dependency-summary-implementation-gate` | `make project-dependency-summary-source-review-bundle` |
 | `project.structure.summary` | approved bounded read-only project structure count metadata | `make project-structure-summary-implementation-gate` | `make project-structure-summary-source-review-bundle` |
+| `project.test.summary` | approved bounded read-only project test-layout count metadata | `make project-test-summary-implementation-gate` | `make project-test-summary-source-review-bundle` |
 
 ## Shared Boundary
 

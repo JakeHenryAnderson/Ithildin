@@ -225,7 +225,7 @@ work must stop for status, reassessment, or external consultation.
 
    Expected outcome: validates the approved bounded read-only `git.show.ref_summary`
    implementation boundary, including no raw ref names, no stable ref-name hashes, no remote refs,
-   no shell, no raw diffs, no file contents, and tool count `15`.
+   no shell, no raw diffs, no file contents, and tool count `16`.
 
 27. `make git-ref-summary-source-review-bundle`
 

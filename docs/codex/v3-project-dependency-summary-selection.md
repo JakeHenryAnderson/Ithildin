@@ -16,7 +16,7 @@ package-manager execution, or network-backed registry analysis.
 
 ## Boundary
 
-- Tool count remains `15`.
+- tool count remains `16`.
 - Implementation remains blocked.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.

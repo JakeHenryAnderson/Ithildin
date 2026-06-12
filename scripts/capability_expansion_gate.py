@@ -30,6 +30,7 @@ EXPECTED_TOOL_NAMES = [
     "project.dependency.summary",
     "project.manifest.summary",
     "project.structure.summary",
+    "project.test.summary",
 ]
 EXPECTED_DEFERRED_BOUNDARIES = [
     "shell execution",

@@ -979,6 +979,7 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
         "project.dependency.summary",
         "project.manifest.summary",
         "project.structure.summary",
+        "project.test.summary",
     }:
         output_policy = content.get("output_policy")
         for key in ("manifest_count",):
@@ -1002,6 +1003,30 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                     if isinstance(value, int) and not isinstance(value, bool):
                         metadata[key] = value
             for section_key in ("directory_categories", "file_kinds", "skipped_counts"):
+                section = content.get(section_key)
+                if isinstance(section, dict):
+                    metadata[f"{section_key}_keys"] = cast(
+                        JsonValue,
+                        sorted(key for key in section if isinstance(key, str)),
+                    )
+        if tool_name == "project.test.summary":
+            summary = content.get("summary")
+            if isinstance(summary, dict):
+                for key in (
+                    "visible_test_directory_count",
+                    "visible_test_file_count",
+                    "max_observed_depth",
+                    "inspected_entry_count",
+                ):
+                    value = summary.get(key)
+                    if isinstance(value, int) and not isinstance(value, bool):
+                        metadata[key] = value
+            for section_key in (
+                "framework_hints",
+                "test_location_counts",
+                "language_family_counts",
+                "skipped_counts",
+            ):
                 section = content.get(section_key)
                 if isinstance(section, dict):
                     metadata[f"{section_key}_keys"] = cast(
@@ -1032,17 +1057,24 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
             for key in (
                 "file_contents_included",
                 "raw_recursive_listing_included",
+                "raw_paths_included",
                 "raw_file_names_included",
                 "raw_sensitive_paths_included",
+                "test_file_names_included",
+                "test_case_names_included",
                 "stable_path_ids_included",
                 "dependency_names_included",
                 "dependency_versions_included",
                 "package_names_included",
                 "package_script_names_included",
                 "package_script_values_included",
+                "coverage_data_included",
+                "test_pass_fail_claims_included",
+                "command_output_included",
                 "lockfile_contents_included",
                 "registry_or_network_access_used",
                 "package_manager_execution_used",
+                "test_execution_used",
                 "recursive_discovery_used",
                 "transitive_dependencies_resolved",
                 "license_vulnerability_or_compliance_claims_included",
