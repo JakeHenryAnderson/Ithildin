@@ -280,6 +280,8 @@ checked with `make control-mapping-readiness`.
   `project.structure.summary` proposal without authorizing runtime work.
 - `make project-structure-summary-implementation-plan-check` - validate the implementation-planning
   packet for `project.structure.summary` without authorizing runtime work.
+- `make project-structure-summary-implementation-gate` - validate the bounded future
+  implementation decision for `project.structure.summary` without adding runtime work.
 - `make project-structure-summary-design-review-packet` - generate the design-review packet for
   the selected `project.structure.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
@@ -591,7 +593,10 @@ current selected design-only candidate is
 and is checked with `make project-structure-summary-proposal-check`; its implementation-planning
 packet is
 [docs/codex/capability-implementation-plans/project-structure-summary.md](docs/codex/capability-implementation-plans/project-structure-summary.md)
-and is checked with `make project-structure-summary-implementation-plan-check`; generate its focused
+and is checked with `make project-structure-summary-implementation-plan-check`; the bounded future
+implementation decision is
+[docs/codex/v3-project-structure-summary-implementation.md](docs/codex/v3-project-structure-summary-implementation.md)
+and is checked with `make project-structure-summary-implementation-gate`; generate its focused
 design-review handoff with `make project-structure-summary-design-review-packet`. The consolidated
 four-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is

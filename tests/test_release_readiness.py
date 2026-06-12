@@ -90,6 +90,7 @@ from scripts import (
     project_manifest_summary_proposal_check,
     project_manifest_summary_source_review_bundle,
     project_structure_summary_design_review_packet,
+    project_structure_summary_implementation_gate,
     project_structure_summary_implementation_plan_check,
     project_structure_summary_proposal_check,
     read_only_capability_inventory_gate,
@@ -1041,6 +1042,66 @@ def test_project_structure_summary_implementation_plan_check_is_wired() -> None:
     assert "docs/codex/capability-implementation-plans/project-structure-summary.md" in docs_site
 
 
+def test_project_structure_summary_implementation_gate_is_wired() -> None:
+    report = project_structure_summary_implementation_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/v3-project-structure-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "project.structure.summary"
+    assert report["implementation_status"] == "approved_limited_read_only_future_implementation"
+    assert report["tool_count"] == 14
+    assert report["new_power_classes_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implemented"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    for phrase in [
+        "approved_limited_read_only future implementation",
+        "Runtime implementation is not present in this sprint",
+        "does not add a tool manifest",
+        "does not add an executor",
+        "does not add runtime behavior",
+        "later implementation sprint may add exactly one bounded read-only tool manifest",
+        "risk `read`",
+        "category `project`",
+        "workspace_id",
+        "max_depth",
+        "include_categories",
+        "structural counts and allowlisted labels only",
+        "no file contents",
+        "no raw recursive listing",
+        "no raw sensitive paths",
+        "no raw file names",
+        "no dependency names",
+        "no package names",
+        "no package script names or values",
+        "no code search",
+        "no shell",
+        "no package-manager execution",
+        "no registry or network access",
+        "no broad filesystem writes",
+        "project_structure",
+        "make project-structure-summary-implementation-gate",
+    ]:
+        assert phrase in doc
+    assert "make project-structure-summary-implementation-gate" in readme
+    assert "project-structure-summary-implementation-gate:" in makefile
+    assert "project-structure-summary-implementation-gate" in release_check_body
+    assert (
+        "project-structure-summary-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "v3 project.structure.summary Implementation Decision" in index
+    assert "docs/codex/v3-project-structure-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-structure-summary-implementation.md" in docs_site
+
+
 def test_project_structure_summary_design_review_packet_builds_from_fixture(
     tmp_path: Path,
 ) -> None:
@@ -1060,9 +1121,10 @@ def test_project_structure_summary_design_review_packet_builds_from_fixture(
         "03_PROJECT_STRUCTURE_SUMMARY_SELECTION.md",
         "04_PROJECT_STRUCTURE_SUMMARY_PROPOSAL.md",
         "05_PROJECT_STRUCTURE_SUMMARY_IMPLEMENTATION_PLAN.md",
-        "06_READ_ONLY_LOCAL_METADATA_CONTRACT.md",
-        "07_GATE_AND_RISK_EVIDENCE.md",
-        "08_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "06_PROJECT_STRUCTURE_SUMMARY_IMPLEMENTATION_DECISION.md",
+        "07_READ_ONLY_LOCAL_METADATA_CONTRACT.md",
+        "08_GATE_AND_RISK_EVIDENCE.md",
+        "09_REVIEW_INTAKE_AND_NEXT_STEPS.md",
         "project-structure-summary-design-review-artifact-hashes.json",
     }
     assert {path.name for path in output_dir.iterdir()} == expected
@@ -2083,6 +2145,7 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
         "project-dependency-summary-design-review-packet",
         "project-structure-summary-proposal-check",
         "project-structure-summary-implementation-plan-check",
+        "project-structure-summary-implementation-gate",
         "project-structure-summary-design-review-packet",
         "reviewer-findings-check",
         "v06-review-dispatch-packets",
@@ -2114,11 +2177,12 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "38. `make project-dependency-summary-design-review-packet`" in reproduction_map
     assert "39. `make project-structure-summary-proposal-check`" in reproduction_map
     assert "40. `make project-structure-summary-implementation-plan-check`" in reproduction_map
-    assert "41. `make project-structure-summary-design-review-packet`" in reproduction_map
-    assert "42. `make review-packet-bundle`" in reproduction_map
-    assert "43. `make review-packet-consolidated`" in reproduction_map
-    assert "44. `make packet-redaction-scan`" in reproduction_map
-    assert "45. `make docs-site`" in reproduction_map
+    assert "41. `make project-structure-summary-implementation-gate`" in reproduction_map
+    assert "42. `make project-structure-summary-design-review-packet`" in reproduction_map
+    assert "43. `make review-packet-bundle`" in reproduction_map
+    assert "44. `make review-packet-consolidated`" in reproduction_map
+    assert "45. `make packet-redaction-scan`" in reproduction_map
+    assert "46. `make docs-site`" in reproduction_map
     assert "22. `make review-packet-consolidated`" not in reproduction_map
 
 
