@@ -326,7 +326,7 @@ def test_v08_capability_design_gate_is_wired() -> None:
     assert report["capability_design_only"] == "conditional_go"
     assert report["capability_implementation"] == "no_go"
     assert report["new_governed_tool_powers"] == "no_go"
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     assert report["evidence"]["superseded_by_v09_implementation"] is True
     assert report["evidence"]["v08_baseline_commit"] == "f993cec"
     assert report["evidence"]["accepted_risks_constraining_design"] == 1
@@ -358,7 +358,7 @@ def test_v09_design_only_charter_and_gate_are_wired() -> None:
     assert report["capability_implementation"] == "no_go"
     assert report["new_governed_tool_powers"] == "no_go"
     assert report["evidence"]["v09_baseline_commit"] == "de32893"
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     assert report["evidence"]["superseded_by_v09_implementation"] is True
     for required in [
         "v0.9 starts design-only capability planning",
@@ -394,7 +394,7 @@ def test_git_commit_metadata_proposal_check_is_wired() -> None:
     assert report["proposal"] == "git.show.commit_metadata"
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for required in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -446,7 +446,7 @@ def test_git_ref_summary_proposal_check_is_wired() -> None:
     assert report["proposal"] == "git.show.ref_summary"
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for required in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -501,7 +501,7 @@ def test_git_ref_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -565,7 +565,7 @@ def test_read_only_metadata_capability_check_is_wired() -> None:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert "make read-only-metadata-capability-check" in readme
     assert "read-only-metadata-capability-check:" in makefile
@@ -607,7 +607,7 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["capability_count"] == 7
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert {capability["tool_name"] for capability in report["capabilities"]} == {
         "git.show.commit_metadata",
@@ -660,7 +660,7 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
     assert report["candidate"] == "project.dependency.summary"
     assert report["candidate_status"] == "design_only_selected"
     assert report["implementation_allowed"] is False
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["approved_read_only_capabilities"] == 7
     for phrase in [
         "Status: design-only candidate selection",
@@ -701,7 +701,7 @@ def test_next_capability_readiness_is_wired() -> None:
     doc = Path("docs/codex/next-capability-readiness.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["current_approved_read_only_capabilities"] == 7
     assert report["next_candidate"] is None
     assert report["next_candidate_status"] == "pending_selection"
@@ -740,8 +740,8 @@ def test_read_only_project_intelligence_is_wired() -> None:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
-    assert report["approved_tool_count"] == 7
+    assert report["tool_count"] == 18
+    assert report["approved_tool_count"] == 8
     assert report["approved_tools"] == [
         "git.show.commit_metadata",
         "git.show.ref_summary",
@@ -765,7 +765,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.structure.summary",
         "project.test.summary",
         "project.docs.summary",
-        "Tool count: `17`",
+        "Tool count: `18`",
         "Next candidate: not selected",
         "Next candidate status: pending selection",
         "Broader capability expansion remains blocked",
@@ -806,7 +806,7 @@ def test_project_dependency_summary_proposal_check_is_wired() -> None:
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -865,7 +865,7 @@ def test_project_dependency_summary_implementation_plan_check_is_wired() -> None
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -936,7 +936,7 @@ def test_project_dependency_summary_design_review_packet_builds_from_fixture(
             "project-dependency-summary-design-review-artifact-hashes.json"
         ).read_text(encoding="utf-8")
     )
-    assert "Tool count: `17`" in index
+    assert "Tool count: `18`" in index
     assert "EXT-DESIGN-PDS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -963,7 +963,7 @@ def test_project_structure_summary_proposal_check_is_wired() -> None:
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -1024,7 +1024,7 @@ def test_project_structure_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -1082,7 +1082,7 @@ def test_project_structure_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "project.structure.summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["runtime_implemented"] is True
@@ -1204,7 +1204,7 @@ def test_project_structure_summary_design_review_packet_builds_from_fixture(
             "project-structure-summary-design-review-artifact-hashes.json"
         ).read_text(encoding="utf-8")
     )
-    assert "Tool count: `17`" in index
+    assert "Tool count: `18`" in index
     assert "EXT-DESIGN-PSS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1231,7 +1231,7 @@ def test_project_test_summary_proposal_check_is_wired() -> None:
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: design-only proposal",
         "count-only test metadata and allowlisted labels only",
@@ -1297,7 +1297,7 @@ def test_project_test_summary_design_review_packet_builds_from_fixture(
             encoding="utf-8"
         )
     )
-    assert "Tool count: `17`" in index
+    assert "Tool count: `18`" in index
     assert "EXT-DESIGN-PTS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1324,7 +1324,7 @@ def test_project_docs_summary_proposal_check_is_wired() -> None:
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: design-only proposal",
         "count-only documentation metadata and allowlisted labels only",
@@ -1392,7 +1392,7 @@ def test_project_docs_summary_design_review_packet_builds_from_fixture(
             encoding="utf-8"
         )
     )
-    assert "Tool count: `17`" in index
+    assert "Tool count: `18`" in index
     assert "EXT-DESIGN-PDS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1416,7 +1416,7 @@ def test_project_docs_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: implementation-planning only",
         "Future Manifest Sketch",
@@ -1467,7 +1467,7 @@ def test_project_docs_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "project.docs.summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is True
     assert report["runtime_implemented"] is True
@@ -1575,7 +1575,7 @@ def test_project_language_summary_proposal_check_is_wired() -> None:
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: design-only proposal",
         "count-only language metadata and allowlisted labels only",
@@ -1622,7 +1622,7 @@ def test_project_language_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: implementation-planning only",
         "Future Manifest Sketch",
@@ -1673,12 +1673,12 @@ def test_project_language_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "project.language.summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
-    assert report["runtime_changes_allowed"] is False
-    assert report["runtime_implemented"] is False
-    assert report["future_runtime_implementation_allowed"] is True
-    assert not Path("tool-manifests/project-language-summary.yaml").exists()
+    assert report["runtime_changes_allowed"] is True
+    assert report["runtime_implemented"] is True
+    assert report["future_runtime_implementation_allowed"] is False
+    assert Path("tool-manifests/project-language-summary.yaml").exists()
     for phrase in [
         "approved_limited_read_only runtime implementation",
         "project.language.summary",
@@ -1748,7 +1748,7 @@ def test_project_language_summary_design_review_packet_builds_from_fixture(
             "project-language-summary-design-review-artifact-hashes.json"
         ).read_text(encoding="utf-8")
     )
-    assert "Tool count: `17`" in index
+    assert "Tool count: `18`" in index
     assert "EXT-DESIGN-PLS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1772,7 +1772,7 @@ def test_project_test_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: implementation-planning only",
         "Future Manifest Sketch",
@@ -1816,7 +1816,7 @@ def test_project_test_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "project.test.summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["runtime_implemented"] is True
@@ -1912,7 +1912,7 @@ def test_project_dependency_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "project.dependency.summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["runtime_implemented"] is True
@@ -2006,7 +2006,7 @@ def test_project_manifest_summary_proposal_check_is_wired() -> None:
     assert report["scope"] == "design_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for phrase in [
         "Status: design-only proposal",
         "does not add a tool manifest",
@@ -2064,7 +2064,7 @@ def test_project_manifest_summary_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -2138,7 +2138,7 @@ def test_project_manifest_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "project.manifest.summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["runtime_implemented"] is True
@@ -2297,7 +2297,7 @@ def test_git_commit_metadata_implementation_plan_check_is_wired() -> None:
     assert report["scope"] == "implementation_planning_only"
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
-    assert report["evidence"]["tool_count"] == 17
+    assert report["evidence"]["tool_count"] == 18
     for required in [
         "Status: implementation-planning only",
         "does not add a tool manifest",
@@ -2355,7 +2355,7 @@ def test_git_commit_metadata_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "git.show.commit_metadata"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     for required in [
         "approved v0.9 implementation",
@@ -2500,7 +2500,7 @@ def test_git_ref_summary_implementation_gate_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_name"] == "git.show.ref_summary"
     assert report["implementation_status"] == "approved_limited_read_only"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     for required in [
         "approved v0.9 implementation",
@@ -2691,7 +2691,7 @@ def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
         "Commit Evidence Reconciliation",
         "reviewed commit is what GPT 5.5 Pro / human reviewers inspect",
         "baseline commit is only the pre-v0.9 comparison point",
-        "Tool count: `17`",
+        "Tool count: `18`",
         "does not add or approve a tool manifest",
         "EXT-DESIGN-GIT-###",
         "implementation-planning sprint may be considered",
@@ -3818,14 +3818,14 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     runbook = Path("docs/codex/live-demo-runbook.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert report["docker_socket_mounted"] is False
     assert report["loopback_ports_valid"] is True
     assert status_report["valid"] is True
     assert status_report["endpoints"]["api_healthz"]["safe_error"] == "probe_skipped"
     assert summary_report["valid"] is True
-    assert summary_report["preflight"]["tool_count"] == 17
+    assert summary_report["preflight"]["tool_count"] == 18
     assert generated == expected
     assert {entry["path"] for entry in hashes} == expected - {"live-demo-artifact-hashes.json"}
     assert "tool count remains `17`" in index
@@ -4088,7 +4088,7 @@ def test_capability_expansion_gate_reports_blocked_without_tool_drift() -> None:
     assert report["hard_failures"] == []
     assert report["capability_expansion_allowed"] is False
     assert report["decision"] == "blocked"
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert "external_pending" in " ".join(report["blockers"])
     assert "make capability-expansion-gate" in readme
     assert "blocked result is healthy" in doc
@@ -4109,8 +4109,8 @@ def test_tool_surface_invariant_gate_is_wired_and_valid() -> None:
 
     assert report["valid"] is True
     assert report["failures"] == []
-    assert report["tool_count"] == 17
-    assert report["manifest_file_count"] == 17
+    assert report["tool_count"] == 18
+    assert report["manifest_file_count"] == 18
     assert report["tool_names"] == tool_surface_invariant_gate.EXPECTED_TOOL_NAMES
     assert report["forbidden_marker_hits"] == []
     assert any(
@@ -4594,7 +4594,7 @@ def test_capability_decision_report_is_wired_and_blocked() -> None:
     assert report["valid"] is True
     assert report["decision"] == "blocked"
     assert report["capability_expansion_allowed"] is False
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["completed_range"] == "152-180"
     assert report["planned_range"] == "none"
     assert report["open_accepted_risks"] == 0
@@ -4628,7 +4628,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
 
     assert report["valid"] is True
     assert report["failures"] == []
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["new_power_classes_allowed"] is False
     assert report["deferred_boundaries_unchanged"] is True
     assert report["tool_names"] == [
@@ -4642,14 +4642,15 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
         "git.log",
         "git.show.commit_metadata",
         "git.show.ref_summary",
-            "git.status",
-            "http.fetch",
-            "project.dependency.summary",
-            "project.docs.summary",
-            "project.manifest.summary",
-            "project.structure.summary",
-            "project.test.summary",
-        ]
+        "git.status",
+        "http.fetch",
+        "project.dependency.summary",
+        "project.docs.summary",
+        "project.language.summary",
+        "project.manifest.summary",
+        "project.structure.summary",
+        "project.test.summary",
+    ]
     assert "does not approve new powers" in doc
     assert "make no-new-powers-guardrail" in readme
     assert "170 - No-new-powers release guardrail v2 | Done" in backlog
@@ -8545,7 +8546,7 @@ def test_agent_run_evidence_contract_check_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert "make agent-run-evidence-contract-check" in readme
@@ -8584,7 +8585,7 @@ def test_agent_run_evidence_export_check_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["run_export_runtime_behavior_allowed"] is False
@@ -8627,7 +8628,7 @@ def test_agent_run_evidence_export_plan_check_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["implementation_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
@@ -8680,7 +8681,7 @@ def test_agent_run_evidence_export_implementation_gate_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_implemented"] is True
     assert report["new_power_classes_allowed"] is False
     assert "make agent-run-evidence-export-implementation-gate" in readme
@@ -8870,7 +8871,7 @@ def test_agent_run_evidence_readiness_gate_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["agent_run_evidence_contract_valid"] is True
     assert report["agent_run_evidence_export_valid"] is True
     assert report["agent_run_evidence_export_plan_valid"] is True
@@ -8932,7 +8933,7 @@ def test_agent_run_operations_readiness_gate_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["run_control_behavior_allowed"] is False
@@ -9029,7 +9030,7 @@ def test_agent_run_timeline_readiness_gate_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["agent_run_evidence_contract_valid"] is True
     assert report["operator_action_states_valid"] is True
     assert report["dashboard_evidence_checklist_valid"] is True
@@ -9085,7 +9086,7 @@ def test_operator_action_states_check_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["run_control_behavior_allowed"] is False
@@ -9132,7 +9133,7 @@ def test_dashboard_evidence_checklist_check_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert "make dashboard-evidence-checklist-check" in readme
@@ -9206,7 +9207,7 @@ def test_siem_evidence_design_check_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert "make siem-evidence-design-check" in readme
@@ -9252,7 +9253,7 @@ def test_data_classification_design_check_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert "make data-classification-design-check" in readme
@@ -9291,7 +9292,7 @@ def test_control_mapping_design_check_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert "make control-mapping-design-check" in readme
@@ -9328,7 +9329,7 @@ def test_incident_reconstruction_check_is_wired() -> None:
     )
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert "make incident-reconstruction-check" in readme
@@ -9653,11 +9654,11 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
 
     assert report["valid"] is True
     assert demo_flow_report["valid"] is True
-    assert demo_flow_report["tool_count"] == 17
+    assert demo_flow_report["tool_count"] == 18
     assert demo_flow_report["runtime_changes_allowed"] is False
     assert demo_flow_report["new_power_classes_allowed"] is False
     assert demo_flow_report["run_control_behavior_allowed"] is False
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["run_control_behavior_allowed"] is False
@@ -9877,7 +9878,7 @@ def test_guided_demo_wrapper_and_readiness_are_wired(tmp_path: Path) -> None:
     content = transcript.read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["run_control_behavior_allowed"] is False
@@ -9983,7 +9984,7 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
     assert result_report["valid"] is True
     assert result_report["status"] == "not_run"
     assert readiness["valid"] is True
-    assert readiness["tool_count"] == 17
+    assert readiness["tool_count"] == 18
     assert readiness["runtime_changes_allowed"] is False
     assert readiness["new_power_classes_allowed"] is False
     assert readiness["run_control_behavior_allowed"] is False
@@ -10053,7 +10054,7 @@ def test_control_mapping_readiness_gate_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["observability_readiness_valid"] is True
     assert report["data_classification_design_valid"] is True
     assert report["control_mapping_design_valid"] is True
@@ -10097,7 +10098,7 @@ def test_operator_sandbox_demo_readiness_gate_is_wired() -> None:
     backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["runtime_changes_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["sandbox_orchestration_allowed"] is False
@@ -10139,7 +10140,7 @@ def test_observability_readiness_gate_is_wired() -> None:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True
-    assert report["tool_count"] == 17
+    assert report["tool_count"] == 18
     assert report["next_capability_candidate"] is None
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False

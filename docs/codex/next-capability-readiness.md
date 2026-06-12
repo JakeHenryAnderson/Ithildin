@@ -6,7 +6,7 @@ tool manifests, policy rules, MCP exposure, API behavior, UI behavior, or new go
 This checkpoint exists because the first bounded read-only metadata lanes are now implemented:
 `git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`,
 `project.dependency.summary`, `project.structure.summary`, `project.test.summary`, and
-`project.docs.summary`. The
+`project.docs.summary`, and `project.language.summary`. The
 historical candidate records still show how each bounded metadata tool advanced through proposal,
 implementation planning, implementation decision, source-review handoff, and local lane closure.
 
@@ -14,8 +14,9 @@ implementation planning, implementation decision, source-review handoff, and loc
 
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
   `git.show.ref_summary`, `project.manifest.summary`, `project.dependency.summary`, and
-  `project.structure.summary`, `project.test.summary`, and `project.docs.summary`.
-- Current tool count: `17`.
+  `project.structure.summary`, `project.test.summary`, `project.docs.summary`, and
+  `project.language.summary`.
+- Current tool count: `18`.
 - Next candidate: not selected.
 - Next candidate status: pending selection.
 - Next candidate implementation: blocked.
@@ -53,7 +54,7 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 ## Gate
 
 The most recent capability,
-[project.docs.summary](capability-proposals/project-docs-summary.md), has advanced through proposal,
+[project.language.summary](capability-proposals/project-language-summary.md), has advanced through proposal,
 implementation planning, implementation decision, runtime implementation, and source-review handoff
 as one bounded read-only metadata tool. No next design-only candidate is currently selected.
 
@@ -61,7 +62,7 @@ Run:
 
 ```bash
 make next-capability-readiness
-make project-docs-summary-source-review-bundle
+make project-language-summary-source-review-bundle
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata

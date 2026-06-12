@@ -87,6 +87,12 @@
       "version": "0.1.0"
     },
     {
+      "manifest_hash": "sha256:a06ac91f923742dce3b87b5a1b242ffb57722ac4b48ca0403227c470db220357",
+      "name": "project.language.summary",
+      "path": "tool-manifests/project-language-summary.yaml",
+      "version": "0.1.0"
+    },
+    {
       "manifest_hash": "sha256:4d5a6bf42ecd53fadee1544707b45d2a44291c79d980612215a77b73d5190bc1",
       "name": "project.manifest.summary",
       "path": "tool-manifests/project-manifest-summary.yaml",

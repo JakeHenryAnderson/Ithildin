@@ -132,7 +132,7 @@ or reviewer should inspect after the optional mediated flow.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Endpoint probes executed: `{str(context["probe_endpoints"]).lower()}`.
-- tool count remains `17`.
+- tool count remains `18`.
 - Demo flow result status: `{result_check["status"]}`.
 - Demo flow result present: `{str(result_check["result_present"]).lower()}`.
 

@@ -28,6 +28,7 @@ ALLOWED_NEW_READ_TOOLS = {
     "project.structure.summary",
     "project.test.summary",
     "project.docs.summary",
+    "project.language.summary",
 }
 FORBIDDEN_TOOL_PREFIXES = (
     "shell.",
@@ -194,6 +195,10 @@ def _validate_schema_fields(name: str, manifest: dict[str, Any]) -> list[str]:
         failures = _validate_project_docs_summary_schema(properties)
         if failures:
             return failures
+    if name == "project.language.summary":
+        failures = _validate_project_language_summary_schema(properties)
+        if failures:
+            return failures
     return []
 
 
@@ -314,6 +319,34 @@ def _validate_project_docs_summary_schema(properties: dict[str, Any]) -> list[st
     ]
     if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected:
         failures.append("project.docs.summary include_categories allowlist drifted")
+    return failures
+
+
+def _validate_project_language_summary_schema(properties: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if sorted(properties) != ["include_categories", "limit", "max_depth", "root", "workspace_id"]:
+        failures.append(
+            "project.language.summary must stay workspace/root/categories/depth/limit-only"
+        )
+        return failures
+    max_depth = properties.get("max_depth")
+    if not isinstance(max_depth, dict) or max_depth.get("maximum") != 5:
+        failures.append("project.language.summary max_depth must stay bounded to 5")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("maximum") != 300:
+        failures.append("project.language.summary limit must stay bounded to 300")
+    categories = properties.get("include_categories")
+    if not isinstance(categories, dict):
+        return failures + ["project.language.summary include_categories schema is invalid"]
+    items = categories.get("items")
+    expected = [
+        "extension_family_counts",
+        "language_family_counts",
+        "skipped_counts",
+        "source_location_counts",
+    ]
+    if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected:
+        failures.append("project.language.summary include_categories allowlist drifted")
     return failures
 
 
