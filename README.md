@@ -589,7 +589,12 @@ checked with `make read-only-metadata-capability-check` and
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
 with `make next-capability-readiness`; it records that `project.structure.summary` has advanced
 through a bounded read-only implementation decision and source-review handoff while broader
-capability expansion remains blocked. The historical selected design-only candidate is
+capability expansion remains blocked. Its internal local review is
+[docs/codex/v3-project-structure-summary-internal-review.md](docs/codex/v3-project-structure-summary-internal-review.md).
+The next selected design-only candidate is
+[docs/codex/capability-proposals/project-test-summary.md](docs/codex/capability-proposals/project-test-summary.md),
+checked with `make project-test-summary-proposal-check`; generate its design-review packet with
+`make project-test-summary-design-review-packet`. The historical selected design-only candidate is
 [docs/codex/capability-proposals/project-structure-summary.md](docs/codex/capability-proposals/project-structure-summary.md)
 and is checked with `make project-structure-summary-proposal-check`; its implementation-planning
 packet is

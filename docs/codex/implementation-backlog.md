@@ -332,6 +332,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 312 - project.structure.summary implementation plan | Done | [capability-implementation-plans/project-structure-summary.md](capability-implementation-plans/project-structure-summary.md), `make project-structure-summary-implementation-plan-check`; implementation-planning only, runtime blocked. |
 | 313 - project.structure.summary implementation decision | Done | [v3-project-structure-summary-implementation.md](v3-project-structure-summary-implementation.md), `make project-structure-summary-implementation-gate`; records the bounded read-only runtime implementation boundary. |
 | 314 - project.structure.summary implementation | Done | `project.structure.summary` is implemented as a bounded read-only local project structure count tool with no raw recursive listing, raw file names, file contents, package-manager execution, registry/network access, or broad filesystem powers; [v3-project-structure-summary-source-review.md](v3-project-structure-summary-source-review.md), `make project-structure-summary-source-review-bundle` prepares the focused handoff. |
+| 315 - project.structure.summary internal review | Done | [v3-project-structure-summary-internal-review.md](v3-project-structure-summary-internal-review.md); records no internal implementation findings and leaves external/source disposition pending. |
+| 316 - project.test.summary design selection | Done | [v3-project-test-summary-selection.md](v3-project-test-summary-selection.md), [capability-proposals/project-test-summary.md](capability-proposals/project-test-summary.md), `make project-test-summary-proposal-check`; design-only, implementation blocked. |
 
 ## Future Candidate Track
 

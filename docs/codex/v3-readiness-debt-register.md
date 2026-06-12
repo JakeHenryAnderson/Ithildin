@@ -15,9 +15,9 @@ without explicit review.
   metadata runtime capability additions.
 - `make read-only-project-intelligence` records the consolidated five-tool project intelligence
   slice.
-- `make next-capability-readiness` records that the next candidate is not selected and any further
-  implementation remains blocked until a fresh proposal, implementation plan, source-review
-  handoff, and explicit decision are recorded.
+- `make next-capability-readiness` records that `project.test.summary` is selected for design
+  review only and any implementation remains blocked until a fresh implementation plan,
+  source-review handoff, and explicit decision are recorded.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
 
@@ -57,7 +57,7 @@ candidate is `project.structure.summary`, recorded in
 Its implementation-planning packet is
 [Implementation-Planning Packet: project.structure.summary](capability-implementation-plans/project-structure-summary.md).
 It has advanced through bounded read-only implementation and source-review handoff. The next
-candidate is not selected yet.
+design-only candidate is `project.test.summary`; implementation remains blocked.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

@@ -42,8 +42,8 @@ Every tool in this family must preserve:
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
   `git.show.ref_summary`, `project.manifest.summary`, `project.dependency.summary`, and
   `project.structure.summary`.
-- Next candidate: not selected.
-- Next candidate status: pending selection.
+- Next candidate: `project.test.summary`.
+- Next candidate status: design-only selected.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -58,4 +58,6 @@ The most recent candidate,
 through implementation as a bounded read-only metadata tool. Future read-only metadata tools must
 start again from a design-only candidate, proposal, implementation plan, explicit implementation
 decision, source-review handoff, policy fixtures, negative transcripts, no-new-powers evidence, and
-release gates.
+release gates. The next design-only candidate is
+[project.test.summary](capability-proposals/project-test-summary.md); implementation remains
+blocked.

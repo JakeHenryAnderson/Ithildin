@@ -15,8 +15,8 @@ implementation decision, source-review handoff, and local lane closure.
   `git.show.ref_summary`, `project.manifest.summary`, `project.dependency.summary`, and
   `project.structure.summary`.
 - Current tool count: `15`.
-- Next candidate: not selected.
-- Next candidate status: pending selection.
+- Next candidate: `project.test.summary`.
+- Next candidate status: design-only selected.
 - Next candidate implementation: blocked.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
@@ -54,14 +54,17 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 The most recent capability,
 [project.structure.summary](capability-proposals/project-structure-summary.md), has advanced through
 proposal, implementation planning, implementation decision, runtime implementation, and
-source-review handoff as one bounded read-only metadata tool. The next candidate is intentionally
-not selected yet.
+source-review handoff as one bounded read-only metadata tool. The next design-only candidate is
+[project.test.summary](capability-proposals/project-test-summary.md), and implementation remains
+blocked until a later implementation-planning packet and explicit implementation decision exist.
 
 Run:
 
 ```bash
 make next-capability-readiness
 make project-structure-summary-source-review-bundle
+make project-test-summary-proposal-check
+make project-test-summary-design-review-packet
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata
