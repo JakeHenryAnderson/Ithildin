@@ -41,6 +41,7 @@ externally closed.
 - [Internal Source Review Pass 1](internal-source-review-pass-1.md)
 - [Local Prompt Triage](local-prompt-triage.md)
 - [Low-Implementer Ticket Catalog](low-implementer-ticket-catalog.md)
+- [Low-Implementer Trial Log](low-implementer-trial-log.md)
 - [Reviewer Finding Template](reviewer-finding-template.md)
 - [Reviewer Finding Intake](reviewer-finding-intake.md)
 - [External Review Intake and Closure](external-review-intake-and-closure.md)

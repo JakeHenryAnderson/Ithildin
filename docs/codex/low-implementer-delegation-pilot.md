@@ -49,7 +49,8 @@ source, manifests, policy, approval/audit code, MCP/API behavior, and trust clai
 
 Every packet includes a manager scorecard so the main manager can record useful suggestions,
 rejected suggestions, boundary drift, cleanup effort, and whether the ticket should be delegated
-again.
+again. Calibration outcomes are summarized in the
+[Low-Implementer Trial Log](low-implementer-trial-log.md).
 
 Direct file edits by Low Codex implementers remain disabled until several read-only trials show
 useful suggestions, low manager cleanup, and no boundary drift.

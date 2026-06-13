@@ -275,6 +275,7 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     catalog = Path("docs/codex/low-implementer-ticket-catalog.md").read_text(
         encoding="utf-8"
     )
+    trial_log = Path("docs/codex/low-implementer-trial-log.md").read_text(encoding="utf-8")
     task = output_dir.joinpath("LOW_IMPLEMENTER_TASK.md").read_text(encoding="utf-8")
     scorecard = output_dir.joinpath("MANAGER_SCORECARD.md").read_text(encoding="utf-8")
     summary = json.loads(output_dir.joinpath("packet-summary.json").read_text(encoding="utf-8"))
@@ -321,6 +322,7 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     assert "several clean read-only trials" in catalog
     assert "docs/codex/low-implementer-delegation-pilot.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/low-implementer-ticket-catalog.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/low-implementer-trial-log.md" in review_docs.REVIEW_DOCS
     for phrase in [
         "Low-Implementer Ticket Catalog",
         "docs-link-scan",
@@ -330,6 +332,17 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
         "manager scorecard",
     ]:
         assert phrase in catalog
+    for phrase in [
+        "Low-Implementer Trial Log",
+        "Trial 1: docs-link-scan",
+        "Trial 2: stale-wording-scan",
+        "accepted suggestions",
+        "rejected suggestions",
+        "boundary drift observed",
+        "manager cleanup required",
+        "recommendation",
+    ]:
+        assert phrase in trial_log
 
 
 def test_v03_milestone_manifest_is_linked_and_complete() -> None:

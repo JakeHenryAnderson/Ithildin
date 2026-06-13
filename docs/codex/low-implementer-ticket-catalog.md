@@ -41,7 +41,8 @@ Every generated delegation packet includes a manager scorecard. Use it to record
 - `delegate_again`.
 
 Delegation is considered useful only when the manager accepts mechanical suggestions with less
-review/cleanup effort than doing the scan directly.
+review/cleanup effort than doing the scan directly. Summarize each live read-only trial in the
+[Low-Implementer Trial Log](low-implementer-trial-log.md).
 
 ## Command
 

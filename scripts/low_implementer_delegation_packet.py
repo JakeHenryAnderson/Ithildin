@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_DIR = Path("var/agent-delegation/low-implementer-packet")
 PILOT_DOC = Path("docs/codex/low-implementer-delegation-pilot.md")
 CATALOG_DOC = Path("docs/codex/low-implementer-ticket-catalog.md")
+TRIAL_LOG_DOC = Path("docs/codex/low-implementer-trial-log.md")
 DEFAULT_TICKET = "docs-link-scan"
 PACKET_FILES = (
     "LOW_IMPLEMENTER_TASK.md",
@@ -111,6 +112,20 @@ REQUIRED_CATALOG_PHRASES = [
     "manager scorecard",
 ]
 
+REQUIRED_TRIAL_LOG_PHRASES = [
+    "Low-Implementer Trial Log",
+    "gpt-5.4-mini",
+    "report-first",
+    "one at a time",
+    "Trial 1: docs-link-scan",
+    "Trial 2: stale-wording-scan",
+    "accepted suggestions",
+    "rejected suggestions",
+    "boundary drift observed",
+    "manager cleanup required",
+    "recommendation",
+]
+
 REQUIRED_PACKET_PHRASES = [
     "Task:",
     "Ticket type:",
@@ -190,6 +205,7 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
     failures: list[str] = []
     pilot_doc = _read_required(repo_root / PILOT_DOC, failures)
     catalog_doc = _read_required(repo_root / CATALOG_DOC, failures)
+    trial_log_doc = _read_required(repo_root / TRIAL_LOG_DOC, failures)
     agents = _read_required(repo_root / "AGENTS.md", failures)
     readme = _read_required(repo_root / "README.md", failures)
     makefile = _read_required(repo_root / "Makefile", failures)
@@ -199,6 +215,9 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
 
     failures.extend(_missing_phrases(PILOT_DOC.as_posix(), pilot_doc, REQUIRED_DOC_PHRASES))
     failures.extend(_missing_phrases(CATALOG_DOC.as_posix(), catalog_doc, REQUIRED_CATALOG_PHRASES))
+    failures.extend(
+        _missing_phrases(TRIAL_LOG_DOC.as_posix(), trial_log_doc, REQUIRED_TRIAL_LOG_PHRASES)
+    )
     if "Low Codex implementers are the preferred mechanical delegation path" not in agents:
         failures.append("AGENTS.md no longer defines Low Codex as preferred mechanical path")
     if "Gemma/local-model output is advisory only" not in agents:
@@ -213,10 +232,14 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         failures.append("pilot doc is missing from review docs")
     if CATALOG_DOC.as_posix() not in review_docs:
         failures.append("ticket catalog doc is missing from review docs")
+    if TRIAL_LOG_DOC.as_posix() not in review_docs:
+        failures.append("trial log doc is missing from review docs")
     if PILOT_DOC.as_posix() not in docs_site:
         failures.append("pilot doc is missing from docs-site inputs")
     if CATALOG_DOC.as_posix() not in docs_site:
         failures.append("ticket catalog doc is missing from docs-site inputs")
+    if TRIAL_LOG_DOC.as_posix() not in docs_site:
+        failures.append("trial log doc is missing from docs-site inputs")
 
     missing_packet_files = [name for name in PACKET_FILES if not packet_dir.joinpath(name).exists()]
     if missing_packet_files:
@@ -262,6 +285,7 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         "failures": failures,
         "pilot_doc": PILOT_DOC.as_posix(),
         "catalog_doc": CATALOG_DOC.as_posix(),
+        "trial_log_doc": TRIAL_LOG_DOC.as_posix(),
         "output_dir": output_dir.as_posix(),
         "ticket_types": sorted(TICKET_TYPES),
         "tool_count": 19,
@@ -279,6 +303,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"pilot_doc: {report['pilot_doc']}",
         f"catalog_doc: {report['catalog_doc']}",
+        f"trial_log_doc: {report['trial_log_doc']}",
         f"output_dir: {report['output_dir']}",
         "ticket_types: " + ", ".join(report["ticket_types"]),
         f"tool_count: {report['tool_count']}",

@@ -264,7 +264,7 @@ checked with `make control-mapping-readiness`.
 - `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
 - `make read-only-capability-inventory-gate` - validate the approved bounded read-only metadata
   tool inventory, implementation gates, source-review handoffs, and release-check wiring.
-- `make read-only-project-intelligence` - validate the consolidated seven-tool read-only project
+- `make read-only-project-intelligence` - validate the consolidated nine-tool read-only project
   intelligence slice without adding runtime powers.
 - `make v3-next-capability-candidate-check` - validate the historical design-only selection that led
   to the now-implemented `project.dependency.summary`.
@@ -658,7 +658,7 @@ implementation decision is
 [docs/codex/v3-project-structure-summary-implementation.md](docs/codex/v3-project-structure-summary-implementation.md)
 and is checked with `make project-structure-summary-implementation-gate`; generate its focused
 source-review handoff with `make project-structure-summary-source-review-bundle`. The consolidated
-seven-tool project intelligence slice is
+nine-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is
 checked with `make read-only-project-intelligence`. The historical design-only candidate evaluation is
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)
