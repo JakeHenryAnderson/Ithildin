@@ -89,6 +89,8 @@ from scripts import (
     project_config_summary_implementation_plan_check,
     project_config_summary_proposal_check,
     project_config_summary_source_review_bundle,
+    project_ci_summary_implementation_plan_check,
+    project_ci_summary_proposal_check,
     project_dependency_summary_design_review_packet,
     project_dependency_summary_implementation_gate,
     project_dependency_summary_implementation_plan_check,
@@ -955,16 +957,16 @@ def test_next_capability_readiness_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 20
     assert report["current_approved_read_only_capabilities"] == 10
-    assert report["next_candidate"] is None
-    assert report["next_candidate_status"] == "pending_selection"
+    assert report["next_candidate"] == "project.ci.summary"
+    assert report["next_candidate_status"] == "design_only_selected"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["historical_candidate"] == "project.dependency.summary"
     for phrase in [
         "Status: capability-expansion readiness checkpoint",
-        "Next candidate: not selected",
-        "Next candidate status: pending selection",
+        "Next candidate: `project.ci.summary`",
+        "Next candidate status: design-only selected",
         "Next candidate implementation: blocked",
         "Broader capability expansion: blocked",
         "New powerful tool classes: blocked",
@@ -973,7 +975,7 @@ def test_next_capability_readiness_is_wired() -> None:
     ]:
         assert phrase in doc
     assert "make next-capability-readiness" in readme
-    assert "make project-language-summary-source-review-bundle" in readme
+    assert "make project-ci-summary-design-review-packet" in readme
     assert "next-capability-readiness:" in makefile
     assert "next-capability-readiness" in release_check_body
     assert "next-capability-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
@@ -1006,7 +1008,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.language.summary",
         "project.config.summary",
     ]
-    assert report["next_candidate"] is None
+    assert report["next_candidate"] == "project.ci.summary"
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
@@ -1023,8 +1025,8 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.docs.summary",
         "project.language.summary",
         "Tool count: `20`",
-        "Next candidate: not selected",
-        "Next candidate status: pending selection",
+        "Next candidate: `project.ci.summary`",
+        "Next candidate status: design-only selected",
         "Broader capability expansion remains blocked",
         "New powerful tool classes remain blocked",
         "No file contents",
@@ -1966,6 +1968,102 @@ def test_project_config_summary_implementation_plan_check_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/capability-implementation-plans/project-config-summary.md" in docs_site
+
+
+def test_project_ci_summary_proposal_check_is_wired() -> None:
+    report = project_ci_summary_proposal_check.build_report(Path.cwd())
+    proposal = Path("docs/codex/capability-proposals/project-ci-summary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = Path("docs/codex/v3-project-ci-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.ci.summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 20
+    for phrase in [
+        "Status: design-only proposal",
+        "count-only CI posture metadata and allowlisted labels only",
+        "no workflow names",
+        "no raw paths",
+        "no file contents",
+        "no command/script values",
+        "no environment names or values",
+        "no CI execution",
+        "no shell",
+        "Policy And Audit Evidence",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in proposal
+    assert "tool count remains `20`" in selection
+    assert "implementation remains blocked" in selection
+    assert "make project-ci-summary-proposal-check" in readme
+    assert "project-ci-summary-proposal-check:" in makefile
+    assert "project-ci-summary-proposal-check" in release_check_body
+    assert (
+        "project-ci-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.ci.summary" in index
+    assert "docs/codex/capability-proposals/project-ci-summary.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-ci-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/project-ci-summary.md" in docs_site
+    assert "docs/codex/v3-project-ci-summary-selection.md" in docs_site
+
+
+def test_project_ci_summary_implementation_plan_check_is_wired() -> None:
+    report = project_ci_summary_implementation_plan_check.build_report(Path.cwd())
+    plan = Path("docs/codex/capability-implementation-plans/project-ci-summary.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.ci.summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 20
+    for phrase in [
+        "Status: implementation-planning only",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Proposed Output Contract",
+        "Filesystem Traversal Contract",
+        "Provider And Category Allowlist",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Actual implementation remains blocked",
+    ]:
+        assert phrase in plan
+    assert "make project-ci-summary-implementation-plan-check" in readme
+    assert "project-ci-summary-implementation-plan-check:" in makefile
+    assert "project-ci-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-ci-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Implementation-Planning Packet: project.ci.summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/project-ci-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/project-ci-summary.md" in docs_site
 
 
 def test_project_config_summary_implementation_gate_is_wired() -> None:

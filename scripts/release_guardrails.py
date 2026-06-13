@@ -112,6 +112,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "project-config-summary-proposal-check",
     "project-config-summary-implementation-plan-check",
     "project-config-summary-implementation-gate",
+    "project-ci-summary-proposal-check",
+    "project-ci-summary-implementation-plan-check",
     "evidence-confusion-gate",
     "external-review-closure-gate",
     "closure-matrix-evidence-sync",
