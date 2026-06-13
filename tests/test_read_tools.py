@@ -1955,11 +1955,13 @@ def test_project_ci_summary_empty_workspace_and_filters(tmp_path: Path) -> None:
         }
     )
 
-    assert summary["summary"]["visible_ci_config_count"] == 0
+    summary_metadata = cast(dict[str, int], summary["summary"])
+    assert summary_metadata["visible_ci_config_count"] == 0
     assert "provider_counts" in summary
     assert "trigger_category_counts" not in summary
     assert cast(dict[str, int], summary["provider_counts"])["github_actions"] == 0
-    assert summary["output_policy"]["ci_execution_used"] is False
+    output_policy = cast(dict[str, bool], summary["output_policy"])
+    assert output_policy["ci_execution_used"] is False
 
 
 def test_project_ci_summary_honors_limits_and_skips_symlink_hardlink(
