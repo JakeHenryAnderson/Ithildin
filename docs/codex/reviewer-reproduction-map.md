@@ -246,6 +246,14 @@ work must stop for status, reassessment, or external consultation.
    implementation record, no-new-powers evidence, command evidence, and artifact hashes for
    source-level review.
 
+27a. `make git-tag-metadata-source-review-bundle`
+
+   Expected outcome: creates an ignored focused source-review handoff under
+   `var/review-packets/v0.9/git-tag-metadata-source-review/`. This attaches the
+   `git.show.tag_metadata` manifest, implementation path, focused tests, policy-parity fixture,
+   implementation record, no-new-powers evidence, command evidence, and artifact hashes for
+   source-level review.
+
 28. `make read-only-metadata-capability-check`
 
    Expected outcome: validates the shared read-only metadata contract, metadata privacy policy,
@@ -371,6 +379,7 @@ work must stop for status, reassessment, or external consultation.
 - Release/evidence automation source-review bundle: `var/review-packets/v0.7/release-automation-source-review/`
 - git.show.commit_metadata source-review bundle: `var/review-packets/v0.9/git-commit-metadata-source-review/`
 - git.show.ref_summary source-review bundle: `var/review-packets/v0.9/git-ref-summary-source-review/`
+- git.show.tag_metadata source-review bundle: `var/review-packets/v0.9/git-tag-metadata-source-review/`
 - project.manifest.summary source-review bundle: `var/review-packets/v0.9/project-manifest-summary-source-review/`
 - project.dependency.summary design-review packet: `var/review-packets/v3/project-dependency-summary-design-review/`
 - project.structure.summary design-review packet: `var/review-packets/v3/project-structure-summary-design-review/`

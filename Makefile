@@ -483,6 +483,9 @@ git-tag-metadata-implementation-plan-check:
 git-tag-metadata-implementation-gate:
 	uv run python scripts/git_tag_metadata_implementation_gate.py
 
+git-tag-metadata-source-review-bundle:
+	uv run python scripts/git_tag_metadata_source_review_bundle.py
+
 git-commit-metadata-implementation-plan-check:
 	uv run python scripts/git_commit_metadata_implementation_plan_check.py
 

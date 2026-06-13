@@ -331,6 +331,7 @@ checked with `make control-mapping-readiness`.
   handoff for the approved `project.manifest.summary` implementation.
 - `make git-commit-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.commit_metadata` implementation.
 - `make git-ref-summary-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.ref_summary` implementation.
+- `make git-tag-metadata-source-review-bundle` - build the focused source/test/evidence handoff for the approved `git.show.tag_metadata` implementation.
 - `make v09-design-review-packet` - generate the design-only review packet for `git.show.commit_metadata`.
 - `make audit-keygen` - create a local Ed25519 keypair for signed audit exports.
 - `make audit-diagnostics` - explain local audit verification and export lifecycle state without mutating evidence.
@@ -610,7 +611,10 @@ and
 [docs/codex/capability-implementation-plans/git-show-tag-metadata.md](docs/codex/capability-implementation-plans/git-show-tag-metadata.md).
 The approved implementation boundary is
 [docs/codex/v0.9-git-tag-metadata-implementation.md](docs/codex/v0.9-git-tag-metadata-implementation.md);
-runtime implementation still lands only in the dedicated implementation checkpoint.
+runtime implementation is now limited to that boundary and checked with
+`make git-tag-metadata-implementation-gate`. The focused source-review handoff is
+[docs/codex/v0.9-git-tag-metadata-source-review.md](docs/codex/v0.9-git-tag-metadata-source-review.md);
+the ignored output is `var/review-packets/v0.9/git-tag-metadata-source-review/`.
 The `project.manifest.summary` implementation record is
 [docs/codex/v3-project-manifest-summary-implementation.md](docs/codex/v3-project-manifest-summary-implementation.md)
 and is checked with `make project-manifest-summary-implementation-gate`. It adds one bounded

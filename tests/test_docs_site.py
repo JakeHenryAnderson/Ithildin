@@ -88,6 +88,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/capability-proposals/git-show-tag-metadata.md" in DEFAULT_DOCS
     assert "docs/codex/capability-implementation-plans/git-show-tag-metadata.md" in DEFAULT_DOCS
     assert "docs/codex/v0.9-git-tag-metadata-implementation.md" in DEFAULT_DOCS
+    assert "docs/codex/v0.9-git-tag-metadata-source-review.md" in DEFAULT_DOCS
     assert "docs/codex/v0.9-git-ref-summary-proposal-review.md" in DEFAULT_DOCS
     assert "docs/codex/read-only-local-metadata-contract.md" in DEFAULT_DOCS
     assert "docs/codex/metadata-privacy-policy.md" in DEFAULT_DOCS

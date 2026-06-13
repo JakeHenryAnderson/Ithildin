@@ -58,6 +58,7 @@ from scripts import (
     git_tag_metadata_implementation_gate,
     git_tag_metadata_implementation_plan_check,
     git_tag_metadata_proposal_check,
+    git_tag_metadata_source_review_bundle,
     guided_demo,
     guided_demo_readiness,
     http_fetch_source_review_bundle,
@@ -852,12 +853,13 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
     doc = Path("docs/codex/read-only-capability-inventory.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["capability_count"] == 9
+    assert report["capability_count"] == 10
     assert report["tool_count"] == 20
     assert report["new_power_classes_allowed"] is False
     assert {capability["tool_name"] for capability in report["capabilities"]} == {
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "project.config.summary",
         "project.dependency.summary",
         "project.manifest.summary",
@@ -870,6 +872,7 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
         "Status: approved read-only metadata inventory",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "project.manifest.summary",
         "project.test.summary",
         "project.docs.summary",
@@ -910,7 +913,7 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
     assert report["candidate_status"] == "design_only_selected"
     assert report["implementation_allowed"] is False
     assert report["tool_count"] == 20
-    assert report["approved_read_only_capabilities"] == 9
+    assert report["approved_read_only_capabilities"] == 10
     for phrase in [
         "Status: design-only candidate selection",
         "project.dependency.summary",
@@ -951,7 +954,7 @@ def test_next_capability_readiness_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 20
-    assert report["current_approved_read_only_capabilities"] == 9
+    assert report["current_approved_read_only_capabilities"] == 10
     assert report["next_candidate"] is None
     assert report["next_candidate_status"] == "pending_selection"
     assert report["next_candidate_implementation_allowed"] is False
@@ -990,10 +993,11 @@ def test_read_only_project_intelligence_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 20
-    assert report["approved_tool_count"] == 9
+    assert report["approved_tool_count"] == 10
     assert report["approved_tools"] == [
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "project.manifest.summary",
         "project.dependency.summary",
         "project.structure.summary",
@@ -1011,6 +1015,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "does not add runtime behavior",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "project.manifest.summary",
         "project.dependency.summary",
         "project.structure.summary",
@@ -3081,6 +3086,96 @@ def test_git_tag_metadata_implementation_gate_is_wired() -> None:
     assert "v0.9 git.show.tag_metadata Implementation Boundary" in index
     assert "docs/codex/v0.9-git-tag-metadata-implementation.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.9-git-tag-metadata-implementation.md" in docs_site
+
+
+def test_git_tag_metadata_source_review_bundle_is_wired(tmp_path: Path) -> None:
+    output_dir = git_tag_metadata_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=tmp_path / "git-tag-metadata-source-review",
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected_files = {
+        "00_GIT_TAG_METADATA_SOURCE_REVIEW_INDEX.md",
+        "01_GIT_TAG_METADATA_SOURCE_REVIEW_PROMPT.md",
+        "02_GIT_TAG_METADATA_IMPLEMENTATION_PACKET.md",
+        "03_GIT_TAG_METADATA_SOURCE_BUNDLE.md",
+        "04_GIT_TAG_METADATA_TESTS_BUNDLE.md",
+        "05_GIT_TAG_METADATA_CONTRACTS_BUNDLE.md",
+        "06_GIT_TAG_METADATA_EVIDENCE.md",
+        "07_GIT_TAG_METADATA_FOCUSED_TESTS.txt",
+        "08_GIT_TAG_METADATA_INTAKE_COMMANDS.md",
+        "git-tag-metadata-source-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    assert generated == expected_files
+
+    index = output_dir.joinpath(
+        "00_GIT_TAG_METADATA_SOURCE_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_GIT_TAG_METADATA_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    implementation_packet = output_dir.joinpath(
+        "02_GIT_TAG_METADATA_IMPLEMENTATION_PACKET.md"
+    ).read_text(encoding="utf-8")
+    source_bundle = output_dir.joinpath(
+        "03_GIT_TAG_METADATA_SOURCE_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    tests_bundle = output_dir.joinpath(
+        "04_GIT_TAG_METADATA_TESTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    contracts_bundle = output_dir.joinpath(
+        "05_GIT_TAG_METADATA_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    evidence = output_dir.joinpath("06_GIT_TAG_METADATA_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    focused = output_dir.joinpath("07_GIT_TAG_METADATA_FOCUSED_TESTS.txt").read_text(
+        encoding="utf-8"
+    )
+    intake = output_dir.joinpath("08_GIT_TAG_METADATA_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    hashes = json.loads(
+        output_dir.joinpath("git-tag-metadata-source-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert "`git.show.tag_metadata` lane" in index
+    assert "EXT-GITTAG-###" in prompt
+    assert "git_tags" in prompt
+    assert "raw tag names" in prompt
+    assert "tag messages" in prompt
+    assert "Tool: `git.show.tag_metadata`" in implementation_packet
+    assert "tool-manifests/git-show-tag-metadata.yaml" in source_bundle
+    assert "def tag_metadata(self, arguments: JsonObject)" in source_bundle
+    assert "_parse_tag_metadata_output" in source_bundle
+    assert "test_git_tag_metadata_returns_name_free_local_tag_metadata" in tests_bundle
+    assert "git_tag_metadata_preview_matches_runtime" in tests_bundle
+    assert "docs/codex/v0.9-git-tag-metadata-implementation.md" in contracts_bundle
+    assert "capability-proposals/git-show-tag-metadata.md" in contracts_bundle
+    assert "make git-tag-metadata-implementation-gate" in evidence
+    assert "SKIPPED: make git-tag-metadata-implementation-gate" in evidence
+    assert "SKIPPED: uv run pytest" in focused
+    assert "--area \"git-tag-metadata\"" in intake
+    hashed_paths = {item["path"] for item in hashes}
+    assert hashed_paths == expected_files - {"git-tag-metadata-source-review-artifact-hashes.json"}
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction = Path("docs/codex/reviewer-reproduction-map.md").read_text(encoding="utf-8")
+    index_doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    assert "make git-tag-metadata-source-review-bundle" in readme
+    assert "git-tag-metadata-source-review-bundle:" in makefile
+    assert "make git-tag-metadata-source-review-bundle" in reproduction
+    assert "var/review-packets/v0.9/git-tag-metadata-source-review/" in reproduction
+    assert "v0.9 git.show.tag_metadata Source Review Handoff" in index_doc
+    assert "docs/codex/v0.9-git-tag-metadata-source-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.9-git-tag-metadata-source-review.md" in docs_site
 
 
 def test_git_ref_summary_source_review_bundle_is_wired(tmp_path: Path) -> None:
@@ -5202,6 +5297,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
         "git.log",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "git.status",
         "http.fetch",
         "project.config.summary",
