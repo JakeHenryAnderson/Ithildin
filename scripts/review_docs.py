@@ -63,6 +63,7 @@ REVIEW_DOCS = [
     "docs/codex/autonomous-sprint-guardrails.md",
     "docs/codex/agent-workflow-instruction-layer.md",
     "docs/codex/low-implementer-delegation-pilot.md",
+    "docs/codex/low-implementer-ticket-catalog.md",
     "docs/codex/reviewer-finding-template.md",
     "docs/codex/reviewer-finding-intake.md",
     "docs/codex/threat-model-and-non-goals.md",

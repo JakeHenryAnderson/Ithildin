@@ -252,13 +252,23 @@ def test_agent_workflow_instruction_layer_is_wired() -> None:
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     output_dir = tmp_path / "low-implementer-packet"
-    low_implementer_delegation_packet.build_packet(Path.cwd(), output_dir)
+    low_implementer_delegation_packet.build_packet(
+        Path.cwd(),
+        output_dir,
+        ticket="stale-wording-scan",
+    )
     report = low_implementer_delegation_packet.build_report(Path.cwd(), output_dir)
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
         encoding="utf-8"
     )
+    catalog = Path("docs/codex/low-implementer-ticket-catalog.md").read_text(
+        encoding="utf-8"
+    )
+    task = output_dir.joinpath("LOW_IMPLEMENTER_TASK.md").read_text(encoding="utf-8")
+    scorecard = output_dir.joinpath("MANAGER_SCORECARD.md").read_text(encoding="utf-8")
+    summary = json.loads(output_dir.joinpath("packet-summary.json").read_text(encoding="utf-8"))
 
     assert report["valid"] is True
     assert report["runtime_changes_allowed"] is False
@@ -267,11 +277,47 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     assert report["low_codex_preferred_mechanical_path"] is True
     assert report["gemma_output_advisory_only"] is True
     assert report["tool_count"] == 19
+    assert report["ticket_types"] == [
+        "docs-link-scan",
+        "make-target-wiring",
+        "packet-inventory",
+        "stale-wording-scan",
+    ]
+    assert summary["ticket"] == "stale-wording-scan"
+    assert summary["model_call_performed"] is False
+    assert set(path.name for path in output_dir.iterdir()) == {
+        "LOW_IMPLEMENTER_TASK.md",
+        "MANAGER_REVIEW_CHECKLIST.md",
+        "MANAGER_SCORECARD.md",
+        "packet-summary.json",
+    }
+    assert "Ticket type: `stale-wording-scan`" in task
+    assert "Focused check" in task
+    assert "Do not edit runtime source" in task
+    assert "useful_suggestions_count" in scorecard
+    assert "boundary_drift_observed" in scorecard
     assert "low-implementer-delegation-packet:" in makefile
     assert "low-implementer-delegation-check:" in makefile
+    assert "low-implementer-ticket-catalog-check:" in makefile
+    assert "low-implementer-ticket-catalog-check" in makefile.partition("release-check:")[2]
+    assert (
+        "low-implementer-ticket-catalog-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
     assert "make low-implementer-delegation-packet" in readme
+    assert "make low-implementer-ticket-catalog-check" in readme
     assert "Gemma/local-model suggestions" in reproduction_map
     assert "docs/codex/low-implementer-delegation-pilot.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/low-implementer-ticket-catalog.md" in review_docs.REVIEW_DOCS
+    for phrase in [
+        "Low-Implementer Ticket Catalog",
+        "docs-link-scan",
+        "stale-wording-scan",
+        "make-target-wiring",
+        "packet-inventory",
+        "manager scorecard",
+    ]:
+        assert phrase in catalog
 
 
 def test_v03_milestone_manifest_is_linked_and_complete() -> None:
