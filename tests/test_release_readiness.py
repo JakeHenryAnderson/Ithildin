@@ -89,6 +89,7 @@ from scripts import (
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
     project_ci_summary_proposal_check,
+    project_ci_summary_source_review_bundle,
     project_config_summary_implementation_gate,
     project_config_summary_implementation_plan_check,
     project_config_summary_proposal_check,
@@ -2271,6 +2272,62 @@ def test_project_config_summary_source_review_bundle_builds_from_fixture(
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/v3-project-config-summary-source-review.md" in docs_site
+
+
+def test_project_ci_summary_source_review_bundle_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-ci-summary-source-review"
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index_doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    built = project_ci_summary_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    assert built == output_dir
+    expected = {
+        "00_PROJECT_CI_SUMMARY_SOURCE_REVIEW_INDEX.md",
+        "01_PROJECT_CI_SUMMARY_SOURCE_REVIEW_PROMPT.md",
+        "02_PROJECT_CI_SUMMARY_IMPLEMENTATION_PACKET.md",
+        "03_PROJECT_CI_SUMMARY_SOURCE_BUNDLE.md",
+        "04_PROJECT_CI_SUMMARY_TESTS_BUNDLE.md",
+        "05_PROJECT_CI_SUMMARY_CONTRACTS_BUNDLE.md",
+        "06_PROJECT_CI_SUMMARY_EVIDENCE.md",
+        "07_PROJECT_CI_SUMMARY_FOCUSED_TESTS.txt",
+        "08_PROJECT_CI_SUMMARY_INTAKE_COMMANDS.md",
+        "project-ci-summary-source-review-artifact-hashes.json",
+    }
+    assert {path.name for path in output_dir.iterdir()} == expected
+    prompt = (output_dir / "01_PROJECT_CI_SUMMARY_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    source_bundle = (output_dir / "03_PROJECT_CI_SUMMARY_SOURCE_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    hashes = json.loads(
+        output_dir.joinpath("project-ci-summary-source-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert "EXT-CI-###" in prompt
+    assert "project_ci" in prompt
+    assert "project.ci.summary" in source_bundle
+    assert "workflow names" in prompt
+    assert "CI execution" in prompt
+    assert {entry["path"] for entry in hashes} == expected - {
+        "project-ci-summary-source-review-artifact-hashes.json"
+    }
+    assert "make project-ci-summary-source-review-bundle" in readme
+    assert "project-ci-summary-source-review-bundle:" in makefile
+    assert "v3 project.ci.summary Source Review Handoff" in index_doc
+    assert "docs/codex/v3-project-ci-summary-source-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-ci-summary-source-review.md" in docs_site
 
 
 def test_project_language_summary_implementation_plan_check_is_wired() -> None:

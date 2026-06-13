@@ -216,6 +216,7 @@ REVIEW_DOCS = [
     "docs/codex/capability-proposals/project-ci-summary.md",
     "docs/codex/capability-implementation-plans/project-ci-summary.md",
     "docs/codex/v3-project-ci-summary-implementation.md",
+    "docs/codex/v3-project-ci-summary-source-review.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",
     "docs/codex/read-only-capability-source-review-template.md",
