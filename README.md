@@ -607,7 +607,9 @@ planning docs are
 [docs/codex/capability-proposals/git-show-tag-metadata.md](docs/codex/capability-proposals/git-show-tag-metadata.md),
 and
 [docs/codex/capability-implementation-plans/git-show-tag-metadata.md](docs/codex/capability-implementation-plans/git-show-tag-metadata.md).
-It remains planning-only until an explicit implementation decision is committed.
+The approved implementation boundary is
+[docs/codex/v0.9-git-tag-metadata-implementation.md](docs/codex/v0.9-git-tag-metadata-implementation.md);
+runtime implementation still lands only in the dedicated implementation checkpoint.
 The `project.manifest.summary` implementation record is
 [docs/codex/v3-project-manifest-summary-implementation.md](docs/codex/v3-project-manifest-summary-implementation.md)
 and is checked with `make project-manifest-summary-implementation-gate`. It adds one bounded
