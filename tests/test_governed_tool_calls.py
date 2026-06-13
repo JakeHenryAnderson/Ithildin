@@ -575,6 +575,48 @@ input_schema:
     )
 
 
+def write_project_ci_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("project-ci-summary.yaml").write_text(
+        """
+name: project.ci.summary
+version: 1.0.0
+title: Summarize project CI posture
+risk: read
+category: project
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root:
+      type: string
+    max_depth:
+      type: integer
+      minimum: 0
+      maximum: 5
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 300
+    include_categories:
+      type: array
+      items:
+        type: string
+        enum:
+          - provider_counts
+          - trigger_category_counts
+          - job_category_counts
+          - location_bucket_counts
+          - skipped_counts
+    workspace_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 def make_service(tmp_path: Path) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -1006,6 +1048,49 @@ def make_project_config_summary_service(tmp_path: Path) -> GovernedToolCallServi
     workspace_root.joinpath("src").mkdir()
     workspace_root.joinpath("src", "settings.ini").write_text(
         "password=secret\n",
+        encoding="utf-8",
+    )
+    return GovernedToolCallService(
+        ToolRegistry.load(manifest_dir),
+        PolicyEvaluator.load(policy_path),
+        approval_service,
+        audit_writer,
+        ReadToolExecutor.from_settings(
+            workspace_root=workspace_root,
+            max_read_bytes=4096,
+            search_result_limit=10,
+            git_log_limit=10,
+        ),
+    )
+
+
+def make_project_ci_summary_service(tmp_path: Path) -> GovernedToolCallService:
+    manifest_dir = tmp_path / "manifests"
+    write_project_ci_summary_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    workspace_root.joinpath(".github", "workflows").mkdir(parents=True)
+    workspace_root.joinpath(".github", "workflows", "private-ci.yml").write_text(
+        """
+name: Secret Release
+on:
+  push:
+  pull_request:
+jobs:
+  private-test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pytest --token secret
+      - run: ruff check .
+""",
         encoding="utf-8",
     )
     return GovernedToolCallService(
@@ -1815,7 +1900,8 @@ def test_project_config_summary_tool_executes_after_policy_allow_and_is_audited(
     assert "pyproject" not in dumped
     assert "app.yaml" not in dumped
     assert "settings.ini" not in dumped
-    assert "secret" not in dumped
+    assert "Secret Release" not in dumped
+    assert "--token secret" not in dumped
     assert "password" not in dumped
     payloads = audit_payloads(tmp_path)
     assert [payload["event_type"] for payload in payloads] == [
@@ -1853,6 +1939,86 @@ def test_project_config_summary_tool_executes_after_policy_allow_and_is_audited(
     assert completed_metadata["config_file_names_included"] is False
     assert completed_metadata["config_contents_included"] is False
     assert completed_metadata["config_values_included"] is False
+
+
+def test_project_ci_summary_tool_executes_after_policy_allow_and_is_audited(
+    tmp_path: Path,
+) -> None:
+    service = make_project_ci_summary_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="project.ci.summary",
+        arguments={"root": ".", "max_depth": 4, "limit": 30},
+        principal=principal(),
+        session_id="sess_project_ci",
+    )
+
+    assert result.status == "completed"
+    assert result.content["tool_name"] == "project.ci.summary"
+    summary = cast(JsonObject, result.content["summary"])
+    assert summary["visible_ci_config_count"] == 1
+    assert cast(JsonObject, result.content["provider_counts"])["github_actions"] == 1
+    assert cast(JsonObject, result.content["trigger_category_counts"])["push"] == 1
+    assert cast(JsonObject, result.content["job_category_counts"])["test"] == 1
+    output_policy = cast(JsonObject, result.content["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["workflow_names_included"] is False
+    assert output_policy["raw_paths_included"] is False
+    assert output_policy["command_values_included"] is False
+    assert output_policy["script_values_included"] is False
+    assert output_policy["ci_execution_used"] is False
+    dumped = json.dumps(result.content)
+    assert "private-ci" not in dumped
+    assert "Secret Release" not in dumped
+    assert "pytest" not in dumped
+    assert "ruff" not in dumped
+    assert "--token secret" not in dumped
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+    policy_metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert policy_metadata["resource_type"] == "project_ci"
+    assert policy_metadata["resource_in_scope"] is True
+    execution_resource = cast(JsonObject, payloads[1]["resource"])
+    assert execution_resource["type"] == "project_ci"
+    completed_metadata = cast(JsonObject, payloads[2]["metadata"])
+    assert completed_metadata["visible_ci_config_count"] == 1
+    assert completed_metadata["provider_counts_keys"] == [
+        "azure_pipelines",
+        "buildkite",
+        "circleci",
+        "github_actions",
+        "gitlab_ci",
+        "jenkins",
+        "travis",
+        "unknown_ci",
+    ]
+    assert completed_metadata["trigger_category_counts_keys"] == [
+        "manual",
+        "pull_request",
+        "push",
+        "release",
+        "schedule",
+        "tag",
+        "unknown_trigger",
+    ]
+    assert completed_metadata["job_category_counts_keys"] == [
+        "build",
+        "deploy_label",
+        "lint",
+        "release_label",
+        "security_scan_label",
+        "test",
+        "unknown_job",
+    ]
+    assert completed_metadata["file_contents_included"] is False
+    assert completed_metadata["raw_paths_included"] is False
+    assert completed_metadata["environment_names_or_values_included"] is False
+    assert completed_metadata["registry_or_network_access_used"] is False
+    assert completed_metadata["package_manager_execution_used"] is False
 
 
 def test_read_tool_output_is_redacted_and_audit_summary_is_recorded(tmp_path: Path) -> None:

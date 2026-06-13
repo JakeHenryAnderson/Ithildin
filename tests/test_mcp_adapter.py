@@ -373,6 +373,49 @@ input_schema:
     )
 
 
+def write_project_ci_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("project-ci-summary.yaml").write_text(
+        """
+name: project.ci.summary
+version: 1.0.0
+title: Summarize project CI posture
+risk: read
+category: project
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root:
+      type: string
+    max_depth:
+      type: integer
+      minimum: 0
+      maximum: 5
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 300
+    include_categories:
+      type: array
+      items:
+        type: string
+        enum:
+          - provider_counts
+          - trigger_category_counts
+          - job_category_counts
+          - location_bucket_counts
+          - skipped_counts
+    workspace_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 @dataclass(frozen=True)
 class McpAdapterHarness:
     adapter: IthildinMcpAdapter
@@ -399,6 +442,7 @@ def make_adapter_harness(
     write_git_commit_metadata_manifest(manifest_dir)
     write_git_ref_summary_manifest(manifest_dir)
     write_git_tag_metadata_manifest(manifest_dir)
+    write_project_ci_summary_manifest(manifest_dir)
     write_project_dependency_summary_manifest(manifest_dir)
     write_project_manifest_summary_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
@@ -428,6 +472,19 @@ input_schema:
                 "dependencies": {"internal-package": "1.0.0"},
             }
         ),
+        encoding="utf-8",
+    )
+    workspace_root.joinpath(".github", "workflows").mkdir(parents=True)
+    workspace_root.joinpath(".github", "workflows", "release.yml").write_text(
+        """
+name: Private Release
+on:
+  workflow_dispatch:
+jobs:
+  secret-test:
+    steps:
+      - run: pytest --token secret
+""",
         encoding="utf-8",
     )
     run_git(workspace_root, ["init"])
@@ -516,6 +573,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "git.show.ref_summary",
         "git.show.tag_metadata",
         "http.fetch",
+        "project.ci.summary",
         "project.dependency.summary",
         "project.manifest.summary",
     ]
@@ -548,6 +606,7 @@ principals:
         "git.show.commit_metadata",
         "git.show.ref_summary",
         "git.show.tag_metadata",
+        "project.ci.summary",
         "project.dependency.summary",
         "project.manifest.summary",
     ]
@@ -701,6 +760,36 @@ def test_mcp_call_returns_real_project_dependency_summary_output(tmp_path: Path)
     dumped = json.dumps(result.structuredContent)
     assert "internal-package" not in dumped
     assert "TOKEN=secret" not in dumped
+
+
+def test_mcp_call_returns_real_project_ci_summary_output(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "project.ci.summary",
+            {"root": ".", "max_depth": 4, "limit": 10},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert cast(dict[str, object], result.structuredContent["summary"])[
+        "visible_ci_config_count"
+    ] == 1
+    assert cast(dict[str, object], result.structuredContent["provider_counts"])[
+        "github_actions"
+    ] == 1
+    output_policy = cast(dict[str, object], result.structuredContent["output_policy"])
+    assert output_policy["workflow_names_included"] is False
+    assert output_policy["command_values_included"] is False
+    assert output_policy["ci_execution_used"] is False
+    dumped = json.dumps(result.structuredContent)
+    assert "release.yml" not in dumped
+    assert "Private Release" not in dumped
+    assert "pytest" not in dumped
+    assert "--token secret" not in dumped
 
 
 def test_mcp_call_denies_registered_tool_not_exposed_over_mcp(tmp_path: Path) -> None:
