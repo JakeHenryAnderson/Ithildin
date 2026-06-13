@@ -7,12 +7,13 @@ workers to edit runtime behavior.
 
 | Metric | Result |
 | --- | --- |
-| total trials | `4` |
-| accepted suggestions | `4` |
+| total trials | `5` |
+| accepted suggestions | `4` plus `1` accepted docs-only patch |
 | rejected suggestions | `2` |
 | boundary drift count | `0` |
 | cleanup trend | low and manager-contained |
 | current recommendation | continue report-first mechanical scans one at a time |
+| trial note | docs-only, manager-reviewed, and not a general enablement for direct low-worker patching |
 
 direct low-worker patching remains disabled. A future sprint may propose one docs-only patch trial,
 but that requires a separate explicit plan, manager-owned diff review, and the same release gates.
