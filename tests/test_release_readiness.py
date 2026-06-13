@@ -55,6 +55,8 @@ from scripts import (
     git_ref_summary_implementation_plan_check,
     git_ref_summary_proposal_check,
     git_ref_summary_source_review_bundle,
+    git_tag_metadata_implementation_plan_check,
+    git_tag_metadata_proposal_check,
     guided_demo,
     guided_demo_readiness,
     http_fetch_source_review_bundle,
@@ -691,6 +693,109 @@ def test_git_ref_summary_implementation_plan_check_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/capability-implementation-plans/git-show-ref-summary.md" in docs_site
+
+
+def test_git_tag_metadata_proposal_check_is_wired() -> None:
+    report = git_tag_metadata_proposal_check.build_report(Path.cwd())
+    doc = Path("docs/codex/capability-proposals/git-show-tag-metadata.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "git.show.tag_metadata"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["evidence"]["tool_count"] == 19
+    for required in [
+        "Status: design-only proposal",
+        "does not add a tool manifest",
+        "git.show.tag_metadata",
+        "all_local_tags",
+        "additionalProperties: false",
+        "tag_names_included",
+        "tag_messages_included",
+        "tag_signatures_included",
+        "stable_tag_hashes_included",
+        "tag_ids_are_response_local",
+        "refs/tags",
+        "include_names",
+        "include_messages",
+        "include_signatures",
+        "Executor Contract Sketch",
+        "fixed `git for-each-ref` argv",
+        "tag_id",
+        "non-commit tag targets",
+        "Policy, Audit, And Review Evidence",
+        "Negative Cases",
+        "No-New-Powers Analysis",
+        "source-review handoff bundle",
+    ]:
+        assert required in doc
+    assert "make git-tag-metadata-proposal-check" in readme
+    assert "git-tag-metadata-proposal-check:" in makefile
+    assert "git-tag-metadata-proposal-check" in release_check_body
+    assert "Capability Proposal: git.show.tag_metadata" in index
+    assert "docs/codex/capability-proposals/git-show-tag-metadata.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/git-show-tag-metadata.md" in docs_site
+
+
+def test_git_tag_metadata_implementation_plan_check_is_wired() -> None:
+    report = git_tag_metadata_implementation_plan_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/capability-implementation-plans/git-show-tag-metadata.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "git.show.tag_metadata"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 19
+    for required in [
+        "Status: implementation-planning only",
+        "does not add a tool manifest",
+        "Implementation state: blocked",
+        "Future Manifest Sketch",
+        "Input And Schema Contract",
+        "Executor Contract Checklist",
+        "Output Contract",
+        "Policy, Audit, UI, And Review Plan",
+        "Resource Limits",
+        "all_local_tags",
+        "additionalProperties: false",
+        "refs/tags",
+        "internally controlled `git for-each-ref` format strings only",
+        "response-local `tag_id` handles only",
+        "Allowed top-level output fields",
+        "Allowed tag entry fields",
+        "raw tag names",
+        "tag messages",
+        "tag signatures",
+        "include_names",
+        "include_messages",
+        "include_signatures",
+        "Source review",
+    ]:
+        assert required in doc
+    assert "make git-tag-metadata-implementation-plan-check" in readme
+    assert "git-tag-metadata-implementation-plan-check:" in makefile
+    assert "git-tag-metadata-implementation-plan-check" in release_check_body
+    assert "Implementation-Planning Packet: git.show.tag_metadata" in index
+    assert (
+        "docs/codex/capability-implementation-plans/git-show-tag-metadata.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/git-show-tag-metadata.md" in docs_site
 
 
 def test_read_only_metadata_capability_check_is_wired() -> None:

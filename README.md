@@ -259,6 +259,8 @@ checked with `make control-mapping-readiness`.
 - `make git-ref-summary-proposal-check` - validate the next read-only Git metadata proposal.
 - `make git-ref-summary-implementation-plan-check` - validate the `git.show.ref_summary` implementation-planning packet without authorizing runtime work.
 - `make git-ref-summary-implementation-gate` - validate the approved read-only `git.show.ref_summary` implementation boundary.
+- `make git-tag-metadata-proposal-check` - validate the `git.show.tag_metadata` design-only proposal.
+- `make git-tag-metadata-implementation-plan-check` - validate the `git.show.tag_metadata` implementation-planning packet without authorizing runtime work.
 - `make git-commit-metadata-implementation-plan-check` - validate the historical implementation-planning packet.
 - `make git-commit-metadata-implementation-gate` - validate the approved read-only `git.show.commit_metadata` implementation boundary.
 - `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
@@ -599,6 +601,13 @@ and is checked with `make git-ref-summary-implementation-gate`. It adds one boun
 ref metadata tool and does not unlock broader capability implementation. The focused source-review
 handoff is [docs/codex/v0.9-git-ref-summary-source-review.md](docs/codex/v0.9-git-ref-summary-source-review.md);
 the ignored output is `var/review-packets/v0.9/git-ref-summary-source-review/`.
+The next selected bounded read-only Git metadata lane is `git.show.tag_metadata`; its current
+planning docs are
+[docs/codex/v0.9-git-tag-metadata-selection.md](docs/codex/v0.9-git-tag-metadata-selection.md),
+[docs/codex/capability-proposals/git-show-tag-metadata.md](docs/codex/capability-proposals/git-show-tag-metadata.md),
+and
+[docs/codex/capability-implementation-plans/git-show-tag-metadata.md](docs/codex/capability-implementation-plans/git-show-tag-metadata.md).
+It remains planning-only until an explicit implementation decision is committed.
 The `project.manifest.summary` implementation record is
 [docs/codex/v3-project-manifest-summary-implementation.md](docs/codex/v3-project-manifest-summary-implementation.md)
 and is checked with `make project-manifest-summary-implementation-gate`. It adds one bounded
