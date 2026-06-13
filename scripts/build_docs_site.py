@@ -136,6 +136,7 @@ DEFAULT_DOCS = [
     "docs/codex/v0.9-git-ref-summary-source-review.md",
     "docs/codex/v0.9-git-tag-metadata-implementation.md",
     "docs/codex/v0.9-git-tag-metadata-source-review.md",
+    "docs/codex/v0.9-git-tag-metadata-internal-review.md",
     "docs/codex/v0.9-git-tag-metadata-selection.md",
     "docs/codex/v0.9-lane-closure-summary.md",
     "docs/codex/v0.9-next-read-only-capability-seed.md",

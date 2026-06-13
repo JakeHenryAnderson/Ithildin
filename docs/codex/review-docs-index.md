@@ -154,6 +154,7 @@ externally closed.
 - [v0.9 git.show.ref_summary Source Review Handoff](v0.9-git-ref-summary-source-review.md)
 - [v0.9 git.show.tag_metadata Implementation Boundary](v0.9-git-tag-metadata-implementation.md)
 - [v0.9 git.show.tag_metadata Source Review Handoff](v0.9-git-tag-metadata-source-review.md)
+- [v0.9 git.show.tag_metadata Internal Source Review](v0.9-git-tag-metadata-internal-review.md)
 - [v0.9 git.show.tag_metadata Selection](v0.9-git-tag-metadata-selection.md)
 - [v0.9 Lane Closure Summary](v0.9-lane-closure-summary.md)
 - [v0.9 Next Read-Only Capability Seed](v0.9-next-read-only-capability-seed.md)

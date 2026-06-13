@@ -3175,7 +3175,9 @@ def test_git_tag_metadata_source_review_bundle_is_wired(tmp_path: Path) -> None:
     assert "var/review-packets/v0.9/git-tag-metadata-source-review/" in reproduction
     assert "v0.9 git.show.tag_metadata Source Review Handoff" in index_doc
     assert "docs/codex/v0.9-git-tag-metadata-source-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v0.9-git-tag-metadata-internal-review.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v0.9-git-tag-metadata-source-review.md" in docs_site
+    assert "docs/codex/v0.9-git-tag-metadata-internal-review.md" in docs_site
 
 
 def test_git_ref_summary_source_review_bundle_is_wired(tmp_path: Path) -> None:
