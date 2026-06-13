@@ -1494,6 +1494,154 @@ def test_project_language_summary_rejects_unsupported_arguments(tmp_path: Path) 
             filesystem.project_language_summary(cast(JsonObject, arguments))
 
 
+def test_project_config_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("pyproject.toml").write_text("[project]\nname='secret'\n", encoding="utf-8")
+    root.joinpath("vite.config.ts").write_text(
+        "export default { secret: true }\n",
+        encoding="utf-8",
+    )
+    root.joinpath("pytest.ini").write_text("[pytest]\naddopts=-q\n", encoding="utf-8")
+    root.joinpath("eslint.config.js").write_text("const token = 'secret'\n", encoding="utf-8")
+    root.joinpath("docker-compose.yml").write_text("services:\n  app:\n", encoding="utf-8")
+    root.joinpath("config").mkdir()
+    root.joinpath("config", "app.yaml").write_text("token: private\n", encoding="utf-8")
+    root.joinpath("src").mkdir()
+    root.joinpath("src", "settings.ini").write_text("password=secret\n", encoding="utf-8")
+    root.joinpath("data.bin").write_bytes(b"\x00\x01")
+    root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
+    root.joinpath(".git").mkdir()
+    root.joinpath(".git", "config").write_text("[remote]\n", encoding="utf-8")
+
+    summary = filesystem.project_config_summary({"root": ".", "max_depth": 3, "limit": 40})
+
+    assert summary["tool_name"] == "project.config.summary"
+    assert summary["summary"] == {
+        "visible_config_directory_count": 1,
+        "visible_config_like_file_count": 7,
+        "max_observed_depth": 2,
+        "inspected_entry_count": 12,
+    }
+    assert cast(dict[str, int], summary["config_category_counts"])["build_config"] == 2
+    assert cast(dict[str, int], summary["config_category_counts"])["test_config"] == 1
+    assert cast(dict[str, int], summary["config_category_counts"])["lint_format_config"] == 1
+    assert cast(dict[str, int], summary["config_category_counts"])["runtime_app_config"] == 2
+    assert (
+        cast(dict[str, int], summary["config_category_counts"])["container_deployment_config"]
+        == 1
+    )
+    assert cast(dict[str, int], summary["config_location_counts"])["root_level"] == 5
+    assert cast(dict[str, int], summary["config_location_counts"])["config_directory"] == 1
+    assert cast(dict[str, int], summary["config_location_counts"])["source_adjacent_config"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["hidden_or_sensitive"] == 1
+    assert cast(dict[str, int], summary["skipped_counts"])["git_internal"] == 1
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["config_file_names_included"] is False
+    assert output_policy["config_contents_included"] is False
+    assert output_policy["config_values_included"] is False
+    assert output_policy["raw_paths_included"] is False
+    assert output_policy["environment_names_or_values_included"] is False
+    assert output_policy["config_parser_execution_used"] is False
+    dumped = json_dump(summary)
+    assert "pyproject" not in dumped
+    assert "vite.config" not in dumped
+    assert "app.yaml" not in dumped
+    assert "settings.ini" not in dumped
+    assert "secret" not in dumped
+    assert "TOKEN" not in dumped
+    assert ".env" not in dumped
+    assert ".git" not in dumped
+
+
+def test_project_config_summary_honors_limits_and_include_categories(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("config").mkdir()
+    root.joinpath("config", "app.yaml").write_text("private\n", encoding="utf-8")
+    root.joinpath("pyproject.toml").write_text("private\n", encoding="utf-8")
+
+    summary = filesystem.project_config_summary(
+        {
+            "root": ".",
+            "max_depth": 1,
+            "limit": 1,
+            "include_categories": ["skipped_counts"],
+        }
+    )
+
+    assert "config_category_counts" not in summary
+    assert "config_location_counts" not in summary
+    assert "skipped_counts" in summary
+    assert summary["truncated"] is True
+    assert cast(dict[str, int], summary["skipped_counts"])["item_limit"] >= 1
+
+
+def test_project_config_summary_skips_symlink_and_hardlink_entries(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    config = root / "config"
+    config.mkdir()
+    target = config / "app.yaml"
+    target.write_text("private\n", encoding="utf-8")
+    try:
+        os.link(target, config / "app-copy.yaml")
+    except OSError:
+        pytest.skip("hardlinks are not supported on this filesystem")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root.joinpath("outside-link").symlink_to(outside)
+
+    summary = filesystem.project_config_summary({"root": ".", "max_depth": 2, "limit": 20})
+
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hardlink"] == 2
+    assert skipped["symlink"] == 1
+    dumped = json_dump(summary)
+    assert "private" not in dumped
+    assert "outside" not in dumped
+
+
+def test_project_config_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "."},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "%2e%2e/outside"},
+        {"root": "bad\x1fpath"},
+        {"max_depth": -1},
+        {"max_depth": 6},
+        {"limit": 0},
+        {"limit": 301},
+        {"include_categories": []},
+        {"include_categories": ["config_category_counts", "config_category_counts"]},
+        {"include_categories": ["raw_names"]},
+        {"glob": "**/*"},
+        {"regex": ".*"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_file_names": True},
+        {"include_config_file_names": True},
+        {"include_config_contents": True},
+        {"include_config_values": True},
+        {"include_dependency_names": True},
+        {"include_package_names": True},
+        {"include_script_values": True},
+        {"include_environment": True},
+        {"parse_config": True},
+        {"execute_parser": True},
+        {"registry_url": "https://registry.example.test"},
+        {"command": "npm config list"},
+        {"argv": ["npm", "config", "list"]},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_config_summary(cast(JsonObject, arguments))
+
+
 def test_project_dependency_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

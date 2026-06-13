@@ -9,11 +9,12 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `16`.
+- Tool count is `19`.
 - `git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`,
-  `project.dependency.summary`, `project.structure.summary`, and `project.test.summary` are the
+  `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
+  `project.docs.summary`, `project.language.summary`, and `project.config.summary` are the
   approved bounded read-only metadata runtime capability additions.
-- `make read-only-project-intelligence` records the consolidated seven-tool project intelligence
+- `make read-only-project-intelligence` records the consolidated nine-tool project intelligence
   slice.
 - `make next-capability-readiness` records that no next capability is currently selected and that
   future implementation remains blocked until fresh selection, implementation planning,
@@ -50,12 +51,12 @@ without explicit review.
 
 ## Current Recommendation
 
-The current seven-tool read-only project intelligence slice is consolidated. The most recent
-candidate is `project.test.summary`, recorded in
-[v3 project.test.summary Selection](v3-project-test-summary-selection.md) and
-[Capability Proposal: project.test.summary](capability-proposals/project-test-summary.md). Its
+The current nine-tool read-only project intelligence slice is consolidated. The most recent
+candidate is `project.config.summary`, recorded in
+[v3 project.config.summary Selection](v3-project-config-summary-selection.md) and
+[Capability Proposal: project.config.summary](capability-proposals/project-config-summary.md). Its
 implementation-planning packet is
-[Implementation-Planning Packet: project.test.summary](capability-implementation-plans/project-test-summary.md).
+[Implementation-Planning Packet: project.config.summary](capability-implementation-plans/project-config-summary.md).
 It has advanced through bounded read-only implementation and source-review handoff. No next
 design-only candidate is currently selected.
 

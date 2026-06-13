@@ -32,7 +32,8 @@ REQUIRED_DOC_PHRASES = [
     "project.test.summary",
     "project.docs.summary",
     "project.language.summary",
-    "Current tool count: `18`",
+    "project.config.summary",
+    "Current tool count: `19`",
     "Next candidate: not selected",
     "Next candidate status: pending selection",
     "Next candidate implementation: blocked",
@@ -48,7 +49,7 @@ REQUIRED_DOC_PHRASES = [
     "negative transcript coverage",
     "no-new-powers evidence",
     "make next-capability-readiness",
-    "make project-language-summary-source-review-bundle",
+    "make project-config-summary-source-review-bundle",
 ]
 
 

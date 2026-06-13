@@ -108,7 +108,7 @@ def _render(
         f"- Commit: `{commit}`.",
         f"- Dirty at generation: `{str(dirty).lower()}`.",
         f"- Observed readiness commands executed: `{str(run_commands).lower()}`.",
-        "- tool count remains `18`.",
+        "- tool count remains `19`.",
         "- Correlation applies only to Ithildin-mediated actions.",
         "",
         "## Observed Readiness Commands",

@@ -30,6 +30,7 @@ APPROVED_TOOLS = [
     "project.test.summary",
     "project.docs.summary",
     "project.language.summary",
+    "project.config.summary",
 ]
 REQUIRED_DOC_PHRASES = [
     "Status: consolidated local-preview product slice",
@@ -42,7 +43,8 @@ REQUIRED_DOC_PHRASES = [
     "project.test.summary",
     "project.docs.summary",
     "project.language.summary",
-    "Tool count: `18`",
+    "project.config.summary",
+    "Tool count: `19`",
     "Next candidate: not selected",
     "Next candidate status: pending selection",
     "Broader capability expansion remains blocked",
@@ -51,6 +53,7 @@ REQUIRED_DOC_PHRASES = [
     "No dependency names",
     "no package-manager execution",
     "no language detector execution",
+    "no config parser execution",
     "no registry/network access",
     "policy preview/runtime parity",
     "make read-only-project-intelligence",

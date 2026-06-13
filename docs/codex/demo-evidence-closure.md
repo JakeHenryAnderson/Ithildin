@@ -50,7 +50,7 @@ guidance, and obvious secret/diff exclusion.
 - `make demo-evidence-packet` is included in `review-candidate`;
 - README and the reproduction map mention the new commands;
 - this doc is included in review docs and docs-site inputs;
-- tool count remains `18`;
+- tool count remains `19`;
 - no-new-powers and tool-surface guardrails still pass.
 
 ## Boundary

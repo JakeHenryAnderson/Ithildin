@@ -981,6 +981,7 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
         "project.structure.summary",
         "project.test.summary",
         "project.docs.summary",
+        "project.config.summary",
         "project.language.summary",
     }:
         output_policy = content.get("output_policy")
@@ -1059,6 +1060,29 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                         JsonValue,
                         sorted(key for key in section if isinstance(key, str)),
                     )
+        if tool_name == "project.config.summary":
+            summary = content.get("summary")
+            if isinstance(summary, dict):
+                for key in (
+                    "visible_config_directory_count",
+                    "visible_config_like_file_count",
+                    "max_observed_depth",
+                    "inspected_entry_count",
+                ):
+                    value = summary.get(key)
+                    if isinstance(value, int) and not isinstance(value, bool):
+                        metadata[key] = value
+            for section_key in (
+                "config_category_counts",
+                "config_location_counts",
+                "skipped_counts",
+            ):
+                section = content.get(section_key)
+                if isinstance(section, dict):
+                    metadata[f"{section_key}_keys"] = cast(
+                        JsonValue,
+                        sorted(key for key in section if isinstance(key, str)),
+                    )
         if tool_name == "project.language.summary":
             summary = content.get("summary")
             if isinstance(summary, dict):
@@ -1114,15 +1138,20 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                 "test_case_names_included",
                 "documentation_file_names_included",
                 "language_file_names_included",
+                "config_file_names_included",
                 "documentation_headings_included",
                 "raw_extensions_included",
                 "stable_path_ids_included",
                 "source_snippets_included",
+                "config_contents_included",
+                "config_values_included",
                 "dependency_names_included",
                 "dependency_versions_included",
                 "package_names_included",
                 "package_script_names_included",
                 "package_script_values_included",
+                "environment_names_or_values_included",
+                "registry_urls_included",
                 "coverage_data_included",
                 "documentation_build_claims_included",
                 "language_detector_claims_included",
@@ -1135,6 +1164,7 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                 "test_execution_used",
                 "documentation_build_execution_used",
                 "language_detector_execution_used",
+                "config_parser_execution_used",
                 "recursive_discovery_used",
                 "transitive_dependencies_resolved",
                 "license_vulnerability_or_compliance_claims_included",

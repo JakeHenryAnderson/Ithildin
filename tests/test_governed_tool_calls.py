@@ -502,6 +502,46 @@ input_schema:
     )
 
 
+def write_project_config_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("project-config-summary.yaml").write_text(
+        """
+name: project.config.summary
+version: 1.0.0
+title: Summarize project configuration posture
+risk: read
+category: project
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root:
+      type: string
+    max_depth:
+      type: integer
+      minimum: 0
+      maximum: 5
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 300
+    include_categories:
+      type: array
+      items:
+        type: string
+        enum:
+          - config_category_counts
+          - config_location_counts
+          - skipped_counts
+    workspace_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 def make_service(tmp_path: Path) -> GovernedToolCallService:
     manifest_dir = tmp_path / "manifests"
     write_manifest(manifest_dir, "fs.read", "read")
@@ -856,6 +896,47 @@ def make_project_language_summary_service(tmp_path: Path) -> GovernedToolCallSer
     workspace_root.joinpath("src", "app.ts").write_text("TOKEN=secret\n", encoding="utf-8")
     workspace_root.joinpath("docs").mkdir()
     workspace_root.joinpath("docs", "guide.md").write_text("TOKEN=secret\n", encoding="utf-8")
+    return GovernedToolCallService(
+        ToolRegistry.load(manifest_dir),
+        PolicyEvaluator.load(policy_path),
+        approval_service,
+        audit_writer,
+        ReadToolExecutor.from_settings(
+            workspace_root=workspace_root,
+            max_read_bytes=4096,
+            search_result_limit=10,
+            git_log_limit=10,
+        ),
+    )
+
+
+def make_project_config_summary_service(tmp_path: Path) -> GovernedToolCallService:
+    manifest_dir = tmp_path / "manifests"
+    write_project_config_summary_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    workspace_root.joinpath("pyproject.toml").write_text(
+        "[project]\nname='secret-package'\n",
+        encoding="utf-8",
+    )
+    workspace_root.joinpath("config").mkdir()
+    workspace_root.joinpath("config", "app.yaml").write_text(
+        "token: secret\n",
+        encoding="utf-8",
+    )
+    workspace_root.joinpath("src").mkdir()
+    workspace_root.joinpath("src", "settings.ini").write_text(
+        "password=secret\n",
+        encoding="utf-8",
+    )
     return GovernedToolCallService(
         ToolRegistry.load(manifest_dir),
         PolicyEvaluator.load(policy_path),
@@ -1587,6 +1668,74 @@ def test_project_language_summary_tool_executes_after_policy_allow_and_is_audite
     assert completed_metadata["raw_extensions_included"] is False
     assert completed_metadata["raw_paths_included"] is False
     assert completed_metadata["language_detector_execution_used"] is False
+
+
+def test_project_config_summary_tool_executes_after_policy_allow_and_is_audited(
+    tmp_path: Path,
+) -> None:
+    service = make_project_config_summary_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="project.config.summary",
+        arguments={"root": ".", "max_depth": 3, "limit": 30},
+        principal=principal(),
+        session_id="sess_project_config",
+    )
+
+    assert result.status == "completed"
+    assert result.content["tool_name"] == "project.config.summary"
+    assert cast(JsonObject, result.content["summary"])["visible_config_directory_count"] == 1
+    assert cast(JsonObject, result.content["summary"])["visible_config_like_file_count"] == 3
+    output_policy = cast(JsonObject, result.content["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["config_file_names_included"] is False
+    assert output_policy["config_contents_included"] is False
+    assert output_policy["config_values_included"] is False
+    assert output_policy["raw_paths_included"] is False
+    assert output_policy["environment_names_or_values_included"] is False
+    assert output_policy["config_parser_execution_used"] is False
+    dumped = json.dumps(result.content)
+    assert "pyproject" not in dumped
+    assert "app.yaml" not in dumped
+    assert "settings.ini" not in dumped
+    assert "secret" not in dumped
+    assert "password" not in dumped
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+    policy_metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert policy_metadata["resource_type"] == "project_config"
+    assert policy_metadata["resource_in_scope"] is True
+    execution_resource = cast(JsonObject, payloads[1]["resource"])
+    assert execution_resource["type"] == "project_config"
+    completed_metadata = cast(JsonObject, payloads[2]["metadata"])
+    assert completed_metadata["visible_config_directory_count"] == 1
+    assert completed_metadata["visible_config_like_file_count"] == 3
+    assert completed_metadata["config_category_counts_keys"] == [
+        "build_config",
+        "ci_workflow_config",
+        "container_deployment_config",
+        "editor_tooling_config",
+        "lint_format_config",
+        "runtime_app_config",
+        "test_config",
+        "unknown_config",
+    ]
+    assert completed_metadata["config_location_counts_keys"] == [
+        "ci_directory",
+        "config_directory",
+        "root_level",
+        "source_adjacent_config",
+        "tooling_directory",
+        "unknown_location",
+    ]
+    assert completed_metadata["file_contents_included"] is False
+    assert completed_metadata["config_file_names_included"] is False
+    assert completed_metadata["config_contents_included"] is False
+    assert completed_metadata["config_values_included"] is False
 
 
 def test_read_tool_output_is_redacted_and_audit_summary_is_recorded(tmp_path: Path) -> None:

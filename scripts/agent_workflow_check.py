@@ -14,7 +14,7 @@ WORKFLOW_DOC = Path("docs/codex/agent-workflow-instruction-layer.md")
 REQUIRED_AGENTS_PHRASES = [
     "coordination guidance, not a security boundary",
     "local-preview governed MCP/tool gateway",
-    "Current governed tool count is 18",
+    "Current governed tool count is 19",
     "Low Codex implementers are the preferred mechanical delegation path",
     "Gemma/local-model output is advisory only",
     "must not decide safety boundaries",
@@ -40,7 +40,7 @@ REQUIRED_WORKFLOW_PHRASES = [
     "Gemma/local-model suggester",
     "Delegation Packet Shape",
     "Forbidden changes",
-    "The current governed tool count is 18",
+    "The current governed tool count is 19",
     "make agent-workflow-check",
 ]
 
@@ -88,7 +88,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "agents_path": AGENTS_PATH.as_posix(),
         "workflow_doc": WORKFLOW_DOC.as_posix(),
-        "tool_count": 18,
+        "tool_count": 19,
         "low_implementer_runtime_changes_allowed": False,
         "low_codex_preferred_mechanical_path": True,
         "gemma_output_advisory_only": True,

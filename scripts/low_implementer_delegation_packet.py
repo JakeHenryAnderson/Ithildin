@@ -79,7 +79,7 @@ def build_packet(repo_root: Path, output_dir: Path) -> Path:
                 "runtime_changes_allowed": False,
                 "new_tool_powers_allowed": False,
                 "model_call_performed": False,
-                "tool_count": 18,
+                "tool_count": 19,
             },
             indent=2,
             sort_keys=True,
@@ -136,7 +136,7 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         if summary.get("model_call_performed") is not False:
             failures.append("packet summary must record model_call_performed=false")
         if summary.get("tool_count") != 18:
-            failures.append("packet summary tool_count drifted from 18")
+            failures.append("packet summary tool_count drifted from 19")
 
     return {
         "schema_version": "1",
@@ -144,7 +144,7 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         "failures": failures,
         "pilot_doc": PILOT_DOC.as_posix(),
         "output_dir": output_dir.as_posix(),
-        "tool_count": 18,
+        "tool_count": 19,
         "runtime_changes_allowed": False,
         "new_tool_powers_allowed": False,
         "model_call_performed": False,

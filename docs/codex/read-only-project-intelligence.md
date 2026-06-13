@@ -7,10 +7,10 @@ Read-only project intelligence is Ithildin's current safe orientation layer for 
 lets an agent learn bounded, policy-mediated facts about a workspace without receiving shell access,
 package-manager execution, broad filesystem writes, raw diffs, dependency names, package names,
 package versions, package script names or values, file contents, lockfile contents, registry output,
-language detector execution, or network-derived package metadata.
+language detector execution, config parser execution, or network-derived package metadata.
 
-No file contents, no dependency names, no language detector execution, no package-manager execution,
-and no registry/network access are part of this product slice.
+No file contents, no dependency names, no language detector execution, no config parser execution,
+no package-manager execution, and no registry/network access are part of this product slice.
 
 ## Current Tool Family
 
@@ -24,6 +24,7 @@ and no registry/network access are part of this product slice.
 | `project.test.summary` | Summarize bounded test-layout signals using counts and allowlisted labels. | No test file names, test case names, raw paths, file contents, coverage data, command output, package-manager execution, registry/network access, or test execution. |
 | `project.docs.summary` | Summarize bounded documentation-layout signals using counts and allowlisted labels. | No documentation file names, headings, raw paths, file contents, build execution, package-manager execution, registry/network access, or broad filesystem powers. |
 | `project.language.summary` | Summarize bounded language-family signals using counts and allowlisted labels. | No language file names, raw extensions, raw paths, file contents, detector execution, package-manager execution, registry/network access, or dependency metadata. |
+| `project.config.summary` | Summarize bounded configuration posture using counts and allowlisted labels. | No config file names, raw paths, file contents, config contents, config values, environment names or values, config parser execution, package-manager execution, registry/network access, or deployment claims. |
 
 ## Evidence Model
 
@@ -41,11 +42,11 @@ Every tool in this family must preserve:
 
 ## Current Position
 
-- Tool count: `18`.
+- Tool count: `19`.
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
   `git.show.ref_summary`, `project.manifest.summary`, `project.dependency.summary`, and
   `project.structure.summary`, `project.test.summary`, `project.docs.summary`, and
-  `project.language.summary`.
+  `project.language.summary`, and `project.config.summary`.
 - Next candidate: not selected.
 - Next candidate status: pending selection.
 - Broader capability expansion remains blocked.
@@ -58,7 +59,7 @@ vulnerability scanner, compliance engine, shell replacement, project build runne
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
 The most recent candidate,
-[project.language.summary](capability-proposals/project-language-summary.md), has advanced through
+[project.config.summary](capability-proposals/project-config-summary.md), has advanced through
 implementation as a bounded read-only metadata tool. Future read-only metadata tools must start
 again from a design-only candidate, proposal, implementation plan, explicit implementation decision,
 source-review handoff, policy fixtures, negative transcripts, no-new-powers evidence, and release

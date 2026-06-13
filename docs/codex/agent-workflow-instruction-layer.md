@@ -44,7 +44,7 @@ secrets-manager tools, sandbox orchestration, SIEM adapters, compliance automati
 security-product claims.
 
 Tool-count changes require explicit proposal, plan, gate, manifest lock update, policy/parity
-coverage, source-review handoff, and release/readiness updates. The current governed tool count is 18.
+coverage, source-review handoff, and release/readiness updates. The current governed tool count is 19.
 
 ## Validation
 

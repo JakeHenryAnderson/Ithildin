@@ -13,7 +13,7 @@ production identity, runtime Postgres, hosted telemetry, remote MCP hosting, plu
 secrets-manager tools, sandbox orchestration, SIEM adapters, compliance automation, or public
 security-product claims.
 
-Current governed tool count is 18. Any tool-count change requires an explicit capability proposal,
+Current governed tool count is 19. Any tool-count change requires an explicit capability proposal,
 implementation plan, implementation gate, manifest lock update, policy/parity coverage, source-review
 handoff, and release/readiness updates.
 

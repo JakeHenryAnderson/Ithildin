@@ -110,6 +110,18 @@ APPROVED_CAPABILITIES = [
         "implementation_gate": "project-language-summary-implementation-gate",
         "source_review_bundle": "project-language-summary-source-review-bundle",
     },
+    {
+        "tool_name": "project.config.summary",
+        "manifest": "tool-manifests/project-config-summary.yaml",
+        "proposal": "docs/codex/capability-proposals/project-config-summary.md",
+        "implementation_plan": (
+            "docs/codex/capability-implementation-plans/project-config-summary.md"
+        ),
+        "implementation": "docs/codex/v3-project-config-summary-implementation.md",
+        "source_review": "docs/codex/v3-project-config-summary-source-review.md",
+        "implementation_gate": "project-config-summary-implementation-gate",
+        "source_review_bundle": "project-config-summary-source-review-bundle",
+    },
 ]
 REQUIRED_INVENTORY_PHRASES = [
     "Status: approved read-only metadata inventory",
@@ -121,7 +133,8 @@ REQUIRED_INVENTORY_PHRASES = [
     "project.test.summary",
     "project.docs.summary",
     "project.language.summary",
-    "tool count `18`",
+    "project.config.summary",
+    "tool count `19`",
     "no shell",
     "no broad filesystem writes",
     "no arbitrary Git command execution",
@@ -219,6 +232,7 @@ def _implemented_read_only_metadata_tools(repo_root: Path) -> list[str]:
                 "project.test.summary",
                 "project.docs.summary",
                 "project.language.summary",
+                "project.config.summary",
             }
         ):
             names.append(name)

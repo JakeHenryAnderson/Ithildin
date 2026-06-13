@@ -23,6 +23,7 @@ ALLOWED_NETWORK_TOOLS = {"http.fetch"}
 ALLOWED_NEW_READ_TOOLS = {
     "git.show.commit_metadata",
     "git.show.ref_summary",
+    "project.config.summary",
     "project.dependency.summary",
     "project.manifest.summary",
     "project.structure.summary",
