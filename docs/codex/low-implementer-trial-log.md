@@ -34,3 +34,33 @@ suggestions, low manager cleanup, and no boundary drift.
 
 Trial 2 inspected only the packet-allowed files, returned suggestions only, and avoided safety,
 product-risk, runtime, tool, policy, approval, audit, MCP/API, and UI-runtime claims.
+
+## Trial 3: make-target-wiring
+
+| Field | Result |
+| --- | --- |
+| ticket type | `make-target-wiring` |
+| model/effort | `gpt-5.4-mini`, low reasoning |
+| accepted suggestions | `0`: README, Makefile, and release-readiness wiring were already aligned |
+| rejected suggestions | `0`: no candidate edits were returned |
+| boundary drift observed | `false` |
+| manager cleanup required | none |
+| recommendation | delegate again for read-only Make target wiring scans when wiring drift is suspected |
+
+Trial 3 inspected only the packet-allowed files, returned suggestions only, and avoided safety,
+product-risk, runtime, tool, policy, approval, audit, MCP/API, and UI-runtime claims.
+
+## Trial 4: packet-inventory
+
+| Field | Result |
+| --- | --- |
+| ticket type | `packet-inventory` |
+| model/effort | `gpt-5.4-mini`, low reasoning |
+| accepted suggestions | `2`: tightened README packet wording and added the generated packet path to the reproduction map |
+| rejected suggestions | `1`: did not add a review-docs link to a non-existent committed packet document |
+| boundary drift observed | `false` |
+| manager cleanup required | low |
+| recommendation | delegate again for read-only packet inventory scans; direct patching remains disabled |
+
+Trial 4 inspected only the packet-allowed files, returned suggestions only, and avoided safety,
+product-risk, runtime, tool, policy, approval, audit, MCP/API, and UI-runtime claims.

@@ -276,6 +276,9 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
         encoding="utf-8"
     )
     trial_log = Path("docs/codex/low-implementer-trial-log.md").read_text(encoding="utf-8")
+    delegation_scorecard = Path("docs/codex/low-implementer-delegation-scorecard.md").read_text(
+        encoding="utf-8"
+    )
     task = output_dir.joinpath("LOW_IMPLEMENTER_TASK.md").read_text(encoding="utf-8")
     scorecard = output_dir.joinpath("MANAGER_SCORECARD.md").read_text(encoding="utf-8")
     summary = json.loads(output_dir.joinpath("packet-summary.json").read_text(encoding="utf-8"))
@@ -323,6 +326,7 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     assert "docs/codex/low-implementer-delegation-pilot.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/low-implementer-ticket-catalog.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/low-implementer-trial-log.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/low-implementer-delegation-scorecard.md" in review_docs.REVIEW_DOCS
     for phrase in [
         "Low-Implementer Ticket Catalog",
         "docs-link-scan",
@@ -336,6 +340,8 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
         "Low-Implementer Trial Log",
         "Trial 1: docs-link-scan",
         "Trial 2: stale-wording-scan",
+        "Trial 3: make-target-wiring",
+        "Trial 4: packet-inventory",
         "accepted suggestions",
         "rejected suggestions",
         "boundary drift observed",
@@ -343,6 +349,17 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
         "recommendation",
     ]:
         assert phrase in trial_log
+    for phrase in [
+        "Low-Implementer Delegation Scorecard",
+        "total trials",
+        "accepted suggestions",
+        "rejected suggestions",
+        "boundary drift count",
+        "cleanup trend",
+        "current recommendation",
+        "direct low-worker patching remains disabled",
+    ]:
+        assert phrase in delegation_scorecard
 
 
 def test_v03_milestone_manifest_is_linked_and_complete() -> None:

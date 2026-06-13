@@ -233,6 +233,7 @@ DEFAULT_DOCS = [
     "docs/codex/low-implementer-delegation-pilot.md",
     "docs/codex/low-implementer-ticket-catalog.md",
     "docs/codex/low-implementer-trial-log.md",
+    "docs/codex/low-implementer-delegation-scorecard.md",
     "docs/codex/reviewer-finding-template.md",
     "docs/codex/reviewer-finding-intake.md",
     "docs/codex/signed-audit-exports.md",

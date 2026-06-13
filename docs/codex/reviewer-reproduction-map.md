@@ -61,6 +61,7 @@ packet, then `make low-implementer-delegation-check` to validate that the packet
 docs-only, and non-runtime. This is a local productivity experiment; Gemma/local-model suggestions
 remain optional advisory input, and the packet does not call a model, grant tool powers, or replace
 main-manager review.
+The generated packet artifacts are written under `var/agent-delegation/low-implementer-packet/`.
 Run `make reviewer-findings-check` after converting any internal AI/subagent, GPT 5.5 Pro, or human
 review note into a structured finding file. The check validates
 [reviewer-finding-intake.md](reviewer-finding-intake.md) records before the closure matrix changes.
