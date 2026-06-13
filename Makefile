@@ -306,6 +306,9 @@ project-ci-summary-proposal-check:
 project-ci-summary-implementation-plan-check:
 	uv run python scripts/project_ci_summary_implementation_plan_check.py
 
+project-ci-summary-design-review-packet:
+	uv run python scripts/project_ci_summary_design_review_packet.py
+
 tool-surface-invariant-gate:
 	uv run python scripts/tool_surface_invariant_gate.py
 

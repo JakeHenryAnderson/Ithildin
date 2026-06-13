@@ -85,12 +85,13 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    project_ci_summary_design_review_packet,
+    project_ci_summary_implementation_plan_check,
+    project_ci_summary_proposal_check,
     project_config_summary_implementation_gate,
     project_config_summary_implementation_plan_check,
     project_config_summary_proposal_check,
     project_config_summary_source_review_bundle,
-    project_ci_summary_implementation_plan_check,
-    project_ci_summary_proposal_check,
     project_dependency_summary_design_review_packet,
     project_dependency_summary_implementation_gate,
     project_dependency_summary_implementation_plan_check,
@@ -2064,6 +2065,63 @@ def test_project_ci_summary_implementation_plan_check_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/capability-implementation-plans/project-ci-summary.md" in docs_site
+
+
+def test_project_ci_summary_design_review_packet_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-ci-summary-design-review"
+
+    built = project_ci_summary_design_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    expected_files = {
+        "00_PROJECT_CI_SUMMARY_DESIGN_REVIEW_INDEX.md",
+        "01_PROJECT_CI_SUMMARY_DESIGN_REVIEW_PROMPT.md",
+        "02_NEXT_CAPABILITY_READINESS.md",
+        "03_PROJECT_CI_SUMMARY_SELECTION.md",
+        "04_PROJECT_CI_SUMMARY_PROPOSAL.md",
+        "05_PROJECT_CI_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "06_GATE_AND_RISK_EVIDENCE.md",
+        "07_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "project-ci-summary-design-review-artifact-hashes.json",
+    }
+    assert built == output_dir
+    assert {path.name for path in output_dir.iterdir()} == expected_files
+
+    prompt = (output_dir / "01_PROJECT_CI_SUMMARY_DESIGN_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    index_doc = (output_dir / "00_PROJECT_CI_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "06_GATE_AND_RISK_EVIDENCE.md").read_text(encoding="utf-8")
+    hashes = json.loads(
+        (output_dir / "project-ci-summary-design-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+
+    assert "EXT-DESIGN-PCI-###" in prompt
+    assert "project.ci.summary" in prompt
+    assert "workflow names" in prompt
+    assert "command/script values" in prompt
+    assert "No-New-Powers Guardrail" in evidence
+    assert "Implementation status: blocked" in index_doc
+    assert "project-ci-summary-design-review-artifact-hashes.json" not in hashed_paths
+    assert hashed_paths == expected_files - {
+        "project-ci-summary-design-review-artifact-hashes.json"
+    }
+    assert "make project-ci-summary-design-review-packet" in Path("README.md").read_text(
+        encoding="utf-8"
+    )
+    assert "project-ci-summary-design-review-packet:" in Path("Makefile").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_project_config_summary_implementation_gate_is_wired() -> None:
@@ -10901,7 +10959,7 @@ def test_observability_readiness_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 20
-    assert report["next_capability_candidate"] is None
+    assert report["next_capability_candidate"] == "project.ci.summary"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["runtime_changes_allowed"] is False
