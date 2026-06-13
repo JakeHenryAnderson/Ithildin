@@ -3156,6 +3156,9 @@ def test_git_tag_metadata_source_review_bundle_is_wired(tmp_path: Path) -> None:
     assert "test_git_tag_metadata_returns_name_free_local_tag_metadata" in tests_bundle
     assert "git_tag_metadata_preview_matches_runtime" in tests_bundle
     assert "docs/codex/v0.9-git-tag-metadata-implementation.md" in contracts_bundle
+    assert "docs/codex/v0.9-git-tag-metadata-internal-review.md" in contracts_bundle
+    assert "XH-GITTAG-001" in contracts_bundle
+    assert "XH-GITTAG-002" in contracts_bundle
     assert "capability-proposals/git-show-tag-metadata.md" in contracts_bundle
     assert "make git-tag-metadata-implementation-gate" in evidence
     assert "SKIPPED: make git-tag-metadata-implementation-gate" in evidence

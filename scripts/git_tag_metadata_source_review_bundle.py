@@ -41,6 +41,7 @@ TEST_FILES = [
 
 CONTRACT_DOCS = [
     Path("docs/codex/v0.9-git-tag-metadata-implementation.md"),
+    Path("docs/codex/v0.9-git-tag-metadata-internal-review.md"),
     Path("docs/codex/capability-implementation-plans/git-show-tag-metadata.md"),
     Path("docs/codex/capability-proposals/git-show-tag-metadata.md"),
     Path("docs/codex/read-only-local-metadata-contract.md"),
