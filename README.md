@@ -315,6 +315,8 @@ checked with `make control-mapping-readiness`.
   `project.config.summary` implementation-planning packet without authorizing runtime work.
 - `make project-config-summary-implementation-gate` - validate the bounded read-only
   implementation decision for `project.config.summary`.
+- `make project-config-summary-source-review-bundle` - build the focused source/test/evidence
+  handoff for the approved `project.config.summary` implementation.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -625,8 +627,9 @@ checked with `make project-config-summary-proposal-check`. Its implementation-pl
 and is checked with `make project-config-summary-implementation-plan-check`; the bounded
 implementation decision is
 [docs/codex/v3-project-config-summary-implementation.md](docs/codex/v3-project-config-summary-implementation.md)
-and is checked with `make project-config-summary-implementation-gate`. The previous selected
-candidate,
+and is checked with `make project-config-summary-implementation-gate`; generate its focused
+source-review handoff with `make project-config-summary-source-review-bundle`. The previous
+selected candidate,
 [docs/codex/capability-proposals/project-language-summary.md](docs/codex/capability-proposals/project-language-summary.md),
 advanced through implementation planning and source-review handoff. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-language-summary.md](docs/codex/capability-implementation-plans/project-language-summary.md)

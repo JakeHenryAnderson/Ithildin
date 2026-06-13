@@ -183,6 +183,7 @@ externally closed.
 - [Capability Proposal: project.config.summary](capability-proposals/project-config-summary.md)
 - [Implementation-Planning Packet: project.config.summary](capability-implementation-plans/project-config-summary.md)
 - [v3 project.config.summary Implementation Decision](v3-project-config-summary-implementation.md)
+- [v3 project.config.summary Source Review Handoff](v3-project-config-summary-source-review.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)
 - [Read-Only Capability Source Review Template](read-only-capability-source-review-template.md)

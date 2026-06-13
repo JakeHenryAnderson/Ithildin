@@ -23,7 +23,7 @@ contents, config values, package scripts, environment variables, dependency name
 
 - selected candidate: `project.config.summary`;
 - scope: design-only proposal;
-- tool count remains `18`;
+- tool count remains `19`;
 - implementation remains blocked;
 - broader capability expansion remains blocked.
 

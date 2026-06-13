@@ -27,6 +27,7 @@ EXPECTED_TOOL_NAMES = [
     "git.show.ref_summary",
     "git.status",
     "http.fetch",
+    "project.config.summary",
     "project.dependency.summary",
     "project.docs.summary",
     "project.language.summary",

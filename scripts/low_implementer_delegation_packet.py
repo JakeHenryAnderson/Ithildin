@@ -135,7 +135,7 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
             failures.append("packet summary must keep new_tool_powers_allowed=false")
         if summary.get("model_call_performed") is not False:
             failures.append("packet summary must record model_call_performed=false")
-        if summary.get("tool_count") != 18:
+        if summary.get("tool_count") != 19:
             failures.append("packet summary tool_count drifted from 19")
 
     return {

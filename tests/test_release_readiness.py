@@ -84,6 +84,7 @@ from scripts import (
     project_config_summary_implementation_gate,
     project_config_summary_implementation_plan_check,
     project_config_summary_proposal_check,
+    project_config_summary_source_review_bundle,
     project_dependency_summary_design_review_packet,
     project_dependency_summary_implementation_gate,
     project_dependency_summary_implementation_plan_check,
@@ -641,7 +642,7 @@ def test_read_only_metadata_capability_check_is_wired() -> None:
         assert rel_path in review_docs.REVIEW_DOCS
         assert rel_path in docs_site
         assert title in index
-    assert "Tool count is `16`" in debt_register
+    assert "Tool count is `19`" in debt_register
     assert "Tool count is `12`" not in debt_register
     assert "project.manifest.summary" in debt_register
     assert "make next-capability-readiness" in debt_register
@@ -657,12 +658,13 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
     doc = Path("docs/codex/read-only-capability-inventory.md").read_text(encoding="utf-8")
 
     assert report["valid"] is True
-    assert report["capability_count"] == 8
+    assert report["capability_count"] == 9
     assert report["tool_count"] == 19
     assert report["new_power_classes_allowed"] is False
     assert {capability["tool_name"] for capability in report["capabilities"]} == {
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "project.config.summary",
         "project.dependency.summary",
         "project.manifest.summary",
         "project.structure.summary",
@@ -678,7 +680,7 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
         "project.test.summary",
         "project.docs.summary",
         "project.language.summary",
-        "tool count `18`",
+        "tool count `19`",
         "no shell",
         "no broad filesystem writes",
         "no arbitrary Git command execution",
@@ -714,7 +716,7 @@ def test_v3_next_capability_candidate_check_is_wired() -> None:
     assert report["candidate_status"] == "design_only_selected"
     assert report["implementation_allowed"] is False
     assert report["tool_count"] == 19
-    assert report["approved_read_only_capabilities"] == 8
+    assert report["approved_read_only_capabilities"] == 9
     for phrase in [
         "Status: design-only candidate selection",
         "project.dependency.summary",
@@ -755,7 +757,7 @@ def test_next_capability_readiness_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 19
-    assert report["current_approved_read_only_capabilities"] == 8
+    assert report["current_approved_read_only_capabilities"] == 9
     assert report["next_candidate"] is None
     assert report["next_candidate_status"] == "pending_selection"
     assert report["next_candidate_implementation_allowed"] is False
@@ -794,7 +796,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 19
-    assert report["approved_tool_count"] == 8
+    assert report["approved_tool_count"] == 9
     assert report["approved_tools"] == [
         "git.show.commit_metadata",
         "git.show.ref_summary",
@@ -804,6 +806,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.test.summary",
         "project.docs.summary",
         "project.language.summary",
+        "project.config.summary",
     ]
     assert report["next_candidate"] is None
     assert report["broader_capability_expansion_allowed"] is False
@@ -820,7 +823,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.test.summary",
         "project.docs.summary",
         "project.language.summary",
-        "Tool count: `18`",
+        "Tool count: `19`",
         "Next candidate: not selected",
         "Next candidate status: pending selection",
         "Broader capability expansion remains blocked",
@@ -992,7 +995,7 @@ def test_project_dependency_summary_design_review_packet_builds_from_fixture(
             "project-dependency-summary-design-review-artifact-hashes.json"
         ).read_text(encoding="utf-8")
     )
-    assert "Tool count: `18`" in index
+    assert "Tool count: `19`" in index
     assert "EXT-DESIGN-PDS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1147,7 +1150,7 @@ def test_project_structure_summary_implementation_gate_is_wired() -> None:
         "approved_limited_read_only runtime implementation",
         "adds one tool manifest",
         "adds one executor dispatch path",
-        "Runtime behavior is bounded read-only",
+        "runtime behavior is bounded read-only",
         "risk `read`",
         "category `project`",
         "workspace_id",
@@ -1260,7 +1263,7 @@ def test_project_structure_summary_design_review_packet_builds_from_fixture(
             "project-structure-summary-design-review-artifact-hashes.json"
         ).read_text(encoding="utf-8")
     )
-    assert "Tool count: `18`" in index
+    assert "Tool count: `19`" in index
     assert "EXT-DESIGN-PSS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1353,7 +1356,7 @@ def test_project_test_summary_design_review_packet_builds_from_fixture(
             encoding="utf-8"
         )
     )
-    assert "Tool count: `18`" in index
+    assert "Tool count: `19`" in index
     assert "EXT-DESIGN-PTS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1448,7 +1451,7 @@ def test_project_docs_summary_design_review_packet_builds_from_fixture(
             encoding="utf-8"
         )
     )
-    assert "Tool count: `18`" in index
+    assert "Tool count: `19`" in index
     assert "EXT-DESIGN-PDS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -1697,7 +1700,7 @@ def test_project_config_summary_proposal_check_is_wired() -> None:
         "External/source Review Requirement",
     ]:
         assert phrase in proposal
-    assert "tool count remains `18`" in selection
+    assert "tool count remains `19`" in selection
     assert "implementation remains blocked" in selection
     assert "make project-config-summary-proposal-check" in readme
     assert "project-config-summary-proposal-check:" in makefile
@@ -1812,6 +1815,64 @@ def test_project_config_summary_implementation_gate_is_wired() -> None:
     assert "v3 project.config.summary Implementation Decision" in index
     assert "docs/codex/v3-project-config-summary-implementation.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-project-config-summary-implementation.md" in docs_site
+
+
+def test_project_config_summary_source_review_bundle_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-config-summary-source-review"
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index_doc = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    built = project_config_summary_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    assert built == output_dir
+    expected = {
+        "00_PROJECT_CONFIG_SUMMARY_SOURCE_REVIEW_INDEX.md",
+        "01_PROJECT_CONFIG_SUMMARY_SOURCE_REVIEW_PROMPT.md",
+        "02_PROJECT_CONFIG_SUMMARY_IMPLEMENTATION_PACKET.md",
+        "03_PROJECT_CONFIG_SUMMARY_SOURCE_BUNDLE.md",
+        "04_PROJECT_CONFIG_SUMMARY_TESTS_BUNDLE.md",
+        "05_PROJECT_CONFIG_SUMMARY_CONTRACTS_BUNDLE.md",
+        "06_PROJECT_CONFIG_SUMMARY_EVIDENCE.md",
+        "07_PROJECT_CONFIG_SUMMARY_FOCUSED_TESTS.txt",
+        "08_PROJECT_CONFIG_SUMMARY_INTAKE_COMMANDS.md",
+        "project-config-summary-source-review-artifact-hashes.json",
+    }
+    assert {path.name for path in output_dir.iterdir()} == expected
+    prompt = (
+        output_dir / "01_PROJECT_CONFIG_SUMMARY_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    source_bundle = (
+        output_dir / "03_PROJECT_CONFIG_SUMMARY_SOURCE_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "project-config-summary-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert "EXT-CONFIG-###" in prompt
+    assert "project_config" in prompt
+    assert "project.config.summary" in source_bundle
+    assert "config values" in prompt
+    assert {entry["path"] for entry in hashes} == expected - {
+        "project-config-summary-source-review-artifact-hashes.json"
+    }
+    assert "make project-config-summary-source-review-bundle" in readme
+    assert "project-config-summary-source-review-bundle:" in makefile
+    assert "v3 project.config.summary Source Review Handoff" in index_doc
+    assert (
+        "docs/codex/v3-project-config-summary-source-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/v3-project-config-summary-source-review.md" in docs_site
 
 
 def test_project_language_summary_implementation_plan_check_is_wired() -> None:
@@ -1956,7 +2017,7 @@ def test_project_language_summary_design_review_packet_builds_from_fixture(
             "project-language-summary-design-review-artifact-hashes.json"
         ).read_text(encoding="utf-8")
     )
-    assert "Tool count: `18`" in index
+    assert "Tool count: `19`" in index
     assert "EXT-DESIGN-PLS-###" in prompt
     assert "Do not approve implementation" in prompt
     assert {entry["path"] for entry in hashes} == expected - {
@@ -2957,7 +3018,7 @@ def test_v09_design_review_packet_is_wired(tmp_path: Path) -> None:
         "Commit Evidence Reconciliation",
         "reviewed commit is what GPT 5.5 Pro / human reviewers inspect",
         "baseline commit is only the pre-v0.9 comparison point",
-        "Tool count: `18`",
+        "Tool count: `19`",
         "does not add or approve a tool manifest",
         "EXT-DESIGN-GIT-###",
         "implementation-planning sprint may be considered",
@@ -4094,7 +4155,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert summary_report["preflight"]["tool_count"] == 19
     assert generated == expected
     assert {entry["path"] for entry in hashes} == expected - {"live-demo-artifact-hashes.json"}
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "Finding namespace: `EXT-LIVE-DEMO-###`" in prompt
     assert "live-demo-runbook.md" in runbook_bundle
     assert "demo-scenario-pack-v2.md" in runbook_bundle
@@ -4910,6 +4971,7 @@ def test_no_new_powers_guardrail_is_wired_and_preserves_boundary() -> None:
         "git.show.ref_summary",
         "git.status",
         "http.fetch",
+        "project.config.summary",
         "project.dependency.summary",
         "project.docs.summary",
         "project.language.summary",
@@ -9026,7 +9088,7 @@ def test_agent_run_evidence_packet_is_wired(tmp_path: Path) -> None:
     assert "make agent-run-evidence-packet" in readme
     assert "agent-run-evidence-packet:" in makefile
     assert "276 - Agent Run evidence review packet | Done" in backlog
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "bounded read-only local-preview surfaces" in index
     assert "EXT-RUN-EVID-###" in prompt
     assert "apps/api/src/ithildin_api/agent_runs.py" in source
@@ -9115,7 +9177,7 @@ def test_agent_run_correlation_smoke_and_packet_are_wired(tmp_path: Path) -> Non
     assert "agent-run-correlation-packet:" in makefile
     assert "285 - Agent Run correlation smoke | Done" in backlog
     assert "286 - Agent Run correlation packet | Done" in backlog
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "Finding namespace: `EXT-RUN-CORR-###`" in prompt
     assert "agent-run-evidence-contract.md" in contracts
     assert "agent-run-evidence-export-implementation.md" in contracts
@@ -9179,7 +9241,7 @@ def test_agent_run_evidence_readiness_gate_is_wired() -> None:
         "dashboard-evidence-checklist-check",
         "no-new-powers-guardrail",
         "tool-surface-invariant-gate",
-        "tool count remains `18`",
+        "tool count remains `19`",
         "run export runtime behavior is not allowed",
         "secret-free",
         "design-only",
@@ -9224,7 +9286,7 @@ def test_agent_run_operations_readiness_gate_is_wired() -> None:
         "no run controls",
         "no sandbox orchestration",
         "no SIEM adapters",
-        "tool count remains `18`",
+        "tool count remains `19`",
     ]:
         assert phrase in gate
     for phrase in [
@@ -9276,7 +9338,7 @@ def test_agent_run_timeline_packet_is_wired(tmp_path: Path) -> None:
     assert "make agent-run-timeline-packet" in readme
     assert "agent-run-timeline-packet:" in makefile
     assert "270 - Agent Run timeline packet | Done" in backlog
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "Finding namespace: `EXT-RUN-###`" in prompt
     assert "apps/api/src/ithildin_api/agent_runs.py" in source
     assert "apps/ui/src/App.tsx" in source
@@ -9332,7 +9394,7 @@ def test_agent_run_timeline_readiness_gate_is_wired() -> None:
         "review-console Agent Runs panel",
         "no-new-powers-guardrail",
         "tool-surface-invariant-gate",
-        "tool count remains `18`",
+        "tool count remains `19`",
         "admin-only and read-only",
         "secret-free",
         "design-only",
@@ -9665,7 +9727,7 @@ def test_observability_control_packet_is_wired(tmp_path: Path) -> None:
     assert "make observability-control-packet" in readme
     assert "observability-control-packet:" in makefile
     assert "268 - Observability control packet | Done" in backlog
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "Finding namespace: `EXT-OBS-###`" in prompt
     assert "data-classification-design.md" in contracts
     assert "control-mapping-design.md" in contracts
@@ -9731,7 +9793,7 @@ def test_operator_sandbox_demo_packet_is_wired(tmp_path: Path) -> None:
     assert "operator-sandbox-dashboard-checklist:" in makefile
     assert "283 - Operator sandbox demo packet | Done" in backlog
     assert "284 - Operator sandbox demo smoke evidence | Done" in backlog
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "does not add runtime behavior" in index
     assert "Finding namespace: `EXT-SANDBOX-DEMO-###`" in prompt
     assert "operator-managed sandbox/workbench local demo" in prompt
@@ -9934,7 +9996,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert {entry["path"] for entry in hashes} == expected - {
         "operator-workbench-artifact-hashes.json"
     }
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "Finding namespace: `EXT-WORKBENCH-###`" in prompt
     assert "Agent Runs `Demo Path`, filters, grouped timeline evidence" in prompt
     assert "operator-workbench-readiness.md" in docs_bundle
@@ -10112,7 +10174,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "summary",
         "does not start services",
         "does not add run controls",
-        "tool count remains `18`",
+        "tool count remains `19`",
         "no-new-powers",
     ]:
         assert phrase in gate
@@ -10259,7 +10321,7 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
         "demo-evidence-artifact-hashes.json"
     }
     assert "Demo Evidence Closure Packet" in index
-    assert "tool count remains `18`" in index
+    assert "tool count remains `19`" in index
     assert "Demo flow result status:" in index
     assert "DEMO_OBSERVED_SUMMARY.md" in index
     assert "Finding namespace: `EXT-DEMO-###`" in prompt
@@ -10293,7 +10355,7 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
         "demo-evidence-artifact-hashes.json",
         "not_run",
         "does not add run controls",
-        "tool count remains `18`",
+        "tool count remains `19`",
         "no-new-powers",
     ]:
         assert phrase in closure_doc
@@ -10344,7 +10406,7 @@ def test_control_mapping_readiness_gate_is_wired() -> None:
         "incident-reconstruction-check",
         "no-new-powers-guardrail",
         "tool-surface-invariant-gate",
-        "tool count remains `18`",
+        "tool count remains `19`",
         "control mapping support",
         "mediated actions only",
         "no new powerful tool classes",
@@ -10426,7 +10488,7 @@ def test_observability_readiness_gate_is_wired() -> None:
         "next-capability-readiness",
         "no-new-powers-guardrail",
         "tool-surface-invariant-gate",
-        "tool count remains `18`",
+        "tool count remains `19`",
         "operator-managed",
         "export-design-only",
         "no new powerful tool classes",
