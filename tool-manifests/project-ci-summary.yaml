@@ -1,0 +1,44 @@
+name: project.ci.summary
+version: 0.1.0
+title: Summarize project CI posture
+risk: read
+category: project
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    workspace_id:
+      type: string
+      default: default
+    root:
+      type: string
+      default: "."
+      minLength: 1
+      maxLength: 240
+    max_depth:
+      type: integer
+      minimum: 0
+      maximum: 5
+      default: 4
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 300
+      default: 200
+    include_categories:
+      type: array
+      minItems: 1
+      maxItems: 5
+      uniqueItems: true
+      items:
+        type: string
+        enum:
+          - provider_counts
+          - trigger_category_counts
+          - job_category_counts
+          - location_bucket_counts
+          - skipped_counts

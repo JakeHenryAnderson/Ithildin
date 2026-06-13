@@ -982,6 +982,7 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
         "project.test.summary",
         "project.docs.summary",
         "project.config.summary",
+        "project.ci.summary",
         "project.language.summary",
     }:
         output_policy = content.get("output_policy")
@@ -1075,6 +1076,31 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
             for section_key in (
                 "config_category_counts",
                 "config_location_counts",
+                "skipped_counts",
+            ):
+                section = content.get(section_key)
+                if isinstance(section, dict):
+                    metadata[f"{section_key}_keys"] = cast(
+                        JsonValue,
+                        sorted(key for key in section if isinstance(key, str)),
+                    )
+        if tool_name == "project.ci.summary":
+            summary = content.get("summary")
+            if isinstance(summary, dict):
+                for key in (
+                    "visible_ci_directory_count",
+                    "visible_ci_config_count",
+                    "max_observed_depth",
+                    "inspected_entry_count",
+                ):
+                    value = summary.get(key)
+                    if isinstance(value, int) and not isinstance(value, bool):
+                        metadata[key] = value
+            for section_key in (
+                "provider_counts",
+                "trigger_category_counts",
+                "job_category_counts",
+                "location_bucket_counts",
                 "skipped_counts",
             ):
                 section = content.get(section_key)

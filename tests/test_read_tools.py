@@ -1844,6 +1844,189 @@ def test_project_config_summary_rejects_unsupported_arguments(tmp_path: Path) ->
             filesystem.project_config_summary(cast(JsonObject, arguments))
 
 
+def test_project_ci_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    workflows.joinpath("release-pipeline.yml").write_text(
+        """
+name: private release workflow
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  secret-build-name:
+    steps:
+      - run: echo "$PRIVATE_TOKEN"
+      - run: npm test
+      - run: ruff check .
+""",
+        encoding="utf-8",
+    )
+    root.joinpath(".gitlab-ci.yml").write_text(
+        """
+stages:
+  - deploy
+deploy-client-prod:
+  script:
+    - ./deploy --token "$SECRET"
+""",
+        encoding="utf-8",
+    )
+    circle = root / ".circleci"
+    circle.mkdir()
+    circle.joinpath("config.yml").write_text("jobs:\n  build:\n    steps: []\n", encoding="utf-8")
+    root.joinpath("azure-pipelines.yml").write_text(
+        "trigger:\n- main\npool: private\n",
+        encoding="utf-8",
+    )
+    root.joinpath("Jenkinsfile").write_text("pipeline { stages { stage('Build') {} } }\n")
+    ci_dir = root / "ci"
+    ci_dir.mkdir()
+    ci_dir.joinpath("custom.yaml").write_text("manual release audit\n", encoding="utf-8")
+    root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
+    root.joinpath(".git").mkdir()
+    root.joinpath(".git", "config").write_text("[remote]\n", encoding="utf-8")
+
+    summary = filesystem.project_ci_summary({"root": ".", "max_depth": 4, "limit": 40})
+
+    assert summary["tool_name"] == "project.ci.summary"
+    assert summary["summary"] == {
+        "visible_ci_directory_count": 4,
+        "visible_ci_config_count": 6,
+        "max_observed_depth": 3,
+        "inspected_entry_count": 12,
+    }
+    providers = cast(dict[str, int], summary["provider_counts"])
+    assert providers["github_actions"] == 1
+    assert providers["gitlab_ci"] == 1
+    assert providers["circleci"] == 1
+    assert providers["azure_pipelines"] == 1
+    assert providers["jenkins"] == 1
+    assert providers["unknown_ci"] == 1
+    triggers = cast(dict[str, int], summary["trigger_category_counts"])
+    assert triggers["push"] == 1
+    assert triggers["pull_request"] == 1
+    assert triggers["manual"] >= 2
+    jobs = cast(dict[str, int], summary["job_category_counts"])
+    assert jobs["build"] >= 2
+    assert jobs["test"] == 1
+    assert jobs["lint"] == 1
+    assert jobs["deploy_label"] == 1
+    assert jobs["release_label"] >= 1
+    locations = cast(dict[str, int], summary["location_bucket_counts"])
+    assert locations["github_workflows"] == 1
+    assert locations["root_level"] == 3
+    assert locations["ci_directory"] == 2
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hidden_or_sensitive"] == 1
+    assert skipped["git_internal"] == 1
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["workflow_names_included"] is False
+    assert output_policy["job_names_included"] is False
+    assert output_policy["raw_paths_included"] is False
+    assert output_policy["command_values_included"] is False
+    assert output_policy["environment_names_or_values_included"] is False
+    assert output_policy["ci_execution_used"] is False
+    dumped = json_dump(summary)
+    assert "release-pipeline" not in dumped
+    assert "secret-build-name" not in dumped
+    assert "PRIVATE_TOKEN" not in dumped
+    assert "deploy-client-prod" not in dumped
+    assert "SECRET" not in dumped
+    assert ".github" not in dumped
+    assert ".gitlab" not in dumped
+    assert ".circleci" not in dumped
+    assert ".env" not in dumped
+
+
+def test_project_ci_summary_empty_workspace_and_filters(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+
+    summary = filesystem.project_ci_summary(
+        {
+            "root": ".",
+            "max_depth": 1,
+            "limit": 10,
+            "include_categories": ["provider_counts"],
+        }
+    )
+
+    assert summary["summary"]["visible_ci_config_count"] == 0
+    assert "provider_counts" in summary
+    assert "trigger_category_counts" not in summary
+    assert cast(dict[str, int], summary["provider_counts"])["github_actions"] == 0
+    assert summary["output_policy"]["ci_execution_used"] is False
+
+
+def test_project_ci_summary_honors_limits_and_skips_symlink_hardlink(
+    tmp_path: Path,
+) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    ci_dir = root / "ci"
+    ci_dir.mkdir()
+    target = ci_dir / "pipeline.yaml"
+    target.write_text("push build\n", encoding="utf-8")
+    try:
+        os.link(target, ci_dir / "pipeline-copy.yaml")
+    except OSError:
+        pytest.skip("hardlinks are not supported on this filesystem")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root.joinpath("outside-link").symlink_to(outside)
+
+    summary = filesystem.project_ci_summary(
+        {"root": ".", "max_depth": 2, "limit": 20, "include_categories": ["skipped_counts"]}
+    )
+
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hardlink"] == 2
+    assert skipped["symlink"] == 1
+    dumped = json_dump(summary)
+    assert "pipeline" not in dumped
+    assert "outside" not in dumped
+
+
+def test_project_ci_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "."},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "%2e%2e/outside"},
+        {"root": "bad\x1fpath"},
+        {"max_depth": -1},
+        {"max_depth": 6},
+        {"limit": 0},
+        {"limit": 301},
+        {"include_categories": []},
+        {"include_categories": ["provider_counts", "provider_counts"]},
+        {"include_categories": ["workflow_names"]},
+        {"glob": "**/*"},
+        {"regex": ".*"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_workflow_names": True},
+        {"include_job_names": True},
+        {"include_raw_paths": True},
+        {"include_command_values": True},
+        {"include_environment": True},
+        {"include_dependency_names": True},
+        {"execute_ci": True},
+        {"run_ci": True},
+        {"shell": "make test"},
+        {"registry_url": "https://registry.example.test"},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_ci_summary(cast(JsonObject, arguments))
+
+
 def test_project_dependency_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

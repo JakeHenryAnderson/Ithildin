@@ -41,6 +41,7 @@ READ_TOOL_NAMES = frozenset(
         "project.test.summary",
         "project.docs.summary",
         "project.config.summary",
+        "project.ci.summary",
         "project.language.summary",
     }
 )
@@ -54,6 +55,7 @@ _PROJECT_STRUCTURE_SUMMARY_TOOL = "project.structure.summary"
 _PROJECT_TEST_SUMMARY_TOOL = "project.test.summary"
 _PROJECT_DOCS_SUMMARY_TOOL = "project.docs.summary"
 _PROJECT_CONFIG_SUMMARY_TOOL = "project.config.summary"
+_PROJECT_CI_SUMMARY_TOOL = "project.ci.summary"
 _PROJECT_LANGUAGE_SUMMARY_TOOL = "project.language.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
@@ -211,6 +213,56 @@ _PROJECT_CONFIG_LOCATIONS = (
     "tooling_directory",
     "unknown_location",
 )
+_PROJECT_CI_DEFAULT_DEPTH = 4
+_PROJECT_CI_MAX_DEPTH = 5
+_PROJECT_CI_DEFAULT_LIMIT = 200
+_PROJECT_CI_MAX_LIMIT = 300
+_PROJECT_CI_SECTIONS = (
+    "provider_counts",
+    "trigger_category_counts",
+    "job_category_counts",
+    "location_bucket_counts",
+    "skipped_counts",
+)
+_PROJECT_CI_PROVIDERS = (
+    "github_actions",
+    "gitlab_ci",
+    "circleci",
+    "azure_pipelines",
+    "buildkite",
+    "jenkins",
+    "travis",
+    "unknown_ci",
+)
+_PROJECT_CI_TRIGGER_CATEGORIES = (
+    "push",
+    "pull_request",
+    "schedule",
+    "manual",
+    "release",
+    "tag",
+    "unknown_trigger",
+)
+_PROJECT_CI_JOB_CATEGORIES = (
+    "build",
+    "test",
+    "lint",
+    "security_scan_label",
+    "deploy_label",
+    "release_label",
+    "unknown_job",
+)
+_PROJECT_CI_LOCATION_BUCKETS = (
+    "root_level",
+    "ci_directory",
+    "github_workflows",
+    "config_directory",
+    "source_adjacent",
+    "unknown_location",
+)
+_PROJECT_CI_SAFE_DOT_DIRS = frozenset({".github", ".circleci", ".buildkite"})
+_PROJECT_CI_SAFE_DOT_FILES = frozenset({".gitlab-ci.yml", ".gitlab-ci.yaml", ".travis.yml"})
+_PROJECT_CI_READ_BYTES = 65536
 _PROJECT_LANGUAGE_DEFAULT_DEPTH = 3
 _PROJECT_LANGUAGE_MAX_DEPTH = 5
 _PROJECT_LANGUAGE_DEFAULT_LIMIT = 200
@@ -466,6 +518,8 @@ class ReadToolExecutor:
             return self._project_docs_resource_from_arguments(arguments)
         if tool_name == _PROJECT_CONFIG_SUMMARY_TOOL:
             return self._project_config_resource_from_arguments(arguments)
+        if tool_name == _PROJECT_CI_SUMMARY_TOOL:
+            return self._project_ci_resource_from_arguments(arguments)
         if tool_name == _PROJECT_LANGUAGE_SUMMARY_TOOL:
             return self._project_language_resource_from_arguments(arguments)
 
@@ -602,6 +656,36 @@ class ReadToolExecutor:
                 "root_label": _project_config_root_label(filesystem, target),
                 "max_depth": _project_config_max_depth(arguments),
                 "limit": _project_config_limit(arguments),
+                "in_scope": True,
+            }
+        )
+        return resource
+
+    def _project_ci_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        root = _project_ci_root(arguments)
+        resource: JsonObject = {
+            "type": "project_ci",
+            "workspace_id": workspace_id,
+            "root_label": "unresolved",
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(root)
+            if not target.is_dir():
+                raise ReadToolError("project CI root is not a directory")
+            _project_ci_max_depth(arguments)
+            _project_ci_limit(arguments)
+            _project_ci_include_categories(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "root_label": _project_ci_root_label(filesystem, target),
+                "max_depth": _project_ci_max_depth(arguments),
+                "limit": _project_ci_limit(arguments),
                 "in_scope": True,
             }
         )
@@ -790,6 +874,8 @@ class ReadToolExecutor:
             return filesystem.project_docs_summary(arguments)
         if tool_name == _PROJECT_CONFIG_SUMMARY_TOOL:
             return filesystem.project_config_summary(arguments)
+        if tool_name == _PROJECT_CI_SUMMARY_TOOL:
+            return filesystem.project_ci_summary(arguments)
         if tool_name == _PROJECT_LANGUAGE_SUMMARY_TOOL:
             return filesystem.project_language_summary(arguments)
         raise ReadToolError("unsupported read tool")
@@ -1658,6 +1744,153 @@ class FilesystemReadTools:
             result["skipped_counts"] = cast(JsonObject, skipped_counts)
         return result
 
+    def project_ci_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_ci_summary_arguments(arguments)
+        root_arg = _project_ci_root(arguments)
+        max_depth = _project_ci_max_depth(arguments)
+        limit = _project_ci_limit(arguments)
+        include_categories = _project_ci_include_categories(arguments)
+        root_path = self.resolve_existing_path(root_arg)
+        if not root_path.is_dir():
+            raise ReadToolError("project CI root is not a directory")
+
+        provider_counts = _zero_count_mapping(_PROJECT_CI_PROVIDERS)
+        trigger_category_counts = _zero_count_mapping(_PROJECT_CI_TRIGGER_CATEGORIES)
+        job_category_counts = _zero_count_mapping(_PROJECT_CI_JOB_CATEGORIES)
+        location_bucket_counts = _zero_count_mapping(_PROJECT_CI_LOCATION_BUCKETS)
+        skipped_counts = _zero_count_mapping(_PROJECT_STRUCTURE_SKIPPED_KEYS)
+        summary: JsonObject = {
+            "visible_ci_directory_count": 0,
+            "visible_ci_config_count": 0,
+            "max_observed_depth": 0,
+            "inspected_entry_count": 0,
+        }
+        truncated = False
+        queue: list[tuple[Path, int]] = [(root_path, 0)]
+
+        while queue:
+            directory, depth = queue.pop(0)
+            try:
+                children = sorted(directory.iterdir(), key=lambda item: item.name)
+            except OSError:
+                skipped_counts["safe_error"] += 1
+                continue
+            for child in children:
+                inspected = cast(int, summary["inspected_entry_count"])
+                if inspected >= limit:
+                    skipped_counts["item_limit"] += 1
+                    truncated = True
+                    continue
+                entry_depth = depth + 1
+                if entry_depth > max_depth:
+                    skipped_counts["depth_limit"] += 1
+                    truncated = True
+                    continue
+                summary["inspected_entry_count"] = inspected + 1
+                try:
+                    child.relative_to(self.workspace_root)
+                except ValueError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+                if child.is_symlink():
+                    skipped_counts["symlink"] += 1
+                    continue
+                try:
+                    relative = child.relative_to(self.workspace_root)
+                    if _relative_has_git_internal(relative):
+                        skipped_counts["git_internal"] += 1
+                        continue
+                    _ensure_project_ci_relative_parts_safe(relative)
+                    resolved = child.resolve(strict=True)
+                    self._ensure_under_workspace(resolved)
+                    stat_result = resolved.stat()
+                except ReadToolError as exc:
+                    _record_project_structure_skip(skipped_counts, exc.reason)
+                    continue
+                except OSError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+
+                summary["max_observed_depth"] = max(
+                    cast(int, summary["max_observed_depth"]),
+                    entry_depth,
+                )
+                if stat.S_ISDIR(stat_result.st_mode):
+                    if _is_project_ci_counted_directory(resolved):
+                        summary["visible_ci_directory_count"] = (
+                            cast(int, summary["visible_ci_directory_count"]) + 1
+                        )
+                    queue.append((resolved, entry_depth))
+                elif stat.S_ISREG(stat_result.st_mode):
+                    if stat_result.st_nlink > 1:
+                        skipped_counts["hardlink"] += 1
+                        continue
+                    if not _is_project_ci_like_file(self, resolved):
+                        continue
+                    summary["visible_ci_config_count"] = (
+                        cast(int, summary["visible_ci_config_count"]) + 1
+                    )
+                    provider_counts[_project_ci_provider(self, resolved)] += 1
+                    location_bucket_counts[_project_ci_location(self, resolved)] += 1
+                    try:
+                        text = _project_ci_safe_text(self, resolved)
+                    except ReadToolError as exc:
+                        _record_project_structure_skip(skipped_counts, exc.reason)
+                        continue
+                    for category in _project_ci_trigger_categories(text):
+                        trigger_category_counts[category] += 1
+                    for category in _project_ci_job_categories(text):
+                        job_category_counts[category] += 1
+                else:
+                    skipped_counts["unsupported_type"] += 1
+
+        result: JsonObject = {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_CI_SUMMARY_TOOL,
+            "root_label": _project_ci_root_label(self, root_path),
+            "summary": summary,
+            "truncated": truncated,
+            "output_policy": {
+                "file_contents_included": False,
+                "workflow_names_included": False,
+                "job_names_included": False,
+                "raw_paths_included": False,
+                "raw_recursive_listing_included": False,
+                "raw_file_names_included": False,
+                "command_values_included": False,
+                "script_values_included": False,
+                "environment_names_or_values_included": False,
+                "secrets_included": False,
+                "dependency_names_included": False,
+                "registry_urls_included": False,
+                "ci_output_included": False,
+                "ci_execution_used": False,
+                "shell_execution_used": False,
+                "package_manager_execution_used": False,
+                "registry_or_network_access_used": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": {
+                "max_depth": max_depth,
+                "entry_limit": limit,
+                "max_ci_config_bytes": _PROJECT_CI_READ_BYTES,
+                "category_keys_are_allowlisted": True,
+                "workflow_names_are_suppressed": True,
+                "command_values_are_suppressed": True,
+            },
+        }
+        if "provider_counts" in include_categories:
+            result["provider_counts"] = cast(JsonObject, provider_counts)
+        if "trigger_category_counts" in include_categories:
+            result["trigger_category_counts"] = cast(JsonObject, trigger_category_counts)
+        if "job_category_counts" in include_categories:
+            result["job_category_counts"] = cast(JsonObject, job_category_counts)
+        if "location_bucket_counts" in include_categories:
+            result["location_bucket_counts"] = cast(JsonObject, location_bucket_counts)
+        if "skipped_counts" in include_categories:
+            result["skipped_counts"] = cast(JsonObject, skipped_counts)
+        return result
+
     def resolve_existing_path(self, path: str) -> Path:
         if not path:
             path = "."
@@ -2518,6 +2751,17 @@ def _validate_project_config_summary_arguments(arguments: JsonObject) -> None:
     _project_config_include_categories(arguments)
 
 
+def _validate_project_ci_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "max_depth", "limit", "include_categories"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project CI summary received unsupported arguments")
+    _project_ci_root(arguments)
+    _project_ci_max_depth(arguments)
+    _project_ci_limit(arguments)
+    _project_ci_include_categories(arguments)
+
+
 def _project_manifest_root(arguments: JsonObject) -> str:
     root = _string_arg(arguments, "root", default=".")
     if not root:
@@ -2769,6 +3013,49 @@ def _project_config_include_categories(arguments: JsonObject) -> list[str]:
     return categories
 
 
+def _project_ci_root(arguments: JsonObject) -> str:
+    root = _string_arg(arguments, "root", default=".")
+    if not root:
+        raise ReadToolError("project CI root must be a non-empty string")
+    return root
+
+
+def _project_ci_max_depth(arguments: JsonObject) -> int:
+    max_depth = _int_arg(arguments, "max_depth", default=_PROJECT_CI_DEFAULT_DEPTH)
+    if max_depth < 0 or max_depth > _PROJECT_CI_MAX_DEPTH:
+        raise ReadToolError("project CI max_depth is outside allowed bounds")
+    return max_depth
+
+
+def _project_ci_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_PROJECT_CI_DEFAULT_LIMIT)
+    if limit < 1 or limit > _PROJECT_CI_MAX_LIMIT:
+        raise ReadToolError("project CI limit is outside allowed bounds")
+    return limit
+
+
+def _project_ci_include_categories(arguments: JsonObject) -> list[str]:
+    raw = arguments.get("include_categories")
+    if raw is None:
+        return list(_PROJECT_CI_SECTIONS)
+    if not isinstance(raw, list):
+        raise ReadToolError("include_categories must be an array")
+    categories: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            raise ReadToolError("include_categories entries must be strings")
+        if item not in _PROJECT_CI_SECTIONS:
+            raise ReadToolError("project CI category is not allowlisted")
+        if item in seen:
+            raise ReadToolError("include_categories entries must be unique")
+        seen.add(item)
+        categories.append(item)
+    if not categories:
+        raise ReadToolError("include_categories must not be empty")
+    return categories
+
+
 def _project_test_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
     if root_path == filesystem.workspace_root:
         return "workspace_root"
@@ -2788,6 +3075,12 @@ def _project_language_root_label(filesystem: FilesystemReadTools, root_path: Pat
 
 
 def _project_config_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
+    if root_path == filesystem.workspace_root:
+        return "workspace_root"
+    return "scoped_root"
+
+
+def _project_ci_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
     if root_path == filesystem.workspace_root:
         return "workspace_root"
     return "scoped_root"
@@ -3264,6 +3557,150 @@ def _project_config_location(filesystem: FilesystemReadTools, path: Path) -> str
     if any(part in (_PROJECT_SOURCE_DIR_NAMES | _PROJECT_TEST_DIR_NAMES) for part in lowered_parts):
         return "source_adjacent_config"
     return "unknown_location"
+
+
+def _ensure_project_ci_relative_parts_safe(relative: Path) -> None:
+    for index, part in enumerate(relative.parts):
+        lowered = part.lower()
+        if (
+            part.startswith(".")
+            and lowered not in _PROJECT_CI_SAFE_DOT_DIRS
+            and lowered not in _PROJECT_CI_SAFE_DOT_FILES
+        ):
+            raise ReadToolError("path is hidden or sensitive")
+        if lowered in _SENSITIVE_EXACT_PATH_PARTS or any(
+            marker in lowered for marker in _SENSITIVE_PATH_MARKERS
+        ):
+            raise ReadToolError("path is hidden or sensitive")
+        if index > 0 and lowered in _PROJECT_CI_SAFE_DOT_FILES:
+            raise ReadToolError("path is hidden or sensitive")
+
+
+def _is_project_ci_counted_directory(path: Path) -> bool:
+    return path.name.lower() in {
+        "ci",
+        "workflow",
+        "workflows",
+        ".github",
+        ".circleci",
+        ".buildkite",
+    }
+
+
+def _is_project_ci_like_file(filesystem: FilesystemReadTools, path: Path) -> bool:
+    provider = _project_ci_provider(filesystem, path)
+    if provider != "unknown_ci":
+        return True
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return False
+    lowered_parts = [part.lower() for part in relative.parts]
+    return (
+        any(part in {"ci", "workflow", "workflows"} for part in lowered_parts)
+        and path.suffix.lower() in {".yml", ".yaml", ".json", ".toml"}
+    )
+
+
+def _project_ci_provider(filesystem: FilesystemReadTools, path: Path) -> str:
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return "unknown_ci"
+    lowered_parts = [part.lower() for part in relative.parts]
+    lowered_name = path.name.lower()
+    if len(lowered_parts) >= 3 and lowered_parts[-3:-1] == [".github", "workflows"]:
+        if path.suffix.lower() in {".yml", ".yaml"}:
+            return "github_actions"
+    if lowered_name in {".gitlab-ci.yml", ".gitlab-ci.yaml"}:
+        return "gitlab_ci"
+    if len(lowered_parts) >= 2 and lowered_parts[-2:] in [
+        [".circleci", "config.yml"],
+        [".circleci", "config.yaml"],
+    ]:
+        return "circleci"
+    if lowered_name in {"azure-pipelines.yml", "azure-pipelines.yaml"}:
+        return "azure_pipelines"
+    if len(lowered_parts) >= 2 and lowered_parts[-2] == ".buildkite":
+        if path.suffix.lower() in {".yml", ".yaml"}:
+            return "buildkite"
+    if lowered_name == "jenkinsfile":
+        return "jenkins"
+    if lowered_name == ".travis.yml":
+        return "travis"
+    return "unknown_ci"
+
+
+def _project_ci_location(filesystem: FilesystemReadTools, path: Path) -> str:
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return "unknown_location"
+    lowered_parts = [part.lower() for part in relative.parts]
+    if len(relative.parts) == 1:
+        return "root_level"
+    if len(lowered_parts) >= 3 and lowered_parts[-3:-1] == [".github", "workflows"]:
+        return "github_workflows"
+    if any(
+        part in {"ci", "workflow", "workflows", ".circleci", ".buildkite"}
+        for part in lowered_parts
+    ):
+        return "ci_directory"
+    if any(part in _PROJECT_CONFIG_DIR_NAMES for part in lowered_parts):
+        return "config_directory"
+    if any(part in (_PROJECT_SOURCE_DIR_NAMES | _PROJECT_TEST_DIR_NAMES) for part in lowered_parts):
+        return "source_adjacent"
+    return "unknown_location"
+
+
+def _project_ci_safe_text(filesystem: FilesystemReadTools, path: Path) -> str:
+    data = filesystem.read_file_bytes(path)
+    if len(data) > _PROJECT_CI_READ_BYTES:
+        raise ReadToolError("file exceeds configured read limit")
+    if b"\x00" in data:
+        raise ReadToolError("file appears to be binary")
+    try:
+        return data.decode("utf-8").lower()
+    except UnicodeDecodeError as exc:
+        raise ReadToolError("file is not valid UTF-8 text") from exc
+
+
+def _project_ci_trigger_categories(text: str) -> set[str]:
+    categories: set[str] = set()
+    if re.search(r"\bpush\b", text):
+        categories.add("push")
+    if "pull_request" in text or "merge_request" in text:
+        categories.add("pull_request")
+    if "schedule" in text or "cron:" in text:
+        categories.add("schedule")
+    if "workflow_dispatch" in text or "manual" in text:
+        categories.add("manual")
+    if re.search(r"\brelease\b", text):
+        categories.add("release")
+    if re.search(r"\btag(s)?\b", text):
+        categories.add("tag")
+    if not categories:
+        categories.add("unknown_trigger")
+    return categories
+
+
+def _project_ci_job_categories(text: str) -> set[str]:
+    categories: set[str] = set()
+    if re.search(r"\bbuild\b", text):
+        categories.add("build")
+    if re.search(r"\b(test|pytest|vitest|jest|unittest)\b", text):
+        categories.add("test")
+    if re.search(r"\b(lint|ruff|eslint|mypy|prettier)\b", text):
+        categories.add("lint")
+    if re.search(r"\b(security|sast|scan|audit)\b", text):
+        categories.add("security_scan_label")
+    if re.search(r"\b(deploy|deployment|publish)\b", text):
+        categories.add("deploy_label")
+    if re.search(r"\b(release|tag)\b", text):
+        categories.add("release_label")
+    if not categories:
+        categories.add("unknown_job")
+    return categories
 
 
 def _project_manifest_record(

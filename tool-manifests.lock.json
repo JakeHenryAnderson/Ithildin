@@ -81,6 +81,12 @@
       "version": "0.1.0"
     },
     {
+      "manifest_hash": "sha256:499958e07d8ebe6478ed63c5175cdad82518de6fa4c19af7681de9317101899f",
+      "name": "project.ci.summary",
+      "path": "tool-manifests/project-ci-summary.yaml",
+      "version": "0.1.0"
+    },
+    {
       "manifest_hash": "sha256:66694884658c2d58341c4cb256eb71b0589ad22625d298a1dc761b3cba50ae12",
       "name": "project.config.summary",
       "path": "tool-manifests/project-config-summary.yaml",
