@@ -311,6 +311,8 @@ checked with `make control-mapping-readiness`.
   the selected `project.language.summary` proposal.
 - `make project-config-summary-proposal-check` - validate the current design-only
   `project.config.summary` proposal without authorizing runtime work.
+- `make project-config-summary-implementation-plan-check` - validate the
+  `project.config.summary` implementation-planning packet without authorizing runtime work.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -616,7 +618,11 @@ with `make next-capability-readiness`; it records that `project.language.summary
 through a bounded read-only implementation decision and source-review handoff while broader
 capability expansion remains blocked. The current selected candidate is
 [docs/codex/capability-proposals/project-config-summary.md](docs/codex/capability-proposals/project-config-summary.md),
-checked with `make project-config-summary-proposal-check`. The previous selected candidate,
+checked with `make project-config-summary-proposal-check`. Its implementation-planning packet is
+[docs/codex/capability-implementation-plans/project-config-summary.md](docs/codex/capability-implementation-plans/project-config-summary.md)
+and is checked with `make project-config-summary-implementation-plan-check`; runtime
+implementation remains blocked until an explicit implementation decision is recorded. The previous
+selected candidate,
 [docs/codex/capability-proposals/project-language-summary.md](docs/codex/capability-proposals/project-language-summary.md),
 advanced through implementation planning and source-review handoff. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-language-summary.md](docs/codex/capability-implementation-plans/project-language-summary.md)
