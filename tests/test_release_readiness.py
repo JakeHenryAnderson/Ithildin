@@ -94,6 +94,7 @@ from scripts import (
     project_intelligence_readiness,
     project_config_summary_proposal_check,
     project_config_summary_implementation_plan_check,
+    project_config_summary_implementation_gate,
     project_language_summary_design_review_packet,
     project_language_summary_implementation_gate,
     project_language_summary_implementation_plan_check,
@@ -1146,7 +1147,7 @@ def test_project_structure_summary_implementation_gate_is_wired() -> None:
         "approved_limited_read_only runtime implementation",
         "adds one tool manifest",
         "adds one executor dispatch path",
-        "runtime behavior is bounded read-only",
+        "Runtime behavior is bounded read-only",
         "risk `read`",
         "category `project`",
         "workspace_id",
@@ -1763,6 +1764,54 @@ def test_project_config_summary_implementation_plan_check_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/capability-implementation-plans/project-config-summary.md" in docs_site
+
+
+def test_project_config_summary_implementation_gate_is_wired() -> None:
+    report = project_config_summary_implementation_gate.build_report(Path.cwd())
+    decision = Path("docs/codex/v3-project-config-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "project.config.summary"
+    assert report["implementation_status"] == "approved_limited_read_only"
+    assert report["tool_count"] == 18
+    assert report["new_power_classes_allowed"] is False
+    assert report["runtime_implemented"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    for phrase in [
+        "approved_limited_read_only runtime implementation",
+        "add one tool manifest",
+        "one executor dispatch path",
+        "Runtime behavior is bounded read-only",
+        "risk `read`",
+        "category `project`",
+        "project_config",
+        "count-only config posture metadata and allowlisted labels only",
+        "no config file names",
+        "no config values",
+        "no environment names or values",
+        "no config parser execution",
+        "no command discovery",
+        "no package-manager execution",
+        "Broader capability expansion remains blocked",
+    ]:
+        assert phrase in decision
+    assert "make project-config-summary-implementation-gate" in readme
+    assert "project-config-summary-implementation-gate:" in makefile
+    assert "project-config-summary-implementation-gate" in release_check_body
+    assert (
+        "project-config-summary-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "v3 project.config.summary Implementation Decision" in index
+    assert "docs/codex/v3-project-config-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-config-summary-implementation.md" in docs_site
 
 
 def test_project_language_summary_implementation_plan_check_is_wired() -> None:
