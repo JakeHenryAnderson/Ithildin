@@ -246,6 +246,15 @@ def test_agent_workflow_instruction_layer_is_wired() -> None:
     assert "agent-workflow-check:" in makefile
     assert "make agent-workflow-check" in readme
     assert "Low Codex mechanical implementers" in reproduction_map
+    agents = Path("AGENTS.md").read_text(encoding="utf-8")
+    workflow = Path("docs/codex/agent-workflow-instruction-layer.md").read_text(
+        encoding="utf-8"
+    )
+    assert "gpt-5.4-mini" in agents
+    assert "Use one Low Codex implementer at a time by default" in agents
+    assert "should remain disabled until several read-only trials" in agents
+    assert "report-first" in workflow
+    assert "Direct edits should remain disabled" in workflow
     assert "AGENTS.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/agent-workflow-instruction-layer.md" in review_docs.REVIEW_DOCS
 
@@ -307,6 +316,9 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     assert "make low-implementer-delegation-packet" in readme
     assert "make low-implementer-ticket-catalog-check" in readme
     assert "Gemma/local-model suggestions" in reproduction_map
+    assert "gpt-5.4-mini" in catalog
+    assert "Use one Low Codex implementer at a time by default" in catalog
+    assert "several clean read-only trials" in catalog
     assert "docs/codex/low-implementer-delegation-pilot.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/low-implementer-ticket-catalog.md" in review_docs.REVIEW_DOCS
     for phrase in [

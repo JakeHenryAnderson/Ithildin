@@ -5,7 +5,10 @@ Status: implemented as a local packet/check workflow.
 This pilot tests whether a Low Codex implementer can make useful Ithildin contributions when the
 main Codex manager provides a narrow task packet and reviews every diff. It is a productivity experiment, not permission to delegate safety judgment.
 
-Gemma/local-model output is optional advisory input only. Low Codex implementers are the preferred mechanical delegation path because they share the workspace, tooling, and gate workflow.
+Gemma/local-model output is optional advisory input only. Low Codex implementers are the preferred
+mechanical delegation path because they share the workspace, tooling, and gate workflow. The default
+cheap worker is `gpt-5.4-mini` with low reasoning, used one at a time and report-first unless a
+later sprint explicitly approves a bounded patch trial.
 
 ## Boundary
 
@@ -47,6 +50,9 @@ source, manifests, policy, approval/audit code, MCP/API behavior, and trust clai
 Every packet includes a manager scorecard so the main manager can record useful suggestions,
 rejected suggestions, boundary drift, cleanup effort, and whether the ticket should be delegated
 again.
+
+Direct file edits by Low Codex implementers remain disabled until several read-only trials show
+useful suggestions, low manager cleanup, and no boundary drift.
 
 The main manager may then choose to apply, patch, or discard any suggestion. No low implementer
 output is committed without main-manager review and the usual gates.

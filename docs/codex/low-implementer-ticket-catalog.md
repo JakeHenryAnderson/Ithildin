@@ -6,8 +6,10 @@ runtime behavior, decide safety boundaries, or change Ithildin product claims.
 
 This catalog is not permission to edit runtime behavior.
 
-The main Codex manager owns scope, review, gates, staging, and commits. Low implementers may return
-suggestions only unless the manager explicitly asks for a bounded patch.
+The main Codex manager owns scope, review, gates, staging, and commits. The default worker is
+`gpt-5.4-mini` with low reasoning. Use one Low Codex implementer at a time by default. Low
+implementers may return suggestions only unless the manager explicitly asks for a bounded patch
+after several clean read-only trials.
 
 ## Approved Ticket Types
 
@@ -18,7 +20,7 @@ suggestions only unless the manager explicitly asks for a bounded patch.
 | `make-target-wiring` | Compare documented Make targets with existing release-readiness assertions. | Short report with missing command references or assertion suggestions. |
 | `packet-inventory` | Check generated packet references and artifact inventory wording. | Short report with missing packet references or stale artifact names. |
 
-repetitive release-readiness assertion suggestions are allowed when they follow an existing test
+Repetitive release-readiness assertion suggestions are allowed when they follow an existing test
 pattern and do not alter runtime behavior.
 
 ## Forbidden Work
@@ -50,4 +52,5 @@ make low-implementer-ticket-catalog-check
 ```
 
 The packet generator does not call a model. Live subagent trials are separate manager-controlled
-experiments and must remain read-only unless a later sprint explicitly narrows a write scope.
+experiments and must remain read-only until the manager records multiple useful, low-cleanup,
+no-boundary-drift trials.

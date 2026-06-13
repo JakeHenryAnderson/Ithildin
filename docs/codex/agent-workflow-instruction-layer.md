@@ -12,7 +12,7 @@ workflow, and human/user review.
 | Role | Allowed Work | Must Not Do |
 | --- | --- | --- |
 | Main Codex manager | Scope work, choose gates, review diffs, decide safety, commit. | Delegate final safety judgment. |
-| Low Codex implementer | Preferred mechanical delegation path for docs links, stale wording scans, repetitive test wiring, packet inventories, and boilerplate from an existing pattern. | Edit manifests, executors, policy semantics, approval/audit logic, MCP/API behavior, storage/auth boundaries, or trust claims. |
+| Low Codex implementer | Preferred `gpt-5.4-mini` low-reasoning report-first path for docs links, stale wording scans, repetitive test wiring suggestions, packet inventories, and boilerplate from an existing pattern. Use one at a time by default. | Edit manifests, executors, policy semantics, approval/audit logic, MCP/API behavior, storage/auth boundaries, or trust claims. |
 | Gemma/local-model suggester | Optional offline advisory pass for broad but shallow scans when latency is acceptable. | Directly edit files, act as the default implementer, or make safety/product judgments. |
 | High implementer/reviewer | Bounded runtime/test work under an explicit plan and manager review. | Approve new product boundaries alone. |
 | XHigh reviewer | Milestone risk review, ambiguous boundary review, break-glass consultation. | Replace external review for public/security-product positioning. |
@@ -34,6 +34,9 @@ Return only:
 
 The main manager reviews the full diff before any commit. If the output is inconsistent, the manager
 patches or discards it.
+
+Low Codex delegation is report-first by default. Direct edits should remain disabled until several
+read-only trials have produced useful suggestions with low cleanup cost and no boundary drift.
 
 ## Boundaries
 

@@ -85,7 +85,10 @@ TICKET_TYPES: dict[str, dict[str, object]] = {
 REQUIRED_DOC_PHRASES = [
     "Low Codex implementer",
     "Gemma/local-model output is optional advisory input only",
-    "Low Codex implementers are the preferred mechanical delegation path",
+    "mechanical delegation path",
+    "gpt-5.4-mini",
+    "used one at a time and report-first",
+    "Direct file edits by Low Codex implementers remain disabled",
     "productivity experiment, not permission to delegate safety judgment",
     "They must not edit manifests, executors, policy semantics, approval logic, audit logic",
     "does not call a local model",
@@ -95,11 +98,15 @@ REQUIRED_DOC_PHRASES = [
 
 REQUIRED_CATALOG_PHRASES = [
     "Low-Implementer Ticket Catalog",
+    "gpt-5.4-mini",
+    "Use one Low Codex implementer at a time by default",
+    "suggestions only",
+    "several clean read-only trials",
     "docs-link-scan",
     "stale-wording-scan",
     "make-target-wiring",
     "packet-inventory",
-    "repetitive release-readiness assertion suggestions",
+    "Repetitive release-readiness assertion suggestions",
     "not permission to edit runtime behavior",
     "manager scorecard",
 ]

@@ -21,14 +21,18 @@ handoff, and release/readiness updates.
 
 - The main Codex agent owns scope, safety judgment, implementation review, gates, staging, and
   commits.
-- Low Codex implementers are the preferred mechanical delegation path. They may do only narrow
-  mechanical work: docs links, stale wording scans,
-  repetitive test wiring, packet inventory checks, and boilerplate following an existing pattern.
+- Low Codex implementers are the preferred mechanical delegation path. Use `gpt-5.4-mini` with low
+  reasoning as the default cheap worker for narrow report-first tasks: docs links, stale wording
+  scans, repetitive test wiring suggestions, packet inventory checks, and boilerplate following an
+  existing pattern.
+- Use one Low Codex implementer at a time by default. Direct file edits by Low Codex implementers
+  should remain disabled until several read-only trials have produced useful suggestions with low
+  cleanup cost and no boundary drift.
 - Gemma/local-model output is advisory only and should be used only for offline suggestions when a
   task is large but shallow; it is not the default implementation path for Ithildin.
-- Low Codex and Gemma/local-model implementers must not decide safety boundaries, design executors, change policy
-  semantics, edit manifests, add MCP/API behavior, alter approval/audit logic, or make product-risk
-  claims.
+- Low Codex and Gemma/local-model implementers must not decide safety boundaries, design executors,
+  change policy semantics, edit manifests, add MCP/API behavior, alter approval/audit logic, or make
+  product-risk claims.
 - High agents may handle bounded implementation or review when runtime behavior, tests, policy,
   registry, audit, executor, release-gate, or UI trust surfaces are touched.
 - XHigh agents are reserved for ambiguous security/product-boundary decisions, milestone risk review,
