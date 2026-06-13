@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TypedDict
 
 REVIEW_DOCS = [
+    "AGENTS.md",
     "README.md",
     "docs/codex/v0.2-review-response-and-rc-cleanup.md",
     "docs/codex/v0.2-review-packet.md",
@@ -60,6 +61,7 @@ REVIEW_DOCS = [
     "docs/codex/internal-review-packet-v2.md",
     "docs/codex/internal-ai-review-workflow.md",
     "docs/codex/autonomous-sprint-guardrails.md",
+    "docs/codex/agent-workflow-instruction-layer.md",
     "docs/codex/reviewer-finding-template.md",
     "docs/codex/reviewer-finding-intake.md",
     "docs/codex/threat-model-and-non-goals.md",

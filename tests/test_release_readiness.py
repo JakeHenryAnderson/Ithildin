@@ -22,6 +22,7 @@ from scripts import (
     agent_run_operations_readiness,
     agent_run_timeline_packet,
     agent_run_timeline_readiness,
+    agent_workflow_check,
     capability_decision_report,
     capability_expansion_gate,
     closure_matrix_evidence_sync,
@@ -221,6 +222,25 @@ def test_release_packet_review_docs_exist() -> None:
     missing = [doc for doc in review_docs.REVIEW_DOCS if not Path(doc).exists()]
 
     assert missing == []
+
+
+def test_agent_workflow_instruction_layer_is_wired() -> None:
+    report = agent_workflow_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 18
+    assert report["low_implementer_runtime_changes_allowed"] is False
+    assert report["guidance_is_security_boundary"] is False
+    assert "agent-workflow-check:" in makefile
+    assert "make agent-workflow-check" in readme
+    assert "Low/Gemma-class" in reproduction_map
+    assert "AGENTS.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/agent-workflow-instruction-layer.md" in review_docs.REVIEW_DOCS
 
 
 def test_v03_milestone_manifest_is_linked_and_complete() -> None:

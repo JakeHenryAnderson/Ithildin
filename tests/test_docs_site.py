@@ -98,6 +98,8 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/internal-review-packet-v2.md" in DEFAULT_DOCS
     assert "docs/codex/internal-ai-review-workflow.md" in DEFAULT_DOCS
     assert "docs/codex/autonomous-sprint-guardrails.md" in DEFAULT_DOCS
+    assert "AGENTS.md" in DEFAULT_DOCS
+    assert "docs/codex/agent-workflow-instruction-layer.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-finding-template.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-finding-intake.md" in DEFAULT_DOCS
     assert "docs/codex/filesystem-executor-contract.md" in DEFAULT_DOCS
