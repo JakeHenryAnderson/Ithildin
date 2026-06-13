@@ -9,12 +9,13 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `20`.
+- Tool count is `21`.
 - `git.show.commit_metadata`, `git.show.ref_summary`, `git.show.tag_metadata`,
   `project.manifest.summary`, `project.dependency.summary`, `project.structure.summary`,
   `project.test.summary`, `project.docs.summary`, `project.language.summary`, and
-  `project.config.summary` are the approved bounded read-only metadata runtime capability additions.
-- `make read-only-project-intelligence` records the consolidated ten-tool project intelligence
+  `project.config.summary`, and `project.ci.summary` are the approved bounded read-only metadata
+  runtime capability additions.
+- `make read-only-project-intelligence` records the consolidated eleven-tool project intelligence
   slice.
 - `make next-capability-readiness` records that no next capability is currently selected and that
   future implementation remains blocked until fresh selection, implementation planning,
@@ -51,12 +52,12 @@ without explicit review.
 
 ## Current Recommendation
 
-The current nine-tool read-only project intelligence slice is consolidated. The most recent
-candidate is `project.config.summary`, recorded in
-[v3 project.config.summary Selection](v3-project-config-summary-selection.md) and
-[Capability Proposal: project.config.summary](capability-proposals/project-config-summary.md). Its
+The current eleven-tool read-only project intelligence slice is consolidated. The most recent
+candidate is `project.ci.summary`, recorded in
+[v3 project.ci.summary Selection](v3-project-ci-summary-selection.md) and
+[Capability Proposal: project.ci.summary](capability-proposals/project-ci-summary.md). Its
 implementation-planning packet is
-[Implementation-Planning Packet: project.config.summary](capability-implementation-plans/project-config-summary.md).
+[Implementation-Planning Packet: project.ci.summary](capability-implementation-plans/project-ci-summary.md).
 It has advanced through bounded read-only implementation and source-review handoff. No next
 design-only candidate is currently selected.
 

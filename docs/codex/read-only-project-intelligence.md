@@ -7,10 +7,12 @@ Read-only project intelligence is Ithildin's current safe orientation layer for 
 lets an agent learn bounded, policy-mediated facts about a workspace without receiving shell access,
 package-manager execution, broad filesystem writes, raw diffs, dependency names, package names,
 package versions, package script names or values, file contents, lockfile contents, registry output,
-language detector execution, config parser execution, or network-derived package metadata.
+language detector execution, config parser execution, CI execution, or network-derived package
+metadata.
 
 No file contents, no dependency names, no language detector execution, no config parser execution,
-no package-manager execution, and no registry/network access are part of this product slice.
+no CI execution, no package-manager execution, and no registry/network access are part of this
+product slice.
 
 ## Current Tool Family
 
@@ -26,6 +28,7 @@ no package-manager execution, and no registry/network access are part of this pr
 | `project.docs.summary` | Summarize bounded documentation-layout signals using counts and allowlisted labels. | No documentation file names, headings, raw paths, file contents, build execution, package-manager execution, registry/network access, or broad filesystem powers. |
 | `project.language.summary` | Summarize bounded language-family signals using counts and allowlisted labels. | No language file names, raw extensions, raw paths, file contents, detector execution, package-manager execution, registry/network access, or dependency metadata. |
 | `project.config.summary` | Summarize bounded configuration posture using counts and allowlisted labels. | No config file names, raw paths, file contents, config contents, config values, environment names or values, config parser execution, package-manager execution, registry/network access, or deployment claims. |
+| `project.ci.summary` | Summarize bounded CI posture using counts and allowlisted labels. | No workflow names, job names, raw paths, file contents, command/script values, environment names or values, CI execution, package-manager execution, registry/network access, deployment claims, or compliance claims. |
 
 ## Evidence Model
 
@@ -43,13 +46,14 @@ Every tool in this family must preserve:
 
 ## Current Position
 
-- Tool count: `20`.
+- Tool count: `21`.
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
-  `project.docs.summary`, `project.language.summary`, and `project.config.summary`.
-- Next candidate: `project.ci.summary`.
-- Next candidate status: design-only selected.
+  `project.docs.summary`, `project.language.summary`, `project.config.summary`, and
+  `project.ci.summary`.
+- Next candidate: `not selected`.
+- Next candidate status: pending selection.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -60,9 +64,8 @@ vulnerability scanner, compliance engine, shell replacement, project build runne
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
 The most recent project metadata candidate,
-[project.config.summary](capability-proposals/project-config-summary.md), has advanced through its
-approved implementation boundary as a bounded read-only metadata tool. The current selected
-design-only candidate is [project.ci.summary](capability-proposals/project-ci-summary.md), with
-implementation blocked. Future read-only metadata tools must start again from a design-only
+[project.ci.summary](capability-proposals/project-ci-summary.md), has advanced through its approved
+implementation boundary as a bounded read-only metadata tool. No next design-only candidate is
+currently selected. Future read-only metadata tools must start again from a design-only
 candidate, proposal, implementation plan, explicit implementation decision, source-review handoff,
 policy fixtures, negative transcripts, no-new-powers evidence, and release gates.

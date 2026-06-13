@@ -61,7 +61,7 @@ rollback. Recovery remains read-only guidance in this slice.
 - the workbench packet references `DEMO_FLOW_RESULT.md`, `DEMO_RESET_GUIDE.md`, and
   `10_DEMO_RESET_GUIDE.md`;
 - the review console and UI tests include display-only demo recognition;
-- tool count remains `20`;
+- tool count remains `21`;
 - no-new-powers and tool-surface guardrails still pass.
 
 ## Boundary

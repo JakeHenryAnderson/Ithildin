@@ -32,6 +32,7 @@ APPROVED_TOOLS = [
     "project.docs.summary",
     "project.language.summary",
     "project.config.summary",
+    "project.ci.summary",
 ]
 REQUIRED_DOC_PHRASES = [
     "Status: consolidated local-preview product slice",
@@ -46,9 +47,10 @@ REQUIRED_DOC_PHRASES = [
     "project.docs.summary",
     "project.language.summary",
     "project.config.summary",
-    "Tool count: `20`",
-    "Next candidate: `project.ci.summary`",
-    "Next candidate status: design-only selected",
+    "project.ci.summary",
+    "Tool count: `21`",
+    "Next candidate: `not selected`",
+    "Next candidate status: pending selection",
     "Broader capability expansion remains blocked",
     "New powerful tool classes remain blocked",
     "No file contents",

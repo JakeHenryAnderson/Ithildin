@@ -24,6 +24,7 @@ ALLOWED_NEW_READ_TOOLS = {
     "git.show.commit_metadata",
     "git.show.ref_summary",
     "git.show.tag_metadata",
+    "project.ci.summary",
     "project.config.summary",
     "project.dependency.summary",
     "project.manifest.summary",
@@ -205,6 +206,10 @@ def _validate_schema_fields(name: str, manifest: dict[str, Any]) -> list[str]:
         failures = _validate_project_language_summary_schema(properties)
         if failures:
             return failures
+    if name == "project.ci.summary":
+        failures = _validate_project_ci_summary_schema(properties)
+        if failures:
+            return failures
     return []
 
 
@@ -380,6 +385,33 @@ def _validate_project_language_summary_schema(properties: dict[str, Any]) -> lis
     ]
     if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected:
         failures.append("project.language.summary include_categories allowlist drifted")
+    return failures
+
+
+def _validate_project_ci_summary_schema(properties: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if sorted(properties) != ["include_categories", "limit", "max_depth", "root", "workspace_id"]:
+        failures.append("project.ci.summary must stay workspace/root/categories/depth/limit-only")
+        return failures
+    max_depth = properties.get("max_depth")
+    if not isinstance(max_depth, dict) or max_depth.get("maximum") != 5:
+        failures.append("project.ci.summary max_depth must stay bounded to 5")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("maximum") != 300:
+        failures.append("project.ci.summary limit must stay bounded to 300")
+    categories = properties.get("include_categories")
+    if not isinstance(categories, dict):
+        return failures + ["project.ci.summary include_categories schema is invalid"]
+    items = categories.get("items")
+    expected = [
+        "job_category_counts",
+        "location_bucket_counts",
+        "provider_counts",
+        "skipped_counts",
+        "trigger_category_counts",
+    ]
+    if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected:
+        failures.append("project.ci.summary include_categories allowlist drifted")
     return failures
 
 

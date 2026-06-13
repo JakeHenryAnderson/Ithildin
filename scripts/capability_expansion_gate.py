@@ -28,6 +28,7 @@ EXPECTED_TOOL_NAMES = [
     "git.show.tag_metadata",
     "git.status",
     "http.fetch",
+    "project.ci.summary",
     "project.config.summary",
     "project.dependency.summary",
     "project.docs.summary",
