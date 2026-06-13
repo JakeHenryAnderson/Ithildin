@@ -67,6 +67,7 @@ class PolicyParityCase(StrictBaseModel):
     expect_runtime_status: str | None = None
     expect_resource_type: str | None = None
     expect_resource_in_scope: bool | None = None
+    expect_resource_fields: JsonObject | None = None
 
 
 class PolicyParityDocument(StrictBaseModel):
@@ -317,6 +318,21 @@ class _PolicyParityHarness:
                     "resource in_scope mismatch: "
                     f"expected={case.expect_resource_in_scope}, preview={observed_scope!r}"
                 )
+        if case.expect_resource_fields is not None:
+            runtime_resource = self._execution_started_resource(runtime.request_id)
+            for key, expected_value in case.expect_resource_fields.items():
+                preview_value = preview_resource.get(key) if preview_resource is not None else None
+                runtime_value = runtime_resource.get(key) if runtime_resource is not None else None
+                if preview_value != expected_value:
+                    failures.append(
+                        "preview resource field mismatch for "
+                        f"{key}: expected={expected_value!r}, preview={preview_value!r}"
+                    )
+                if runtime_value != expected_value:
+                    failures.append(
+                        "runtime resource field mismatch for "
+                        f"{key}: expected={expected_value!r}, runtime={runtime_value!r}"
+                    )
 
         preview_evidence = _json_object_or_none(preview.get("decision_evidence"))
         runtime_evidence = _json_object_or_none(policy_event.get("metadata"))
@@ -374,6 +390,21 @@ class _PolicyParityHarness:
                 f"expected exactly one policy.evaluated event for {request_id}, got {len(events)}"
             )
         return events[0]
+
+    def _execution_started_resource(self, request_id: str) -> JsonObject | None:
+        events = self.audit_writer.list_events(
+            limit=10,
+            event_type=AuditEventType.TOOL_EXECUTION_STARTED.value,
+            request_id=request_id,
+        )
+        if not events:
+            return None
+        if len(events) != 1:
+            raise PolicyParityError(
+                f"expected at most one tool.execution.started event for {request_id}, "
+                f"got {len(events)}"
+            )
+        return _json_object_or_none(events[0].get("resource"))
 
 
 class _FixtureHttpResponse:

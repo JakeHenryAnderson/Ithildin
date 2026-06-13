@@ -13,6 +13,7 @@ from ithildin_api.read_tools import (
     GitReadTools,
     ReadToolError,
     ReadToolExecutor,
+    _parse_tag_metadata_output,
 )
 from ithildin_schemas import JsonObject
 
@@ -829,6 +830,26 @@ def test_git_tag_metadata_rejects_unsupported_arguments(tmp_path: Path) -> None:
             git.tag_metadata(cast(JsonObject, arguments))
 
 
+def test_git_tag_metadata_parser_rejects_ambiguous_or_malformed_rows() -> None:
+    commit = "a" * 40
+
+    with pytest.raises(ReadToolError, match="ambiguous"):
+        _parse_tag_metadata_output(
+            "\n".join(
+                [
+                    f"refs/tags/Release\x00{commit}\x00commit\x00\x00",
+                    f"refs/tags/release\x00{commit}\x00commit\x00\x00",
+                ]
+            )
+        )
+
+    with pytest.raises(ReadToolError, match="invalid"):
+        _parse_tag_metadata_output(f"refs/tags/v1\x00{commit}\x00commit")
+
+    with pytest.raises(ReadToolError, match="unsupported ref namespace"):
+        _parse_tag_metadata_output(f"refs/heads/main\x00{commit}\x00commit\x00\x00")
+
+
 def test_git_tag_metadata_skips_non_commit_tag_targets(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     repo = filesystem.workspace_root
@@ -849,6 +870,47 @@ def test_git_tag_metadata_skips_non_commit_tag_targets(tmp_path: Path) -> None:
     assert summary["skipped_non_commit_tag_count"] == 1
     assert summary["tags"] == []
     assert "blobtag" not in json_dump(summary)
+
+
+def test_git_tag_metadata_skips_annotated_non_commit_tag_targets(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    blob_hash = git_output(repo, ["hash-object", "tracked.txt"])
+    run_git(repo, ["tag", "-a", "annotated-blobtag", blob_hash, "-m", "secret tag message"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    summary = git.tag_metadata({"selector": {"kind": "all_local_tags"}})
+
+    assert summary["tag_count"] == 0
+    assert summary["total_tag_count"] == 0
+    assert summary["skipped_non_commit_tag_count"] == 1
+    assert summary["tags"] == []
+    dumped = json_dump(summary)
+    assert "annotated-blobtag" not in dumped
+    assert "secret tag message" not in dumped
+
+
+def test_git_tag_metadata_git_output_is_bounded(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=512)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    for index in range(40):
+        run_git(repo, ["tag", f"v{index:02d}"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=512, git_log_limit=10)
+
+    with pytest.raises(ReadToolError, match="exceeds configured read limit"):
+        git.tag_metadata({"selector": {"kind": "all_local_tags"}})
 
 
 def test_git_tag_metadata_resource_denies_parent_repo_outside_workspace(

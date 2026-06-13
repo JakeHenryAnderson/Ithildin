@@ -112,6 +112,8 @@ cases:
     expect_runtime_status: completed
     expect_resource_type: git_tags
     expect_resource_in_scope: true
+    expect_resource_fields:
+      selector_kind: all_local_tags
 
   - id: project_manifest_summary_preview_matches_runtime
     description: Project manifest summary preview and runtime policy evidence agree on a scoped project manifest resource.
