@@ -172,6 +172,8 @@ checked with `make control-mapping-readiness`.
 - `make packet-redaction-scan` - scan generated review packet artifacts for obvious secret material.
 - `make local-prompt-triage` - classify a local task prompt with deterministic host-side heuristics; no model, network, proxy, or tool-power changes.
 - `make agent-workflow-check` - validate the repo `AGENTS.md` planner-implementer guidance, role boundaries, docs wiring, and no-security-boundary caveat.
+- `make low-implementer-delegation-packet` - generate an ignored Low/Gemma-class mechanical task packet without calling a model or changing runtime behavior.
+- `make low-implementer-delegation-check` - validate the low-implementer pilot packet, docs wiring, and no-new-powers boundary.
 - `make internal-review-packet` - build v2 local prompts for internal AI/subagent source review.
 - `make source-review-transcript-packet` - generate a source-review transcript skeleton under ignored `var/`.
 - `make reviewer-artifact-manifest` - generate the v0.5 reviewer artifact inventory.

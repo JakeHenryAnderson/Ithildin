@@ -22,6 +22,7 @@ site/
 var/db/*
 var/keys/*
 var/logs/*
+var/agent-delegation/*
 var/review-packets/*
 var/review-runs/*
 var/signatures/*

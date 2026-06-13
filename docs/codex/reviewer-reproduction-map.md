@@ -56,6 +56,10 @@ Medium/High/XHigh coordination and Low/Gemma-class mechanical implementers. The 
 `AGENTS.md`, the agent workflow instruction layer, README command list, docs-site inputs, and review
 metadata preserve the local-preview boundary and state clearly that agent instructions are guidance,
 not a security boundary.
+Run `make low-implementer-delegation-packet` to generate the ignored Low/Gemma-class mechanical task
+packet, then `make low-implementer-delegation-check` to validate that the packet remains advisory,
+docs-only, and non-runtime. This is a local productivity experiment; it does not call Gemma, grant
+tool powers, or replace main-manager review.
 Run `make reviewer-findings-check` after converting any internal AI/subagent, GPT 5.5 Pro, or human
 review note into a structured finding file. The check validates
 [reviewer-finding-intake.md](reviewer-finding-intake.md) records before the closure matrix changes.

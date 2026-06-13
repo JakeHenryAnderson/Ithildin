@@ -65,6 +65,7 @@ from scripts import (
     live_demo_preflight,
     live_demo_smoke,
     live_demo_status,
+    low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
     next_capability_readiness,
     no_new_powers_guardrail,
@@ -241,6 +242,28 @@ def test_agent_workflow_instruction_layer_is_wired() -> None:
     assert "Low/Gemma-class" in reproduction_map
     assert "AGENTS.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/agent-workflow-instruction-layer.md" in review_docs.REVIEW_DOCS
+
+
+def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "low-implementer-packet"
+    low_implementer_delegation_packet.build_packet(Path.cwd(), output_dir)
+    report = low_implementer_delegation_packet.build_report(Path.cwd(), output_dir)
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    reproduction_map = Path("docs/codex/reviewer-reproduction-map.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_tool_powers_allowed"] is False
+    assert report["model_call_performed"] is False
+    assert report["tool_count"] == 18
+    assert "low-implementer-delegation-packet:" in makefile
+    assert "low-implementer-delegation-check:" in makefile
+    assert "make low-implementer-delegation-packet" in readme
+    assert "does not call Gemma" in reproduction_map
+    assert "docs/codex/low-implementer-delegation-pilot.md" in review_docs.REVIEW_DOCS
 
 
 def test_v03_milestone_manifest_is_linked_and_complete() -> None:
