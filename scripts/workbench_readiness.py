@@ -46,7 +46,7 @@ REQUIRED_DOC_PHRASES = [
     "summary",
     "does not start services",
     "does not add run controls",
-    "tool count remains `19`",
+    "tool count remains `20`",
     "no-new-powers",
 ]
 

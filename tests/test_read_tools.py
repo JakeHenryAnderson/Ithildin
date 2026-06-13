@@ -740,6 +740,146 @@ def test_git_ref_summary_resource_denies_parent_repo_outside_workspace(
     assert resource["scope_error"] == "git repository escapes the workspace scope"
 
 
+def test_git_tag_metadata_returns_name_free_local_tag_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    run_git(repo, ["tag", "v1-lightweight"])
+    run_git(repo, ["tag", "-a", "v2-annotated", "-m", "release secret message"])
+    commit_hash = git_output(repo, ["rev-parse", "HEAD"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    summary = git.tag_metadata({"selector": {"kind": "all_local_tags"}, "limit": 10})
+
+    assert summary["tool_name"] == "git.show.tag_metadata"
+    assert summary["selector"] == {"kind": "all_local_tags"}
+    assert summary["tag_count"] == 2
+    assert summary["total_tag_count"] == 2
+    assert summary["skipped_non_commit_tag_count"] == 0
+    assert summary["truncated"] is False
+    tags = cast(list[dict[str, object]], summary["tags"])
+    assert {tag["tag_type"] for tag in tags} == {"lightweight", "annotated"}
+    assert all(str(tag["tag_id"]).startswith("tag_") for tag in tags)
+    assert all(tag["target_object_type"] == "commit" for tag in tags)
+    assert all(tag["resolved_commit_hash"] == commit_hash for tag in tags)
+    assert any(tag["peeled_from_tag_object"] is True for tag in tags)
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["tag_names_included"] is False
+    assert output_policy["tag_messages_included"] is False
+    assert output_policy["tag_signatures_included"] is False
+    assert output_policy["stable_tag_hashes_included"] is False
+    assert output_policy["tag_ids_are_response_local"] is True
+    dumped = json_dump(summary)
+    assert "v1-lightweight" not in dumped
+    assert "v2-annotated" not in dumped
+    assert "release secret message" not in dumped
+    assert "refs/tags" not in dumped
+
+
+def test_git_tag_metadata_handles_no_tags_and_limit_truncation(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    empty = git.tag_metadata({"selector": {"kind": "all_local_tags"}})
+    assert empty["tag_count"] == 0
+    assert empty["total_tag_count"] == 0
+    assert empty["tags"] == []
+
+    run_git(repo, ["tag", "v1"])
+    run_git(repo, ["tag", "v2"])
+    truncated = git.tag_metadata({"selector": {"kind": "all_local_tags"}, "limit": 1})
+    assert truncated["tag_count"] == 1
+    assert truncated["total_tag_count"] == 2
+    assert truncated["truncated"] is True
+
+
+def test_git_tag_metadata_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    denied_arguments = [
+        {"selector": {"kind": "all_local_tags", "tag": "v1"}},
+        {"selector": {"kind": "tag"}},
+        {"selector": {"kind": "all_local_tags"}, "include_names": True},
+        {"selector": {"kind": "all_local_tags"}, "include_messages": True},
+        {"selector": {"kind": "all_local_tags"}, "include_signatures": True},
+        {"selector": {"kind": "all_local_tags"}, "format": "%(refname)"},
+        {"selector": {"kind": "all_local_tags"}, "argv": ["for-each-ref"]},
+        {"selector": {"kind": "all_local_tags"}, "ref": "v1"},
+        {"selector": {"kind": "all_local_tags"}, "remote": "origin"},
+        {"selector": {"kind": "all_local_tags"}, "limit": 0},
+        {"selector": {"kind": "all_local_tags"}, "limit": 201},
+    ]
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            git.tag_metadata(cast(JsonObject, arguments))
+
+
+def test_git_tag_metadata_skips_non_commit_tag_targets(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    repo = filesystem.workspace_root
+    run_git(repo, ["init"])
+    run_git(repo, ["config", "user.email", "test@example.com"])
+    run_git(repo, ["config", "user.name", "Test User"])
+    repo.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(repo, ["add", "tracked.txt"])
+    run_git(repo, ["commit", "-m", "initial"])
+    blob_hash = git_output(repo, ["hash-object", "tracked.txt"])
+    run_git(repo, ["tag", "blobtag", blob_hash])
+    git = GitReadTools(filesystem=filesystem, max_output_bytes=4096, git_log_limit=10)
+
+    summary = git.tag_metadata({"selector": {"kind": "all_local_tags"}})
+
+    assert summary["tag_count"] == 0
+    assert summary["total_tag_count"] == 0
+    assert summary["skipped_non_commit_tag_count"] == 1
+    assert summary["tags"] == []
+    assert "blobtag" not in json_dump(summary)
+
+
+def test_git_tag_metadata_resource_denies_parent_repo_outside_workspace(
+    tmp_path: Path,
+) -> None:
+    parent_repo = tmp_path / "parent"
+    parent_repo.mkdir()
+    workspace_root = parent_repo / "workspace"
+    workspace_root.mkdir()
+    run_git(parent_repo, ["init"])
+    run_git(parent_repo, ["config", "user.email", "test@example.com"])
+    run_git(parent_repo, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("tracked.txt").write_text("hello\n", encoding="utf-8")
+    run_git(parent_repo, ["add", "workspace/tracked.txt"])
+    run_git(parent_repo, ["commit", "-m", "parent repo commit"])
+    executor = ReadToolExecutor.from_settings(
+        workspace_root=workspace_root,
+        max_read_bytes=4096,
+        search_result_limit=5,
+        git_log_limit=10,
+    )
+
+    resource = executor.resource_from_arguments(
+        {"selector": {"kind": "all_local_tags"}},
+        tool_name="git.show.tag_metadata",
+    )
+
+    assert resource["in_scope"] is False
+    assert resource["scope_error"] == "git repository escapes the workspace scope"
+
+
 def test_project_manifest_summary_returns_count_only_metadata(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

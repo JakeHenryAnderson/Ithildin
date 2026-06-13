@@ -21,6 +21,7 @@ EXPECTED_TOOL_NAMES = [
     "git.log",
     "git.show.commit_metadata",
     "git.show.ref_summary",
+    "git.show.tag_metadata",
     "git.status",
     "http.fetch",
     "project.config.summary",
@@ -42,6 +43,7 @@ EXPECTED_TOOL_RISKS = {
     "git.log": "read",
     "git.show.commit_metadata": "read",
     "git.show.ref_summary": "read",
+    "git.show.tag_metadata": "read",
     "git.status": "read",
     "http.fetch": "network",
     "project.config.summary": "read",
@@ -128,6 +130,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(_check_git_commit_metadata_schema(manifest))
         if manifest_name == "git.show.ref_summary":
             failures.extend(_check_git_ref_summary_schema(manifest))
+        if manifest_name == "git.show.tag_metadata":
+            failures.extend(_check_git_tag_metadata_schema(manifest))
         if manifest_name == "project.manifest.summary":
             failures.extend(_check_project_manifest_summary_schema(manifest))
         if manifest_name == "project.dependency.summary":
@@ -290,6 +294,65 @@ def _check_git_ref_summary_schema(manifest: dict[str, Any]) -> list[str]:
     if drift:
         failures.append(
             "git.show.ref_summary exposes forbidden caller-controlled fields: "
+            + ", ".join(drift)
+        )
+    return failures
+
+
+def _check_git_tag_metadata_schema(manifest: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    schema = manifest.get("input_schema")
+    if not isinstance(schema, dict):
+        return ["git.show.tag_metadata input_schema is missing or invalid"]
+    if schema.get("additionalProperties") is not False:
+        failures.append("git.show.tag_metadata must keep additionalProperties: false")
+    required = schema.get("required")
+    if required != ["selector"]:
+        failures.append("git.show.tag_metadata required fields drifted")
+    properties = schema.get("properties")
+    allowed = ["limit", "selector", "workspace_id"]
+    if not isinstance(properties, dict) or sorted(properties) != allowed:
+        failures.append("git.show.tag_metadata properties drifted")
+        return failures
+    selector_schema = properties.get("selector")
+    if not isinstance(selector_schema, dict):
+        return failures + ["git.show.tag_metadata selector schema is invalid"]
+    if selector_schema.get("additionalProperties") is not False:
+        failures.append("git.show.tag_metadata selector must keep additionalProperties: false")
+    if selector_schema.get("required") != ["kind"]:
+        failures.append("git.show.tag_metadata selector required fields drifted")
+    selector_properties = selector_schema.get("properties")
+    if not isinstance(selector_properties, dict):
+        failures.append("git.show.tag_metadata selector properties are invalid")
+        return failures
+    kind = selector_properties.get("kind")
+    if not isinstance(kind, dict) or sorted(kind.get("enum", [])) != ["all_local_tags"]:
+        failures.append("git.show.tag_metadata selector kind enum drifted")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("minimum") != 1 or limit.get("maximum") != 200:
+        failures.append("git.show.tag_metadata limit bounds drifted")
+    forbidden_inputs = {
+        "argv",
+        "args",
+        "command",
+        "format",
+        "pathspec",
+        "remote",
+        "checkout",
+        "diff",
+        "headers",
+        "body",
+        "include_names",
+        "include_messages",
+        "include_signatures",
+        "ref",
+        "refspec",
+    }
+    exposed = set(properties) | set(selector_properties)
+    drift = sorted(exposed & forbidden_inputs)
+    if drift:
+        failures.append(
+            "git.show.tag_metadata exposes forbidden caller-controlled fields: "
             + ", ".join(drift)
         )
     return failures

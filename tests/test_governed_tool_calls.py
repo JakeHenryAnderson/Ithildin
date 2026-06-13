@@ -286,6 +286,39 @@ input_schema:
     )
 
 
+def write_git_tag_metadata_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("git-show-tag-metadata.yaml").write_text(
+        """
+name: git.show.tag_metadata
+version: 1.0.0
+title: Show tag metadata
+risk: read
+category: git
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["selector"]
+  properties:
+    selector:
+      type: object
+      additionalProperties: false
+      required: ["kind"]
+      properties:
+        kind:
+          type: string
+          enum: [all_local_tags]
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 200
+""",
+        encoding="utf-8",
+    )
+
+
 def write_project_manifest_summary_manifest(manifest_dir: Path) -> None:
     manifest_dir.mkdir(exist_ok=True)
     manifest_dir.joinpath("project-manifest-summary.yaml").write_text(
@@ -684,6 +717,44 @@ def make_git_ref_summary_service(tmp_path: Path) -> tuple[GovernedToolCallServic
     run_git(workspace_root, ["commit", "-m", "initial"])
     run_git(workspace_root, ["branch", "safe/topic"])
     commit_hash = git_output(workspace_root, ["rev-parse", "HEAD"])
+    return (
+        GovernedToolCallService(
+            ToolRegistry.load(manifest_dir),
+            PolicyEvaluator.load(policy_path),
+            approval_service,
+            audit_writer,
+            ReadToolExecutor.from_settings(
+                workspace_root=workspace_root,
+                max_read_bytes=4096,
+                search_result_limit=10,
+                git_log_limit=10,
+            ),
+        ),
+        commit_hash,
+    )
+
+
+def make_git_tag_metadata_service(tmp_path: Path) -> tuple[GovernedToolCallService, str]:
+    manifest_dir = tmp_path / "manifests"
+    write_git_tag_metadata_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    run_git(workspace_root, ["init"])
+    run_git(workspace_root, ["config", "user.email", "test@example.com"])
+    run_git(workspace_root, ["config", "user.name", "Test User"])
+    workspace_root.joinpath("README.md").write_text("hello\n", encoding="utf-8")
+    run_git(workspace_root, ["add", "README.md"])
+    run_git(workspace_root, ["commit", "-m", "initial"])
+    commit_hash = git_output(workspace_root, ["rev-parse", "HEAD"])
+    run_git(workspace_root, ["tag", "v-secret-customer-release", commit_hash])
     return (
         GovernedToolCallService(
             ToolRegistry.load(manifest_dir),
@@ -1349,6 +1420,52 @@ def test_git_ref_summary_tool_executes_after_policy_allow_and_is_audited(
     assert isinstance(completed_ref_count, int)
     assert completed_ref_count >= 1
     assert "safe/topic" not in json.dumps(completed_metadata)
+
+
+def test_git_tag_metadata_tool_executes_after_policy_allow_and_is_audited(
+    tmp_path: Path,
+) -> None:
+    service, commit_hash = make_git_tag_metadata_service(tmp_path)
+
+    result = service.call_tool(
+        tool_name="git.show.tag_metadata",
+        arguments={"selector": {"kind": "all_local_tags"}, "limit": 10},
+        principal=principal(),
+        session_id="sess_git_tags",
+    )
+
+    assert result.status == "completed"
+    assert result.content["tool_name"] == "git.show.tag_metadata"
+    tags = cast(list[JsonObject], result.content["tags"])
+    assert tags
+    assert tags[0]["tag_id"] == "tag_0001"
+    assert tags[0]["resolved_commit_hash"] == commit_hash
+    output_policy = cast(JsonObject, result.content["output_policy"])
+    assert output_policy["tag_names_included"] is False
+    assert "v-secret-customer-release" not in json.dumps(result.content)
+    assert "refs/tags" not in json.dumps(result.content)
+    payloads = audit_payloads(tmp_path)
+    assert [payload["event_type"] for payload in payloads] == [
+        "policy.evaluated",
+        "tool.execution.started",
+        "tool.execution.completed",
+    ]
+    policy_metadata = cast(JsonObject, payloads[0]["metadata"])
+    assert policy_metadata["resource_type"] == "git_tags"
+    assert policy_metadata["resource_in_scope"] is True
+    execution_resource = cast(JsonObject, payloads[1]["resource"])
+    assert execution_resource["type"] == "git_tags"
+    assert execution_resource["selector_kind"] == "all_local_tags"
+    completed_metadata = cast(JsonObject, payloads[2]["metadata"])
+    assert completed_metadata["selector_kind"] == "all_local_tags"
+    assert completed_metadata["tag_count"] == 1
+    assert completed_metadata["total_tag_count"] == 1
+    assert completed_metadata["tag_names_included"] is False
+    assert completed_metadata["tag_messages_included"] is False
+    assert completed_metadata["tag_signatures_included"] is False
+    assert completed_metadata["stable_tag_hashes_included"] is False
+    assert completed_metadata["tag_ids_are_response_local"] is True
+    assert "v-secret-customer-release" not in json.dumps(completed_metadata)
 
 
 def test_project_manifest_summary_tool_executes_after_policy_allow_and_is_audited(

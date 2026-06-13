@@ -4,19 +4,20 @@ Status: capability-expansion readiness checkpoint. This document does not add ru
 tool manifests, policy rules, MCP exposure, API behavior, UI behavior, or new governed tool powers.
 
 This checkpoint exists because the first bounded read-only metadata lanes are now implemented:
-`git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`,
-`project.dependency.summary`, `project.structure.summary`, `project.test.summary`, and
-`project.docs.summary`, `project.language.summary`, and `project.config.summary`. The
+`git.show.commit_metadata`, `git.show.ref_summary`, `git.show.tag_metadata`,
+`project.manifest.summary`, `project.dependency.summary`, `project.structure.summary`,
+`project.test.summary`, `project.docs.summary`, `project.language.summary`, and
+`project.config.summary`. The
 historical candidate records still show how each bounded metadata tool advanced through proposal,
 implementation planning, implementation decision, source-review handoff, and local lane closure.
 
 ## Current State
 
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
-  `git.show.ref_summary`, `project.manifest.summary`, `project.dependency.summary`, and
-  `project.structure.summary`, `project.test.summary`, `project.docs.summary`, and
-  `project.language.summary`, and `project.config.summary`.
-- Current tool count: `19`.
+  `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
+  `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
+  `project.docs.summary`, `project.language.summary`, and `project.config.summary`.
+- Current tool count: `20`.
 - Next candidate: not selected.
 - Next candidate status: pending selection.
 - Next candidate implementation: blocked.

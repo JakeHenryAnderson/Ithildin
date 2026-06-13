@@ -98,6 +98,21 @@ cases:
     expect_resource_type: git_refs
     expect_resource_in_scope: true
 
+  - id: git_tag_metadata_preview_matches_runtime
+    description: Tag metadata preview and runtime policy evidence agree on a scoped Git tags resource.
+    tool_name: git.show.tag_metadata
+    arguments:
+      selector:
+        kind: all_local_tags
+      limit: 5
+    principal:
+      id: agent:mcp-local
+    session_id: parity-git-tag-metadata
+    expect_decision: allow
+    expect_runtime_status: completed
+    expect_resource_type: git_tags
+    expect_resource_in_scope: true
+
   - id: project_manifest_summary_preview_matches_runtime
     description: Project manifest summary preview and runtime policy evidence agree on a scoped project manifest resource.
     tool_name: project.manifest.summary

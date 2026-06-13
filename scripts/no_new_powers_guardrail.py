@@ -23,6 +23,7 @@ ALLOWED_NETWORK_TOOLS = {"http.fetch"}
 ALLOWED_NEW_READ_TOOLS = {
     "git.show.commit_metadata",
     "git.show.ref_summary",
+    "git.show.tag_metadata",
     "project.config.summary",
     "project.dependency.summary",
     "project.manifest.summary",
@@ -180,6 +181,10 @@ def _validate_schema_fields(name: str, manifest: dict[str, Any]) -> list[str]:
         failures = _validate_git_ref_summary_schema(properties)
         if failures:
             return failures
+    if name == "git.show.tag_metadata":
+        failures = _validate_git_tag_metadata_schema(properties)
+        if failures:
+            return failures
     if name == "project.manifest.summary":
         failures = _validate_project_manifest_summary_schema(properties)
         if failures:
@@ -229,6 +234,33 @@ def _validate_git_ref_summary_schema(properties: dict[str, Any]) -> list[str]:
     if forbidden_nested:
         failures.append(
             "git.show.ref_summary exposes forbidden selector fields: "
+            + ", ".join(forbidden_nested)
+        )
+    return failures
+
+
+def _validate_git_tag_metadata_schema(properties: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if sorted(properties) != ["limit", "selector", "workspace_id"]:
+        failures.append("git.show.tag_metadata must stay selector/limit/workspace-only")
+        return failures
+    selector = properties.get("selector")
+    if not isinstance(selector, dict):
+        return ["git.show.tag_metadata selector schema is invalid"]
+    if selector.get("additionalProperties") is not False:
+        failures.append("git.show.tag_metadata selector must reject unknown fields")
+    if selector.get("required") != ["kind"]:
+        failures.append("git.show.tag_metadata selector required fields drifted")
+    selector_properties = selector.get("properties")
+    if not isinstance(selector_properties, dict):
+        return failures + ["git.show.tag_metadata selector properties are invalid"]
+    kind = selector_properties.get("kind")
+    if not isinstance(kind, dict) or sorted(kind.get("enum", [])) != ["all_local_tags"]:
+        failures.append("git.show.tag_metadata selector kind enum drifted")
+    forbidden_nested = sorted(set(selector_properties) & FORBIDDEN_SCHEMA_FIELDS)
+    if forbidden_nested:
+        failures.append(
+            "git.show.tag_metadata exposes forbidden selector fields: "
             + ", ".join(forbidden_nested)
         )
     return failures

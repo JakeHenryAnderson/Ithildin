@@ -9,12 +9,12 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `19`.
-- `git.show.commit_metadata`, `git.show.ref_summary`, `project.manifest.summary`,
-  `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
-  `project.docs.summary`, `project.language.summary`, and `project.config.summary` are the
-  approved bounded read-only metadata runtime capability additions.
-- `make read-only-project-intelligence` records the consolidated nine-tool project intelligence
+- Tool count is `20`.
+- `git.show.commit_metadata`, `git.show.ref_summary`, `git.show.tag_metadata`,
+  `project.manifest.summary`, `project.dependency.summary`, `project.structure.summary`,
+  `project.test.summary`, `project.docs.summary`, `project.language.summary`, and
+  `project.config.summary` are the approved bounded read-only metadata runtime capability additions.
+- `make read-only-project-intelligence` records the consolidated ten-tool project intelligence
   slice.
 - `make next-capability-readiness` records that no next capability is currently selected and that
   future implementation remains blocked until fresh selection, implementation planning,

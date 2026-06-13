@@ -25,6 +25,7 @@ EXPECTED_TOOL_NAMES = [
     "git.log",
     "git.show.commit_metadata",
     "git.show.ref_summary",
+    "git.show.tag_metadata",
     "git.status",
     "http.fetch",
     "project.config.summary",

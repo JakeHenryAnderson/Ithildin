@@ -211,6 +211,7 @@ class _PolicyParityHarness:
         _run_git(workspace_root, ["add", "README.md"])
         _run_git(workspace_root, ["commit", "-m", "policy parity commit"])
         self.commit_hash = _git_output(workspace_root, ["rev-parse", "HEAD"])
+        _run_git(workspace_root, ["tag", "parity-v1", self.commit_hash])
         read_tool_executor = ReadToolExecutor.from_settings(
             workspace_root=workspace_root,
             max_read_bytes=1024,

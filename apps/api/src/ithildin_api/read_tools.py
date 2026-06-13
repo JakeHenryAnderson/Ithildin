@@ -34,6 +34,7 @@ READ_TOOL_NAMES = frozenset(
         "git.log",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "project.dependency.summary",
         "project.manifest.summary",
         "project.structure.summary",
@@ -46,6 +47,7 @@ READ_TOOL_NAMES = frozenset(
 
 _GIT_COMMIT_METADATA_TOOL = "git.show.commit_metadata"
 _GIT_REF_SUMMARY_TOOL = "git.show.ref_summary"
+_GIT_TAG_METADATA_TOOL = "git.show.tag_metadata"
 _PROJECT_DEPENDENCY_SUMMARY_TOOL = "project.dependency.summary"
 _PROJECT_MANIFEST_SUMMARY_TOOL = "project.manifest.summary"
 _PROJECT_STRUCTURE_SUMMARY_TOOL = "project.structure.summary"
@@ -63,6 +65,8 @@ _COMMIT_METADATA_CHANGED_FILE_LIMIT = 100
 _REF_SUMMARY_DEFAULT_LIMIT = 100
 _REF_SUMMARY_MAX_LIMIT = 200
 _REF_SUMMARY_NAME_BYTE_LIMIT = 240
+_TAG_METADATA_DEFAULT_LIMIT = 100
+_TAG_METADATA_MAX_LIMIT = 200
 _PROJECT_MANIFEST_DEFAULT_LIMIT = 20
 _PROJECT_MANIFEST_MAX_LIMIT = 20
 _PROJECT_MANIFEST_MAX_TOTAL_BYTES = 262144
@@ -447,6 +451,8 @@ class ReadToolExecutor:
             return self._commit_metadata_resource_from_arguments(arguments)
         if tool_name == _GIT_REF_SUMMARY_TOOL:
             return self._ref_summary_resource_from_arguments(arguments)
+        if tool_name == _GIT_TAG_METADATA_TOOL:
+            return self._tag_metadata_resource_from_arguments(arguments)
         if tool_name in {
             _PROJECT_DEPENDENCY_SUMMARY_TOOL,
             _PROJECT_MANIFEST_SUMMARY_TOOL,
@@ -652,6 +658,31 @@ class ReadToolExecutor:
         )
         return resource
 
+    def _tag_metadata_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        resource: JsonObject = {
+            "type": "git_tags",
+            "workspace_id": workspace_id,
+            "in_scope": False,
+        }
+        try:
+            self._filesystem(workspace_id)
+            git = self._git(workspace_id)
+            repo = git._repo_path(".")
+            git._ensure_repo_toplevel_in_workspace(repo)
+            selector_kind = _tag_metadata_selector_kind(arguments)
+            _tag_metadata_limit(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "selector_kind": selector_kind,
+                "in_scope": True,
+            }
+        )
+        return resource
+
     def _project_manifest_resource_from_arguments(
         self, arguments: JsonObject, *, tool_name: str
     ) -> JsonObject:
@@ -745,6 +776,8 @@ class ReadToolExecutor:
             return git.commit_metadata(arguments)
         if tool_name == _GIT_REF_SUMMARY_TOOL:
             return git.ref_summary(arguments)
+        if tool_name == _GIT_TAG_METADATA_TOOL:
+            return git.tag_metadata(arguments)
         if tool_name == _PROJECT_DEPENDENCY_SUMMARY_TOOL:
             return filesystem.project_dependency_summary(arguments)
         if tool_name == _PROJECT_MANIFEST_SUMMARY_TOOL:
@@ -1924,6 +1957,48 @@ class GitReadTools:
             },
         }
 
+    def tag_metadata(self, arguments: JsonObject) -> JsonObject:
+        _validate_tag_metadata_arguments(arguments)
+        selector_kind = _tag_metadata_selector_kind(arguments)
+        limit = _tag_metadata_limit(arguments)
+
+        repo = self._repo_path(".")
+        self._ensure_repo_toplevel_in_workspace(repo)
+        output = self._run_git(
+            repo,
+            [
+                "for-each-ref",
+                "--sort=refname",
+                "--format=%(refname)%00%(objectname)%00%(objecttype)%00%(*objectname)%00%(*objecttype)",
+                "refs/tags",
+            ],
+        )
+        if output.truncated:
+            raise ReadToolError("git tag metadata exceeds configured read limit")
+
+        tags, skipped_non_commit = _parse_tag_metadata_output(output.text)
+        selected_tags = tags[:limit]
+        return {
+            "workspace_id": self.filesystem.workspace_id,
+            "tool_name": _GIT_TAG_METADATA_TOOL,
+            "selector": {"kind": selector_kind},
+            "tag_count": len(selected_tags),
+            "total_tag_count": len(tags),
+            "skipped_non_commit_tag_count": skipped_non_commit,
+            "truncated": len(tags) > limit,
+            "tags": cast(list[JsonValue], selected_tags),
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_diff_included": False,
+                "tag_names_included": False,
+                "tag_messages_included": False,
+                "tag_signatures_included": False,
+                "stable_tag_hashes_included": False,
+                "tag_ids_are_response_local": True,
+                "metadata_is_untrusted": True,
+            },
+        }
+
     def _repo_path(self, path: str) -> Path:
         repo = self.filesystem.resolve_existing_path(path)
         if not repo.is_dir():
@@ -2293,6 +2368,79 @@ def _ref_summary_resolved_commit(
     if not _HEX_OBJECT_RE.fullmatch(candidate):
         raise ReadToolError("git ref summary commit metadata is invalid")
     return candidate.lower()
+
+
+def _validate_tag_metadata_arguments(arguments: JsonObject) -> None:
+    allowed = {"selector", "limit", "workspace_id"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("git tag metadata received unsupported arguments")
+    _tag_metadata_selector_kind(arguments)
+    _tag_metadata_limit(arguments)
+
+
+def _tag_metadata_selector_kind(arguments: JsonObject) -> str:
+    raw = arguments.get("selector")
+    if not isinstance(raw, dict):
+        raise ReadToolError("selector must be an object")
+    unknown = sorted(set(raw) - {"kind"})
+    if unknown:
+        raise ReadToolError("git tag metadata selector contains unsupported fields")
+    kind = raw.get("kind")
+    if not isinstance(kind, str):
+        raise ReadToolError("selector kind must be a string")
+    if kind != "all_local_tags":
+        raise ReadToolError("unsupported tag metadata selector")
+    return kind
+
+
+def _tag_metadata_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_TAG_METADATA_DEFAULT_LIMIT)
+    if limit < 1 or limit > _TAG_METADATA_MAX_LIMIT:
+        raise ReadToolError("git tag metadata limit is outside allowed bounds")
+    return limit
+
+
+def _parse_tag_metadata_output(output: str) -> tuple[list[JsonObject], int]:
+    tags: list[JsonObject] = []
+    skipped_non_commit = 0
+    seen_casefolded: dict[str, str] = {}
+    for line in output.splitlines():
+        if not line:
+            continue
+        fields = line.split("\x00")
+        if len(fields) != 5:
+            raise ReadToolError("git tag metadata is invalid")
+        refname, object_id, object_type, peeled_object, peeled_type = fields
+        if not refname.startswith("refs/tags/"):
+            raise ReadToolError("git tag metadata returned an unsupported ref namespace")
+        tag_name = refname.removeprefix("refs/tags/")
+        _validate_ref_summary_name(tag_name)
+        casefolded = tag_name.casefold()
+        existing = seen_casefolded.get(casefolded)
+        if existing is not None and existing != tag_name:
+            raise ReadToolError("git tag metadata contains ambiguous tag names")
+        seen_casefolded[casefolded] = tag_name
+        commit_hash = _ref_summary_resolved_commit(
+            object_id=object_id,
+            object_type=object_type,
+            peeled_object=peeled_object,
+            peeled_type=peeled_type,
+        )
+        if commit_hash is None:
+            skipped_non_commit += 1
+            continue
+        tag_type = "annotated" if object_type == "tag" else "lightweight"
+        tags.append(
+            {
+                "tag_id": f"tag_{len(tags) + 1:04d}",
+                "tag_type": tag_type,
+                "target_object_type": "commit",
+                "resolved_commit_hash": commit_hash,
+                "peeled_from_tag_object": object_type == "tag",
+            }
+        )
+    return tags, skipped_non_commit
 
 
 def _validate_project_manifest_summary_arguments(arguments: JsonObject) -> None:

@@ -277,6 +277,40 @@ input_schema:
     )
 
 
+def write_git_tag_metadata_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("git-show-tag-metadata.yaml").write_text(
+        """
+name: git.show.tag_metadata
+version: 1.0.0
+title: Show tag metadata
+risk: read
+category: git
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["selector"]
+  properties:
+    selector:
+      type: object
+      additionalProperties: false
+      required: ["kind"]
+      properties:
+        kind:
+          type: string
+          enum: [all_local_tags]
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 200
+""",
+        encoding="utf-8",
+    )
+
+
 def write_project_manifest_summary_manifest(manifest_dir: Path) -> None:
     manifest_dir.joinpath("project-manifest-summary.yaml").write_text(
         """
@@ -364,6 +398,7 @@ def make_adapter_harness(
     write_http_fetch_manifest(manifest_dir)
     write_git_commit_metadata_manifest(manifest_dir)
     write_git_ref_summary_manifest(manifest_dir)
+    write_git_tag_metadata_manifest(manifest_dir)
     write_project_dependency_summary_manifest(manifest_dir)
     write_project_manifest_summary_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
@@ -402,6 +437,7 @@ input_schema:
     run_git(workspace_root, ["commit", "-m", "mcp commit"])
     run_git(workspace_root, ["branch", "safe/topic"])
     commit_hash = git_output(workspace_root, ["rev-parse", "HEAD"])
+    run_git(workspace_root, ["tag", "v-mcp-secret-release", commit_hash])
     audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
     audit_writer.initialize()
     approval_store = ApprovalStore(db_path)
@@ -478,6 +514,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "fs.read",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "http.fetch",
         "project.dependency.summary",
         "project.manifest.summary",
@@ -510,6 +547,7 @@ principals:
         "fs.read",
         "git.show.commit_metadata",
         "git.show.ref_summary",
+        "git.show.tag_metadata",
         "project.dependency.summary",
         "project.manifest.summary",
     ]
@@ -595,6 +633,28 @@ def test_mcp_call_returns_real_git_ref_summary_output(tmp_path: Path) -> None:
     assert all(ref["resolved_commit_hash"] == harness.commit_hash for ref in refs)
     assert "safe/topic" not in json.dumps(result.structuredContent)
     assert "refs/heads" not in json.dumps(result.structuredContent)
+
+
+def test_mcp_call_returns_real_git_tag_metadata_output(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "git.show.tag_metadata",
+            {"selector": {"kind": "all_local_tags"}, "limit": 10},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert result.structuredContent["output_policy"]["tag_names_included"] is False
+    assert result.structuredContent["output_policy"]["tag_messages_included"] is False
+    tags = cast(list[dict[str, object]], result.structuredContent["tags"])
+    assert tags
+    assert all(tag["resolved_commit_hash"] == harness.commit_hash for tag in tags)
+    assert "v-mcp-secret-release" not in json.dumps(result.structuredContent)
+    assert "refs/tags" not in json.dumps(result.structuredContent)
 
 
 def test_mcp_call_returns_real_project_manifest_summary_output(tmp_path: Path) -> None:

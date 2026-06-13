@@ -41,6 +41,18 @@ APPROVED_CAPABILITIES = [
         "source_review_bundle": "git-ref-summary-source-review-bundle",
     },
     {
+        "tool_name": "git.show.tag_metadata",
+        "manifest": "tool-manifests/git-show-tag-metadata.yaml",
+        "proposal": "docs/codex/capability-proposals/git-show-tag-metadata.md",
+        "implementation_plan": (
+            "docs/codex/capability-implementation-plans/git-show-tag-metadata.md"
+        ),
+        "implementation": "docs/codex/v0.9-git-tag-metadata-implementation.md",
+        "source_review": "docs/codex/v0.9-git-tag-metadata-source-review.md",
+        "implementation_gate": "git-tag-metadata-implementation-gate",
+        "source_review_bundle": "git-tag-metadata-source-review-bundle",
+    },
+    {
         "tool_name": "project.manifest.summary",
         "manifest": "tool-manifests/project-manifest-summary.yaml",
         "proposal": "docs/codex/capability-proposals/project-manifest-summary.md",
@@ -127,6 +139,7 @@ REQUIRED_INVENTORY_PHRASES = [
     "Status: approved read-only metadata inventory",
     "git.show.commit_metadata",
     "git.show.ref_summary",
+    "git.show.tag_metadata",
     "project.dependency.summary",
     "project.manifest.summary",
     "project.structure.summary",
@@ -134,7 +147,7 @@ REQUIRED_INVENTORY_PHRASES = [
     "project.docs.summary",
     "project.language.summary",
     "project.config.summary",
-    "tool count `19`",
+    "tool count `20`",
     "no shell",
     "no broad filesystem writes",
     "no arbitrary Git command execution",

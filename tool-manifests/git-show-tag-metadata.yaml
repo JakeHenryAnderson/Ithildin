@@ -1,0 +1,33 @@
+name: git.show.tag_metadata
+version: 0.1.0
+title: Show git tag metadata
+risk: read
+category: git
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+    - selector
+  properties:
+    selector:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - all_local_tags
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 200
+      default: 100
+    workspace_id:
+      type: string
+      default: default

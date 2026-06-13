@@ -1174,6 +1174,31 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                     metadata[key] = value
         return metadata
 
+    if tool_name == "git.show.tag_metadata":
+        selector = content.get("selector")
+        output_policy = content.get("output_policy")
+        if isinstance(selector, dict) and isinstance(selector.get("kind"), str):
+            metadata["selector_kind"] = selector["kind"]
+        for key in ("tag_count", "total_tag_count", "skipped_non_commit_tag_count"):
+            value = content.get(key)
+            if isinstance(value, int) and not isinstance(value, bool):
+                metadata[key] = value
+        truncated = content.get("truncated")
+        if isinstance(truncated, bool):
+            metadata["truncated"] = truncated
+        if isinstance(output_policy, dict):
+            for key in (
+                "tag_names_included",
+                "tag_messages_included",
+                "tag_signatures_included",
+                "stable_tag_hashes_included",
+                "tag_ids_are_response_local",
+            ):
+                value = output_policy.get(key)
+                if isinstance(value, bool):
+                    metadata[key] = value
+        return metadata
+
     if tool_name != "git.show.ref_summary":
         return metadata
 

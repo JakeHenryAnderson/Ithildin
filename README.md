@@ -261,6 +261,7 @@ checked with `make control-mapping-readiness`.
 - `make git-ref-summary-implementation-gate` - validate the approved read-only `git.show.ref_summary` implementation boundary.
 - `make git-tag-metadata-proposal-check` - validate the `git.show.tag_metadata` design-only proposal.
 - `make git-tag-metadata-implementation-plan-check` - validate the `git.show.tag_metadata` implementation-planning packet without authorizing runtime work.
+- `make git-tag-metadata-implementation-gate` - validate the approved read-only `git.show.tag_metadata` implementation boundary.
 - `make git-commit-metadata-implementation-plan-check` - validate the historical implementation-planning packet.
 - `make git-commit-metadata-implementation-gate` - validate the approved read-only `git.show.commit_metadata` implementation boundary.
 - `make read-only-metadata-capability-check` - validate the shared read-only metadata contract, privacy policy, checklist, review template, and v3 debt register.
