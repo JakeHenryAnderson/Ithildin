@@ -48,8 +48,8 @@ Every tool in this family must preserve:
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
   `project.docs.summary`, `project.language.summary`, and `project.config.summary`.
-- Next candidate: not selected.
-- Next candidate status: pending selection.
+- Next candidate: `project.ci.summary`.
+- Next candidate status: design-only selected.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -59,9 +59,10 @@ This slice is not a code-search engine, package analyzer, dependency scanner, SB
 vulnerability scanner, compliance engine, shell replacement, project build runner, network package
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
-The most recent Git metadata candidate,
-[git.show.tag_metadata](capability-proposals/git-show-tag-metadata.md), has advanced through its
-approved implementation boundary as a bounded read-only metadata tool. Future read-only metadata
-tools must start again from a design-only candidate, proposal, implementation plan, explicit
-implementation decision, source-review handoff, policy fixtures, negative transcripts,
-no-new-powers evidence, and release gates. No next candidate is currently selected.
+The most recent project metadata candidate,
+[project.config.summary](capability-proposals/project-config-summary.md), has advanced through its
+approved implementation boundary as a bounded read-only metadata tool. The current selected
+design-only candidate is [project.ci.summary](capability-proposals/project-ci-summary.md), with
+implementation blocked. Future read-only metadata tools must start again from a design-only
+candidate, proposal, implementation plan, explicit implementation decision, source-review handoff,
+policy fixtures, negative transcripts, no-new-powers evidence, and release gates.

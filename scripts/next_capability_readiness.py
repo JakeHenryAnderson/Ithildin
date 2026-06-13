@@ -35,8 +35,8 @@ REQUIRED_DOC_PHRASES = [
     "project.language.summary",
     "project.config.summary",
     "Current tool count: `20`",
-    "Next candidate: not selected",
-    "Next candidate status: pending selection",
+    "Next candidate: `project.ci.summary`",
+    "Next candidate status: design-only selected",
     "Next candidate implementation: blocked",
     "Broader capability expansion: blocked",
     "New powerful tool classes: blocked",
@@ -50,7 +50,9 @@ REQUIRED_DOC_PHRASES = [
     "negative transcript coverage",
     "no-new-powers evidence",
     "make next-capability-readiness",
-    "make project-config-summary-source-review-bundle",
+    "make project-ci-summary-proposal-check",
+    "make project-ci-summary-implementation-plan-check",
+    "make project-ci-summary-design-review-packet",
 ]
 
 
@@ -108,8 +110,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "current_approved_read_only_capabilities": inventory.get("capability_count"),
         "tool_count": inventory.get("tool_count"),
-        "next_candidate": None,
-        "next_candidate_status": "pending_selection",
+        "next_candidate": "project.ci.summary",
+        "next_candidate_status": "design_only_selected",
         "next_candidate_implementation_allowed": False,
         "broader_capability_expansion_allowed": False,
         "new_power_classes_allowed": False,

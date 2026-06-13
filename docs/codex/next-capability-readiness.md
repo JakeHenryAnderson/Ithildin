@@ -18,8 +18,8 @@ implementation planning, implementation decision, source-review handoff, and loc
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
   `project.docs.summary`, `project.language.summary`, and `project.config.summary`.
 - Current tool count: `20`.
-- Next candidate: not selected.
-- Next candidate status: pending selection.
+- Next candidate: `project.ci.summary`.
+- Next candidate status: design-only selected.
 - Next candidate implementation: blocked.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
@@ -57,13 +57,16 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 The most recent capability,
 [project.config.summary](capability-proposals/project-config-summary.md), has advanced through proposal,
 implementation planning, implementation decision, runtime implementation, and source-review handoff
-as one bounded read-only metadata tool. No next design-only candidate is currently selected.
+as one bounded read-only metadata tool. The current selected design-only candidate is
+[project.ci.summary](capability-proposals/project-ci-summary.md), with implementation blocked.
 
 Run:
 
 ```bash
 make next-capability-readiness
-make project-config-summary-source-review-bundle
+make project-ci-summary-proposal-check
+make project-ci-summary-implementation-plan-check
+make project-ci-summary-design-review-packet
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata
