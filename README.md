@@ -309,6 +309,8 @@ checked with `make control-mapping-readiness`.
   handoff for the approved `project.language.summary` implementation.
 - `make project-language-summary-design-review-packet` - generate the design-review packet for
   the selected `project.language.summary` proposal.
+- `make project-config-summary-proposal-check` - validate the current design-only
+  `project.config.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -610,11 +612,13 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next-capability preflight is
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
-with `make next-capability-readiness`; it records that `project.docs.summary` has advanced through
-a bounded read-only implementation decision and source-review handoff while broader capability
-expansion remains blocked. The current selected candidate is
+with `make next-capability-readiness`; it records that `project.language.summary` has advanced
+through a bounded read-only implementation decision and source-review handoff while broader
+capability expansion remains blocked. The current selected candidate is
+[docs/codex/capability-proposals/project-config-summary.md](docs/codex/capability-proposals/project-config-summary.md),
+checked with `make project-config-summary-proposal-check`. The previous selected candidate,
 [docs/codex/capability-proposals/project-language-summary.md](docs/codex/capability-proposals/project-language-summary.md),
-checked with `make project-language-summary-proposal-check`. Its implementation-planning packet is
+advanced through implementation planning and source-review handoff. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-language-summary.md](docs/codex/capability-implementation-plans/project-language-summary.md)
 and is checked with `make project-language-summary-implementation-plan-check`; the bounded
 implementation decision is

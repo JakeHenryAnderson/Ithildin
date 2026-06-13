@@ -92,6 +92,7 @@ from scripts import (
     project_docs_summary_proposal_check,
     project_docs_summary_source_review_bundle,
     project_intelligence_readiness,
+    project_config_summary_proposal_check,
     project_language_summary_design_review_packet,
     project_language_summary_implementation_gate,
     project_language_summary_implementation_plan_check,
@@ -1657,6 +1658,57 @@ def test_project_language_summary_proposal_check_is_wired() -> None:
     assert "docs/codex/v3-project-language-summary-selection.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-proposals/project-language-summary.md" in docs_site
     assert "docs/codex/v3-project-language-summary-selection.md" in docs_site
+
+
+def test_project_config_summary_proposal_check_is_wired() -> None:
+    report = project_config_summary_proposal_check.build_report(Path.cwd())
+    proposal = Path("docs/codex/capability-proposals/project-config-summary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = Path("docs/codex/v3-project-config-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.config.summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 18
+    for phrase in [
+        "Status: design-only proposal",
+        "count-only config posture metadata and allowlisted labels only",
+        "no config file names",
+        "no raw paths",
+        "no file contents",
+        "no config values",
+        "no environment names or values",
+        "no config parser execution",
+        "no command discovery",
+        "no package-manager execution",
+        "Policy And Audit Evidence",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in proposal
+    assert "tool count remains `18`" in selection
+    assert "implementation remains blocked" in selection
+    assert "make project-config-summary-proposal-check" in readme
+    assert "project-config-summary-proposal-check:" in makefile
+    assert "project-config-summary-proposal-check" in release_check_body
+    assert (
+        "project-config-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.config.summary" in index
+    assert "docs/codex/capability-proposals/project-config-summary.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-config-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/project-config-summary.md" in docs_site
+    assert "docs/codex/v3-project-config-summary-selection.md" in docs_site
 
 
 def test_project_language_summary_implementation_plan_check_is_wired() -> None:
