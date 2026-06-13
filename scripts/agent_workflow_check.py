@@ -15,7 +15,8 @@ REQUIRED_AGENTS_PHRASES = [
     "coordination guidance, not a security boundary",
     "local-preview governed MCP/tool gateway",
     "Current governed tool count is 18",
-    "Low/Gemma-class implementers may do only narrow mechanical work",
+    "Low Codex implementers are the preferred mechanical delegation path",
+    "Gemma/local-model output is advisory only",
     "must not decide safety boundaries",
     "Do not add shell execution",
     "Docker socket access",
@@ -35,7 +36,8 @@ REQUIRED_AGENTS_PHRASES = [
 REQUIRED_WORKFLOW_PHRASES = [
     "planner-implementer workflow",
     "not a policy engine, sandbox, approval workflow, or security boundary",
-    "Low/Gemma-class implementer",
+    "Low Codex implementer",
+    "Gemma/local-model suggester",
     "Delegation Packet Shape",
     "Forbidden changes",
     "The current governed tool count is 18",
@@ -88,6 +90,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "workflow_doc": WORKFLOW_DOC.as_posix(),
         "tool_count": 18,
         "low_implementer_runtime_changes_allowed": False,
+        "low_codex_preferred_mechanical_path": True,
+        "gemma_output_advisory_only": True,
         "guidance_is_security_boundary": False,
     }
 
@@ -100,6 +104,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"workflow_doc: {report['workflow_doc']}",
         f"tool_count: {report['tool_count']}",
         "low_implementer_runtime_changes_allowed: false",
+        "low_codex_preferred_mechanical_path: true",
+        "gemma_output_advisory_only: true",
         "guidance_is_security_boundary: false",
     ]
     if report["failures"]:

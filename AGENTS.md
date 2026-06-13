@@ -21,9 +21,12 @@ handoff, and release/readiness updates.
 
 - The main Codex agent owns scope, safety judgment, implementation review, gates, staging, and
   commits.
-- Low/Gemma-class implementers may do only narrow mechanical work: docs links, stale wording scans,
+- Low Codex implementers are the preferred mechanical delegation path. They may do only narrow
+  mechanical work: docs links, stale wording scans,
   repetitive test wiring, packet inventory checks, and boilerplate following an existing pattern.
-- Low/Gemma-class implementers must not decide safety boundaries, design executors, change policy
+- Gemma/local-model output is advisory only and should be used only for offline suggestions when a
+  task is large but shallow; it is not the default implementation path for Ithildin.
+- Low Codex and Gemma/local-model implementers must not decide safety boundaries, design executors, change policy
   semantics, edit manifests, add MCP/API behavior, alter approval/audit logic, or make product-risk
   claims.
 - High agents may handle bounded implementation or review when runtime behavior, tests, policy,
@@ -57,4 +60,4 @@ make lint
 
 Stop and report status if a critical/high trust-boundary issue appears, the same gate fails three
 times, implementation requires changing the product boundary, tests reveal a real security
-regression, or a low/Gemma-class implementer proposes changes outside its allowed role.
+regression, or a low Codex/Gemma implementer proposes changes outside its allowed role.

@@ -1,13 +1,15 @@
-# Low/Gemma Implementer Delegation Pilot
+# Low Implementer Delegation Pilot
 
 Status: implemented as a local packet/check workflow.
 
-This pilot tests whether a low/Gemma-class implementer can make useful Ithildin contributions when
-the main Codex manager provides a narrow task packet and reviews every diff. It is a productivity experiment, not permission to delegate safety judgment.
+This pilot tests whether a Low Codex implementer can make useful Ithildin contributions when the
+main Codex manager provides a narrow task packet and reviews every diff. It is a productivity experiment, not permission to delegate safety judgment.
+
+Gemma/local-model output is optional advisory input only. Low Codex implementers are the preferred mechanical delegation path because they share the workspace, tooling, and gate workflow.
 
 ## Boundary
 
-Low/Gemma-class implementers may receive only mechanical tasks:
+Low Codex implementers may receive only mechanical tasks:
 
 - docs link updates;
 - stale wording scans;
@@ -39,7 +41,7 @@ The default generated task asks a low implementer to inspect committed docs for 
 references and report candidate mechanical updates only. It forbids edits to runtime source,
 manifests, policy, approval/audit code, MCP/API behavior, and trust claims.
 
-The main manager may then choose to apply, patch, or discard any suggestion. No low/Gemma-class
+The main manager may then choose to apply, patch, or discard any suggestion. No low implementer
 output is committed without main-manager review and the usual gates.
 
 ## Success Criteria
@@ -49,3 +51,4 @@ output is committed without main-manager review and the usual gates.
 - The focused check is small and cheap.
 - The workflow can be repeated without spending High/XHigh review on mechanical chores.
 - Any output that drifts into design or safety decisions is rejected.
+- Gemma/local-model suggestions remain optional and are not part of the required release path.

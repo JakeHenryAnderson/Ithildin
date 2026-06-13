@@ -189,7 +189,7 @@ externally closed.
 - [v0.6 Closure Handoff](v0.6-closure-handoff.md)
 - [v0.6 GPT 5.5 Pro Handoff Prompt](v0.6-gpt-55-pro-handoff-prompt.md)
 - [Agent Workflow Instruction Layer](agent-workflow-instruction-layer.md)
-- [Low/Gemma Implementer Delegation Pilot](low-implementer-delegation-pilot.md)
+- [Low Implementer Delegation Pilot](low-implementer-delegation-pilot.md)
 - [Capability Expansion Gate v2](capability-expansion-gate.md)
 - [Tool-Surface Invariant Gate v2](tool-surface-invariant-gate.md)
 - [No-New-Powers Guardrail v2](no-new-powers-guardrail.md)

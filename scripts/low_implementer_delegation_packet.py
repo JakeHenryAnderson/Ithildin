@@ -1,4 +1,4 @@
-"""Generate and validate a narrow low/Gemma-class implementer delegation packet."""
+"""Generate and validate a narrow Low Codex implementer delegation packet."""
 
 from __future__ import annotations
 
@@ -15,7 +15,9 @@ PILOT_DOC = Path("docs/codex/low-implementer-delegation-pilot.md")
 PACKET_FILES = ("LOW_IMPLEMENTER_TASK.md", "MANAGER_REVIEW_CHECKLIST.md", "packet-summary.json")
 
 REQUIRED_DOC_PHRASES = [
-    "low/Gemma-class implementer",
+    "Low Codex implementer",
+    "Gemma/local-model output is optional advisory input only",
+    "Low Codex implementers are the preferred mechanical delegation path",
     "productivity experiment, not permission to delegate safety judgment",
     "They must not edit manifests, executors, policy semantics, approval logic, audit logic",
     "does not call a local model",
@@ -99,8 +101,10 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
     packet_dir = repo_root / output_dir
 
     failures.extend(_missing_phrases(PILOT_DOC.as_posix(), pilot_doc, REQUIRED_DOC_PHRASES))
-    if "Low/Gemma-class implementers may do only narrow mechanical work" not in agents:
-        failures.append("AGENTS.md no longer defines Low/Gemma-class mechanical boundary")
+    if "Low Codex implementers are the preferred mechanical delegation path" not in agents:
+        failures.append("AGENTS.md no longer defines Low Codex as preferred mechanical path")
+    if "Gemma/local-model output is advisory only" not in agents:
+        failures.append("AGENTS.md no longer keeps Gemma/local-model output advisory")
     if "low-implementer-delegation-packet:" not in makefile:
         failures.append("Makefile is missing low-implementer-delegation-packet target")
     if "low-implementer-delegation-check:" not in makefile:
@@ -144,6 +148,8 @@ def build_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         "runtime_changes_allowed": False,
         "new_tool_powers_allowed": False,
         "model_call_performed": False,
+        "low_codex_preferred_mechanical_path": True,
+        "gemma_output_advisory_only": True,
     }
 
 
@@ -157,6 +163,8 @@ def render_report(report: dict[str, Any]) -> str:
         "runtime_changes_allowed: false",
         "new_tool_powers_allowed: false",
         "model_call_performed: false",
+        "low_codex_preferred_mechanical_path: true",
+        "gemma_output_advisory_only: true",
     ]
     if report["failures"]:
         lines.append("failures:")
@@ -169,7 +177,10 @@ def _task_prompt(commit: str, dirty: bool) -> str:
 
 Task: mechanical documentation command-list scan.
 
-You are acting as a Low/Gemma-class implementer for Ithildin. Main manager review required.
+You are acting as a Low Codex implementer for Ithildin. Main manager review required.
+
+Gemma/local-model suggestions are optional advisory input only and are not the default path for this
+task.
 
 Reviewed commit: `{commit}`
 Dirty tree at packet generation: `{str(dirty).lower()}`

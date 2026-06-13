@@ -52,14 +52,15 @@ Run `make internal-review-packet` when you want v2 local AI/subagent source-revi
 `var/review-packets/v0.3/internal-ai-review-packet/`. That packet is internal pressure-test
 material only and does not replace external/source review.
 Run `make agent-workflow-check` when validating the repo-level planner-implementer guidance for
-Medium/High/XHigh coordination and Low/Gemma-class mechanical implementers. The check confirms that
+Medium/High/XHigh coordination and Low Codex mechanical implementers. The check confirms that
 `AGENTS.md`, the agent workflow instruction layer, README command list, docs-site inputs, and review
 metadata preserve the local-preview boundary and state clearly that agent instructions are guidance,
 not a security boundary.
-Run `make low-implementer-delegation-packet` to generate the ignored Low/Gemma-class mechanical task
+Run `make low-implementer-delegation-packet` to generate the ignored Low Codex mechanical task
 packet, then `make low-implementer-delegation-check` to validate that the packet remains advisory,
-docs-only, and non-runtime. This is a local productivity experiment; it does not call Gemma, grant
-tool powers, or replace main-manager review.
+docs-only, and non-runtime. This is a local productivity experiment; Gemma/local-model suggestions
+remain optional advisory input, and the packet does not call a model, grant tool powers, or replace
+main-manager review.
 Run `make reviewer-findings-check` after converting any internal AI/subagent, GPT 5.5 Pro, or human
 review note into a structured finding file. The check validates
 [reviewer-finding-intake.md](reviewer-finding-intake.md) records before the closure matrix changes.

@@ -236,10 +236,12 @@ def test_agent_workflow_instruction_layer_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 18
     assert report["low_implementer_runtime_changes_allowed"] is False
+    assert report["low_codex_preferred_mechanical_path"] is True
+    assert report["gemma_output_advisory_only"] is True
     assert report["guidance_is_security_boundary"] is False
     assert "agent-workflow-check:" in makefile
     assert "make agent-workflow-check" in readme
-    assert "Low/Gemma-class" in reproduction_map
+    assert "Low Codex mechanical implementers" in reproduction_map
     assert "AGENTS.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/agent-workflow-instruction-layer.md" in review_docs.REVIEW_DOCS
 
@@ -258,11 +260,13 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     assert report["runtime_changes_allowed"] is False
     assert report["new_tool_powers_allowed"] is False
     assert report["model_call_performed"] is False
+    assert report["low_codex_preferred_mechanical_path"] is True
+    assert report["gemma_output_advisory_only"] is True
     assert report["tool_count"] == 18
     assert "low-implementer-delegation-packet:" in makefile
     assert "low-implementer-delegation-check:" in makefile
     assert "make low-implementer-delegation-packet" in readme
-    assert "does not call Gemma" in reproduction_map
+    assert "Gemma/local-model suggestions" in reproduction_map
     assert "docs/codex/low-implementer-delegation-pilot.md" in review_docs.REVIEW_DOCS
 
 

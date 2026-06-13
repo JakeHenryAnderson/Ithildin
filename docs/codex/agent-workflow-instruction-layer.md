@@ -12,13 +12,15 @@ workflow, and human/user review.
 | Role | Allowed Work | Must Not Do |
 | --- | --- | --- |
 | Main Codex manager | Scope work, choose gates, review diffs, decide safety, commit. | Delegate final safety judgment. |
-| Low/Gemma-class implementer | Mechanical docs links, stale wording scans, repetitive test wiring, packet inventories, boilerplate from an existing pattern. | Edit manifests, executors, policy semantics, approval/audit logic, MCP/API behavior, storage/auth boundaries, or trust claims. |
+| Low Codex implementer | Preferred mechanical delegation path for docs links, stale wording scans, repetitive test wiring, packet inventories, and boilerplate from an existing pattern. | Edit manifests, executors, policy semantics, approval/audit logic, MCP/API behavior, storage/auth boundaries, or trust claims. |
+| Gemma/local-model suggester | Optional offline advisory pass for broad but shallow scans when latency is acceptable. | Directly edit files, act as the default implementer, or make safety/product judgments. |
 | High implementer/reviewer | Bounded runtime/test work under an explicit plan and manager review. | Approve new product boundaries alone. |
 | XHigh reviewer | Milestone risk review, ambiguous boundary review, break-glass consultation. | Replace external review for public/security-product positioning. |
 
 ## Delegation Packet Shape
 
-When using a low/Gemma-class implementer, give one narrow assignment at a time:
+When using a Low Codex implementer or optional Gemma/local-model suggester, give one narrow
+assignment at a time:
 
 ```text
 Task:
