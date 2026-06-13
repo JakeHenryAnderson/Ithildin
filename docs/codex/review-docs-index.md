@@ -194,6 +194,7 @@ externally closed.
 - [v3 project.ci.summary Selection](v3-project-ci-summary-selection.md)
 - [Capability Proposal: project.ci.summary](capability-proposals/project-ci-summary.md)
 - [Implementation-Planning Packet: project.ci.summary](capability-implementation-plans/project-ci-summary.md)
+- [v3 project.ci.summary Implementation Decision](v3-project-ci-summary-implementation.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)
 - [Read-Only Capability Source Review Template](read-only-capability-source-review-template.md)

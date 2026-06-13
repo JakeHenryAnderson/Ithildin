@@ -325,6 +325,8 @@ checked with `make control-mapping-readiness`.
   `project.ci.summary` proposal without authorizing runtime work.
 - `make project-ci-summary-implementation-plan-check` - validate the
   `project.ci.summary` implementation-planning packet without authorizing runtime work.
+- `make project-ci-summary-implementation-gate` - validate the bounded read-only
+  implementation decision for `project.ci.summary`.
 - `make project-ci-summary-design-review-packet` - generate the design-review packet for the
   selected `project.ci.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
@@ -647,7 +649,10 @@ capability expansion remains blocked. The current selected design-only candidate
 [docs/codex/capability-proposals/project-ci-summary.md](docs/codex/capability-proposals/project-ci-summary.md),
 checked with `make project-ci-summary-proposal-check`. Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-ci-summary.md](docs/codex/capability-implementation-plans/project-ci-summary.md)
-and is checked with `make project-ci-summary-implementation-plan-check`; generate its focused
+and is checked with `make project-ci-summary-implementation-plan-check`; the bounded
+implementation decision is
+[docs/codex/v3-project-ci-summary-implementation.md](docs/codex/v3-project-ci-summary-implementation.md)
+and is checked with `make project-ci-summary-implementation-gate`; generate its focused
 design-review packet with `make project-ci-summary-design-review-packet`. The previous selected
 candidate,
 [docs/codex/capability-proposals/project-config-summary.md](docs/codex/capability-proposals/project-config-summary.md),

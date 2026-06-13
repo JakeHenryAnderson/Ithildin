@@ -86,6 +86,7 @@ from scripts import (
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
     project_ci_summary_design_review_packet,
+    project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
     project_ci_summary_proposal_check,
     project_config_summary_implementation_gate,
@@ -2065,6 +2066,48 @@ def test_project_ci_summary_implementation_plan_check_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/capability-implementation-plans/project-ci-summary.md" in docs_site
+
+
+def test_project_ci_summary_implementation_gate_is_wired() -> None:
+    report = project_ci_summary_implementation_gate.build_report(Path.cwd())
+    decision = Path("docs/codex/v3-project-ci-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "project.ci.summary"
+    assert report["implementation_status"] == "approved_limited_read_only"
+    assert report["new_power_classes_allowed"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    for phrase in [
+        "approved_limited_read_only runtime implementation",
+        "count-only CI posture metadata and allowlisted labels only",
+        "project_ci",
+        "no workflow names",
+        "no raw paths",
+        "no file contents",
+        "no command/script values",
+        "no environment names or values",
+        "no CI execution",
+        "no shell",
+        "Broader capability expansion remains blocked",
+    ]:
+        assert phrase in decision
+    assert "make project-ci-summary-implementation-gate" in readme
+    assert "project-ci-summary-implementation-gate:" in makefile
+    assert "project-ci-summary-implementation-gate" in release_check_body
+    assert (
+        "project-ci-summary-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "v3 project.ci.summary Implementation Decision" in index
+    assert "docs/codex/v3-project-ci-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-ci-summary-implementation.md" in docs_site
 
 
 def test_project_ci_summary_design_review_packet_builds_from_fixture(
