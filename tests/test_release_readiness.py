@@ -168,6 +168,7 @@ from scripts import (
     v08_status_reconciliation,
     v09_design_only_gate,
     v09_design_review_packet,
+    v1_rc_roadmap_check,
     v3_next_capability_candidate_check,
     workbench_demo_smoke,
     workbench_evidence_packet,
@@ -275,6 +276,40 @@ def test_agent_workflow_instruction_layer_is_wired() -> None:
     assert "Direct edits should remain disabled" in workflow
     assert "AGENTS.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/agent-workflow-instruction-layer.md" in review_docs.REVIEW_DOCS
+
+
+def test_v1_rc_roadmap_is_wired() -> None:
+    report = v1_rc_roadmap_check.build_report(Path.cwd())
+    roadmap = Path("docs/codex/v1.0-rc-roadmap.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 21
+    assert report["selected_capability"] == "project.release.summary"
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Ithildin v1.0 RC is a local-first governed MCP workbench",
+        "Phase 1: Finish The Read-Only Metadata Surface",
+        "Phase 2: Prove The Local Workbench Loop",
+        "Phase 3: Polish The Operator Console",
+        "Phase 4: Freeze Capability Expansion",
+        "Phase 5: Final Assurance And Handoff",
+        "one worker ticket at a time",
+        "public/security-product positioning",
+    ]:
+        assert phrase in roadmap
+    assert "v1-rc-roadmap-check:" in makefile
+    assert "v1-rc-roadmap-check" in release_check_body
+    assert "make v1-rc-roadmap-check" in readme
+    assert "docs/codex/v1.0-rc-roadmap.md" in docs_site
+    assert "docs/codex/v1.0-rc-roadmap.md" in review_docs.REVIEW_DOCS
+    assert "Ithildin v1.0 RC Roadmap" in review_index
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

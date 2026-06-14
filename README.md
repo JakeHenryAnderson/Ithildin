@@ -277,6 +277,8 @@ checked with `make control-mapping-readiness`.
 - `make next-capability-candidate-evaluation-2-check` - validate the planning-only evaluation of
   release, license, and ownership metadata candidates and the selected `project.release.summary`
   next candidate.
+- `make v1-rc-roadmap-check` - validate the local-first v1.0 RC roadmap, delegation sequencing,
+  and no-new-powers boundaries.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -509,6 +511,10 @@ The v0.5 threat-model delta is in
 [docs/codex/v0.5-threat-model-delta.md](docs/codex/v0.5-threat-model-delta.md).
 The v0.5 handoff packet is in
 [docs/codex/v0.5-handoff-packet.md](docs/codex/v0.5-handoff-packet.md).
+The v1.0 RC roadmap is in
+[docs/codex/v1.0-rc-roadmap.md](docs/codex/v1.0-rc-roadmap.md); it defines the remaining
+local-first release-candidate phases without approving production/security-product positioning or
+new governed tool powers.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in
