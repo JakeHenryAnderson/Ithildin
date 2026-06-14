@@ -164,6 +164,7 @@ externally closed.
 - [Read-Only Project Intelligence](read-only-project-intelligence.md)
 - [Next Capability Readiness Check](next-capability-readiness.md)
 - [v3 Next Capability Candidate Evaluation](v3-next-capability-candidate-evaluation.md)
+- [v3 Next Capability Candidate Evaluation 2](v3-next-capability-candidate-evaluation-2.md)
 - [v3 project.dependency.summary Selection](v3-project-dependency-summary-selection.md)
 - [v3 project.structure.summary Selection](v3-project-structure-summary-selection.md)
 - [Capability Proposal: project.structure.summary](capability-proposals/project-structure-summary.md)

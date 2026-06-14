@@ -273,6 +273,8 @@ checked with `make control-mapping-readiness`.
   to the now-implemented `project.dependency.summary`.
 - `make next-capability-readiness` - validate the current bounded metadata inventory and the
   preflight requirements before selecting or implementing another capability.
+- `make next-capability-candidate-evaluation-2-check` - validate the planning-only evaluation of
+  release, license, and ownership metadata candidates without selecting a next capability.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -638,6 +640,7 @@ The shared expansion-prep hardening docs are
 [docs/codex/read-only-capability-inventory.md](docs/codex/read-only-capability-inventory.md),
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md),
 [docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md),
+[docs/codex/v3-next-capability-candidate-evaluation-2.md](docs/codex/v3-next-capability-candidate-evaluation-2.md),
 [docs/codex/metadata-privacy-policy.md](docs/codex/metadata-privacy-policy.md),
 [docs/codex/read-only-metadata-capability-checklist.md](docs/codex/read-only-metadata-capability-checklist.md),
 [docs/codex/read-only-capability-source-review-template.md](docs/codex/read-only-capability-source-review-template.md),
@@ -697,8 +700,10 @@ source-review handoff with `make project-structure-summary-source-review-bundle`
 eleven-tool project intelligence slice is
 [docs/codex/read-only-project-intelligence.md](docs/codex/read-only-project-intelligence.md) and is
 checked with `make read-only-project-intelligence`. The historical design-only candidate evaluation is
-[docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md)
-and the historical `project.dependency.summary` selection is
+[docs/codex/v3-next-capability-candidate-evaluation.md](docs/codex/v3-next-capability-candidate-evaluation.md),
+and the newer planning-only candidate evaluation is
+[docs/codex/v3-next-capability-candidate-evaluation-2.md](docs/codex/v3-next-capability-candidate-evaluation-2.md);
+the historical `project.dependency.summary` selection is
 [docs/codex/v3-project-dependency-summary-selection.md](docs/codex/v3-project-dependency-summary-selection.md),
 checked with `make v3-next-capability-candidate-check`. The proposal for that now-implemented
 candidate is

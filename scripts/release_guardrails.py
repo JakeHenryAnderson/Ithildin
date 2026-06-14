@@ -66,6 +66,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "read-only-project-intelligence",
     "v3-next-capability-candidate-check",
     "next-capability-readiness",
+    "next-capability-candidate-evaluation-2-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",

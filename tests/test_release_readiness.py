@@ -71,6 +71,7 @@ from scripts import (
     live_demo_status,
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
+    next_capability_candidate_evaluation_2_check,
     next_capability_readiness,
     no_new_powers_guardrail,
     observability_control_packet,
@@ -983,13 +984,71 @@ def test_next_capability_readiness_is_wired() -> None:
     ]:
         assert phrase in doc
     assert "make next-capability-readiness" in readme
+    assert "make next-capability-candidate-evaluation-2-check" in readme
     assert "make project-ci-summary-source-review-bundle" in readme
     assert "next-capability-readiness:" in makefile
+    assert "next-capability-candidate-evaluation-2-check:" in makefile
     assert "next-capability-readiness" in release_check_body
+    assert "next-capability-candidate-evaluation-2-check" in release_check_body
     assert "next-capability-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert (
+        "next-capability-candidate-evaluation-2-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
     assert "Next Capability Readiness Check" in index
     assert "docs/codex/next-capability-readiness.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/next-capability-readiness.md" in docs_site
+    assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in docs_site
+
+
+def test_next_capability_candidate_evaluation_2_is_wired() -> None:
+    report = next_capability_candidate_evaluation_2_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_docs_text = Path("scripts/review_docs.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    doc = Path("docs/codex/v3-next-capability-candidate-evaluation-2.md").read_text(
+        encoding="utf-8"
+    )
+    normalized_doc = " ".join(doc.split()).lower()
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 21
+    assert report["next_candidate"] == "not selected"
+    assert report["manager_review_required"] is True
+    assert report["selection_status"] == "deferred"
+    for phrase in [
+        "Status: planning-only candidate evaluation",
+        "does not add a tool manifest",
+        "does not add an executor",
+        "does not add policy rules",
+        "does not add MCP exposure",
+        "does not add API behavior",
+        "does not add UI behavior",
+        "does not add runtime behavior",
+        "project.release.summary",
+        "project.license.summary",
+        "project.ownership.summary",
+        "tool count remains `21`",
+        "next candidate: `not selected`",
+        "Further manager review is required",
+        "Source-Review Requirement",
+        "Deferred",
+    ]:
+        assert phrase.lower() in normalized_doc
+    assert "make next-capability-candidate-evaluation-2-check" in readme
+    assert "next-capability-candidate-evaluation-2-check:" in makefile
+    assert "next-capability-candidate-evaluation-2-check" in release_check_body
+    assert (
+        "next-capability-candidate-evaluation-2-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "v3 Next Capability Candidate Evaluation 2" in index
+    assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in review_docs_text
+    assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in docs_site
 
 
 def test_read_only_project_intelligence_is_wired() -> None:

@@ -183,6 +183,7 @@ REVIEW_DOCS = [
     "docs/codex/read-only-project-intelligence.md",
     "docs/codex/next-capability-readiness.md",
     "docs/codex/v3-next-capability-candidate-evaluation.md",
+    "docs/codex/v3-next-capability-candidate-evaluation-2.md",
     "docs/codex/v3-project-dependency-summary-selection.md",
     "docs/codex/capability-proposals/project-dependency-summary.md",
     "docs/codex/capability-implementation-plans/project-dependency-summary.md",
