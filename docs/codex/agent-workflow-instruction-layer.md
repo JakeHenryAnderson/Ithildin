@@ -38,6 +38,20 @@ patches or discards it.
 Low Codex delegation is report-first by default. Direct edits should remain disabled until several
 read-only trials have produced useful suggestions with low cleanup cost and no boundary drift.
 
+## Context Handoff
+
+The main Codex manager should raise its hand and recommend a fresh chat when the current thread
+becomes too context-heavy for reliable planning, review, or product-boundary judgment. This is an
+efficiency practice, not a failure condition.
+
+A handoff prompt should be paste-ready and include:
+
+- current repo path, branch, commit, dirty state, and tool count;
+- latest completed sprint and generated packet paths;
+- gates that passed and any local ignored artifacts refreshed;
+- current product boundary, deferred powers, delegation rules, and stop conditions;
+- the next recommended sprint options and the commands a new chat should run first.
+
 ## Boundaries
 
 The workflow must preserve the existing deferred-power list: no shell execution, Docker socket,

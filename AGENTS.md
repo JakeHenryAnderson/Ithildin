@@ -41,6 +41,24 @@ handoff, and release/readiness updates.
 Discard or rewrite any implementer output that weakens validation, broadens capabilities, adds
 unreviewed runtime behavior, leaks sensitive metadata, or conflicts with these instructions.
 
+## Efficiency Discipline
+
+- Optimize for bounded, reviewable progress rather than maximal autonomy or broad exploration.
+- Start with targeted file/symbol reads and known gates before scanning the whole repository.
+- Use terse structured handoffs for delegated work: objective, allowed files, forbidden boundary
+  changes, acceptance criteria, validation commands, and stop conditions.
+- Prefer stdlib, existing helpers, registry patterns, and current policy/gate machinery before adding
+  abstractions, dependencies, or new workflow surfaces.
+- Keep diffs small. Do not perform opportunistic cleanup, formatting churn, docs rewrites, or
+  capability-adjacent refactors unless explicitly requested.
+- Filter long command output and retain only the failure lines needed for diagnosis.
+- In long sessions, use `/status`, `/compact`, or a short handoff summary before starting a new
+  phase so stale context does not steer product-boundary decisions.
+- Agents are explicitly allowed to recommend a fresh Codex chat when the current thread becomes too
+  context-heavy for reliable planning, review, or product-boundary judgment. When recommending a
+  handoff, provide a concise paste-ready prompt with current commit, tool count, latest gates, packet
+  paths, next sprint options, delegation rules, and stop conditions.
+
 ## Required Local Checks
 
 Use focused gates for the files touched, then run broader gates before committing meaningful changes.
