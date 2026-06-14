@@ -3,6 +3,12 @@
 Status: focused source-review handoff. This document does not add runtime behavior beyond the
 bounded read-only `project.ci.summary` implementation.
 
+Latest internal refresh: `make project-ci-summary-source-review-bundle` was regenerated at commit
+`ea344a1f3cd4ac7058e4b40579b424609bc9a429` with a clean working tree. The generated packet records
+passing `make project-ci-summary-implementation-gate`, `make policy-parity`, and focused
+`project.ci.summary` test output. This is local handoff evidence only; source-review closure still
+requires reviewer intake under the `EXT-CI-###` namespace.
+
 ## Review Question
 
 Can the `project.ci.summary` lane close for continued local-preview development as one bounded,

@@ -7,9 +7,9 @@ This checkpoint exists because the first bounded read-only metadata lanes are no
 `git.show.commit_metadata`, `git.show.ref_summary`, `git.show.tag_metadata`,
 `project.manifest.summary`, `project.dependency.summary`, `project.structure.summary`,
 `project.test.summary`, `project.docs.summary`, `project.language.summary`, and
-`project.config.summary`, and `project.ci.summary`. The
-historical candidate records still show how each bounded metadata tool advanced through proposal,
-implementation planning, implementation decision, source-review handoff, and local lane closure.
+`project.config.summary`, plus `project.ci.summary`. The historical candidate records still show
+how each bounded metadata tool advanced through proposal, implementation planning, implementation
+decision, source-review handoff, and local lane closure.
 
 ## Current State
 
