@@ -122,6 +122,7 @@ from scripts import (
     project_release_summary_proposal_check,
     project_release_summary_review_handoff_check,
     project_release_summary_source_review_bundle,
+    project_release_summary_transition_check,
     project_structure_summary_design_review_packet,
     project_structure_summary_implementation_gate,
     project_structure_summary_implementation_plan_check,
@@ -2582,6 +2583,56 @@ def test_project_release_summary_implementation_gate_is_wired() -> None:
     )
     assert "docs/codex/v3-project-release-summary-implementation.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-project-release-summary-implementation.md" in docs_site
+
+
+def test_project_release_summary_transition_check_is_wired() -> None:
+    report = project_release_summary_transition_check.build_report(Path.cwd())
+    transition = Path(
+        "docs/codex/project-release-summary-implementation-transition.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    readiness = Path("docs/codex/next-capability-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "project.release.summary"
+    assert report["tool_count"] == 21
+    assert report["runtime_implemented"] is False
+    assert report["runtime_changes_allowed_now"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    assert report["low_implementer_runtime_changes_allowed"] is False
+    for phrase in [
+        "Status: implementation-transition checklist only.",
+        "canonical handoff",
+        "preimplementation guard active",
+        "Replace the preimplementation guard with an implementation-aware gate state.",
+        "Add exactly one bounded read-only manifest for `project.release.summary`.",
+        "Add exactly one bounded read-only executor path.",
+        "Run `make release-check` and `make review-candidate`",
+        "no release names",
+        "no version strings that reveal cadence",
+        "remain main-manager work",
+    ]:
+        assert phrase in transition
+    assert "project-release-summary-transition-check:" in makefile
+    assert "project-release-summary-transition-check" in release_check_body
+    assert (
+        "project-release-summary-transition-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "make project-release-summary-transition-check" in readme
+    assert "Implementation transition checklist" in readiness
+    assert "project-release-summary-implementation-transition.md" in index
+    assert (
+        "docs/codex/project-release-summary-implementation-transition.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/project-release-summary-implementation-transition.md" in docs_site
 
 
 def test_project_release_summary_design_review_packet_builds_from_fixture(

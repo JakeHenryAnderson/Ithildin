@@ -26,6 +26,7 @@ decision, source-review handoff, and local lane closure.
 - Preimplementation fixture/test contract: recorded for `project.release.summary`.
 - Active gate note: the preimplementation guard intentionally rejects `project.release.summary`
   manifest or runtime source until a later explicit implementation checkpoint replaces that guard.
+- Implementation transition checklist: recorded for the later manager-owned runtime sprint.
 - Future source-review handoff: recorded for `project.release.summary`.
 - Future source-review bundle: recorded for `project.release.summary`.
 - Broader capability expansion: blocked.
@@ -80,6 +81,7 @@ make project-release-summary-proposal-check
 make project-release-summary-implementation-plan-check
 make project-release-summary-preimplementation-check
 make project-release-summary-implementation-gate
+make project-release-summary-transition-check
 make project-release-summary-review-handoff-check
 make project-release-summary-design-review-packet
 make project-release-summary-source-review-bundle

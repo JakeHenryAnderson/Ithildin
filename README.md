@@ -347,6 +347,9 @@ checked with `make control-mapping-readiness`.
   read-only implementation boundary without authorizing runtime work; the current gate
   intentionally rejects `project.release.summary` manifest or runtime source until a later explicit
   implementation checkpoint replaces the preimplementation guard.
+- `make project-release-summary-transition-check` - validate the canonical transition checklist for
+  the later manager-owned `project.release.summary` implementation sprint without adding runtime
+  behavior.
 - `make project-release-summary-review-handoff-check` - validate the future source-review handoff
   for `project.release.summary` without claiming runtime source exists.
 - `make project-release-summary-design-review-packet` - generate the design-review packet for

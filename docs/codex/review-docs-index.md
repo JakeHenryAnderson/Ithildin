@@ -203,6 +203,7 @@ externally closed.
 - [project.release.summary Fixture Plan](project-release-summary-fixture-plan.md)
 - [project.release.summary Negative Transcript Plan](project-release-summary-negative-transcripts.md)
 - [v3 project.release.summary Implementation Decision](v3-project-release-summary-implementation.md)
+- [project.release.summary Implementation Transition](project-release-summary-implementation-transition.md)
 - [v3 project.release.summary Source Review Handoff](v3-project-release-summary-source-review.md)
 - [Metadata Privacy Policy](metadata-privacy-policy.md)
 - [Read-Only Metadata Capability Checklist](read-only-metadata-capability-checklist.md)

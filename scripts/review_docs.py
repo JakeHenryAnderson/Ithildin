@@ -224,6 +224,7 @@ REVIEW_DOCS = [
     "docs/codex/project-release-summary-fixture-plan.md",
     "docs/codex/project-release-summary-negative-transcripts.md",
     "docs/codex/v3-project-release-summary-implementation.md",
+    "docs/codex/project-release-summary-implementation-transition.md",
     "docs/codex/v3-project-release-summary-source-review.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",
