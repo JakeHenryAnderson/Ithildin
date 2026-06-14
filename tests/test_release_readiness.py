@@ -120,6 +120,8 @@ from scripts import (
     project_release_summary_implementation_plan_check,
     project_release_summary_preimplementation_check,
     project_release_summary_proposal_check,
+    project_release_summary_review_handoff_check,
+    project_release_summary_source_review_bundle,
     project_structure_summary_design_review_packet,
     project_structure_summary_implementation_gate,
     project_structure_summary_implementation_plan_check,
@@ -2538,8 +2540,11 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
         "08_PROJECT_RELEASE_SUMMARY_PREIMPLEMENTATION_CHECK.json",
         "09_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md",
         "10_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json",
-        "11_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md",
-        "12_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "11_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_HANDOFF.md",
+        "12_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md",
+        "13_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF_CHECK.json",
+        "14_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md",
+        "15_REVIEW_INTAKE_AND_NEXT_STEPS.md",
         "project-release-summary-design-review-artifact-hashes.json",
     }
     assert built == output_dir
@@ -2567,8 +2572,19 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
             encoding="utf-8"
         )
     )
+    source_review_handoff = (
+        output_dir / "11_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_HANDOFF.md"
+    ).read_text(encoding="utf-8")
+    negative_transcripts_plan = (
+        output_dir / "12_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md"
+    ).read_text(encoding="utf-8")
+    review_handoff_check_json = json.loads(
+        (output_dir / "13_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF_CHECK.json").read_text(
+            encoding="utf-8"
+        )
+    )
     evidence = (
-        output_dir / "11_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md"
+        output_dir / "14_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md"
     ).read_text(encoding="utf-8")
     hashes = json.loads(
         (output_dir / "project-release-summary-design-review-artifact-hashes.json").read_text(
@@ -2584,16 +2600,32 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
     assert "No-New-Powers Guardrail" in evidence
     assert "Preimplementation Check" in evidence
     assert "Implementation Decision Evidence" in evidence
+    assert "Review-Handoff Check Evidence" in evidence
     assert "approved limited read-only implementation boundary" in decision_doc
     assert preimplementation_json["valid"] is True
     assert preimplementation_json["proposal"] == "project.release.summary"
     assert preimplementation_json["scope"] == "preimplementation_fixture_contract"
     assert preimplementation_json["tool_count"] == 21
+    assert review_handoff_check_json["valid"] is True
+    assert review_handoff_check_json["runtime_implemented"] is False
+    assert review_handoff_check_json["future_runtime_implementation_allowed"] is True
+    assert review_handoff_check_json["tool_count"] == 21
+    assert (
+        "Status: future source-review handoff, implementation not present"
+        in source_review_handoff
+    )
+    assert "Finding namespace: `EXT-RELEASE-SUMMARY-###`" in source_review_handoff
+    assert "project.release.summary" in source_review_handoff
+    assert "project.release.summary" in negative_transcripts_plan
+    assert "release names suppressed" in negative_transcripts_plan
+    assert "unauthorized principal denied" in negative_transcripts_plan
     assert "Status: pre-implementation fixture/test contract only" in fixture_doc
     assert "Strict Non-Leak List" in fixture_doc
     assert implementation_gate_json["runtime_implemented"] is False
     assert "Implementation status: blocked" in index_doc
     assert "Tool count: `21`" in index_doc
+    assert "project-release-summary-negative-transcripts.md" in index_doc
+    assert "project-release-summary-source-review.md" in index_doc
     assert "project-release-summary-design-review-artifact-hashes.json" not in hashed_paths
     assert hashed_paths == expected - {"project-release-summary-design-review-artifact-hashes.json"}
     assert "make project-release-summary-design-review-packet" in Path("README.md").read_text(
@@ -2602,6 +2634,196 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
     assert "project-release-summary-design-review-packet:" in Path("Makefile").read_text(
         encoding="utf-8"
     )
+
+
+def test_project_release_summary_review_handoff_check_is_wired() -> None:
+    report = project_release_summary_review_handoff_check.build_report(Path.cwd())
+    source_review = Path("docs/codex/v3-project-release-summary-source-review.md").read_text(
+        encoding="utf-8"
+    )
+    negative_plan = Path("docs/codex/project-release-summary-negative-transcripts.md").read_text(
+        encoding="utf-8"
+    )
+    implementation = Path("docs/codex/v3-project-release-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    fixture_plan = Path("docs/codex/project-release-summary-fixture-plan.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    lockfile = Path("tool-manifests.lock.json").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["scope"] == "future_source_review_handoff"
+    assert report["runtime_implemented"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    assert report["tool_count"] == 21
+    assert report["new_power_classes_allowed"] is False
+    assert report["evidence"]["source_review_doc"] == (
+        "docs/codex/v3-project-release-summary-source-review.md"
+    )
+    assert report["evidence"]["negative_transcripts_doc"] == (
+        "docs/codex/project-release-summary-negative-transcripts.md"
+    )
+    assert "Status: future source-review handoff, implementation not present" in source_review
+    assert "Resource type: `project_release`" in source_review
+    assert "Current tool count remains `21`" in source_review
+    assert "Runtime implementation remains absent" in source_review
+    assert (
+        "This lane cannot close until a future runtime implementation and focused "
+        "source-review bundle exist"
+        in source_review
+    )
+    for scenario in [
+        "traversal denied",
+        "absolute root denied",
+        "hidden/sensitive path skipped",
+        ".git skipped",
+        "symlink skipped",
+        "hardlink skipped",
+        "binary/NUL skipped",
+        "unsupported encoding skipped",
+        "depth limit truncation",
+        "item limit truncation",
+        "release names suppressed",
+        "version strings suppressed",
+        "changelog contents suppressed",
+        "tag names suppressed",
+        "branch names suppressed",
+        "command/script values suppressed",
+        "unauthorized principal denied",
+    ]:
+        assert scenario in negative_plan
+    for phrase in [
+        "no release names",
+        "no version strings",
+        "no changelog contents",
+        "no tag names",
+        "no branch names",
+        "no raw file names",
+        "no raw paths",
+        "no file contents",
+        "no package names",
+        "no dependency names",
+        "no author/maintainer names",
+        "no email addresses",
+        "no command/script values",
+        "no environment names/values",
+        "no registry URLs",
+        "no shell/Git/package-manager/CI output",
+    ]:
+        assert phrase in negative_plan
+    assert "make project-release-summary-review-handoff-check" in readme
+    assert "make project-release-summary-source-review-bundle" in readme
+    assert "project-release-summary-review-handoff-check:" in makefile
+    assert "project-release-summary-source-review-bundle:" in makefile
+    assert "project-release-summary-review-handoff-check" in release_check_body
+    assert (
+        "project-release-summary-review-handoff-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/v3-project-release-summary-source-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/project-release-summary-negative-transcripts.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-release-summary-source-review.md" in docs_site
+    assert "docs/codex/project-release-summary-negative-transcripts.md" in docs_site
+    assert "project.release.summary" in implementation
+    assert "project.release.summary" in fixture_plan
+    assert "project.release.summary" not in lockfile
+    assert not Path("tool-manifests/project-release-summary.yaml").exists()
+
+
+def test_project_release_summary_source_review_bundle_builds_from_fixture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_dir = tmp_path / "project-release-summary-source-review"
+
+    def fake_git(repo_root: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abcdef1234567890"
+        if args == ["status", "--short"]:
+            return ""
+        raise AssertionError((repo_root, args))
+
+    monkeypatch.setattr(project_release_summary_source_review_bundle, "_git", fake_git)
+
+    built = project_release_summary_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_INDEX.md",
+        "01_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_PROMPT.md",
+        "02_PROJECT_RELEASE_SUMMARY_PROPOSAL.md",
+        "03_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "04_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md",
+        "05_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md",
+        "06_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md",
+        "07_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md",
+        "08_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json",
+        "project-release-summary-source-review-artifact-hashes.json",
+    }
+    assert built == output_dir
+    assert {path.name for path in output_dir.iterdir()} == expected
+    hashes = json.loads(
+        (output_dir / "project-release-summary-source-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert {entry["path"] for entry in hashes} == expected - {
+        "project-release-summary-source-review-artifact-hashes.json"
+    }
+    index = (output_dir / "00_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = (output_dir / "01_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    proposal = (output_dir / "02_PROJECT_RELEASE_SUMMARY_PROPOSAL.md").read_text(
+        encoding="utf-8"
+    )
+    implementation_plan = (
+        output_dir / "03_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md"
+    ).read_text(encoding="utf-8")
+    boundary = (
+        output_dir / "04_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md"
+    ).read_text(encoding="utf-8")
+    fixture_plan = (output_dir / "05_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md").read_text(
+        encoding="utf-8"
+    )
+    negative_plan = (
+        output_dir / "06_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md"
+    ).read_text(encoding="utf-8")
+    review_handoff = (
+        output_dir / "07_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md"
+    ).read_text(encoding="utf-8")
+    gate_evidence = json.loads(
+        (output_dir / "08_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert "Status: future source-review handoff placeholder" in index
+    assert "Runtime implementation: absent" in index
+    assert "EXT-RELEASE-SUMMARY-###" in prompt
+    assert "runtime implementation remains absent" in prompt
+    assert "project.release.summary" in proposal
+    assert "project.release.summary" in implementation_plan
+    assert "project.release.summary" in boundary
+    assert "project.release.summary" in fixture_plan
+    assert "project.release.summary" in negative_plan
+    assert "project.release.summary" in review_handoff
+    assert "Status: future source-review handoff, implementation not present" in review_handoff
+    assert gate_evidence["implementation_gate"]["runtime_implemented"] is False
+    assert gate_evidence["review_handoff_check"]["valid"] is True
+    assert gate_evidence["tool_surface"]["tool_count"] == 21
+    assert gate_evidence["no_new_powers"]["new_power_classes_allowed"] is False
 
 
 def test_project_config_summary_implementation_gate_is_wired() -> None:

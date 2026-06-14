@@ -21,6 +21,7 @@ from scripts import (
     project_release_summary_implementation_plan_check,
     project_release_summary_preimplementation_check,
     project_release_summary_proposal_check,
+    project_release_summary_review_handoff_check,
 )
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/project-release-summary-design-review")
@@ -44,6 +45,12 @@ DOCS = {
     ),
     "09_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md": Path(
         "docs/codex/v3-project-release-summary-implementation.md"
+    ),
+    "11_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_HANDOFF.md": Path(
+        "docs/codex/v3-project-release-summary-source-review.md"
+    ),
+    "12_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md": Path(
+        "docs/codex/project-release-summary-negative-transcripts.md"
     ),
 }
 
@@ -85,6 +92,7 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
     plan = project_release_summary_implementation_plan_check.build_report(repo_root)
     preimplementation = project_release_summary_preimplementation_check.build_report(repo_root)
     implementation_gate = project_release_summary_implementation_gate.build_report(repo_root)
+    review_handoff_check = project_release_summary_review_handoff_check.build_report(repo_root)
     readiness = next_capability_readiness.build_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     failures = [
@@ -92,6 +100,7 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         *(f"implementation-plan check: {failure}" for failure in plan["failures"]),
         *(f"preimplementation check: {failure}" for failure in preimplementation["failures"]),
         *(f"implementation-gate: {failure}" for failure in implementation_gate["failures"]),
+        *(f"review-handoff-check: {failure}" for failure in review_handoff_check["failures"]),
         *(f"next-capability readiness: {failure}" for failure in readiness["failures"]),
         *(f"no-new-powers guardrail: {failure}" for failure in no_new_powers["failures"]),
     ]
@@ -109,6 +118,7 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "plan": plan,
         "preimplementation": preimplementation,
         "implementation_gate": implementation_gate,
+        "review_handoff_check": review_handoff_check,
         "readiness": readiness,
         "no_new_powers": no_new_powers,
     }
@@ -127,8 +137,17 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "10_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json": json.dumps(
             context["implementation_gate"], indent=2, sort_keys=True
         ),
-        "11_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
-        "12_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
+        "11_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_HANDOFF.md": (
+            repo_root / DOCS["11_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_HANDOFF.md"]
+        ).read_text(encoding="utf-8"),
+        "12_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md": (
+            repo_root / DOCS["12_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md"]
+        ).read_text(encoding="utf-8"),
+        "13_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF_CHECK.json": json.dumps(
+            context["review_handoff_check"], indent=2, sort_keys=True
+        ),
+        "14_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
+        "15_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
     }
     for name, source in DOCS.items():
         if name not in files:
@@ -155,6 +174,10 @@ def _index(context: dict[str, Any]) -> str:
 
 This packet asks for design review of the next proposed read-only local metadata capability. It
 does not approve implementation.
+It now also includes the future source-review handoff doc,
+`docs/codex/v3-project-release-summary-source-review.md`, the negative transcript plan,
+`docs/codex/project-release-summary-negative-transcripts.md`, and review-handoff-check JSON
+evidence for the same bounded lane.
 
 ## Boundary
 
@@ -179,9 +202,12 @@ does not approve implementation.
 9. `08_PROJECT_RELEASE_SUMMARY_PREIMPLEMENTATION_CHECK.json`
 10. `09_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md`
 11. `10_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json`
-12. `11_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md`
-13. `12_REVIEW_INTAKE_AND_NEXT_STEPS.md`
-14. `project-release-summary-design-review-artifact-hashes.json`
+12. `11_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_HANDOFF.md`
+13. `12_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md`
+14. `13_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF_CHECK.json`
+15. `14_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md`
+16. `15_REVIEW_INTAKE_AND_NEXT_STEPS.md`
+17. `project-release-summary-design-review-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -199,7 +225,9 @@ def _prompt(context: dict[str, Any]) -> str:
 
 This packet is for both internal and external source review of Ithildin's next design-only
 read-only capability proposal. Treat this as review only. Do not approve implementation in this
-review. At most, say whether a later implementation-boundary sprint may be considered.
+review. At most, say whether a later implementation-boundary sprint may be considered. The packet
+now also includes the future source-review handoff doc, negative-transcript plan, and
+review-handoff-check evidence for the same bounded lane.
 
 Reviewed commit: `{context["commit"]}`
 Capability: `project.release.summary`
@@ -273,6 +301,12 @@ def _gate_evidence(context: dict[str, Any]) -> str:
 ```json
 {json.dumps(context["no_new_powers"], indent=2, sort_keys=True)}
 ```
+
+## Review-Handoff Check Evidence
+
+```json
+{json.dumps(context["review_handoff_check"], indent=2, sort_keys=True)}
+```
 """
 
 
@@ -288,7 +322,9 @@ Suggested command context:
 - `make project-release-summary-implementation-plan-check`
 - `make project-release-summary-preimplementation-check`
 - `make project-release-summary-implementation-gate`
+- `make project-release-summary-review-handoff-check`
 - `make project-release-summary-design-review-packet`
+- `make project-release-summary-source-review-bundle`
 - `make next-capability-readiness`
 - `make release-check`
 

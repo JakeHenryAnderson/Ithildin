@@ -342,8 +342,12 @@ checked with `make control-mapping-readiness`.
   readiness wiring for `project.release.summary` without authorizing runtime work.
 - `make project-release-summary-implementation-gate` - validate the approved limited
   read-only implementation boundary without authorizing runtime work.
+- `make project-release-summary-review-handoff-check` - validate the future source-review handoff
+  for `project.release.summary` without claiming runtime source exists.
 - `make project-release-summary-design-review-packet` - generate the design-review packet for
   the selected `project.release.summary` proposal.
+- `make project-release-summary-source-review-bundle` - generate the ignored preimplementation
+  source-review packet for `project.release.summary`.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the

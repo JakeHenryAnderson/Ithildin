@@ -30,6 +30,11 @@ product slice.
 | `project.config.summary` | Summarize bounded configuration posture using counts and allowlisted labels. | No config file names, raw paths, file contents, config contents, config values, environment names or values, config parser execution, package-manager execution, registry/network access, or deployment claims. |
 | `project.ci.summary` | Summarize bounded CI posture using counts and allowlisted labels. | No workflow names, job names, raw paths, file contents, command/script values, environment names or values, CI execution, package-manager execution, registry/network access, deployment claims, or compliance claims. |
 
+Future release-summary review handoff work is recorded separately in
+`make project-release-summary-review-handoff-check` and
+`make project-release-summary-source-review-bundle`; those commands are placeholders for the
+future source-review lane and do not claim runtime source exists yet.
+
 ## Operator Reading Guide
 
 For demos and handoffs, read this family as orientation evidence, not as execution evidence. The
@@ -96,7 +101,10 @@ next design-only candidate. Its proposal and implementation planning are complet
 implementation decision now records the approved limited read-only boundary, but runtime remains
 absent until a later explicit implementation-boundary sprint. Its preimplementation fixture/test
 contract is [project.release.summary Fixture Plan](project-release-summary-fixture-plan.md) and
-is checked with `make project-release-summary-preimplementation-check`. Future read-only metadata
-tools must start again from a design-only candidate, proposal, implementation plan, explicit
-implementation decision, source-review handoff, policy fixtures, negative transcripts,
-no-new-powers evidence, and release gates.
+is checked with `make project-release-summary-preimplementation-check`. The future source-review
+handoff is [v3 project.release.summary Source Review Handoff](v3-project-release-summary-source-review.md)
+and the negative transcript plan is
+[project.release.summary Negative Transcript Plan](project-release-summary-negative-transcripts.md).
+Future read-only metadata tools must start again from a design-only candidate, proposal,
+implementation plan, explicit implementation decision, source-review handoff, policy fixtures,
+negative transcripts, no-new-powers evidence, and release gates.

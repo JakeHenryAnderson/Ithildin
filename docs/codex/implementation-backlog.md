@@ -367,6 +367,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 309 - project.release.summary design review packet | Done | `make project-release-summary-design-review-packet`; generates the ignored release-summary design-review packet for later source review. |
 | 310 - project.release.summary implementation decision | Done | [v3-project-release-summary-implementation.md](v3-project-release-summary-implementation.md), `make project-release-summary-implementation-gate`; records the approved limited read-only boundary while runtime remains absent. |
 | 311 - project.release.summary implementation gate | Done | `make project-release-summary-implementation-gate`; validates the approved limited read-only boundary without runtime implementation. |
+| 312 - project.release.summary source-review handoff check | Done | [v3-project-release-summary-source-review.md](v3-project-release-summary-source-review.md), `make project-release-summary-review-handoff-check`; records the future source-review handoff without pretending runtime source exists. |
+| 313 - project.release.summary source-review bundle | Done | `make project-release-summary-source-review-bundle`; builds the ignored preimplementation source-review packet under `var/review-packets/v3/project-release-summary-source-review/`. |
 
 ## v0.2 Planning Seed
 

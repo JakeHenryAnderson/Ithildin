@@ -24,6 +24,8 @@ decision, source-review handoff, and local lane closure.
 - Proposal and implementation plan: complete.
 - Selected candidate implementation: blocked; implementation decision recorded, runtime not implemented.
 - Preimplementation fixture/test contract: recorded for `project.release.summary`.
+- Future source-review handoff: recorded for `project.release.summary`.
+- Future source-review bundle: recorded for `project.release.summary`.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
 
@@ -73,7 +75,9 @@ make project-release-summary-proposal-check
 make project-release-summary-implementation-plan-check
 make project-release-summary-preimplementation-check
 make project-release-summary-implementation-gate
+make project-release-summary-review-handoff-check
 make project-release-summary-design-review-packet
+make project-release-summary-source-review-bundle
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata
