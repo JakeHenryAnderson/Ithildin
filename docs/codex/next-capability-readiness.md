@@ -22,7 +22,7 @@ decision, source-review handoff, and local lane closure.
 - Selected candidate: `project.release.summary`.
 - Selected candidate status: design-only selected.
 - Proposal and implementation plan: complete.
-- Selected candidate implementation: blocked.
+- Selected candidate implementation: blocked; implementation decision recorded, runtime not implemented.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
 
@@ -61,7 +61,7 @@ The most recent capability,
 implementation planning, implementation decision, runtime implementation, and source-review handoff
 as one bounded read-only metadata tool. The next bounded candidate is
 [project.release.summary](v3-project-release-summary-selection.md), with proposal work and
-implementation planning now complete but implementation still blocked.
+implementation planning complete, an implementation decision recorded, and runtime still blocked.
 
 Run:
 
@@ -69,6 +69,7 @@ Run:
 make next-capability-readiness
 make project-release-summary-proposal-check
 make project-release-summary-implementation-plan-check
+make project-release-summary-implementation-gate
 make project-release-summary-design-review-packet
 ```
 

@@ -97,6 +97,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "project-manifest-summary-implementation-gate",
     "project-release-summary-proposal-check",
     "project-release-summary-implementation-plan-check",
+    "project-release-summary-implementation-gate",
     "project-dependency-summary-proposal-check",
     "project-dependency-summary-implementation-plan-check",
     "project-dependency-summary-implementation-gate",

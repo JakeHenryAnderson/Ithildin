@@ -52,6 +52,7 @@ REQUIRED_DOC_PHRASES = [
     "Tool count: `21`",
     "Selected candidate: `project.release.summary`",
     "Selected candidate status: design-only selected",
+    "Implementation boundary: approved limited read-only, runtime not yet implemented",
     "Broader capability expansion remains blocked",
     "New powerful tool classes remain blocked",
     "No file contents",
@@ -62,6 +63,7 @@ REQUIRED_DOC_PHRASES = [
     "no registry/network access",
     "policy preview/runtime parity",
     "make read-only-project-intelligence",
+    "explicit implementation decision",
 ]
 
 

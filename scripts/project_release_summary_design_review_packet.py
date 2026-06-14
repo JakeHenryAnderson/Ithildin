@@ -17,6 +17,7 @@ if __package__ in {None, ""}:
 from scripts import (
     next_capability_readiness,
     no_new_powers_guardrail,
+    project_release_summary_implementation_gate,
     project_release_summary_implementation_plan_check,
     project_release_summary_proposal_check,
 )
@@ -36,6 +37,9 @@ DOCS = {
     ),
     "06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md": Path(
         "docs/codex/capability-implementation-plans/project-release-summary.md"
+    ),
+    "07_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md": Path(
+        "docs/codex/v3-project-release-summary-implementation.md"
     ),
 }
 
@@ -75,11 +79,13 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
 
     proposal = project_release_summary_proposal_check.build_report(repo_root)
     plan = project_release_summary_implementation_plan_check.build_report(repo_root)
+    implementation_gate = project_release_summary_implementation_gate.build_report(repo_root)
     readiness = next_capability_readiness.build_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     failures = [
         *(f"proposal check: {failure}" for failure in proposal["failures"]),
         *(f"implementation-plan check: {failure}" for failure in plan["failures"]),
+        *(f"implementation-gate: {failure}" for failure in implementation_gate["failures"]),
         *(f"next-capability readiness: {failure}" for failure in readiness["failures"]),
         *(f"no-new-powers guardrail: {failure}" for failure in no_new_powers["failures"]),
     ]
@@ -95,15 +101,19 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "dirty": dirty,
         "proposal": proposal,
         "plan": plan,
+        "implementation_gate": implementation_gate,
         "readiness": readiness,
         "no_new_powers": no_new_powers,
     }
     files = {
         "00_PROJECT_RELEASE_SUMMARY_DESIGN_REVIEW_INDEX.md": _index(context),
         "01_PROJECT_RELEASE_SUMMARY_REVIEW_PROMPT.md": _prompt(context),
-        "07_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
-        "08_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
+        "09_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
+        "10_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
     }
+    files["08_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json"] = json.dumps(
+        context["implementation_gate"], indent=2, sort_keys=True
+    )
     for name, source in DOCS.items():
         files[name] = (repo_root / source).read_text(encoding="utf-8")
     for name, content in files.items():
@@ -135,7 +145,7 @@ does not approve implementation.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Capability: `project.release.summary`.
 - Scope: design-only proposal and implementation-planning packet.
-- Implementation status: blocked.
+- Implementation status: blocked in this sprint.
 - Tool count: `{context["no_new_powers"]["tool_count"]}`.
 - New governed tool powers: no-go.
 
@@ -148,9 +158,11 @@ does not approve implementation.
 5. `04_V3_PROJECT_RELEASE_SUMMARY_SELECTION.md`
 6. `05_PROJECT_RELEASE_SUMMARY_PROPOSAL.md`
 7. `06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md`
-8. `07_GATE_AND_RISK_EVIDENCE.md`
-9. `08_REVIEW_INTAKE_AND_NEXT_STEPS.md`
-10. `project-release-summary-design-review-artifact-hashes.json`
+8. `07_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md`
+9. `08_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json`
+10. `09_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md`
+11. `10_REVIEW_INTAKE_AND_NEXT_STEPS.md`
+12. `project-release-summary-design-review-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
@@ -180,16 +192,17 @@ Please review whether the selected candidate and its proposal remain design-only
 manifest/executor/policy/MCP/runtime changes; whether count-only release posture metadata is useful
 enough without release names, version strings, changelog contents, tag names, branch names, raw
 paths, file contents, package names, dependency names, author or maintainer names, shell, Git,
-package-manager, or CI execution; and whether the proposal, implementation plan, and next-capability
-readiness evidence are consistent enough to justify a later implementation-boundary sprint.
+package-manager, or CI execution; and whether the proposal, implementation plan, implementation
+decision, and next-capability readiness evidence are consistent enough to justify a later
+implementation-boundary sprint.
 
 ## External Review Prompt
 
 Please review whether the attached candidate evaluation, selection, proposal, implementation plan,
-and readiness evidence are sufficient for a later implementation-boundary sprint to be considered.
-Do not approve implementation directly. Focus on whether the packet preserves local-only
-count-only behavior, closed schema, policy/resource parity, audit safety, and the deferred
-non-goals.
+implementation decision, and readiness evidence are sufficient for a later implementation-boundary
+sprint to be considered. Do not approve implementation directly. Focus on whether the packet
+preserves local-only count-only behavior, closed schema, policy/resource parity, audit safety, and
+the deferred non-goals.
 
 Required answer:
 
@@ -218,6 +231,12 @@ def _gate_evidence(context: dict[str, Any]) -> str:
 {json.dumps(context["plan"], indent=2, sort_keys=True)}
 ```
 
+## Implementation Decision Evidence
+
+```json
+{json.dumps(context["implementation_gate"], indent=2, sort_keys=True)}
+```
+
 ## Next-Capability Readiness
 
 ```json
@@ -242,6 +261,7 @@ Suggested command context:
 
 - `make project-release-summary-proposal-check`
 - `make project-release-summary-implementation-plan-check`
+- `make project-release-summary-implementation-gate`
 - `make project-release-summary-design-review-packet`
 - `make next-capability-readiness`
 - `make release-check`

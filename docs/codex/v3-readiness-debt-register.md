@@ -20,6 +20,8 @@ without explicit review.
 - `make next-capability-readiness` records that `project.release.summary` is the selected next
   design-only candidate and that future implementation remains blocked until an explicit
   implementation decision, source-review handoff, and release gates are recorded.
+- `make project-release-summary-implementation-gate` records the approved limited read-only
+  boundary while runtime remains absent.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
 
@@ -58,7 +60,11 @@ candidate is `project.release.summary`, recorded in
 [Capability Proposal: project.release.summary](capability-proposals/project-release-summary.md).
 Its implementation-planning packet is
 [Implementation-Planning Packet: project.release.summary](capability-implementation-plans/project-release-summary.md).
-It has advanced through design-only selection and planning. Implementation remains blocked.
+Its implementation decision is
+[v3 project.release.summary Implementation Decision](v3-project-release-summary-implementation.md)
+and `make project-release-summary-implementation-gate` validates the approved limited read-only
+boundary. It has advanced through design-only selection and planning. Runtime implementation
+remains absent.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

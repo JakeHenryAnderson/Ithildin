@@ -338,6 +338,8 @@ checked with `make control-mapping-readiness`.
   `project.release.summary` design-only proposal without authorizing runtime work.
 - `make project-release-summary-implementation-plan-check` - validate the
   `project.release.summary` implementation-planning packet without authorizing runtime work.
+- `make project-release-summary-implementation-gate` - validate the approved limited
+  read-only implementation boundary without authorizing runtime work.
 - `make project-release-summary-design-review-packet` - generate the design-review packet for
   the selected `project.release.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only

@@ -40,7 +40,8 @@ REQUIRED_DOC_PHRASES = [
     "Selected candidate: `project.release.summary`",
     "Selected candidate status: design-only selected",
     "Proposal and implementation plan: complete",
-    "Selected candidate implementation: blocked",
+    "Selected candidate implementation: blocked; implementation decision recorded, "
+    "runtime not implemented",
     "Broader capability expansion: blocked",
     "New powerful tool classes: blocked",
     "Required Preflight Before Another Capability",
@@ -55,6 +56,7 @@ REQUIRED_DOC_PHRASES = [
     "make next-capability-readiness",
     "make project-release-summary-proposal-check",
     "make project-release-summary-implementation-plan-check",
+    "make project-release-summary-implementation-gate",
     "make project-release-summary-design-review-packet",
 ]
 

@@ -364,6 +364,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 306 - project.release.summary proposal | Done | [capability-proposals/project-release-summary.md](capability-proposals/project-release-summary.md), `make project-release-summary-proposal-check`; design-only, no runtime behavior. |
 | 307 - project.release.summary implementation plan | Done | [capability-implementation-plans/project-release-summary.md](capability-implementation-plans/project-release-summary.md), `make project-release-summary-implementation-plan-check`; implementation-planning only, no runtime behavior. |
 | 308 - project.release.summary design review packet | Done | `make project-release-summary-design-review-packet`; generates the ignored release-summary design-review packet for later source review. |
+| 309 - project.release.summary implementation decision | Done | [v3-project-release-summary-implementation.md](v3-project-release-summary-implementation.md), `make project-release-summary-implementation-gate`; records the approved limited read-only boundary while runtime remains absent. |
+| 310 - project.release.summary implementation gate | Done | `make project-release-summary-implementation-gate`; validates the approved limited read-only boundary without runtime implementation. |
 
 ## v0.2 Planning Seed
 

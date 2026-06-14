@@ -184,6 +184,7 @@ DEFAULT_DOCS = [
     "docs/codex/v3-project-ci-summary-source-review.md",
     "docs/codex/capability-proposals/project-release-summary.md",
     "docs/codex/capability-implementation-plans/project-release-summary.md",
+    "docs/codex/v3-project-release-summary-implementation.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",
     "docs/codex/read-only-capability-source-review-template.md",

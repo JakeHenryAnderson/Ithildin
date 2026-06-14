@@ -116,6 +116,7 @@ from scripts import (
     project_manifest_summary_proposal_check,
     project_manifest_summary_source_review_bundle,
     project_release_summary_design_review_packet,
+    project_release_summary_implementation_gate,
     project_release_summary_implementation_plan_check,
     project_release_summary_proposal_check,
     project_structure_summary_design_review_packet,
@@ -2359,6 +2360,51 @@ def test_project_release_summary_implementation_plan_check_is_wired() -> None:
     assert "docs/codex/capability-implementation-plans/project-release-summary.md" in docs_site
 
 
+def test_project_release_summary_implementation_gate_is_wired() -> None:
+    report = project_release_summary_implementation_gate.build_report(Path.cwd())
+    decision = Path("docs/codex/v3-project-release-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    lockfile = Path("tool-manifests.lock.json").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "project.release.summary"
+    assert report["implementation_status"] == "approved_limited_read_only"
+    assert report["risk"] == "read"
+    assert report["category"] == "project"
+    assert report["proposed_resource_type"] == "project_release"
+    assert report["tool_count"] == 21
+    assert report["new_power_classes_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implemented"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    assert not Path("tool-manifests/project-release-summary.yaml").exists()
+    assert "project-release-summary" not in lockfile
+    for phrase in [
+        "approved limited read-only implementation boundary",
+        "runtime not yet implemented",
+        "Tool count remains `21`",
+        "project.release.summary",
+        "proposed resource type: `project_release`",
+        "Implementation state: blocked in this sprint",
+        "no new powerful tool class",
+    ]:
+        assert phrase in decision
+    assert "make project-release-summary-implementation-gate" in readme
+    assert "project-release-summary-implementation-gate:" in makefile
+    assert "project-release-summary-implementation-gate" in release_check_body
+    assert (
+        "project-release-summary-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/v3-project-release-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-release-summary-implementation.md" in docs_site
+
+
 def test_project_release_summary_design_review_packet_builds_from_fixture(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -2388,8 +2434,10 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
         "04_V3_PROJECT_RELEASE_SUMMARY_SELECTION.md",
         "05_PROJECT_RELEASE_SUMMARY_PROPOSAL.md",
         "06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md",
-        "07_GATE_AND_RISK_EVIDENCE.md",
-        "08_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "07_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md",
+        "08_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json",
+        "09_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md",
+        "10_REVIEW_INTAKE_AND_NEXT_STEPS.md",
         "project-release-summary-design-review-artifact-hashes.json",
     }
     assert built == output_dir
@@ -2401,7 +2449,17 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
     index_doc = (output_dir / "00_PROJECT_RELEASE_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
         encoding="utf-8"
     )
-    evidence = (output_dir / "07_GATE_AND_RISK_EVIDENCE.md").read_text(encoding="utf-8")
+    decision_doc = (
+        output_dir / "07_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md"
+    ).read_text(encoding="utf-8")
+    implementation_gate_json = json.loads(
+        (output_dir / "08_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    evidence = (
+        output_dir / "09_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
     hashes = json.loads(
         (output_dir / "project-release-summary-design-review-artifact-hashes.json").read_text(
             encoding="utf-8"
@@ -2414,6 +2472,9 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
     assert "Internal Review Prompt" in prompt
     assert "External Review Prompt" in prompt
     assert "No-New-Powers Guardrail" in evidence
+    assert "Implementation Decision Evidence" in evidence
+    assert "approved limited read-only implementation boundary" in decision_doc
+    assert implementation_gate_json["runtime_implemented"] is False
     assert "Implementation status: blocked" in index_doc
     assert "Tool count: `21`" in index_doc
     assert "project-release-summary-design-review-artifact-hashes.json" not in hashed_paths

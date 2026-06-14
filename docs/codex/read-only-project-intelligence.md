@@ -79,6 +79,8 @@ Every tool in this family must preserve:
   `project.ci.summary`.
 - Selected candidate: `project.release.summary`.
 - Selected candidate status: design-only selected.
+- Implementation boundary: approved limited read-only, runtime not yet implemented.
+- explicit implementation decision recorded.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -90,8 +92,9 @@ inspector, plugin SDK, sandbox, SIEM, production identity system, or public/secu
 
 The most recent project metadata candidate,
 [project.release.summary](capability-proposals/project-release-summary.md), is selected as the
-next design-only candidate. Its proposal and implementation planning are complete, but
-implementation remains blocked until a later explicit implementation-boundary sprint. Future
-read-only metadata tools must start again from a design-only candidate, proposal, implementation
-plan, explicit implementation decision, source-review handoff, policy fixtures, negative
-transcripts, no-new-powers evidence, and release gates.
+next design-only candidate. Its proposal and implementation planning are complete, and an
+implementation decision now records the approved limited read-only boundary, but runtime remains
+absent until a later explicit implementation-boundary sprint. Future read-only metadata tools
+must start again from a design-only candidate, proposal, implementation plan, explicit
+implementation decision, source-review handoff, policy fixtures, negative transcripts,
+no-new-powers evidence, and release gates.
