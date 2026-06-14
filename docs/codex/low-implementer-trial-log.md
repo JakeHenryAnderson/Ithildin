@@ -80,3 +80,23 @@ product-risk, runtime, tool, policy, approval, audit, MCP/API, and UI-runtime cl
 Trial 5 edited only the single allowed docs file and avoided runtime, tool, policy, approval, audit,
 MCP/API, UI-runtime, and product-risk changes. Direct low-worker patching remains disabled by
 default.
+
+## Trial 6: roadmap-guided heartbeat transition report
+
+| Field | Result |
+| --- | --- |
+| ticket type | roadmap-guided transition report |
+| model/effort | `gpt-5.4-mini`, medium reasoning |
+| accepted suggestions | `1`: identified the semantic gap between approved boundary and active preimplementation guard |
+| rejected suggestions | `0`: no runtime or safety-boundary changes were proposed |
+| boundary drift observed | `false` |
+| manager cleanup required | none |
+| manager overhead | medium: custom prompt plus heartbeat setup/cleanup |
+| cheap model work replaced | medium: independent scan of roadmap, docs, and gates |
+| codex usage efficiency | useful for medium-sized transition planning; too much overhead for tiny obvious checks |
+| recommendation | delegate again for medium-sized read-only transition reports when the output feeds a later manager-owned sprint |
+
+Trial 6 used one heartbeat-managed `gpt-5.4-mini` medium worker named Aristotle. The worker returned
+a read-only report, stayed within allowed files, proposed no runtime edits, and confirmed that the
+next `project.release.summary` implementation sprint should first replace the preimplementation
+guard with an explicit manager-owned implementation checkpoint.

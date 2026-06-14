@@ -7,12 +7,14 @@ workers to edit runtime behavior.
 
 | Metric | Result |
 | --- | --- |
-| total trials | `5` |
-| accepted suggestions | `4` plus `1` accepted docs-only patch |
+| total trials | `6` |
+| accepted suggestions | `5` plus `1` accepted docs-only patch |
 | rejected suggestions | `2` |
 | boundary drift count | `0` |
 | cleanup trend | low and manager-contained |
-| current recommendation | continue report-first mechanical scans one at a time |
+| manager overhead trend | low for packetized scans, medium for custom heartbeat-managed transition reports |
+| cheap-model replacement value | useful when the worker scans enough docs/gates to save main-manager context work |
+| current recommendation | continue one-ticket-at-a-time delegation; use mini-low for shallow scans and mini-medium for bounded transition reports |
 | trial note | docs-only, manager-reviewed, and not a general enablement for direct low-worker patching |
 
 direct low-worker patching remains disabled. A future sprint may propose one docs-only patch trial,

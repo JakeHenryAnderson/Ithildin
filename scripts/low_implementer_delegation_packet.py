@@ -111,6 +111,8 @@ REQUIRED_CATALOG_PHRASES = [
     "Repetitive release-readiness assertion suggestions",
     "not permission to edit runtime behavior",
     "manager scorecard",
+    "Usage-Efficiency Rule",
+    "gpt-5.4-mini` medium reasoning",
 ]
 
 REQUIRED_TRIAL_LOG_PHRASES = [
@@ -122,10 +124,13 @@ REQUIRED_TRIAL_LOG_PHRASES = [
     "Trial 2: stale-wording-scan",
     "Trial 3: make-target-wiring",
     "Trial 4: packet-inventory",
+    "Trial 6: roadmap-guided heartbeat transition report",
     "accepted suggestions",
     "rejected suggestions",
     "boundary drift observed",
     "manager cleanup required",
+    "manager overhead",
+    "codex usage efficiency",
     "recommendation",
 ]
 
@@ -136,6 +141,8 @@ REQUIRED_SCORECARD_PHRASES = [
     "rejected suggestions",
     "boundary drift count",
     "cleanup trend",
+    "manager overhead trend",
+    "cheap-model replacement value",
     "current recommendation",
     "direct low-worker patching remains disabled",
 ]
@@ -421,6 +428,9 @@ useful_suggestions_count:
 rejected_suggestions_count:
 boundary_drift_observed: false
 manager_cleanup_required: none
+manager_overhead: low
+cheap_model_work_replaced: unclear
+codex_usage_efficiency: undecided
 delegate_again: undecided
 notes:
 ```

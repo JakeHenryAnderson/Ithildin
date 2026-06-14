@@ -38,12 +38,30 @@ Every generated delegation packet includes a manager scorecard. Use it to record
 - `rejected_suggestions_count`;
 - `boundary_drift_observed`;
 - `manager_cleanup_required`;
+- `manager_overhead`;
+- `cheap_model_work_replaced`;
+- `codex_usage_efficiency`;
 - `delegate_again`.
 
 Delegation is considered useful only when the manager accepts mechanical suggestions with less
-review/cleanup effort than doing the scan directly. Summarize each live read-only trial in the
-[Low-Implementer Trial Log](low-implementer-trial-log.md), then update the
+review/cleanup effort than doing the scan directly, or when cheaper-model scanning replaces enough
+main-manager context work to justify the packaging overhead. Summarize each live read-only trial in
+the [Low-Implementer Trial Log](low-implementer-trial-log.md), then update the
 [Low-Implementer Delegation Scorecard](low-implementer-delegation-scorecard.md).
+
+## Usage-Efficiency Rule
+
+Prefer delegation when the ticket can replace expensive manager scanning with cheap-model work and
+the output is easy to verify. Skip delegation when the manager would spend more effort packaging,
+reviewing, and cleaning up the ticket than doing the work directly.
+
+Use this routing:
+
+- `gpt-5.4-mini` low reasoning: shallow inventory, stale wording, link, and Make-target scans.
+- `gpt-5.4-mini` medium reasoning: medium-sized transition reports, fixture completeness reviews,
+  and file-change maps.
+- Main Codex: runtime source, manifests, policy semantics, approval/audit, MCP/API, product-risk
+  decisions, and commits.
 
 ## Command
 

@@ -362,6 +362,9 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
     assert "Do not edit runtime source" in task
     assert "useful_suggestions_count" in scorecard
     assert "boundary_drift_observed" in scorecard
+    assert "manager_overhead" in scorecard
+    assert "cheap_model_work_replaced" in scorecard
+    assert "codex_usage_efficiency" in scorecard
     assert "low-implementer-delegation-packet:" in makefile
     assert "low-implementer-delegation-check:" in makefile
     assert "low-implementer-ticket-catalog-check:" in makefile
@@ -387,6 +390,8 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
         "make-target-wiring",
         "packet-inventory",
         "manager scorecard",
+        "Usage-Efficiency Rule",
+        "gpt-5.4-mini` medium reasoning",
     ]:
         assert phrase in catalog
     for phrase in [
@@ -395,10 +400,13 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
         "Trial 2: stale-wording-scan",
         "Trial 3: make-target-wiring",
         "Trial 4: packet-inventory",
+        "Trial 6: roadmap-guided heartbeat transition report",
         "accepted suggestions",
         "rejected suggestions",
         "boundary drift observed",
         "manager cleanup required",
+        "manager overhead",
+        "codex usage efficiency",
         "recommendation",
     ]:
         assert phrase in trial_log
@@ -409,6 +417,8 @@ def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
         "rejected suggestions",
         "boundary drift count",
         "cleanup trend",
+        "manager overhead trend",
+        "cheap-model replacement value",
         "current recommendation",
         "direct low-worker patching remains disabled",
     ]:
