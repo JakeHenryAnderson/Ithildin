@@ -2405,6 +2405,9 @@ def test_project_release_summary_preimplementation_check_is_wired() -> None:
     assert report["evidence"]["fixture_plan_path"] == (
         "docs/codex/project-release-summary-fixture-plan.md"
     )
+    assert report["evidence"]["fixture_artifact_path"] == (
+        "tests/fixtures/project_release_summary_fixture_contract.json"
+    )
     for phrase in [
         "Status: pre-implementation fixture/test contract only",
         "No runtime behavior",
@@ -2425,6 +2428,7 @@ def test_project_release_summary_preimplementation_check_is_wired() -> None:
         "symlink skipped",
         "hardlink skipped",
         "binary/NUL skipped",
+        "oversized input skipped",
         "unsupported encoding skipped",
         "malformed config shape counted as safe unknown",
         "unauthorized principal denied in future governed-call tests",
@@ -2461,6 +2465,29 @@ def test_project_release_summary_preimplementation_check_is_wired() -> None:
     assert "project.release.summary" in decision
     assert not Path("tool-manifests/project-release-summary.yaml").exists()
     assert "project-release-summary" not in lockfile
+
+
+def test_project_release_summary_fixture_artifact_is_wired() -> None:
+    fixture_path = Path("tests/fixtures/project_release_summary_fixture_contract.json")
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    expected_scenarios = project_release_summary_preimplementation_check.REQUIRED_SCENARIOS
+    expected_non_leak = project_release_summary_preimplementation_check.STRICT_NON_LEAK_LIST
+
+    assert fixture["version"] == "1"
+    assert fixture["contract"] == "project.release.summary"
+    assert fixture["scope"] == "preimplementation_fixture_contract"
+    assert fixture["strict_non_leak_list"] == expected_non_leak
+    assert [scenario["scenario"] for scenario in fixture["scenarios"]] == expected_scenarios
+    assert len({scenario["id"] for scenario in fixture["scenarios"]}) == len(
+        fixture["scenarios"]
+    )
+    assert all(scenario["safe_expected_labels"] for scenario in fixture["scenarios"])
+    assert all(scenario["non_leak_assertions"] for scenario in fixture["scenarios"])
+    assert all(scenario["future_test_type"] for scenario in fixture["scenarios"])
+    assert any(
+        "oversized_skipped" in scenario["safe_expected_labels"]
+        for scenario in fixture["scenarios"]
+    )
 
 
 def test_project_release_summary_implementation_gate_is_wired() -> None:
@@ -2607,6 +2634,9 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
     assert preimplementation_json["proposal"] == "project.release.summary"
     assert preimplementation_json["scope"] == "preimplementation_fixture_contract"
     assert preimplementation_json["tool_count"] == 21
+    assert preimplementation_json["evidence"]["fixture_artifact_path"] == (
+        "tests/fixtures/project_release_summary_fixture_contract.json"
+    )
     assert review_handoff_check_json["valid"] is True
     assert review_handoff_check_json["runtime_implemented"] is False
     assert review_handoff_check_json["future_runtime_implementation_allowed"] is True

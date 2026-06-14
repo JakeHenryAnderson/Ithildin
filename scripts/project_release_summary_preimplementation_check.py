@@ -26,6 +26,7 @@ IMPLEMENTATION_PLAN_DOC = (
 )
 IMPLEMENTATION_BOUNDARY_DOC = ROOT / "docs/codex/v3-project-release-summary-implementation.md"
 FIXTURE_PLAN_DOC = ROOT / "docs/codex/project-release-summary-fixture-plan.md"
+FIXTURE_ARTIFACT = ROOT / "tests/fixtures/project_release_summary_fixture_contract.json"
 REQUIRED_SCENARIOS = [
     "empty workspace / no release-shaped files",
     "release config files present by coarse category only",
@@ -40,6 +41,7 @@ REQUIRED_SCENARIOS = [
     "symlink skipped",
     "hardlink skipped",
     "binary/nul skipped",
+    "oversized input skipped",
     "unsupported encoding skipped",
     "malformed config shape counted as safe unknown",
     "unauthorized principal denied in future governed-call tests",
@@ -115,6 +117,83 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             if item.lower() not in lower:
                 failures.append(f"fixture plan is missing strict non-leak entry: {item}")
 
+    fixture_artifact_path = repo_root / FIXTURE_ARTIFACT.relative_to(ROOT)
+    if not fixture_artifact_path.exists():
+        failures.append("project.release.summary fixture artifact is missing")
+        fixture_artifact: dict[str, Any] | None = None
+    else:
+        try:
+            fixture_artifact = json.loads(fixture_artifact_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            failures.append(f"project.release.summary fixture artifact is invalid json: {exc.msg}")
+            fixture_artifact = None
+        else:
+            if not isinstance(fixture_artifact, dict):
+                failures.append("project.release.summary fixture artifact must be a JSON object")
+                fixture_artifact = None
+
+    if fixture_artifact is not None:
+        if fixture_artifact.get("version") != "1":
+            failures.append("fixture artifact must report version: 1")
+        if fixture_artifact.get("contract") != "project.release.summary":
+            failures.append("fixture artifact must report contract: project.release.summary")
+        if fixture_artifact.get("scope") != "preimplementation_fixture_contract":
+            failures.append("fixture artifact must report preimplementation fixture scope")
+
+        strict_non_leak_list = fixture_artifact.get("strict_non_leak_list")
+        if not isinstance(strict_non_leak_list, list):
+            failures.append("fixture artifact strict_non_leak_list must be a list")
+        else:
+            lowered = {str(item).lower() for item in strict_non_leak_list}
+            for item in STRICT_NON_LEAK_LIST:
+                if item.lower() not in lowered:
+                    failures.append(
+                        f"fixture artifact is missing strict non-leak entry: {item}"
+                    )
+
+        scenarios = fixture_artifact.get("scenarios")
+        if not isinstance(scenarios, list):
+            failures.append("fixture artifact scenarios must be a list")
+            scenarios = []
+        scenario_names: list[str] = []
+        scenario_ids: set[str] = set()
+        for index, scenario in enumerate(scenarios):
+            if not isinstance(scenario, dict):
+                failures.append(f"fixture artifact scenario {index} must be an object")
+                continue
+            scenario_name = scenario.get("scenario")
+            scenario_id = scenario.get("id")
+            if not isinstance(scenario_name, str):
+                failures.append(f"fixture artifact scenario {index} missing scenario name")
+            else:
+                scenario_names.append(scenario_name)
+            if not isinstance(scenario_id, str):
+                failures.append(f"fixture artifact scenario {index} missing id")
+            elif scenario_id in scenario_ids:
+                failures.append(f"fixture artifact duplicate scenario id: {scenario_id}")
+            else:
+                scenario_ids.add(scenario_id)
+
+            safe_expected_labels = scenario.get("safe_expected_labels")
+            if not isinstance(safe_expected_labels, list) or not safe_expected_labels:
+                failures.append(
+                    f"fixture artifact scenario {index} must include safe_expected_labels"
+                )
+            non_leak_assertions = scenario.get("non_leak_assertions")
+            if not isinstance(non_leak_assertions, list) or not non_leak_assertions:
+                failures.append(
+                    f"fixture artifact scenario {index} must include non_leak_assertions"
+                )
+            future_test_type = scenario.get("future_test_type")
+            if not isinstance(future_test_type, str) or not future_test_type:
+                failures.append(
+                    f"fixture artifact scenario {index} must include future_test_type"
+                )
+
+        for scenario in REQUIRED_SCENARIOS:
+            if scenario not in scenario_names:
+                failures.append(f"fixture artifact is missing scenario: {scenario}")
+
     if implementation_gate.get("runtime_implemented") is not False:
         failures.append("implementation gate must report runtime_implemented: false")
     if implementation_gate.get("future_runtime_implementation_allowed") is not True:
@@ -148,6 +227,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 IMPLEMENTATION_BOUNDARY_DOC.relative_to(ROOT).as_posix()
             ),
             "fixture_plan_path": FIXTURE_PLAN_DOC.relative_to(ROOT).as_posix(),
+            "fixture_artifact_path": FIXTURE_ARTIFACT.relative_to(ROOT).as_posix(),
             "implementation_gate": implementation_gate,
             "tool_surface": tool_surface,
             "no_new_powers": no_new_powers,

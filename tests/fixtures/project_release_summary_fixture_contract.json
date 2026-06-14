@@ -1,0 +1,246 @@
+{
+  "version": "1",
+  "contract": "project.release.summary",
+  "scope": "preimplementation_fixture_contract",
+  "strict_non_leak_list": [
+    "no release names",
+    "no version strings",
+    "no changelog contents",
+    "no tag names",
+    "no branch names",
+    "no raw file names",
+    "no raw paths",
+    "no file contents",
+    "no package names",
+    "no dependency names",
+    "no author/maintainer names",
+    "no email addresses",
+    "no command/script values",
+    "no environment names/values",
+    "no registry urls",
+    "no shell/git/package-manager/ci output"
+  ],
+  "scenarios": [
+    {
+      "id": "empty_workspace_no_release_shaped_files",
+      "scenario": "empty workspace / no release-shaped files",
+      "future_test_type": "source-review packet",
+      "safe_expected_labels": [
+        "zero release-shaped counts",
+        "zero skipped counts",
+        "zero truncation flags"
+      ],
+      "non_leak_assertions": [
+        "no release names",
+        "no raw file names",
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "release_config_files_present_by_coarse_category_only",
+      "scenario": "release config files present by coarse category only",
+      "future_test_type": "executor",
+      "safe_expected_labels": [
+        "release_config counts",
+        "safe_unknown counts",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no release names",
+        "no raw file names"
+      ]
+    },
+    {
+      "id": "changelog_release_note_shaped_files_counted_without_names_or_contents",
+      "scenario": "changelog/release-note shaped files counted without names or contents",
+      "future_test_type": "MCP",
+      "safe_expected_labels": [
+        "changelog_category counts",
+        "release_note_category counts"
+      ],
+      "non_leak_assertions": [
+        "no release names",
+        "no changelog contents"
+      ]
+    },
+    {
+      "id": "version_marker_shaped_files_counted_without_version_strings",
+      "scenario": "version-marker shaped files counted without version strings",
+      "future_test_type": "executor",
+      "safe_expected_labels": [
+        "version_marker counts",
+        "version_marker_category counts"
+      ],
+      "non_leak_assertions": [
+        "no version strings"
+      ]
+    },
+    {
+      "id": "release_automation_shaped_files_counted_without_commands",
+      "scenario": "release automation shaped files counted without commands",
+      "future_test_type": "governed call",
+      "safe_expected_labels": [
+        "release_automation counts",
+        "automation_category counts"
+      ],
+      "non_leak_assertions": [
+        "no command/script values"
+      ]
+    },
+    {
+      "id": "mixed_safe_and_skipped_candidates",
+      "scenario": "mixed safe and skipped candidates",
+      "future_test_type": "policy parity",
+      "safe_expected_labels": [
+        "mixed_safe counts",
+        "mixed_skipped counts",
+        "truncation flags remain false"
+      ],
+      "non_leak_assertions": [
+        "no raw file names",
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "depth_limit_truncation",
+      "scenario": "depth-limit truncation",
+      "future_test_type": "executor",
+      "safe_expected_labels": [
+        "depth_truncated",
+        "max_depth_hit",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "item_limit_truncation",
+      "scenario": "item-limit truncation",
+      "future_test_type": "executor",
+      "safe_expected_labels": [
+        "item_limit_truncated",
+        "max_items_hit",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "hidden_sensitive_path_skipped",
+      "scenario": "hidden/sensitive path skipped",
+      "future_test_type": "policy parity",
+      "safe_expected_labels": [
+        "hidden_path_skipped",
+        "sensitive_path_skipped",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no raw paths",
+        "no sensitive path disclosure"
+      ]
+    },
+    {
+      "id": "git_skipped",
+      "scenario": ".git skipped",
+      "future_test_type": "policy parity",
+      "safe_expected_labels": [
+        "git_skipped",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "symlink_skipped",
+      "scenario": "symlink skipped",
+      "future_test_type": "executor",
+      "safe_expected_labels": [
+        "symlink_skipped",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "hardlink_skipped",
+      "scenario": "hardlink skipped",
+      "future_test_type": "executor",
+      "safe_expected_labels": [
+        "hardlink_skipped",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "binary_nul_skipped",
+      "scenario": "binary/nul skipped",
+      "future_test_type": "audit",
+      "safe_expected_labels": [
+        "binary_skipped",
+        "nul_detected",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no file contents"
+      ]
+    },
+    {
+      "id": "oversized_input_skipped",
+      "scenario": "oversized input skipped",
+      "future_test_type": "executor",
+      "safe_expected_labels": [
+        "oversized_skipped",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no file contents",
+        "no raw paths"
+      ]
+    },
+    {
+      "id": "unsupported_encoding_skipped",
+      "scenario": "unsupported encoding skipped",
+      "future_test_type": "audit",
+      "safe_expected_labels": [
+        "encoding_skipped",
+        "skipped counts"
+      ],
+      "non_leak_assertions": [
+        "no file contents"
+      ]
+    },
+    {
+      "id": "malformed_config_shape_counted_as_safe_unknown",
+      "scenario": "malformed config shape counted as safe unknown",
+      "future_test_type": "source-review packet",
+      "safe_expected_labels": [
+        "safe_unknown",
+        "malformed_shape",
+        "skipped counts only if rejected"
+      ],
+      "non_leak_assertions": [
+        "no package names",
+        "no dependency names"
+      ]
+    },
+    {
+      "id": "unauthorized_principal_denied_in_future_governed_call_tests",
+      "scenario": "unauthorized principal denied in future governed-call tests",
+      "future_test_type": "governed call",
+      "safe_expected_labels": [
+        "denied_principal",
+        "authorization_denied"
+      ],
+      "non_leak_assertions": [
+        "no author/maintainer names",
+        "no email addresses"
+      ]
+    }
+  ]
+}

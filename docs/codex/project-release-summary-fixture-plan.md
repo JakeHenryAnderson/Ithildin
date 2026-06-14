@@ -11,6 +11,9 @@ This document defines future fixture coverage and negative-test expectations onl
 or approve runtime behavior, tool manifests, executors, policy rules, MCP exposure, API behavior,
 UI runtime behavior, or new governed tool powers.
 
+The committed JSON fixture corpus for this contract stays aligned with the scenario list below and
+is checked by `make project-release-summary-preimplementation-check`.
+
 ## Strict Non-Leak List
 
 - no release names;
@@ -133,6 +136,14 @@ UI runtime behavior, or new governed tool powers.
 - Required non-leak assertions: strict non-leak list applies; no file contents.
 - Future test type: audit.
 
+### oversized input skipped
+
+- Fixture purpose: confirm oversized candidates are rejected or skipped without surfacing raw
+  content.
+- Safe expected labels/count categories: oversized_skipped, skipped counts.
+- Required non-leak assertions: strict non-leak list applies; no file contents; no raw paths.
+- Future test type: executor.
+
 ### unsupported encoding skipped
 
 - Fixture purpose: confirm unsupported encodings are skipped safely.
@@ -156,4 +167,3 @@ UI runtime behavior, or new governed tool powers.
 - Required non-leak assertions: strict non-leak list applies; no author/maintainer names; no email
   addresses.
 - Future test type: governed call.
-
