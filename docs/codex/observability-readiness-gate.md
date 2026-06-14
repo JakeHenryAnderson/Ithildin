@@ -32,7 +32,7 @@ The expected result is:
 - Agent Run evidence remains secret-free;
 - sandbox/workspace posture remains operator-managed and design/evidence-only;
 - SIEM-shaped evidence remains export-design-only with no adapters;
-- next capability candidate is `project.structure.summary`, design-only selected, and
+- next capability candidate is `project.release.summary`, design-only selected, and
   implementation-blocked;
 - broader capability expansion remains blocked;
 - no new powerful tool classes are allowed.

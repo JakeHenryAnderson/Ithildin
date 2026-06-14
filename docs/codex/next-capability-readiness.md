@@ -16,12 +16,13 @@ decision, source-review handoff, and local lane closure.
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
-  `project.docs.summary`, `project.language.summary`, `project.config.summary`, and
+  `project.docs.summary`, `project.language.summary`, and `project.config.summary`, plus
   `project.ci.summary`.
 - Current tool count: `21`.
-- Next candidate: `not selected`.
-- Next candidate status: pending selection.
-- Next candidate implementation: blocked.
+- Selected candidate: `project.release.summary`.
+- Selected candidate status: design-only selected.
+- Proposal and implementation plan: complete.
+- Selected candidate implementation: blocked.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
 
@@ -58,17 +59,20 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 The most recent capability,
 [project.ci.summary](capability-proposals/project-ci-summary.md), has advanced through proposal,
 implementation planning, implementation decision, runtime implementation, and source-review handoff
-as one bounded read-only metadata tool. No next design-only candidate is currently selected.
+as one bounded read-only metadata tool. The next bounded candidate is
+[project.release.summary](v3-project-release-summary-selection.md), with proposal work and
+implementation planning now complete but implementation still blocked.
 
 Run:
 
 ```bash
 make next-capability-readiness
-make project-ci-summary-implementation-gate
-make project-ci-summary-source-review-bundle
+make project-release-summary-proposal-check
+make project-release-summary-implementation-plan-check
+make project-release-summary-design-review-packet
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata
 inventory, no-new-powers evidence, the historical candidate lineage, release-check wiring,
-review-doc inclusion, and docs-site inclusion. It does not approve another
-implementation by itself.
+review-doc inclusion, and docs-site inclusion. It does not approve another implementation by
+itself.

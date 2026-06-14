@@ -115,6 +115,9 @@ from scripts import (
     project_manifest_summary_implementation_plan_check,
     project_manifest_summary_proposal_check,
     project_manifest_summary_source_review_bundle,
+    project_release_summary_design_review_packet,
+    project_release_summary_implementation_plan_check,
+    project_release_summary_proposal_check,
     project_structure_summary_design_review_packet,
     project_structure_summary_implementation_gate,
     project_structure_summary_implementation_plan_check,
@@ -966,30 +969,39 @@ def test_next_capability_readiness_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 21
     assert report["current_approved_read_only_capabilities"] == 11
-    assert report["next_candidate"] == "not selected"
-    assert report["next_candidate_status"] == "pending_selection"
+    assert report["next_candidate"] == "project.release.summary"
+    assert report["next_candidate_status"] == "design_only_selected"
+    assert report["next_candidate_proposal_complete"] is True
+    assert report["next_candidate_plan_complete"] is True
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["historical_candidate"] == "project.dependency.summary"
     for phrase in [
         "Status: capability-expansion readiness checkpoint",
-        "Next candidate: `not selected`",
-        "Next candidate status: pending selection",
-        "Next candidate implementation: blocked",
+        "Selected candidate: `project.release.summary`",
+        "Selected candidate status: design-only selected",
+        "Proposal and implementation plan: complete",
+        "Selected candidate implementation: blocked",
         "Broader capability expansion: blocked",
         "New powerful tool classes: blocked",
         "Required Preflight Before Another Capability",
         "make next-capability-readiness",
+        "make project-release-summary-proposal-check",
+        "make project-release-summary-implementation-plan-check",
+        "make project-release-summary-design-review-packet",
     ]:
         assert phrase in doc
     assert "make next-capability-readiness" in readme
     assert "make next-capability-candidate-evaluation-2-check" in readme
+    assert "make project-release-summary-proposal-check" in readme
     assert "make project-ci-summary-source-review-bundle" in readme
     assert "next-capability-readiness:" in makefile
     assert "next-capability-candidate-evaluation-2-check:" in makefile
     assert "next-capability-readiness" in release_check_body
     assert "next-capability-candidate-evaluation-2-check" in release_check_body
+    assert "project-release-summary-proposal-check" in release_check_body
+    assert "project-release-summary-implementation-plan-check" in release_check_body
     assert "next-capability-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     assert (
         "next-capability-candidate-evaluation-2-check"
@@ -1000,6 +1012,8 @@ def test_next_capability_readiness_is_wired() -> None:
     assert "docs/codex/next-capability-readiness.md" in docs_site
     assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in docs_site
+    assert "docs/codex/v3-project-release-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-release-summary-selection.md" in docs_site
 
 
 def test_next_capability_candidate_evaluation_2_is_wired() -> None:
@@ -1017,9 +1031,9 @@ def test_next_capability_candidate_evaluation_2_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 21
-    assert report["next_candidate"] == "not selected"
-    assert report["manager_review_required"] is True
-    assert report["selection_status"] == "deferred"
+    assert report["next_candidate"] == "project.release.summary"
+    assert report["selection_status"] == "design_only_selected"
+    assert report["implementation_allowed"] is False
     for phrase in [
         "Status: planning-only candidate evaluation",
         "does not add a tool manifest",
@@ -1033,10 +1047,11 @@ def test_next_capability_candidate_evaluation_2_is_wired() -> None:
         "project.license.summary",
         "project.ownership.summary",
         "tool count remains `21`",
-        "next candidate: `not selected`",
-        "Further manager review is required",
+        "selected next candidate is `project.release.summary`",
+        "proposal work may proceed",
+        "implementation remains blocked",
         "Source-Review Requirement",
-        "Deferred",
+        "Selected",
     ]:
         assert phrase.lower() in normalized_doc
     assert "make next-capability-candidate-evaluation-2-check" in readme
@@ -1049,6 +1064,8 @@ def test_next_capability_candidate_evaluation_2_is_wired() -> None:
     assert "v3 Next Capability Candidate Evaluation 2" in index
     assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in review_docs_text
     assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in docs_site
+    assert "docs/codex/v3-project-release-summary-selection.md" in review_docs_text
+    assert "docs/codex/v3-project-release-summary-selection.md" in docs_site
 
 
 def test_read_only_project_intelligence_is_wired() -> None:
@@ -1076,7 +1093,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.config.summary",
         "project.ci.summary",
     ]
-    assert report["next_candidate"] == "not selected"
+    assert report["next_candidate"] == "project.release.summary"
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
@@ -1093,8 +1110,8 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.docs.summary",
         "project.language.summary",
         "Tool count: `21`",
-        "Next candidate: `not selected`",
-        "Next candidate status: pending selection",
+        "Selected candidate: `project.release.summary`",
+        "Selected candidate status: design-only selected",
         "Operator Reading Guide",
         "orientation evidence",
         "read-only-capability-inventory.md",
@@ -2232,6 +2249,179 @@ def test_project_ci_summary_design_review_packet_builds_from_fixture(
         encoding="utf-8"
     )
     assert "project-ci-summary-design-review-packet:" in Path("Makefile").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_project_release_summary_proposal_check_is_wired() -> None:
+    report = project_release_summary_proposal_check.build_report(Path.cwd())
+    proposal = Path("docs/codex/capability-proposals/project-release-summary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = Path("docs/codex/v3-project-release-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.release.summary"
+    assert report["scope"] == "design_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 21
+    for phrase in [
+        "Status: design-only proposal",
+        "does not add a manifest",
+        "executor",
+        "policy rule",
+        "MCP exposure",
+        "API behavior",
+        "UI runtime behavior",
+        "runtime implementation",
+        "project.release.summary",
+        "count-only release posture metadata and allowlisted labels only",
+        "no release names",
+        "no changelog contents",
+        "no file contents",
+        "no package names",
+        "no dependency names",
+        "no Git execution",
+        "no CI execution",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in proposal
+    assert "Status: design-only candidate selection" in selection
+    assert "tool count remains `21`" in selection
+    assert "make project-release-summary-proposal-check" in readme
+    assert "project-release-summary-proposal-check:" in makefile
+    assert "project-release-summary-proposal-check" in release_check_body
+    assert (
+        "project-release-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.release.summary" in index
+    assert "docs/codex/capability-proposals/project-release-summary.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/project-release-summary.md" in docs_site
+
+
+def test_project_release_summary_implementation_plan_check_is_wired() -> None:
+    report = project_release_summary_implementation_plan_check.build_report(Path.cwd())
+    plan = Path("docs/codex/capability-implementation-plans/project-release-summary.md").read_text(
+        encoding="utf-8"
+    )
+    proposal = Path("docs/codex/capability-proposals/project-release-summary.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.release.summary"
+    assert report["scope"] == "implementation_planning_only"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["evidence"]["tool_count"] == 21
+    for phrase in [
+        "Status: implementation-planning only",
+        "does not add a manifest",
+        "Implementation state: blocked",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Proposed Output Contract",
+        "Future Category Allowlist",
+        "Policy preview/runtime resource parity",
+        "Future MCP Exposure Expectations",
+        "Future Source-Review Bundle Requirements",
+        "Future Negative Tests",
+        "Actual implementation remains blocked",
+    ]:
+        assert phrase in plan
+    assert "Status: design-only proposal" in proposal
+    assert "make project-release-summary-implementation-plan-check" in readme
+    assert "project-release-summary-implementation-plan-check:" in makefile
+    assert "project-release-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-release-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Implementation-Planning Packet: project.release.summary" in index
+    assert (
+        "docs/codex/capability-implementation-plans/project-release-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/capability-implementation-plans/project-release-summary.md" in docs_site
+
+
+def test_project_release_summary_design_review_packet_builds_from_fixture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_dir = tmp_path / "project-release-summary-design-review"
+
+    def fake_git(repo_root: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abcdef1234567890"
+        if args == ["status", "--short"]:
+            return ""
+        raise AssertionError((repo_root, args))
+
+    monkeypatch.setattr(project_release_summary_design_review_packet, "_git", fake_git)
+
+    built = project_release_summary_design_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    expected = {
+        "00_PROJECT_RELEASE_SUMMARY_DESIGN_REVIEW_INDEX.md",
+        "01_PROJECT_RELEASE_SUMMARY_REVIEW_PROMPT.md",
+        "02_NEXT_CAPABILITY_READINESS.md",
+        "03_V3_NEXT_CAPABILITY_CANDIDATE_EVALUATION_2.md",
+        "04_V3_PROJECT_RELEASE_SUMMARY_SELECTION.md",
+        "05_PROJECT_RELEASE_SUMMARY_PROPOSAL.md",
+        "06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "07_GATE_AND_RISK_EVIDENCE.md",
+        "08_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "project-release-summary-design-review-artifact-hashes.json",
+    }
+    assert built == output_dir
+    assert {path.name for path in output_dir.iterdir()} == expected
+
+    prompt = (output_dir / "01_PROJECT_RELEASE_SUMMARY_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    index_doc = (output_dir / "00_PROJECT_RELEASE_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "07_GATE_AND_RISK_EVIDENCE.md").read_text(encoding="utf-8")
+    hashes = json.loads(
+        (output_dir / "project-release-summary-design-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+
+    assert "EXT-RELEASE-SUMMARY-###" in prompt
+    assert "project.release.summary" in prompt
+    assert "Internal Review Prompt" in prompt
+    assert "External Review Prompt" in prompt
+    assert "No-New-Powers Guardrail" in evidence
+    assert "Implementation status: blocked" in index_doc
+    assert "Tool count: `21`" in index_doc
+    assert "project-release-summary-design-review-artifact-hashes.json" not in hashed_paths
+    assert hashed_paths == expected - {"project-release-summary-design-review-artifact-hashes.json"}
+    assert "make project-release-summary-design-review-packet" in Path("README.md").read_text(
+        encoding="utf-8"
+    )
+    assert "project-release-summary-design-review-packet:" in Path("Makefile").read_text(
         encoding="utf-8"
     )
 
@@ -11138,7 +11328,7 @@ def test_observability_readiness_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 21
-    assert report["next_capability_candidate"] == "not selected"
+    assert report["next_capability_candidate"] == "project.release.summary"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["runtime_changes_allowed"] is False
@@ -11160,6 +11350,7 @@ def test_observability_readiness_gate_is_wired() -> None:
         "tool count remains `21`",
         "operator-managed",
         "export-design-only",
+        "project.release.summary",
         "no new powerful tool classes",
     ]:
         assert phrase in gate

@@ -17,9 +17,9 @@ without explicit review.
   runtime capability additions.
 - `make read-only-project-intelligence` records the consolidated eleven-tool project intelligence
   slice.
-- `make next-capability-readiness` records that no next capability is currently selected and that
-  future implementation remains blocked until fresh selection, implementation planning,
-  source-review handoff, and explicit decision are recorded.
+- `make next-capability-readiness` records that `project.release.summary` is the selected next
+  design-only candidate and that future implementation remains blocked until an explicit
+  implementation decision, source-review handoff, and release gates are recorded.
 - Public/security-product positioning remains blocked.
 - Broader capability expansion remains blocked.
 
@@ -53,13 +53,12 @@ without explicit review.
 ## Current Recommendation
 
 The current eleven-tool read-only project intelligence slice is consolidated. The most recent
-candidate is `project.ci.summary`, recorded in
-[v3 project.ci.summary Selection](v3-project-ci-summary-selection.md) and
-[Capability Proposal: project.ci.summary](capability-proposals/project-ci-summary.md). Its
-implementation-planning packet is
-[Implementation-Planning Packet: project.ci.summary](capability-implementation-plans/project-ci-summary.md).
-It has advanced through bounded read-only implementation and source-review handoff. No next
-design-only candidate is currently selected.
+candidate is `project.release.summary`, recorded in
+[v3 project.release.summary Selection](v3-project-release-summary-selection.md) and
+[Capability Proposal: project.release.summary](capability-proposals/project-release-summary.md).
+Its implementation-planning packet is
+[Implementation-Planning Packet: project.release.summary](capability-implementation-plans/project-release-summary.md).
+It has advanced through design-only selection and planning. Implementation remains blocked.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

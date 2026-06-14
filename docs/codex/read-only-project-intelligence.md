@@ -77,8 +77,8 @@ Every tool in this family must preserve:
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
   `project.docs.summary`, `project.language.summary`, `project.config.summary`, and
   `project.ci.summary`.
-- Next candidate: `not selected`.
-- Next candidate status: pending selection.
+- Selected candidate: `project.release.summary`.
+- Selected candidate status: design-only selected.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -89,8 +89,9 @@ vulnerability scanner, compliance engine, shell replacement, project build runne
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
 The most recent project metadata candidate,
-[project.ci.summary](capability-proposals/project-ci-summary.md), has advanced through its approved
-implementation boundary as a bounded read-only metadata tool. No next design-only candidate is
-currently selected. Future read-only metadata tools must start again from a design-only
-candidate, proposal, implementation plan, explicit implementation decision, source-review handoff,
-policy fixtures, negative transcripts, no-new-powers evidence, and release gates.
+[project.release.summary](capability-proposals/project-release-summary.md), is selected as the
+next design-only candidate. Its proposal and implementation planning are complete, but
+implementation remains blocked until a later explicit implementation-boundary sprint. Future
+read-only metadata tools must start again from a design-only candidate, proposal, implementation
+plan, explicit implementation decision, source-review handoff, policy fixtures, negative
+transcripts, no-new-powers evidence, and release gates.

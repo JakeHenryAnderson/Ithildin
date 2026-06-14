@@ -5,14 +5,14 @@ add an executor, does not add policy rules, does not add MCP exposure, does not 
 does not add UI behavior, and does not add runtime behavior.
 
 This sprint evaluates the next safest bounded read-only metadata candidate after the current
-project-intelligence family. The current tool count remains `21`. Next candidate: `not selected`.
-Further manager review is required before any candidate is chosen for proposal work.
+project-intelligence family. The current tool count remains `21`. The selected next candidate is
+`project.release.summary`; proposal work may proceed, while implementation remains blocked.
 
 ## Evaluation Summary
 
 | Candidate | Decision | Short Reason |
 | --- | --- | --- |
-| `project.release.summary` | Deferred | Strongest future fit, but it still needs a sharper privacy boundary so release cadence, release names, tag names, and changelog text stay out. |
+| `project.release.summary` | Selected | Strongest next fit because it stays count-only and label-only while avoiding release names, version strings, changelog contents, tag names, branch names, package names, and dependency names. |
 | `project.license.summary` | Deferred | Plausible count-only metadata, but legal or compliance interpretations can be over-read if labels are too specific. |
 | `project.ownership.summary` | Deferred | Ownership metadata can leak people, teams, or customer structure and is too sensitive for this sprint. |
 
@@ -22,8 +22,9 @@ Further manager review is required before any candidate is chosen for proposal w
 
 #### Intended Safe Value
 
-Help an agent notice whether release-shaped metadata exists without exposing release names, tag
-names, changelog text, or package-level detail.
+Help an agent notice whether release-shaped metadata exists without exposing release names, version
+strings, changelog contents, tag names, branch names, package names, dependency names, or file
+contents.
 
 #### Proposed Resource Type
 
@@ -31,23 +32,27 @@ names, changelog text, or package-level detail.
 
 #### Safe Output Labels/Counts Only
 
-Release-related counts, allowlisted status labels, truncation indicators, and support flags only.
+Release artifact/config counts, release-note and changelog counts by coarse category, version-marker
+counts by coarse source category, release automation/config category counts, location buckets,
+skipped counts, truncation metadata, and output-policy flags.
 
 #### Strict Non-Goals
 
-No raw filenames, raw paths, release names, tag names, changelog text, package names, dependency
-names, branch names, or registry data. No legal, compliance, or shipping-readiness conclusions.
+No release names, version strings that reveal product/customer cadence, changelog contents, tag
+names, branch names, package names, dependency names, author or maintainer names, raw paths, file
+contents, shell access, Git execution, package-manager execution, CI execution, or registry data.
+No legal, compliance, or shipping-readiness conclusions.
 
 #### Sensitive Metadata Risks
 
 Could expose release cadence, shipping strategy, or product planning if labels drift into specific
-release identifiers.
+release identifiers or version strings.
 
 #### Policy/Audit Evidence Expectations
 
 Require policy preview/runtime parity for the normalized resource, audit evidence with counts and
-allowlisted labels only, and negative transcripts showing release names and changelog text are
-withheld.
+allowlisted labels only, and negative transcripts showing release names, version strings, and
+changelog contents are withheld.
 
 #### Negative Cases
 
@@ -60,7 +65,7 @@ Required before any implementation decision.
 
 #### Decision
 
-Deferred.
+Selected.
 
 ### `project.license.summary`
 
@@ -152,7 +157,6 @@ Deferred.
 
 ## Required Future Review
 
-No candidate is selected in this sprint. The next step is further manager review, not
-implementation. Any later proposal must still preserve the planning-only boundary, the current tool
-count, and the no-new-powers posture.
-
+The next step is proposal work for `project.release.summary`, not another candidate search. Any
+later proposal must still preserve the planning-only boundary, the current tool count, and the
+no-new-powers posture.

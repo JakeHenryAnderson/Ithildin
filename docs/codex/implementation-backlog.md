@@ -356,6 +356,15 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | Remote MCP hosting | Deferred | Stdio-only local MCP remains the v0.1 boundary. |
 | Plugin SDK and marketplace | Deferred | Requires stronger signing, review UX, executor contracts, and stable policy impact tooling. |
 
+## v3 Release Summary Planning Track
+
+| Task | Status | Spec |
+| --- | --- | --- |
+| 305 - v3 next capability candidate evaluation 2 refresh | Done | [v3-next-capability-candidate-evaluation-2.md](v3-next-capability-candidate-evaluation-2.md), `make next-capability-candidate-evaluation-2-check`; selects `project.release.summary` and keeps implementation blocked. |
+| 306 - project.release.summary proposal | Done | [capability-proposals/project-release-summary.md](capability-proposals/project-release-summary.md), `make project-release-summary-proposal-check`; design-only, no runtime behavior. |
+| 307 - project.release.summary implementation plan | Done | [capability-implementation-plans/project-release-summary.md](capability-implementation-plans/project-release-summary.md), `make project-release-summary-implementation-plan-check`; implementation-planning only, no runtime behavior. |
+| 308 - project.release.summary design review packet | Done | `make project-release-summary-design-review-packet`; generates the ignored release-summary design-review packet for later source review. |
+
 ## v0.2 Planning Seed
 
 Use [v0.2-review-response-and-rc-cleanup.md](v0.2-review-response-and-rc-cleanup.md) and

@@ -274,7 +274,8 @@ checked with `make control-mapping-readiness`.
 - `make next-capability-readiness` - validate the current bounded metadata inventory and the
   preflight requirements before selecting or implementing another capability.
 - `make next-capability-candidate-evaluation-2-check` - validate the planning-only evaluation of
-  release, license, and ownership metadata candidates without selecting a next capability.
+  release, license, and ownership metadata candidates and the selected `project.release.summary`
+  next candidate.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -333,6 +334,12 @@ checked with `make control-mapping-readiness`.
   handoff for the approved `project.ci.summary` implementation.
 - `make project-ci-summary-design-review-packet` - generate the design-review packet for the
   selected `project.ci.summary` proposal.
+- `make project-release-summary-proposal-check` - validate the selected
+  `project.release.summary` design-only proposal without authorizing runtime work.
+- `make project-release-summary-implementation-plan-check` - validate the
+  `project.release.summary` implementation-planning packet without authorizing runtime work.
+- `make project-release-summary-design-review-packet` - generate the design-review packet for
+  the selected `project.release.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the

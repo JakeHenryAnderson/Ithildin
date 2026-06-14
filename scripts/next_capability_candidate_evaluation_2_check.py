@@ -28,8 +28,9 @@ REQUIRED_PHRASES = [
     "project.license.summary",
     "project.ownership.summary",
     "tool count remains `21`",
-    "next candidate: `not selected`",
-    "Further manager review is required",
+    "selected next candidate is `project.release.summary`",
+    "proposal work may proceed",
+    "implementation remains blocked",
     "Intended Safe Value",
     "Proposed Resource Type",
     "Safe Output Labels/Counts Only",
@@ -38,7 +39,7 @@ REQUIRED_PHRASES = [
     "Policy/Audit Evidence Expectations",
     "Negative Cases",
     "Source-Review Requirement",
-    "Deferred",
+    "Selected",
 ]
 FORBIDDEN_PHRASES = [
     "implementation allowed",
@@ -48,7 +49,6 @@ FORBIDDEN_PHRASES = [
     "add policy rules now",
     "expose through MCP now",
     "approved for implementation",
-    "selected candidate",
     "go-live",
 ]
 
@@ -92,28 +92,42 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     docs_site = (repo_root / "scripts/build_docs_site.py").read_text(encoding="utf-8")
     review_docs = (repo_root / "scripts/review_docs.py").read_text(encoding="utf-8")
     index = (repo_root / "docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    selection_doc = (repo_root / "docs/codex/v3-project-release-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
 
     if "make next-capability-candidate-evaluation-2-check" not in readme:
-        failures.append("README is missing the new planning gate command")
+        failures.append("README is missing the planning gate command")
     if "next-capability-candidate-evaluation-2-check:" not in makefile:
-        failures.append("Makefile is missing the new planning gate target")
+        failures.append("Makefile is missing the planning gate target")
     if "next-capability-candidate-evaluation-2-check" not in release_check_body:
-        failures.append("release-check is missing the new planning gate target")
+        failures.append("release-check is missing the planning gate target")
     if DOC_PATH.relative_to(ROOT).as_posix() not in docs_site:
-        failures.append("docs-site inputs are missing the new planning gate doc")
+        failures.append("docs-site inputs are missing the planning gate doc")
     if DOC_PATH.relative_to(ROOT).as_posix() not in review_docs:
-        failures.append("review docs metadata is missing the new planning gate doc")
+        failures.append("review docs metadata is missing the planning gate doc")
     if "v3 Next Capability Candidate Evaluation 2" not in index:
-        failures.append("review docs index is missing the new planning gate doc")
+        failures.append("review docs index is missing the planning gate doc")
+    for phrase in [
+        "Status: design-only candidate selection",
+        "project.release.summary",
+        "tool count remains `21`",
+        "implementation remains blocked",
+        "make project-release-summary-proposal-check",
+        "make project-release-summary-implementation-plan-check",
+        "make project-release-summary-design-review-packet",
+    ]:
+        if phrase not in selection_doc:
+            failures.append(f"release selection doc is missing phrase: {phrase}")
 
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "tool_count": inventory.get("tool_count"),
-        "next_candidate": "not selected",
-        "manager_review_required": True,
-        "selection_status": "deferred",
+        "next_candidate": "project.release.summary",
+        "selection_status": "design_only_selected",
+        "implementation_allowed": False,
     }
 
 
@@ -123,8 +137,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"tool_count: {report.get('tool_count', 'unknown')}",
         f"next_candidate: {report['next_candidate']}",
-        "manager_review_required: true",
         f"selection_status: {report['selection_status']}",
+        f"implementation_allowed: {str(report.get('implementation_allowed', False)).lower()}",
     ]
     if report["failures"]:
         lines.append("failures:")
