@@ -29,11 +29,12 @@ product slice.
 | `project.language.summary` | Summarize bounded language-family signals using counts and allowlisted labels. | No language file names, raw extensions, raw paths, file contents, detector execution, package-manager execution, registry/network access, or dependency metadata. |
 | `project.config.summary` | Summarize bounded configuration posture using counts and allowlisted labels. | No config file names, raw paths, file contents, config contents, config values, environment names or values, config parser execution, package-manager execution, registry/network access, or deployment claims. |
 | `project.ci.summary` | Summarize bounded CI posture using counts and allowlisted labels. | No workflow names, job names, raw paths, file contents, command/script values, environment names or values, CI execution, package-manager execution, registry/network access, deployment claims, or compliance claims. |
+| `project.release.summary` | Summarize bounded release posture using counts and allowlisted labels. | No release names, version strings, changelog contents, tag names, branch names, raw paths, file contents, command/script values, Git execution, CI execution, package-manager execution, registry/network access, deployment-readiness claims, legal claims, or compliance claims. |
 
-Future release-summary review handoff work is recorded separately in
+Release-summary review handoff work is recorded separately in
 `make project-release-summary-review-handoff-check` and
-`make project-release-summary-source-review-bundle`; those commands are placeholders for the
-future source-review lane and do not claim runtime source exists yet.
+`make project-release-summary-source-review-bundle`; those commands package the implemented
+bounded read-only source-review lane without claiming external closure.
 
 ## Operator Reading Guide
 
@@ -53,7 +54,7 @@ Expected operator interpretation:
   production hardening claims, compliance evidence, vulnerability scans, dependency scans, or
   public/security-product positioning.
 - `read-only-capability-inventory.md` is the closure map for gates, source-review bundles, policy
-  resources, and current lane status across the full 21-tool surface.
+  resources, and current lane status across the full 22-tool surface.
 
 In the operator workbench story, the family should appear as a quiet inspection layer: a reviewer
 can see registered tools, policy/audit evidence, and safe summaries, then follow each lane's
@@ -76,16 +77,16 @@ Every tool in this family must preserve:
 
 ## Current Position
 
-- Tool count: `21`.
+- Tool count: `22`.
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
-  `project.docs.summary`, `project.language.summary`, `project.config.summary`, and
-  `project.ci.summary`.
-- Selected candidate: `project.release.summary`.
-- Selected candidate status: design-only selected.
-- Implementation boundary: approved limited read-only, runtime not yet implemented.
-- explicit implementation decision recorded.
+  `project.docs.summary`, `project.language.summary`, `project.config.summary`,
+  `project.ci.summary`, and `project.release.summary`.
+- Selected candidate: `not selected`.
+- Selected candidate status: pending selection.
+- Most recent implementation: `project.release.summary`, approved bounded read-only runtime.
+- explicit implementation decision recorded for `project.release.summary`.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -96,13 +97,10 @@ vulnerability scanner, compliance engine, shell replacement, project build runne
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
 The most recent project metadata candidate,
-[project.release.summary](capability-proposals/project-release-summary.md), is selected as the
-next design-only candidate. Its proposal and implementation planning are complete, and an
-implementation decision now records the approved limited read-only boundary, but runtime remains
-absent until a later explicit implementation-boundary sprint. Its preimplementation fixture/test
-contract is [project.release.summary Fixture Plan](project-release-summary-fixture-plan.md) and
-is checked with `make project-release-summary-preimplementation-check`. The future source-review
-handoff is [v3 project.release.summary Source Review Handoff](v3-project-release-summary-source-review.md)
+[project.release.summary](capability-proposals/project-release-summary.md), is now implemented as
+one bounded read-only metadata tool. Its fixture/test contract is
+[project.release.summary Fixture Plan](project-release-summary-fixture-plan.md), its source-review
+handoff is [v3 project.release.summary Source Review Handoff](v3-project-release-summary-source-review.md),
 and the negative transcript plan is
 [project.release.summary Negative Transcript Plan](project-release-summary-negative-transcripts.md).
 Future read-only metadata tools must start again from a design-only candidate, proposal,

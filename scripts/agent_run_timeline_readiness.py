@@ -38,7 +38,7 @@ REQUIRED_GATE_PHRASES = [
     "review-console Agent Runs panel",
     "no-new-powers-guardrail",
     "tool-surface-invariant-gate",
-    "tool count remains `21`",
+    "tool count remains `22`",
     "admin-only and read-only",
     "secret-free",
     "design-only",

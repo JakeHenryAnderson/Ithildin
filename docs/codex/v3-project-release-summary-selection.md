@@ -1,12 +1,13 @@
 # v3 project.release.summary Selection
 
-Status: design-only candidate selection.
+Status: historical candidate selection; implemented.
 
-`project.release.summary` is selected as the next bounded read-only project-intelligence candidate.
-The current governed tool count remains `21`, and implementation remains blocked until a later
-explicit implementation-boundary sprint approves a manifest, executor, policy/runtime resource
+`project.release.summary` was selected as the next bounded read-only project-intelligence
+candidate. The current governed tool count remains `22`, and implementation has advanced through
+an explicit implementation-boundary sprint with a manifest, executor, policy/runtime resource
 wiring, MCP exposure, audit coverage, negative transcripts, and source-review handoff.
-Selected candidate status: design-only selected.
+The runtime implementation is now present.
+Selected candidate status: implemented bounded read-only.
 
 ## Selection Rationale
 
@@ -20,10 +21,10 @@ human-facing release narrative or any execution surface.
 
 ## Boundary
 
-This selection does not add a manifest, executor, policy rule, API/MCP behavior, UI runtime
-behavior, approval behavior, audit behavior, or governed tool power.
+This historical selection did not by itself add a manifest, executor, policy rule, API/MCP
+behavior, UI runtime behavior, approval behavior, audit behavior, or governed tool power.
 
-Future implementation must remain:
+Implemented behavior must remain:
 
 - local workspace only;
 - read-only;
@@ -35,7 +36,7 @@ Future implementation must remain:
 
 ## Strict Non-Goals
 
-The future proposal must not expose release names, release version strings when they reveal
+The implemented proposal must not expose release names, release version strings when they reveal
 product/customer cadence, changelog contents, tag names, branch names, package names, dependency
 names, author or maintainer names, raw paths, file contents, shell access, Git execution,
 package-manager execution, CI execution, registry or network access, deployment-readiness claims,
@@ -48,4 +49,5 @@ legal claims, compliance claims, or broad recursive listings.
 - `make project-release-summary-design-review-packet`
 - `make next-capability-readiness`
 
-The design-review packet is for review only. It must not imply implementation approval.
+The design-review packet is retained as historical planning evidence. Runtime implementation is
+controlled by the implementation gate and source-review bundle, not by this selection alone.

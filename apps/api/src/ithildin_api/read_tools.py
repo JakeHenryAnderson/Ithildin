@@ -43,6 +43,7 @@ READ_TOOL_NAMES = frozenset(
         "project.config.summary",
         "project.ci.summary",
         "project.language.summary",
+        "project.release.summary",
     }
 )
 
@@ -57,6 +58,7 @@ _PROJECT_DOCS_SUMMARY_TOOL = "project.docs.summary"
 _PROJECT_CONFIG_SUMMARY_TOOL = "project.config.summary"
 _PROJECT_CI_SUMMARY_TOOL = "project.ci.summary"
 _PROJECT_LANGUAGE_SUMMARY_TOOL = "project.language.summary"
+_PROJECT_RELEASE_SUMMARY_TOOL = "project.release.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
@@ -263,6 +265,48 @@ _PROJECT_CI_LOCATION_BUCKETS = (
 _PROJECT_CI_SAFE_DOT_DIRS = frozenset({".github", ".circleci", ".buildkite"})
 _PROJECT_CI_SAFE_DOT_FILES = frozenset({".gitlab-ci.yml", ".gitlab-ci.yaml", ".travis.yml"})
 _PROJECT_CI_READ_BYTES = 65536
+_PROJECT_RELEASE_DEFAULT_DEPTH = 4
+_PROJECT_RELEASE_MAX_DEPTH = 5
+_PROJECT_RELEASE_DEFAULT_LIMIT = 200
+_PROJECT_RELEASE_MAX_LIMIT = 300
+_PROJECT_RELEASE_SECTIONS = (
+    "release_posture_counts",
+    "release_location_counts",
+    "release_signal_counts",
+    "skipped_counts",
+)
+_PROJECT_RELEASE_POSTURES = (
+    "release_config",
+    "changelog_category",
+    "release_note_category",
+    "version_marker_category",
+    "release_automation_category",
+    "safe_unknown",
+)
+_PROJECT_RELEASE_LOCATIONS = (
+    "root_level",
+    "docs_directory",
+    "config_directory",
+    "ci_directory",
+    "release_directory",
+    "source_adjacent",
+    "unknown_location",
+)
+_PROJECT_RELEASE_SIGNALS = (
+    "release_config_signal",
+    "changelog_signal",
+    "release_note_signal",
+    "version_marker_signal",
+    "automation_signal",
+    "safe_unknown_signal",
+)
+_PROJECT_RELEASE_DIR_NAMES = frozenset(
+    {"release", "releases", "release-notes", "release_notes", "changelog", "changelogs", "changes"}
+)
+_PROJECT_RELEASE_FILE_SUFFIXES = frozenset(
+    {".md", ".markdown", ".rst", ".adoc", ".asciidoc", ".txt", ".json", ".toml", ".yaml", ".yml"}
+)
+_PROJECT_RELEASE_READ_BYTES = 65536
 _PROJECT_LANGUAGE_DEFAULT_DEPTH = 3
 _PROJECT_LANGUAGE_MAX_DEPTH = 5
 _PROJECT_LANGUAGE_DEFAULT_LIMIT = 200
@@ -520,6 +564,8 @@ class ReadToolExecutor:
             return self._project_config_resource_from_arguments(arguments)
         if tool_name == _PROJECT_CI_SUMMARY_TOOL:
             return self._project_ci_resource_from_arguments(arguments)
+        if tool_name == _PROJECT_RELEASE_SUMMARY_TOOL:
+            return self._project_release_resource_from_arguments(arguments)
         if tool_name == _PROJECT_LANGUAGE_SUMMARY_TOOL:
             return self._project_language_resource_from_arguments(arguments)
 
@@ -686,6 +732,36 @@ class ReadToolExecutor:
                 "root_label": _project_ci_root_label(filesystem, target),
                 "max_depth": _project_ci_max_depth(arguments),
                 "limit": _project_ci_limit(arguments),
+                "in_scope": True,
+            }
+        )
+        return resource
+
+    def _project_release_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        root = _project_release_root(arguments)
+        resource: JsonObject = {
+            "type": "project_release",
+            "workspace_id": workspace_id,
+            "root_label": "unresolved",
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(root)
+            if not target.is_dir():
+                raise ReadToolError("project release root is not a directory")
+            _project_release_max_depth(arguments)
+            _project_release_limit(arguments)
+            _project_release_include_categories(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "root_label": _project_release_root_label(filesystem, target),
+                "max_depth": _project_release_max_depth(arguments),
+                "limit": _project_release_limit(arguments),
                 "in_scope": True,
             }
         )
@@ -876,6 +952,8 @@ class ReadToolExecutor:
             return filesystem.project_config_summary(arguments)
         if tool_name == _PROJECT_CI_SUMMARY_TOOL:
             return filesystem.project_ci_summary(arguments)
+        if tool_name == _PROJECT_RELEASE_SUMMARY_TOOL:
+            return filesystem.project_release_summary(arguments)
         if tool_name == _PROJECT_LANGUAGE_SUMMARY_TOOL:
             return filesystem.project_language_summary(arguments)
         raise ReadToolError("unsupported read tool")
@@ -1891,6 +1969,157 @@ class FilesystemReadTools:
             result["skipped_counts"] = cast(JsonObject, skipped_counts)
         return result
 
+    def project_release_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_release_summary_arguments(arguments)
+        root_arg = _project_release_root(arguments)
+        max_depth = _project_release_max_depth(arguments)
+        limit = _project_release_limit(arguments)
+        include_categories = _project_release_include_categories(arguments)
+        root_path = self.resolve_existing_path(root_arg)
+        if not root_path.is_dir():
+            raise ReadToolError("project release root is not a directory")
+
+        release_posture_counts = _zero_count_mapping(_PROJECT_RELEASE_POSTURES)
+        release_location_counts = _zero_count_mapping(_PROJECT_RELEASE_LOCATIONS)
+        release_signal_counts = _zero_count_mapping(_PROJECT_RELEASE_SIGNALS)
+        skipped_counts = _zero_count_mapping(_PROJECT_STRUCTURE_SKIPPED_KEYS)
+        summary: JsonObject = {
+            "visible_release_directory_count": 0,
+            "visible_release_signal_count": 0,
+            "max_observed_depth": 0,
+            "inspected_entry_count": 0,
+        }
+        truncated = False
+        queue: list[tuple[Path, int]] = [(root_path, 0)]
+
+        while queue:
+            directory, depth = queue.pop(0)
+            try:
+                children = sorted(directory.iterdir(), key=lambda item: item.name)
+            except OSError:
+                skipped_counts["safe_error"] += 1
+                continue
+            for child in children:
+                inspected = cast(int, summary["inspected_entry_count"])
+                if inspected >= limit:
+                    skipped_counts["item_limit"] += 1
+                    truncated = True
+                    continue
+                entry_depth = depth + 1
+                if entry_depth > max_depth:
+                    skipped_counts["depth_limit"] += 1
+                    truncated = True
+                    continue
+                summary["inspected_entry_count"] = inspected + 1
+                try:
+                    child.relative_to(self.workspace_root)
+                except ValueError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+                if child.is_symlink():
+                    skipped_counts["symlink"] += 1
+                    continue
+                try:
+                    relative = child.relative_to(self.workspace_root)
+                    if _relative_has_git_internal(relative):
+                        skipped_counts["git_internal"] += 1
+                        continue
+                    _ensure_project_release_relative_parts_safe(relative)
+                    resolved = child.resolve(strict=True)
+                    self._ensure_under_workspace(resolved)
+                    stat_result = resolved.stat()
+                except ReadToolError as exc:
+                    _record_project_structure_skip(skipped_counts, exc.reason)
+                    continue
+                except OSError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+
+                summary["max_observed_depth"] = max(
+                    cast(int, summary["max_observed_depth"]),
+                    entry_depth,
+                )
+                if stat.S_ISDIR(stat_result.st_mode):
+                    if _is_project_release_counted_directory(resolved):
+                        summary["visible_release_directory_count"] = (
+                            cast(int, summary["visible_release_directory_count"]) + 1
+                        )
+                    queue.append((resolved, entry_depth))
+                elif stat.S_ISREG(stat_result.st_mode):
+                    if stat_result.st_nlink > 1:
+                        skipped_counts["hardlink"] += 1
+                        continue
+                    if not _is_project_release_like_file(self, resolved):
+                        continue
+                    try:
+                        text = _project_release_safe_text(self, resolved)
+                    except ReadToolError as exc:
+                        _record_project_structure_skip(skipped_counts, exc.reason)
+                        continue
+                    summary["visible_release_signal_count"] = (
+                        cast(int, summary["visible_release_signal_count"]) + 1
+                    )
+                    release_posture_counts[_project_release_posture_category(self, resolved)] += 1
+                    release_location_counts[_project_release_location(self, resolved)] += 1
+                    for category in _project_release_signal_categories(text):
+                        release_signal_counts[category] += 1
+                else:
+                    skipped_counts["unsupported_type"] += 1
+
+        result: JsonObject = {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_RELEASE_SUMMARY_TOOL,
+            "root_label": _project_release_root_label(self, root_path),
+            "summary": summary,
+            "truncated": truncated,
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_recursive_listing_included": False,
+                "raw_paths_included": False,
+                "raw_file_names_included": False,
+                "release_names_included": False,
+                "version_strings_included": False,
+                "changelog_contents_included": False,
+                "tag_names_included": False,
+                "branch_names_included": False,
+                "package_names_included": False,
+                "dependency_names_included": False,
+                "author_or_maintainer_names_included": False,
+                "email_addresses_included": False,
+                "command_values_included": False,
+                "script_values_included": False,
+                "environment_names_or_values_included": False,
+                "registry_urls_included": False,
+                "git_output_included": False,
+                "ci_output_included": False,
+                "shell_execution_used": False,
+                "git_execution_used": False,
+                "package_manager_execution_used": False,
+                "ci_execution_used": False,
+                "registry_or_network_access_used": False,
+                "deployment_readiness_claims_included": False,
+                "legal_or_compliance_claims_included": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": {
+                "max_depth": max_depth,
+                "entry_limit": limit,
+                "max_release_metadata_bytes": _PROJECT_RELEASE_READ_BYTES,
+                "category_keys_are_allowlisted": True,
+                "release_names_are_suppressed": True,
+                "version_strings_are_suppressed": True,
+            },
+        }
+        if "release_posture_counts" in include_categories:
+            result["release_posture_counts"] = cast(JsonObject, release_posture_counts)
+        if "release_location_counts" in include_categories:
+            result["release_location_counts"] = cast(JsonObject, release_location_counts)
+        if "release_signal_counts" in include_categories:
+            result["release_signal_counts"] = cast(JsonObject, release_signal_counts)
+        if "skipped_counts" in include_categories:
+            result["skipped_counts"] = cast(JsonObject, skipped_counts)
+        return result
+
     def resolve_existing_path(self, path: str) -> Path:
         if not path:
             path = "."
@@ -2762,6 +2991,17 @@ def _validate_project_ci_summary_arguments(arguments: JsonObject) -> None:
     _project_ci_include_categories(arguments)
 
 
+def _validate_project_release_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "max_depth", "limit", "include_categories"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project release summary received unsupported arguments")
+    _project_release_root(arguments)
+    _project_release_max_depth(arguments)
+    _project_release_limit(arguments)
+    _project_release_include_categories(arguments)
+
+
 def _project_manifest_root(arguments: JsonObject) -> str:
     root = _string_arg(arguments, "root", default=".")
     if not root:
@@ -3056,6 +3296,49 @@ def _project_ci_include_categories(arguments: JsonObject) -> list[str]:
     return categories
 
 
+def _project_release_root(arguments: JsonObject) -> str:
+    root = _string_arg(arguments, "root", default=".")
+    if not root:
+        raise ReadToolError("project release root must be a non-empty string")
+    return root
+
+
+def _project_release_max_depth(arguments: JsonObject) -> int:
+    max_depth = _int_arg(arguments, "max_depth", default=_PROJECT_RELEASE_DEFAULT_DEPTH)
+    if max_depth < 0 or max_depth > _PROJECT_RELEASE_MAX_DEPTH:
+        raise ReadToolError("project release max_depth is outside allowed bounds")
+    return max_depth
+
+
+def _project_release_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_PROJECT_RELEASE_DEFAULT_LIMIT)
+    if limit < 1 or limit > _PROJECT_RELEASE_MAX_LIMIT:
+        raise ReadToolError("project release limit is outside allowed bounds")
+    return limit
+
+
+def _project_release_include_categories(arguments: JsonObject) -> list[str]:
+    raw = arguments.get("include_categories")
+    if raw is None:
+        return list(_PROJECT_RELEASE_SECTIONS)
+    if not isinstance(raw, list):
+        raise ReadToolError("include_categories must be an array")
+    categories: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            raise ReadToolError("include_categories entries must be strings")
+        if item not in _PROJECT_RELEASE_SECTIONS:
+            raise ReadToolError("project release category is not allowlisted")
+        if item in seen:
+            raise ReadToolError("include_categories entries must be unique")
+        seen.add(item)
+        categories.append(item)
+    if not categories:
+        raise ReadToolError("include_categories must not be empty")
+    return categories
+
+
 def _project_test_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
     if root_path == filesystem.workspace_root:
         return "workspace_root"
@@ -3081,6 +3364,12 @@ def _project_config_root_label(filesystem: FilesystemReadTools, root_path: Path)
 
 
 def _project_ci_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
+    if root_path == filesystem.workspace_root:
+        return "workspace_root"
+    return "scoped_root"
+
+
+def _project_release_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
     if root_path == filesystem.workspace_root:
         return "workspace_root"
     return "scoped_root"
@@ -3700,6 +3989,110 @@ def _project_ci_job_categories(text: str) -> set[str]:
         categories.add("release_label")
     if not categories:
         categories.add("unknown_job")
+    return categories
+
+
+def _ensure_project_release_relative_parts_safe(relative: Path) -> None:
+    for part in relative.parts:
+        lowered = part.lower()
+        if part.startswith("."):
+            raise ReadToolError("path is hidden or sensitive")
+        if lowered in _SENSITIVE_EXACT_PATH_PARTS or any(
+            marker in lowered for marker in _SENSITIVE_PATH_MARKERS
+        ):
+            raise ReadToolError("path is hidden or sensitive")
+
+
+def _is_project_release_counted_directory(path: Path) -> bool:
+    return path.name.lower() in _PROJECT_RELEASE_DIR_NAMES
+
+
+def _is_project_release_like_file(filesystem: FilesystemReadTools, path: Path) -> bool:
+    if path.suffix.lower() not in _PROJECT_RELEASE_FILE_SUFFIXES:
+        return False
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return False
+    lowered_name = path.name.lower()
+    lowered_parts = [part.lower() for part in relative.parts]
+    if any(token in lowered_name for token in ("release", "changelog", "changes", "version")):
+        return True
+    return any(part in _PROJECT_RELEASE_DIR_NAMES for part in lowered_parts[:-1])
+
+
+def _project_release_posture_category(filesystem: FilesystemReadTools, path: Path) -> str:
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return "safe_unknown"
+    lowered_name = path.name.lower()
+    lowered_parts = [part.lower() for part in relative.parts]
+    if "changelog" in lowered_name or lowered_name.startswith("changes"):
+        return "changelog_category"
+    if "release-note" in lowered_name or "release_note" in lowered_name:
+        return "release_note_category"
+    if "version" in lowered_name:
+        return "version_marker_category"
+    if any(
+        part in {"ci", "workflow", "workflows", "automation", "automations"}
+        for part in lowered_parts
+    ):
+        return "release_automation_category"
+    if "release" in lowered_name or any(
+        part in _PROJECT_RELEASE_DIR_NAMES for part in lowered_parts
+    ):
+        return "release_config"
+    return "safe_unknown"
+
+
+def _project_release_location(filesystem: FilesystemReadTools, path: Path) -> str:
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return "unknown_location"
+    lowered_parts = [part.lower() for part in relative.parts]
+    if len(relative.parts) == 1:
+        return "root_level"
+    if any(part in _PROJECT_RELEASE_DIR_NAMES for part in lowered_parts):
+        return "release_directory"
+    if any(part in _PROJECT_DOCS_DIR_NAMES for part in lowered_parts):
+        return "docs_directory"
+    if any(part in _PROJECT_CONFIG_DIR_NAMES for part in lowered_parts):
+        return "config_directory"
+    if any(part in {"ci", "workflow", "workflows"} for part in lowered_parts):
+        return "ci_directory"
+    if any(part in (_PROJECT_SOURCE_DIR_NAMES | _PROJECT_TEST_DIR_NAMES) for part in lowered_parts):
+        return "source_adjacent"
+    return "unknown_location"
+
+
+def _project_release_safe_text(filesystem: FilesystemReadTools, path: Path) -> str:
+    data = filesystem.read_file_bytes(path)
+    if len(data) > _PROJECT_RELEASE_READ_BYTES:
+        raise ReadToolError("file exceeds configured read limit")
+    if b"\x00" in data:
+        raise ReadToolError("file appears to be binary")
+    try:
+        return data.decode("utf-8").lower()
+    except UnicodeDecodeError as exc:
+        raise ReadToolError("file is not valid UTF-8 text") from exc
+
+
+def _project_release_signal_categories(text: str) -> set[str]:
+    categories: set[str] = set()
+    if "changelog" in text or re.search(r"\bchanges\b", text):
+        categories.add("changelog_signal")
+    if "release note" in text or "release_note" in text or "release-notes" in text:
+        categories.add("release_note_signal")
+    if "version" in text or re.search(r"\bv?\d+\.\d+(\.\d+)?\b", text):
+        categories.add("version_marker_signal")
+    if re.search(r"\b(release|publish|deploy|tag)\b", text):
+        categories.add("automation_signal")
+    if "release" in text:
+        categories.add("release_config_signal")
+    if not categories:
+        categories.add("safe_unknown_signal")
     return categories
 
 

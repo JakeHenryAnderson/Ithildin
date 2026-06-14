@@ -1,10 +1,11 @@
 # v3 project.release.summary Implementation Decision
 
-Status: approved limited read-only implementation boundary, but runtime not yet implemented.
-This decision records the narrow future boundary for `project.release.summary`; it does not add a
-tool manifest, executor, policy rule, API/MCP behavior, UI behavior, approval behavior, audit
-behavior, or runtime behavior in this sprint. Tool count remains `21` until a future
-implementation commit.
+Status: approved limited read-only implementation boundary; runtime is implemented.
+This decision records the narrow implemented boundary for `project.release.summary`. It approves
+exactly one bounded read-only manifest and executor path, with governed MCP exposure, policy
+preview/runtime resource parity, and count-only audit metadata. It does not approve additional
+policy rules, API behavior, UI behavior, approval behavior, broad traversal, execution behavior, or
+future runtime changes outside this fixed surface. Tool count is `22`.
 
 `project.release.summary` is approved only as a count-oriented local project release metadata
 capability. It remains a narrow continuation of the read-only local metadata lane, not a new
@@ -12,13 +13,13 @@ powerful tool class.
 
 ## Approved Boundary
 
-The approved boundary is limited to a future bounded read-only runtime implementation that may add
-exactly one manifest and executor only if all listed constraints continue to hold:
+The approved boundary is limited to the bounded read-only runtime implementation that added exactly
+one manifest and executor while all listed constraints continue to hold:
 
 - tool name: `project.release.summary`;
 - risk: `read`;
 - category: `project`;
-- proposed resource type: `project_release`;
+- resource type: `project_release`;
 - input schema: closed object with `workspace_id`, `root`, `max_depth`, `limit`, and optional safe
   category filters;
 - output schema: count-only release posture labels, skipped counts, limit metadata, and
@@ -30,7 +31,7 @@ exactly one manifest and executor only if all listed constraints continue to hol
 
 ## Required Non-Goals
 
-Future runtime work must preserve these non-goals:
+Runtime behavior must preserve these non-goals:
 
 - no release names;
 - no version strings that reveal cadence;
@@ -55,7 +56,7 @@ Future runtime work must preserve these non-goals:
 
 ## Future Implementation Evidence
 
-If the later bounded runtime sprint is approved, it must provide:
+The bounded runtime implementation provides:
 
 - closed input schema evidence;
 - workspace confinement evidence;
@@ -72,15 +73,13 @@ If the later bounded runtime sprint is approved, it must provide:
 
 ## Implementation State
 
-Implementation state: blocked in this sprint.
+Implementation state: implemented under this boundary.
 
-This decision approves only the limited read-only boundary above. Runtime changes outside this
-fixed surface are not allowed without a later explicit implementation sprint and source review.
+This decision approves only the limited read-only boundary above. Future runtime changes outside
+this fixed surface are not allowed without a later explicit implementation sprint and source review.
 
-Current gate behavior: preimplementation guard remains active. While
+Current gate behavior: implementation-aware guard is active. While
 `make project-release-summary-preimplementation-check` and
 `make project-release-summary-implementation-gate` are wired into `make release-check`, the gate
-must fail closed if a `project.release.summary` manifest, manifest-lock entry, or runtime helper is
-added. The next runtime sprint must explicitly retire or replace this preimplementation guard as
-part of the implementation checkpoint before adding runtime source. Do not delegate
-`project.release.summary` runtime source to a low implementer while this gate is active.
+must require the `project.release.summary` manifest, manifest-lock entry, runtime helper, resource
+parity, and no-new-powers evidence. A low implementer must not alter this runtime surface.

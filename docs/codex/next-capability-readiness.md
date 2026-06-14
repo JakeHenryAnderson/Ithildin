@@ -6,8 +6,9 @@ tool manifests, policy rules, MCP exposure, API behavior, UI behavior, or new go
 This checkpoint exists because the first bounded read-only metadata lanes are now implemented:
 `git.show.commit_metadata`, `git.show.ref_summary`, `git.show.tag_metadata`,
 `project.manifest.summary`, `project.dependency.summary`, `project.structure.summary`,
-`project.test.summary`, `project.docs.summary`, `project.language.summary`, and
-`project.config.summary`, plus `project.ci.summary`. The historical candidate records still show
+`project.test.summary`, `project.docs.summary`, `project.language.summary`,
+`project.config.summary`, `project.ci.summary`, and `project.release.summary`. The historical
+candidate records still show
 how each bounded metadata tool advanced through proposal, implementation planning, implementation
 decision, source-review handoff, and local lane closure.
 
@@ -16,19 +17,17 @@ decision, source-review handoff, and local lane closure.
 - Current approved read-only metadata inventory: `git.show.commit_metadata`,
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
-  `project.docs.summary`, `project.language.summary`, and `project.config.summary`, plus
-  `project.ci.summary`.
-- Current tool count: `21`.
-- Selected candidate: `project.release.summary`.
-- Selected candidate status: design-only selected.
-- Proposal and implementation plan: complete.
-- Selected candidate implementation: blocked; implementation decision recorded, runtime not implemented.
-- Preimplementation fixture/test contract: recorded for `project.release.summary`.
-- Active gate note: the preimplementation guard intentionally rejects `project.release.summary`
-  manifest or runtime source until a later explicit implementation checkpoint replaces that guard.
-- Implementation transition checklist: recorded for the later manager-owned runtime sprint.
-- Future source-review handoff: recorded for `project.release.summary`.
-- Future source-review bundle: recorded for `project.release.summary`.
+  `project.docs.summary`, `project.language.summary`, `project.config.summary`,
+  `project.ci.summary`, and `project.release.summary`.
+- Current tool count: `22`.
+- Selected candidate: `not selected`.
+- Selected candidate status: pending selection.
+- Most recent implemented candidate: `project.release.summary`.
+- Most recent implementation: approved bounded read-only runtime implementation complete.
+- Fixture/test contract: retained for `project.release.summary`.
+- Implementation transition checklist: completed for `project.release.summary`.
+- Source-review handoff: recorded for `project.release.summary`.
+- Source-review bundle: recorded for `project.release.summary`.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
 
@@ -64,14 +63,11 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 ## Gate
 
 The most recent capability,
-[project.ci.summary](capability-proposals/project-ci-summary.md), has advanced through proposal,
-implementation planning, implementation decision, runtime implementation, and source-review handoff
-as one bounded read-only metadata tool. The next bounded candidate is
-[project.release.summary](v3-project-release-summary-selection.md), with proposal work and
-implementation planning complete, an implementation decision recorded, and runtime still blocked.
-The current release gate is deliberately preimplementation-only: it must fail if a manifest,
-manifest-lock entry, or runtime helper for `project.release.summary` appears before the next
-explicit implementation checkpoint updates the gate.
+[project.release.summary](capability-proposals/project-release-summary.md), has advanced through
+proposal, implementation planning, implementation decision, runtime implementation, and
+source-review handoff as one bounded read-only metadata tool. No next bounded candidate is selected
+yet. The current release gate must continue to prove the implemented release-summary surface remains
+count-only, read-only, and source-review ready before any later candidate begins.
 
 Run:
 
@@ -79,7 +75,6 @@ Run:
 make next-capability-readiness
 make project-release-summary-proposal-check
 make project-release-summary-implementation-plan-check
-make project-release-summary-preimplementation-check
 make project-release-summary-implementation-gate
 make project-release-summary-transition-check
 make project-release-summary-review-handoff-check

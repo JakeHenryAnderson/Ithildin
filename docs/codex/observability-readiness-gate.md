@@ -28,7 +28,7 @@ The gate composes:
 
 The expected result is:
 
-- tool count remains `21`;
+- tool count remains `22`;
 - Agent Run evidence remains secret-free;
 - sandbox/workspace posture remains operator-managed and design/evidence-only;
 - SIEM-shaped evidence remains export-design-only with no adapters;

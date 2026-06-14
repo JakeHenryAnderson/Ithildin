@@ -60,14 +60,14 @@ REQUIRED_PHRASES = [
     "External/source Review Requirement",
 ]
 SELECTION_PHRASES = [
-    "Status: design-only candidate selection",
+    "Status: historical candidate selection; implemented",
     "project.release.summary",
-    "tool count remains `21`",
-    "implementation remains blocked",
+    "tool count remains `22`",
+    "Selected candidate status: implemented bounded read-only",
     "make project-release-summary-proposal-check",
     "make project-release-summary-implementation-plan-check",
     "make project-release-summary-design-review-packet",
-    "design-only selected",
+    "historical planning evidence",
 ]
 FORBIDDEN_PHRASES = [
     "implementation allowed",

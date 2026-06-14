@@ -194,27 +194,25 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             if scenario not in scenario_names:
                 failures.append(f"fixture artifact is missing scenario: {scenario}")
 
-    if implementation_gate.get("runtime_implemented") is not False:
-        failures.append("implementation gate must report runtime_implemented: false")
-    if implementation_gate.get("future_runtime_implementation_allowed") is not True:
-        failures.append("implementation gate must keep future_runtime_implementation_allowed true")
-    if implementation_gate.get("tool_count") != 21:
-        failures.append("implementation gate tool count is not 21")
-    if tool_surface.get("tool_count") != 21:
-        failures.append("tool surface tool count is not 21")
+    if implementation_gate.get("runtime_implemented") is not True:
+        failures.append("implementation gate must report runtime_implemented: true")
+    if implementation_gate.get("future_runtime_implementation_allowed") is not False:
+        failures.append("implementation gate must close future_runtime_implementation_allowed")
+    if implementation_gate.get("tool_count") != 22:
+        failures.append("implementation gate tool count is not 22")
+    if tool_surface.get("tool_count") != 22:
+        failures.append("tool surface tool count is not 22")
     if no_new_powers.get("new_power_classes_allowed") is not False:
         failures.append("no-new-powers guardrail allows new power classes")
-    if (repo_root / "tool-manifests/project-release-summary.yaml").exists():
-        failures.append("project.release.summary manifest already exists")
 
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "proposal": "project.release.summary",
-        "scope": "preimplementation_fixture_contract",
-        "implementation_allowed": False,
-        "runtime_changes_allowed": False,
+        "scope": "fixture_contract_after_implementation",
+        "implementation_allowed": True,
+        "runtime_changes_allowed": True,
         "proposal_valid": proposal["valid"],
         "implementation_plan_valid": implementation_plan["valid"],
         "implementation_gate_runtime_implemented": implementation_gate.get("runtime_implemented"),
@@ -240,12 +238,12 @@ def render_report(report: dict[str, Any]) -> str:
         "Ithildin project.release.summary preimplementation check",
         f"valid: {str(report['valid']).lower()}",
         "proposal: project.release.summary",
-        "scope: preimplementation_fixture_contract",
-        "implementation_allowed: false",
-        "runtime_changes_allowed: false",
+        "scope: fixture_contract_after_implementation",
+        "implementation_allowed: true",
+        "runtime_changes_allowed: true",
         f"tool_count: {report.get('tool_count', 'unknown')}",
-        "runtime_implemented: false",
-        "future_runtime_implementation_allowed: true",
+        "runtime_implemented: true",
+        "future_runtime_implementation_allowed: false",
         "new_power_classes_allowed: false",
     ]
     if report["failures"]:

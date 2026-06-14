@@ -16,7 +16,7 @@ from scripts import read_only_capability_inventory_gate
 ROOT = Path(__file__).resolve().parents[1]
 DOC_PATH = ROOT / "docs/codex/v3-next-capability-candidate-evaluation-2.md"
 REQUIRED_PHRASES = [
-    "Status: planning-only candidate evaluation",
+    "Status: historical planning-only candidate evaluation",
     "does not add a tool manifest",
     "does not add an executor",
     "does not add policy rules",
@@ -27,10 +27,10 @@ REQUIRED_PHRASES = [
     "project.release.summary",
     "project.license.summary",
     "project.ownership.summary",
-    "tool count remains `21`",
-    "selected next candidate is `project.release.summary`",
-    "proposal work may proceed",
-    "implementation remains blocked",
+    "tool count remains `22`",
+    "historical selected candidate was `project.release.summary`",
+    "proposal and implementation work completed",
+    "no next candidate is selected",
     "Intended Safe Value",
     "Proposed Resource Type",
     "Safe Output Labels/Counts Only",
@@ -109,10 +109,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if "v3 Next Capability Candidate Evaluation 2" not in index:
         failures.append("review docs index is missing the planning gate doc")
     for phrase in [
-        "Status: design-only candidate selection",
+        "Status: historical candidate selection; implemented",
         "project.release.summary",
-        "tool count remains `21`",
-        "implementation remains blocked",
+        "tool count remains `22`",
+        "runtime implementation is now present",
         "make project-release-summary-proposal-check",
         "make project-release-summary-implementation-plan-check",
         "make project-release-summary-design-review-packet",
@@ -125,8 +125,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "tool_count": inventory.get("tool_count"),
-        "next_candidate": "project.release.summary",
-        "selection_status": "design_only_selected",
+        "next_candidate": "not selected",
+        "selection_status": "pending_selection",
         "implementation_allowed": False,
     }
 

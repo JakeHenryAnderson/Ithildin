@@ -93,12 +93,6 @@ def build_bundle(
             "working tree is dirty; commit before source-review handoff"
         )
 
-    runtime_manifest = repo_root / "tool-manifests/project-release-summary.yaml"
-    if runtime_manifest.exists():
-        raise ProjectReleaseSummarySourceReviewBundleError(
-            "runtime implementation exists unexpectedly; refresh the bundle contract first"
-        )
-
     proposal = project_release_summary_proposal_check.build_report(repo_root)
     plan = project_release_summary_preimplementation_check.build_report(repo_root)
     implementation_gate = project_release_summary_implementation_gate.build_report(repo_root)
@@ -180,10 +174,10 @@ def _require_project_root(repo_root: Path) -> None:
 def _index(context: dict[str, Any]) -> str:
     return f"""# project.release.summary Source Review Handoff
 
-Status: future source-review handoff placeholder.
+Status: implemented source-review handoff.
 
-This packet is a preimplementation review bundle only. It does not claim runtime source exists,
-and it cannot close the lane yet because runtime implementation remains absent.
+This packet prepares the implemented bounded read-only `project.release.summary` lane for focused
+source review. It does not close the lane without reviewer disposition.
 
 ## Boundary
 
@@ -192,7 +186,7 @@ and it cannot close the lane yet because runtime implementation remains absent.
 - Capability: `project.release.summary`.
 - Resource type: `project_release`.
 - Tool count: `{context["tool_surface"]["tool_count"]}`.
-- Runtime implementation: absent.
+- Runtime implementation: present.
 - Finding namespace: `EXT-RELEASE-SUMMARY-###`.
 
 ## Attachments
@@ -210,23 +204,23 @@ and it cannot close the lane yet because runtime implementation remains absent.
 
 ## Closure Note
 
-The lane remains blocked until a future runtime implementation exists and a real source-review
-bundle can be built from implementation source, tests, policy parity, and audit evidence.
+The lane remains source-review pending until a focused reviewer reviews implementation source,
+tests, policy parity, audit evidence, and no-new-powers evidence.
 """
 
 
 def _prompt(context: dict[str, Any]) -> str:
     return f"""# project.release.summary Source Review Prompt
 
-This is a future source-review placeholder for `project.release.summary`. Review the attached
-proposal, implementation plan, implementation boundary, fixture plan, negative-transcript plan,
-review handoff doc, and gate evidence. Do not expect runtime source in this packet.
+This is the source-review handoff for the implemented bounded read-only `project.release.summary`
+lane. Review the attached proposal, implementation plan, implementation boundary, fixture plan,
+negative-transcript plan, review handoff doc, and gate evidence.
 
 Reviewed commit: `{context["commit"]}`
 Finding namespace: `EXT-RELEASE-SUMMARY-###`
 
-Please confirm whether the future lane stays within the approved limited read-only boundary and
-why the lane still cannot close yet. The runtime implementation remains absent in this packet.
+Please confirm whether the implemented lane stays within the approved limited read-only boundary
+and whether any `EXT-RELEASE-SUMMARY-###` findings block local-preview source-review disposition.
 """
 
 

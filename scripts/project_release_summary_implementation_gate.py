@@ -22,12 +22,12 @@ IMPLEMENTATION_DOC = ROOT / "docs/codex/v3-project-release-summary-implementatio
 REQUIRED_DOC_PHRASES = [
     "project.release.summary",
     "approved limited read-only implementation boundary",
-    "runtime not yet implemented",
-    "tool count remains `21`",
+    "runtime is implemented",
+    "tool count is `22`",
     "tool name: `project.release.summary`",
     "risk: `read`",
     "category: `project`",
-    "proposed resource type: `project_release`",
+    "resource type: `project_release`",
     "closed object",
     "workspace_id",
     "root",
@@ -59,13 +59,12 @@ REQUIRED_DOC_PHRASES = [
     "no compliance claims",
     "no broad recursive listing",
     "no new powerful tool class",
-    "Implementation state: blocked in this sprint",
-    "Current gate behavior: preimplementation guard remains active",
-    "low implementer while this gate is active",
+    "Implementation state: implemented under this boundary",
+    "Current gate behavior: implementation-aware guard is active",
+    "low implementer must not alter this runtime surface",
 ]
 FORBIDDEN_DOC_PHRASES = [
-    "runtime is implemented",
-    "runtime changes are allowed",
+    "future runtime changes are allowed",
     "broad recursive listing is approved",
     "package-manager execution is approved",
     "network access is approved",
@@ -115,30 +114,30 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     runtime_source = (repo_root / "apps/api/src/ithildin_api/read_tools.py").read_text(
         encoding="utf-8"
     )
-    if manifest_path.exists():
-        failures.append("project.release.summary manifest already exists")
-    if "project-release-summary" in manifest_lock:
-        failures.append("project.release.summary manifest lock was updated")
+    if not manifest_path.exists():
+        failures.append("project.release.summary manifest is missing")
+    if "project-release-summary" not in manifest_lock:
+        failures.append("project.release.summary manifest lock entry is missing")
     if (
-        "def project_release_summary(" in runtime_source
-        or "_validate_project_release_summary" in runtime_source
+        "def project_release_summary(" not in runtime_source
+        or "_validate_project_release_summary" not in runtime_source
     ):
-        failures.append("project.release.summary runtime implementation already exists")
+        failures.append("project.release.summary runtime implementation is missing")
 
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "tool_name": "project.release.summary",
-        "implementation_status": "approved_limited_read_only",
+        "implementation_status": "implemented_limited_read_only",
         "risk": "read",
         "category": "project",
-        "proposed_resource_type": "project_release",
+        "resource_type": "project_release",
         "tool_count": tool_surface.get("tool_count"),
         "new_power_classes_allowed": False,
-        "runtime_changes_allowed": False,
-        "runtime_implemented": False,
-        "future_runtime_implementation_allowed": True,
+        "runtime_changes_allowed": True,
+        "runtime_implemented": True,
+        "future_runtime_implementation_allowed": False,
         "deferred_boundaries_unchanged": no_new_powers.get("deferred_boundaries_unchanged"),
     }
 
@@ -151,12 +150,12 @@ def render_report(report: dict[str, Any]) -> str:
         f"implementation_status: {report['implementation_status']}",
         f"risk: {report['risk']}",
         f"category: {report['category']}",
-        f"proposed_resource_type: {report['proposed_resource_type']}",
+        f"resource_type: {report['resource_type']}",
         f"tool_count: {report['tool_count']}",
         f"new_power_classes_allowed: {str(report['new_power_classes_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"runtime_implemented: {str(report['runtime_implemented']).lower()}",
-        f"future_runtime_implementation_allowed: "
+        "future_runtime_implementation_allowed: "
         f"{str(report['future_runtime_implementation_allowed']).lower()}",
     ]
     if report["failures"]:

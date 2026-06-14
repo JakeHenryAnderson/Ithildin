@@ -172,9 +172,9 @@ def _require_project_root(repo_root: Path) -> None:
 def _index(context: dict[str, Any]) -> str:
     return f"""# project.release.summary Design Review Packet
 
-This packet asks for design review of the next proposed read-only local metadata capability. It
-does not approve implementation.
-It now also includes the future source-review handoff doc,
+This packet records the design-review lineage and source-review handoff for the implemented
+bounded read-only local metadata capability. It does not approve additional implementation.
+It now also includes the implemented source-review handoff doc,
 `docs/codex/v3-project-release-summary-source-review.md`, the negative transcript plan,
 `docs/codex/project-release-summary-negative-transcripts.md`, and review-handoff-check JSON
 evidence for the same bounded lane.
@@ -184,8 +184,8 @@ evidence for the same bounded lane.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Capability: `project.release.summary`.
-- Scope: design-only proposal and implementation-planning packet.
-- Implementation status: blocked in this sprint.
+- Scope: implemented bounded read-only source-review handoff.
+- Implementation status: implemented bounded read-only.
 - Tool count: `{context["no_new_powers"]["tool_count"]}`.
 - New governed tool powers: no-go.
 
@@ -226,7 +226,7 @@ def _prompt(context: dict[str, Any]) -> str:
 This packet is for both internal and external source review of Ithildin's next design-only
 read-only capability proposal. Treat this as review only. Do not approve implementation in this
 review. At most, say whether a later implementation-boundary sprint may be considered. The packet
-now also includes the future source-review handoff doc, negative-transcript plan, and
+now also includes the implemented source-review handoff doc, negative-transcript plan, and
 review-handoff-check evidence for the same bounded lane.
 
 Reviewed commit: `{context["commit"]}`

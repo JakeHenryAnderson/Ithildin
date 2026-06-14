@@ -30,7 +30,7 @@ The workbench should let a local operator answer four questions without reading 
 - `GET /runs/{run_id}/evidence-export` exports a bounded, read-only run evidence bundle.
 - `docs/codex/read-only-project-intelligence.md` explains the eleven-tool project-intelligence
   family as orientation evidence, while `docs/codex/read-only-capability-inventory.md` maps that
-  family back to the full 21-tool governed surface, policy resources, gates, and source-review
+  family back to the full 22-tool governed surface, policy resources, gates, and source-review
   handoffs.
 - `make operator-sandbox-demo-packet` records the operator-managed sandbox/workspace story.
 - `make agent-run-correlation-packet` records the run-to-tool/audit/approval correlation story.
@@ -144,7 +144,7 @@ or deployment/compliance readiness.
   `WORKBENCH_DEMO_SMOKE.md` are wired;
 - release-check includes the workbench readiness gate;
 - review-candidate includes the focused demo evidence closure packet;
-- tool count remains `21`;
+- tool count remains `22`;
 - no-new-powers and tool-surface guardrails still pass;
 - the review console still exposes Agent Runs, summaries, timeline evidence, and Export Run
   Evidence;

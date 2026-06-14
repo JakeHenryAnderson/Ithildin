@@ -416,6 +416,48 @@ input_schema:
     )
 
 
+def write_project_release_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("project-release-summary.yaml").write_text(
+        """
+name: project.release.summary
+version: 1.0.0
+title: Summarize project release posture
+risk: read
+category: project
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root:
+      type: string
+    max_depth:
+      type: integer
+      minimum: 0
+      maximum: 5
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 300
+    include_categories:
+      type: array
+      items:
+        type: string
+        enum:
+          - release_posture_counts
+          - release_location_counts
+          - release_signal_counts
+          - skipped_counts
+    workspace_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 @dataclass(frozen=True)
 class McpAdapterHarness:
     adapter: IthildinMcpAdapter
@@ -445,6 +487,7 @@ def make_adapter_harness(
     write_project_ci_summary_manifest(manifest_dir)
     write_project_dependency_summary_manifest(manifest_dir)
     write_project_manifest_summary_manifest(manifest_dir)
+    write_project_release_summary_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
         """
 name: internal.hidden
@@ -576,6 +619,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "project.ci.summary",
         "project.dependency.summary",
         "project.manifest.summary",
+        "project.release.summary",
     ]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
 
@@ -609,6 +653,7 @@ principals:
         "project.ci.summary",
         "project.dependency.summary",
         "project.manifest.summary",
+        "project.release.summary",
     ]
 
 
@@ -788,6 +833,37 @@ def test_mcp_call_returns_real_project_ci_summary_output(tmp_path: Path) -> None
     dumped = json.dumps(result.structuredContent)
     assert "release.yml" not in dumped
     assert "Private Release" not in dumped
+
+
+def test_mcp_call_returns_real_project_release_summary_output(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+    workspace = tmp_path / "workspace"
+    workspace.joinpath("CHANGELOG.md").write_text(
+        "Private Version 3.2.1 release notes\n",
+        encoding="utf-8",
+    )
+
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "project.release.summary",
+            {"root": ".", "max_depth": 4, "limit": 20},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert cast(dict[str, object], result.structuredContent["summary"])[
+        "visible_release_signal_count"
+    ] == 1
+    output_policy = cast(dict[str, object], result.structuredContent["output_policy"])
+    assert output_policy["release_names_included"] is False
+    assert output_policy["version_strings_included"] is False
+    assert output_policy["git_execution_used"] is False
+    dumped = json.dumps(result.structuredContent)
+    assert "CHANGELOG" not in dumped
+    assert "3.2.1" not in dumped
+    assert "Private" not in dumped
     assert "pytest" not in dumped
     assert "--token secret" not in dumped
 

@@ -33,6 +33,7 @@ APPROVED_TOOLS = [
     "project.language.summary",
     "project.config.summary",
     "project.ci.summary",
+    "project.release.summary",
 ]
 REQUIRED_DOC_PHRASES = [
     "Status: consolidated local-preview product slice",
@@ -49,10 +50,10 @@ REQUIRED_DOC_PHRASES = [
     "project.config.summary",
     "project.ci.summary",
     "project.release.summary",
-    "Tool count: `21`",
-    "Selected candidate: `project.release.summary`",
-    "Selected candidate status: design-only selected",
-    "Implementation boundary: approved limited read-only, runtime not yet implemented",
+    "Tool count: `22`",
+    "Selected candidate: `not selected`",
+    "Selected candidate status: pending selection",
+    "Most recent implementation: `project.release.summary`, approved bounded read-only runtime",
     "Broader capability expansion remains blocked",
     "New powerful tool classes remain blocked",
     "No file contents",

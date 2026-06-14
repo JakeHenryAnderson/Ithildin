@@ -1,4 +1,4 @@
-"""Validate the project.release.summary future source-review handoff wiring."""
+"""Validate the project.release.summary source-review handoff wiring."""
 
 from __future__ import annotations
 
@@ -96,25 +96,24 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     fixture_path = repo_root / FIXTURE_PLAN_DOC.relative_to(ROOT)
 
     if not source_review_path.exists():
-        failures.append("future source-review handoff doc is missing")
+        failures.append("implemented source-review handoff doc is missing")
     else:
         source_text = source_review_path.read_text(encoding="utf-8")
         for phrase in [
-            "Status: future source-review handoff, implementation not present",
+            "Status: source-review handoff for implemented bounded read-only lane",
             "project.release.summary",
             "Resource type: `project_release`",
-            "Current tool count remains `21`",
-            "Runtime implementation remains absent",
+            "Current tool count remains `22`",
+            "Runtime implementation is present",
             "Finding namespace: `EXT-RELEASE-SUMMARY-###`",
-            "manifest/schema shape, once added",
-            "workspace traversal and path safety, once implemented",
+            "manifest/schema shape",
+            "workspace traversal and path safety",
             "category allowlist and skipped-count behavior",
             "policy preview/runtime resource parity",
             "MCP governed path",
             "audit metadata count-only behavior",
             "no-new-powers evidence",
-            "This lane cannot close until a future runtime implementation and focused "
-            "source-review bundle exist",
+            "This lane remains source-review pending until a focused reviewer disposition exists",
         ]:
             if phrase not in source_text:
                 failures.append(f"source-review handoff doc is missing phrase: {phrase}")
@@ -138,20 +137,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("fixture plan doc is missing")
 
     if not (repo_root / "tool-manifests/project-release-summary.yaml").exists():
-        pass
-    else:
-        failures.append("project.release.summary manifest already exists")
+        failures.append("project.release.summary manifest is missing")
 
-    if implementation_gate.get("runtime_implemented") is not False:
-        failures.append("implementation gate must report runtime_implemented: false")
-    if implementation_gate.get("future_runtime_implementation_allowed") is not True:
+    if implementation_gate.get("runtime_implemented") is not True:
+        failures.append("implementation gate must report runtime_implemented: true")
+    if implementation_gate.get("future_runtime_implementation_allowed") is not False:
         failures.append(
-            "implementation gate must keep future_runtime_implementation_allowed true"
+            "implementation gate must close future_runtime_implementation_allowed"
         )
-    if implementation_gate.get("tool_count") != 21:
-        failures.append("implementation gate tool count is not 21")
-    if tool_surface.get("tool_count") != 21:
-        failures.append("tool surface tool count is not 21")
+    if implementation_gate.get("tool_count") != 22:
+        failures.append("implementation gate tool count is not 22")
+    if tool_surface.get("tool_count") != 22:
+        failures.append("tool surface tool count is not 22")
     if no_new_powers.get("new_power_classes_allowed") is not False:
         failures.append("no-new-powers guardrail allows new power classes")
 
@@ -182,17 +179,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("tool-manifests.lock.json is missing")
     else:
         lockfile = (repo_root / "tool-manifests.lock.json").read_text(encoding="utf-8")
-        if "project-release-summary" in lockfile:
-            failures.append("project.release.summary manifest lock was unexpectedly updated")
+        if "project-release-summary" not in lockfile:
+            failures.append("project.release.summary manifest lock entry is missing")
 
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "proposal": "project.release.summary",
-        "scope": "future_source_review_handoff",
-        "implementation_allowed": False,
-        "runtime_changes_allowed": False,
+        "scope": "implemented_source_review_handoff",
+        "implementation_allowed": True,
+        "runtime_changes_allowed": True,
         "runtime_implemented": implementation_gate.get("runtime_implemented"),
         "future_runtime_implementation_allowed": implementation_gate.get(
             "future_runtime_implementation_allowed"
@@ -217,9 +214,9 @@ def render_report(report: dict[str, Any]) -> str:
         "Ithildin project.release.summary review-handoff check",
         f"valid: {str(report['valid']).lower()}",
         "proposal: project.release.summary",
-        "scope: future_source_review_handoff",
-        "implementation_allowed: false",
-        "runtime_changes_allowed: false",
+        "scope: implemented_source_review_handoff",
+        "implementation_allowed: true",
+        "runtime_changes_allowed: true",
         f"tool_count: {report.get('tool_count', 'unknown')}",
         f"runtime_implemented: {str(report.get('runtime_implemented')).lower()}",
         "future_runtime_implementation_allowed: "

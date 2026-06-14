@@ -2029,6 +2029,161 @@ def test_project_ci_summary_rejects_unsupported_arguments(tmp_path: Path) -> Non
             filesystem.project_ci_summary(cast(JsonObject, arguments))
 
 
+def test_project_release_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    root.joinpath("CHANGELOG.md").write_text(
+        "ClientX Version 9.8.7 private release notes\n",
+        encoding="utf-8",
+    )
+    releases = root / "releases"
+    releases.mkdir()
+    releases.joinpath("release-plan.yaml").write_text(
+        "publish tag deploy release\n",
+        encoding="utf-8",
+    )
+    docs = root / "docs"
+    docs.mkdir()
+    docs.joinpath("release-notes.md").write_text(
+        "Release notes for private customer\n",
+        encoding="utf-8",
+    )
+    root.joinpath(".git").mkdir()
+    root.joinpath(".git", "config").write_text("[remote]\n", encoding="utf-8")
+    root.joinpath(".env").write_text("TOKEN=secret", encoding="utf-8")
+
+    summary = filesystem.project_release_summary({"root": ".", "max_depth": 4, "limit": 40})
+
+    assert summary["tool_name"] == "project.release.summary"
+    assert summary["summary"] == {
+        "visible_release_directory_count": 1,
+        "visible_release_signal_count": 3,
+        "max_observed_depth": 2,
+        "inspected_entry_count": 7,
+    }
+    postures = cast(dict[str, int], summary["release_posture_counts"])
+    assert postures["changelog_category"] == 1
+    assert postures["release_note_category"] == 1
+    assert postures["release_config"] == 1
+    locations = cast(dict[str, int], summary["release_location_counts"])
+    assert locations["root_level"] == 1
+    assert locations["docs_directory"] == 1
+    assert locations["release_directory"] == 1
+    signals = cast(dict[str, int], summary["release_signal_counts"])
+    assert signals["version_marker_signal"] == 1
+    assert signals["automation_signal"] >= 2
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["git_internal"] == 1
+    assert skipped["hidden_or_sensitive"] == 1
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["release_names_included"] is False
+    assert output_policy["version_strings_included"] is False
+    assert output_policy["changelog_contents_included"] is False
+    assert output_policy["tag_names_included"] is False
+    assert output_policy["command_values_included"] is False
+    assert output_policy["git_execution_used"] is False
+    assert output_policy["ci_execution_used"] is False
+    dumped = json_dump(summary)
+    assert "CHANGELOG" not in dumped
+    assert "release-plan" not in dumped
+    assert "release-notes" not in dumped
+    assert "ClientX" not in dumped
+    assert "9.8.7" not in dumped
+    assert "private customer" not in dumped
+    assert "publish" not in dumped
+    assert "TOKEN" not in dumped
+    assert ".git" not in dumped
+    assert ".env" not in dumped
+
+
+def test_project_release_summary_empty_workspace_and_filters(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+
+    summary = filesystem.project_release_summary(
+        {
+            "root": ".",
+            "max_depth": 1,
+            "limit": 10,
+            "include_categories": ["release_posture_counts"],
+        }
+    )
+
+    summary_metadata = cast(dict[str, int], summary["summary"])
+    assert summary_metadata["visible_release_signal_count"] == 0
+    assert "release_posture_counts" in summary
+    assert "release_signal_counts" not in summary
+    assert cast(dict[str, int], summary["release_posture_counts"])["release_config"] == 0
+    output_policy = cast(dict[str, bool], summary["output_policy"])
+    assert output_policy["git_execution_used"] is False
+    assert output_policy["deployment_readiness_claims_included"] is False
+
+
+def test_project_release_summary_honors_limits_and_skips_symlink_hardlink(
+    tmp_path: Path,
+) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    releases = root / "releases"
+    releases.mkdir()
+    target = releases / "release.txt"
+    target.write_text("release version 1.0.0\n", encoding="utf-8")
+    try:
+        os.link(target, releases / "release-copy.txt")
+    except OSError:
+        pytest.skip("hardlinks are not supported on this filesystem")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root.joinpath("outside-link").symlink_to(outside)
+
+    summary = filesystem.project_release_summary(
+        {"root": ".", "max_depth": 2, "limit": 20, "include_categories": ["skipped_counts"]}
+    )
+
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hardlink"] == 2
+    assert skipped["symlink"] == 1
+    dumped = json_dump(summary)
+    assert "release.txt" not in dumped
+    assert "outside" not in dumped
+
+
+def test_project_release_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "."},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "%2e%2e/outside"},
+        {"root": "bad\x1fpath"},
+        {"max_depth": -1},
+        {"max_depth": 6},
+        {"limit": 0},
+        {"limit": 301},
+        {"include_categories": []},
+        {"include_categories": ["release_posture_counts", "release_posture_counts"]},
+        {"include_categories": ["release_names"]},
+        {"glob": "**/*"},
+        {"regex": ".*"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_release_names": True},
+        {"include_versions": True},
+        {"include_tag_names": True},
+        {"include_branch_names": True},
+        {"include_commands": True},
+        {"include_environment": True},
+        {"execute_git": True},
+        {"execute_ci": True},
+        {"shell": "git tag"},
+        {"registry_url": "https://registry.example.test"},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_release_summary(cast(JsonObject, arguments))
+
+
 def test_project_dependency_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

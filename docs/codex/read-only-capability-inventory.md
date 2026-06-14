@@ -4,7 +4,7 @@ Status: approved read-only metadata inventory. This document records the bounded
 capabilities that have moved beyond design-only planning through explicit implementation gates and
 source-review handoff artifacts.
 
-The governed tool surface has tool count `21`. The inventory below distinguishes the original
+The governed tool surface has tool count `22`. The inventory below distinguishes the original
 local-preview filesystem/Git/HTTP tools from the later bounded metadata additions so reviewers can
 see which closure evidence applies to each surface. It authorizes no shell, no broad filesystem
 writes, no arbitrary Git command execution, no remote fetch, no browser automation, no
@@ -15,7 +15,7 @@ explicit implementation decision, and release gates are recorded.
 
 This map intentionally keeps the guardrail phrases `no broad filesystem writes` and `Broader capability expansion remains blocked` visible for review-gate checks.
 
-## 21-Tool Surface Context
+## 22-Tool Surface Context
 
 This table is a review map, not a new approval. The original local-preview tools remain governed by
 their existing lane docs and release gates. The metadata additions have per-tool implementation
@@ -44,6 +44,7 @@ gates and source-review bundle targets in the next section.
 | `project.language.summary` | project metadata | `read` | `project_language` | `make project-language-summary-implementation-gate`; `make project-language-summary-source-review-bundle` |
 | `project.config.summary` | project metadata | `read` | `project_config` | `make project-config-summary-implementation-gate`; `make project-config-summary-source-review-bundle` |
 | `project.ci.summary` | project metadata | `read` | `project_ci` | `make project-ci-summary-implementation-gate`; `make project-ci-summary-source-review-bundle` |
+| `project.release.summary` | project metadata | `read` | `project_release` | `make project-release-summary-implementation-gate`; `make project-release-summary-source-review-bundle` |
 
 ## Approved Read-Only Metadata Tools
 
@@ -60,6 +61,7 @@ gates and source-review bundle targets in the next section.
 | `project.language.summary` | bounded read-only project language count metadata | `project_language` | `make project-language-summary-implementation-gate` | `make project-language-summary-source-review-bundle` | source-review handoff prepared |
 | `project.config.summary` | bounded read-only project config posture count metadata | `project_config` | `make project-config-summary-implementation-gate` | `make project-config-summary-source-review-bundle` | source-review handoff prepared |
 | `project.ci.summary` | bounded read-only project CI posture count metadata | `project_ci` | `make project-ci-summary-implementation-gate` | `make project-ci-summary-source-review-bundle` | source-review handoff refreshed; reviewer intake still required for `EXT-CI-###` closure |
+| `project.release.summary` | bounded read-only project release posture count metadata | `project_release` | `make project-release-summary-implementation-gate` | `make project-release-summary-source-review-bundle` | source-review handoff refreshed; reviewer intake still required for `EXT-REL-###` closure |
 
 ## Shared Boundary
 

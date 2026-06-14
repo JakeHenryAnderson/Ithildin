@@ -32,7 +32,7 @@ REQUIRED_GATE_PHRASES = [
     "next-capability-readiness",
     "no-new-powers-guardrail",
     "tool-surface-invariant-gate",
-    "tool count remains `21`",
+    "tool count remains `22`",
     "operator-managed",
     "export-design-only",
     "no new powerful tool classes",

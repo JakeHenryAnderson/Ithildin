@@ -29,7 +29,7 @@ REQUIRED_DOC_PHRASES = [
     "no run controls",
     "no sandbox orchestration",
     "no SIEM adapters",
-    "tool count remains `21`",
+    "tool count remains `22`",
 ]
 
 

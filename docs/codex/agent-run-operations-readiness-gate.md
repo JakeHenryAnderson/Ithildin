@@ -28,7 +28,7 @@ identity, runtime Postgres, hosted telemetry, shell execution, Docker or Kuberne
 browser automation, arbitrary HTTP, broad filesystem writes, compliance automation, or a production
 security-product claim.
 
-The tool count remains `21`. No new governed tools, manifests, executor capabilities, policy rules,
+The tool count remains `22`. No new governed tools, manifests, executor capabilities, policy rules,
 MCP exposure, or power classes are added.
 
 ## Verification

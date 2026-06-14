@@ -17,17 +17,14 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_PATH = ROOT / "docs/codex/project-release-summary-implementation-transition.md"
 
 REQUIRED_PHRASES = [
-    "Status: implementation-transition checklist only.",
+    "Status: implementation transition completed.",
     "canonical handoff",
-    "current tool count: `21`",
-    "current runtime status: not implemented",
-    "preimplementation guard active",
-    "fails closed if a",
-    "manifest, manifest-lock entry, or runtime helper",
-    "Replace the preimplementation guard with an implementation-aware gate state.",
+    "current tool count: `22`",
+    "current runtime status: implemented",
+    "implementation-aware guard active",
     "Add exactly one bounded read-only manifest for `project.release.summary`.",
     "Add exactly one bounded read-only executor path.",
-    "Update the manifest lock intentionally.",
+    "Manifest lock updated intentionally.",
     "resource type `project_release`",
     "Run `make release-check` and `make review-candidate`",
     "local workspace only and read-only",
@@ -41,8 +38,7 @@ REQUIRED_PHRASES = [
     "no registry or network access",
     "no new powerful tool class",
     "Low implementers may help with fixture inventory or docs-only scans.",
-    "Runtime implementation",
-    "remain main-manager work",
+    "Runtime implementation completed as main-manager work",
 ]
 
 
@@ -71,10 +67,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(
         f"implementation-gate: {failure}" for failure in implementation_gate["failures"]
     )
-    if implementation_gate.get("runtime_implemented") is not False:
-        failures.append("transition check expects runtime_implemented=false")
-    if implementation_gate.get("future_runtime_implementation_allowed") is not True:
-        failures.append("transition check expects future runtime implementation to remain allowed")
+    if implementation_gate.get("runtime_implemented") is not True:
+        failures.append("transition check expects runtime_implemented=true")
+    if implementation_gate.get("future_runtime_implementation_allowed") is not False:
+        failures.append("transition check expects future runtime implementation to be closed")
 
     if not doc_path.exists():
         failures.append("project.release.summary implementation transition doc is missing")
@@ -98,11 +94,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "tool_name": "project.release.summary",
-        "transition_status": "ready_for_later_manager_owned_implementation_sprint",
-        "tool_count": 21,
-        "runtime_implemented": False,
-        "runtime_changes_allowed_now": False,
-        "future_runtime_implementation_allowed": True,
+        "transition_status": "manager_owned_implementation_completed",
+        "tool_count": 22,
+        "runtime_implemented": True,
+        "runtime_changes_allowed_now": True,
+        "future_runtime_implementation_allowed": False,
         "low_implementer_runtime_changes_allowed": False,
     }
 

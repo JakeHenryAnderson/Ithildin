@@ -24,7 +24,7 @@ REQUIRED_DOC_PHRASES = [
     "demo-evidence-artifact-hashes.json",
     "not_run",
     "does not add run controls",
-    "tool count remains `21`",
+    "tool count remains `22`",
     "no-new-powers",
 ]
 

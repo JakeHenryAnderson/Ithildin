@@ -1,12 +1,17 @@
 # v3 Next Capability Candidate Evaluation 2
 
-Status: planning-only candidate evaluation. This document does not add a tool manifest, does not
-add an executor, does not add policy rules, does not add MCP exposure, does not add API behavior,
-does not add UI behavior, and does not add runtime behavior.
+Status: historical planning-only candidate evaluation. This document did not add a tool manifest,
+did not add an executor, did not add policy rules, did not add MCP exposure, did not add API
+behavior, did not add UI behavior, and did not add runtime behavior.
+
+It remains a historical review artifact and does not add a tool manifest, does not add an
+executor, does not add policy rules, does not add MCP exposure, does not add API behavior, does not
+add UI behavior, and does not add runtime behavior.
 
 This sprint evaluates the next safest bounded read-only metadata candidate after the current
-project-intelligence family. The current tool count remains `21`. The selected next candidate is
-`project.release.summary`; proposal work may proceed, while implementation remains blocked.
+project-intelligence family. The current tool count remains `22`. The historical selected
+candidate was `project.release.summary`; proposal and implementation work completed, and no next
+candidate is selected.
 
 ## Evaluation Summary
 

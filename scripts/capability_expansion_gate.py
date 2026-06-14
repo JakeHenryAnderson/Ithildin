@@ -34,6 +34,7 @@ EXPECTED_TOOL_NAMES = [
     "project.docs.summary",
     "project.language.summary",
     "project.manifest.summary",
+    "project.release.summary",
     "project.structure.summary",
     "project.test.summary",
 ]

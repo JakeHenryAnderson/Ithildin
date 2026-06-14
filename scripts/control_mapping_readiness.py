@@ -33,7 +33,7 @@ REQUIRED_GATE_PHRASES = [
     "incident-reconstruction-check",
     "no-new-powers-guardrail",
     "tool-surface-invariant-gate",
-    "tool count remains `21`",
+    "tool count remains `22`",
     "control mapping support",
     "mediated actions only",
     "no new powerful tool classes",

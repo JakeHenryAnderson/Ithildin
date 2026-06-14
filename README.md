@@ -350,7 +350,7 @@ checked with `make control-mapping-readiness`.
 - `make project-release-summary-transition-check` - validate the canonical transition checklist for
   the later manager-owned `project.release.summary` implementation sprint without adding runtime
   behavior.
-- `make project-release-summary-review-handoff-check` - validate the future source-review handoff
+- `make project-release-summary-review-handoff-check` - validate the implemented source-review handoff
   for `project.release.summary` without claiming runtime source exists.
 - `make project-release-summary-design-review-packet` - generate the design-review packet for
   the selected `project.release.summary` proposal.
