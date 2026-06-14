@@ -30,6 +30,31 @@ product slice.
 | `project.config.summary` | Summarize bounded configuration posture using counts and allowlisted labels. | No config file names, raw paths, file contents, config contents, config values, environment names or values, config parser execution, package-manager execution, registry/network access, or deployment claims. |
 | `project.ci.summary` | Summarize bounded CI posture using counts and allowlisted labels. | No workflow names, job names, raw paths, file contents, command/script values, environment names or values, CI execution, package-manager execution, registry/network access, deployment claims, or compliance claims. |
 
+## Operator Reading Guide
+
+For demos and handoffs, read this family as orientation evidence, not as execution evidence. The
+tools are useful because they let an operator or reviewer understand the shape of a local workspace
+without giving the agent a shell, package manager, network registry lookup, language detector,
+config parser, CI runner, or broad file-content view.
+
+Expected operator interpretation:
+
+- Git metadata tools answer which local Git shape was inspected, using bounded metadata and
+  response-local handles instead of arbitrary Git commands or raw diffs.
+- Project metadata tools answer how many allowlisted signals exist in a bounded workspace slice,
+  using counts, labels, skip counts, truncation, and output-policy booleans instead of names,
+  contents, command output, or externally derived facts.
+- Source-review handoffs answer whether a specific bounded lane is reviewable; they are not
+  production hardening claims, compliance evidence, vulnerability scans, dependency scans, or
+  public/security-product positioning.
+- `read-only-capability-inventory.md` is the closure map for gates, source-review bundles, policy
+  resources, and current lane status across the full 21-tool surface.
+
+In the operator workbench story, the family should appear as a quiet inspection layer: a reviewer
+can see registered tools, policy/audit evidence, and safe summaries, then follow each lane's
+source-review bundle when they need implementation source, tests, policy parity, and artifact
+hashes.
+
 ## Evidence Model
 
 Every tool in this family must preserve:

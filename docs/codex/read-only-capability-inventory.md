@@ -4,29 +4,62 @@ Status: approved read-only metadata inventory. This document records the bounded
 capabilities that have moved beyond design-only planning through explicit implementation gates and
 source-review handoff artifacts.
 
-The inventory has tool count `21` and includes only local read-only developer metadata additions.
-It authorizes no shell, no broad filesystem writes, no arbitrary Git command execution, no remote
-fetch, no browser automation, no Docker/Kubernetes tools, no production identity, no runtime
-Postgres, no hosted telemetry, no remote MCP, no plugin SDK work, no arbitrary HTTP, and no future
-governed tool powers. Broader capability expansion remains blocked until a separate proposal,
-implementation plan,
-source-review handoff, explicit implementation decision, and release gates are recorded.
+The governed tool surface has tool count `21`. The inventory below distinguishes the original
+local-preview filesystem/Git/HTTP tools from the later bounded metadata additions so reviewers can
+see which closure evidence applies to each surface. It authorizes no shell, no broad filesystem
+writes, no arbitrary Git command execution, no remote fetch, no browser automation, no
+Docker/Kubernetes tools, no production identity, no runtime Postgres, no hosted telemetry, no remote
+MCP, no plugin SDK work, no arbitrary HTTP, and no future governed tool powers. Broader capability
+expansion remains blocked until a separate proposal, implementation plan, source-review handoff,
+explicit implementation decision, and release gates are recorded.
+
+This map intentionally keeps the guardrail phrases `no broad filesystem writes` and `Broader capability expansion remains blocked` visible for review-gate checks.
+
+## 21-Tool Surface Context
+
+This table is a review map, not a new approval. The original local-preview tools remain governed by
+their existing lane docs and release gates. The metadata additions have per-tool implementation
+gates and source-review bundle targets in the next section.
+
+| Tool | Family | Risk | Policy resource | Closure evidence |
+| --- | --- | --- | --- | --- |
+| `fs.list` | filesystem | `read` | `file` | filesystem/platform lane; `make filesystem-source-review-bundle` |
+| `fs.read` | filesystem | `read` | `file` | filesystem/platform lane; `make filesystem-source-review-bundle` |
+| `fs.search` | filesystem | `read` | `file` | filesystem/platform lane; `make filesystem-source-review-bundle` |
+| `fs.stat` | filesystem | `read` | `file` | filesystem/platform lane; `make filesystem-source-review-bundle` |
+| `fs.patch.propose` | filesystem | `write-proposal` | `file` | patch proposal/apply lane; `make v06-patch-apply-review-packet` |
+| `fs.patch.apply` | filesystem | `write` | approved patch/proposal | patch proposal/apply lane; `make v06-patch-apply-review-packet` |
+| `git.status` | git | `read` | workspace Git/file scope | original local-preview Git lane; `make review-candidate` |
+| `git.log` | git | `read` | workspace Git/file scope | original local-preview Git lane; `make review-candidate` |
+| `git.diff` | git | `read` | workspace Git/file scope | original local-preview Git lane; `make review-candidate` |
+| `http.fetch` | network | `network` | `network` | HTTP fetch lane; `make http-fetch-source-review-bundle` |
+| `git.show.commit_metadata` | Git metadata | `read` | `git_commit` | `make git-commit-metadata-implementation-gate`; `make git-commit-metadata-source-review-bundle` |
+| `git.show.ref_summary` | Git metadata | `read` | `git_refs` | `make git-ref-summary-implementation-gate`; `make git-ref-summary-source-review-bundle` |
+| `git.show.tag_metadata` | Git metadata | `read` | `git_tags` | `make git-tag-metadata-implementation-gate`; `make git-tag-metadata-source-review-bundle` |
+| `project.manifest.summary` | project metadata | `read` | `project_manifest` | `make project-manifest-summary-implementation-gate`; `make project-manifest-summary-source-review-bundle` |
+| `project.dependency.summary` | project metadata | `read` | `project_dependencies` | `make project-dependency-summary-implementation-gate`; `make project-dependency-summary-source-review-bundle` |
+| `project.structure.summary` | project metadata | `read` | `project_structure` | `make project-structure-summary-implementation-gate`; `make project-structure-summary-source-review-bundle` |
+| `project.test.summary` | project metadata | `read` | `project_tests` | `make project-test-summary-implementation-gate`; `make project-test-summary-source-review-bundle` |
+| `project.docs.summary` | project metadata | `read` | `project_docs` | `make project-docs-summary-implementation-gate`; `make project-docs-summary-source-review-bundle` |
+| `project.language.summary` | project metadata | `read` | `project_language` | `make project-language-summary-implementation-gate`; `make project-language-summary-source-review-bundle` |
+| `project.config.summary` | project metadata | `read` | `project_config` | `make project-config-summary-implementation-gate`; `make project-config-summary-source-review-bundle` |
+| `project.ci.summary` | project metadata | `read` | `project_ci` | `make project-ci-summary-implementation-gate`; `make project-ci-summary-source-review-bundle` |
 
 ## Approved Read-Only Metadata Tools
 
-| Tool | Status | Gate | Source Review Handoff |
-| --- | --- | --- | --- |
-| `git.show.commit_metadata` | approved bounded read-only Git commit metadata | `make git-commit-metadata-implementation-gate` | `make git-commit-metadata-source-review-bundle` |
-| `git.show.ref_summary` | approved bounded read-only Git ref metadata | `make git-ref-summary-implementation-gate` | `make git-ref-summary-source-review-bundle` |
-| `git.show.tag_metadata` | approved bounded read-only Git tag metadata | `make git-tag-metadata-implementation-gate` | `make git-tag-metadata-source-review-bundle` |
-| `project.manifest.summary` | approved bounded read-only project manifest metadata | `make project-manifest-summary-implementation-gate` | `make project-manifest-summary-source-review-bundle` |
-| `project.dependency.summary` | approved bounded read-only direct dependency count metadata | `make project-dependency-summary-implementation-gate` | `make project-dependency-summary-source-review-bundle` |
-| `project.structure.summary` | approved bounded read-only project structure count metadata | `make project-structure-summary-implementation-gate` | `make project-structure-summary-source-review-bundle` |
-| `project.test.summary` | approved bounded read-only project test-layout count metadata | `make project-test-summary-implementation-gate` | `make project-test-summary-source-review-bundle` |
-| `project.docs.summary` | approved bounded read-only project documentation count metadata | `make project-docs-summary-implementation-gate` | `make project-docs-summary-source-review-bundle` |
-| `project.language.summary` | approved bounded read-only project language count metadata | `make project-language-summary-implementation-gate` | `make project-language-summary-source-review-bundle` |
-| `project.config.summary` | approved bounded read-only project config posture count metadata | `make project-config-summary-implementation-gate` | `make project-config-summary-source-review-bundle` |
-| `project.ci.summary` | approved bounded read-only project CI posture count metadata | `make project-ci-summary-implementation-gate` | `make project-ci-summary-source-review-bundle` |
+| Tool | Boundary | Resource | Gate | Source Review Handoff | Closure Status |
+| --- | --- | --- | --- | --- | --- |
+| `git.show.commit_metadata` | bounded read-only Git commit metadata | `git_commit` | `make git-commit-metadata-implementation-gate` | `make git-commit-metadata-source-review-bundle` | internally xhigh-reviewed; external/source disposition optional/deferred |
+| `git.show.ref_summary` | bounded read-only Git ref metadata | `git_refs` | `make git-ref-summary-implementation-gate` | `make git-ref-summary-source-review-bundle` | internally xhigh-reviewed; external/source disposition optional/deferred |
+| `git.show.tag_metadata` | bounded read-only Git tag metadata | `git_tags` | `make git-tag-metadata-implementation-gate` | `make git-tag-metadata-source-review-bundle` | internally reviewed; external/source disposition optional/deferred |
+| `project.manifest.summary` | bounded read-only project manifest metadata | `project_manifest` | `make project-manifest-summary-implementation-gate` | `make project-manifest-summary-source-review-bundle` | locally reviewed; external/source disposition optional/deferred |
+| `project.dependency.summary` | bounded read-only direct dependency count metadata | `project_dependencies` | `make project-dependency-summary-implementation-gate` | `make project-dependency-summary-source-review-bundle` | source-review handoff prepared |
+| `project.structure.summary` | bounded read-only project structure count metadata | `project_structure` | `make project-structure-summary-implementation-gate` | `make project-structure-summary-source-review-bundle` | source-review handoff prepared |
+| `project.test.summary` | bounded read-only project test-layout count metadata | `project_tests` | `make project-test-summary-implementation-gate` | `make project-test-summary-source-review-bundle` | source-review handoff prepared |
+| `project.docs.summary` | bounded read-only project documentation count metadata | `project_docs` | `make project-docs-summary-implementation-gate` | `make project-docs-summary-source-review-bundle` | source-review handoff prepared |
+| `project.language.summary` | bounded read-only project language count metadata | `project_language` | `make project-language-summary-implementation-gate` | `make project-language-summary-source-review-bundle` | source-review handoff prepared |
+| `project.config.summary` | bounded read-only project config posture count metadata | `project_config` | `make project-config-summary-implementation-gate` | `make project-config-summary-source-review-bundle` | source-review handoff prepared |
+| `project.ci.summary` | bounded read-only project CI posture count metadata | `project_ci` | `make project-ci-summary-implementation-gate` | `make project-ci-summary-source-review-bundle` | source-review handoff refreshed; reviewer intake still required for `EXT-CI-###` closure |
 
 ## Shared Boundary
 

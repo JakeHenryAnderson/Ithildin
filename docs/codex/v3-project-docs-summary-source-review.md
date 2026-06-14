@@ -22,7 +22,7 @@ count-only, workspace-confined, read-only project documentation-layout metadata 
   data, dependency names, package names, package script values, command output, package-manager
   output, raw filesystem errors, registry URLs, network data, or documentation build results.
 - Preview/runtime policy parity uses resource type `project_docs`.
-- Source-review findings should use namespace `EXT-PDS-###`.
+- Source-review findings should use namespace `EXT-PDOCS-###`.
 
 ## Command
 

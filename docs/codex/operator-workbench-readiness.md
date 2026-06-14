@@ -28,6 +28,10 @@ The workbench should let a local operator answer four questions without reading 
   correlation counts before the raw table, making the demo screen understandable without raw JSON.
 - `GET /runs/{run_id}` reconstructs the selected run timeline from audit events.
 - `GET /runs/{run_id}/evidence-export` exports a bounded, read-only run evidence bundle.
+- `docs/codex/read-only-project-intelligence.md` explains the eleven-tool project-intelligence
+  family as orientation evidence, while `docs/codex/read-only-capability-inventory.md` maps that
+  family back to the full 21-tool governed surface, policy resources, gates, and source-review
+  handoffs.
 - `make operator-sandbox-demo-packet` records the operator-managed sandbox/workspace story.
 - `make agent-run-correlation-packet` records the run-to-tool/audit/approval correlation story.
 - `make demo-readiness-summary` records ready, missing, optional/manual, deferred, and recommended
@@ -117,6 +121,12 @@ The packet points to existing live-demo, operator sandbox, Agent Run correlation
 negative transcript, and consolidated review artifacts. It is a reviewer convenience artifact, not
 notarization, SIEM custody, compliance automation, production security, or proof of activity outside
 Ithildin-mediated actions.
+
+When demoing the read-only project-intelligence family from the workbench, the operator should
+frame these tools as safe workspace orientation: counts, allowlisted labels, truncation, and policy
+evidence. The demo should not imply command execution, CI execution, dependency scanning, language
+detection, config parsing, registry/network lookup, raw path disclosure, file-content inspection,
+or deployment/compliance readiness.
 
 ## Readiness Gate
 

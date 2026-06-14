@@ -889,6 +889,10 @@ def test_read_only_capability_inventory_gate_is_wired() -> None:
         "no arbitrary Git command execution",
         "no package-manager execution",
         "Broader capability expansion remains blocked",
+        "21-Tool Surface Context",
+        "git_commit",
+        "project_ci",
+        "source-review handoff refreshed",
     ]:
         assert phrase in doc
     assert "make read-only-capability-inventory-gate" in readme
@@ -1027,11 +1031,14 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.dependency.summary",
         "project.structure.summary",
         "project.test.summary",
-            "project.docs.summary",
-            "project.language.summary",
-            "Tool count: `21`",
-            "Next candidate: `not selected`",
-            "Next candidate status: pending selection",
+        "project.docs.summary",
+        "project.language.summary",
+        "Tool count: `21`",
+        "Next candidate: `not selected`",
+        "Next candidate status: pending selection",
+        "Operator Reading Guide",
+        "orientation evidence",
+        "read-only-capability-inventory.md",
         "Broader capability expansion remains blocked",
         "New powerful tool classes remain blocked",
         "No file contents",
@@ -1808,7 +1815,7 @@ def test_project_docs_summary_source_review_bundle_builds_from_fixture(
             encoding="utf-8"
         )
     )
-    assert "EXT-PDS-###" in prompt
+    assert "EXT-PDOCS-###" in prompt
     assert "project_docs" in prompt
     assert "project.docs.summary" in source_bundle
     assert {entry["path"] for entry in hashes} == expected - {
@@ -2758,13 +2765,23 @@ def test_project_dependency_summary_source_review_bundle_is_wired(tmp_path: Path
         "08_PROJECT_DEPENDENCY_SUMMARY_INTAKE_COMMANDS.md",
         "project-dependency-summary-source-review-artifact-hashes.json",
     ]
+    index = (output_dir / "00_PROJECT_DEPENDENCY_SUMMARY_SOURCE_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
     prompt = (output_dir / "01_PROJECT_DEPENDENCY_SUMMARY_SOURCE_REVIEW_PROMPT.md").read_text(
         encoding="utf-8"
     )
     source_bundle = (output_dir / "03_PROJECT_DEPENDENCY_SUMMARY_SOURCE_BUNDLE.md").read_text(
         encoding="utf-8"
     )
+    intake = (output_dir / "08_PROJECT_DEPENDENCY_SUMMARY_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EXT-PDS-###" in index
     assert "EXT-PDS-###" in prompt
+    assert "EXT-PDS-###" in intake
+    assert "EXT-PMS-###" not in index
+    assert "EXT-PMS-###" not in intake
     assert "project_dependencies" in prompt
     assert "project.dependency.summary" in source_bundle
     assert "make project-dependency-summary-source-review-bundle" in readme

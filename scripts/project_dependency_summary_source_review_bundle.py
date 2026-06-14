@@ -162,7 +162,7 @@ capability can close for the v0.1 local-preview runtime boundary.
 ## Boundary
 
 - Lane: `project.dependency.summary`.
-- Finding namespace: `EXT-PMS-###`.
+- Finding namespace: `EXT-PDS-###`.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Implementation packet SHA-256: `{context["implementation_packet_sha256"]}`.
@@ -312,7 +312,7 @@ uv run python scripts/external_response_normalize.py \\
   --output var/review-runs/v0.9/project-dependency-summary/normalized-response.json
 ```
 
-Use finding IDs in the `EXT-PMS-###` namespace.
+Use finding IDs in the `EXT-PDS-###` namespace.
 
 Focused commands:
 

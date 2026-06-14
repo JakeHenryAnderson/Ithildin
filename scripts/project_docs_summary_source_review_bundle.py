@@ -142,7 +142,7 @@ no-new-powers evidence, and command evidence needed to decide whether this bound
 capability can close for the v0.1 local-preview runtime boundary.
 
 - Lane: `project.docs.summary`.
-- Finding namespace: `EXT-PDS-###`.
+- Finding namespace: `EXT-PDOCS-###`.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Implementation packet SHA-256: `{context["implementation_packet_sha256"]}`.
@@ -177,7 +177,7 @@ tests, parity fixture, contract docs, implementation packet, and command evidenc
 Reviewed commit: `{context["commit"]}`
 Reviewed implementation packet hash: `{context["implementation_packet_sha256"]}`
 Area: `project-docs-summary`
-Finding namespace: `EXT-PDS-###`
+Finding namespace: `EXT-PDOCS-###`
 
 Please answer whether this lane can close for the v0.1 local-preview runtime boundary. Review that
 the tool is count-only, workspace-confined, read-only, policy/audit/MCP mediated, uses

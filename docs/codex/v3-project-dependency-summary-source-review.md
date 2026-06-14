@@ -5,6 +5,9 @@ Status: source-review handoff for the bounded read-only dependency count lane.
 This handoff packages the implementation, tests, policy parity fixture, manifest, audit evidence,
 and no-new-powers checks for `project.dependency.summary`.
 
+- Finding namespace: `EXT-PDS-###`.
+- Default ignored bundle: `var/review-packets/v0.9/project-dependency-summary-source-review/`.
+
 ## Review Scope
 
 Reviewers should inspect:
