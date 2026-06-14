@@ -42,6 +42,7 @@ REQUIRED_DOC_PHRASES = [
     "Proposal and implementation plan: complete",
     "Selected candidate implementation: blocked; implementation decision recorded, "
     "runtime not implemented",
+    "Preimplementation fixture/test contract: recorded for `project.release.summary`",
     "Broader capability expansion: blocked",
     "New powerful tool classes: blocked",
     "Required Preflight Before Another Capability",
@@ -50,12 +51,14 @@ REQUIRED_DOC_PHRASES = [
     "implementation-planning packet",
     "explicit implementation decision",
     "focused source-review handoff bundle",
+    "preimplementation fixture/test contract and check",
     "policy fixtures and parity evidence",
     "negative transcript coverage",
     "no-new-powers evidence",
     "make next-capability-readiness",
     "make project-release-summary-proposal-check",
     "make project-release-summary-implementation-plan-check",
+    "make project-release-summary-preimplementation-check",
     "make project-release-summary-implementation-gate",
     "make project-release-summary-design-review-packet",
 ]

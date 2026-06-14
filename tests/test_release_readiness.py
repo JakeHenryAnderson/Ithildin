@@ -118,6 +118,7 @@ from scripts import (
     project_release_summary_design_review_packet,
     project_release_summary_implementation_gate,
     project_release_summary_implementation_plan_check,
+    project_release_summary_preimplementation_check,
     project_release_summary_proposal_check,
     project_structure_summary_design_review_packet,
     project_structure_summary_implementation_gate,
@@ -2360,6 +2361,105 @@ def test_project_release_summary_implementation_plan_check_is_wired() -> None:
     assert "docs/codex/capability-implementation-plans/project-release-summary.md" in docs_site
 
 
+def test_project_release_summary_preimplementation_check_is_wired() -> None:
+    report = project_release_summary_preimplementation_check.build_report(Path.cwd())
+    fixture_plan = Path("docs/codex/project-release-summary-fixture-plan.md").read_text(
+        encoding="utf-8"
+    )
+    proposal = Path("docs/codex/capability-proposals/project-release-summary.md").read_text(
+        encoding="utf-8"
+    )
+    plan = Path("docs/codex/capability-implementation-plans/project-release-summary.md").read_text(
+        encoding="utf-8"
+    )
+    decision = Path("docs/codex/v3-project-release-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    lockfile = Path("tool-manifests.lock.json").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["proposal"] == "project.release.summary"
+    assert report["scope"] == "preimplementation_fixture_contract"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["proposal_valid"] is True
+    assert report["implementation_plan_valid"] is True
+    assert report["implementation_gate_runtime_implemented"] is False
+    assert report["tool_count"] == 21
+    assert report["new_power_classes_allowed"] is False
+    assert report["evidence"]["tool_surface"]["tool_count"] == 21
+    assert report["evidence"]["implementation_gate"]["runtime_implemented"] is False
+    assert (
+        report["evidence"]["implementation_gate"]["future_runtime_implementation_allowed"]
+        is True
+    )
+    assert report["evidence"]["no_new_powers"]["new_power_classes_allowed"] is False
+    assert report["evidence"]["fixture_plan_path"] == (
+        "docs/codex/project-release-summary-fixture-plan.md"
+    )
+    for phrase in [
+        "Status: pre-implementation fixture/test contract only",
+        "No runtime behavior",
+        "Future tool: `project.release.summary`",
+        "Proposed resource type: `project_release`",
+        "Tool count remains `21`",
+        "Runtime implementation remains blocked until a later sprint",
+        "empty workspace / no release-shaped files",
+        "release config files present by coarse category only",
+        "changelog/release-note shaped files counted without names or contents",
+        "version-marker shaped files counted without version strings",
+        "release automation shaped files counted without commands",
+        "mixed safe and skipped candidates",
+        "depth-limit truncation",
+        "item-limit truncation",
+        "hidden/sensitive path skipped",
+        ".git skipped",
+        "symlink skipped",
+        "hardlink skipped",
+        "binary/NUL skipped",
+        "unsupported encoding skipped",
+        "malformed config shape counted as safe unknown",
+        "unauthorized principal denied in future governed-call tests",
+        "no release names",
+        "no version strings",
+        "no changelog contents",
+        "no tag names",
+        "no branch names",
+        "no raw file names",
+        "no raw paths",
+        "no file contents",
+        "no package names",
+        "no dependency names",
+        "no author/maintainer names",
+        "no email addresses",
+        "no command/script values",
+        "no environment names/values",
+        "no registry URLs",
+        "no shell/Git/package-manager/CI output",
+    ]:
+        assert phrase in fixture_plan
+    assert "make project-release-summary-preimplementation-check" in readme
+    assert "project-release-summary-preimplementation-check:" in makefile
+    assert "project-release-summary-preimplementation-check" in release_check_body
+    assert (
+        "project-release-summary-preimplementation-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "project-release-summary-fixture-plan.md" in index
+    assert "docs/codex/project-release-summary-fixture-plan.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/project-release-summary-fixture-plan.md" in docs_site
+    assert "project.release.summary" in proposal
+    assert "project.release.summary" in plan
+    assert "project.release.summary" in decision
+    assert not Path("tool-manifests/project-release-summary.yaml").exists()
+    assert "project-release-summary" not in lockfile
+
+
 def test_project_release_summary_implementation_gate_is_wired() -> None:
     report = project_release_summary_implementation_gate.build_report(Path.cwd())
     decision = Path("docs/codex/v3-project-release-summary-implementation.md").read_text(
@@ -2434,10 +2534,12 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
         "04_V3_PROJECT_RELEASE_SUMMARY_SELECTION.md",
         "05_PROJECT_RELEASE_SUMMARY_PROPOSAL.md",
         "06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md",
-        "07_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md",
-        "08_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json",
-        "09_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md",
-        "10_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "07_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md",
+        "08_PROJECT_RELEASE_SUMMARY_PREIMPLEMENTATION_CHECK.json",
+        "09_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md",
+        "10_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json",
+        "11_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md",
+        "12_REVIEW_INTAKE_AND_NEXT_STEPS.md",
         "project-release-summary-design-review-artifact-hashes.json",
     }
     assert built == output_dir
@@ -2449,16 +2551,24 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
     index_doc = (output_dir / "00_PROJECT_RELEASE_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
         encoding="utf-8"
     )
+    fixture_doc = (output_dir / "07_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md").read_text(
+        encoding="utf-8"
+    )
+    preimplementation_json = json.loads(
+        (output_dir / "08_PROJECT_RELEASE_SUMMARY_PREIMPLEMENTATION_CHECK.json").read_text(
+            encoding="utf-8"
+        )
+    )
     decision_doc = (
-        output_dir / "07_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md"
+        output_dir / "09_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_DECISION.md"
     ).read_text(encoding="utf-8")
     implementation_gate_json = json.loads(
-        (output_dir / "08_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json").read_text(
+        (output_dir / "10_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_GATE.json").read_text(
             encoding="utf-8"
         )
     )
     evidence = (
-        output_dir / "09_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md"
+        output_dir / "11_PROJECT_RELEASE_SUMMARY_GATE_AND_RISK_EVIDENCE.md"
     ).read_text(encoding="utf-8")
     hashes = json.loads(
         (output_dir / "project-release-summary-design-review-artifact-hashes.json").read_text(
@@ -2472,8 +2582,15 @@ def test_project_release_summary_design_review_packet_builds_from_fixture(
     assert "Internal Review Prompt" in prompt
     assert "External Review Prompt" in prompt
     assert "No-New-Powers Guardrail" in evidence
+    assert "Preimplementation Check" in evidence
     assert "Implementation Decision Evidence" in evidence
     assert "approved limited read-only implementation boundary" in decision_doc
+    assert preimplementation_json["valid"] is True
+    assert preimplementation_json["proposal"] == "project.release.summary"
+    assert preimplementation_json["scope"] == "preimplementation_fixture_contract"
+    assert preimplementation_json["tool_count"] == 21
+    assert "Status: pre-implementation fixture/test contract only" in fixture_doc
+    assert "Strict Non-Leak List" in fixture_doc
     assert implementation_gate_json["runtime_implemented"] is False
     assert "Implementation status: blocked" in index_doc
     assert "Tool count: `21`" in index_doc

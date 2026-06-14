@@ -63,8 +63,10 @@ Its implementation-planning packet is
 Its implementation decision is
 [v3 project.release.summary Implementation Decision](v3-project-release-summary-implementation.md)
 and `make project-release-summary-implementation-gate` validates the approved limited read-only
-boundary. It has advanced through design-only selection and planning. Runtime implementation
-remains absent.
+boundary. Its preimplementation fixture/test contract is
+[project.release.summary Fixture Plan](project-release-summary-fixture-plan.md) and is checked
+with `make project-release-summary-preimplementation-check`. It has advanced through design-only
+selection and planning. Runtime implementation remains absent.
 
 Do not expand into new powerful tool classes until the blocked debt rows above are explicitly
 dispositioned.

@@ -94,7 +94,9 @@ The most recent project metadata candidate,
 [project.release.summary](capability-proposals/project-release-summary.md), is selected as the
 next design-only candidate. Its proposal and implementation planning are complete, and an
 implementation decision now records the approved limited read-only boundary, but runtime remains
-absent until a later explicit implementation-boundary sprint. Future read-only metadata tools
-must start again from a design-only candidate, proposal, implementation plan, explicit
+absent until a later explicit implementation-boundary sprint. Its preimplementation fixture/test
+contract is [project.release.summary Fixture Plan](project-release-summary-fixture-plan.md) and
+is checked with `make project-release-summary-preimplementation-check`. Future read-only metadata
+tools must start again from a design-only candidate, proposal, implementation plan, explicit
 implementation decision, source-review handoff, policy fixtures, negative transcripts,
 no-new-powers evidence, and release gates.

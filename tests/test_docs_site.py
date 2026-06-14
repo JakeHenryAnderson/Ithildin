@@ -94,6 +94,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/read-only-local-metadata-contract.md" in DEFAULT_DOCS
     assert "docs/codex/metadata-privacy-policy.md" in DEFAULT_DOCS
     assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in DEFAULT_DOCS
+    assert "docs/codex/project-release-summary-fixture-plan.md" in DEFAULT_DOCS
     assert "docs/codex/v3-project-release-summary-implementation.md" in DEFAULT_DOCS
     assert "docs/codex/v3-project-ci-summary-selection.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/project-ci-summary.md" in DEFAULT_DOCS

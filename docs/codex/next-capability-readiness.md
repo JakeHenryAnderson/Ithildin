@@ -23,6 +23,7 @@ decision, source-review handoff, and local lane closure.
 - Selected candidate status: design-only selected.
 - Proposal and implementation plan: complete.
 - Selected candidate implementation: blocked; implementation decision recorded, runtime not implemented.
+- Preimplementation fixture/test contract: recorded for `project.release.summary`.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
 
@@ -35,6 +36,7 @@ Before any future capability implementation may begin, the project must record:
 - an implementation-planning packet;
 - an explicit implementation decision for that one bounded capability;
 - a focused source-review handoff bundle;
+- a preimplementation fixture/test contract and check for the selected candidate;
 - policy preview/runtime resource evidence;
 - policy fixtures and parity evidence;
 - audit evidence fields;
@@ -69,6 +71,7 @@ Run:
 make next-capability-readiness
 make project-release-summary-proposal-check
 make project-release-summary-implementation-plan-check
+make project-release-summary-preimplementation-check
 make project-release-summary-implementation-gate
 make project-release-summary-design-review-packet
 ```
