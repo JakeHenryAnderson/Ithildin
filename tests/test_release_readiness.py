@@ -145,6 +145,7 @@ from scripts import (
     review_packet_diff,
     review_packet_source_pointers,
     review_run_manifest,
+    review_run_manifest_refresh,
     reviewer_artifact_manifest,
     reviewer_findings,
     siem_evidence_design_check,
@@ -9160,14 +9161,151 @@ def test_review_run_manifest_validator_rejects_missing_and_mismatched_fields(
         review_run_manifest.validate_review_runs(runs_dir, tmp_path)
 
 
+def test_review_run_manifest_refresh_updates_commit_and_dirty(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo_root = tmp_path
+    prompt = repo_root / "prompt.md"
+    output = repo_root / "output.md"
+    prompt.write_text("prompt\n", encoding="utf-8")
+    output.write_text("output\n", encoding="utf-8")
+    runs_dir = repo_root / "var" / "review-runs" / "nested"
+    runs_dir.mkdir(parents=True)
+    manifest = runs_dir / "review-run-fixture.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "closure_matrix_rows_touched": ["http.fetch"],
+                "commit": "deadbeef",
+                "date": "2026-05-31",
+                "dirty": False,
+                "files_inspected": ["scripts/review_run_manifest.py"],
+                "finding_count": 0,
+                "output_file": "output.md",
+                "prompt_file": "prompt.md",
+                "review_id": "review-1",
+                "reviewer_name": "fixture",
+                "reviewer_type": "internal_ai",
+                "severity_counts": {
+                    "critical": 0,
+                    "high": 0,
+                    "informational": 0,
+                    "low": 0,
+                    "medium": 0,
+                },
+                "tests_run": ["uv run pytest tests/test_release_readiness.py -q"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(review_run_manifest_refresh, "ROOT", repo_root)
+    monkeypatch.setattr(
+        review_run_manifest_refresh,
+        "DEFAULT_RUNS_DIR",
+        repo_root / "var/review-runs",
+    )
+    monkeypatch.setattr(
+        review_run_manifest_refresh,
+        "_git",
+        lambda repo_root_arg, args: "cafebabe" if args == ["rev-parse", "HEAD"] else " M prompt.md",
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["review_run_manifest_refresh.py"],
+    )
+
+    result = review_run_manifest_refresh.main()
+
+    assert result == 1
+    assert "would refresh" in capsys.readouterr().out
+    refreshed = json.loads(manifest.read_text(encoding="utf-8"))
+    assert refreshed["commit"] == "deadbeef"
+    assert refreshed["dirty"] is False
+
+    monkeypatch.setattr(sys, "argv", ["review_run_manifest_refresh.py", "--write"])
+
+    result = review_run_manifest_refresh.main()
+
+    assert result == 0
+    rewritten = json.loads(manifest.read_text(encoding="utf-8"))
+    assert rewritten["commit"] == "cafebabe"
+    assert rewritten["dirty"] is True
+
+
+@pytest.mark.parametrize(
+    ("payload", "match"),
+    [
+        ("{not-json", "not valid JSON"),
+        (
+            json.dumps(
+                {
+                    "closure_matrix_rows_touched": ["http.fetch"],
+                    "date": "2026-05-31",
+                    "dirty": False,
+                    "files_inspected": ["scripts/review_run_manifest.py"],
+                    "finding_count": 0,
+                    "output_file": "output.md",
+                    "prompt_file": "prompt.md",
+                    "review_id": "review-1",
+                    "reviewer_name": "fixture",
+                    "reviewer_type": "internal_ai",
+                    "severity_counts": {
+                        "critical": 0,
+                        "high": 0,
+                        "informational": 0,
+                        "low": 0,
+                        "medium": 0,
+                    },
+                    "tests_run": ["uv run pytest tests/test_release_readiness.py -q"],
+                }
+            ),
+            "missing \\['commit'\\]",
+        ),
+    ],
+)
+def test_review_run_manifest_refresh_rejects_invalid_or_incomplete_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    payload: str,
+    match: str,
+) -> None:
+    repo_root = tmp_path
+    runs_dir = repo_root / "var" / "review-runs"
+    runs_dir.mkdir(parents=True)
+    runs_dir.joinpath("review-run-fixture.json").write_text(payload, encoding="utf-8")
+    monkeypatch.setattr(review_run_manifest_refresh, "ROOT", repo_root)
+    monkeypatch.setattr(
+        review_run_manifest_refresh,
+        "DEFAULT_RUNS_DIR",
+        repo_root / "var/review-runs",
+    )
+    monkeypatch.setattr(
+        review_run_manifest_refresh,
+        "_git",
+        lambda repo_root_arg, args: "cafebabe" if args == ["rev-parse", "HEAD"] else "",
+    )
+
+    with pytest.raises(review_run_manifest_refresh.ReviewRunManifestRefreshError, match=match):
+        review_run_manifest_refresh.refresh_review_run_manifests(runs_dir, repo_root, write=False)
+
+
 def test_review_run_manifest_doc_and_release_check_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     schema = Path("docs/codex/review-run-manifest-schema.md").read_text(encoding="utf-8")
+    release_check_line = next(
+        line for line in makefile.splitlines() if line.startswith("release-check:")
+    )
 
     assert "review-run-manifest-check:" in makefile
-    assert "review-run-manifest-check" in makefile.partition("release-check:")[2]
+    assert "review-run-manifest-refresh:" in makefile
+    assert "review-run-manifest-check" in release_check_line
+    assert "review-run-manifest-refresh" not in release_check_line
     assert "make review-run-manifest-check" in readme
+    assert "make review-run-manifest-refresh" in readme
     assert "V03-INT-PATCH-001" in schema
     assert "docs/codex/review-run-manifest-schema.md" in review_docs.REVIEW_DOCS
 

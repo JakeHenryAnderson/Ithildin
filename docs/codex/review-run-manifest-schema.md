@@ -7,6 +7,16 @@ They live under ignored `var/review-runs/` and are validated with:
 make review-run-manifest-check
 ```
 
+If a local commit changes or the tracked tree state shifts, refresh the ignored manifests first
+with:
+
+```sh
+make review-run-manifest-refresh
+```
+
+That target is the explicit local-only fix for stale commit or dirty metadata; it does not change
+release gating.
+
 The directory may be empty; an empty directory means no review runs have been executed yet.
 
 ## Required Fields
