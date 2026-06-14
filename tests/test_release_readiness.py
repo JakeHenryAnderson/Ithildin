@@ -2521,9 +2521,13 @@ def test_project_release_summary_implementation_gate_is_wired() -> None:
         "project.release.summary",
         "proposed resource type: `project_release`",
         "Implementation state: blocked in this sprint",
+        "Current gate behavior: preimplementation guard remains active",
+        "Do not delegate",
+        "low implementer while this gate is active",
         "no new powerful tool class",
     ]:
         assert phrase in decision
+    assert "preimplementation guard" in readme
     assert "make project-release-summary-implementation-gate" in readme
     assert "project-release-summary-implementation-gate:" in makefile
     assert "project-release-summary-implementation-gate" in release_check_body

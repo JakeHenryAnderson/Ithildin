@@ -43,6 +43,7 @@ REQUIRED_DOC_PHRASES = [
     "Selected candidate implementation: blocked; implementation decision recorded, "
     "runtime not implemented",
     "Preimplementation fixture/test contract: recorded for `project.release.summary`",
+    "Active gate note: the preimplementation guard intentionally rejects `project.release.summary`",
     "Future source-review handoff: recorded for `project.release.summary`",
     "Future source-review bundle: recorded for `project.release.summary`",
     "Broader capability expansion: blocked",
@@ -65,6 +66,7 @@ REQUIRED_DOC_PHRASES = [
     "make project-release-summary-review-handoff-check",
     "make project-release-summary-design-review-packet",
     "make project-release-summary-source-review-bundle",
+    "deliberately preimplementation-only",
 ]
 
 

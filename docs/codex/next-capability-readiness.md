@@ -24,6 +24,8 @@ decision, source-review handoff, and local lane closure.
 - Proposal and implementation plan: complete.
 - Selected candidate implementation: blocked; implementation decision recorded, runtime not implemented.
 - Preimplementation fixture/test contract: recorded for `project.release.summary`.
+- Active gate note: the preimplementation guard intentionally rejects `project.release.summary`
+  manifest or runtime source until a later explicit implementation checkpoint replaces that guard.
 - Future source-review handoff: recorded for `project.release.summary`.
 - Future source-review bundle: recorded for `project.release.summary`.
 - Broader capability expansion: blocked.
@@ -66,6 +68,9 @@ implementation planning, implementation decision, runtime implementation, and so
 as one bounded read-only metadata tool. The next bounded candidate is
 [project.release.summary](v3-project-release-summary-selection.md), with proposal work and
 implementation planning complete, an implementation decision recorded, and runtime still blocked.
+The current release gate is deliberately preimplementation-only: it must fail if a manifest,
+manifest-lock entry, or runtime helper for `project.release.summary` appears before the next
+explicit implementation checkpoint updates the gate.
 
 Run:
 

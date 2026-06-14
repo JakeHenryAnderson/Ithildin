@@ -342,7 +342,9 @@ checked with `make control-mapping-readiness`.
 - `make project-release-summary-preimplementation-check` - validate the fixture/test contract and
   readiness wiring for `project.release.summary` without authorizing runtime work.
 - `make project-release-summary-implementation-gate` - validate the approved limited
-  read-only implementation boundary without authorizing runtime work.
+  read-only implementation boundary without authorizing runtime work; the current gate
+  intentionally rejects `project.release.summary` manifest or runtime source until a later explicit
+  implementation checkpoint replaces the preimplementation guard.
 - `make project-release-summary-review-handoff-check` - validate the future source-review handoff
   for `project.release.summary` without claiming runtime source exists.
 - `make project-release-summary-design-review-packet` - generate the design-review packet for

@@ -60,6 +60,8 @@ REQUIRED_DOC_PHRASES = [
     "no broad recursive listing",
     "no new powerful tool class",
     "Implementation state: blocked in this sprint",
+    "Current gate behavior: preimplementation guard remains active",
+    "low implementer while this gate is active",
 ]
 FORBIDDEN_DOC_PHRASES = [
     "runtime is implemented",

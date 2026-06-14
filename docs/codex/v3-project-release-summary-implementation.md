@@ -76,3 +76,11 @@ Implementation state: blocked in this sprint.
 
 This decision approves only the limited read-only boundary above. Runtime changes outside this
 fixed surface are not allowed without a later explicit implementation sprint and source review.
+
+Current gate behavior: preimplementation guard remains active. While
+`make project-release-summary-preimplementation-check` and
+`make project-release-summary-implementation-gate` are wired into `make release-check`, the gate
+must fail closed if a `project.release.summary` manifest, manifest-lock entry, or runtime helper is
+added. The next runtime sprint must explicitly retire or replace this preimplementation guard as
+part of the implementation checkpoint before adding runtime source. Do not delegate
+`project.release.summary` runtime source to a low implementer while this gate is active.
