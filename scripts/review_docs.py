@@ -226,6 +226,7 @@ REVIEW_DOCS = [
     "docs/codex/v3-project-release-summary-implementation.md",
     "docs/codex/project-release-summary-implementation-transition.md",
     "docs/codex/v3-project-release-summary-source-review.md",
+    "docs/codex/v3-project-release-summary-internal-review.md",
     "docs/codex/metadata-privacy-policy.md",
     "docs/codex/read-only-metadata-capability-checklist.md",
     "docs/codex/read-only-capability-source-review-template.md",

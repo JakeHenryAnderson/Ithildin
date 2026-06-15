@@ -368,7 +368,8 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 310 - project.release.summary implementation decision | Done | [v3-project-release-summary-implementation.md](v3-project-release-summary-implementation.md), `make project-release-summary-implementation-gate`; records the approved limited read-only boundary while runtime remains absent. |
 | 311 - project.release.summary implementation gate | Done | `make project-release-summary-implementation-gate`; validates the approved limited read-only boundary without runtime implementation. |
 | 312 - project.release.summary source-review handoff check | Done | [v3-project-release-summary-source-review.md](v3-project-release-summary-source-review.md), `make project-release-summary-review-handoff-check`; records the implemented bounded source-review handoff without claiming external closure. |
-| 313 - project.release.summary source-review bundle | Done | `make project-release-summary-source-review-bundle`; builds the ignored preimplementation source-review packet under `var/review-packets/v3/project-release-summary-source-review/`. |
+| 313 - project.release.summary source-review bundle | Done | `make project-release-summary-source-review-bundle`; builds the ignored implemented source-review packet under `var/review-packets/v3/project-release-summary-source-review/`. |
+| 314 - project.release.summary internal source review | Done | [v3-project-release-summary-internal-review.md](v3-project-release-summary-internal-review.md), [XH-RELEASE-001](findings/xh-release-001-source-review-bundle-evidence.md); records the local review and fixes source/test bundle evidence without claiming external closure. |
 
 ## v0.2 Planning Seed
 

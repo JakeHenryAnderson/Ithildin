@@ -1,4 +1,4 @@
-"""Build a future project.release.summary source-review bundle placeholder."""
+"""Build the project.release.summary source-review bundle."""
 
 from __future__ import annotations
 
@@ -49,6 +49,20 @@ DOCS = [
         "07_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md",
         "docs/codex/v3-project-release-summary-source-review.md",
     ),
+]
+SOURCE_FILES = [
+    "apps/api/src/ithildin_api/read_tools.py",
+    "apps/api/src/ithildin_api/tool_calls.py",
+    "tool-manifests/project-release-summary.yaml",
+    "policies/tests/parity.yaml",
+]
+TEST_FILES = [
+    "tests/test_read_tools.py",
+    "tests/test_governed_tool_calls.py",
+    "tests/test_mcp_adapter.py",
+    "tests/test_policy_parity.py",
+    "tests/test_tool_registry.py",
+    "tests/test_release_readiness.py",
 ]
 
 
@@ -128,17 +142,19 @@ def build_bundle(
     files = {
         "00_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_INDEX.md": _index(context),
         "01_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_PROMPT.md": _prompt(context),
-        "02_PROJECT_RELEASE_SUMMARY_PROPOSAL.md": _load_doc(repo_root, DOCS[0][1]),
-        "03_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md": _load_doc(repo_root, DOCS[1][1]),
-        "04_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md": _load_doc(
+        "02_PROJECT_RELEASE_SUMMARY_SOURCE_BUNDLE.md": _bundle_files(repo_root, SOURCE_FILES),
+        "03_PROJECT_RELEASE_SUMMARY_TESTS_BUNDLE.md": _bundle_files(repo_root, TEST_FILES),
+        "04_PROJECT_RELEASE_SUMMARY_PROPOSAL.md": _load_doc(repo_root, DOCS[0][1]),
+        "05_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md": _load_doc(repo_root, DOCS[1][1]),
+        "06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md": _load_doc(
             repo_root, DOCS[2][1]
         ),
-        "05_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md": _load_doc(repo_root, DOCS[3][1]),
-        "06_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md": _load_doc(
+        "07_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md": _load_doc(repo_root, DOCS[3][1]),
+        "08_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md": _load_doc(
             repo_root, DOCS[4][1]
         ),
-        "07_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md": _load_doc(repo_root, DOCS[5][1]),
-        "08_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json": json.dumps(
+        "09_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md": _load_doc(repo_root, DOCS[5][1]),
+        "10_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json": json.dumps(
             {
                 "proposal": proposal,
                 "preimplementation": plan,
@@ -193,14 +209,16 @@ source review. It does not close the lane without reviewer disposition.
 
 1. `00_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_INDEX.md`
 2. `01_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_PROMPT.md`
-3. `02_PROJECT_RELEASE_SUMMARY_PROPOSAL.md`
-4. `03_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md`
-5. `04_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md`
-6. `05_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md`
-7. `06_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md`
-8. `07_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md`
-9. `08_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json`
-10. `project-release-summary-source-review-artifact-hashes.json`
+3. `02_PROJECT_RELEASE_SUMMARY_SOURCE_BUNDLE.md`
+4. `03_PROJECT_RELEASE_SUMMARY_TESTS_BUNDLE.md`
+5. `04_PROJECT_RELEASE_SUMMARY_PROPOSAL.md`
+6. `05_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md`
+7. `06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md`
+8. `07_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md`
+9. `08_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md`
+10. `09_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md`
+11. `10_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json`
+12. `project-release-summary-source-review-artifact-hashes.json`
 
 ## Closure Note
 
@@ -229,6 +247,35 @@ def _load_doc(repo_root: Path, relative: str) -> str:
     if not path.exists():
         raise ProjectReleaseSummarySourceReviewBundleError(f"missing document: {relative}")
     return path.read_text(encoding="utf-8")
+
+
+def _bundle_files(repo_root: Path, files: list[str]) -> str:
+    sections: list[str] = []
+    for relative in files:
+        path = repo_root / relative
+        if not path.exists():
+            raise ProjectReleaseSummarySourceReviewBundleError(f"missing source file: {relative}")
+        sections.extend(
+            [
+                f"## {relative}",
+                "",
+                "```" + _fence_language(path),
+                path.read_text(encoding="utf-8").rstrip(),
+                "```",
+                "",
+            ]
+        )
+    return "\n".join(sections).rstrip()
+
+
+def _fence_language(path: Path) -> str:
+    if path.suffix == ".py":
+        return "python"
+    if path.suffix in {".yaml", ".yml"}:
+        return "yaml"
+    if path.suffix == ".json":
+        return "json"
+    return "text"
 
 
 def _hashes(output_dir: Path) -> list[dict[str, Any]]:

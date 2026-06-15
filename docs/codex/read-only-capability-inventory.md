@@ -61,7 +61,7 @@ gates and source-review bundle targets in the next section.
 | `project.language.summary` | bounded read-only project language count metadata | `project_language` | `make project-language-summary-implementation-gate` | `make project-language-summary-source-review-bundle` | source-review handoff prepared |
 | `project.config.summary` | bounded read-only project config posture count metadata | `project_config` | `make project-config-summary-implementation-gate` | `make project-config-summary-source-review-bundle` | source-review handoff prepared |
 | `project.ci.summary` | bounded read-only project CI posture count metadata | `project_ci` | `make project-ci-summary-implementation-gate` | `make project-ci-summary-source-review-bundle` | source-review handoff refreshed; reviewer intake still required for `EXT-CI-###` closure |
-| `project.release.summary` | bounded read-only project release posture count metadata | `project_release` | `make project-release-summary-implementation-gate` | `make project-release-summary-source-review-bundle` | source-review handoff refreshed; reviewer intake still required for `EXT-REL-###` closure |
+| `project.release.summary` | bounded read-only project release posture count metadata | `project_release` | `make project-release-summary-implementation-gate` | `make project-release-summary-source-review-bundle` | internally reviewed; reviewer intake still required for `EXT-REL-###` closure |
 
 ## Shared Boundary
 

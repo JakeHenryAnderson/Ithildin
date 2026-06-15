@@ -2891,13 +2891,15 @@ def test_project_release_summary_source_review_bundle_builds_from_fixture(
     expected = {
         "00_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_INDEX.md",
         "01_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_PROMPT.md",
-        "02_PROJECT_RELEASE_SUMMARY_PROPOSAL.md",
-        "03_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md",
-        "04_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md",
-        "05_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md",
-        "06_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md",
-        "07_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md",
-        "08_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json",
+        "02_PROJECT_RELEASE_SUMMARY_SOURCE_BUNDLE.md",
+        "03_PROJECT_RELEASE_SUMMARY_TESTS_BUNDLE.md",
+        "04_PROJECT_RELEASE_SUMMARY_PROPOSAL.md",
+        "05_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md",
+        "07_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md",
+        "08_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md",
+        "09_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md",
+        "10_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json",
         "project-release-summary-source-review-artifact-hashes.json",
     }
     assert built == output_dir
@@ -2916,26 +2918,32 @@ def test_project_release_summary_source_review_bundle_builds_from_fixture(
     prompt = (output_dir / "01_PROJECT_RELEASE_SUMMARY_SOURCE_REVIEW_PROMPT.md").read_text(
         encoding="utf-8"
     )
-    proposal = (output_dir / "02_PROJECT_RELEASE_SUMMARY_PROPOSAL.md").read_text(
+    source_bundle = (output_dir / "02_PROJECT_RELEASE_SUMMARY_SOURCE_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    tests_bundle = (output_dir / "03_PROJECT_RELEASE_SUMMARY_TESTS_BUNDLE.md").read_text(
+        encoding="utf-8"
+    )
+    proposal = (output_dir / "04_PROJECT_RELEASE_SUMMARY_PROPOSAL.md").read_text(
         encoding="utf-8"
     )
     implementation_plan = (
-        output_dir / "03_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md"
+        output_dir / "05_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_PLAN.md"
     ).read_text(encoding="utf-8")
     boundary = (
-        output_dir / "04_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md"
+        output_dir / "06_PROJECT_RELEASE_SUMMARY_IMPLEMENTATION_BOUNDARY.md"
     ).read_text(encoding="utf-8")
-    fixture_plan = (output_dir / "05_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md").read_text(
+    fixture_plan = (output_dir / "07_PROJECT_RELEASE_SUMMARY_FIXTURE_PLAN.md").read_text(
         encoding="utf-8"
     )
     negative_plan = (
-        output_dir / "06_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md"
+        output_dir / "08_PROJECT_RELEASE_SUMMARY_NEGATIVE_TRANSCRIPTS_PLAN.md"
     ).read_text(encoding="utf-8")
     review_handoff = (
-        output_dir / "07_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md"
+        output_dir / "09_PROJECT_RELEASE_SUMMARY_REVIEW_HANDOFF.md"
     ).read_text(encoding="utf-8")
     gate_evidence = json.loads(
-        (output_dir / "08_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json").read_text(
+        (output_dir / "10_PROJECT_RELEASE_SUMMARY_GATE_EVIDENCE.json").read_text(
             encoding="utf-8"
         )
     )
@@ -2944,6 +2952,16 @@ def test_project_release_summary_source_review_bundle_builds_from_fixture(
     assert "Runtime implementation: present" in index
     assert "EXT-RELEASE-SUMMARY-###" in prompt
     assert "implemented bounded read-only" in prompt
+    assert "apps/api/src/ithildin_api/read_tools.py" in source_bundle
+    assert "apps/api/src/ithildin_api/tool_calls.py" in source_bundle
+    assert "tool-manifests/project-release-summary.yaml" in source_bundle
+    assert "policies/tests/parity.yaml" in source_bundle
+    assert "def project_release_summary" in source_bundle
+    assert "project_release_summary_preview_matches_runtime" in source_bundle
+    assert "tests/test_read_tools.py" in tests_bundle
+    assert "tests/test_governed_tool_calls.py" in tests_bundle
+    assert "tests/test_mcp_adapter.py" in tests_bundle
+    assert "test_project_release_summary_returns_count_only_metadata" in tests_bundle
     assert "project.release.summary" in proposal
     assert "project.release.summary" in implementation_plan
     assert "project.release.summary" in boundary
@@ -2955,6 +2973,10 @@ def test_project_release_summary_source_review_bundle_builds_from_fixture(
     assert gate_evidence["review_handoff_check"]["valid"] is True
     assert gate_evidence["tool_surface"]["tool_count"] == 22
     assert gate_evidence["no_new_powers"]["new_power_classes_allowed"] is False
+    assert "docs/codex/v3-project-release-summary-internal-review.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-release-summary-internal-review.md" in Path(
+        "scripts/build_docs_site.py"
+    ).read_text(encoding="utf-8")
 
 
 def test_project_config_summary_implementation_gate_is_wired() -> None:

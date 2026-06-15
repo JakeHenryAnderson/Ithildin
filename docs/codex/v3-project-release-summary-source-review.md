@@ -56,3 +56,8 @@ approval/audit logic, or new governed tool powers.
 This lane remains source-review pending until a focused reviewer disposition exists. The review
 bundle must be able to show the implementation source, tests, policy parity, audit evidence, and
 no-new-powers evidence without widening the read-only boundary.
+
+The internal source-review pass is recorded in
+[v3 project.release.summary Internal Source Review](v3-project-release-summary-internal-review.md).
+It fixed `XH-RELEASE-001` by adding implementation source and focused test bundles to the generated
+handoff packet. That local review does not externally close the lane.
