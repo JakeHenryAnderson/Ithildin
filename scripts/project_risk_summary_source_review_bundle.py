@@ -1,4 +1,4 @@
-"""Build a future project.risk.summary source-review bundle skeleton."""
+"""Build a project.risk.summary source-review bundle."""
 
 from __future__ import annotations
 
@@ -111,14 +111,14 @@ def _require_project_root(repo_root: Path) -> None:
 def _index(context: dict[str, Any]) -> str:
     return f"""# project.risk.summary Source Review Bundle
 
-This is a preimplementation source-review bundle skeleton for `project.risk.summary`. It prepares
-the review lane and does not claim runtime implementation.
+This is the implemented source-review bundle for `project.risk.summary`. It prepares the review
+lane for source-level disposition and does not claim external closure.
 
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Tool count: `{context["handoff"]["tool_count"]}`.
 - Runtime implemented: `{str(context["handoff"]["runtime_implemented"]).lower()}`.
-- Future runtime implementation allowed only by later explicit sprint:
+- Future runtime implementation allowed:
   `{str(context["handoff"]["future_runtime_implementation_allowed"]).lower()}`.
 
 ## Attachments
@@ -142,9 +142,9 @@ def _prompt(context: dict[str, Any]) -> str:
     return f"""# project.risk.summary Source Review Prompt
 
 You are reviewing Ithildin's `project.risk.summary` lane as a source-review preparation packet.
-Runtime implementation is not present yet, so do not close source review. Evaluate whether the
-boundary, fixture plan, negative transcript plan, and handoff evidence are sufficient before a later
-implementation sprint.
+Runtime implementation is present. Evaluate whether the manifest, executor, focused tests, policy
+parity, audit metadata, fixture plan, negative transcript plan, and handoff evidence are sufficient
+to close the lane for the v0.1 local-preview runtime boundary.
 
 Reviewed commit: `{context["commit"]}`
 Area: `project-risk-summary`
@@ -152,11 +152,11 @@ Finding namespace: `EXT-RISK-SUMMARY-###`
 
 Please answer:
 
-- whether the preimplementation handoff is coherent;
-- whether the non-leak list is strong enough;
+- whether the implementation preserves count-only risk posture metadata;
+- whether the non-leak list is enforced by source and tests;
 - whether any design item still drifts toward vulnerability scanning, scanner execution, dependency
   vulnerability analysis, compliance automation, or security assurance;
-- what must be added before implementation or before source-review closure.
+- what must be added before source-review closure.
 
 Do not approve production security positioning, compliance claims, broad capability expansion, or
 new governed tool powers.
@@ -182,6 +182,8 @@ make project-risk-summary-implementation-gate
 make project-risk-summary-preimplementation-check
 make project-risk-summary-review-handoff-check
 make project-risk-summary-source-review-bundle
+uv run pytest tests/test_read_tools.py tests/test_governed_tool_calls.py \\
+  tests/test_mcp_adapter.py tests/test_policy_parity.py tests/test_tool_registry.py -q
 make release-check
 ```
 

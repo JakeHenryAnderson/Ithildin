@@ -985,6 +985,7 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
         "project.ci.summary",
         "project.language.summary",
         "project.release.summary",
+        "project.risk.summary",
     }:
         output_policy = content.get("output_policy")
         for key in ("manifest_count",):
@@ -1134,6 +1135,30 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                         JsonValue,
                         sorted(key for key in section if isinstance(key, str)),
                     )
+        if tool_name == "project.risk.summary":
+            summary = content.get("summary")
+            if isinstance(summary, dict):
+                for key in (
+                    "visible_risk_directory_count",
+                    "visible_risk_signal_count",
+                    "max_observed_depth",
+                    "inspected_entry_count",
+                ):
+                    value = summary.get(key)
+                    if isinstance(value, int) and not isinstance(value, bool):
+                        metadata[key] = value
+            for section_key in (
+                "risk_signal_counts",
+                "risk_posture_counts",
+                "risk_location_counts",
+                "skipped_counts",
+            ):
+                section = content.get(section_key)
+                if isinstance(section, dict):
+                    metadata[f"{section_key}_keys"] = cast(
+                        JsonValue,
+                        sorted(key for key in section if isinstance(key, str)),
+                    )
         if tool_name == "project.language.summary":
             summary = content.get("summary")
             if isinstance(summary, dict):
@@ -1206,10 +1231,19 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                 "dependency_names_included",
                 "dependency_versions_included",
                 "package_names_included",
+                "filenames_included",
+                "cve_ids_included",
+                "advisory_ids_included",
+                "secret_names_included",
+                "secret_values_included",
                 "package_script_names_included",
                 "package_script_values_included",
                 "environment_names_or_values_included",
                 "registry_urls_included",
+                "scanner_output_included",
+                "vulnerability_findings_included",
+                "compliance_findings_included",
+                "security_findings_included",
                 "coverage_data_included",
                 "documentation_build_claims_included",
                 "language_detector_claims_included",
@@ -1225,11 +1259,14 @@ def _read_tool_execution_metadata(tool_name: str, content: JsonObject) -> JsonOb
                 "config_parser_execution_used",
                 "git_execution_used",
                 "ci_execution_used",
+                "scanner_execution_used",
                 "recursive_discovery_used",
                 "transitive_dependencies_resolved",
                 "deployment_readiness_claims_included",
                 "legal_or_compliance_claims_included",
                 "license_vulnerability_or_compliance_claims_included",
+                "compliance_claims_included",
+                "security_assurance_claims_included",
             ):
                 value = output_policy.get(key)
                 if isinstance(value, bool):

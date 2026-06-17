@@ -1,11 +1,16 @@
 # Project Risk Summary Candidate Selection
 
-Status: design-only candidate selection.
+Status: historical design-only candidate selection.
 
-`project.risk.summary` is selected as the next bounded read-only project-intelligence candidate.
-The current governed tool count remains `22`, and implementation remains blocked until a later
-explicit implementation-boundary sprint approves a manifest, executor, policy/runtime resource
-wiring, MCP exposure, audit coverage, negative transcripts, and source-review handoff.
+`project.risk.summary` was selected as the next bounded read-only project-intelligence candidate.
+At selection time, implementation was blocked until a later explicit implementation-boundary sprint
+approved a manifest, executor, policy/runtime resource wiring, MCP exposure, audit coverage,
+negative transcripts, and source-review handoff.
+
+Post-implementation note: `project.risk.summary` has since advanced through a bounded read-only
+runtime implementation. The current implementation boundary is recorded in
+[v3 project.risk.summary Implementation](v3-project-risk-summary-implementation.md), and this
+selection document is retained as historical proposal evidence.
 
 ## Selection Rationale
 

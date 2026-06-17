@@ -123,6 +123,12 @@
       "version": "0.1.0"
     },
     {
+      "manifest_hash": "sha256:a85b40e3cddbf2bc7af00cae4df376eef145af0b09f9d84bc2ae02492333c115",
+      "name": "project.risk.summary",
+      "path": "tool-manifests/project-risk-summary.yaml",
+      "version": "0.1.0"
+    },
+    {
       "manifest_hash": "sha256:cfe3e1c160e8fbefad4779e550d158eaec935327edbc06a76c3d16a91bf861b1",
       "name": "project.structure.summary",
       "path": "tool-manifests/project-structure-summary.yaml",

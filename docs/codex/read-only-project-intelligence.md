@@ -30,6 +30,7 @@ product slice.
 | `project.config.summary` | Summarize bounded configuration posture using counts and allowlisted labels. | No config file names, raw paths, file contents, config contents, config values, environment names or values, config parser execution, package-manager execution, registry/network access, or deployment claims. |
 | `project.ci.summary` | Summarize bounded CI posture using counts and allowlisted labels. | No workflow names, job names, raw paths, file contents, command/script values, environment names or values, CI execution, package-manager execution, registry/network access, deployment claims, or compliance claims. |
 | `project.release.summary` | Summarize bounded release posture using counts and allowlisted labels. | No release names, version strings, changelog contents, tag names, branch names, raw paths, file contents, command/script values, Git execution, CI execution, package-manager execution, registry/network access, deployment-readiness claims, legal claims, or compliance claims. |
+| `project.risk.summary` | Summarize bounded risk-posture signals using counts and allowlisted labels. | No filenames, raw paths, file contents, dependency names, package names, CVE IDs, advisory IDs, secret names or values, scanner output, vulnerability findings, compliance findings, or security assurance claims. |
 
 Release-summary review handoff work is recorded separately in
 `make project-release-summary-review-handoff-check` and
@@ -54,7 +55,7 @@ Expected operator interpretation:
   production hardening claims, compliance evidence, vulnerability scans, dependency scans, or
   public/security-product positioning.
 - `read-only-capability-inventory.md` is the closure map for gates, source-review bundles, policy
-  resources, and current lane status across the full 22-tool surface.
+  resources, and current lane status across the full 23-tool surface.
 
 In the operator workbench story, the family should appear as a quiet inspection layer: a reviewer
 can see registered tools, policy/audit evidence, and safe summaries, then follow each lane's
@@ -77,16 +78,16 @@ Every tool in this family must preserve:
 
 ## Current Position
 
-- Tool count: `22`.
+- Tool count: `23`.
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
   `project.docs.summary`, `project.language.summary`, `project.config.summary`,
-  `project.ci.summary`, and `project.release.summary`.
-- Selected candidate: `project.risk.summary`.
-- Selected candidate status: design-only selected; implementation blocked.
-- Most recent implementation: `project.release.summary`, approved bounded read-only runtime.
-- explicit implementation decision recorded for `project.release.summary`.
+  `project.ci.summary`, `project.release.summary`, and `project.risk.summary`.
+- Selected candidate: not selected.
+- Selected candidate status: pending selection.
+- Most recent implementation: `project.risk.summary`, approved bounded read-only runtime.
+- explicit implementation decision recorded for `project.risk.summary`.
 - Broader capability expansion remains blocked.
 - New powerful tool classes remain blocked.
 
@@ -97,19 +98,16 @@ vulnerability scanner, compliance engine, shell replacement, project build runne
 inspector, plugin SDK, sandbox, SIEM, production identity system, or public/security-product claim.
 
 The most recent project metadata candidate,
-[project.release.summary](capability-proposals/project-release-summary.md), is now implemented as
-one bounded read-only metadata tool. Its fixture/test contract is
-[project.release.summary Fixture Plan](project-release-summary-fixture-plan.md), its source-review
-handoff is [v3 project.release.summary Source Review Handoff](v3-project-release-summary-source-review.md),
+[project.risk.summary](capability-proposals/project-risk-summary.md), is now implemented as one
+bounded read-only metadata tool. Its fixture/test contract is
+[project.risk.summary Fixture Plan](project-risk-summary-fixture-plan.md), its source-review
+handoff is [v3 project.risk.summary Source Review Handoff](v3-project-risk-summary-source-review.md),
 and the negative transcript plan is
-[project.release.summary Negative Transcript Plan](project-release-summary-negative-transcripts.md).
+[project.risk.summary Negative Transcript Plan](project-risk-summary-negative-transcripts.md).
 Future read-only metadata tools must start again from a design-only candidate, proposal,
 implementation plan, explicit implementation decision, source-review handoff, policy fixtures,
 negative transcripts, no-new-powers evidence, and release gates.
 
-The next design-only candidate is
-[project.risk.summary](capability-proposals/project-risk-summary.md), with an implementation plan at
-[Implementation-Planning Packet: project.risk.summary](capability-implementation-plans/project-risk-summary.md).
-It is proposed as risk-signal count metadata only. It is not a vulnerability scanner, dependency
-scanner, compliance engine, security assurance mechanism, scanner runner, registry/network tool, or
-shell/package-manager execution path.
+No next design-only candidate is selected. `project.risk.summary` is risk-signal count metadata only.
+It is not a vulnerability scanner, dependency scanner, compliance engine, security assurance
+mechanism, scanner runner, registry/network tool, or shell/package-manager execution path.

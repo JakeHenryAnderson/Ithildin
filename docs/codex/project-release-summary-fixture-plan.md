@@ -4,7 +4,7 @@ Status: fixture/test contract retained after implementation.
 Runtime implementation is present.
 Implemented tool: `project.release.summary`.
 Proposed resource type: `project_release`.
-Tool count remains `22`.
+Tool count remains `23`.
 Runtime implementation is bounded by the approved implementation gate.
 
 This document defines fixture coverage and negative-test expectations only. It does not add or

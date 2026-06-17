@@ -3,7 +3,7 @@
 Status: historical candidate selection; implemented.
 
 `project.release.summary` was selected as the next bounded read-only project-intelligence
-candidate. The current governed tool count remains `22`, and implementation has advanced through
+candidate. The current governed tool count remains `23`, and implementation has advanced through
 an explicit implementation-boundary sprint with a manifest, executor, policy/runtime resource
 wiring, MCP exposure, audit coverage, negative transcripts, and source-review handoff.
 The runtime implementation is now present.

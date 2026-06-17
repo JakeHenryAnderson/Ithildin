@@ -13,7 +13,7 @@ Run the secret-free preflight first:
 make live-demo-preflight
 ```
 
-Expected result: the report passes core checks for repo markers, tool count `22`, loopback Compose
+Expected result: the report passes core checks for repo markers, tool count `23`, loopback Compose
 ports, no Docker socket mount, read-only Compose posture, SQLite storage, telemetry disabled, demo
 workspace inputs, no-new-powers, and tool-surface invariants. Warnings may appear for optional
 runtime signing keys or missing Docker Compose.

@@ -1,4 +1,4 @@
-"""Validate the project.risk.summary preimplementation fixture contract."""
+"""Validate the project.risk.summary fixture contract."""
 
 from __future__ import annotations
 
@@ -125,27 +125,27 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if fixture_artifact is not None:
         _validate_fixture_artifact(fixture_artifact, failures)
 
-    if implementation_gate.get("runtime_implemented") is not False:
-        failures.append("implementation gate must report runtime_implemented: false")
-    if implementation_gate.get("future_runtime_implementation_allowed") is not True:
-        failures.append("implementation gate must allow a later explicit runtime sprint")
-    if implementation_gate.get("tool_count") != 22:
-        failures.append("implementation gate tool count is not 22")
-    if tool_surface.get("tool_count") != 22:
-        failures.append("tool surface tool count is not 22")
+    if implementation_gate.get("runtime_implemented") is not True:
+        failures.append("implementation gate must report runtime_implemented: true")
+    if implementation_gate.get("future_runtime_implementation_allowed") is not False:
+        failures.append("implementation gate must not allow another runtime sprint")
+    if implementation_gate.get("tool_count") != 23:
+        failures.append("implementation gate tool count is not 23")
+    if tool_surface.get("tool_count") != 23:
+        failures.append("tool surface tool count is not 23")
     if no_new_powers.get("new_power_classes_allowed") is not False:
         failures.append("no-new-powers guardrail allows new power classes")
-    if repo_root.joinpath("tool-manifests/project-risk-summary.yaml").exists():
-        failures.append("project.risk.summary manifest must not exist during preimplementation")
+    if not repo_root.joinpath("tool-manifests/project-risk-summary.yaml").exists():
+        failures.append("project.risk.summary manifest is missing")
 
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "proposal": "project.risk.summary",
-        "scope": "preimplementation_fixture_contract",
-        "implementation_allowed": False,
-        "runtime_changes_allowed": False,
+        "scope": "implemented_fixture_contract",
+        "implementation_allowed": True,
+        "runtime_changes_allowed": True,
         "proposal_valid": proposal["valid"],
         "implementation_plan_valid": implementation_plan["valid"],
         "implementation_gate_future_runtime_allowed": implementation_gate.get(
@@ -191,8 +191,11 @@ def _validate_fixture_artifact(
         failures.append("fixture artifact must report version: 1")
     if fixture_artifact.get("contract") != "project.risk.summary":
         failures.append("fixture artifact must report contract: project.risk.summary")
-    if fixture_artifact.get("scope") != "preimplementation_fixture_contract":
-        failures.append("fixture artifact must report preimplementation fixture scope")
+    if fixture_artifact.get("scope") not in {
+        "preimplementation_fixture_contract",
+        "implemented_fixture_contract",
+    }:
+        failures.append("fixture artifact must report fixture scope")
 
     strict_non_leak_list = fixture_artifact.get("strict_non_leak_list")
     if not isinstance(strict_non_leak_list, list):
@@ -241,15 +244,15 @@ def _validate_fixture_artifact(
 
 def render_report(report: dict[str, Any]) -> str:
     lines = [
-        "Ithildin project.risk.summary preimplementation check",
+        "Ithildin project.risk.summary fixture contract check",
         f"valid: {str(report['valid']).lower()}",
         "proposal: project.risk.summary",
-        "scope: preimplementation_fixture_contract",
-        "implementation_allowed: false",
-        "runtime_changes_allowed: false",
+        f"scope: {report['scope']}",
+        f"implementation_allowed: {str(report['implementation_allowed']).lower()}",
+        f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"tool_count: {report.get('tool_count', 'unknown')}",
-        "runtime_implemented: false",
-        "future_runtime_implementation_allowed: true",
+        "runtime_implemented: true",
+        "future_runtime_implementation_allowed: false",
         "new_power_classes_allowed: false",
     ]
     if report["failures"]:

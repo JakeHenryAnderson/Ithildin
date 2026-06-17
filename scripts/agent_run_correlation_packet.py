@@ -118,7 +118,7 @@ diagnostics, and read-only run evidence export. It is evidence packaging only.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- tool count remains `22`.
+- tool count remains `23`.
 - No manifests, executors, policy rules, API endpoints, MCP tools, run controls, sandbox controls,
   SIEM adapters, production identity, runtime Postgres, hosted telemetry, shell, Docker,
   Kubernetes, browser automation, arbitrary HTTP, broad filesystem writes, plugin SDK work, or new

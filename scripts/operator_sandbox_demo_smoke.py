@@ -105,7 +105,7 @@ def _render(
         f"- Commit: `{commit}`.",
         f"- Dirty at generation: `{str(dirty).lower()}`.",
         f"- Observed readiness commands executed: `{str(run_commands).lower()}`.",
-        "- tool count remains `22`.",
+        "- tool count remains `23`.",
         "- Ithildin mediates registered tools against an operator-managed workspace or sandbox.",
         "- The operator remains responsible for any container, VM, mount, isolation, and teardown.",
         "",

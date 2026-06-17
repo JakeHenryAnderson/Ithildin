@@ -99,7 +99,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "roadmap_doc": doc_rel,
         "phase_count": len(phases),
-        "tool_count": 22,
+        "tool_count": 23,
         "selected_capability": "not selected",
         "runtime_changes_allowed": False,
         "new_power_classes_allowed": False,

@@ -52,7 +52,7 @@ REQUIRED_PHRASES = [
 SELECTION_PHRASES = [
     "Status: design-only candidate selection",
     "project.ci.summary",
-    "tool count remains `22`",
+    "tool count remains `23`",
     "implementation remains blocked",
     "make project-ci-summary-proposal-check",
 ]

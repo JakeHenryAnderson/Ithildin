@@ -7,7 +7,8 @@ This checkpoint exists because the first bounded read-only metadata lanes are no
 `git.show.commit_metadata`, `git.show.ref_summary`, `git.show.tag_metadata`,
 `project.manifest.summary`, `project.dependency.summary`, `project.structure.summary`,
 `project.test.summary`, `project.docs.summary`, `project.language.summary`,
-`project.config.summary`, `project.ci.summary`, and `project.release.summary`. The historical
+`project.config.summary`, `project.ci.summary`, `project.release.summary`, and
+`project.risk.summary`. The historical
 candidate records still show
 how each bounded metadata tool advanced through proposal, implementation planning, implementation
 decision, source-review handoff, and local lane closure.
@@ -18,18 +19,16 @@ decision, source-review handoff, and local lane closure.
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
   `project.docs.summary`, `project.language.summary`, `project.config.summary`,
-  `project.ci.summary`, and `project.release.summary`.
-- Current tool count: `22`.
-- Selected candidate: `project.risk.summary`.
-- Selected candidate status: design-only selected; implementation blocked.
-- Selected candidate proposal: complete for `project.risk.summary`.
-- Selected candidate implementation plan: complete for `project.risk.summary`.
-- Most recent implemented candidate: `project.release.summary`.
+  `project.ci.summary`, `project.release.summary`, and `project.risk.summary`.
+- Current tool count: `23`.
+- Selected candidate: not selected.
+- Selected candidate status: pending selection.
+- Most recent implemented candidate: `project.risk.summary`.
 - Most recent implementation: approved bounded read-only runtime implementation complete.
-- Fixture/test contract: retained for `project.release.summary`.
-- Implementation transition checklist: completed for `project.release.summary`.
-- Source-review handoff: recorded for `project.release.summary`.
-- Source-review bundle: recorded for `project.release.summary`.
+- Fixture/test contract: retained for `project.risk.summary`.
+- Implementation transition checklist: completed for `project.risk.summary`.
+- Source-review handoff: recorded for `project.risk.summary`.
+- Source-review bundle: recorded for `project.risk.summary`.
 - Broader capability expansion: blocked.
 - New powerful tool classes: blocked.
 
@@ -65,14 +64,12 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 ## Gate
 
 The most recent implemented capability,
-[project.release.summary](capability-proposals/project-release-summary.md), has advanced through
+[project.risk.summary](capability-proposals/project-risk-summary.md), has advanced through
 proposal, implementation planning, implementation decision, runtime implementation, internal source
 review, and source-review handoff as one bounded read-only metadata tool.
 
-The next selected candidate is
-[project.risk.summary](capability-proposals/project-risk-summary.md). It is design-only and
-implementation remains blocked. The proposal is intentionally risk-signal count metadata, not
-vulnerability scanning, dependency analysis, compliance automation, security assurance, scanner
+No next capability is selected. `project.risk.summary` is intentionally risk-signal count metadata,
+not vulnerability scanning, dependency analysis, compliance automation, security assurance, scanner
 execution, package-manager execution, registry/network access, or raw sensitive metadata exposure.
 
 Run:
@@ -81,14 +78,14 @@ Run:
 make next-capability-readiness
 make project-risk-summary-proposal-check
 make project-risk-summary-implementation-plan-check
+make project-risk-summary-implementation-gate
+make project-risk-summary-preimplementation-check
+make project-risk-summary-review-handoff-check
 make project-risk-summary-design-review-packet
+make project-risk-summary-source-review-bundle
 make project-release-summary-proposal-check
 make project-release-summary-implementation-plan-check
-make project-release-summary-implementation-gate
-make project-release-summary-transition-check
-make project-release-summary-review-handoff-check
 make project-release-summary-design-review-packet
-make project-release-summary-source-review-bundle
 ```
 
 The gate validates the shared read-only metadata capability contract, the approved bounded metadata

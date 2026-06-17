@@ -44,6 +44,7 @@ READ_TOOL_NAMES = frozenset(
         "project.ci.summary",
         "project.language.summary",
         "project.release.summary",
+        "project.risk.summary",
     }
 )
 
@@ -59,6 +60,7 @@ _PROJECT_CONFIG_SUMMARY_TOOL = "project.config.summary"
 _PROJECT_CI_SUMMARY_TOOL = "project.ci.summary"
 _PROJECT_LANGUAGE_SUMMARY_TOOL = "project.language.summary"
 _PROJECT_RELEASE_SUMMARY_TOOL = "project.release.summary"
+_PROJECT_RISK_SUMMARY_TOOL = "project.risk.summary"
 _HEX_OBJECT_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _SAFE_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 _EMAIL_LIKE_RE = re.compile(r"[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+")
@@ -307,6 +309,59 @@ _PROJECT_RELEASE_FILE_SUFFIXES = frozenset(
     {".md", ".markdown", ".rst", ".adoc", ".asciidoc", ".txt", ".json", ".toml", ".yaml", ".yml"}
 )
 _PROJECT_RELEASE_READ_BYTES = 65536
+_PROJECT_RISK_DEFAULT_DEPTH = 4
+_PROJECT_RISK_MAX_DEPTH = 5
+_PROJECT_RISK_DEFAULT_LIMIT = 200
+_PROJECT_RISK_MAX_LIMIT = 300
+_PROJECT_RISK_SECTIONS = (
+    "risk_signal_counts",
+    "risk_posture_counts",
+    "risk_location_counts",
+    "skipped_counts",
+)
+_PROJECT_RISK_SIGNALS = (
+    "security_config_label",
+    "secrets_adjacent_label",
+    "dependency_risk_label",
+    "ci_deploy_risk_label",
+    "policy_control_label",
+    "unknown_risk_label",
+)
+_PROJECT_RISK_POSTURES = (
+    "security_config_shape",
+    "secrets_adjacent_shape",
+    "dependency_risk_shape",
+    "automation_risk_shape",
+    "policy_control_shape",
+    "safe_unknown_shape",
+)
+_PROJECT_RISK_LOCATIONS = (
+    "root_level",
+    "security_directory",
+    "config_directory",
+    "ci_directory",
+    "docs_directory",
+    "source_adjacent",
+    "unknown_location",
+)
+_PROJECT_RISK_DIR_NAMES = frozenset(
+    {
+        "security",
+        "secure",
+        "policy",
+        "policies",
+        "compliance",
+        "controls",
+        "risk",
+        "risks",
+        "audit",
+        "audits",
+    }
+)
+_PROJECT_RISK_FILE_SUFFIXES = frozenset(
+    {".md", ".markdown", ".rst", ".adoc", ".asciidoc", ".txt", ".json", ".toml", ".yaml", ".yml"}
+)
+_PROJECT_RISK_READ_BYTES = 65536
 _PROJECT_LANGUAGE_DEFAULT_DEPTH = 3
 _PROJECT_LANGUAGE_MAX_DEPTH = 5
 _PROJECT_LANGUAGE_DEFAULT_LIMIT = 200
@@ -566,6 +621,8 @@ class ReadToolExecutor:
             return self._project_ci_resource_from_arguments(arguments)
         if tool_name == _PROJECT_RELEASE_SUMMARY_TOOL:
             return self._project_release_resource_from_arguments(arguments)
+        if tool_name == _PROJECT_RISK_SUMMARY_TOOL:
+            return self._project_risk_resource_from_arguments(arguments)
         if tool_name == _PROJECT_LANGUAGE_SUMMARY_TOOL:
             return self._project_language_resource_from_arguments(arguments)
 
@@ -767,6 +824,36 @@ class ReadToolExecutor:
         )
         return resource
 
+    def _project_risk_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
+        workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
+        root = _project_risk_root(arguments)
+        resource: JsonObject = {
+            "type": "project_risk",
+            "workspace_id": workspace_id,
+            "root_label": "unresolved",
+            "in_scope": False,
+        }
+        try:
+            filesystem = self._filesystem(workspace_id)
+            target = filesystem.resolve_existing_path(root)
+            if not target.is_dir():
+                raise ReadToolError("project risk root is not a directory")
+            _project_risk_max_depth(arguments)
+            _project_risk_limit(arguments)
+            _project_risk_include_categories(arguments)
+        except ReadToolError as exc:
+            resource["scope_error"] = exc.reason
+            return resource
+        resource.update(
+            {
+                "root_label": _project_risk_root_label(filesystem, target),
+                "max_depth": _project_risk_max_depth(arguments),
+                "limit": _project_risk_limit(arguments),
+                "in_scope": True,
+            }
+        )
+        return resource
+
     def _commit_metadata_resource_from_arguments(self, arguments: JsonObject) -> JsonObject:
         workspace_id = _workspace_id_arg(arguments, self.default_workspace_id)
         resource: JsonObject = {
@@ -954,6 +1041,8 @@ class ReadToolExecutor:
             return filesystem.project_ci_summary(arguments)
         if tool_name == _PROJECT_RELEASE_SUMMARY_TOOL:
             return filesystem.project_release_summary(arguments)
+        if tool_name == _PROJECT_RISK_SUMMARY_TOOL:
+            return filesystem.project_risk_summary(arguments)
         if tool_name == _PROJECT_LANGUAGE_SUMMARY_TOOL:
             return filesystem.project_language_summary(arguments)
         raise ReadToolError("unsupported read tool")
@@ -2120,6 +2209,158 @@ class FilesystemReadTools:
             result["skipped_counts"] = cast(JsonObject, skipped_counts)
         return result
 
+    def project_risk_summary(self, arguments: JsonObject) -> JsonObject:
+        _validate_project_risk_summary_arguments(arguments)
+        root_arg = _project_risk_root(arguments)
+        max_depth = _project_risk_max_depth(arguments)
+        limit = _project_risk_limit(arguments)
+        include_categories = _project_risk_include_categories(arguments)
+        root_path = self.resolve_existing_path(root_arg)
+        if not root_path.is_dir():
+            raise ReadToolError("project risk root is not a directory")
+
+        risk_signal_counts = _zero_count_mapping(_PROJECT_RISK_SIGNALS)
+        risk_posture_counts = _zero_count_mapping(_PROJECT_RISK_POSTURES)
+        risk_location_counts = _zero_count_mapping(_PROJECT_RISK_LOCATIONS)
+        skipped_counts = _zero_count_mapping(_PROJECT_STRUCTURE_SKIPPED_KEYS)
+        summary: JsonObject = {
+            "visible_risk_directory_count": 0,
+            "visible_risk_signal_count": 0,
+            "max_observed_depth": 0,
+            "inspected_entry_count": 0,
+        }
+        truncated = False
+        queue: list[tuple[Path, int]] = [(root_path, 0)]
+
+        while queue:
+            directory, depth = queue.pop(0)
+            try:
+                children = sorted(directory.iterdir(), key=lambda item: item.name)
+            except OSError:
+                skipped_counts["safe_error"] += 1
+                continue
+            for child in children:
+                inspected = cast(int, summary["inspected_entry_count"])
+                if inspected >= limit:
+                    skipped_counts["item_limit"] += 1
+                    truncated = True
+                    continue
+                entry_depth = depth + 1
+                if entry_depth > max_depth:
+                    skipped_counts["depth_limit"] += 1
+                    truncated = True
+                    continue
+                summary["inspected_entry_count"] = inspected + 1
+                try:
+                    child.relative_to(self.workspace_root)
+                except ValueError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+                if child.is_symlink():
+                    skipped_counts["symlink"] += 1
+                    continue
+                try:
+                    relative = child.relative_to(self.workspace_root)
+                    if _relative_has_git_internal(relative):
+                        skipped_counts["git_internal"] += 1
+                        continue
+                    _ensure_project_risk_relative_parts_safe(relative)
+                    resolved = child.resolve(strict=True)
+                    self._ensure_under_workspace(resolved)
+                    stat_result = resolved.stat()
+                except ReadToolError as exc:
+                    _record_project_structure_skip(skipped_counts, exc.reason)
+                    continue
+                except OSError:
+                    skipped_counts["safe_error"] += 1
+                    continue
+
+                summary["max_observed_depth"] = max(
+                    cast(int, summary["max_observed_depth"]),
+                    entry_depth,
+                )
+                if stat.S_ISDIR(stat_result.st_mode):
+                    if _is_project_risk_counted_directory(resolved):
+                        summary["visible_risk_directory_count"] = (
+                            cast(int, summary["visible_risk_directory_count"]) + 1
+                        )
+                    queue.append((resolved, entry_depth))
+                elif stat.S_ISREG(stat_result.st_mode):
+                    if stat_result.st_nlink > 1:
+                        skipped_counts["hardlink"] += 1
+                        continue
+                    if not _is_project_risk_like_file(self, resolved):
+                        continue
+                    try:
+                        text = _project_risk_safe_text(self, resolved)
+                    except ReadToolError as exc:
+                        _record_project_structure_skip(skipped_counts, exc.reason)
+                        continue
+                    summary["visible_risk_signal_count"] = (
+                        cast(int, summary["visible_risk_signal_count"]) + 1
+                    )
+                    risk_posture_counts[_project_risk_posture_category(self, resolved)] += 1
+                    risk_location_counts[_project_risk_location(self, resolved)] += 1
+                    for category in _project_risk_signal_categories(text):
+                        risk_signal_counts[category] += 1
+                else:
+                    skipped_counts["unsupported_type"] += 1
+
+        result: JsonObject = {
+            "workspace_id": self.workspace_id,
+            "tool_name": _PROJECT_RISK_SUMMARY_TOOL,
+            "root_label": _project_risk_root_label(self, root_path),
+            "summary": summary,
+            "truncated": truncated,
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_recursive_listing_included": False,
+                "raw_paths_included": False,
+                "raw_file_names_included": False,
+                "filenames_included": False,
+                "dependency_names_included": False,
+                "package_names_included": False,
+                "cve_ids_included": False,
+                "advisory_ids_included": False,
+                "secret_names_included": False,
+                "secret_values_included": False,
+                "environment_names_or_values_included": False,
+                "command_values_included": False,
+                "script_values_included": False,
+                "registry_urls_included": False,
+                "scanner_output_included": False,
+                "vulnerability_findings_included": False,
+                "compliance_findings_included": False,
+                "security_findings_included": False,
+                "shell_execution_used": False,
+                "git_execution_used": False,
+                "package_manager_execution_used": False,
+                "ci_execution_used": False,
+                "scanner_execution_used": False,
+                "registry_or_network_access_used": False,
+                "compliance_claims_included": False,
+                "security_assurance_claims_included": False,
+                "metadata_is_untrusted": True,
+            },
+            "limits": {
+                "max_depth": max_depth,
+                "entry_limit": limit,
+                "max_risk_metadata_bytes": _PROJECT_RISK_READ_BYTES,
+                "category_keys_are_allowlisted": True,
+                "raw_evidence_is_suppressed": True,
+                "scanner_execution_is_disabled": True,
+            },
+        }
+        if "risk_signal_counts" in include_categories:
+            result["risk_signal_counts"] = cast(JsonObject, risk_signal_counts)
+        if "risk_posture_counts" in include_categories:
+            result["risk_posture_counts"] = cast(JsonObject, risk_posture_counts)
+        if "risk_location_counts" in include_categories:
+            result["risk_location_counts"] = cast(JsonObject, risk_location_counts)
+        if "skipped_counts" in include_categories:
+            result["skipped_counts"] = cast(JsonObject, skipped_counts)
+        return result
+
     def resolve_existing_path(self, path: str) -> Path:
         if not path:
             path = "."
@@ -3002,6 +3243,17 @@ def _validate_project_release_summary_arguments(arguments: JsonObject) -> None:
     _project_release_include_categories(arguments)
 
 
+def _validate_project_risk_summary_arguments(arguments: JsonObject) -> None:
+    allowed = {"workspace_id", "root", "max_depth", "limit", "include_categories"}
+    unknown = sorted(set(arguments) - allowed)
+    if unknown:
+        raise ReadToolError("project risk summary received unsupported arguments")
+    _project_risk_root(arguments)
+    _project_risk_max_depth(arguments)
+    _project_risk_limit(arguments)
+    _project_risk_include_categories(arguments)
+
+
 def _project_manifest_root(arguments: JsonObject) -> str:
     root = _string_arg(arguments, "root", default=".")
     if not root:
@@ -3339,6 +3591,49 @@ def _project_release_include_categories(arguments: JsonObject) -> list[str]:
     return categories
 
 
+def _project_risk_root(arguments: JsonObject) -> str:
+    root = _string_arg(arguments, "root", default=".")
+    if not root:
+        raise ReadToolError("project risk root must be a non-empty string")
+    return root
+
+
+def _project_risk_max_depth(arguments: JsonObject) -> int:
+    max_depth = _int_arg(arguments, "max_depth", default=_PROJECT_RISK_DEFAULT_DEPTH)
+    if max_depth < 0 or max_depth > _PROJECT_RISK_MAX_DEPTH:
+        raise ReadToolError("project risk max_depth is outside allowed bounds")
+    return max_depth
+
+
+def _project_risk_limit(arguments: JsonObject) -> int:
+    limit = _int_arg(arguments, "limit", default=_PROJECT_RISK_DEFAULT_LIMIT)
+    if limit < 1 or limit > _PROJECT_RISK_MAX_LIMIT:
+        raise ReadToolError("project risk limit is outside allowed bounds")
+    return limit
+
+
+def _project_risk_include_categories(arguments: JsonObject) -> list[str]:
+    raw = arguments.get("include_categories")
+    if raw is None:
+        return list(_PROJECT_RISK_SECTIONS)
+    if not isinstance(raw, list):
+        raise ReadToolError("include_categories must be an array")
+    categories: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            raise ReadToolError("include_categories entries must be strings")
+        if item not in _PROJECT_RISK_SECTIONS:
+            raise ReadToolError("project risk category is not allowlisted")
+        if item in seen:
+            raise ReadToolError("include_categories entries must be unique")
+        seen.add(item)
+        categories.append(item)
+    if not categories:
+        raise ReadToolError("include_categories must not be empty")
+    return categories
+
+
 def _project_test_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
     if root_path == filesystem.workspace_root:
         return "workspace_root"
@@ -3370,6 +3665,12 @@ def _project_ci_root_label(filesystem: FilesystemReadTools, root_path: Path) -> 
 
 
 def _project_release_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
+    if root_path == filesystem.workspace_root:
+        return "workspace_root"
+    return "scoped_root"
+
+
+def _project_risk_root_label(filesystem: FilesystemReadTools, root_path: Path) -> str:
     if root_path == filesystem.workspace_root:
         return "workspace_root"
     return "scoped_root"
@@ -4093,6 +4394,151 @@ def _project_release_signal_categories(text: str) -> set[str]:
         categories.add("release_config_signal")
     if not categories:
         categories.add("safe_unknown_signal")
+    return categories
+
+
+def _ensure_project_risk_relative_parts_safe(relative: Path) -> None:
+    for part in relative.parts:
+        lowered = part.lower()
+        if part.startswith("."):
+            raise ReadToolError("path is hidden or sensitive")
+        if lowered in _SENSITIVE_EXACT_PATH_PARTS or any(
+            marker in lowered for marker in _SENSITIVE_PATH_MARKERS
+        ):
+            raise ReadToolError("path is hidden or sensitive")
+
+
+def _is_project_risk_counted_directory(path: Path) -> bool:
+    lowered = path.name.lower()
+    return lowered in _PROJECT_RISK_DIR_NAMES or lowered in {
+        "ci",
+        "workflow",
+        "workflows",
+        "deploy",
+        "deployment",
+        "deployments",
+    }
+
+
+def _is_project_risk_like_file(filesystem: FilesystemReadTools, path: Path) -> bool:
+    if path.suffix.lower() not in _PROJECT_RISK_FILE_SUFFIXES:
+        return False
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return False
+    lowered_name = path.name.lower()
+    lowered_parts = [part.lower() for part in relative.parts]
+    risk_name_tokens = (
+        "security",
+        "secure",
+        "secret",
+        "risk",
+        "audit",
+        "policy",
+        "control",
+        "compliance",
+        "dependabot",
+        "snyk",
+        "codeql",
+        "trivy",
+        "scan",
+        "sast",
+        "sbom",
+        "requirement",
+        "deploy",
+        "deployment",
+        "pipeline",
+    )
+    if any(token in lowered_name for token in risk_name_tokens):
+        return True
+    if any(part in _PROJECT_RISK_DIR_NAMES for part in lowered_parts[:-1]):
+        return True
+    if any(part in {"ci", "workflow", "workflows"} for part in lowered_parts[:-1]):
+        return any(token in lowered_name for token in ("security", "scan", "sast", "audit"))
+    return False
+
+
+def _project_risk_posture_category(filesystem: FilesystemReadTools, path: Path) -> str:
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return "safe_unknown_shape"
+    lowered_name = path.name.lower()
+    lowered_parts = [part.lower() for part in relative.parts]
+    if any(token in lowered_name for token in ("secret", "secrets", "env")):
+        return "secrets_adjacent_shape"
+    if any(
+        token in lowered_name
+        for token in ("dependabot", "snyk", "sbom", "dependency", "requirement")
+    ):
+        return "dependency_risk_shape"
+    if any(token in lowered_name for token in ("security", "secure", "codeql", "sast", "scan")):
+        return "security_config_shape"
+    if any(token in lowered_name for token in ("policy", "control", "compliance", "audit")):
+        return "policy_control_shape"
+    if any(
+        part in {"ci", "workflow", "workflows", "deploy", "deployment"}
+        for part in lowered_parts
+    ):
+        return "automation_risk_shape"
+    if any(token in lowered_name for token in ("deploy", "deployment", "pipeline")):
+        return "automation_risk_shape"
+    if any(part in _PROJECT_RISK_DIR_NAMES for part in lowered_parts):
+        return "policy_control_shape"
+    return "safe_unknown_shape"
+
+
+def _project_risk_location(filesystem: FilesystemReadTools, path: Path) -> str:
+    try:
+        relative = path.relative_to(filesystem.workspace_root)
+    except ValueError:
+        return "unknown_location"
+    lowered_parts = [part.lower() for part in relative.parts]
+    if len(relative.parts) == 1:
+        return "root_level"
+    if any(
+        part in {"security", "secure", "risk", "risks", "audit", "audits"}
+        for part in lowered_parts
+    ):
+        return "security_directory"
+    if any(part in _PROJECT_CONFIG_DIR_NAMES for part in lowered_parts):
+        return "config_directory"
+    if any(part in {"ci", "workflow", "workflows"} for part in lowered_parts):
+        return "ci_directory"
+    if any(part in _PROJECT_DOCS_DIR_NAMES for part in lowered_parts):
+        return "docs_directory"
+    if any(part in (_PROJECT_SOURCE_DIR_NAMES | _PROJECT_TEST_DIR_NAMES) for part in lowered_parts):
+        return "source_adjacent"
+    return "unknown_location"
+
+
+def _project_risk_safe_text(filesystem: FilesystemReadTools, path: Path) -> str:
+    data = filesystem.read_file_bytes(path)
+    if len(data) > _PROJECT_RISK_READ_BYTES:
+        raise ReadToolError("file exceeds configured read limit")
+    if b"\x00" in data:
+        raise ReadToolError("file appears to be binary")
+    try:
+        return data.decode("utf-8").lower()
+    except UnicodeDecodeError as exc:
+        raise ReadToolError("file is not valid UTF-8 text") from exc
+
+
+def _project_risk_signal_categories(text: str) -> set[str]:
+    categories: set[str] = set()
+    if re.search(r"\b(security|secure|sast|codeql|scan|scanner|trivy)\b", text):
+        categories.add("security_config_label")
+    if re.search(r"\b(secret|secrets|credential|credentials|token|api[_-]?key)\b", text):
+        categories.add("secrets_adjacent_label")
+    if re.search(r"\b(dependabot|dependency|dependencies|sbom|snyk|advisory|audit)\b", text):
+        categories.add("dependency_risk_label")
+    if re.search(r"\b(ci|workflow|deploy|deployment|release|pipeline)\b", text):
+        categories.add("ci_deploy_risk_label")
+    if re.search(r"\b(policy|control|controls|compliance|governance)\b", text):
+        categories.add("policy_control_label")
+    if not categories:
+        categories.add("unknown_risk_label")
     return categories
 
 

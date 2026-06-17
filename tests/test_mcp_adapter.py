@@ -458,6 +458,48 @@ input_schema:
     )
 
 
+def write_project_risk_summary_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("project-risk-summary.yaml").write_text(
+        """
+name: project.risk.summary
+version: 1.0.0
+title: Summarize project risk posture
+risk: read
+category: project
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: true
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root:
+      type: string
+    max_depth:
+      type: integer
+      minimum: 0
+      maximum: 5
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 300
+    include_categories:
+      type: array
+      items:
+        type: string
+        enum:
+          - risk_signal_counts
+          - risk_posture_counts
+          - risk_location_counts
+          - skipped_counts
+    workspace_id:
+      type: string
+""",
+        encoding="utf-8",
+    )
+
+
 @dataclass(frozen=True)
 class McpAdapterHarness:
     adapter: IthildinMcpAdapter
@@ -488,6 +530,7 @@ def make_adapter_harness(
     write_project_dependency_summary_manifest(manifest_dir)
     write_project_manifest_summary_manifest(manifest_dir)
     write_project_release_summary_manifest(manifest_dir)
+    write_project_risk_summary_manifest(manifest_dir)
     (manifest_dir / "internal.yaml").write_text(
         """
 name: internal.hidden
@@ -528,6 +571,10 @@ jobs:
     steps:
       - run: pytest --token secret
 """,
+        encoding="utf-8",
+    )
+    workspace_root.joinpath("SECURITY.md").write_text(
+        "CVE-2026-1234 private advisory token scanner finding\n",
         encoding="utf-8",
     )
     run_git(workspace_root, ["init"])
@@ -620,6 +667,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "project.dependency.summary",
         "project.manifest.summary",
         "project.release.summary",
+        "project.risk.summary",
     ]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
 
@@ -654,6 +702,7 @@ principals:
         "project.dependency.summary",
         "project.manifest.summary",
         "project.release.summary",
+        "project.risk.summary",
     ]
 
 
@@ -866,6 +915,35 @@ def test_mcp_call_returns_real_project_release_summary_output(tmp_path: Path) ->
     assert "Private" not in dumped
     assert "pytest" not in dumped
     assert "--token secret" not in dumped
+
+
+def test_mcp_call_returns_real_project_risk_summary_output(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "project.risk.summary",
+            {"root": ".", "max_depth": 4, "limit": 20},
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "completed"
+    assert cast(dict[str, object], result.structuredContent["summary"])[
+        "visible_risk_signal_count"
+    ] == 1
+    output_policy = cast(dict[str, object], result.structuredContent["output_policy"])
+    assert output_policy["filenames_included"] is False
+    assert output_policy["cve_ids_included"] is False
+    assert output_policy["advisory_ids_included"] is False
+    assert output_policy["scanner_execution_used"] is False
+    assert output_policy["vulnerability_findings_included"] is False
+    dumped = json.dumps(result.structuredContent)
+    assert "SECURITY" not in dumped
+    assert "CVE-2026-1234" not in dumped
+    assert "private advisory" not in dumped
+    assert "scanner finding" not in dumped
 
 
 def test_mcp_call_denies_registered_tool_not_exposed_over_mcp(tmp_path: Path) -> None:

@@ -254,6 +254,7 @@ def test_committed_read_tool_manifests_load() -> None:
         "project.language.summary",
         "project.manifest.summary",
         "project.release.summary",
+        "project.risk.summary",
         "project.structure.summary",
         "project.test.summary",
     ]

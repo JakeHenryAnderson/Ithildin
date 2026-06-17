@@ -56,10 +56,12 @@ REQUIRED_PHRASES = [
     "External/source Review Requirement",
 ]
 SELECTION_PHRASES = [
-    "Status: design-only candidate selection",
+    "Status: historical design-only candidate selection",
     "project.risk.summary",
-    "tool count remains `22`",
-    "implementation remains blocked",
+    "At selection time, implementation was blocked",
+    "Post-implementation note",
+    "bounded read-only",
+    "runtime implementation",
     "make project-risk-summary-proposal-check",
 ]
 FORBIDDEN_PHRASES = [

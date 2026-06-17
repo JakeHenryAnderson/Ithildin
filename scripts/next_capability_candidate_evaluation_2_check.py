@@ -27,7 +27,7 @@ REQUIRED_PHRASES = [
     "project.release.summary",
     "project.license.summary",
     "project.ownership.summary",
-    "tool count remains `22`",
+    "tool count remains `23`",
     "historical selected candidate was `project.release.summary`",
     "proposal and implementation work completed",
     "no next candidate is selected",
@@ -111,7 +111,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Status: historical candidate selection; implemented",
         "project.release.summary",
-        "tool count remains `22`",
+        "tool count remains `23`",
         "runtime implementation is now present",
         "make project-release-summary-proposal-check",
         "make project-release-summary-implementation-plan-check",

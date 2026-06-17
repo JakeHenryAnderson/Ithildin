@@ -357,18 +357,18 @@ checked with `make control-mapping-readiness`.
 - `make project-release-summary-source-review-bundle` - generate the ignored implemented
   source-review packet for `project.release.summary`.
 - `make project-risk-summary-proposal-check` - validate the selected design-only
-  `project.risk.summary` proposal without authorizing runtime work.
+  `project.risk.summary` proposal that preceded runtime implementation.
 - `make project-risk-summary-implementation-plan-check` - validate the
-  `project.risk.summary` implementation-planning packet without authorizing runtime work.
-- `make project-risk-summary-implementation-gate` - validate the later bounded read-only
-  implementation boundary while keeping runtime work out of this sprint.
-- `make project-risk-summary-preimplementation-check` - validate fixture and strict non-leak
-  expectations before any `project.risk.summary` runtime code exists.
-- `make project-risk-summary-review-handoff-check` - validate the preimplementation
-  source-review and negative-transcript handoff for `project.risk.summary`.
+  `project.risk.summary` implementation-planning packet.
+- `make project-risk-summary-implementation-gate` - validate the bounded read-only
+  implementation boundary and current runtime wiring for `project.risk.summary`.
+- `make project-risk-summary-preimplementation-check` - validate the retained fixture and strict
+  non-leak expectations for `project.risk.summary`.
+- `make project-risk-summary-review-handoff-check` - validate the implemented source-review and
+  negative-transcript handoff for `project.risk.summary`.
 - `make project-risk-summary-design-review-packet` - generate the design-review packet for the
-  selected `project.risk.summary` proposal.
-- `make project-risk-summary-source-review-bundle` - generate the preimplementation
+  historical `project.risk.summary` proposal.
+- `make project-risk-summary-source-review-bundle` - generate the implemented
   source-review handoff bundle for `project.risk.summary`.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
@@ -691,19 +691,18 @@ checked with `make read-only-metadata-capability-check` and
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
 with `make next-capability-readiness`; it records that `project.release.summary` has advanced
 through a bounded read-only implementation, internal source review, and source-review handoff while
-broader capability expansion remains blocked. The current selected design-only candidate is
+broader capability expansion remains blocked. The most recent implemented candidate is
 [docs/codex/capability-proposals/project-risk-summary.md](docs/codex/capability-proposals/project-risk-summary.md),
-checked with `make project-risk-summary-proposal-check`. Its implementation-planning packet is
+checked with `make project-risk-summary-proposal-check`. Its historical implementation-planning packet is
 [docs/codex/capability-implementation-plans/project-risk-summary.md](docs/codex/capability-implementation-plans/project-risk-summary.md)
-and is checked with `make project-risk-summary-implementation-plan-check`; generate its design-review
-packet with `make project-risk-summary-design-review-packet`. Its implementation boundary is
+and is checked with `make project-risk-summary-implementation-plan-check`; its implementation boundary is
 recorded in
 [docs/codex/v3-project-risk-summary-implementation.md](docs/codex/v3-project-risk-summary-implementation.md)
 and checked with `make project-risk-summary-implementation-gate`; fixture and handoff evidence are
 checked with `make project-risk-summary-preimplementation-check` and
-`make project-risk-summary-review-handoff-check`. Implementation remains blocked until a later
-explicit runtime sprint. The
-proposal is risk-signal count metadata only, not vulnerability scanning, dependency analysis,
+`make project-risk-summary-review-handoff-check`; generate its implemented source-review packet with
+`make project-risk-summary-source-review-bundle`. No next design-only candidate is selected yet.
+The implemented tool is risk-signal count metadata only, not vulnerability scanning, dependency analysis,
 compliance automation, security assurance, scanner execution, registry/network access, or shell
 execution. The previous selected candidate,
 [docs/codex/capability-proposals/project-ci-summary.md](docs/codex/capability-proposals/project-ci-summary.md),

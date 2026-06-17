@@ -1,15 +1,14 @@
-# project.risk.summary Implementation Boundary
+# project.risk.summary Implementation
 
-Status: approved boundary for a later limited read-only implementation.
+Status: approved limited read-only runtime implementation.
 
-This document records the implementation boundary for the proposed `project.risk.summary`
-capability. It does not add runtime behavior in this sprint. A later explicit implementation sprint
-may add one bounded read-only tool only if it preserves this boundary, updates the manifest lock, and
-passes the source-review handoff and release gates.
+This document records the implemented boundary for the `project.risk.summary` capability. It adds
+one bounded read-only project metadata tool only. The implementation preserves the existing
+local-preview boundary, updates the manifest lock, and keeps the source-review handoff pending.
 
 ## Decision
 
-`project.risk.summary` may be implemented later as one governed read-only project metadata tool.
+`project.risk.summary` is implemented as one governed read-only project metadata tool.
 
 Approved shape:
 
@@ -25,14 +24,14 @@ Approved shape:
 
 Current state:
 
-- tool count remains `22`;
-- no tool manifest is added by this boundary sprint;
-- runtime behavior is not changed by this boundary sprint;
-- implementation remains blocked until a later explicit runtime implementation task.
+- tool count is `23`;
+- runtime manifest is present;
+- runtime implementation is present;
+- no new power class is approved.
 
-## Future Input Contract
+## Input Contract
 
-A later implementation may use only the bounded input sketch from the implementation plan:
+The implemented tool uses only the bounded input sketch from the implementation plan:
 
 - `workspace_id`;
 - `root`;
@@ -40,13 +39,13 @@ A later implementation may use only the bounded input sketch from the implementa
 - `limit`;
 - `include_categories`.
 
-Inputs must remain closed-schema and bounded. The future tool must reject traversal, absolute paths,
+Inputs must remain closed-schema and bounded. The tool must reject traversal, absolute paths,
 encoded ambiguity, control characters, oversized values, unsupported fields, and malformed argument
 types with safe errors.
 
-## Future Output Contract
+## Output Contract
 
-A later implementation may return only safe counts and coarse labels, such as:
+The tool may return only safe counts and coarse labels, such as:
 
 - risk-signal category counts;
 - posture bucket counts;
@@ -80,7 +79,7 @@ For gate clarity, the exact strict non-leak phrases are:
 
 ## Explicit Non-Goals
 
-The future tool must not become any of these:
+The tool must not become any of these:
 
 - vulnerability scanning;
 - dependency vulnerability analysis;
@@ -99,18 +98,18 @@ The future tool must not become any of these:
 - production identity, hosted telemetry, runtime Postgres, remote MCP, plugin SDK, or SIEM adapter
   behavior.
 
-## Evidence Required Before Runtime
+## Evidence
 
-Before any runtime implementation is merged, the following must exist and pass:
+The following must exist and pass:
 
 - `make project-risk-summary-implementation-gate`;
 - `make project-risk-summary-preimplementation-check`;
 - source-review handoff docs and negative transcript plan;
-- future runtime tests for executor, governed call, policy parity, MCP list/call, audit metadata, and
-  safe denial behavior;
+- runtime tests for executor, governed call, policy parity, MCP list/call, audit metadata, and safe
+  denial behavior;
 - manifest lock update and tool-surface invariant update;
 - `make release-check`;
 - source-review bundle for `project.risk.summary`.
 
-Broader capability expansion remains blocked. This boundary approves only the possibility of a later
-single bounded read-only metadata tool.
+Broader capability expansion remains blocked. This boundary approves only this single bounded
+read-only metadata tool.

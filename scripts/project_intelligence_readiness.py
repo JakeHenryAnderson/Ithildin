@@ -34,6 +34,7 @@ APPROVED_TOOLS = [
     "project.config.summary",
     "project.ci.summary",
     "project.release.summary",
+    "project.risk.summary",
 ]
 REQUIRED_DOC_PHRASES = [
     "Status: consolidated local-preview product slice",
@@ -50,10 +51,11 @@ REQUIRED_DOC_PHRASES = [
     "project.config.summary",
     "project.ci.summary",
     "project.release.summary",
-    "Tool count: `22`",
-    "Selected candidate: `project.risk.summary`",
-    "Selected candidate status: design-only selected; implementation blocked",
-    "Most recent implementation: `project.release.summary`, approved bounded read-only runtime",
+    "project.risk.summary",
+    "Tool count: `23`",
+    "Selected candidate: not selected",
+    "Selected candidate status: pending selection",
+    "Most recent implementation: `project.risk.summary`, approved bounded read-only runtime",
     "Broader capability expansion remains blocked",
     "New powerful tool classes remain blocked",
     "No file contents",
@@ -65,7 +67,6 @@ REQUIRED_DOC_PHRASES = [
     "policy preview/runtime parity",
     "make read-only-project-intelligence",
     "explicit implementation decision",
-    "project.risk.summary",
     "risk-signal count metadata only",
 ]
 

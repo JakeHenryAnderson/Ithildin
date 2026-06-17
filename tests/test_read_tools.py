@@ -2184,6 +2184,166 @@ def test_project_release_summary_rejects_unsupported_arguments(tmp_path: Path) -
             filesystem.project_release_summary(cast(JsonObject, arguments))
 
 
+def test_project_risk_summary_returns_count_only_metadata(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    security = root / "security"
+    security.mkdir()
+    security.joinpath("private-risk-register.md").write_text(
+        "CVE-2026-1234 GHSA-private advisory secret token finding\n",
+        encoding="utf-8",
+    )
+    root.joinpath("SECURITY.md").write_text(
+        "vulnerability disclosure policy scanner finding\n",
+        encoding="utf-8",
+    )
+    root.joinpath("requirements.txt").write_text(
+        "private-package==1.0.0 # vulnerable dependency\n",
+        encoding="utf-8",
+    )
+    root.joinpath("deploy.yml").write_text(
+        "deploy production token command\n",
+        encoding="utf-8",
+    )
+    root.joinpath(".env").write_text("PRIVATE_TOKEN=secret", encoding="utf-8")
+    root.joinpath(".git").mkdir()
+    root.joinpath(".git", "config").write_text("[remote]\n", encoding="utf-8")
+
+    summary = filesystem.project_risk_summary({"root": ".", "max_depth": 4, "limit": 40})
+
+    assert summary["tool_name"] == "project.risk.summary"
+    assert summary["summary"] == {
+        "visible_risk_directory_count": 1,
+        "visible_risk_signal_count": 4,
+        "max_observed_depth": 2,
+        "inspected_entry_count": 7,
+    }
+    signals = cast(dict[str, int], summary["risk_signal_counts"])
+    assert signals["security_config_label"] >= 1
+    assert signals["secrets_adjacent_label"] >= 2
+    assert signals["dependency_risk_label"] >= 1
+    assert signals["ci_deploy_risk_label"] == 1
+    postures = cast(dict[str, int], summary["risk_posture_counts"])
+    assert postures["security_config_shape"] >= 1
+    assert postures["dependency_risk_shape"] == 1
+    assert postures["automation_risk_shape"] == 1
+    locations = cast(dict[str, int], summary["risk_location_counts"])
+    assert locations["security_directory"] == 1
+    assert locations["root_level"] == 3
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["git_internal"] == 1
+    assert skipped["hidden_or_sensitive"] == 1
+    output_policy = cast(dict[str, object], summary["output_policy"])
+    assert output_policy["file_contents_included"] is False
+    assert output_policy["filenames_included"] is False
+    assert output_policy["cve_ids_included"] is False
+    assert output_policy["advisory_ids_included"] is False
+    assert output_policy["secret_names_included"] is False
+    assert output_policy["secret_values_included"] is False
+    assert output_policy["scanner_output_included"] is False
+    assert output_policy["vulnerability_findings_included"] is False
+    assert output_policy["compliance_findings_included"] is False
+    assert output_policy["security_assurance_claims_included"] is False
+    dumped = json_dump(summary)
+    assert "private-risk-register" not in dumped
+    assert "CVE-2026-1234" not in dumped
+    assert "GHSA-private" not in dumped
+    assert "PRIVATE_TOKEN" not in dumped
+    assert "private-package" not in dumped
+    assert "deploy.yml" not in dumped
+    assert ".git" not in dumped
+    assert ".env" not in dumped
+
+
+def test_project_risk_summary_empty_workspace_and_filters(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+
+    summary = filesystem.project_risk_summary(
+        {
+            "root": ".",
+            "max_depth": 1,
+            "limit": 10,
+            "include_categories": ["risk_signal_counts"],
+        }
+    )
+
+    summary_metadata = cast(dict[str, int], summary["summary"])
+    assert summary_metadata["visible_risk_signal_count"] == 0
+    assert "risk_signal_counts" in summary
+    assert "risk_posture_counts" not in summary
+    assert cast(dict[str, int], summary["risk_signal_counts"])["security_config_label"] == 0
+    output_policy = cast(dict[str, bool], summary["output_policy"])
+    assert output_policy["scanner_execution_used"] is False
+    assert output_policy["compliance_claims_included"] is False
+
+
+def test_project_risk_summary_honors_limits_and_skips_symlink_hardlink(
+    tmp_path: Path,
+) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    root = filesystem.workspace_root
+    security = root / "security"
+    security.mkdir()
+    target = security / "risk.txt"
+    target.write_text("security vulnerability token\n", encoding="utf-8")
+    try:
+        os.link(target, security / "risk-copy.txt")
+    except OSError:
+        pytest.skip("hardlinks are not supported on this filesystem")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root.joinpath("outside-link").symlink_to(outside)
+
+    summary = filesystem.project_risk_summary(
+        {"root": ".", "max_depth": 2, "limit": 20, "include_categories": ["skipped_counts"]}
+    )
+
+    skipped = cast(dict[str, int], summary["skipped_counts"])
+    assert skipped["hardlink"] == 2
+    assert skipped["symlink"] == 1
+    dumped = json_dump(summary)
+    assert "risk.txt" not in dumped
+    assert "outside" not in dumped
+
+
+def test_project_risk_summary_rejects_unsupported_arguments(tmp_path: Path) -> None:
+    filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
+    denied_arguments = [
+        {"path": "."},
+        {"root": "../outside"},
+        {"root": "/tmp"},
+        {"root": "%2e%2e/outside"},
+        {"root": "bad\x1fpath"},
+        {"max_depth": -1},
+        {"max_depth": 6},
+        {"limit": 0},
+        {"limit": 301},
+        {"include_categories": []},
+        {"include_categories": ["risk_signal_counts", "risk_signal_counts"]},
+        {"include_categories": ["filenames"]},
+        {"glob": "**/*"},
+        {"regex": ".*"},
+        {"recursive": True},
+        {"include_file_contents": True},
+        {"include_file_names": True},
+        {"include_filenames": True},
+        {"include_cve_ids": True},
+        {"include_advisory_ids": True},
+        {"include_secret_names": True},
+        {"include_secret_values": True},
+        {"include_dependency_names": True},
+        {"include_package_names": True},
+        {"execute_scanner": True},
+        {"run_scanner": True},
+        {"shell": "trivy fs ."},
+        {"registry_url": "https://registry.example.test"},
+    ]
+
+    for arguments in denied_arguments:
+        with pytest.raises(ReadToolError):
+            filesystem.project_risk_summary(cast(JsonObject, arguments))
+
+
 def test_project_dependency_summary_counts_multiple_ecosystems(tmp_path: Path) -> None:
     filesystem = make_filesystem(tmp_path, max_read_bytes=4096)
     root = filesystem.workspace_root

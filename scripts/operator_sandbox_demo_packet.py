@@ -122,7 +122,7 @@ only.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- tool count remains `22`.
+- tool count remains `23`.
 - Ithildin mediates registered tool calls against an operator-managed workspace or sandbox.
 - This packet does not add runtime behavior, sandbox lifecycle control, sandbox orchestration, API
   endpoints, MCP tools, executors, tool manifests, policy rules, SIEM adapters, production identity,

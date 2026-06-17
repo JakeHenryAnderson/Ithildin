@@ -10,7 +10,7 @@ approval/audit logic, or new governed tool powers.
 
 - Tool: `project.release.summary`.
 - Resource type: `project_release`.
-- Current tool count remains `22`.
+- Current tool count remains `23`.
 - Runtime implementation is present.
 - Implementation must stay within the approved limited read-only boundary.
 - Finding namespace: `EXT-RELEASE-SUMMARY-###`.

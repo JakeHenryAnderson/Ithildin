@@ -95,7 +95,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "tool_name": "project.release.summary",
         "transition_status": "manager_owned_implementation_completed",
-        "tool_count": 22,
+        "tool_count": 23,
         "runtime_implemented": True,
         "runtime_changes_allowed_now": True,
         "future_runtime_implementation_allowed": False,

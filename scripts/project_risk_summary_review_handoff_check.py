@@ -113,11 +113,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     else:
         source_text = source_review_path.read_text(encoding="utf-8")
         for phrase in [
-            "Status: preimplementation source-review handoff skeleton",
+            "Status: implemented source-review handoff",
             "project.risk.summary",
             "Resource type: `project_risk`",
-            "Current tool count remains `22`",
-            "Runtime implementation is not present",
+            "Current tool count is `23`",
+            "Runtime implementation is present",
             "Finding namespace: `EXT-RISK-SUMMARY-###`",
             "manifest/schema shape",
             "workspace traversal and path safety",
@@ -148,17 +148,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("implementation boundary doc is missing")
     if not fixture_path.exists():
         failures.append("fixture plan doc is missing")
-    if repo_root.joinpath("tool-manifests/project-risk-summary.yaml").exists():
-        failures.append("project.risk.summary manifest must not exist in handoff skeleton")
+    if not repo_root.joinpath("tool-manifests/project-risk-summary.yaml").exists():
+        failures.append("project.risk.summary manifest is missing")
 
-    if implementation_gate.get("runtime_implemented") is not False:
-        failures.append("implementation gate must report runtime_implemented: false")
-    if implementation_gate.get("future_runtime_implementation_allowed") is not True:
-        failures.append("implementation gate must allow a later explicit runtime sprint")
-    if implementation_gate.get("tool_count") != 22:
-        failures.append("implementation gate tool count is not 22")
-    if tool_surface.get("tool_count") != 22:
-        failures.append("tool surface tool count is not 22")
+    if implementation_gate.get("runtime_implemented") is not True:
+        failures.append("implementation gate must report runtime_implemented: true")
+    if implementation_gate.get("future_runtime_implementation_allowed") is not False:
+        failures.append("implementation gate must not allow another runtime sprint")
+    if implementation_gate.get("tool_count") != 23:
+        failures.append("implementation gate tool count is not 23")
+    if tool_surface.get("tool_count") != 23:
+        failures.append("tool surface tool count is not 23")
     if no_new_powers.get("new_power_classes_allowed") is not False:
         failures.append("no-new-powers guardrail allows new power classes")
 
@@ -190,9 +190,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "proposal": "project.risk.summary",
-        "scope": "preimplementation_source_review_handoff",
-        "implementation_allowed": False,
-        "runtime_changes_allowed": False,
+        "scope": "implemented_source_review_handoff",
+        "implementation_allowed": True,
+        "runtime_changes_allowed": True,
         "runtime_implemented": implementation_gate.get("runtime_implemented"),
         "future_runtime_implementation_allowed": implementation_gate.get(
             "future_runtime_implementation_allowed"
@@ -217,9 +217,9 @@ def render_report(report: dict[str, Any]) -> str:
         "Ithildin project.risk.summary review-handoff check",
         f"valid: {str(report['valid']).lower()}",
         "proposal: project.risk.summary",
-        "scope: preimplementation_source_review_handoff",
-        "implementation_allowed: false",
-        "runtime_changes_allowed: false",
+        f"scope: {report['scope']}",
+        f"implementation_allowed: {str(report['implementation_allowed']).lower()}",
+        f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"tool_count: {report.get('tool_count', 'unknown')}",
         f"runtime_implemented: {str(report.get('runtime_implemented')).lower()}",
         "future_runtime_implementation_allowed: "

@@ -139,7 +139,7 @@ demo-readiness packet only.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- tool count remains `22`.
+- tool count remains `23`.
 - Ithildin does not start containers, mount Docker sockets, run shell commands through governed
   tools, manage Kubernetes, provide OS isolation, or claim production security.
 - The live demo is an operator-managed local workbench showing mediated tool calls, approvals,

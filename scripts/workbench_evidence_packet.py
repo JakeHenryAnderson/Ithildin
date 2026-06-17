@@ -195,7 +195,7 @@ sandbox/workspace posture, and read-only evidence export.
 - Reviewed commit: `{context["commit"]}`.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
-- tool count remains `22`.
+- tool count remains `23`.
 - No run controls, sandbox orchestration, SIEM adapters, production identity, runtime Postgres,
   hosted telemetry, remote MCP, shell, Docker, Kubernetes, browser automation, arbitrary HTTP,
   broad filesystem writes, plugin SDK work, or new governed tool powers are added or approved.

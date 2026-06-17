@@ -1,24 +1,24 @@
 # project.risk.summary Source Review Handoff
 
-Status: preimplementation source-review handoff skeleton.
+Status: implemented source-review handoff.
 
-This document defines the future source-review lane for `project.risk.summary`. It is intentionally
-preimplementation-only: there is no manifest, executor, policy rule, MCP exposure, API change, UI
-runtime behavior, or audit behavior yet.
+This document defines the source-review lane for the implemented `project.risk.summary` tool. It is
+ready for focused source-review disposition for the v0.1 local-preview runtime boundary only; it
+does not claim production security, compliance automation, vulnerability scanning, or external
+closure.
 
 ## Review Boundary
 
 - Tool candidate: `project.risk.summary`.
 - Resource type: `project_risk`.
-- Current tool count remains `22`.
-- Runtime implementation is not present.
+- Current tool count is `23`.
+- Runtime implementation is present.
 - Finding namespace: `EXT-RISK-SUMMARY-###`.
-- This lane remains source-review pending until a future implementation exists and a focused
-  reviewer disposition exists.
+- This lane remains source-review pending until a focused reviewer disposition exists.
 
-## Future Review Areas
+## Review Areas
 
-A reviewer should inspect these areas only after a future runtime implementation is added:
+A reviewer should inspect these areas:
 
 - manifest/schema shape;
 - workspace traversal and path safety;
@@ -29,9 +29,9 @@ A reviewer should inspect these areas only after a future runtime implementation
 - negative transcript coverage;
 - no-new-powers evidence.
 
-## Claims To Test Later
+## Claims To Test
 
-Future source review must verify that the tool:
+Source review must verify that the tool:
 
 - returns count-only risk signal metadata and allowlisted labels only;
 - never returns filenames, raw paths, file contents, dependency names, package names, CVE IDs,
@@ -41,11 +41,12 @@ Future source review must verify that the tool:
   network requests;
 - remains one bounded read-only metadata capability and not a new power class.
 
-## Required Commands Before Future Review
+## Required Commands
 
 - `make project-risk-summary-proposal-check`;
 - `make project-risk-summary-implementation-plan-check`;
 - `make project-risk-summary-implementation-gate`;
 - `make project-risk-summary-preimplementation-check`;
 - `make project-risk-summary-review-handoff-check`;
-- future runtime tests and `make release-check` after implementation.
+- `make project-risk-summary-source-review-bundle`;
+- focused runtime tests and `make release-check`.

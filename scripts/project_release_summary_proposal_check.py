@@ -62,7 +62,7 @@ REQUIRED_PHRASES = [
 SELECTION_PHRASES = [
     "Status: historical candidate selection; implemented",
     "project.release.summary",
-    "tool count remains `22`",
+    "tool count remains `23`",
     "Selected candidate status: implemented bounded read-only",
     "make project-release-summary-proposal-check",
     "make project-release-summary-implementation-plan-check",

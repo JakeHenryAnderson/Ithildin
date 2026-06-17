@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 IMPLEMENTATION_DOC = ROOT / "docs/codex/v3-project-risk-summary-implementation.md"
 REQUIRED_DOC_PHRASES = [
     "project.risk.summary",
-    "approved boundary for a later limited read-only implementation",
+    "approved limited read-only runtime implementation",
     "tool name: `project.risk.summary`",
     "risk `read`",
     "category `project`",
@@ -30,10 +30,9 @@ REQUIRED_DOC_PHRASES = [
     "no scanner execution",
     "no vulnerability finding generation",
     "no compliance or security assurance claims",
-    "tool count remains `22`",
-    "no tool manifest is added by this boundary sprint",
-    "runtime behavior is not changed by this boundary sprint",
-    "implementation remains blocked until a later explicit runtime implementation task",
+    "tool count is `23`",
+    "runtime manifest is present",
+    "runtime implementation is present",
     "workspace_id",
     "root",
     "max_depth",
@@ -104,18 +103,34 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(f"implementation decision doc contains forbidden phrase: {phrase}")
 
     manifest_exists = repo_root.joinpath("tool-manifests/project-risk-summary.yaml").exists()
+    lock_text = (repo_root / "tool-manifests.lock.json").read_text(encoding="utf-8")
+    runtime_source = (repo_root / "apps/api/src/ithildin_api/read_tools.py").read_text(
+        encoding="utf-8"
+    )
+
+    if not manifest_exists:
+        failures.append("project.risk.summary manifest is missing")
+    if "project.risk.summary" not in lock_text:
+        failures.append("project.risk.summary manifest lock entry is missing")
+    if (
+        "def project_risk_summary(" not in runtime_source
+        or "_validate_project_risk_summary" not in runtime_source
+        or "_project_risk_resource_from_arguments" not in runtime_source
+    ):
+        failures.append("project.risk.summary runtime implementation is missing")
 
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "tool_name": "project.risk.summary",
-        "implementation_status": "approved_limited_read_only_boundary",
+        "implementation_status": "approved_limited_read_only_runtime",
+        "resource_type": "project_risk",
         "tool_count": tool_surface.get("tool_count"),
         "new_power_classes_allowed": False,
-        "runtime_changes_allowed": False,
+        "runtime_changes_allowed": True,
         "runtime_implemented": manifest_exists,
-        "future_runtime_implementation_allowed": not manifest_exists,
+        "future_runtime_implementation_allowed": False,
         "deferred_boundaries_unchanged": no_new_powers.get("deferred_boundaries_unchanged"),
     }
 

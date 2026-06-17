@@ -94,7 +94,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "agents_path": AGENTS_PATH.as_posix(),
         "workflow_doc": WORKFLOW_DOC.as_posix(),
-        "tool_count": 22,
+        "tool_count": 23,
         "low_implementer_runtime_changes_allowed": False,
         "low_codex_preferred_mechanical_path": True,
         "gemma_output_advisory_only": True,

@@ -103,7 +103,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "Status: source-review handoff for implemented bounded read-only lane",
             "project.release.summary",
             "Resource type: `project_release`",
-            "Current tool count remains `22`",
+            "Current tool count remains `23`",
             "Runtime implementation is present",
             "Finding namespace: `EXT-RELEASE-SUMMARY-###`",
             "manifest/schema shape",
@@ -145,10 +145,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append(
             "implementation gate must close future_runtime_implementation_allowed"
         )
-    if implementation_gate.get("tool_count") != 22:
-        failures.append("implementation gate tool count is not 22")
-    if tool_surface.get("tool_count") != 22:
-        failures.append("tool surface tool count is not 22")
+    if implementation_gate.get("tool_count") != 23:
+        failures.append("implementation gate tool count is not 23")
+    if tool_surface.get("tool_count") != 23:
+        failures.append("tool surface tool count is not 23")
     if no_new_powers.get("new_power_classes_allowed") is not False:
         failures.append("no-new-powers guardrail allows new power classes")
 

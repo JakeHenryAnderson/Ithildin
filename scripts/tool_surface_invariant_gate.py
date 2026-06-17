@@ -31,6 +31,7 @@ EXPECTED_TOOL_NAMES = [
     "project.language.summary",
     "project.manifest.summary",
     "project.release.summary",
+    "project.risk.summary",
     "project.structure.summary",
     "project.test.summary",
 ]
@@ -55,6 +56,7 @@ EXPECTED_TOOL_RISKS = {
     "project.language.summary": "read",
     "project.manifest.summary": "read",
     "project.release.summary": "read",
+    "project.risk.summary": "read",
     "project.structure.summary": "read",
     "project.test.summary": "read",
 }
@@ -152,6 +154,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(_check_project_ci_summary_schema(manifest))
         if manifest_name == "project.release.summary":
             failures.extend(_check_project_release_summary_schema(manifest))
+        if manifest_name == "project.risk.summary":
+            failures.extend(_check_project_risk_summary_schema(manifest))
     if marker_hits:
         failures.append("manifest text references deferred or broad tool-power markers")
 
@@ -832,6 +836,46 @@ def _check_project_release_summary_schema(manifest: dict[str, Any]) -> list[str]
             "project.release.summary exposes forbidden caller-controlled fields: "
             + ", ".join(drift)
         )
+    return failures
+
+
+def _check_project_risk_summary_schema(manifest: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    schema = manifest.get("input_schema")
+    if not isinstance(schema, dict):
+        return ["project.risk.summary input_schema is missing or invalid"]
+    if schema.get("additionalProperties") is not False:
+        failures.append("project.risk.summary must keep additionalProperties: false")
+    properties = schema.get("properties")
+    if not isinstance(properties, dict) or sorted(properties) != [
+        "include_categories",
+        "limit",
+        "max_depth",
+        "root",
+        "workspace_id",
+    ]:
+        failures.append(
+            "project.risk.summary must stay workspace/root/categories/depth/limit-only"
+        )
+        return failures
+    max_depth = properties.get("max_depth")
+    if not isinstance(max_depth, dict) or max_depth.get("maximum") != 5:
+        failures.append("project.risk.summary max_depth must stay bounded to 5")
+    limit = properties.get("limit")
+    if not isinstance(limit, dict) or limit.get("maximum") != 300:
+        failures.append("project.risk.summary limit must stay bounded to 300")
+    categories = properties.get("include_categories")
+    if not isinstance(categories, dict):
+        return failures + ["project.risk.summary include_categories schema is invalid"]
+    items = categories.get("items")
+    expected = [
+        "risk_location_counts",
+        "risk_posture_counts",
+        "risk_signal_counts",
+        "skipped_counts",
+    ]
+    if not isinstance(items, dict) or sorted(items.get("enum", [])) != expected:
+        failures.append("project.risk.summary include_categories allowlist drifted")
     return failures
 
 

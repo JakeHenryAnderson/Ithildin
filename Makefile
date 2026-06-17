@@ -578,8 +578,9 @@ release-evidence:
 	uv run python scripts/release_evidence.py
 
 release-evidence-gate:
-	@TMP_FILE=$$(mktemp /tmp/ithildin-release-evidence.XXXXXX.json); \
-	trap 'rm -f "$$TMP_FILE"' EXIT; \
+	@TMP_DIR=$$(mktemp -d); \
+	TMP_FILE="$$TMP_DIR/release-evidence.json"; \
+	trap 'rm -rf "$$TMP_DIR"' EXIT; \
 	uv run python scripts/release_evidence.py > "$$TMP_FILE"; \
 	uv run python scripts/release_evidence.py --validate-file "$$TMP_FILE"
 

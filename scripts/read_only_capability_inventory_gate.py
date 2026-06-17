@@ -156,6 +156,16 @@ APPROVED_CAPABILITIES = [
         "implementation_gate": "project-release-summary-implementation-gate",
         "source_review_bundle": "project-release-summary-source-review-bundle",
     },
+    {
+        "tool_name": "project.risk.summary",
+        "manifest": "tool-manifests/project-risk-summary.yaml",
+        "proposal": "docs/codex/capability-proposals/project-risk-summary.md",
+        "implementation_plan": "docs/codex/capability-implementation-plans/project-risk-summary.md",
+        "implementation": "docs/codex/v3-project-risk-summary-implementation.md",
+        "source_review": "docs/codex/v3-project-risk-summary-source-review.md",
+        "implementation_gate": "project-risk-summary-implementation-gate",
+        "source_review_bundle": "project-risk-summary-source-review-bundle",
+    },
 ]
 REQUIRED_INVENTORY_PHRASES = [
     "Status: approved read-only metadata inventory",
@@ -171,7 +181,8 @@ REQUIRED_INVENTORY_PHRASES = [
     "project.config.summary",
     "project.ci.summary",
     "project.release.summary",
-    "tool count `22`",
+    "project.risk.summary",
+    "tool count `23`",
     "no shell",
     "no broad filesystem writes",
     "no arbitrary Git command execution",
@@ -272,6 +283,7 @@ def _implemented_read_only_metadata_tools(repo_root: Path) -> list[str]:
                 "project.config.summary",
                 "project.ci.summary",
                 "project.release.summary",
+                "project.risk.summary",
             }
         ):
             names.append(name)

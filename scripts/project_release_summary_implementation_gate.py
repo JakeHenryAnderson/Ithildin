@@ -23,7 +23,7 @@ REQUIRED_DOC_PHRASES = [
     "project.release.summary",
     "approved limited read-only implementation boundary",
     "runtime is implemented",
-    "tool count is `22`",
+    "tool count is `23`",
     "tool name: `project.release.summary`",
     "risk: `read`",
     "category: `project`",
