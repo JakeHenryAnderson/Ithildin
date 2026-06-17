@@ -17,8 +17,11 @@ if __package__ in {None, ""}:
 from scripts import (
     next_capability_readiness,
     no_new_powers_guardrail,
+    project_risk_summary_implementation_gate,
     project_risk_summary_implementation_plan_check,
+    project_risk_summary_preimplementation_check,
     project_risk_summary_proposal_check,
+    project_risk_summary_review_handoff_check,
 )
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/project-risk-summary-design-review")
@@ -31,6 +34,18 @@ DOCS = {
     ),
     "05_PROJECT_RISK_SUMMARY_IMPLEMENTATION_PLAN.md": Path(
         "docs/codex/capability-implementation-plans/project-risk-summary.md"
+    ),
+    "06_PROJECT_RISK_SUMMARY_IMPLEMENTATION_BOUNDARY.md": Path(
+        "docs/codex/v3-project-risk-summary-implementation.md"
+    ),
+    "07_PROJECT_RISK_SUMMARY_FIXTURE_PLAN.md": Path(
+        "docs/codex/project-risk-summary-fixture-plan.md"
+    ),
+    "08_PROJECT_RISK_SUMMARY_NEGATIVE_TRANSCRIPTS.md": Path(
+        "docs/codex/project-risk-summary-negative-transcripts.md"
+    ),
+    "09_PROJECT_RISK_SUMMARY_SOURCE_REVIEW.md": Path(
+        "docs/codex/v3-project-risk-summary-source-review.md"
     ),
 }
 
@@ -70,11 +85,17 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
 
     proposal = project_risk_summary_proposal_check.build_report(repo_root)
     plan = project_risk_summary_implementation_plan_check.build_report(repo_root)
+    implementation_gate = project_risk_summary_implementation_gate.build_report(repo_root)
+    preimplementation = project_risk_summary_preimplementation_check.build_report(repo_root)
+    review_handoff = project_risk_summary_review_handoff_check.build_report(repo_root)
     readiness = next_capability_readiness.build_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     failures = [
         *(f"proposal check: {failure}" for failure in proposal["failures"]),
         *(f"implementation-plan check: {failure}" for failure in plan["failures"]),
+        *(f"implementation gate: {failure}" for failure in implementation_gate["failures"]),
+        *(f"preimplementation check: {failure}" for failure in preimplementation["failures"]),
+        *(f"review handoff check: {failure}" for failure in review_handoff["failures"]),
         *(f"next-capability readiness: {failure}" for failure in readiness["failures"]),
         *(f"no-new-powers guardrail: {failure}" for failure in no_new_powers["failures"]),
     ]
@@ -90,14 +111,17 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "dirty": dirty,
         "proposal": proposal,
         "plan": plan,
+        "implementation_gate": implementation_gate,
+        "preimplementation": preimplementation,
+        "review_handoff": review_handoff,
         "readiness": readiness,
         "no_new_powers": no_new_powers,
     }
     files = {
         "00_PROJECT_RISK_SUMMARY_DESIGN_REVIEW_INDEX.md": _index(context),
         "01_PROJECT_RISK_SUMMARY_DESIGN_REVIEW_PROMPT.md": _prompt(context),
-        "06_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
-        "07_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
+        "10_GATE_AND_RISK_EVIDENCE.md": _gate_evidence(context),
+        "11_REVIEW_INTAKE_AND_NEXT_STEPS.md": _intake(context),
     }
     for name, source in DOCS.items():
         files[name] = (repo_root / source).read_text(encoding="utf-8")
@@ -142,16 +166,21 @@ does not approve implementation.
 4. `03_PROJECT_RISK_SUMMARY_SELECTION.md`
 5. `04_PROJECT_RISK_SUMMARY_PROPOSAL.md`
 6. `05_PROJECT_RISK_SUMMARY_IMPLEMENTATION_PLAN.md`
-7. `06_GATE_AND_RISK_EVIDENCE.md`
-8. `07_REVIEW_INTAKE_AND_NEXT_STEPS.md`
-9. `project-risk-summary-design-review-artifact-hashes.json`
+7. `06_PROJECT_RISK_SUMMARY_IMPLEMENTATION_BOUNDARY.md`
+8. `07_PROJECT_RISK_SUMMARY_FIXTURE_PLAN.md`
+9. `08_PROJECT_RISK_SUMMARY_NEGATIVE_TRANSCRIPTS.md`
+10. `09_PROJECT_RISK_SUMMARY_SOURCE_REVIEW.md`
+11. `10_GATE_AND_RISK_EVIDENCE.md`
+12. `11_REVIEW_INTAKE_AND_NEXT_STEPS.md`
+13. `project-risk-summary-design-review-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 
-This packet does not add or approve a manifest, executor, policy rule, MCP exposure, API behavior,
-UI behavior, runtime behavior, filenames, raw paths, file contents, dependency names, package names,
-CVE IDs, secret names/values, command/script values, scanner execution, vulnerability findings,
-network access, compliance claims, security assurance, or future governed tool powers.
+This packet does not add a manifest, executor, policy rule, MCP exposure, API behavior, UI behavior,
+runtime behavior, filenames, raw paths, file contents, dependency names, package names, CVE IDs,
+secret names/values, command/script values, scanner execution, vulnerability findings, network
+access, compliance claims, security assurance, or future governed tool powers. It records only that
+the implementation boundary may be considered in a later explicit runtime sprint.
 """
 
 
@@ -205,6 +234,24 @@ def _gate_evidence(context: dict[str, Any]) -> str:
 {json.dumps(context["plan"], indent=2, sort_keys=True)}
 ```
 
+## Implementation Boundary Gate
+
+```json
+{json.dumps(context["implementation_gate"], indent=2, sort_keys=True)}
+```
+
+## Preimplementation Fixture Check
+
+```json
+{json.dumps(context["preimplementation"], indent=2, sort_keys=True)}
+```
+
+## Review Handoff Check
+
+```json
+{json.dumps(context["review_handoff"], indent=2, sort_keys=True)}
+```
+
 ## Next-Capability Readiness
 
 ```json
@@ -229,7 +276,11 @@ Suggested command context:
 
 - `make project-risk-summary-proposal-check`
 - `make project-risk-summary-implementation-plan-check`
+- `make project-risk-summary-implementation-gate`
+- `make project-risk-summary-preimplementation-check`
+- `make project-risk-summary-review-handoff-check`
 - `make project-risk-summary-design-review-packet`
+- `make project-risk-summary-source-review-bundle`
 - `make release-check`
 
 Current reviewed commit: `{context["commit"]}`.

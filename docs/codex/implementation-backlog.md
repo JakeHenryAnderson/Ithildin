@@ -374,6 +374,9 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 316 - project.risk.summary proposal | Done | [capability-proposals/project-risk-summary.md](capability-proposals/project-risk-summary.md), `make project-risk-summary-proposal-check`; proposal is count-only/label-only and not vulnerability scanning or compliance automation. |
 | 317 - project.risk.summary implementation plan | Done | [capability-implementation-plans/project-risk-summary.md](capability-implementation-plans/project-risk-summary.md), `make project-risk-summary-implementation-plan-check`; implementation remains blocked pending a later explicit decision. |
 | 318 - project.risk.summary design review packet | Done | `make project-risk-summary-design-review-packet`; generates the ignored design-review packet for review of the selected candidate. |
+| 319 - project.risk.summary implementation boundary | Done | [v3-project-risk-summary-implementation.md](v3-project-risk-summary-implementation.md), `make project-risk-summary-implementation-gate`; approves only a later bounded read-only implementation boundary while keeping runtime blocked. |
+| 320 - project.risk.summary fixture contract | Done | [project-risk-summary-fixture-plan.md](project-risk-summary-fixture-plan.md), `make project-risk-summary-preimplementation-check`; fixes future fixture scenarios and strict non-leak assertions before runtime code. |
+| 321 - project.risk.summary review handoff skeleton | Done | [v3-project-risk-summary-source-review.md](v3-project-risk-summary-source-review.md), [project-risk-summary-negative-transcripts.md](project-risk-summary-negative-transcripts.md), `make project-risk-summary-review-handoff-check`; prepares source-review and negative transcript expectations without adding a tool. |
 
 ## v0.2 Planning Seed
 

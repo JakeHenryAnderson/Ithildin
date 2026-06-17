@@ -124,8 +124,12 @@ from scripts import (
     project_release_summary_source_review_bundle,
     project_release_summary_transition_check,
     project_risk_summary_design_review_packet,
+    project_risk_summary_implementation_gate,
     project_risk_summary_implementation_plan_check,
+    project_risk_summary_preimplementation_check,
     project_risk_summary_proposal_check,
+    project_risk_summary_review_handoff_check,
+    project_risk_summary_source_review_bundle,
     project_structure_summary_design_review_packet,
     project_structure_summary_implementation_gate,
     project_structure_summary_implementation_plan_check,
@@ -2331,6 +2335,9 @@ def test_project_ci_summary_design_review_packet_builds_from_fixture(
 def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
     proposal_report = project_risk_summary_proposal_check.build_report(Path.cwd())
     plan_report = project_risk_summary_implementation_plan_check.build_report(Path.cwd())
+    implementation_report = project_risk_summary_implementation_gate.build_report(Path.cwd())
+    preimplementation_report = project_risk_summary_preimplementation_check.build_report(Path.cwd())
+    handoff_report = project_risk_summary_review_handoff_check.build_report(Path.cwd())
     proposal = Path("docs/codex/capability-proposals/project-risk-summary.md").read_text(
         encoding="utf-8"
     )
@@ -2338,6 +2345,18 @@ def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
         encoding="utf-8"
     )
     plan = Path("docs/codex/capability-implementation-plans/project-risk-summary.md").read_text(
+        encoding="utf-8"
+    )
+    implementation = Path("docs/codex/v3-project-risk-summary-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    fixture_plan = Path("docs/codex/project-risk-summary-fixture-plan.md").read_text(
+        encoding="utf-8"
+    )
+    negative_plan = Path("docs/codex/project-risk-summary-negative-transcripts.md").read_text(
+        encoding="utf-8"
+    )
+    source_review = Path("docs/codex/v3-project-risk-summary-source-review.md").read_text(
         encoding="utf-8"
     )
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -2358,6 +2377,17 @@ def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
     assert plan_report["implementation_allowed"] is False
     assert plan_report["runtime_changes_allowed"] is False
     assert plan_report["evidence"]["tool_count"] == 22
+    assert implementation_report["valid"] is True
+    assert implementation_report["tool_name"] == "project.risk.summary"
+    assert implementation_report["runtime_changes_allowed"] is False
+    assert implementation_report["runtime_implemented"] is False
+    assert implementation_report["future_runtime_implementation_allowed"] is True
+    assert preimplementation_report["valid"] is True
+    assert preimplementation_report["scope"] == "preimplementation_fixture_contract"
+    assert preimplementation_report["tool_count"] == 22
+    assert handoff_report["valid"] is True
+    assert handoff_report["scope"] == "preimplementation_source_review_handoff"
+    assert handoff_report["runtime_implemented"] is False
     for phrase in [
         "Status: design-only proposal",
         "count-only risk signal metadata and allowlisted labels only",
@@ -2389,14 +2419,66 @@ def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
         "Actual implementation remains blocked",
     ]:
         assert phrase in plan
+    for phrase in [
+        "Status: approved boundary for a later limited read-only implementation",
+        "tool name: `project.risk.summary`",
+        "risk `read`",
+        "category `project`",
+        "resource type `project_risk`",
+        "tool count remains `22`",
+        "no scanner execution",
+        "no vulnerability findings",
+        "no compliance findings",
+        "implementation remains blocked until a later explicit runtime implementation task",
+    ]:
+        assert phrase in implementation
+    for phrase in [
+        "Status: preimplementation fixture contract",
+        "empty workspace / no risk-shaped files",
+        "coarse risk signal files present by category only",
+        "secrets-adjacent shaped files counted without secret names or values",
+        "category filter limits output categories",
+        "no filenames",
+        "no scanner output",
+        "no vulnerability findings",
+    ]:
+        assert phrase in fixture_plan
+    for phrase in [
+        "Status: preimplementation negative transcript plan",
+        "traversal denied",
+        "malformed `include_categories` denied",
+        "filenames suppressed",
+        "scanner output suppressed",
+        "vulnerability findings suppressed",
+        "unauthorized principal denied",
+    ]:
+        assert phrase in negative_plan
+    for phrase in [
+        "Status: preimplementation source-review handoff skeleton",
+        "Finding namespace: `EXT-RISK-SUMMARY-###`",
+        "Runtime implementation is not present",
+        "This lane remains source-review pending",
+    ]:
+        assert phrase in source_review
     assert "tool count remains `22`" in selection
     assert "implementation remains blocked" in selection
     assert "make project-risk-summary-proposal-check" in readme
     assert "make project-risk-summary-implementation-plan-check" in readme
+    assert "make project-risk-summary-implementation-gate" in readme
+    assert "make project-risk-summary-preimplementation-check" in readme
+    assert "make project-risk-summary-review-handoff-check" in readme
+    assert "make project-risk-summary-source-review-bundle" in readme
     assert "project-risk-summary-proposal-check:" in makefile
     assert "project-risk-summary-implementation-plan-check:" in makefile
+    assert "project-risk-summary-implementation-gate:" in makefile
+    assert "project-risk-summary-preimplementation-check:" in makefile
+    assert "project-risk-summary-review-handoff-check:" in makefile
+    assert "project-risk-summary-source-review-bundle:" in makefile
     assert "project-risk-summary-proposal-check" in release_check_body
     assert "project-risk-summary-implementation-plan-check" in release_check_body
+    assert "project-risk-summary-implementation-gate" in release_check_body
+    assert "project-risk-summary-preimplementation-check" in release_check_body
+    assert "project-risk-summary-review-handoff-check" in release_check_body
     assert (
         "project-risk-summary-proposal-check"
         in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
@@ -2405,17 +2487,42 @@ def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
         "project-risk-summary-implementation-plan-check"
         in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
+    assert (
+        "project-risk-summary-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "project-risk-summary-preimplementation-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "project-risk-summary-review-handoff-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
     assert "Capability Proposal: project.risk.summary" in index
     assert "Implementation-Planning Packet: project.risk.summary" in index
+    assert "project.risk.summary Implementation Boundary" in index
+    assert "project.risk.summary Fixture Plan" in index
+    assert "project.risk.summary Negative Transcript Plan" in index
+    assert "project.risk.summary Source Review Handoff" in index
     assert "docs/codex/v3-project-risk-summary-selection.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/capability-proposals/project-risk-summary.md" in review_docs.REVIEW_DOCS
     assert (
         "docs/codex/capability-implementation-plans/project-risk-summary.md"
         in review_docs.REVIEW_DOCS
     )
+    assert "docs/codex/v3-project-risk-summary-implementation.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/project-risk-summary-fixture-plan.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/project-risk-summary-negative-transcripts.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v3-project-risk-summary-source-review.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-project-risk-summary-selection.md" in docs_site
     assert "docs/codex/capability-proposals/project-risk-summary.md" in docs_site
     assert "docs/codex/capability-implementation-plans/project-risk-summary.md" in docs_site
+    assert "docs/codex/v3-project-risk-summary-implementation.md" in docs_site
+    assert "docs/codex/project-risk-summary-fixture-plan.md" in docs_site
+    assert "docs/codex/project-risk-summary-negative-transcripts.md" in docs_site
+    assert "docs/codex/v3-project-risk-summary-source-review.md" in docs_site
+    assert not Path("tool-manifests/project-risk-summary.yaml").exists()
 
 
 def test_project_risk_summary_design_review_packet_builds_from_fixture(
@@ -2436,8 +2543,12 @@ def test_project_risk_summary_design_review_packet_builds_from_fixture(
         "03_PROJECT_RISK_SUMMARY_SELECTION.md",
         "04_PROJECT_RISK_SUMMARY_PROPOSAL.md",
         "05_PROJECT_RISK_SUMMARY_IMPLEMENTATION_PLAN.md",
-        "06_GATE_AND_RISK_EVIDENCE.md",
-        "07_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "06_PROJECT_RISK_SUMMARY_IMPLEMENTATION_BOUNDARY.md",
+        "07_PROJECT_RISK_SUMMARY_FIXTURE_PLAN.md",
+        "08_PROJECT_RISK_SUMMARY_NEGATIVE_TRANSCRIPTS.md",
+        "09_PROJECT_RISK_SUMMARY_SOURCE_REVIEW.md",
+        "10_GATE_AND_RISK_EVIDENCE.md",
+        "11_REVIEW_INTAKE_AND_NEXT_STEPS.md",
         "project-risk-summary-design-review-artifact-hashes.json",
     }
     assert built == output_dir
@@ -2449,7 +2560,7 @@ def test_project_risk_summary_design_review_packet_builds_from_fixture(
     index_doc = (output_dir / "00_PROJECT_RISK_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
         encoding="utf-8"
     )
-    evidence = (output_dir / "06_GATE_AND_RISK_EVIDENCE.md").read_text(encoding="utf-8")
+    evidence = (output_dir / "10_GATE_AND_RISK_EVIDENCE.md").read_text(encoding="utf-8")
     hashes = json.loads(
         (output_dir / "project-risk-summary-design-review-artifact-hashes.json").read_text(
             encoding="utf-8"
@@ -2463,6 +2574,9 @@ def test_project_risk_summary_design_review_packet_builds_from_fixture(
     assert "scanner output" in prompt
     assert "No-New-Powers Guardrail" in evidence
     assert "Implementation status: blocked" in index_doc
+    assert "Implementation Boundary Gate" in evidence
+    assert "Preimplementation Fixture Check" in evidence
+    assert "Review Handoff Check" in evidence
     assert "project-risk-summary-design-review-artifact-hashes.json" not in hashed_paths
     assert hashed_paths == expected_files - {
         "project-risk-summary-design-review-artifact-hashes.json"
@@ -2471,6 +2585,66 @@ def test_project_risk_summary_design_review_packet_builds_from_fixture(
         encoding="utf-8"
     )
     assert "project-risk-summary-design-review-packet:" in Path("Makefile").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_project_risk_summary_source_review_bundle_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-risk-summary-source-review"
+
+    built = project_risk_summary_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    expected_files = {
+        "00_PROJECT_RISK_SUMMARY_SOURCE_REVIEW_INDEX.md",
+        "01_PROJECT_RISK_SUMMARY_SOURCE_REVIEW_PROMPT.md",
+        "02_PROJECT_RISK_SUMMARY_SELECTION.md",
+        "03_PROJECT_RISK_SUMMARY_PROPOSAL.md",
+        "04_PROJECT_RISK_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "05_PROJECT_RISK_SUMMARY_IMPLEMENTATION_BOUNDARY.md",
+        "06_PROJECT_RISK_SUMMARY_FIXTURE_PLAN.md",
+        "07_PROJECT_RISK_SUMMARY_NEGATIVE_TRANSCRIPTS.md",
+        "08_PROJECT_RISK_SUMMARY_SOURCE_REVIEW.md",
+        "09_PROJECT_RISK_SUMMARY_EVIDENCE.md",
+        "10_PROJECT_RISK_SUMMARY_INTAKE_COMMANDS.md",
+        "project-risk-summary-source-review-artifact-hashes.json",
+    }
+    assert built == output_dir
+    assert {path.name for path in output_dir.iterdir()} == expected_files
+
+    prompt = (output_dir / "01_PROJECT_RISK_SUMMARY_SOURCE_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    index_doc = (output_dir / "00_PROJECT_RISK_SUMMARY_SOURCE_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "09_PROJECT_RISK_SUMMARY_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    hashes = json.loads(
+        (output_dir / "project-risk-summary-source-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+
+    assert "EXT-RISK-SUMMARY-###" in prompt
+    assert "Runtime implementation is not present yet" in prompt
+    assert "Runtime implemented: `false`" in index_doc
+    assert "future_runtime_implementation_allowed" in evidence
+    assert "project-risk-summary-source-review-artifact-hashes.json" not in hashed_paths
+    assert hashed_paths == expected_files - {
+        "project-risk-summary-source-review-artifact-hashes.json"
+    }
+    assert "make project-risk-summary-source-review-bundle" in Path("README.md").read_text(
+        encoding="utf-8"
+    )
+    assert "project-risk-summary-source-review-bundle:" in Path("Makefile").read_text(
         encoding="utf-8"
     )
 

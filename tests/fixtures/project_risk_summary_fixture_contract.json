@@ -1,0 +1,159 @@
+{
+  "contract": "project.risk.summary",
+  "scope": "preimplementation_fixture_contract",
+  "scenarios": [
+    {
+      "future_test_type": "executor",
+      "id": "risk_empty_workspace",
+      "non_leak_assertions": ["no filenames", "no raw paths", "no file contents"],
+      "safe_expected_labels": ["risk_signal_counts", "output_policy"],
+      "scenario": "empty workspace / no risk-shaped files"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_coarse_files",
+      "non_leak_assertions": ["no filenames", "no raw paths", "no security findings"],
+      "safe_expected_labels": ["security_config_label", "posture_bucket_counts"],
+      "scenario": "coarse risk signal files present by category only"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_security_config",
+      "non_leak_assertions": ["no filenames", "no raw paths", "no file contents"],
+      "safe_expected_labels": ["security_config_label", "location_bucket_counts"],
+      "scenario": "security config shaped files counted without names or contents"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_secrets_adjacent",
+      "non_leak_assertions": ["no secret names", "no secret values", "no raw paths"],
+      "safe_expected_labels": ["secrets_adjacent_label", "skipped_counts"],
+      "scenario": "secrets-adjacent shaped files counted without secret names or values"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_dependency_shape",
+      "non_leak_assertions": ["no dependency names", "no package names", "no CVE IDs"],
+      "safe_expected_labels": ["dependency_risk_label", "risk_signal_counts"],
+      "scenario": "dependency risk shaped files counted without dependency or package names"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_ci_deploy_shape",
+      "non_leak_assertions": ["no command/script values", "no filenames", "no raw paths"],
+      "safe_expected_labels": ["ci_deploy_risk_label", "location_bucket_counts"],
+      "scenario": "CI/deploy risk shaped files counted without workflow names or command values"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_mixed_safe_skipped",
+      "non_leak_assertions": ["no raw paths", "no raw filesystem errors"],
+      "safe_expected_labels": ["risk_signal_counts", "skipped_counts"],
+      "scenario": "mixed safe and skipped candidates"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_depth_limit",
+      "non_leak_assertions": ["no filenames", "no raw paths"],
+      "safe_expected_labels": ["truncated", "depth_limit"],
+      "scenario": "depth-limit truncation"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_item_limit",
+      "non_leak_assertions": ["no filenames", "no raw paths"],
+      "safe_expected_labels": ["truncated", "item_limit"],
+      "scenario": "item-limit truncation"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_category_filter",
+      "non_leak_assertions": ["no filenames", "no raw paths", "no file contents"],
+      "safe_expected_labels": ["include_categories", "filtered_category_counts"],
+      "scenario": "category filter limits output categories"
+    },
+    {
+      "future_test_type": "security",
+      "id": "risk_hidden_sensitive",
+      "non_leak_assertions": ["no secret names", "no secret values", "no raw paths"],
+      "safe_expected_labels": ["hidden_sensitive_skipped"],
+      "scenario": "hidden/sensitive path skipped"
+    },
+    {
+      "future_test_type": "security",
+      "id": "risk_git_skipped",
+      "non_leak_assertions": ["no filenames", "no raw paths"],
+      "safe_expected_labels": [".git_skipped"],
+      "scenario": ".git skipped"
+    },
+    {
+      "future_test_type": "security",
+      "id": "risk_symlink_skipped",
+      "non_leak_assertions": ["no raw paths", "no raw filesystem errors"],
+      "safe_expected_labels": ["symlink_skipped"],
+      "scenario": "symlink skipped"
+    },
+    {
+      "future_test_type": "security",
+      "id": "risk_hardlink_skipped",
+      "non_leak_assertions": ["no raw paths", "no raw filesystem errors"],
+      "safe_expected_labels": ["hardlink_skipped"],
+      "scenario": "hardlink skipped"
+    },
+    {
+      "future_test_type": "security",
+      "id": "risk_binary_skipped",
+      "non_leak_assertions": ["no file contents", "no raw filesystem errors"],
+      "safe_expected_labels": ["binary_nul_skipped"],
+      "scenario": "binary/NUL skipped"
+    },
+    {
+      "future_test_type": "security",
+      "id": "risk_oversized_skipped",
+      "non_leak_assertions": ["no file contents", "no raw paths"],
+      "safe_expected_labels": ["oversized_skipped"],
+      "scenario": "oversized input skipped"
+    },
+    {
+      "future_test_type": "security",
+      "id": "risk_encoding_skipped",
+      "non_leak_assertions": ["no file contents", "no raw filesystem errors"],
+      "safe_expected_labels": ["unsupported_encoding_skipped"],
+      "scenario": "unsupported encoding skipped"
+    },
+    {
+      "future_test_type": "executor",
+      "id": "risk_malformed_unknown",
+      "non_leak_assertions": ["no file contents", "no vulnerability findings"],
+      "safe_expected_labels": ["unknown_risk_label", "safe_errors"],
+      "scenario": "malformed config shape counted as safe unknown"
+    },
+    {
+      "future_test_type": "governed_call",
+      "id": "risk_unauthorized_principal",
+      "non_leak_assertions": ["no file contents", "no raw paths", "no raw arguments"],
+      "safe_expected_labels": ["unauthorized_denied"],
+      "scenario": "unauthorized principal denied in future governed-call tests"
+    }
+  ],
+  "strict_non_leak_list": [
+    "no filenames",
+    "no raw paths",
+    "no file contents",
+    "no dependency names",
+    "no package names",
+    "no CVE IDs",
+    "no advisory IDs",
+    "no secret names",
+    "no secret values",
+    "no environment names/values",
+    "no command/script values",
+    "no registry URLs",
+    "no scanner output",
+    "no vulnerability findings",
+    "no compliance findings",
+    "no security findings",
+    "no shell/Git/package-manager/CI output"
+  ],
+  "version": "1"
+}
