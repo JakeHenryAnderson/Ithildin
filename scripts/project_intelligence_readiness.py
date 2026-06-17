@@ -51,8 +51,8 @@ REQUIRED_DOC_PHRASES = [
     "project.ci.summary",
     "project.release.summary",
     "Tool count: `22`",
-    "Selected candidate: `not selected`",
-    "Selected candidate status: pending selection",
+    "Selected candidate: `project.risk.summary`",
+    "Selected candidate status: design-only selected; implementation blocked",
     "Most recent implementation: `project.release.summary`, approved bounded read-only runtime",
     "Broader capability expansion remains blocked",
     "New powerful tool classes remain blocked",
@@ -65,6 +65,8 @@ REQUIRED_DOC_PHRASES = [
     "policy preview/runtime parity",
     "make read-only-project-intelligence",
     "explicit implementation decision",
+    "project.risk.summary",
+    "risk-signal count metadata only",
 ]
 
 

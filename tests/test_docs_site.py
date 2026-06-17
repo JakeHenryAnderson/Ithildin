@@ -102,6 +102,9 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v3-project-ci-summary-selection.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/project-ci-summary.md" in DEFAULT_DOCS
     assert "docs/codex/capability-implementation-plans/project-ci-summary.md" in DEFAULT_DOCS
+    assert "docs/codex/v3-project-risk-summary-selection.md" in DEFAULT_DOCS
+    assert "docs/codex/capability-proposals/project-risk-summary.md" in DEFAULT_DOCS
+    assert "docs/codex/capability-implementation-plans/project-risk-summary.md" in DEFAULT_DOCS
     assert "docs/codex/read-only-metadata-capability-checklist.md" in DEFAULT_DOCS
     assert "docs/codex/read-only-capability-source-review-template.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-roadmap.md" in DEFAULT_DOCS

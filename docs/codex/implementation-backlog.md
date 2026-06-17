@@ -370,6 +370,10 @@ Git metadata additions recorded below. Broad capability implementation remains b
 | 312 - project.release.summary source-review handoff check | Done | [v3-project-release-summary-source-review.md](v3-project-release-summary-source-review.md), `make project-release-summary-review-handoff-check`; records the implemented bounded source-review handoff without claiming external closure. |
 | 313 - project.release.summary source-review bundle | Done | `make project-release-summary-source-review-bundle`; builds the ignored implemented source-review packet under `var/review-packets/v3/project-release-summary-source-review/`. |
 | 314 - project.release.summary internal source review | Done | [v3-project-release-summary-internal-review.md](v3-project-release-summary-internal-review.md), [XH-RELEASE-001](findings/xh-release-001-source-review-bundle-evidence.md); records the local review and fixes source/test bundle evidence without claiming external closure. |
+| 315 - project.risk.summary selection | Done | [v3-project-risk-summary-selection.md](v3-project-risk-summary-selection.md), `make project-risk-summary-proposal-check`; selects a design-only risk-signal count metadata candidate without runtime behavior. |
+| 316 - project.risk.summary proposal | Done | [capability-proposals/project-risk-summary.md](capability-proposals/project-risk-summary.md), `make project-risk-summary-proposal-check`; proposal is count-only/label-only and not vulnerability scanning or compliance automation. |
+| 317 - project.risk.summary implementation plan | Done | [capability-implementation-plans/project-risk-summary.md](capability-implementation-plans/project-risk-summary.md), `make project-risk-summary-implementation-plan-check`; implementation remains blocked pending a later explicit decision. |
+| 318 - project.risk.summary design review packet | Done | `make project-risk-summary-design-review-packet`; generates the ignored design-review packet for review of the selected candidate. |
 
 ## v0.2 Planning Seed
 

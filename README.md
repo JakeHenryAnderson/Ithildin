@@ -354,8 +354,14 @@ checked with `make control-mapping-readiness`.
   for `project.release.summary` without claiming runtime source exists.
 - `make project-release-summary-design-review-packet` - generate the design-review packet for
   the selected `project.release.summary` proposal.
-- `make project-release-summary-source-review-bundle` - generate the ignored preimplementation
+- `make project-release-summary-source-review-bundle` - generate the ignored implemented
   source-review packet for `project.release.summary`.
+- `make project-risk-summary-proposal-check` - validate the selected design-only
+  `project.risk.summary` proposal without authorizing runtime work.
+- `make project-risk-summary-implementation-plan-check` - validate the
+  `project.risk.summary` implementation-planning packet without authorizing runtime work.
+- `make project-risk-summary-design-review-packet` - generate the design-review packet for the
+  selected `project.risk.summary` proposal.
 - `make project-manifest-summary-proposal-check` - validate the design-only
   `project.manifest.summary` proposal without authorizing runtime work.
 - `make project-manifest-summary-implementation-plan-check` - validate the
@@ -675,18 +681,27 @@ and [docs/codex/v3-readiness-debt-register.md](docs/codex/v3-readiness-debt-regi
 checked with `make read-only-metadata-capability-check` and
 `make read-only-capability-inventory-gate`. The next-capability preflight is
 [docs/codex/next-capability-readiness.md](docs/codex/next-capability-readiness.md) and is checked
-with `make next-capability-readiness`; it records that `project.config.summary` has advanced
-through a bounded read-only implementation decision and source-review handoff while broader
-capability expansion remains blocked. The current selected design-only candidate is
+with `make next-capability-readiness`; it records that `project.release.summary` has advanced
+through a bounded read-only implementation, internal source review, and source-review handoff while
+broader capability expansion remains blocked. The current selected design-only candidate is
+[docs/codex/capability-proposals/project-risk-summary.md](docs/codex/capability-proposals/project-risk-summary.md),
+checked with `make project-risk-summary-proposal-check`. Its implementation-planning packet is
+[docs/codex/capability-implementation-plans/project-risk-summary.md](docs/codex/capability-implementation-plans/project-risk-summary.md)
+and is checked with `make project-risk-summary-implementation-plan-check`; generate its design-review
+packet with `make project-risk-summary-design-review-packet`. Implementation remains blocked. The
+proposal is risk-signal count metadata only, not vulnerability scanning, dependency analysis,
+compliance automation, security assurance, scanner execution, registry/network access, or shell
+execution. The previous selected candidate,
 [docs/codex/capability-proposals/project-ci-summary.md](docs/codex/capability-proposals/project-ci-summary.md),
-checked with `make project-ci-summary-proposal-check`. Its implementation-planning packet is
+advanced through implementation planning and source-review handoff. Its implementation-planning
+packet is
 [docs/codex/capability-implementation-plans/project-ci-summary.md](docs/codex/capability-implementation-plans/project-ci-summary.md)
 and is checked with `make project-ci-summary-implementation-plan-check`; the bounded
 implementation decision is
 [docs/codex/v3-project-ci-summary-implementation.md](docs/codex/v3-project-ci-summary-implementation.md)
 and is checked with `make project-ci-summary-implementation-gate`; generate its focused
 source-review handoff with `make project-ci-summary-source-review-bundle` and its historical
-design-review packet with `make project-ci-summary-design-review-packet`. The previous selected
+design-review packet with `make project-ci-summary-design-review-packet`. The earlier selected
 candidate,
 [docs/codex/capability-proposals/project-config-summary.md](docs/codex/capability-proposals/project-config-summary.md),
 advanced through implementation planning and source-review handoff. Its implementation-planning packet is

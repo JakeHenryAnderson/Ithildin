@@ -83,8 +83,8 @@ Every tool in this family must preserve:
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
   `project.docs.summary`, `project.language.summary`, `project.config.summary`,
   `project.ci.summary`, and `project.release.summary`.
-- Selected candidate: `not selected`.
-- Selected candidate status: pending selection.
+- Selected candidate: `project.risk.summary`.
+- Selected candidate status: design-only selected; implementation blocked.
 - Most recent implementation: `project.release.summary`, approved bounded read-only runtime.
 - explicit implementation decision recorded for `project.release.summary`.
 - Broader capability expansion remains blocked.
@@ -106,3 +106,10 @@ and the negative transcript plan is
 Future read-only metadata tools must start again from a design-only candidate, proposal,
 implementation plan, explicit implementation decision, source-review handoff, policy fixtures,
 negative transcripts, no-new-powers evidence, and release gates.
+
+The next design-only candidate is
+[project.risk.summary](capability-proposals/project-risk-summary.md), with an implementation plan at
+[Implementation-Planning Packet: project.risk.summary](capability-implementation-plans/project-risk-summary.md).
+It is proposed as risk-signal count metadata only. It is not a vulnerability scanner, dependency
+scanner, compliance engine, security assurance mechanism, scanner runner, registry/network tool, or
+shell/package-manager execution path.

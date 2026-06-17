@@ -123,6 +123,9 @@ from scripts import (
     project_release_summary_review_handoff_check,
     project_release_summary_source_review_bundle,
     project_release_summary_transition_check,
+    project_risk_summary_design_review_packet,
+    project_risk_summary_implementation_plan_check,
+    project_risk_summary_proposal_check,
     project_structure_summary_design_review_packet,
     project_structure_summary_implementation_gate,
     project_structure_summary_implementation_plan_check,
@@ -1021,24 +1024,29 @@ def test_next_capability_readiness_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 22
     assert report["current_approved_read_only_capabilities"] == 12
-    assert report["next_candidate"] == "not selected"
-    assert report["next_candidate_status"] == "pending_selection"
-    assert report["next_candidate_proposal_complete"] is False
-    assert report["next_candidate_plan_complete"] is False
+    assert report["next_candidate"] == "project.risk.summary"
+    assert report["next_candidate_status"] == "design_only_selected"
+    assert report["next_candidate_proposal_complete"] is True
+    assert report["next_candidate_plan_complete"] is True
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["historical_candidate"] == "project.dependency.summary"
     for phrase in [
         "Status: capability-expansion readiness checkpoint",
-        "Selected candidate: `not selected`",
-        "Selected candidate status: pending selection",
+        "Selected candidate: `project.risk.summary`",
+        "Selected candidate status: design-only selected; implementation blocked",
+        "Selected candidate proposal: complete for `project.risk.summary`",
+        "Selected candidate implementation plan: complete for `project.risk.summary`",
         "Most recent implemented candidate: `project.release.summary`",
         "Most recent implementation: approved bounded read-only runtime implementation complete",
         "Broader capability expansion: blocked",
         "New powerful tool classes: blocked",
         "Required Preflight Before Another Capability",
         "make next-capability-readiness",
+        "make project-risk-summary-proposal-check",
+        "make project-risk-summary-implementation-plan-check",
+        "make project-risk-summary-design-review-packet",
         "make project-release-summary-proposal-check",
         "make project-release-summary-implementation-plan-check",
         "make project-release-summary-design-review-packet",
@@ -1046,12 +1054,15 @@ def test_next_capability_readiness_is_wired() -> None:
         assert phrase in doc
     assert "make next-capability-readiness" in readme
     assert "make next-capability-candidate-evaluation-2-check" in readme
+    assert "make project-risk-summary-proposal-check" in readme
     assert "make project-release-summary-proposal-check" in readme
     assert "make project-ci-summary-source-review-bundle" in readme
     assert "next-capability-readiness:" in makefile
     assert "next-capability-candidate-evaluation-2-check:" in makefile
     assert "next-capability-readiness" in release_check_body
     assert "next-capability-candidate-evaluation-2-check" in release_check_body
+    assert "project-risk-summary-proposal-check" in release_check_body
+    assert "project-risk-summary-implementation-plan-check" in release_check_body
     assert "project-release-summary-proposal-check" in release_check_body
     assert "project-release-summary-implementation-plan-check" in release_check_body
     assert "next-capability-readiness" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
@@ -1066,6 +1077,15 @@ def test_next_capability_readiness_is_wired() -> None:
     assert "docs/codex/v3-next-capability-candidate-evaluation-2.md" in docs_site
     assert "docs/codex/v3-project-release-summary-selection.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v3-project-release-summary-selection.md" in docs_site
+    assert "docs/codex/v3-project-risk-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/project-risk-summary.md" in review_docs.REVIEW_DOCS
+    assert (
+        "docs/codex/capability-implementation-plans/project-risk-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/v3-project-risk-summary-selection.md" in docs_site
+    assert "docs/codex/capability-proposals/project-risk-summary.md" in docs_site
+    assert "docs/codex/capability-implementation-plans/project-risk-summary.md" in docs_site
 
 
 def test_next_capability_candidate_evaluation_2_is_wired() -> None:
@@ -1146,7 +1166,7 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.ci.summary",
         "project.release.summary",
     ]
-    assert report["next_candidate"] == "not selected"
+    assert report["next_candidate"] == "project.risk.summary"
     assert report["broader_capability_expansion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["runtime_changes_allowed"] is False
@@ -1163,11 +1183,13 @@ def test_read_only_project_intelligence_is_wired() -> None:
         "project.docs.summary",
         "project.language.summary",
         "Tool count: `22`",
-        "Selected candidate: `not selected`",
-        "Selected candidate status: pending selection",
+        "Selected candidate: `project.risk.summary`",
+        "Selected candidate status: design-only selected; implementation blocked",
         "Operator Reading Guide",
         "orientation evidence",
         "read-only-capability-inventory.md",
+        "project.risk.summary",
+        "risk-signal count metadata only",
         "Broader capability expansion remains blocked",
         "New powerful tool classes remain blocked",
         "No file contents",
@@ -2302,6 +2324,153 @@ def test_project_ci_summary_design_review_packet_builds_from_fixture(
         encoding="utf-8"
     )
     assert "project-ci-summary-design-review-packet:" in Path("Makefile").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
+    proposal_report = project_risk_summary_proposal_check.build_report(Path.cwd())
+    plan_report = project_risk_summary_implementation_plan_check.build_report(Path.cwd())
+    proposal = Path("docs/codex/capability-proposals/project-risk-summary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = Path("docs/codex/v3-project-risk-summary-selection.md").read_text(
+        encoding="utf-8"
+    )
+    plan = Path("docs/codex/capability-implementation-plans/project-risk-summary.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert proposal_report["valid"] is True
+    assert proposal_report["proposal"] == "project.risk.summary"
+    assert proposal_report["scope"] == "design_only"
+    assert proposal_report["implementation_allowed"] is False
+    assert proposal_report["runtime_changes_allowed"] is False
+    assert proposal_report["evidence"]["tool_count"] == 22
+    assert plan_report["valid"] is True
+    assert plan_report["proposal"] == "project.risk.summary"
+    assert plan_report["scope"] == "implementation_planning_only"
+    assert plan_report["implementation_allowed"] is False
+    assert plan_report["runtime_changes_allowed"] is False
+    assert plan_report["evidence"]["tool_count"] == 22
+    for phrase in [
+        "Status: design-only proposal",
+        "count-only risk signal metadata and allowlisted labels only",
+        "no filenames",
+        "no raw paths",
+        "no file contents",
+        "no dependency names",
+        "no package names",
+        "no CVE IDs",
+        "no secret values",
+        "no vulnerability findings",
+        "no scanner execution",
+        "no compliance claims",
+        "Policy And Audit Evidence",
+        "External/source Review Requirement",
+    ]:
+        assert phrase in proposal
+    for phrase in [
+        "Status: implementation-planning only",
+        "Future Manifest Sketch",
+        "Proposed Input Contract",
+        "Proposed Output Contract",
+        "Filesystem Traversal Contract",
+        "Risk Signal And Category Allowlist",
+        "Policy Fixture Plan",
+        "Audit Evidence Plan",
+        "UI And Policy Preview Plan",
+        "Negative Transcript Plan",
+        "Actual implementation remains blocked",
+    ]:
+        assert phrase in plan
+    assert "tool count remains `22`" in selection
+    assert "implementation remains blocked" in selection
+    assert "make project-risk-summary-proposal-check" in readme
+    assert "make project-risk-summary-implementation-plan-check" in readme
+    assert "project-risk-summary-proposal-check:" in makefile
+    assert "project-risk-summary-implementation-plan-check:" in makefile
+    assert "project-risk-summary-proposal-check" in release_check_body
+    assert "project-risk-summary-implementation-plan-check" in release_check_body
+    assert (
+        "project-risk-summary-proposal-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "project-risk-summary-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "Capability Proposal: project.risk.summary" in index
+    assert "Implementation-Planning Packet: project.risk.summary" in index
+    assert "docs/codex/v3-project-risk-summary-selection.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/capability-proposals/project-risk-summary.md" in review_docs.REVIEW_DOCS
+    assert (
+        "docs/codex/capability-implementation-plans/project-risk-summary.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/v3-project-risk-summary-selection.md" in docs_site
+    assert "docs/codex/capability-proposals/project-risk-summary.md" in docs_site
+    assert "docs/codex/capability-implementation-plans/project-risk-summary.md" in docs_site
+
+
+def test_project_risk_summary_design_review_packet_builds_from_fixture(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "project-risk-summary-design-review"
+
+    built = project_risk_summary_design_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    expected_files = {
+        "00_PROJECT_RISK_SUMMARY_DESIGN_REVIEW_INDEX.md",
+        "01_PROJECT_RISK_SUMMARY_DESIGN_REVIEW_PROMPT.md",
+        "02_NEXT_CAPABILITY_READINESS.md",
+        "03_PROJECT_RISK_SUMMARY_SELECTION.md",
+        "04_PROJECT_RISK_SUMMARY_PROPOSAL.md",
+        "05_PROJECT_RISK_SUMMARY_IMPLEMENTATION_PLAN.md",
+        "06_GATE_AND_RISK_EVIDENCE.md",
+        "07_REVIEW_INTAKE_AND_NEXT_STEPS.md",
+        "project-risk-summary-design-review-artifact-hashes.json",
+    }
+    assert built == output_dir
+    assert {path.name for path in output_dir.iterdir()} == expected_files
+
+    prompt = (output_dir / "01_PROJECT_RISK_SUMMARY_DESIGN_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    index_doc = (output_dir / "00_PROJECT_RISK_SUMMARY_DESIGN_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "06_GATE_AND_RISK_EVIDENCE.md").read_text(encoding="utf-8")
+    hashes = json.loads(
+        (output_dir / "project-risk-summary-design-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed_paths = {entry["path"] for entry in hashes}
+
+    assert "EXT-DESIGN-PRISK-###" in prompt
+    assert "project.risk.summary" in prompt
+    assert "vulnerability findings" in prompt
+    assert "scanner output" in prompt
+    assert "No-New-Powers Guardrail" in evidence
+    assert "Implementation status: blocked" in index_doc
+    assert "project-risk-summary-design-review-artifact-hashes.json" not in hashed_paths
+    assert hashed_paths == expected_files - {
+        "project-risk-summary-design-review-artifact-hashes.json"
+    }
+    assert "make project-risk-summary-design-review-packet" in Path("README.md").read_text(
+        encoding="utf-8"
+    )
+    assert "project-risk-summary-design-review-packet:" in Path("Makefile").read_text(
         encoding="utf-8"
     )
 
@@ -12019,7 +12188,7 @@ def test_observability_readiness_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 22
-    assert report["next_capability_candidate"] == "not selected"
+    assert report["next_capability_candidate"] == "project.risk.summary"
     assert report["next_candidate_implementation_allowed"] is False
     assert report["broader_capability_expansion_allowed"] is False
     assert report["runtime_changes_allowed"] is False

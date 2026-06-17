@@ -20,8 +20,10 @@ decision, source-review handoff, and local lane closure.
   `project.docs.summary`, `project.language.summary`, `project.config.summary`,
   `project.ci.summary`, and `project.release.summary`.
 - Current tool count: `22`.
-- Selected candidate: `not selected`.
-- Selected candidate status: pending selection.
+- Selected candidate: `project.risk.summary`.
+- Selected candidate status: design-only selected; implementation blocked.
+- Selected candidate proposal: complete for `project.risk.summary`.
+- Selected candidate implementation plan: complete for `project.risk.summary`.
 - Most recent implemented candidate: `project.release.summary`.
 - Most recent implementation: approved bounded read-only runtime implementation complete.
 - Fixture/test contract: retained for `project.release.summary`.
@@ -62,17 +64,24 @@ or network access, raw diffs, file contents by default, or unbounded repository-
 
 ## Gate
 
-The most recent capability,
+The most recent implemented capability,
 [project.release.summary](capability-proposals/project-release-summary.md), has advanced through
-proposal, implementation planning, implementation decision, runtime implementation, and
-source-review handoff as one bounded read-only metadata tool. No next bounded candidate is selected
-yet. The current release gate must continue to prove the implemented release-summary surface remains
-count-only, read-only, and source-review ready before any later candidate begins.
+proposal, implementation planning, implementation decision, runtime implementation, internal source
+review, and source-review handoff as one bounded read-only metadata tool.
+
+The next selected candidate is
+[project.risk.summary](capability-proposals/project-risk-summary.md). It is design-only and
+implementation remains blocked. The proposal is intentionally risk-signal count metadata, not
+vulnerability scanning, dependency analysis, compliance automation, security assurance, scanner
+execution, package-manager execution, registry/network access, or raw sensitive metadata exposure.
 
 Run:
 
 ```bash
 make next-capability-readiness
+make project-risk-summary-proposal-check
+make project-risk-summary-implementation-plan-check
+make project-risk-summary-design-review-packet
 make project-release-summary-proposal-check
 make project-release-summary-implementation-plan-check
 make project-release-summary-implementation-gate
