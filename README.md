@@ -287,6 +287,10 @@ checked with `make control-mapping-readiness`.
   Agent Run, approval, audit, signed evidence, demo, and packet readiness.
 - `make v1-assurance-closure-check` - validate the v1.0 local-preview assurance ledger across
   findings, accepted risks, closure-matrix status, external-pending rows, and claim boundaries.
+- `make v1-rc-readiness` - validate the v1.0 local-preview RC umbrella across status, quickstart,
+  workbench/evidence, assurance, tool-surface, no-new-powers, and packet redaction gates.
+- `make v1-rc-packet` - generate a compact ignored v1.0 RC handoff packet under
+  `var/review-packets/v1.0/rc/`.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -557,6 +561,9 @@ The v1.0 assurance closure map is
 [docs/codex/v1.0-assurance-closure.md](docs/codex/v1.0-assurance-closure.md) and is checked with
 `make v1-assurance-closure-check`; it summarizes local-preview findings, accepted risks, closure
 matrix evidence, and remaining external-pending rows without claiming production or external closure.
+The v1.0 RC readiness gate is
+[docs/codex/v1.0-rc-readiness-gate.md](docs/codex/v1.0-rc-readiness-gate.md) and is checked with
+`make v1-rc-readiness`; use `make v1-rc-packet` for the compact ignored handoff packet.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in

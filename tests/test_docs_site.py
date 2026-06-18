@@ -116,6 +116,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v1.0-operator-quickstart.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in DEFAULT_DOCS
+    assert "docs/codex/v1.0-rc-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/v3-readiness-debt-register.md" in DEFAULT_DOCS
     assert "docs/codex/local-prompt-triage.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS

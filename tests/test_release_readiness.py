@@ -178,6 +178,7 @@ from scripts import (
     v09_design_review_packet,
     v1_assurance_closure_check,
     v1_operator_quickstart_check,
+    v1_rc_readiness_check,
     v1_rc_roadmap_check,
     v1_rc_status_check,
     v1_workbench_evidence_check,
@@ -296,6 +297,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     quickstart_report = v1_operator_quickstart_check.build_report(Path.cwd())
     workbench_report = v1_workbench_evidence_check.build_report(Path.cwd())
     assurance_report = v1_assurance_closure_check.build_report(Path.cwd())
+    readiness_report = v1_rc_readiness_check.build_report(Path.cwd())
     roadmap = Path("docs/codex/v1.0-rc-roadmap.md").read_text(encoding="utf-8")
     status = Path("docs/codex/v1.0-rc-status.md").read_text(encoding="utf-8")
     quickstart = Path("docs/codex/v1.0-operator-quickstart.md").read_text(
@@ -305,6 +307,9 @@ def test_v1_rc_roadmap_is_wired() -> None:
         encoding="utf-8"
     )
     assurance_closure = Path("docs/codex/v1.0-assurance-closure.md").read_text(
+        encoding="utf-8"
+    )
+    readiness_gate = Path("docs/codex/v1.0-rc-readiness-gate.md").read_text(
         encoding="utf-8"
     )
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -340,6 +345,12 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert assurance_report["accepted_risk_count"] == 10
     assert assurance_report["external_closure_complete"] is False
     assert assurance_report["capability_expansion_allowed"] is False
+    assert readiness_report["valid"] is True
+    assert readiness_report["tool_count"] == 23
+    assert readiness_report["latest_implemented_tool"] == "project.risk.summary"
+    assert readiness_report["selected_capability"] == "not selected"
+    assert readiness_report["packet_redaction_findings"] == 0
+    assert readiness_report["capability_expansion_allowed"] is False
     for phrase in [
         "Ithildin v1.0 RC is a local-first governed MCP workbench",
         "Phase 1: Finish The Read-Only Metadata Surface",
@@ -406,36 +417,59 @@ def test_v1_rc_roadmap_is_wired() -> None:
         "Accepted-deferred risks are not closed risks",
     ]:
         assert phrase in assurance_closure
+    for phrase in [
+        "Status: v1.0 local-preview release-candidate readiness gate.",
+        "Gate Inputs",
+        "RC Interpretation",
+        "make v1-rc-readiness",
+        "make v1-rc-packet",
+        "make release-check",
+        "make review-candidate",
+        "governed tool count remains `23`",
+        "latest implemented tool remains `project.risk.summary`",
+        "no next capability is selected",
+        "capability expansion remains blocked",
+        "public/security-product positioning remains blocked",
+    ]:
+        assert phrase in readiness_gate
     assert "v1-rc-roadmap-check:" in makefile
     assert "v1-rc-status-check:" in makefile
     assert "v1-operator-quickstart-check:" in makefile
     assert "v1-workbench-evidence-check:" in makefile
     assert "v1-assurance-closure-check:" in makefile
+    assert "v1-rc-readiness:" in makefile
+    assert "v1-rc-packet:" in makefile
     assert "v1-rc-roadmap-check" in release_check_body
     assert "v1-rc-status-check" in release_check_body
     assert "v1-operator-quickstart-check" in release_check_body
     assert "v1-workbench-evidence-check" in release_check_body
     assert "v1-assurance-closure-check" in release_check_body
+    assert "v1-rc-readiness" in release_check_body
     assert "make v1-rc-roadmap-check" in readme
     assert "make v1-rc-status-check" in readme
     assert "make v1-operator-quickstart-check" in readme
     assert "make v1-workbench-evidence-check" in readme
     assert "make v1-assurance-closure-check" in readme
+    assert "make v1-rc-readiness" in readme
+    assert "make v1-rc-packet" in readme
     assert "docs/codex/v1.0-rc-roadmap.md" in docs_site
     assert "docs/codex/v1.0-rc-status.md" in docs_site
     assert "docs/codex/v1.0-operator-quickstart.md" in docs_site
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in docs_site
     assert "docs/codex/v1.0-assurance-closure.md" in docs_site
+    assert "docs/codex/v1.0-rc-readiness-gate.md" in docs_site
     assert "docs/codex/v1.0-rc-roadmap.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-status.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-operator-quickstart.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v1.0-rc-readiness-gate.md" in review_docs.REVIEW_DOCS
     assert "Ithildin v1.0 RC Roadmap" in review_index
     assert "Ithildin v1.0 RC Status" in review_index
     assert "Ithildin v1.0 Operator Quickstart" in review_index
     assert "Ithildin v1.0 Workbench And Evidence Closure" in review_index
     assert "Ithildin v1.0 Assurance Closure" in review_index
+    assert "Ithildin v1.0 RC Readiness Gate" in review_index
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
