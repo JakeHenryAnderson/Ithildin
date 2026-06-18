@@ -281,6 +281,8 @@ checked with `make control-mapping-readiness`.
   and no-new-powers boundaries.
 - `make v1-rc-status-check` - validate the canonical v1.0 RC status map, current tool count,
   blocked/deferred boundaries, and release-check/docs wiring.
+- `make v1-operator-quickstart-check` - validate the v1.0 local-preview operator quickstart,
+  demo command order, evidence reading order, and no-new-powers boundaries.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -538,6 +540,10 @@ The canonical v1.0 RC status map is
 [docs/codex/v1.0-rc-status.md](docs/codex/v1.0-rc-status.md) and is checked with
 `make v1-rc-status-check`; read it before historical v0.x/v3 packet archaeology when deciding what
 is implemented, blocked, deferred, or still pending for local-preview RC.
+The v1.0 operator quickstart is
+[docs/codex/v1.0-operator-quickstart.md](docs/codex/v1.0-operator-quickstart.md) and is checked
+with `make v1-operator-quickstart-check`; it is the current zero-to-one local demo path from
+preflight through cleanup.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in
