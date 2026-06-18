@@ -283,6 +283,8 @@ checked with `make control-mapping-readiness`.
   blocked/deferred boundaries, and release-check/docs wiring.
 - `make v1-operator-quickstart-check` - validate the v1.0 local-preview operator quickstart,
   demo command order, evidence reading order, and no-new-powers boundaries.
+- `make v1-workbench-evidence-check` - validate the v1.0 workbench/evidence closure map across
+  Agent Run, approval, audit, signed evidence, demo, and packet readiness.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -544,6 +546,11 @@ The v1.0 operator quickstart is
 [docs/codex/v1.0-operator-quickstart.md](docs/codex/v1.0-operator-quickstart.md) and is checked
 with `make v1-operator-quickstart-check`; it is the current zero-to-one local demo path from
 preflight through cleanup.
+The v1.0 workbench/evidence closure map is
+[docs/codex/v1.0-workbench-evidence-closure.md](docs/codex/v1.0-workbench-evidence-closure.md)
+and is checked with `make v1-workbench-evidence-check`; it ties the local review console, Agent Run
+evidence, approvals, audit, signed evidence, demo artifacts, and review packets into one
+operator-facing evidence story.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in

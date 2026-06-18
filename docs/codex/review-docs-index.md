@@ -219,6 +219,7 @@ externally closed.
 - [Ithildin v1.0 RC Roadmap](v1.0-rc-roadmap.md)
 - [Ithildin v1.0 RC Status](v1.0-rc-status.md)
 - [Ithildin v1.0 Operator Quickstart](v1.0-operator-quickstart.md)
+- [Ithildin v1.0 Workbench And Evidence Closure](v1.0-workbench-evidence-closure.md)
 - [v3 Readiness Debt Register](v3-readiness-debt-register.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)

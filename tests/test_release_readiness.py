@@ -179,6 +179,7 @@ from scripts import (
     v1_operator_quickstart_check,
     v1_rc_roadmap_check,
     v1_rc_status_check,
+    v1_workbench_evidence_check,
     v3_next_capability_candidate_check,
     workbench_demo_smoke,
     workbench_evidence_packet,
@@ -292,9 +293,13 @@ def test_v1_rc_roadmap_is_wired() -> None:
     report = v1_rc_roadmap_check.build_report(Path.cwd())
     status_report = v1_rc_status_check.build_report(Path.cwd())
     quickstart_report = v1_operator_quickstart_check.build_report(Path.cwd())
+    workbench_report = v1_workbench_evidence_check.build_report(Path.cwd())
     roadmap = Path("docs/codex/v1.0-rc-roadmap.md").read_text(encoding="utf-8")
     status = Path("docs/codex/v1.0-rc-status.md").read_text(encoding="utf-8")
     quickstart = Path("docs/codex/v1.0-operator-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    workbench_closure = Path("docs/codex/v1.0-workbench-evidence-closure.md").read_text(
         encoding="utf-8"
     )
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -319,6 +324,10 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert quickstart_report["tool_count"] == 23
     assert quickstart_report["runtime_changes_allowed"] is False
     assert quickstart_report["new_power_classes_allowed"] is False
+    assert workbench_report["valid"] is True
+    assert workbench_report["tool_count"] == 23
+    assert workbench_report["runtime_changes_allowed"] is False
+    assert workbench_report["new_power_classes_allowed"] is False
     for phrase in [
         "Ithildin v1.0 RC is a local-first governed MCP workbench",
         "Phase 1: Finish The Read-Only Metadata Surface",
@@ -356,24 +365,44 @@ def test_v1_rc_roadmap_is_wired() -> None:
         "What This Does Not Demonstrate",
     ]:
         assert phrase in quickstart
+    for phrase in [
+        "Status: v1.0 local-preview workbench/evidence closure map.",
+        "Operator Questions",
+        "Current Workbench Surfaces",
+        "Evidence Reading Order",
+        "make agent-run-timeline-readiness",
+        "make agent-run-evidence-readiness",
+        "make agent-run-operations-readiness",
+        "make workbench-readiness",
+        "make review-candidate",
+        "packet redaction reports `findings: 0`",
+        "mediated actions only",
+    ]:
+        assert phrase in workbench_closure
     assert "v1-rc-roadmap-check:" in makefile
     assert "v1-rc-status-check:" in makefile
     assert "v1-operator-quickstart-check:" in makefile
+    assert "v1-workbench-evidence-check:" in makefile
     assert "v1-rc-roadmap-check" in release_check_body
     assert "v1-rc-status-check" in release_check_body
     assert "v1-operator-quickstart-check" in release_check_body
+    assert "v1-workbench-evidence-check" in release_check_body
     assert "make v1-rc-roadmap-check" in readme
     assert "make v1-rc-status-check" in readme
     assert "make v1-operator-quickstart-check" in readme
+    assert "make v1-workbench-evidence-check" in readme
     assert "docs/codex/v1.0-rc-roadmap.md" in docs_site
     assert "docs/codex/v1.0-rc-status.md" in docs_site
     assert "docs/codex/v1.0-operator-quickstart.md" in docs_site
+    assert "docs/codex/v1.0-workbench-evidence-closure.md" in docs_site
     assert "docs/codex/v1.0-rc-roadmap.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-status.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-operator-quickstart.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v1.0-workbench-evidence-closure.md" in review_docs.REVIEW_DOCS
     assert "Ithildin v1.0 RC Roadmap" in review_index
     assert "Ithildin v1.0 RC Status" in review_index
     assert "Ithildin v1.0 Operator Quickstart" in review_index
+    assert "Ithildin v1.0 Workbench And Evidence Closure" in review_index
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
