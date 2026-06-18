@@ -201,6 +201,7 @@ DEFAULT_DOCS = [
     "docs/codex/read-only-metadata-capability-checklist.md",
     "docs/codex/read-only-capability-source-review-template.md",
     "docs/codex/v1.0-rc-roadmap.md",
+    "docs/codex/v1.0-rc-status.md",
     "docs/codex/v3-readiness-debt-register.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",

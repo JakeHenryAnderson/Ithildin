@@ -19,9 +19,9 @@ ROADMAP_DOC = ROOT / "docs/codex/v1.0-rc-roadmap.md"
 REQUIRED_PHRASES = [
     "Status: roadmap and sequencing target only.",
     "Ithildin v1.0 RC is a local-first governed MCP workbench",
-    "Current governed tool count: `22`",
+    "Current governed tool count: `23`",
     "Current selected capability: `not selected`",
-    "Most recent capability state: `project.release.summary` is implemented",
+    "Most recent capability state: `project.risk.summary` is implemented",
     "Phase 1: Finish The Read-Only Metadata Surface",
     "Phase 2: Prove The Local Workbench Loop",
     "Phase 3: Polish The Operator Console",
