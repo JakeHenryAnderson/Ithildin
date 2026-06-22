@@ -1,6 +1,6 @@
 # Governed Artifact Transfer Lab
 
-Status: future goal and Stage 1 proof-of-concept plan.
+Status: future goal with Stage 1 Part 1 Ithildin-only proof-of-concept packet.
 
 This lab is the first practical bridge between Ithildin and Mission Control. It keeps the projects
 distinct: Mission Control is the operator/control plane, Ithildin is the governed MCP/tool gateway,
@@ -63,6 +63,47 @@ Evidence to collect:
 - output artifact SHA-256 hash;
 - audit head before and after;
 - local packet or export path.
+
+### Stage 1 Part 1: Ithildin-Only Known Good
+
+Part 1 creates a deterministic known-good packet before Mission Control participates. It uses a
+synthetic harmless article-style fixture and produces a staged summary plus hash evidence. It does
+not start services, call a model, call governed tools, add a VM, add Mission Control metadata, or
+write to trusted output zones.
+
+Run:
+
+```sh
+make governed-artifact-transfer-lab
+make governed-artifact-transfer-lab-check
+```
+
+The generated packet is ignored under:
+
+```text
+var/review-packets/v3/governed-artifact-transfer-lab/
+```
+
+The packet records:
+
+- mission_control_integration: `false`;
+- vm_or_sandbox: `false`;
+- source and staged-output SHA-256 hashes;
+- a deterministic transcript;
+- an artifact hash manifest;
+- boundaries showing no new governed tools, no shell, no external network, and no broad writes.
+
+This is intentionally not a live governance claim. It is the baseline artifact/evidence shape that
+Stage 1 Part 2 can wrap with Mission Control mission metadata while keeping the Ithildin-only result
+stable. The tool count remains `23`; this lab does not add governed tools, manifests, executors,
+policy rules, API/MCP behavior, UI runtime behavior, or sandbox orchestration.
+
+### Stage 1 Part 2: Mission Control Wrapper
+
+Part 2 should keep the Part 1 packet as the known-good baseline and add Mission Control as the
+operator-facing mission/evidence layer. The expected comparison is simple: Mission Control records
+operator intent and evidence attachments; Ithildin keeps the local gateway/evidence packet; neither
+part introduces a VM yet.
 
 ## Stage 2: VM Working Copy Summary
 

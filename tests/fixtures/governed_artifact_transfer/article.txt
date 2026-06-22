@@ -1,0 +1,14 @@
+# Demo Article: The Moon
+
+The Moon is Earth's only natural satellite. It reflects sunlight and appears to
+change shape during a repeating cycle of phases. Those phases are caused by the
+Moon's position relative to Earth and the Sun, not by Earth's shadow except
+during a lunar eclipse.
+
+The Moon affects Earth in practical ways. Its gravity helps drive ocean tides,
+and its regular motion has been used for calendars, navigation, and night-sky
+observation. Robotic spacecraft and crewed missions have also used the Moon as
+a nearby destination for studying planetary geology.
+
+This fixture is intentionally harmless. It is synthetic article-style text for
+local governance testing, not a copied encyclopedia article or regulated data.

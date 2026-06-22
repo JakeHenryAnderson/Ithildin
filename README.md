@@ -219,6 +219,10 @@ checked with `make control-mapping-readiness`.
 - `make demo-observed-summary` - summarize observed demo IDs, audit heads, and run evidence export pointers without file contents or diffs.
 - `make demo-evidence-packet` - generate a focused demo evidence closure packet under `var/review-packets/v3/demo-evidence/`.
 - `make demo-evidence-readiness` - validate demo evidence packet, result-check, docs, review-candidate, and no-new-powers wiring.
+- `make governed-artifact-transfer-lab` - generate the Stage 1 Part 1 Ithildin-only known-good
+  artifact transfer lab packet under `var/review-packets/v3/governed-artifact-transfer-lab/`.
+- `make governed-artifact-transfer-lab-check` - validate the Stage 1 lab packet, docs wiring,
+  no-new-powers boundary, and Mission-Control/VM-disabled posture.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -566,8 +570,8 @@ The v1.0 RC readiness gate is
 `make v1-rc-readiness`; use `make v1-rc-packet` for the compact ignored handoff packet.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
-it sketches the future Mission Control + Ithildin proof of concept for local file summary,
-sandboxed working copies, approval-gated promotion, and correlated evidence.
+it now includes a Stage 1 Part 1 Ithildin-only known-good packet generated with
+`make governed-artifact-transfer-lab`, before the later Mission Control and VM/sandbox parts.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in

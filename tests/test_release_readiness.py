@@ -59,6 +59,8 @@ from scripts import (
     git_tag_metadata_implementation_plan_check,
     git_tag_metadata_proposal_check,
     git_tag_metadata_source_review_bundle,
+    governed_artifact_transfer_lab,
+    governed_artifact_transfer_lab_check,
     guided_demo,
     guided_demo_readiness,
     http_fetch_source_review_bundle,
@@ -12418,7 +12420,90 @@ def test_demo_evidence_closure_packet_and_readiness_are_wired(tmp_path: Path) ->
     ]:
         assert forbidden not in index
         assert forbidden not in prompt
-        assert forbidden not in commands
+
+
+def test_governed_artifact_transfer_lab_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "governed-artifact-transfer-lab"
+    governed_artifact_transfer_lab.build_lab(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+    report = governed_artifact_transfer_lab_check.build_report(Path.cwd())
+
+    expected = {
+        "STAGE_1_LAB_INDEX.md",
+        "STAGE_1_LAB_TRANSCRIPT.md",
+        "STAGE_1_PART_2_MISSION_CONTROL_NOTES.md",
+        "artifact-hashes.json",
+        "staging",
+        "evidence",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    manifest = json.loads((output_dir / "evidence/manifest.json").read_text(encoding="utf-8"))
+    hashes = json.loads((output_dir / "artifact-hashes.json").read_text(encoding="utf-8"))
+    artifact_paths = {entry["path"] for entry in hashes["artifacts"]}
+    summary = (output_dir / "staging/summary.md").read_text(encoding="utf-8")
+    index = (output_dir / "STAGE_1_LAB_INDEX.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/governed-artifact-transfer-lab.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert generated == expected
+    assert report["valid"] is True
+    assert report["tool_count"] == 23
+    assert report["mission_control_integration"] is False
+    assert report["vm_or_sandbox"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert manifest["lab"] == "governed-artifact-transfer-stage-1-part-1"
+    assert manifest["tool_count"] == 23
+    assert manifest["mission_control_integration"] is False
+    assert manifest["vm_or_sandbox"] is False
+    assert manifest["service_startup_performed"] is False
+    assert manifest["governed_tool_calls_performed"] is False
+    assert manifest["promotion_required_for_trusted_write"] is True
+    assert "no_new_governed_tools" in manifest["boundaries"]
+    assert "no_shell_execution" in manifest["boundaries"]
+    assert "staging/summary.md" in artifact_paths
+    assert "evidence/manifest.json" in artifact_paths
+    assert "STAGE_1_PART_2_MISSION_CONTROL_NOTES.md" in artifact_paths
+    assert "Deterministic Summary" in summary
+    assert "mission_control_integration: `false`" in summary
+    assert "vm_or_sandbox: `false`" in summary
+    assert "Ithildin-only known-good baseline" in index
+    assert "Stage 1 Part 1: Ithildin-Only Known Good" in doc
+    assert "make governed-artifact-transfer-lab" in doc
+    assert "make governed-artifact-transfer-lab-check" in doc
+    assert "tool count remains `23`" in doc
+    assert "does not add governed tools" in doc
+    assert "make governed-artifact-transfer-lab" in readme
+    assert "make governed-artifact-transfer-lab-check" in readme
+    assert "governed-artifact-transfer-lab:" in makefile
+    assert "governed-artifact-transfer-lab-check:" in makefile
+    assert "governed-artifact-transfer-lab-check" in release_check_body
+    assert "$(MAKE) governed-artifact-transfer-lab" in review_candidate_body
+    assert "$(MAKE) governed-artifact-transfer-lab-check" in review_candidate_body
+    assert (
+        "governed-artifact-transfer-lab-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "$(MAKE) governed-artifact-transfer-lab"
+        in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/governed-artifact-transfer-lab.md" in review_docs.REVIEW_DOCS
+    for forbidden in [
+        "PRIVATE KEY",
+        "ITHILDIN_ADMIN_TOKEN=",
+        "BEGIN OPENSSH",
+        "diff --git",
+        "response body:",
+    ]:
+        assert forbidden not in index
+        assert forbidden not in summary
 
 
 def test_control_mapping_readiness_gate_is_wired() -> None:
