@@ -564,6 +564,10 @@ matrix evidence, and remaining external-pending rows without claiming production
 The v1.0 RC readiness gate is
 [docs/codex/v1.0-rc-readiness-gate.md](docs/codex/v1.0-rc-readiness-gate.md) and is checked with
 `make v1-rc-readiness`; use `make v1-rc-packet` for the compact ignored handoff packet.
+The governed artifact transfer lab note is
+[docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
+it sketches the future Mission Control + Ithildin proof of concept for local file summary,
+sandboxed working copies, approval-gated promotion, and correlated evidence.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in
