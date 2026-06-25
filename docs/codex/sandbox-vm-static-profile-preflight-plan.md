@@ -1,20 +1,20 @@
 # Sandbox/VM Static Profile And Preflight Implementation Plan
 
-Status: implementation-planning only.
+Status: implementation-planning complete; CLI-only fixture preflight runner implemented.
 
-This document plans a future static, operator-managed sandbox/VM profile fixture and read-only
-preflight runner. It does not add runtime behavior, API endpoints, MCP tools, executors, tool
+This document records the static, operator-managed sandbox/VM profile fixture and CLI-only
+read-only preflight runner boundary. It does not add API endpoints, MCP tools, executors, tool
 manifests, policy rules, local model invocation, Mission Control runtime behavior, VM/container
 lifecycle control, Docker socket access, Kubernetes control, browser automation, shell execution,
 arbitrary HTTP, broad filesystem writes, trusted-host promotion, SIEM adapters, production identity,
 runtime Postgres, hosted telemetry, plugin SDK behavior, compliance automation, public
 security-product claims, or new governed tool powers.
 
-Implementation state: blocked.
+Implementation state: CLI-only fixture runner implemented.
 
-The future implementation may be planned only as a local-preview diagnostic and fixture-validation
-lane. It must not manage a VM, start a container, call a model, move host files, promote artifacts,
-or become a sandbox orchestrator.
+The implementation is only a local-preview diagnostic and fixture-validation lane. It does not
+manage a VM, start a container, call a model, move host files, promote artifacts, or become a
+sandbox orchestrator.
 
 Validate this plan with:
 
@@ -80,12 +80,12 @@ secrets, environment variables, model prompts, model outputs, command lines, she
 socket paths, Kubernetes contexts, browser profiles, network credentials, file contents, diffs,
 response bodies, package scripts, dependency names, or raw sandbox internals.
 
-## Future Read-Only Preflight Runner
+## Implemented Read-Only Preflight Runner
 
-If approved later, a preflight runner may load the static profile fixture and return a secret-free
-go/no-go report. It may inspect only the fixture contents and existing Ithildin readiness evidence.
+The preflight runner loads the static profile fixture and returns a secret-free review/no-go report.
+It may inspect only the fixture contents and existing Ithildin readiness evidence.
 
-Allowed future checks:
+Allowed checks:
 
 - verify required sections are present;
 - verify schema version is supported;
@@ -102,9 +102,10 @@ Allowed future checks:
 - verify cleanup transcript expectations are present;
 - verify warning chips include `not_os_isolation_proof`, `operator_managed`, and
   `local_preview_only`;
-- emit a `decision` of `go`, `no_go`, or `review_required` with safe reasons only.
+- emit a `decision` of `no_go` or `review_required` with safe reasons only. `go` remains deferred
+  until a later live sandbox profile support decision.
 
-Forbidden future behavior:
+Forbidden behavior:
 
 - starting, stopping, snapshotting, or controlling VMs or containers;
 - reading VM disks or sandbox filesystem contents;
@@ -140,9 +141,9 @@ The output must not include raw paths, file contents, model prompts, model outpu
 Docker/Kubernetes handles, environment values, network endpoints beyond coarse labels, usernames,
 home directories, VM disk paths, or sensitive workspace details.
 
-## Future Negative Transcript Plan
+## Negative Transcript Plan
 
-Any future implementation must include observed negative transcripts for:
+The implementation includes observed negative transcripts for:
 
 - missing required section;
 - unsupported platform claiming support;
@@ -163,9 +164,9 @@ Any future implementation must include observed negative transcripts for:
 Negative transcripts must record command/scenario, expected denial, observed status/reason, and
 evidence pointer without file contents, raw paths, prompts, secrets, model output, or stack traces.
 
-## Future Source Review Requirements
+## Source Review Requirements
 
-Before any runtime preflight implementation is accepted, a source-review bundle must include:
+Before any broader sandbox/VM implementation is accepted, a source-review bundle must include:
 
 - this plan;
 - the sandbox/VM proof-of-concept review packet;
@@ -184,7 +185,8 @@ Finding IDs should use `EXT-SANDBOX-PREFLIGHT-###`.
 ## Current Allowed State
 
 - tool count remains `24`;
-- runtime changes allowed: `false`;
+- governed tool/API/policy changes allowed: `false`;
+- CLI-only fixture preflight runner implemented: `true`;
 - Mission Control runtime allowed: `false`;
 - local model invocation allowed: `false`;
 - sandbox orchestration allowed: `false`;
@@ -192,10 +194,9 @@ Finding IDs should use `EXT-SANDBOX-PREFLIGHT-###`.
 - network expansion allowed: `false`;
 - new power classes allowed: `false`.
 
-## Future Implementation Gate
+## Implementation Gate
 
-A later implementation sprint must add a separate implementation decision document and gate. That
-gate must fail closed unless:
+The implementation decision document and gate fail closed unless:
 
 - the implementation remains read-only and fixture-only;
 - no new MCP/API/governed tool surface is added unless separately approved;
@@ -205,4 +206,4 @@ gate must fail closed unless:
 - static profile fixture tests and negative transcripts pass;
 - release-check and packet redaction scan pass.
 
-Until that separate gate exists and passes, implementation remains blocked.
+Live sandbox/VM integration remains blocked.

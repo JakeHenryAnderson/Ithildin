@@ -2,9 +2,9 @@
 
 Status: source-review handoff only.
 
-This document defines the focused review handoff for the future static sandbox/VM profile preflight
-lane. The current state remains design and fixture evidence only: Ithildin does not load sandbox
-profiles at runtime, start VMs or containers, invoke local models, call Mission Control runtime
+This document defines the focused review handoff for the static sandbox/VM profile preflight lane.
+The current implementation is CLI-only and fixture-only: Ithildin does not load sandbox profiles
+through API/MCP, start VMs or containers, invoke local models, call Mission Control runtime
 behavior, promote artifacts to a trusted host, or expose any new governed tool/API/MCP surface.
 
 Generate the focused handoff packet with:
@@ -21,8 +21,8 @@ make sandbox-vm-static-preflight-source-review-packet-check
 
 ## Review Scope
 
-The packet asks a source reviewer to inspect the static-profile preflight lane before any future
-read-only fixture runner is planned. The review namespace is `EXT-SANDBOX-PREFLIGHT-###`.
+The packet asks a source reviewer to inspect the static-profile preflight lane before any broader
+sandbox/VM integration is planned. The review namespace is `EXT-SANDBOX-PREFLIGHT-###`.
 
 The review surface is:
 
@@ -36,9 +36,9 @@ The review surface is:
 
 ## Required Reviewer Question
 
-The reviewer should answer whether Ithildin may plan a later implementation proposal for a
-read-only, fixture-only static profile preflight runner. A positive answer is not approval to
-implement live sandbox control.
+The reviewer should answer whether the CLI-only, fixture-only static profile preflight runner stays
+within the approved boundary and whether broader sandbox/VM planning may proceed. A positive answer
+is not approval to implement live sandbox control.
 
 ## Explicit Non-Goals
 

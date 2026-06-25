@@ -180,7 +180,9 @@ from scripts import (
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
+    sandbox_vm_static_preflight,
     sandbox_vm_static_preflight_implementation_gate,
+    sandbox_vm_static_preflight_negative_transcripts,
     sandbox_vm_static_preflight_source_review_packet,
     sandbox_vm_static_profile_fixture_contract_check,
     sandbox_vm_static_profile_negative_fixtures_check,
@@ -1023,10 +1025,11 @@ def test_sandbox_vm_static_profile_preflight_plan_is_wired() -> None:
     )
     assert "sandbox-vm-static-profile-preflight-plan.md" in enterprise
     assert "Future Static Profile Fixture" in plan
-    assert "Future Read-Only Preflight Runner" in plan
-    assert "Future Negative Transcript Plan" in plan
-    assert "Future Source Review Requirements" in plan
-    assert "Implementation state: blocked." in plan
+    assert "Implemented Read-Only Preflight Runner" in plan
+    assert "Negative Transcript Plan" in plan
+    assert "Source Review Requirements" in plan
+    assert "Implementation state: CLI-only fixture runner implemented." in plan
+    assert "CLI-only fixture preflight runner implemented: `true`" in plan
     assert "live VM control" in enterprise
 
 
@@ -1201,6 +1204,7 @@ def test_sandbox_vm_static_preflight_source_review_packet_is_wired(
     assert "sandbox-vm-static-profile-preflight-plan.md" in contracts
     assert "sandbox-vm-static-profile-fixture-contract.md" in contracts
     assert "sandbox-vm-static-profile-negative-fixtures.md" in contracts
+    assert "sandbox-vm-static-preflight-implementation-decision.md" in contracts
     assert "sandbox-vm-static-preflight-source-review.md" in contracts
     assert "sandbox-vm-static-profile.local-preview.example.json" in fixtures
     assert "runtime_changes_allowed" in validation
@@ -1210,6 +1214,9 @@ def test_sandbox_vm_static_preflight_source_review_packet_is_wired(
     assert "trusted_host_promotion_allowed" in validation
     assert "new_power_classes_allowed" in validation
     assert "make sandbox-vm-static-profile-negative-fixtures-check" in commands
+    assert "make sandbox-vm-static-preflight" in commands
+    assert "make sandbox-vm-static-preflight-negative-transcripts" in commands
+    assert "make sandbox-vm-static-preflight-implementation-gate" in commands
     assert "command execution skipped for fixture/test packet generation" in commands
     assert "make sandbox-vm-static-preflight-source-review-packet" in readme
     assert "sandbox-vm-static-preflight-source-review-packet:" in makefile
@@ -1247,8 +1254,8 @@ def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["implementation_status"] == "cli_fixture_preflight_boundary_approved"
-    assert report["runtime_implemented"] is False
+    assert report["implementation_status"] == "cli_fixture_preflight_implemented"
+    assert report["runtime_implemented"] is True
     assert report["cli_only_fixture_preflight_runner_allowed"] is True
     assert report["governed_tool_surface_changes_allowed"] is False
     assert report["api_mcp_behavior_changes_allowed"] is False
@@ -1263,6 +1270,10 @@ def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
     assert "make sandbox-vm-static-preflight-implementation-gate" in readme
     assert "sandbox-vm-static-preflight-implementation-gate:" in makefile
     assert "sandbox-vm-static-preflight-implementation-gate" in release_check_body
+    assert "sandbox-vm-static-preflight:" in makefile
+    assert "sandbox-vm-static-preflight-negative-transcripts:" in makefile
+    assert "sandbox-vm-static-preflight" in release_check_body
+    assert "sandbox-vm-static-preflight-negative-transcripts" in release_check_body
     assert "sandbox-vm-static-preflight-implementation-gate" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
@@ -1276,7 +1287,47 @@ def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
     )
     assert "sandbox-vm-static-preflight-implementation-decision.md" in enterprise
     assert "CLI-only fixture preflight runner allowed: `true`" in decision
+    assert "CLI-only fixture preflight runner implemented: `true`" in decision
     assert "runtime sandbox control allowed: `false`" in decision
+
+
+def test_sandbox_vm_static_preflight_runner_and_transcripts_are_safe(
+    tmp_path: Path,
+) -> None:
+    fixture = json.loads(
+        Path("docs/codex/fixtures/sandbox-vm-static-profile.local-preview.example.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    report = sandbox_vm_static_preflight.build_report(
+        Path("docs/codex/fixtures/sandbox-vm-static-profile.local-preview.example.json")
+    )
+    assert report["valid"] is True
+    assert report["decision"] == "review_required"
+    assert report["output_policy"]["sandbox_runtime_inspected"] is False
+    assert report["output_policy"]["mission_control_runtime_called"] is False
+    assert report["output_policy"]["local_model_invoked"] is False
+    assert report["output_policy"]["trusted_host_promotion_performed"] is False
+    assert report["safe_reasons"] == []
+
+    fixture["mounts"]["root_label"] = "/Users/demo/workspace"
+    bad_fixture = tmp_path / "bad-fixture.json"
+    bad_fixture.write_text(json.dumps(fixture), encoding="utf-8")
+    bad_report = sandbox_vm_static_preflight.build_report(bad_fixture)
+    assert bad_report["valid"] is False
+    assert bad_report["decision"] == "no_go"
+    assert "sensitive_payload_shape" in bad_report["safe_reasons"]
+    assert "/Users/demo/workspace" not in json.dumps(bad_report)
+
+    transcript_path = sandbox_vm_static_preflight_negative_transcripts.build_transcripts(
+        tmp_path / "transcripts"
+    )
+    transcript = transcript_path.read_text(encoding="utf-8")
+    assert "Sandbox/VM Static Preflight Negative Transcripts" in transcript
+    assert "Mission Control Authority" in transcript
+    assert "Trusted Host Promotion" in transcript
+    assert "/Users/demo/workspace" not in transcript
+    assert "redacted" not in transcript.lower()
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

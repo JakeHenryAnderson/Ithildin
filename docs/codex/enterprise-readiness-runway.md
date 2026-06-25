@@ -281,7 +281,7 @@ safe reason labels only.
 
 The implementation decision is
 [sandbox-vm-static-preflight-implementation-decision.md](sandbox-vm-static-preflight-implementation-decision.md)
-and is validated with `make sandbox-vm-static-preflight-implementation-gate`. It approves only a
+and is validated with `make sandbox-vm-static-preflight-implementation-gate`. It approves only the
 CLI-only fixture preflight runner that reads static profile metadata and emits safe labels; it does
 not approve API/MCP behavior, sandbox orchestration, local model invocation, Mission Control runtime
 behavior, trusted-host promotion, or network expansion.

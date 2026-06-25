@@ -24,14 +24,14 @@ ROOT = Path(__file__).resolve().parents[1]
 DECISION_DOC = ROOT / "docs/codex/sandbox-vm-static-preflight-implementation-decision.md"
 RUNNER = ROOT / "scripts/sandbox_vm_static_preflight.py"
 REQUIRED_PHRASES = [
-    "Status: CLI-only implementation boundary approved; runtime runner not yet implemented.",
+    "Status: CLI-only implementation implemented for local fixture preflight.",
     "make sandbox-vm-static-preflight-implementation-gate",
     "scripts/sandbox_vm_static_preflight.py",
     "make sandbox-vm-static-preflight",
     "deterministic local CLI",
     "reads a JSON fixture path",
     "secret-free report",
-    "Allowed decisions are `go`, `no_go`, and `review_required`.",
+    "Current decisions are `no_go` and `review_required`",
     "raw path-shaped mount/root labels",
     "broad network posture",
     "Mission Control execution authority claims",
@@ -48,6 +48,7 @@ REQUIRED_PHRASES = [
     "network expansion allowed: `false`",
     "new power classes allowed: `false`",
     "CLI-only fixture preflight runner allowed: `true`",
+    "CLI-only fixture preflight runner implemented: `true`",
     "Broader capability expansion remains blocked.",
 ]
 FORBIDDEN_PHRASES = [
@@ -126,7 +127,22 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if tool_surface.get("tool_count") != 24:
         failures.append("tool surface tool count is not 24")
 
-    runner_implemented = (repo_root / RUNNER.relative_to(ROOT)).exists()
+    runner_path = repo_root / RUNNER.relative_to(ROOT)
+    runner_implemented = runner_path.exists()
+    if not runner_implemented:
+        failures.append("static preflight runner script is missing")
+    else:
+        runner_text = runner_path.read_text(encoding="utf-8")
+        for phrase in [
+            "def build_report(",
+            "MAX_FIXTURE_BYTES",
+            "sandbox_runtime_inspected",
+            "mission_control_runtime_called",
+            "local_model_invoked",
+            "trusted_host_promotion_performed",
+        ]:
+            if phrase not in runner_text:
+                failures.append(f"static preflight runner is missing phrase: {phrase}")
     return {
         "schema_version": "1",
         "valid": not failures,

@@ -80,6 +80,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-static-profile-preflight-plan-check",
     "sandbox-vm-static-profile-fixture-contract-check",
     "sandbox-vm-static-profile-negative-fixtures-check",
+    "sandbox-vm-static-preflight",
+    "sandbox-vm-static-preflight-negative-transcripts",
     "sandbox-vm-static-preflight-implementation-gate",
     "sandbox-vm-static-preflight-source-review-packet-check",
     "agent-workflow-check",

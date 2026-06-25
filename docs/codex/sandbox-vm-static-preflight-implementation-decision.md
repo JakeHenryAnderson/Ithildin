@@ -1,6 +1,6 @@
 # Sandbox/VM Static Preflight Implementation Decision
 
-Status: CLI-only implementation boundary approved; runtime runner not yet implemented.
+Status: CLI-only implementation implemented for local fixture preflight.
 
 This decision approves only a local CLI script and Make target that validate a static
 operator-managed sandbox/VM profile fixture and emit a secret-free preflight report. It does not
@@ -17,14 +17,14 @@ make sandbox-vm-static-preflight-implementation-gate
 
 ## Approved Implementation Shape
 
-The future runner may be implemented as:
+The implemented runner is:
 
 - `scripts/sandbox_vm_static_preflight.py`;
 - `make sandbox-vm-static-preflight`;
 - a deterministic local CLI that reads a JSON fixture path;
 - a secret-free report with coarse labels, warning labels, safe reasons, and false authority flags.
 
-The runner may read only the supplied fixture file and repo-local validation helpers. It must not
+The runner reads only the supplied fixture file and repo-local validation helpers. It must not
 inspect a live VM, container, host mount, sandbox filesystem, Docker socket, Kubernetes context,
 Mission Control runtime, local model, network endpoint, shell, browser profile, or trusted-host
 promotion path.
@@ -50,7 +50,8 @@ The report must be a closed object containing only:
 - `safe_reasons`;
 - `output_policy`.
 
-Allowed decisions are `go`, `no_go`, and `review_required`. Reasons must be safe snake-case labels.
+Current decisions are `no_go` and `review_required`; `go` remains deferred until a later live
+sandbox profile support decision. Reasons must be safe snake-case labels.
 
 ## Required Denials
 
@@ -90,5 +91,6 @@ contents, diffs, response bodies, package scripts, dependency names, or raw sand
 - network expansion allowed: `false`;
 - new power classes allowed: `false`;
 - CLI-only fixture preflight runner allowed: `true`;
+- CLI-only fixture preflight runner implemented: `true`;
 
 Broader capability expansion remains blocked.

@@ -363,6 +363,11 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-profile-preflight-plan-check` - validate the design-only implementation
   plan for a future static operator-managed sandbox profile fixture and read-only preflight runner
   while confirming runtime sandbox control remains blocked.
+- `make sandbox-vm-static-preflight` - run the CLI-only static profile preflight over the committed
+  local-preview fixture, returning safe labels and review/no-go decisions without inspecting a live
+  VM/container.
+- `make sandbox-vm-static-preflight-negative-transcripts` - generate observed negative transcripts
+  for malformed or overclaiming static sandbox profile fixtures.
 - `make sandbox-vm-static-preflight-implementation-gate` - validate the CLI-only fixture preflight
   runner boundary decision while confirming no API/MCP, governed tool, sandbox control, Mission
   Control runtime, local-model, promotion, or network expansion is approved.
@@ -710,8 +715,8 @@ static profile example in memory to prove overclaims, raw path-shaped fields, br
 posture, promotion claims, and authority flags fail closed with safe reason labels.
 The implementation decision is
 [docs/codex/sandbox-vm-static-preflight-implementation-decision.md](docs/codex/sandbox-vm-static-preflight-implementation-decision.md)
-and is checked with `make sandbox-vm-static-preflight-implementation-gate`; it approves only a
-future CLI-only fixture preflight runner, not API/MCP behavior, sandbox orchestration, Mission
+and is checked with `make sandbox-vm-static-preflight-implementation-gate`; it approves only the
+CLI-only fixture preflight runner, not API/MCP behavior, sandbox orchestration, Mission
 Control runtime behavior, local model invocation, trusted-host promotion, or new governed powers.
 The focused source-review handoff is
 [docs/codex/sandbox-vm-static-preflight-source-review.md](docs/codex/sandbox-vm-static-preflight-source-review.md)

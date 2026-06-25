@@ -18,6 +18,7 @@ if __package__ in {None, ""}:
 from scripts import (
     no_new_powers_guardrail,
     sandbox_vm_poc_review_packet,
+    sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_profile_fixture_contract_check,
     sandbox_vm_static_profile_negative_fixtures_check,
     sandbox_vm_static_profile_preflight_plan_check,
@@ -37,6 +38,7 @@ CONTRACT_DOCS = [
     Path("docs/codex/sandbox-vm-static-profile-preflight-plan.md"),
     Path("docs/codex/sandbox-vm-static-profile-fixture-contract.md"),
     Path("docs/codex/sandbox-vm-static-profile-negative-fixtures.md"),
+    Path("docs/codex/sandbox-vm-static-preflight-implementation-decision.md"),
     Path("docs/codex/sandbox-vm-static-preflight-source-review.md"),
     Path("docs/codex/sandbox-vm-preflight-contract.md"),
     Path("docs/codex/sandbox-vm-profile-contract.md"),
@@ -50,6 +52,9 @@ COMMANDS = [
     ["make", "sandbox-vm-static-profile-preflight-plan-check"],
     ["make", "sandbox-vm-static-profile-fixture-contract-check"],
     ["make", "sandbox-vm-static-profile-negative-fixtures-check"],
+    ["make", "sandbox-vm-static-preflight"],
+    ["make", "sandbox-vm-static-preflight-negative-transcripts"],
+    ["make", "sandbox-vm-static-preflight-implementation-gate"],
     ["make", "sandbox-vm-poc-review-packet-check"],
     ["make", "no-new-powers-guardrail"],
     ["make", "tool-surface-invariant-gate"],
@@ -186,6 +191,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "artifact_count": len(expected),
         "tool_count": 24,
         "runtime_changes_allowed": False,
+        "cli_only_fixture_preflight_runner_allowed": True,
+        "cli_only_fixture_preflight_runner_implemented": True,
         "mission_control_runtime_allowed": False,
         "local_model_invocation_allowed": False,
         "sandbox_orchestration_allowed": False,
@@ -213,6 +220,7 @@ def build_packet(
     preflight_plan = sandbox_vm_static_profile_preflight_plan_check.build_report(repo_root)
     fixture_contract = sandbox_vm_static_profile_fixture_contract_check.build_report(repo_root)
     negative_fixtures = sandbox_vm_static_profile_negative_fixtures_check.build_report(repo_root)
+    implementation_gate = sandbox_vm_static_preflight_implementation_gate.build_report(repo_root)
     poc_packet = sandbox_vm_poc_review_packet.build_check_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     tool_surface = tool_surface_invariant_gate.build_report(repo_root)
@@ -220,6 +228,7 @@ def build_packet(
         *(f"preflight plan: {failure}" for failure in preflight_plan["failures"]),
         *(f"fixture contract: {failure}" for failure in fixture_contract["failures"]),
         *(f"negative fixtures: {failure}" for failure in negative_fixtures["failures"]),
+        *(f"implementation gate: {failure}" for failure in implementation_gate["failures"]),
         *(f"POC packet: {failure}" for failure in poc_packet["failures"]),
         *(f"no-new-powers: {failure}" for failure in no_new_powers["failures"]),
         *(f"tool-surface: {failure}" for failure in tool_surface["failures"]),
@@ -238,6 +247,7 @@ def build_packet(
         "preflight_plan": preflight_plan,
         "fixture_contract": fixture_contract,
         "negative_fixtures": negative_fixtures,
+        "implementation_gate": implementation_gate,
         "poc_packet": poc_packet,
         "no_new_powers": no_new_powers,
         "tool_surface": tool_surface,
@@ -272,14 +282,16 @@ fixture-only preflight runner may be planned.
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
 - tool count remains `{context["tool_surface"]["tool_count"]}`.
-- Runtime implementation: absent.
+- CLI-only fixture preflight runner: present.
+- Live sandbox/runtime control: absent.
 - Finding namespace: `EXT-SANDBOX-PREFLIGHT-###`.
-- This packet does not add runtime behavior, API endpoints, MCP tools, executors, tool manifests,
-  policy rules, local model invocation, Mission Control runtime behavior, sandbox orchestration, VM
-  lifecycle control, Docker socket access, Kubernetes control, browser automation, shell execution,
-  arbitrary HTTP, broad filesystem writes, trusted-host promotion, SIEM adapters, production
-  identity, runtime Postgres, hosted telemetry, plugin SDK behavior, compliance automation, public
-  security-product claims, or new governed tool powers.
+- This packet includes CLI-only static fixture preflight evidence. It does not add API endpoints,
+  MCP tools, executors, tool manifests, policy rules, local model invocation, Mission Control
+  runtime behavior, sandbox orchestration, VM lifecycle control, Docker socket access, Kubernetes
+  control, browser automation, shell execution, arbitrary HTTP, broad filesystem writes,
+  trusted-host promotion, SIEM adapters, production identity, runtime Postgres, hosted telemetry,
+  plugin SDK behavior, compliance automation, public security-product claims, or new governed tool
+  powers.
 
 ## Artifacts
 
@@ -305,7 +317,8 @@ def _prompt(context: dict[str, Any]) -> str:
     return f"""# Sandbox/VM Static Preflight Source Review Prompt
 
 You are reviewing Ithildin's static sandbox/VM profile preflight lane. Treat this as a source-review
-handoff for design and fixture evidence only, not as approval of a live VM/container integration.
+handoff for design, fixture, and CLI-only preflight evidence, not as approval of a live
+VM/container integration.
 
 Reviewed commit: `{context["commit"]}`
 Area: `sandbox-vm-static-preflight`
@@ -362,10 +375,13 @@ def _validation_evidence(context: dict[str, Any]) -> str:
                     "preflight_plan": context["preflight_plan"],
                     "fixture_contract": context["fixture_contract"],
                     "negative_fixtures": context["negative_fixtures"],
+                    "implementation_gate": context["implementation_gate"],
                     "poc_packet": context["poc_packet"],
                     "no_new_powers": context["no_new_powers"],
                     "tool_surface": context["tool_surface"],
                     "runtime_changes_allowed": False,
+                    "cli_only_fixture_preflight_runner_allowed": True,
+                    "cli_only_fixture_preflight_runner_implemented": True,
                     "mission_control_runtime_allowed": False,
                     "local_model_invocation_allowed": False,
                     "sandbox_orchestration_allowed": False,
