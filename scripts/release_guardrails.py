@@ -74,6 +74,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "mission-control-handoff-schema-contract-check",
     "mission-control-handoff-negative-fixtures-check",
     "sandbox-vm-worker-boundary-charter-check",
+    "sandbox-vm-profile-contract-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",

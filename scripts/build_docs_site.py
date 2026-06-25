@@ -211,6 +211,7 @@ DEFAULT_DOCS = [
     "docs/codex/mission-control-handoff-schema-contract.md",
     "docs/codex/mission-control-handoff-negative-fixtures.md",
     "docs/codex/sandbox-vm-worker-boundary-charter.md",
+    "docs/codex/sandbox-vm-profile-contract.md",
     "docs/codex/governed-artifact-transfer-lab.md",
     "docs/codex/hello-world-sandbox-demo-roadmap.md",
     "docs/codex/hello-world-sandbox-observed-demo.md",

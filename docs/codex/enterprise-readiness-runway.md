@@ -96,6 +96,7 @@ Allowed design scope:
 Required before implementation:
 
 - sandbox worker boundary charter;
+- sandbox/VM profile contract;
 - supported platform matrix;
 - mount/root contract;
 - network posture contract;
@@ -232,3 +233,9 @@ Start with
 evidence viewer, Ithildin as the governed mediation/evidence gateway, and the sandbox/VM layer as
 operator-managed infrastructure. In short: prepare the sandbox worker boundary before touching
 runtime sandbox control.
+
+Then use [sandbox-vm-profile-contract.md](sandbox-vm-profile-contract.md) and validate it with
+`make sandbox-vm-profile-contract-check`. The profile contract defines the future operator-supplied
+sandbox metadata shape, forbidden fields, validation decisions, and `promotion_status:
+not_promoted` posture before any live profile loader, local-model invocation, VM/container
+lifecycle, or Mission Control importer is implemented.

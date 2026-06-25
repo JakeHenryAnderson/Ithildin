@@ -351,6 +351,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-worker-boundary-charter-check` - validate the design-only sandbox/VM worker
   boundary charter for future operator-managed sandbox proof-of-concept planning while confirming
   Ithildin still does not orchestrate a VM/container or claim OS isolation.
+- `make sandbox-vm-profile-contract-check` - validate the design-only sandbox/VM profile contract
+  for future operator-supplied sandbox metadata while confirming no runtime profile loader,
+  sandbox orchestration, local model invocation, or trusted-host promotion is added.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -659,6 +662,11 @@ The next sandbox/VM planning artifact is
 and is checked with `make sandbox-vm-worker-boundary-charter-check`; it defines future sandbox
 profile evidence, negative cases, and role separation while keeping VM/container lifecycle, local
 model invocation, sandbox orchestration, and host promotion unimplemented.
+The companion profile contract is
+[docs/codex/sandbox-vm-profile-contract.md](docs/codex/sandbox-vm-profile-contract.md) and is
+checked with `make sandbox-vm-profile-contract-check`; it defines the future operator-supplied
+profile fields, forbidden fields, validation decisions, and `not_promoted` posture without adding a
+runtime profile loader or sandbox control.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control
