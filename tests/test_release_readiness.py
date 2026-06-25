@@ -89,6 +89,7 @@ from scripts import (
     mission_control_display_review_packet,
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_schema_contract_check,
+    mission_control_integration_implementation_ticket_check,
     mission_control_side_handoff_plan_check,
     next_capability_candidate_evaluation_2_check,
     next_capability_readiness,
@@ -1598,6 +1599,79 @@ def test_mission_control_side_handoff_plan_is_wired() -> None:
     assert "Mission Control-Side Display Importer Handoff Plan" in review_index
 
 
+def test_mission_control_integration_implementation_ticket_is_wired() -> None:
+    report = mission_control_integration_implementation_ticket_check.build_report(Path.cwd())
+    doc = Path("docs/codex/mission-control-integration-implementation-ticket.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    packet_script = Path("scripts/mission_control_display_review_packet.py").read_text(
+        encoding="utf-8"
+    )
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["mission_control_implementation_ticket_ready"] is True
+    for phrase in [
+        "Status: planning-only cross-repo implementation ticket",
+        "Mission Control Implementation Slices",
+        "Allowed Mission Control Files",
+        "Required Mission Control Tests",
+        "Required Mission Control Evidence",
+        "Done When",
+        "node scripts/check-ithildin-integration-docs.mjs",
+        "apps/desktop/src/App.tsx",
+        "apps/desktop/src/App.test.ts",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "Mission Control may execute",
+        "Mission Control may approve",
+        "runtime importer is approved",
+        "trusted-host promotion is implemented",
+    ]:
+        assert forbidden not in doc
+    assert "make mission-control-integration-implementation-ticket-check" in readme
+    assert "mission-control-integration-implementation-ticket-check:" in makefile
+    assert "mission-control-integration-implementation-ticket-check" in release_check_body
+    assert "mission-control-integration-implementation-ticket-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-integration-implementation-ticket.md" in docs_site
+    assert (
+        "docs/codex/mission-control-integration-implementation-ticket.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/mission-control-integration-implementation-ticket.md" in packet_script
+    assert "Mission Control Integration Implementation Ticket" in review_index
+    assert "mission-control-integration-implementation-ticket.md" in enterprise
+    assert "mission-control-integration-implementation-ticket.md" in gap_matrix
+    assert "mission-control-integration-implementation-ticket.md" in decision_register
+
+
 def test_mission_control_handoff_schema_contract_is_wired() -> None:
     report = mission_control_handoff_schema_contract_check.build_report(Path.cwd())
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -1702,8 +1776,10 @@ def test_mission_control_display_review_packet_is_wired(tmp_path: Path) -> None:
     assert "Mission Control Display Integration Proposal" in contracts
     assert "Mission Control Display Importer Implementation Plan" in contracts
     assert "Mission Control-Side Display Importer Handoff Plan" in contracts
+    assert "Mission Control Integration Implementation Ticket" in contracts
     assert "make mission-control-display-importer-plan-check" in contracts
     assert "make mission-control-side-handoff-plan-check" in contracts
+    assert "make mission-control-integration-implementation-ticket-check" in contracts
     assert "Mission Control Handoff Schema Contract" in contracts
     assert "MC-HANDOFF-NEG-014" in negative
     assert "make mission-control-display-review-packet" in readme

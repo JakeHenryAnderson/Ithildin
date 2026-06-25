@@ -71,6 +71,7 @@ Required before implementation:
 - data contract for imported evidence fields;
 - negative cases for stale evidence, mismatched hashes, unsupported packet versions, and missing
   warning state;
+- Mission Control repository implementation ticket;
 - source-review handoff for both Mission Control and Ithildin changes.
 
 Blocked:
@@ -273,11 +274,14 @@ Stop enterprise-readiness work and reassess if:
 ## Current Next Best Action
 
 The Mission Control display proposal, handoff schema, negative fixtures, and focused display review
-packet now exist on the Ithildin side. The Mission Control display post-RC decision intake now also
-exists as planning-only evidence. The Mission Control display importer implementation plan now also
-exists as planning-only evidence. The sandbox/VM worker boundary charter, profile contract,
-preflight contract, proof-of-concept review packet, static profile fixture contract, static preflight
-CLI fixture runner, source-review packet, and internal source-review pass also now exist.
+packet now exist on the Ithildin side. The
+[mission-control-integration-implementation-ticket.md](mission-control-integration-implementation-ticket.md)
+also now exists as a concrete Mission Control repository ticket for the display-only importer. The
+Mission Control display post-RC decision intake now also exists as planning-only evidence. The
+Mission Control display importer implementation plan now also exists as planning-only evidence. The
+sandbox/VM worker boundary charter, profile contract, preflight contract, proof-of-concept review
+packet, static profile fixture contract, static preflight CLI fixture runner, source-review packet,
+and internal source-review pass also now exist.
 The current enterprise-path action is external/source review disposition of the static preflight
 lane, followed by a separate post-RC decision before any live VM/container inspection, local-model
 invocation, Mission Control runtime importer, sandbox orchestration, or trusted-host promotion work.

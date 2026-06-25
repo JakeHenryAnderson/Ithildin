@@ -241,6 +241,7 @@ externally closed.
 - [Mission Control Display Importer Implementation Plan](mission-control-display-importer-plan.md)
 - [Mission Control Display Decision Intake](mission-control-display-decision-intake.md)
 - [Mission Control-Side Display Importer Handoff Plan](mission-control-side-handoff-plan.md)
+- [Mission Control Integration Implementation Ticket](mission-control-integration-implementation-ticket.md)
 - [Mission Control Handoff Schema Contract](mission-control-handoff-schema-contract.md)
 - [Mission Control Handoff Negative Fixtures](mission-control-handoff-negative-fixtures.md)
 - [Sandbox/VM Worker Boundary Charter](sandbox-vm-worker-boundary-charter.md)

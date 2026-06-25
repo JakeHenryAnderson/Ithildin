@@ -25,6 +25,7 @@ CONTRACT_DOCS = [
     Path("docs/codex/mission-control-display-integration-proposal.md"),
     Path("docs/codex/mission-control-display-importer-plan.md"),
     Path("docs/codex/mission-control-side-handoff-plan.md"),
+    Path("docs/codex/mission-control-integration-implementation-ticket.md"),
     Path("docs/codex/mission-control-handoff-schema-contract.md"),
     Path("docs/codex/mission-control-handoff-negative-fixtures.md"),
     Path("docs/codex/hello-world-mission-control-handoff.md"),
@@ -182,9 +183,9 @@ def _index(context: dict[str, Any]) -> str:
     return f"""# Mission Control Display Review Packet
 
 This packet packages Ithildin's current Mission Control display/import proposal, handoff schema
-contract, Mission Control-side handoff plan, negative fixture plan, Hello World seed payload
-evidence, and command evidence. It is a review/design handoff for display-only integration
-planning.
+contract, Mission Control-side handoff plan, Mission Control integration implementation ticket,
+negative fixture plan, Hello World seed payload evidence, and command evidence. It is a
+review/design handoff for display-only integration planning.
 
 ## Boundary
 

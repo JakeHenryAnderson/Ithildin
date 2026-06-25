@@ -262,6 +262,7 @@ REVIEW_DOCS = [
     "docs/codex/mission-control-display-importer-plan.md",
     "docs/codex/mission-control-display-decision-intake.md",
     "docs/codex/mission-control-side-handoff-plan.md",
+    "docs/codex/mission-control-integration-implementation-ticket.md",
     "docs/codex/mission-control-handoff-schema-contract.md",
     "docs/codex/mission-control-handoff-negative-fixtures.md",
     "docs/codex/sandbox-vm-worker-boundary-charter.md",

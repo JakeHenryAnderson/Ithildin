@@ -396,6 +396,10 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-review-packet` - generate the focused Mission Control display
   review packet with proposal, schema, negative fixtures, seed handoff evidence, command evidence,
   and artifact hashes.
+- `make mission-control-integration-implementation-ticket-check` - validate the planning-only
+  Mission Control repository implementation ticket for a future display-only importer while keeping
+  Mission Control outside Ithildin execution, policy, approval, audit, sandbox, local-model,
+  SIEM, identity, and compliance authority.
 - `make mission-control-handoff-schema-contract-check` - validate the Ithildin-side Mission
   Control handoff schema contract and the current `mission-control-handoff.json` seed payload while
   keeping the integration file/import-only and display-only.
@@ -791,6 +795,11 @@ The Mission Control-side handoff plan is
 and is checked with `make mission-control-side-handoff-plan-check`; it is the paste-ready
 Mission Control repository work order for a future display-only importer, with explicit inputs,
 validation stages, tests, evidence, stop conditions, and no authority transfer.
+The Mission Control integration implementation ticket is
+[docs/codex/mission-control-integration-implementation-ticket.md](docs/codex/mission-control-integration-implementation-ticket.md)
+and is checked with `make mission-control-integration-implementation-ticket-check`; it converts the
+Ithildin packet/schema/fixture evidence into a concrete Mission Control repository task list while
+keeping the future importer display-only and local-file/import-only.
 The Ithildin-side handoff schema contract is
 [docs/codex/mission-control-handoff-schema-contract.md](docs/codex/mission-control-handoff-schema-contract.md)
 and is checked with `make mission-control-handoff-schema-contract-check`; it validates the current
