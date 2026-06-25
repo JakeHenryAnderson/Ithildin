@@ -241,6 +241,7 @@ REVIEW_DOCS = [
     "docs/codex/v1.0-rc-status.md",
     "docs/codex/v1.0-rc-feature-freeze.md",
     "docs/codex/v1.0-rc-external-review-prompt.md",
+    "docs/codex/v1.0-rc-final-handoff.md",
     "docs/codex/v1.0-operator-quickstart.md",
     "docs/codex/v1.0-workbench-evidence-closure.md",
     "docs/codex/v1.0-assurance-closure.md",
