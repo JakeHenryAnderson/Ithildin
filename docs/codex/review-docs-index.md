@@ -267,6 +267,7 @@ externally closed.
 - [Trusted-Host Promotion Zone Contract](trusted-host-promotion-zone-contract.md)
 - [Trusted-Host Promotion Implementation Plan](trusted-host-promotion-implementation-plan.md)
 - [Trusted-Host Promotion Source Review](trusted-host-promotion-source-review.md)
+- [Trusted-Host Promotion Internal Source Review](v3-trusted-host-promotion-internal-review.md)
 - [v3 Readiness Debt Register](v3-readiness-debt-register.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)

@@ -48,6 +48,7 @@ future trusted-host promotion implementation decision. The packet includes:
 - `trusted-host-promotion-negative-fixtures.md`;
 - `trusted-host-promotion-zone-contract.md`;
 - `trusted-host-promotion-implementation-plan.md`;
+- `v3-trusted-host-promotion-internal-review.md`;
 - post-RC decision-gate and decision-register evidence;
 - no-new-powers and tool-surface invariant evidence.
 

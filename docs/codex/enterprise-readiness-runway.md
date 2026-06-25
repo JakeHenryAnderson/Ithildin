@@ -150,6 +150,10 @@ The focused design/source-review handoff is
 [trusted-host-promotion-source-review.md](trusted-host-promotion-source-review.md) and is generated
 with `make trusted-host-promotion-source-review-packet`; it packages the promotion evidence
 contracts for reviewer disposition while keeping trusted-host promotion blocked.
+The internal design/source-review pass is
+[v3-trusted-host-promotion-internal-review.md](v3-trusted-host-promotion-internal-review.md) and is
+validated with `make trusted-host-promotion-internal-review-check`; it records
+`continue_design_only` posture and keeps runtime implementation blocked.
 
 Current permitted state:
 

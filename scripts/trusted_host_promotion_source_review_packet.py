@@ -47,6 +47,7 @@ CONTRACT_DOCS = [
     Path("docs/codex/trusted-host-promotion-zone-contract.md"),
     Path("docs/codex/trusted-host-promotion-implementation-plan.md"),
     Path("docs/codex/trusted-host-promotion-source-review.md"),
+    Path("docs/codex/v3-trusted-host-promotion-internal-review.md"),
     Path("docs/codex/post-rc-decision-gate.md"),
     Path("docs/codex/post-rc-decision-register.md"),
     Path("docs/codex/enterprise-readiness-runway.md"),

@@ -207,6 +207,7 @@ from scripts import (
     tool_surface_invariant_gate,
     trusted_host_promotion_decision_intake_check,
     trusted_host_promotion_implementation_plan_check,
+    trusted_host_promotion_internal_review_check,
     trusted_host_promotion_negative_fixtures_check,
     trusted_host_promotion_source_review_packet,
     trusted_host_promotion_state_machine_check,
@@ -15223,6 +15224,80 @@ def test_trusted_host_promotion_source_review_packet_is_wired() -> None:
     assert "trusted-host-promotion-source-review.md" in gap_matrix
     assert "trusted-host-promotion-source-review.md" in decision_register
     assert "trusted-host-promotion-source-review.md" in implementation_plan
+
+
+def test_trusted_host_promotion_internal_review_is_wired() -> None:
+    report = trusted_host_promotion_internal_review_check.build_report(Path.cwd())
+    internal_review = Path(
+        "docs/codex/v3-trusted-host-promotion-internal-review.md"
+    ).read_text(encoding="utf-8")
+    source_review = Path("docs/codex/trusted-host-promotion-source-review.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["scope"] == "internal_design_source_review"
+    assert report["disposition"] == "continue_design_only"
+    assert report["finding_count"] == 0
+    assert report["critical_high_findings_open"] == 0
+    assert report["erg_005_status"] == "blocked"
+    assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["implementation_approved"] is False
+    assert report["external_source_review_closed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: internal design/source-review pass complete",
+        "No critical, high, medium, low, or informational implementation findings",
+        "The lane may continue as design-only planning and reviewer handoff.",
+        "Runtime implementation remains blocked",
+        "External/source review remains pending",
+        "trusted-host promotion allowed: false",
+        "direct_host_writes_allowed: false",
+        "promotion_status: not_promoted",
+    ]:
+        assert phrase in internal_review
+    for forbidden in [
+        "runtime implementation is approved",
+        "host promotion is approved",
+        "direct host writes are approved",
+        "trusted-host promotion allowed: `true`",
+        "runtime changes allowed: `true`",
+        "external/source review is closed",
+    ]:
+        assert forbidden not in internal_review
+    assert "trusted-host-promotion-internal-review-check:" in makefile
+    assert "trusted-host-promotion-internal-review-check" in release_check_body
+    assert "make trusted-host-promotion-internal-review-check" in readme
+    assert (
+        "trusted-host-promotion-internal-review-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/v3-trusted-host-promotion-internal-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/v3-trusted-host-promotion-internal-review.md" in docs_site
+    assert "Trusted-Host Promotion Internal Source Review" in review_index
+    assert "v3-trusted-host-promotion-internal-review.md" in source_review
+    assert "v3-trusted-host-promotion-internal-review.md" in enterprise
+    assert "Trusted-host promotion planning lane" in matrix
+    assert "internal reviewed; implementation blocked pending external/source disposition" in matrix
+    assert "make trusted-host-promotion-internal-review-check" in matrix
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

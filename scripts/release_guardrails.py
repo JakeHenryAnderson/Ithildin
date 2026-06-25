@@ -136,6 +136,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "trusted-host-promotion-zone-contract-check",
     "trusted-host-promotion-implementation-plan-check",
     "trusted-host-promotion-source-review-packet-check",
+    "trusted-host-promotion-internal-review-check",
     "sandbox-artifact-observed-demo-check",
     "sandbox-artifact-write-text-implementation-gate",
     "sandbox-artifact-write-text-negative-transcripts",

@@ -260,6 +260,8 @@ checked with `make control-mapping-readiness`.
   packet for trusted-host promotion while keeping host promotion blocked.
 - `make trusted-host-promotion-source-review-packet-check` - validate the trusted-host promotion
   source-review packet wiring and artifact hashes.
+- `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
+  disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -902,6 +904,11 @@ The focused trusted-host promotion source-review handoff is in
 [docs/codex/trusted-host-promotion-source-review.md](docs/codex/trusted-host-promotion-source-review.md)
 and is generated with `make trusted-host-promotion-source-review-packet`; it asks reviewers whether
 the lane may continue as design-only planning and does not approve runtime host promotion.
+The internal trusted-host promotion source-review pass is in
+[docs/codex/v3-trusted-host-promotion-internal-review.md](docs/codex/v3-trusted-host-promotion-internal-review.md)
+and is checked with `make trusted-host-promotion-internal-review-check`; it records
+`continue_design_only` posture and keeps implementation blocked pending future decision/external
+review.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in
