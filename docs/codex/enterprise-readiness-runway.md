@@ -271,3 +271,10 @@ non-production static profile example with coarse labels, required warnings, and
 flags only. It does not add a runtime profile loader, preflight runner, VM/container lifecycle
 control, Mission Control execution, local model invocation, trusted-host promotion, or network
 expansion.
+
+The negative fixture plan is
+[sandbox-vm-static-profile-negative-fixtures.md](sandbox-vm-static-profile-negative-fixtures.md) and
+is validated with `make sandbox-vm-static-profile-negative-fixtures-check`. It mutates the static
+profile example in memory and requires unsupported schemas, raw path-shaped labels, network
+overclaims, promotion claims, missing warnings, and authority-flag overclaims to fail closed with
+safe reason labels only.

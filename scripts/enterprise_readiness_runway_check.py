@@ -47,6 +47,8 @@ REQUIRED_PHRASES = [
     "make sandbox-vm-static-profile-preflight-plan-check",
     "sandbox-vm-static-profile-fixture-contract.md",
     "make sandbox-vm-static-profile-fixture-contract-check",
+    "sandbox-vm-static-profile-negative-fixtures.md",
+    "make sandbox-vm-static-profile-negative-fixtures-check",
     "platform matrix",
     "mount/root posture",
     "network posture",
@@ -135,6 +137,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("README is missing sandbox/VM static profile preflight plan command")
     if "make sandbox-vm-static-profile-fixture-contract-check" not in readme:
         failures.append("README is missing sandbox/VM static profile fixture contract command")
+    if "make sandbox-vm-static-profile-negative-fixtures-check" not in readme:
+        failures.append("README is missing sandbox/VM static profile negative fixture command")
 
     phases = [line for line in text.splitlines() if line.startswith("## Phase E")]
     return {

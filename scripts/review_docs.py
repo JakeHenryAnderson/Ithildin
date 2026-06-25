@@ -252,6 +252,7 @@ REVIEW_DOCS = [
     "docs/codex/sandbox-vm-preflight-contract.md",
     "docs/codex/sandbox-vm-static-profile-preflight-plan.md",
     "docs/codex/sandbox-vm-static-profile-fixture-contract.md",
+    "docs/codex/sandbox-vm-static-profile-negative-fixtures.md",
     "docs/codex/governed-artifact-transfer-lab.md",
     "docs/codex/hello-world-sandbox-demo-roadmap.md",
     "docs/codex/hello-world-sandbox-observed-demo.md",

@@ -181,6 +181,7 @@ from scripts import (
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
     sandbox_vm_static_profile_fixture_contract_check,
+    sandbox_vm_static_profile_negative_fixtures_check,
     sandbox_vm_static_profile_preflight_plan_check,
     sandbox_vm_worker_boundary_charter_check,
     siem_evidence_design_check,
@@ -1079,6 +1080,47 @@ def test_sandbox_vm_static_profile_fixture_contract_is_wired() -> None:
         value is False
         for value in fixture["decision"]["false_authority_flags"].values()
     )
+
+
+def test_sandbox_vm_static_profile_negative_fixtures_are_wired() -> None:
+    report = sandbox_vm_static_profile_negative_fixtures_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    negative_doc = Path("docs/codex/sandbox-vm-static-profile-negative-fixtures.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["negative_case_count"] == 18
+    assert report["negative_cases_rejected"] == 18
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make sandbox-vm-static-profile-negative-fixtures-check" in readme
+    assert "sandbox-vm-static-profile-negative-fixtures-check:" in makefile
+    assert "sandbox-vm-static-profile-negative-fixtures-check" in release_check_body
+    assert "sandbox-vm-static-profile-negative-fixtures-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-static-profile-negative-fixtures.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-static-profile-negative-fixtures.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "sandbox-vm-static-profile-negative-fixtures.md" in enterprise
+    assert "SANDBOX-PROFILE-NEG-001" in negative_doc
+    assert "SANDBOX-PROFILE-NEG-018" in negative_doc
+    assert "Safe Error Expectations" in negative_doc
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

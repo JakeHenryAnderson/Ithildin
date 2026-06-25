@@ -79,6 +79,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-poc-review-packet-check",
     "sandbox-vm-static-profile-preflight-plan-check",
     "sandbox-vm-static-profile-fixture-contract-check",
+    "sandbox-vm-static-profile-negative-fixtures-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",

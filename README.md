@@ -697,6 +697,11 @@ and is checked with `make sandbox-vm-static-profile-fixture-contract-check`; it 
 non-production static profile example with labels and false authority flags only, without adding a
 runtime loader, live preflight runner, VM/container control, Mission Control execution, or local
 model behavior.
+The negative fixture plan is
+[docs/codex/sandbox-vm-static-profile-negative-fixtures.md](docs/codex/sandbox-vm-static-profile-negative-fixtures.md)
+and is checked with `make sandbox-vm-static-profile-negative-fixtures-check`; it mutates the
+static profile example in memory to prove overclaims, raw path-shaped fields, broad network
+posture, promotion claims, and authority flags fail closed with safe reason labels.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control
