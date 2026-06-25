@@ -43,6 +43,13 @@ ARTIFACTS = [
         ),
     ),
     (
+        "hello_world_sandbox_observed_demo",
+        Path(
+            "var/review-packets/v3/hello-world-sandbox-observed-demo/"
+            "HELLO_WORLD_SANDBOX_OBSERVED_DEMO.md"
+        ),
+    ),
+    (
         "consolidated_review_packet",
         Path("var/review-packets/v0.2/GPT-5.5-Pro-consolidated"),
     ),

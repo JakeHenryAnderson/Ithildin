@@ -38,6 +38,10 @@ ARTIFACTS = {
     "sandbox_artifact_observed_demo": Path(
         "var/review-packets/v3/sandbox-artifact-observed-demo/SANDBOX_ARTIFACT_OBSERVED_DEMO.md"
     ),
+    "hello_world_sandbox_observed_demo": Path(
+        "var/review-packets/v3/hello-world-sandbox-observed-demo/"
+        "HELLO_WORLD_SANDBOX_OBSERVED_DEMO.md"
+    ),
     "agent_run_correlation_packet": Path("var/review-packets/v3/agent-run-correlation"),
     "operator_sandbox_demo_packet": Path("var/review-packets/v3/operator-sandbox-demo"),
     "consolidated_review_packet": Path(
@@ -157,8 +161,10 @@ def render_summary(report: dict[str, Any]) -> str:
             "4. `NEGATIVE_REVIEW_TRANSCRIPTS.md` for observed safe denials.",
             "5. `SANDBOX_ARTIFACT_OBSERVED_DEMO.md` for observed approval-gated sandbox",
             "   artifact write evidence.",
-            "6. Agent Run correlation and operator sandbox demo packets for evidence flow.",
-            "7. The consolidated review packet for the broader handoff context.",
+            "6. `HELLO_WORLD_SANDBOX_OBSERVED_DEMO.md` for the operator-facing Hello",
+            "   World version of the observed governed artifact flow.",
+            "7. Agent Run correlation and operator sandbox demo packets for evidence flow.",
+            "8. The consolidated review packet for the broader handoff context.",
             "",
             "## Boundary",
             "",

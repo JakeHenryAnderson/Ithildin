@@ -63,6 +63,7 @@ POINTERS = [
     Path("var/review-packets/v3/live-demo"),
     Path("var/review-packets/v3/operator-sandbox-demo"),
     Path("var/review-packets/v3/sandbox-artifact-observed-demo"),
+    Path("var/review-packets/v3/hello-world-sandbox-observed-demo"),
     Path("var/review-packets/v3/agent-run-correlation"),
     Path("var/review-packets/v0.2/signed-evidence-demo"),
     Path("var/review-packets/v0.2/negative-review-transcripts"),
@@ -537,6 +538,8 @@ workspaces, or manage sandbox lifecycle.
   post-demo reading order.
 - `var/review-packets/v3/sandbox-artifact-observed-demo/` for observed approval-gated sandbox
   artifact write evidence.
+- `var/review-packets/v3/hello-world-sandbox-observed-demo/` for the operator-facing observed
+  Hello World sandbox artifact flow.
 - `RUN_EVIDENCE_EXPORT.json` for the selected run's safe run evidence export when captured.
 - `DEMO_RESET_GUIDE.md` for read-only reset/recovery guidance.
 - `WORKBENCH_DEMO_SMOKE.md` for observed readiness commands and manual demo sequence.
@@ -583,7 +586,9 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         "12. `var/review-packets/v3/live-demo/` for the live-demo packet.",
         "13. `var/review-packets/v3/sandbox-artifact-observed-demo/` for observed",
         "    approval-gated sandbox artifact write evidence.",
-        "14. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
+        "14. `var/review-packets/v3/hello-world-sandbox-observed-demo/` for the",
+        "    operator-facing observed Hello World sandbox artifact flow.",
+        "15. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
         "",
         "## Supporting Artifacts",
         "",

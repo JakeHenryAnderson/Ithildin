@@ -32,6 +32,7 @@ REQUIRED_DOC_PHRASES = [
     "make workbench-evidence-packet",
     "make live-demo-evidence-summary",
     "make sandbox-artifact-observed-demo",
+    "make hello-world-sandbox-observed-demo",
     "WORKBENCH_DEMO_INDEX.md",
     "DEMO_READINESS_SUMMARY.md",
     "OPERATOR_DEMO_WALKTHROUGH.md",
@@ -44,6 +45,7 @@ REQUIRED_DOC_PHRASES = [
     "12_OPERATOR_DEMO_WALKTHROUGH.md",
     "WORKBENCH_DEMO_SMOKE.md",
     "sandbox-artifact-observed-demo",
+    "hello-world-sandbox-observed-demo",
     "newest reading order",
     "summary",
     "does not start services",
@@ -107,6 +109,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("demo-workbench-smoke is missing from demo-workbench")
     if "$(MAKE) sandbox-artifact-observed-demo" not in makefile.partition("demo-workbench:")[2]:
         failures.append("sandbox-artifact-observed-demo is missing from demo-workbench")
+    if "$(MAKE) hello-world-sandbox-observed-demo" not in makefile.partition("demo-workbench:")[2]:
+        failures.append("hello-world-sandbox-observed-demo is missing from demo-workbench")
     if "$(MAKE) demo-readiness-summary" not in makefile.partition("demo-workbench:")[2]:
         failures.append("demo-readiness-summary is missing from demo-workbench")
     if "$(MAKE) demo-operator-walkthrough" not in makefile.partition("demo-workbench:")[2]:

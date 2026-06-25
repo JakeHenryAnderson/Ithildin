@@ -66,6 +66,8 @@ from scripts import (
     hello_world_sandbox_demo_check,
     hello_world_sandbox_demo_packet,
     hello_world_sandbox_demo_packet_check,
+    hello_world_sandbox_observed_demo,
+    hello_world_sandbox_observed_demo_check,
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
@@ -12686,6 +12688,64 @@ def test_hello_world_sandbox_demo_packet_builds_from_fixture(tmp_path: Path) -> 
     assert "simulated-sandbox/hello-demo/hello.txt" in artifact_paths
     assert "host-staging/hello-demo/hello.txt" in artifact_paths
     assert "approved-host/hello-demo/hello.txt" in artifact_paths
+
+
+def test_hello_world_sandbox_observed_demo_is_wired(tmp_path: Path) -> None:
+    report = hello_world_sandbox_observed_demo_check.build_report(Path.cwd())
+    output_dir = hello_world_sandbox_observed_demo.build_demo(tmp_path / "hello-observed")
+    payload = json.loads(
+        output_dir.joinpath(hello_world_sandbox_observed_demo.JSON_NAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    index = output_dir.joinpath(hello_world_sandbox_observed_demo.INDEX_NAME).read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["governed_tool_calls_performed"] is True
+    assert report["mission_control_runtime_behavior"] is False
+    assert report["local_llm_runtime_behavior"] is False
+    assert report["real_vm_or_container_started"] is False
+    assert report["host_promotion_performed"] is False
+    assert payload["status"] == "observed_hello_world_local_fixture"
+    assert payload["tool_name"] == "sandbox.artifact.write_text"
+    assert payload["governed_tool_calls_performed"] is True
+    assert payload["mission_control_runtime_behavior"] is False
+    assert payload["local_llm_runtime_behavior"] is False
+    assert payload["real_vm_or_container_started"] is False
+    assert payload["sandbox_orchestration_performed"] is False
+    assert payload["shell_execution_performed"] is False
+    assert payload["host_promotion_performed"] is False
+    assert payload["governed_request"]["status"] == "approval_required"
+    assert payload["approval"]["status"] == "executed"
+    assert payload["approval"]["raw_content_stored_in_scope"] is False
+    assert payload["execution"]["status"] == "completed"
+    assert payload["artifact"]["present"] is True
+    assert payload["artifact"]["hash_matches_execution"] is True
+    assert payload["audit"]["valid"] is True
+    assert "content\":" not in index
+    assert "host promotion performed: `false`" in index.lower()
+    assert "make hello-world-sandbox-observed-demo" in readme
+    assert "make hello-world-sandbox-observed-demo-check" in readme
+    assert "hello-world-sandbox-observed-demo:" in makefile
+    assert "hello-world-sandbox-observed-demo-check:" in makefile
+    assert "hello-world-sandbox-observed-demo-check" in release_check_body
+    assert "$(MAKE) hello-world-sandbox-observed-demo" in review_candidate_body
+    assert "hello-world-sandbox-observed-demo-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) hello-world-sandbox-observed-demo" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/hello-world-sandbox-observed-demo.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/hello-world-sandbox-observed-demo.md" in docs_site
 
 
 def test_sandbox_artifact_write_text_preimplementation_is_historical() -> None:

@@ -208,6 +208,7 @@ DEFAULT_DOCS = [
     "docs/codex/v1.0-rc-readiness-gate.md",
     "docs/codex/governed-artifact-transfer-lab.md",
     "docs/codex/hello-world-sandbox-demo-roadmap.md",
+    "docs/codex/hello-world-sandbox-observed-demo.md",
     "docs/codex/capability-proposals/sandbox-artifact-write-text.md",
     "docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md",
     "docs/codex/sandbox-artifact-write-text-fixture-plan.md",

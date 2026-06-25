@@ -39,6 +39,8 @@ make governed-artifact-transfer-stage2
 make governed-artifact-transfer-stage2-check
 make hello-world-sandbox-demo-packet
 make hello-world-sandbox-demo-packet-check
+make hello-world-sandbox-observed-demo
+make hello-world-sandbox-observed-demo-check
 ```
 
 Generated packet:
@@ -46,6 +48,7 @@ Generated packet:
 ```text
 var/review-packets/v3/governed-artifact-transfer-lab/
 var/review-packets/v3/hello-world-sandbox-demo/
+var/review-packets/v3/hello-world-sandbox-observed-demo/
 ```
 
 The Hello World packet is evidence-only:
@@ -55,6 +58,11 @@ The Hello World packet is evidence-only:
 - no governed tool calls are performed;
 - no Mission Control runtime behavior is performed;
 - no real VM startup, sandbox orchestration, shell execution, or host promotion occurs.
+
+The observed Hello World packet performs the existing governed `sandbox.artifact.write_text`
+approval/execution path in a temporary local fixture workspace, while Mission Control behavior,
+local LLM execution, real VM/container lifecycle, sandbox orchestration, shell execution, and host
+promotion remain disabled.
 
 ## Phase 1: Mission Control Evidence Attachment
 
@@ -130,7 +138,7 @@ and Ithildin can review.
 
 ## Phase 4: Bounded Artifact Creation Capability
 
-The proposed future capability is
+The bounded artifact creation capability is now implemented as
 [sandbox.artifact.write_text](capability-proposals/sandbox-artifact-write-text.md).
 
 It is not shell and not broad filesystem write. It is a narrow artifact-creation lane:
@@ -142,16 +150,19 @@ It is not shell and not broad filesystem write. It is a narrow artifact-creation
 - records hashes and labels, not raw sensitive paths;
 - enforces size, encoding, path, symlink, hardlink, hidden-path, and `.git` denials.
 
-Implementation remains blocked until a later explicit implementation-boundary sprint.
+Implementation is limited to the approved local-preview `sandbox.artifact.write_text` boundary.
+Mission Control runtime integration, local LLM invocation, VM/container lifecycle, sandbox
+orchestration, and host promotion remain separate future gates.
 
 ## Phase 5: Hello World Sandbox Run
 
-Expected happy path after the future capability is approved and implemented:
+Expected happy path after Mission Control/local-model/VM layers are separately approved:
 
 1. Mission Control creates a mission.
 2. Local LLM proposes the `hello-demo/hello.txt` plan.
 3. Operator approves the bounded artifact creation.
-4. Ithildin creates the artifact inside the sandbox/staging root through a reviewed executor.
+4. Ithildin creates the artifact inside the sandbox/staging root through the reviewed
+   `sandbox.artifact.write_text` executor.
 5. Ithildin records action evidence:
    - run ID;
    - principal ID;
@@ -207,5 +218,6 @@ local model for the Hello World task, Ithildin mediates the bounded artifact cre
 operator-managed sandbox/staging root, and the final host artifact can be compared against an
 evidence timeline with matching hashes.
 
-Until that future implementation is explicitly approved, this roadmap is planning and evidence
-contract work only.
+The current observed packet proves the Ithildin-mediated artifact creation slice. The complete
+Mission Control plus local LLM plus real VM/sandbox plus host-promotion workflow remains future
+staged work.

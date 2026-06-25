@@ -235,6 +235,11 @@ checked with `make control-mapping-readiness`.
 - `make hello-world-sandbox-demo-packet-check` - validate the generated packet shape in a temporary
   directory while confirming it performs no governed tool calls, VM startup, Mission Control
   runtime behavior, or host promotion.
+- `make hello-world-sandbox-observed-demo` - generate an observed Hello World packet that wraps the
+  approval-gated `sandbox.artifact.write_text` fixture flow with Mission Control/local-model
+  metadata labels.
+- `make hello-world-sandbox-observed-demo-check` - validate the observed Hello World packet, docs
+  wiring, governed-tool evidence, and no-VM/no-Mission-Control-runtime/no-host-promotion boundary.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -609,6 +614,11 @@ Generate the evidence-only packet with `make hello-world-sandbox-demo-packet`; v
 records that the bounded sandbox write capability exists, but does not perform governed tool calls,
 Mission Control runtime behavior, real VM startup, sandbox orchestration, shell execution, or host
 promotion.
+Generate the observed Hello World packet with `make hello-world-sandbox-observed-demo`; validate it
+with `make hello-world-sandbox-observed-demo-check`. That packet performs the existing governed
+`sandbox.artifact.write_text` approval/execution flow in a temporary local fixture workspace while
+keeping Mission Control, local LLM execution, VM/container lifecycle, sandbox orchestration, shell
+execution, and host promotion disabled.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

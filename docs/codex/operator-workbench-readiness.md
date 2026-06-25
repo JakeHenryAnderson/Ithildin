@@ -53,6 +53,8 @@ The workbench should let a local operator answer four questions without reading 
   `make live-demo-packet` record live-demo handoff evidence.
 - `make sandbox-artifact-observed-demo` records observed local fixture approval/execution evidence
   for the bounded `sandbox.artifact.write_text` path.
+- `make hello-world-sandbox-observed-demo` records the operator-facing Hello World version of the
+  observed governed artifact path.
 - `make demo-workbench-smoke` records a deterministic operator-flow smoke transcript.
 - `make workbench-evidence-packet` packages the operator workbench story into one focused review
   packet.
@@ -66,6 +68,7 @@ demo evidence commands:
 - `make live-demo-status`;
 - `make live-demo-smoke`;
 - `make sandbox-artifact-observed-demo`;
+- `make hello-world-sandbox-observed-demo`;
 - `make live-demo-evidence-summary`;
 - `make demo-readiness-summary`;
 - `make demo-operator-walkthrough`;
@@ -109,6 +112,8 @@ touch the configured demo workspace or promote artifacts to the host.
 - artifact hashes.
 - `var/review-packets/v3/sandbox-artifact-observed-demo/` observed sandbox artifact write
   approval/execution evidence.
+- `var/review-packets/v3/hello-world-sandbox-observed-demo/` observed Hello World sandbox artifact
+  evidence.
 
 `WORKBENCH_DEMO_INDEX.md` is the first file to open. Its newest reading order is:
 `WORKBENCH_DEMO_INDEX.md`, `OPERATOR_DEMO_WALKTHROUGH.md`, `DEMO_OBSERVED_SUMMARY.md`,
@@ -116,6 +121,8 @@ touch the configured demo workspace or promote artifacts to the host.
 `OPERATOR_DEMO_GUIDE.md`, `DEMO_STATE_REPORT.md`, `DEMO_READINESS_SUMMARY.md`,
 `WORKBENCH_DEMO_SMOKE.md`, `DEMO_RESET_GUIDE.md`, the workbench packet boundary, the live-demo
 packet, the observed sandbox artifact write evidence, and the run evidence/export docs.
+The observed Hello World sandbox artifact evidence sits immediately after the generic observed
+sandbox artifact write packet in that reading order.
 `OPERATOR_DEMO_WALKTHROUGH.md` gives the first human
 path with expected screens, expected evidence files, next steps, and reset guidance.
 `07_WORKBENCH_DEMO_STORY.md` gives the happy path from preflight through cleanup,
