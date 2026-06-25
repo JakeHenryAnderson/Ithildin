@@ -265,6 +265,10 @@ checked with `make control-mapping-readiness`.
   packet for trusted-host promotion while keeping host promotion blocked.
 - `make trusted-host-promotion-source-review-packet-check` - validate the trusted-host promotion
   source-review packet wiring and artifact hashes.
+- `make trusted-host-promotion-disposition-packet` - generate the external disposition handoff
+  packet for the trusted-host promotion planning lane while keeping host promotion blocked.
+- `make trusted-host-promotion-disposition-packet-check` - validate the trusted-host promotion
+  disposition packet wiring and artifact hashes.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
@@ -956,6 +960,11 @@ The focused trusted-host promotion source-review handoff is in
 [docs/codex/trusted-host-promotion-source-review.md](docs/codex/trusted-host-promotion-source-review.md)
 and is generated with `make trusted-host-promotion-source-review-packet`; it asks reviewers whether
 the lane may continue as design-only planning and does not approve runtime host promotion.
+The trusted-host promotion disposition packet is in
+[docs/codex/trusted-host-promotion-disposition-packet.md](docs/codex/trusted-host-promotion-disposition-packet.md)
+and is generated with `make trusted-host-promotion-disposition-packet`; it packages the source-review
+pointer, disposition question set, command evidence, and artifact hashes for reviewer handoff
+without approving trusted-host promotion or direct host writes.
 The internal trusted-host promotion source-review pass is in
 [docs/codex/v3-trusted-host-promotion-internal-review.md](docs/codex/v3-trusted-host-promotion-internal-review.md)
 and is checked with `make trusted-host-promotion-internal-review-check`; it records

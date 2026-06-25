@@ -151,6 +151,11 @@ The focused design/source-review handoff is
 [trusted-host-promotion-source-review.md](trusted-host-promotion-source-review.md) and is generated
 with `make trusted-host-promotion-source-review-packet`; it packages the promotion evidence
 contracts for reviewer disposition while keeping trusted-host promotion blocked.
+The external disposition packet is
+[trusted-host-promotion-disposition-packet.md](trusted-host-promotion-disposition-packet.md) and is
+generated with `make trusted-host-promotion-disposition-packet`; it packages the source-review
+pointer, disposition question set, command evidence, and artifact hashes for reviewer handoff
+without approving trusted-host promotion, direct host writes, or runtime implementation planning.
 The internal design/source-review pass is
 [v3-trusted-host-promotion-internal-review.md](v3-trusted-host-promotion-internal-review.md) and is
 validated with `make trusted-host-promotion-internal-review-check`; it records
