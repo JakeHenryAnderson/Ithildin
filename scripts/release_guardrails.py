@@ -131,6 +131,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "hello-world-mission-control-handoff-check",
     "sandbox-promotion-evidence-contract-check",
     "trusted-host-promotion-decision-intake-check",
+    "trusted-host-promotion-state-machine-check",
     "sandbox-artifact-observed-demo-check",
     "sandbox-artifact-write-text-implementation-gate",
     "sandbox-artifact-write-text-negative-transcripts",

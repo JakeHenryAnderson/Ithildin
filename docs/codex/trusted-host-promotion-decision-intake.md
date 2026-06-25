@@ -62,7 +62,7 @@ A future decision record must include at least:
 | No-new-powers evidence | `make no-new-powers-guardrail` and `make tool-surface-invariant-gate` |
 | Artifact hash-binding model | future implementation-planning packet |
 | Approval binding model | future implementation-planning packet |
-| Promotion state machine | future implementation-planning packet |
+| Promotion state machine | `trusted-host-promotion-state-machine.md` |
 | Zone contract | future implementation-planning packet |
 | Conflict negative transcripts | future transcript generator and review packet |
 | Replay negative transcripts | future transcript generator and review packet |
@@ -106,6 +106,10 @@ Before implementation, evidence must show denial or safe warning behavior for:
 Current artifacts may reference this intake as a future decision checklist only. Today this intake
 allows docs, state-machine sketches, evidence contracts, static fixtures, review packets,
 source-review questions, and operator warnings. It does not approve runtime behavior.
+
+The state-machine sketch is recorded in
+[trusted-host-promotion-state-machine.md](trusted-host-promotion-state-machine.md) and validated
+with `make trusted-host-promotion-state-machine-check`.
 
 Current output must continue to report:
 

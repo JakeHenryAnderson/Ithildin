@@ -48,6 +48,8 @@ REQUIRED_PHRASES = [
     "Trusted-host promotion lane",
     "Promotion state-machine design, decision-intake, and evidence contract discussion only",
     "trusted-host-promotion-decision-intake.md",
+    "trusted-host-promotion-state-machine.md",
+    "state-machine evidence",
     "trusted-host promotion remains blocked",
     "PRD-SIEM-EXPORT-001",
     "SIEM-shaped export adapter lane",

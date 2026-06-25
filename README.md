@@ -248,6 +248,8 @@ checked with `make control-mapping-readiness`.
   evidence contract while confirming host promotion remains unimplemented.
 - `make trusted-host-promotion-decision-intake-check` - validate the post-RC decision-intake
   checklist for the trusted-host promotion lane while keeping host promotion blocked.
+- `make trusted-host-promotion-state-machine-check` - validate the design-only promotion state
+  machine, transition evidence, and denial plan while keeping host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -867,6 +869,10 @@ The trusted-host promotion decision intake is in
 and is checked with `make trusted-host-promotion-decision-intake-check`; it defines the required
 decision evidence, negative evidence, and allowed future outcomes before any promotion runtime path
 can be considered.
+The design-only trusted-host promotion state machine is in
+[docs/codex/trusted-host-promotion-state-machine.md](docs/codex/trusted-host-promotion-state-machine.md)
+and is checked with `make trusted-host-promotion-state-machine-check`; it defines future state
+labels, allowed transitions, safe evidence fields, and transition-denial cases.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

@@ -134,6 +134,9 @@ The decision-intake checklist for this lane is
 [trusted-host-promotion-decision-intake.md](trusted-host-promotion-decision-intake.md) and is
 validated with `make trusted-host-promotion-decision-intake-check`. It records the allowed
 design-only outcomes and the evidence required before any promotion implementation decision.
+The design-only state machine for the lane is
+[trusted-host-promotion-state-machine.md](trusted-host-promotion-state-machine.md) and is validated
+with `make trusted-host-promotion-state-machine-check`.
 
 Current permitted state:
 
