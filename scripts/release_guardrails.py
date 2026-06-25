@@ -91,6 +91,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "hello-world-sandbox-demo-packet-check",
     "hello-world-sandbox-demo-check",
     "sandbox-artifact-write-text-implementation-gate",
+    "sandbox-artifact-write-text-negative-transcripts",
     "siem-evidence-design-check",
     "data-classification-design-check",
     "control-mapping-design-check",

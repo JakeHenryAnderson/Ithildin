@@ -239,6 +239,10 @@ checked with `make control-mapping-readiness`.
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
   runtime implementation for `sandbox.artifact.write_text`.
+- `make sandbox-artifact-write-text-negative-transcripts` - generate observed local fixture denial
+  transcripts for the sandbox artifact write path.
+- `make sandbox-artifact-write-text-source-review-bundle` - generate the focused source-review
+  handoff packet for the sandbox artifact write path.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -608,6 +612,9 @@ and
 [docs/codex/sandbox-artifact-write-text-negative-transcripts.md](docs/codex/sandbox-artifact-write-text-negative-transcripts.md);
 the future source-review lane is
 [docs/codex/sandbox-artifact-write-text-source-review.md](docs/codex/sandbox-artifact-write-text-source-review.md).
+Generate observed denial transcripts with `make sandbox-artifact-write-text-negative-transcripts`;
+generate the focused source-review handoff with
+`make sandbox-artifact-write-text-source-review-bundle`.
 The historical preimplementation check remains available for lineage, but active readiness now uses
 the runtime implementation gate.
 The approved future implementation boundary is recorded in

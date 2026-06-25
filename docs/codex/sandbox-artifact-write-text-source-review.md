@@ -50,12 +50,15 @@ The implementation must pass:
 
 ```sh
 make sandbox-artifact-write-text-implementation-gate
+make sandbox-artifact-write-text-negative-transcripts
+make sandbox-artifact-write-text-source-review-bundle
 make policy-parity
 make release-check
 ```
 
-Future closure work should add a focused source-review bundle and negative transcript generator if
-this lane is sent for external/source review.
+The source-review bundle is generated under
+`var/review-packets/v3/sandbox-artifact-write-text-source-review/`. The observed denial transcript
+is generated under `var/review-packets/v3/sandbox-artifact-write-text-negative/`.
 
 ## Finding Namespace
 

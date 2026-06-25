@@ -88,7 +88,8 @@ REQUIRED_PHRASES = {
         "unauthorized principal denied",
     ],
     NEGATIVE_PLAN_DOC: [
-        "Status: future negative-transcript plan only.",
+        "Status: implemented observed-transcript plan.",
+        "make sandbox-artifact-write-text-negative-transcripts",
         "overwrite denied by default",
         "Mission Control metadata cannot substitute for Ithildin execution",
     ],

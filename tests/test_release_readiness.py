@@ -162,7 +162,9 @@ from scripts import (
     reviewer_artifact_manifest,
     reviewer_findings,
     sandbox_artifact_write_text_implementation_gate,
+    sandbox_artifact_write_text_negative_transcripts,
     sandbox_artifact_write_text_preimplementation_check,
+    sandbox_artifact_write_text_source_review_bundle,
     siem_evidence_design_check,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
@@ -12746,10 +12748,19 @@ def test_sandbox_artifact_write_text_implementation_gate_is_wired() -> None:
     assert "deny direct trusted-host writes" in decision
     assert "This decision does not approve shell execution" in decision
     assert "make sandbox-artifact-write-text-implementation-gate" in readme
+    assert "make sandbox-artifact-write-text-negative-transcripts" in readme
+    assert "make sandbox-artifact-write-text-source-review-bundle" in readme
     assert "sandbox-artifact-write-text-implementation-gate:" in makefile
+    assert "sandbox-artifact-write-text-negative-transcripts:" in makefile
+    assert "sandbox-artifact-write-text-source-review-bundle:" in makefile
     assert "sandbox-artifact-write-text-implementation-gate" in release_check_body
+    assert "sandbox-artifact-write-text-negative-transcripts" in release_check_body
     assert (
         "sandbox-artifact-write-text-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "sandbox-artifact-write-text-negative-transcripts"
         in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert Path("tool-manifests/sandbox-artifact-write-text.yaml").exists()
@@ -12758,6 +12769,78 @@ def test_sandbox_artifact_write_text_implementation_gate_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/sandbox-artifact-write-text-implementation-decision.md" in docs_site
+
+
+def test_sandbox_artifact_write_text_negative_transcripts_are_observed(
+    tmp_path: Path,
+) -> None:
+    transcript_path = sandbox_artifact_write_text_negative_transcripts.build_transcripts(
+        tmp_path / "sandbox-negative"
+    )
+    transcript = transcript_path.read_text(encoding="utf-8")
+
+    assert "Status: observed local fixture transcripts." in transcript
+    assert "Traversal Denial" in transcript
+    assert "Hidden/Sensitive Path Denial" in transcript
+    assert "Symlink Target Denial" in transcript
+    assert "Approval Content Mismatch Denial" in transcript
+    assert "Replayed Approval Denial" in transcript
+    assert "Overwrite Denied By Default" in transcript
+    assert "Existing Non-UTF-8 Target Denial" in transcript
+    assert "Observed status: `denied`" in transcript
+    assert "redacted fixture text" not in transcript
+
+
+def test_sandbox_artifact_write_text_source_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    output_dir = sandbox_artifact_write_text_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=tmp_path / "sandbox-source-review",
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_SANDBOX_ARTIFACT_WRITE_TEXT_SOURCE_REVIEW_INDEX.md",
+        "01_SANDBOX_ARTIFACT_WRITE_TEXT_SOURCE_REVIEW_PROMPT.md",
+        "02_SANDBOX_ARTIFACT_WRITE_TEXT_SOURCE_BUNDLE.md",
+        "03_SANDBOX_ARTIFACT_WRITE_TEXT_TESTS_BUNDLE.md",
+        "04_SANDBOX_ARTIFACT_WRITE_TEXT_CONTRACTS_BUNDLE.md",
+        "05_SANDBOX_ARTIFACT_WRITE_TEXT_GATE_EVIDENCE.json",
+        "06_SANDBOX_ARTIFACT_WRITE_TEXT_EVIDENCE.md",
+        "07_SANDBOX_ARTIFACT_WRITE_TEXT_FOCUSED_TESTS.txt",
+        "08_SANDBOX_ARTIFACT_WRITE_TEXT_INTAKE_COMMANDS.md",
+        "sandbox-artifact-write-text-source-review-artifact-hashes.json",
+    }
+
+    assert {path.name for path in output_dir.iterdir()} == expected
+    index = output_dir.joinpath(
+        "00_SANDBOX_ARTIFACT_WRITE_TEXT_SOURCE_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_SANDBOX_ARTIFACT_WRITE_TEXT_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    source_bundle = output_dir.joinpath(
+        "02_SANDBOX_ARTIFACT_WRITE_TEXT_SOURCE_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    tests_bundle = output_dir.joinpath(
+        "03_SANDBOX_ARTIFACT_WRITE_TEXT_TESTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "sandbox-artifact-write-text-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert "EXT-SANDBOX-WRITE-###" in index
+    assert "EXT-SANDBOX-WRITE-###" in prompt
+    assert "apps/api/src/ithildin_api/sandbox_artifacts.py" in source_bundle
+    assert "tool-manifests/sandbox-artifact-write-text.yaml" in source_bundle
+    assert "test_sandbox_artifact_write_requires_approval_and_executes_once" in tests_bundle
+    assert "sandbox-artifact-write-text-negative-transcripts" in prompt
+    assert {entry["path"] for entry in hashes} == expected - {
+        "sandbox-artifact-write-text-source-review-artifact-hashes.json"
+    }
 
 
 def test_sandbox_artifact_write_text_fixture_artifact_is_wired() -> None:
