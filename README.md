@@ -115,6 +115,11 @@ The policy/control mapping design is
 [docs/codex/control-mapping-design.md](docs/codex/control-mapping-design.md) and is checked with
 `make control-mapping-design-check`; it supports control-objective mapping only and does not make
 HIPAA, GLBA, SOX, GDPR, or other compliance claims.
+The compliance mapping architecture packet is
+[docs/codex/compliance-mapping-architecture.md](docs/codex/compliance-mapping-architecture.md) and
+is checked with `make compliance-mapping-architecture-check`; it defines future mapping-template,
+operator responsibility, legal-review, and evidence-field requirements while keeping compliance
+automation, legal conclusions, and regulated-industry compliance claims blocked.
 The incident reconstruction guide is
 [docs/codex/incident-reconstruction-guide.md](docs/codex/incident-reconstruction-guide.md) and is
 checked with `make incident-reconstruction-check`; it explains how to reconstruct mediated actions
@@ -377,6 +382,9 @@ checked with `make control-mapping-readiness`.
 - `make siem-export-adapter-architecture-check` - validate the design-only SIEM export adapter
   architecture packet while keeping adapter runtime behavior, hosted telemetry, remote delivery,
   and SIEM custody claims blocked.
+- `make compliance-mapping-architecture-check` - validate the design-only compliance mapping
+  architecture packet while keeping compliance automation, legal conclusions, and regulated-industry
+  compliance claims blocked.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -744,6 +752,12 @@ and is checked with `make siem-export-adapter-architecture-check`; it defines fu
 profile, schema compatibility, delivery, retry, backpressure, signing, diagnostics, and review
 questions while keeping SIEM adapter runtime behavior, hosted telemetry, remote delivery, and
 security-operations control-plane claims blocked.
+The compliance mapping architecture packet is
+[docs/codex/compliance-mapping-architecture.md](docs/codex/compliance-mapping-architecture.md)
+and is checked with `make compliance-mapping-architecture-check`; it defines future framework
+scope, mapping-template, evidence allowlist/denylist, operator responsibility, legal-review, and
+accepted-risk questions while keeping compliance automation, legal conclusions, automated
+certification, and regulated-industry compliance claims blocked.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.

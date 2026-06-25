@@ -36,7 +36,7 @@ Current selected capability: `not selected`.
 | `ERG-006` | Production identity and multi-user authorization | `planning_only` | Enterprise identity, RBAC, tenant/team authorization, and remote admin use | The design-only architecture packet in `production-identity-storage-architecture.md`, identity provider design, local-principal mapping, tenant/workspace model, session/admin model, audit attribution model, post-RC decision record, and external architecture review |
 | `ERG-007` | Durable runtime storage and retention | `planning_only` | Runtime Postgres, multi-user concurrency, retention policy, backup/restore, and production custody | The design-only architecture packet in `production-identity-storage-architecture.md`, storage architecture decision, migration plan, backup/restore plan, retention model, failure-mode tests, post-RC decision record, and source review |
 | `ERG-008` | SIEM-shaped export adapter | `planning_only` | SIEM integration, delivery/retry behavior, and security-ops ingestion | The design-only adapter architecture packet in `siem-export-adapter-architecture.md`, stable event schema, redaction policy, delivery/backpressure model, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
-| `ERG-009` | Compliance mapping support | `planning_only` | HIPAA/GLBA/SOX/GDPR or other compliance claims | Control mapping templates, legal-review boundary, operator responsibility language, evidence reconstruction guide, and explicit no-compliance-automation wording |
+| `ERG-009` | Compliance mapping support | `planning_only` | HIPAA/GLBA/SOX/GDPR or other compliance claims | The design-only architecture packet in `compliance-mapping-architecture.md`, control mapping templates, legal-review boundary, operator responsibility language, evidence reconstruction guide, explicit no-compliance-automation wording, post-RC decision record, and external/source review |
 | `ERG-010` | Public/security-product positioning | `blocked` | Marketing as production security control, sandbox, EDR/MDM, SIEM, or compliance system | Independent review, resolved accepted risks, production identity/storage decisions, deployment hardening, support model, and claim review |
 
 ## Claim Boundary Summary
@@ -63,10 +63,13 @@ Blocked current claims, written without product-marketing claim phrases:
 ## Next Enterprise Action
 
 The next enterprise-readiness action is to choose one matrix row and create or update a post-RC
-decision record before implementation begins. The most conservative next lane remains Mission
-Control display/importer planning (`ERG-002`) because it can improve operator usability while keeping
-Mission Control outside execution, policy, approval, audit authority, local-model invocation,
-sandbox orchestration, and trusted-host promotion.
+decision record before implementation begins. Mission Control display/importer planning (`ERG-002`)
+remains the most conservative usability lane because it can improve operator visibility while
+keeping Mission Control outside execution, policy, approval, audit authority, local-model
+invocation, sandbox orchestration, and trusted-host promotion. Compliance mapping support
+(`ERG-009`) now has the planning-only architecture packet in
+`compliance-mapping-architecture.md`; it may support future operator control mapping only and still
+blocks compliance automation, legal conclusions, and regulated-industry compliance claims.
 
 ## Validation
 

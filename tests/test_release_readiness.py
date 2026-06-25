@@ -26,6 +26,7 @@ from scripts import (
     capability_decision_report,
     capability_expansion_gate,
     closure_matrix_evidence_sync,
+    compliance_mapping_architecture_check,
     consolidate_review_packet,
     control_mapping_design_check,
     control_mapping_readiness,
@@ -1230,7 +1231,7 @@ def test_post_rc_decision_register_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["registered_decision_count"] == 7
+    assert report["registered_decision_count"] == 8
     assert report["mission_control_planning_allowed"] is True
     assert report["mission_control_runtime_allowed"] is False
     assert report["sandbox_live_preflight_allowed"] is False
@@ -1266,6 +1267,14 @@ def test_post_rc_decision_register_is_wired() -> None:
         "PRD-SIEM-EXPORT-001",
         "SIEM-shaped export adapter lane",
         "SIEM adapter work remains blocked",
+        "PRD-COMPLIANCE-MAPPING-001",
+        "Compliance mapping support lane",
+        (
+            "Mapping-template architecture, operator responsibility language, "
+            "legal-review boundary, and evidence-field planning only"
+        ),
+        "compliance-mapping-architecture.md",
+        "runtime compliance mapping behavior remains blocked",
         "PRD-PROD-IAM-STORAGE-001",
         "Production identity and durable storage architecture",
         "production-identity-storage-architecture.md",
@@ -13784,6 +13793,93 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
     assert "siem-export-adapter-architecture.md" in runway
     assert "siem-export-adapter-architecture.md" in gap_matrix
     assert "siem-export-adapter-architecture.md" in decision_register
+
+
+def test_compliance_mapping_architecture_is_wired() -> None:
+    report = compliance_mapping_architecture_check.build_report(Path.cwd())
+    architecture = Path("docs/codex/compliance-mapping-architecture.md").read_text(
+        encoding="utf-8"
+    )
+    normalized_architecture = " ".join(architecture.split())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["erg_009_status"] == "planning_only"
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["compliance_mapping_runtime_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["legal_advice_allowed"] is False
+    assert report["automated_certification_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: design-only architecture packet for `ERG-009`.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "`ERG-009`: Compliance mapping support",
+        "control-mapping-design.md",
+        "incident-reconstruction-guide.md",
+        "Future Compliance Mapping Questions",
+        "Mapping Template Requirements",
+        "Evidence Sources",
+        "Evidence Non-Goals",
+        "Operator Responsibility Model",
+        "Required Before Implementation",
+        "external/source review",
+        "The current decision is `planning_only`.",
+        "Runtime compliance mapping implementation remains blocked",
+    ]:
+        assert phrase in normalized_architecture
+    for phrase in [
+        "target framework or control family",
+        "HIPAA",
+        "GLBA",
+        "SOX",
+        "GDPR",
+        "NIST",
+        "CIS",
+        "SOC 2",
+        "legal-review boundary",
+        "false-assurance warnings",
+        "mapping ID and framework/control reference",
+        "what the evidence cannot prove",
+    ]:
+        assert phrase in architecture
+    for phrase in [
+        "compliance automation is approved",
+        "HIPAA compliant",
+        "GLBA compliant",
+        "SOX compliant",
+        "GDPR compliant",
+        "SOC 2 compliant",
+        "automated certification is approved",
+        "legal advice is implemented",
+        "public security product approved",
+        "custody-grade audit is implemented",
+    ]:
+        assert phrase not in architecture
+    assert "compliance-mapping-architecture-check:" in makefile
+    assert "compliance-mapping-architecture-check" in release_check_body
+    assert "make compliance-mapping-architecture-check" in readme
+    assert "docs/codex/compliance-mapping-architecture.md" in readme
+    assert "docs/codex/compliance-mapping-architecture.md" in docs_site
+    assert "docs/codex/compliance-mapping-architecture.md" in review_docs.REVIEW_DOCS
+    assert "Compliance Mapping Architecture" in review_index
+    assert "compliance-mapping-architecture.md" in runway
+    assert "compliance-mapping-architecture.md" in gap_matrix
+    assert "compliance-mapping-architecture.md" in decision_register
 
 
 def test_data_classification_design_check_is_wired() -> None:

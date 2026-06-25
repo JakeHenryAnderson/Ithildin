@@ -40,6 +40,7 @@ Current selected capability: `not selected`.
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
 | `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, implementation-plan skeleton, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, and external/source review |
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
+| `PRD-COMPLIANCE-MAPPING-001` | Compliance mapping support lane | `approved_for_planning` | Mapping-template architecture, operator responsibility language, legal-review boundary, and evidence-field planning only | `false` | The architecture packet in `compliance-mapping-architecture.md`, exact framework scope, template schema, evidence allowlist/denylist, accepted-risk impact review, post-RC decision record, and external/source review before runtime work |
 | `PRD-PROD-IAM-STORAGE-001` | Production identity and durable storage architecture | `approved_for_planning` | Maintain the architecture packet, threat model questions, migration/retention/backup planning, and external architecture review preparation | `false` | Post-RC decision record, identity provider design, tenant/workspace model, storage/migration plan, backup/restore plan, failure-mode tests, and external architecture review before runtime work |
 
 ## Decision Details
@@ -145,6 +146,25 @@ Current selected capability: `not selected`.
   `siem-export-adapter-architecture.md` defines the future adapter profile, delivery, retry,
   backpressure, compatibility, signing, diagnostics, and review questions before any future runtime
   decision.
+
+### PRD-COMPLIANCE-MAPPING-001
+
+- Status: `approved_for_planning`.
+- Current allowed scope: compliance mapping architecture documentation, framework/control taxonomy
+  design, mapping-template schema design, operator responsibility language, legal-review boundary
+  drafting, evidence-field allowlist/denylist planning, and external architecture review
+  preparation.
+- Current forbidden scope: compliance automation, HIPAA/GLBA/SOX/GDPR/SOC 2/NIST/CIS compliance
+  claims, legal advice, automated certification, production security-product positioning,
+  custody-grade audit claims, production identity, runtime Postgres, SIEM adapter runtime behavior,
+  sandbox orchestration, and public/security-product positioning.
+- Current implementation posture: runtime compliance mapping behavior remains blocked.
+- Current warning language: Ithildin may support operator control mapping and evidence-field
+  planning, not legal conclusions or claims that an organization satisfies a regulatory framework.
+- Current architecture evidence:
+  `compliance-mapping-architecture.md` defines future mapping template requirements, legal-review
+  boundary, operator responsibility model, evidence non-goals, and review requirements before any
+  future runtime decision.
 
 ### PRD-PROD-IAM-STORAGE-001
 

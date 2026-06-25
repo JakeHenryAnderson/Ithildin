@@ -239,6 +239,7 @@ Allowed design scope:
 - policy decision and approval evidence mapping;
 - operator checklists;
 - reviewer packets.
+- the design-only architecture packet in `compliance-mapping-architecture.md`.
 
 Blocked:
 
@@ -246,6 +247,15 @@ Blocked:
 - legal conclusions;
 - automated certification;
 - production security-product positioning.
+
+Current evidence:
+
+- `compliance-mapping-architecture.md` defines future mapping template requirements, legal-review
+  boundary, operator responsibility language, evidence-field boundaries, and required review before
+  any compliance mapping implementation or regulated-industry artifact is shipped.
+- `make compliance-mapping-architecture-check` validates the planning-only posture and confirms
+  compliance mapping runtime behavior, legal advice, automated certification, custody-grade audit
+  claims, and new power classes remain blocked.
 
 ## Stop Conditions
 

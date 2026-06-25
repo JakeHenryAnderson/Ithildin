@@ -63,6 +63,14 @@ REQUIRED_PHRASES = [
     "Stable schema, adapter architecture, compatibility tests, and offline export design only",
     "siem-export-adapter-architecture.md",
     "SIEM adapter work remains blocked",
+    "PRD-COMPLIANCE-MAPPING-001",
+    "Compliance mapping support lane",
+    (
+        "Mapping-template architecture, operator responsibility language, "
+        "legal-review boundary, and evidence-field planning only"
+    ),
+    "compliance-mapping-architecture.md",
+    "runtime compliance mapping behavior remains blocked",
     "PRD-PROD-IAM-STORAGE-001",
     "Production identity and durable storage architecture",
     (
@@ -94,6 +102,7 @@ DECISION_IDS = [
     "PRD-CAPABILITY-001",
     "PRD-TRUSTED-HOST-001",
     "PRD-SIEM-EXPORT-001",
+    "PRD-COMPLIANCE-MAPPING-001",
     "PRD-PROD-IAM-STORAGE-001",
 ]
 
