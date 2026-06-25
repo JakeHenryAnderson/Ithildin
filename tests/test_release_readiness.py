@@ -180,6 +180,7 @@ from scripts import (
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
+    sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_source_review_packet,
     sandbox_vm_static_profile_fixture_contract_check,
     sandbox_vm_static_profile_negative_fixtures_check,
@@ -1229,6 +1230,53 @@ def test_sandbox_vm_static_preflight_source_review_packet_is_wired(
         in review_docs.REVIEW_DOCS
     )
     assert "sandbox-vm-static-preflight-source-review.md" in enterprise
+
+
+def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
+    report = sandbox_vm_static_preflight_implementation_gate.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    decision = Path(
+        "docs/codex/sandbox-vm-static-preflight-implementation-decision.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["implementation_status"] == "cli_fixture_preflight_boundary_approved"
+    assert report["runtime_implemented"] is False
+    assert report["cli_only_fixture_preflight_runner_allowed"] is True
+    assert report["governed_tool_surface_changes_allowed"] is False
+    assert report["api_mcp_behavior_changes_allowed"] is False
+    assert report["policy_rule_changes_allowed"] is False
+    assert report["runtime_sandbox_control_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make sandbox-vm-static-preflight-implementation-gate" in readme
+    assert "sandbox-vm-static-preflight-implementation-gate:" in makefile
+    assert "sandbox-vm-static-preflight-implementation-gate" in release_check_body
+    assert "sandbox-vm-static-preflight-implementation-gate" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-implementation-decision.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-implementation-decision.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "sandbox-vm-static-preflight-implementation-decision.md" in enterprise
+    assert "CLI-only fixture preflight runner allowed: `true`" in decision
+    assert "runtime sandbox control allowed: `false`" in decision
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

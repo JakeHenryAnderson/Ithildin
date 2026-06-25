@@ -363,6 +363,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-profile-preflight-plan-check` - validate the design-only implementation
   plan for a future static operator-managed sandbox profile fixture and read-only preflight runner
   while confirming runtime sandbox control remains blocked.
+- `make sandbox-vm-static-preflight-implementation-gate` - validate the CLI-only fixture preflight
+  runner boundary decision while confirming no API/MCP, governed tool, sandbox control, Mission
+  Control runtime, local-model, promotion, or network expansion is approved.
 - `make sandbox-vm-static-preflight-source-review-packet` - generate the focused source-review
   handoff packet for deciding whether a future read-only static profile preflight runner may be
   planned; it remains fixture/design-only and adds no runtime sandbox control.
@@ -705,6 +708,11 @@ The negative fixture plan is
 and is checked with `make sandbox-vm-static-profile-negative-fixtures-check`; it mutates the
 static profile example in memory to prove overclaims, raw path-shaped fields, broad network
 posture, promotion claims, and authority flags fail closed with safe reason labels.
+The implementation decision is
+[docs/codex/sandbox-vm-static-preflight-implementation-decision.md](docs/codex/sandbox-vm-static-preflight-implementation-decision.md)
+and is checked with `make sandbox-vm-static-preflight-implementation-gate`; it approves only a
+future CLI-only fixture preflight runner, not API/MCP behavior, sandbox orchestration, Mission
+Control runtime behavior, local model invocation, trusted-host promotion, or new governed powers.
 The focused source-review handoff is
 [docs/codex/sandbox-vm-static-preflight-source-review.md](docs/codex/sandbox-vm-static-preflight-source-review.md)
 and is generated with `make sandbox-vm-static-preflight-source-review-packet`; it asks whether a

@@ -131,6 +131,7 @@ def test_default_docs_include_v02_review_packet() -> None:
         in DEFAULT_DOCS
     )
     assert "docs/codex/sandbox-vm-static-profile-negative-fixtures.md" in DEFAULT_DOCS
+    assert "docs/codex/sandbox-vm-static-preflight-implementation-decision.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-static-preflight-source-review.md" in DEFAULT_DOCS
     assert "docs/codex/governed-artifact-transfer-lab.md" in DEFAULT_DOCS
     assert "docs/codex/hello-world-sandbox-demo-roadmap.md" in DEFAULT_DOCS

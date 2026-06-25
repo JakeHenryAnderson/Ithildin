@@ -229,6 +229,7 @@ externally closed.
 - [Sandbox/VM Worker Boundary Charter](sandbox-vm-worker-boundary-charter.md)
 - [Sandbox/VM Profile Contract](sandbox-vm-profile-contract.md)
 - [Sandbox/VM Preflight Contract](sandbox-vm-preflight-contract.md)
+- [Sandbox/VM Static Preflight Implementation Decision](sandbox-vm-static-preflight-implementation-decision.md)
 - [Sandbox/VM Static Preflight Source Review Handoff](sandbox-vm-static-preflight-source-review.md)
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
 - [Hello World Sandbox Demo Roadmap](hello-world-sandbox-demo-roadmap.md)
