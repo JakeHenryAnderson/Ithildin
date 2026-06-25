@@ -120,6 +120,13 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/governed-artifact-transfer-lab.md" in DEFAULT_DOCS
     assert "docs/codex/hello-world-sandbox-demo-roadmap.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/sandbox-artifact-write-text.md" in DEFAULT_DOCS
+    assert (
+        "docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md"
+        in DEFAULT_DOCS
+    )
+    assert "docs/codex/sandbox-artifact-write-text-fixture-plan.md" in DEFAULT_DOCS
+    assert "docs/codex/sandbox-artifact-write-text-negative-transcripts.md" in DEFAULT_DOCS
+    assert "docs/codex/sandbox-artifact-write-text-source-review.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-promotion-evidence-contract.md" in DEFAULT_DOCS
     assert "docs/codex/v3-readiness-debt-register.md" in DEFAULT_DOCS
     assert "docs/codex/local-prompt-triage.md" in DEFAULT_DOCS

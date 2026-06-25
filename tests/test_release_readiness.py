@@ -159,6 +159,7 @@ from scripts import (
     review_run_manifest_refresh,
     reviewer_artifact_manifest,
     reviewer_findings,
+    sandbox_artifact_write_text_preimplementation_check,
     siem_evidence_design_check,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
@@ -12612,6 +12613,83 @@ def test_hello_world_sandbox_demo_preimplementation_is_wired() -> None:
         assert forbidden not in roadmap.lower()
         assert forbidden not in proposal.lower()
         assert forbidden not in promotion.lower()
+
+
+def test_sandbox_artifact_write_text_preimplementation_is_wired() -> None:
+    report = sandbox_artifact_write_text_preimplementation_check.build_report(Path.cwd())
+    implementation_plan = Path(
+        "docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md"
+    ).read_text(encoding="utf-8")
+    fixture_plan = Path("docs/codex/sandbox-artifact-write-text-fixture-plan.md").read_text(
+        encoding="utf-8"
+    )
+    negative_plan = Path(
+        "docs/codex/sandbox-artifact-write-text-negative-transcripts.md"
+    ).read_text(encoding="utf-8")
+    source_review = Path("docs/codex/sandbox-artifact-write-text-source-review.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["proposal"] == "sandbox.artifact.write_text"
+    assert report["scope"] == "preimplementation_planning"
+    assert report["implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["write_capability_implemented"] is False
+    assert report["tool_count"] == 23
+    assert report["manifest_absent"] is True
+    assert "Implementation is blocked" in implementation_plan
+    assert "same-directory temporary file and atomic replace" in implementation_plan
+    assert "Mission Control remains the operator surface and evidence viewer" in implementation_plan
+    assert "hello world artifact creation" in fixture_plan
+    assert "host write denied without promotion" in fixture_plan
+    assert "Mission Control metadata cannot substitute for Ithildin execution" in negative_plan
+    assert "EXT-SANDBOX-WRITE-###" in source_review
+    assert "make sandbox-artifact-write-text-preimplementation-check" in readme
+    assert "sandbox-artifact-write-text-preimplementation-check:" in makefile
+    assert "sandbox-artifact-write-text-preimplementation-check" in release_check_body
+    assert (
+        "sandbox-artifact-write-text-preimplementation-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert not Path("tool-manifests/sandbox-artifact-write-text.yaml").exists()
+    for path in [
+        "docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md",
+        "docs/codex/sandbox-artifact-write-text-fixture-plan.md",
+        "docs/codex/sandbox-artifact-write-text-negative-transcripts.md",
+        "docs/codex/sandbox-artifact-write-text-source-review.md",
+    ]:
+        assert path in review_docs.REVIEW_DOCS
+        assert path in docs_site
+
+
+def test_sandbox_artifact_write_text_fixture_artifact_is_wired() -> None:
+    fixture_path = Path("tests/fixtures/sandbox_artifact_write_text_fixture_contract.json")
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    expected_scenarios = sandbox_artifact_write_text_preimplementation_check.REQUIRED_SCENARIOS
+    expected_non_leak = (
+        sandbox_artifact_write_text_preimplementation_check.STRICT_NON_LEAK_LIST
+    )
+
+    assert fixture["version"] == "1"
+    assert fixture["contract"] == "sandbox.artifact.write_text"
+    assert fixture["scope"] == "preimplementation_fixture_contract"
+    assert fixture["strict_non_leak_list"] == expected_non_leak
+    assert [scenario["scenario"] for scenario in fixture["scenarios"]] == expected_scenarios
+    assert len({scenario["id"] for scenario in fixture["scenarios"]}) == len(
+        fixture["scenarios"]
+    )
+    assert all(scenario["safe_expected_labels"] for scenario in fixture["scenarios"])
+    assert all(scenario["non_leak_assertions"] for scenario in fixture["scenarios"])
+    assert all(scenario["future_test_type"] for scenario in fixture["scenarios"])
+    assert any(
+        "promotion_required" in scenario["safe_expected_labels"]
+        for scenario in fixture["scenarios"]
+    )
 
 
 def test_control_mapping_readiness_gate_is_wired() -> None:

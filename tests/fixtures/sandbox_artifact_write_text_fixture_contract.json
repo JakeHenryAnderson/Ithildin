@@ -1,0 +1,119 @@
+{
+  "version": "1",
+  "contract": "sandbox.artifact.write_text",
+  "scope": "preimplementation_fixture_contract",
+  "strict_non_leak_list": [
+    "no file contents in responses or audit metadata",
+    "no raw host paths",
+    "no prompts or chain-of-thought",
+    "no secrets",
+    "no environment names or values",
+    "no shell output",
+    "no VM logs",
+    "no unrelated directory listings",
+    "no sandbox root internals",
+    "no Mission Control private state",
+    "no production identity claims",
+    "no compliance claims"
+  ],
+  "scenarios": [
+    {
+      "id": "sandbox-write-001",
+      "scenario": "hello world artifact creation",
+      "safe_expected_labels": ["artifact_created", "parent_created", "content_sha256", "bytes_written", "approval_bound"],
+      "non_leak_assertions": ["no raw host paths", "no file contents returned"],
+      "future_test_type": "governed call"
+    },
+    {
+      "id": "sandbox-write-002",
+      "scenario": "empty parent directory creation denied without approval",
+      "safe_expected_labels": ["requires_approval", "parent_creation_denied"],
+      "non_leak_assertions": ["strict non-leak list applies"],
+      "future_test_type": "approval workflow"
+    },
+    {
+      "id": "sandbox-write-003",
+      "scenario": "traversal denied",
+      "safe_expected_labels": ["denied", "traversal_denied"],
+      "non_leak_assertions": ["no raw paths"],
+      "future_test_type": "executor"
+    },
+    {
+      "id": "sandbox-write-004",
+      "scenario": "absolute path denied",
+      "safe_expected_labels": ["denied", "absolute_path_denied"],
+      "non_leak_assertions": ["no raw host paths"],
+      "future_test_type": "schema/governed call"
+    },
+    {
+      "id": "sandbox-write-005",
+      "scenario": "encoded ambiguity denied",
+      "safe_expected_labels": ["denied", "encoded_ambiguity_denied"],
+      "non_leak_assertions": ["strict non-leak list applies"],
+      "future_test_type": "executor"
+    },
+    {
+      "id": "sandbox-write-006",
+      "scenario": "control character denied",
+      "safe_expected_labels": ["denied", "control_character_denied"],
+      "non_leak_assertions": ["strict non-leak list applies"],
+      "future_test_type": "schema/executor"
+    },
+    {
+      "id": "sandbox-write-007",
+      "scenario": "hidden sensitive and git paths denied",
+      "safe_expected_labels": ["denied", "hidden_sensitive_denied", "git_denied"],
+      "non_leak_assertions": ["no raw paths"],
+      "future_test_type": "executor"
+    },
+    {
+      "id": "sandbox-write-008",
+      "scenario": "symlink and hardlink denied",
+      "safe_expected_labels": ["denied", "symlink_denied", "hardlink_denied"],
+      "non_leak_assertions": ["no target disclosure"],
+      "future_test_type": "filesystem race harness"
+    },
+    {
+      "id": "sandbox-write-009",
+      "scenario": "overwrite denied by default",
+      "safe_expected_labels": ["denied", "overwrite_requires_approval"],
+      "non_leak_assertions": ["no previous content disclosure"],
+      "future_test_type": "approval workflow"
+    },
+    {
+      "id": "sandbox-write-010",
+      "scenario": "replayed approval denied",
+      "safe_expected_labels": ["denied", "replay_denied"],
+      "non_leak_assertions": ["strict non-leak list applies"],
+      "future_test_type": "approval workflow"
+    },
+    {
+      "id": "sandbox-write-011",
+      "scenario": "missing sandbox profile denied",
+      "safe_expected_labels": ["denied", "sandbox_profile_missing"],
+      "non_leak_assertions": ["strict non-leak list applies"],
+      "future_test_type": "governed call"
+    },
+    {
+      "id": "sandbox-write-012",
+      "scenario": "host write denied without promotion",
+      "safe_expected_labels": ["denied", "promotion_required"],
+      "non_leak_assertions": ["no raw host paths"],
+      "future_test_type": "governed call"
+    },
+    {
+      "id": "sandbox-write-013",
+      "scenario": "oversized or unsupported content denied",
+      "safe_expected_labels": ["denied", "content_too_large", "unsupported_encoding", "binary_nul_denied"],
+      "non_leak_assertions": ["no content returned"],
+      "future_test_type": "executor"
+    },
+    {
+      "id": "sandbox-write-014",
+      "scenario": "unauthorized principal denied",
+      "safe_expected_labels": ["denied", "authorization_denied"],
+      "non_leak_assertions": ["strict non-leak list applies"],
+      "future_test_type": "policy parity"
+    }
+  ]
+}

@@ -230,6 +230,9 @@ checked with `make control-mapping-readiness`.
 - `make hello-world-sandbox-demo-check` - validate the design/preimplementation roadmap for the
   Mission Control + local LLM Hello World sandbox demo and confirm runtime write powers remain
   blocked.
+- `make sandbox-artifact-write-text-preimplementation-check` - validate the future
+  `sandbox.artifact.write_text` implementation plan, fixture contract, negative transcript plan,
+  source-review handoff, and manifest-absent boundary while keeping runtime write powers blocked.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -586,6 +589,16 @@ The Hello World sandbox demo roadmap is in
 and is checked with `make hello-world-sandbox-demo-check`; it defines the end-to-end Mission
 Control + local LLM + Ithildin demo target while keeping `sandbox.artifact.write_text` design-only
 and the tool count remains `23`.
+Its implementation-planning packet is
+[docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
+fixture and denial expectations are in
+[docs/codex/sandbox-artifact-write-text-fixture-plan.md](docs/codex/sandbox-artifact-write-text-fixture-plan.md)
+and
+[docs/codex/sandbox-artifact-write-text-negative-transcripts.md](docs/codex/sandbox-artifact-write-text-negative-transcripts.md);
+the future source-review lane is
+[docs/codex/sandbox-artifact-write-text-source-review.md](docs/codex/sandbox-artifact-write-text-source-review.md).
+All are checked with `make sandbox-artifact-write-text-preimplementation-check`, which confirms the
+manifest remains absent and runtime write powers remain blocked.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in
