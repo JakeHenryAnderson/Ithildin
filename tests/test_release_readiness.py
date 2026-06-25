@@ -194,6 +194,7 @@ from scripts import (
     v09_design_review_packet,
     v1_assurance_closure_check,
     v1_operator_quickstart_check,
+    v1_rc_packet,
     v1_rc_readiness_check,
     v1_rc_roadmap_check,
     v1_rc_status_check,
@@ -446,6 +447,8 @@ def test_v1_rc_roadmap_is_wired() -> None:
         "no next capability is selected",
         "capability expansion remains blocked",
         "public/security-product positioning remains blocked",
+        "compact artifact map",
+        "`make review-candidate` regenerates the v1.0 RC packet",
     ]:
         assert phrase in readiness_gate
     assert "v1-rc-roadmap-check:" in makefile
@@ -461,6 +464,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "v1-workbench-evidence-check" in release_check_body
     assert "v1-assurance-closure-check" in release_check_body
     assert "v1-rc-readiness" in release_check_body
+    assert "$(MAKE) v1-rc-packet" in makefile.partition("review-candidate:")[2]
     assert "make v1-rc-roadmap-check" in readme
     assert "make v1-rc-status-check" in readme
     assert "make v1-operator-quickstart-check" in readme
@@ -486,6 +490,46 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "Ithildin v1.0 Workbench And Evidence Closure" in review_index
     assert "Ithildin v1.0 Assurance Closure" in review_index
     assert "Ithildin v1.0 RC Readiness Gate" in review_index
+
+
+def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
+    output_dir = tmp_path / "v1-rc"
+    output_dir.mkdir()
+    output_dir.joinpath("06_V1_RC_COMMANDS.md").write_text("stale\n", encoding="utf-8")
+
+    packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
+
+    assert packet["artifact_count"] == 9
+    index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
+    artifacts = output_dir.joinpath("06_V1_RC_ARTIFACTS.md").read_text(encoding="utf-8")
+    commands = output_dir.joinpath("07_V1_RC_COMMANDS.md").read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath("v1-rc-artifact-hashes.json").read_text(encoding="utf-8")
+    )
+
+    assert not output_dir.joinpath("06_V1_RC_COMMANDS.md").exists()
+    assert "6. `06_V1_RC_ARTIFACTS.md`" in index
+    assert "7. `07_V1_RC_COMMANDS.md`" in index
+    assert "v1.0 RC Artifact Map" in artifacts
+    assert "var/review-packets/v3/live-demo" in artifacts
+    assert "var/review-packets/v3/operator-workbench" in artifacts
+    assert "var/review-packets/v3/hello-world-sandbox-observed-demo" in artifacts
+    assert "var/review-packets/v3/hello-world-mission-control-handoff" in artifacts
+    assert "docs/codex/sandbox-promotion-evidence-contract.md" in artifacts
+    assert "promotion only as `not_promoted`" in artifacts
+    assert "host promotion is implemented or approved" in artifacts
+    assert "make review-candidate" in commands
+    assert len(hashes["artifacts"]) == 8
+    assert {artifact["path"] for artifact in hashes["artifacts"]} == {
+        "00_V1_RC_PACKET_INDEX.md",
+        "01_V1_RC_STATUS.md",
+        "02_V1_OPERATOR_QUICKSTART.md",
+        "03_V1_WORKBENCH_EVIDENCE_CLOSURE.md",
+        "04_V1_ASSURANCE_CLOSURE.md",
+        "05_V1_RC_READINESS_GATE.md",
+        "06_V1_RC_ARTIFACTS.md",
+        "07_V1_RC_COMMANDS.md",
+    }
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

@@ -161,7 +161,7 @@ checked with `make control-mapping-readiness`.
 - `make release-evidence-validate FILE=...` - validate a saved release evidence JSON snapshot.
 - `make release-packet` - print a v0.2 external-review packet snapshot.
 - `make v04-review-packet` - print a v0.4 review-candidate packet snapshot.
-- `make review-candidate` - run the full local handoff gate, including focused v0.6 dispatch packets, operator-managed sandbox and live-demo packets, and regenerated review artifacts.
+- `make review-candidate` - run the full local handoff gate, including focused v0.6 dispatch packets, operator-managed sandbox and live-demo packets, the compact v1.0 RC packet, and regenerated review artifacts.
 - `make v05-review-candidate` - run the v0.5 handoff gate plus source-review artifact prep.
 - `make review-packet-bundle` - build an ignored v0.2 review handoff bundle under `var/review-packets/`.
 - `make review-packet-consolidated` - build the 10-attachment-friendly GPT review packet.
@@ -604,6 +604,9 @@ matrix evidence, and remaining external-pending rows without claiming production
 The v1.0 RC readiness gate is
 [docs/codex/v1.0-rc-readiness-gate.md](docs/codex/v1.0-rc-readiness-gate.md) and is checked with
 `make v1-rc-readiness`; use `make v1-rc-packet` for the compact ignored handoff packet.
+`make review-candidate` regenerates that compact packet as part of the broader local handoff gate so
+the v1.0 RC status, workbench evidence map, Mission Control handoff, sandbox-promotion evidence
+contract, and artifact hashes are refreshed together.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

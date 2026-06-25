@@ -45,6 +45,8 @@ REQUIRED_PHRASES = [
     "capability expansion remains blocked",
     "public/security-product positioning remains blocked",
     "external/source-review pending rows remain visible",
+    "compact artifact map",
+    "`make review-candidate` regenerates the v1.0 RC packet",
 ]
 
 
@@ -127,6 +129,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("Make target is missing: v1-rc-readiness")
     if "v1-rc-packet:" not in makefile:
         failures.append("Make target is missing: v1-rc-packet")
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    if "$(MAKE) v1-rc-packet" not in review_candidate_body:
+        failures.append("v1-rc-packet is missing from review-candidate")
     if "v1-rc-readiness" not in release_check_body:
         failures.append("v1-rc-readiness is missing from release-check")
     if "make v1-rc-readiness" not in readme or "make v1-rc-packet" not in readme:

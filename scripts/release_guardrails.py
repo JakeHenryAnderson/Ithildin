@@ -191,6 +191,7 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) governed-artifact-transfer-lab-check",
     "$(MAKE) governed-artifact-transfer-stage2",
     "$(MAKE) governed-artifact-transfer-stage2-check",
+    "$(MAKE) v1-rc-packet",
     "$(MAKE) v06-review-dispatch-packets",
     "$(MAKE) review-packet-bundle",
     "$(MAKE) review-packet-consolidated",
