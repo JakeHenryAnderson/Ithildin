@@ -799,6 +799,11 @@ The external disposition plan is
 and is checked with `make sandbox-vm-static-preflight-disposition-plan-check`; it defines the
 reviewer questions, allowed outcomes, closure evidence, and post-disposition boundary for `ERG-003`
 without closing the lane or approving live sandbox/VM runtime work.
+The external response intake template is
+[docs/codex/sandbox-vm-static-preflight-external-response-intake.md](docs/codex/sandbox-vm-static-preflight-external-response-intake.md)
+and is checked with `make sandbox-vm-static-preflight-external-response-intake-check`; it defines
+the `EXT-SVP-###` namespace and normalizer command for reviewer responses without mutating findings,
+closing `ERG-003`, or approving live sandbox/VM runtime work.
 The internal source-review pass is
 [docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
 it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label

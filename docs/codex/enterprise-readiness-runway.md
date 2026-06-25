@@ -319,6 +319,12 @@ questions and allowed outcomes for recording an external/source-review response 
 turning static fixture evidence into live VM/container control, sandbox orchestration, local model
 invocation, Mission Control runtime behavior, or trusted-host promotion.
 
+The external response intake template is
+[sandbox-vm-static-preflight-external-response-intake.md](sandbox-vm-static-preflight-external-response-intake.md)
+and is validated with `make sandbox-vm-static-preflight-external-response-intake-check`. It defines
+the `EXT-SVP-###` finding namespace and normalizer command for recording a reviewer response without
+mutating findings, closing `ERG-003`, or approving live sandbox/VM runtime work.
+
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
 It records the CLI-only fixture preflight runner as locally reviewed after tightening raw

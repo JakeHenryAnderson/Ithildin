@@ -22,9 +22,10 @@ AREA_NAMESPACES = {
     "mcp-ingress": "MCP",
     "review-console": "UI",
     "release-automation": "REL",
+    "sandbox-vm-static-preflight": "SVP",
 }
 FINDING_PATTERN = re.compile(
-    r"^EXT-((PA|FS|HTTP|SE|PR|MCP|UI|REL)-(\d{3}|###)|(\d{3}|###))$"
+    r"^EXT-((PA|FS|HTTP|SE|PR|MCP|UI|REL|SVP)-(\d{3}|###)|(\d{3}|###))$"
 )
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")

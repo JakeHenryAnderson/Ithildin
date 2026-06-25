@@ -189,6 +189,7 @@ from scripts import (
     sandbox_vm_profile_contract_check,
     sandbox_vm_static_preflight,
     sandbox_vm_static_preflight_disposition_plan_check,
+    sandbox_vm_static_preflight_external_response_intake_check,
     sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_negative_transcripts,
     sandbox_vm_static_preflight_source_review_packet,
@@ -2049,6 +2050,73 @@ def test_sandbox_vm_static_preflight_disposition_plan_is_wired() -> None:
     assert "Sandbox/VM Static Preflight External Disposition Plan" in review_index
     assert "sandbox-vm-static-preflight-disposition-plan.md" in enterprise
     assert "sandbox-vm-static-preflight-disposition-plan.md" in gap_matrix
+
+
+def test_sandbox_vm_static_preflight_external_response_intake_is_wired() -> None:
+    report = sandbox_vm_static_preflight_external_response_intake_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-static-preflight-external-response-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-static-preflight"
+    assert report["finding_namespace"] == "EXT-SVP-###"
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["mutates_findings"] is False
+    assert report["closes_external_review"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: response-intake template for `ERG-003`.",
+        "Finding namespace: `EXT-SVP-###`.",
+        "Reviewed area for normalization: `sandbox-vm-static-preflight`.",
+        "Required Disposition Answers",
+        "Finding Extraction Table",
+        "--area sandbox-vm-static-preflight",
+        "mutates_findings: false",
+        "closes_external_review: false",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "live VM/container inspection",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "API/MCP profile loading",
+    ]:
+        assert blocked in doc
+    assert "make sandbox-vm-static-preflight-external-response-intake-check" in readme
+    assert "sandbox-vm-static-preflight-external-response-intake-check:" in makefile
+    assert "sandbox-vm-static-preflight-external-response-intake-check" in release_check_body
+    assert "sandbox-vm-static-preflight-external-response-intake-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-static-preflight-external-response-intake.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-external-response-intake.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight External Response Intake" in review_index
+    assert "sandbox-vm-static-preflight-external-response-intake.md" in enterprise
+    assert "sandbox-vm-static-preflight-external-response-intake.md" in gap_matrix
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
@@ -11107,6 +11175,30 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
     assert tab_normalized["findings"][0]["finding_id"] == "EXT-PA-002"
     assert tab_normalized["findings"][1]["severity"] == "low"
     assert tab_normalized["findings"][1]["blocking_status"] == "later"
+
+    sandbox_response = "\n".join(
+        [
+            "# Sandbox/VM Static Preflight Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-SVP-001 | medium | sandbox-vm-static-preflight | "
+            "scripts/sandbox_vm_static_preflight.py | should-fix | open | "
+            "tighten static profile label handling |",
+        ]
+    )
+    sandbox_normalized = external_response_normalize.normalize_response(
+        sandbox_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="source-level",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="sandbox-vm-static-preflight",
+    )
+    assert sandbox_normalized["findings"][0]["finding_id"] == "EXT-SVP-001"
+    assert sandbox_normalized["findings"][0]["area"] == "sandbox-vm-static-preflight"
 
 
 def test_external_response_normalization_binds_area_and_namespace() -> None:

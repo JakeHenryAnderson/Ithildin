@@ -84,6 +84,10 @@ Before `ERG-003` can move out of `external_review_required`, record:
 - accepted-risk impact;
 - statement that broader runtime sandbox/VM work remains blocked.
 
+Use [sandbox-vm-static-preflight-external-response-intake.md](sandbox-vm-static-preflight-external-response-intake.md)
+to normalize the raw reviewer response into intake evidence before any committed triage update. The
+intake template does not mutate findings, close external review, or move `ERG-003` by itself.
+
 ## Post-Disposition Boundary
 
 If an external reviewer accepts this lane, the only allowed stronger statement is:
@@ -112,6 +116,7 @@ Run:
 
 ```sh
 make sandbox-vm-static-preflight-disposition-plan-check
+make sandbox-vm-static-preflight-external-response-intake-check
 make sandbox-vm-static-preflight-source-review-packet-check
 make enterprise-readiness-gap-matrix-check
 ```
