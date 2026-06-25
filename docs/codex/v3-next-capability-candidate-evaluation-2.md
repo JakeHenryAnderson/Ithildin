@@ -9,7 +9,7 @@ executor, does not add policy rules, does not add MCP exposure, does not add API
 add UI behavior, and does not add runtime behavior.
 
 This sprint evaluates the next safest bounded read-only metadata candidate after the current
-project-intelligence family. The current tool count remains `23`. The historical selected
+project-intelligence family. The current tool count remains `24`. The historical selected
 candidate was `project.release.summary`; proposal and implementation work completed, and no next
 candidate is selected.
 

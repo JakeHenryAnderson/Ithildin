@@ -9,7 +9,7 @@ without explicit review.
 ## Current Position
 
 - Local-preview runtime boundary remains `v0.1 local-preview`.
-- Tool count is `23`.
+- Tool count is `24`.
 - `git.show.commit_metadata`, `git.show.ref_summary`, `git.show.tag_metadata`,
   `project.manifest.summary`, `project.dependency.summary`, `project.structure.summary`,
   `project.test.summary`, `project.docs.summary`, `project.language.summary`,

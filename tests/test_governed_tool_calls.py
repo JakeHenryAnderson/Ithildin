@@ -26,6 +26,7 @@ from ithildin_api.patches import (
 )
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
@@ -188,6 +189,46 @@ input_schema:
   oneOf:
     - required: ["proposal_id"]
     - required: ["approval_id"]
+""",
+        encoding="utf-8",
+    )
+
+
+def write_sandbox_artifact_write_text_manifest(manifest_dir: Path) -> None:
+    manifest_dir.mkdir(exist_ok=True)
+    manifest_dir.joinpath("sandbox-artifact-write-text.yaml").write_text(
+        """
+name: sandbox.artifact.write_text
+version: 1.0.0
+title: Write sandbox text artifact
+risk: write
+category: sandbox
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["relative_path", "content"]
+  properties:
+    workspace_id:
+      type: string
+    sandbox_id:
+      type: string
+    root:
+      type: string
+    relative_path:
+      type: string
+    content:
+      type: string
+      maxLength: 4096
+    create_parent_directories:
+      type: boolean
+    overwrite:
+      type: boolean
+    idempotency_key:
+      type: string
+    approval_id:
+      type: string
 """,
         encoding="utf-8",
     )
@@ -1304,6 +1345,45 @@ class PatchHarness:
     workspace_root: Path
 
 
+@dataclass(frozen=True)
+class SandboxArtifactHarness:
+    service: GovernedToolCallService
+    approval_service: ApprovalService
+    db_path: Path
+    workspace_root: Path
+
+
+def make_sandbox_artifact_harness(tmp_path: Path) -> SandboxArtifactHarness:
+    manifest_dir = tmp_path / "manifests"
+    write_sandbox_artifact_write_text_manifest(manifest_dir)
+    policy_path = tmp_path / "policy.yaml"
+    write_policy(policy_path)
+    db_path = tmp_path / "ithildin.sqlite3"
+    audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    approval_store = ApprovalStore(db_path)
+    approval_store.initialize()
+    approval_service = ApprovalService(approval_store, audit_writer, timedelta(minutes=15))
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    workspace_root.joinpath("hello-demo").mkdir()
+    read_executor = ReadToolExecutor.from_settings(
+        workspace_root=workspace_root,
+        max_read_bytes=1024,
+        search_result_limit=10,
+        git_log_limit=10,
+    )
+    service = GovernedToolCallService(
+        ToolRegistry.load(manifest_dir),
+        PolicyEvaluator.load(policy_path),
+        approval_service,
+        audit_writer,
+        read_executor,
+        sandbox_artifact_service=SandboxArtifactWriteService.from_read_executor(read_executor),
+    )
+    return SandboxArtifactHarness(service, approval_service, db_path, workspace_root)
+
+
 def make_patch_harness(
     tmp_path: Path,
     *,
@@ -1350,6 +1430,160 @@ def make_patch_harness(
 
 def make_patch_service(tmp_path: Path) -> GovernedToolCallService:
     return make_patch_harness(tmp_path).service
+
+
+def test_sandbox_artifact_write_requires_approval_and_executes_once(tmp_path: Path) -> None:
+    harness = make_sandbox_artifact_harness(tmp_path)
+    arguments: JsonObject = {
+        "sandbox_id": "local-demo-sandbox",
+        "root": ".",
+        "relative_path": "hello-demo/hello.txt",
+        "content": "Hello World",
+        "idempotency_key": "hello-world-demo",
+    }
+
+    request = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments=arguments,
+        principal=principal(),
+        session_id="session-1",
+    )
+
+    assert request.status == "approval_required"
+    approval_id = cast(str, request.content["approval_id"])
+    assert request.content["artifact_label"] == "sandbox://local-demo-sandbox/hello-demo/hello.txt"
+    assert "content" not in request.content
+    approval = harness.approval_service.get(approval_id)
+    assert "content" not in approval.one_time_scope
+    assert approval.one_time_scope["content_sha256"] == sha256_digest("Hello World")
+
+    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    apply_result = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments={**arguments, "approval_id": approval_id},
+        principal=principal(),
+        session_id="session-1",
+    )
+
+    assert apply_result.status == "completed"
+    assert apply_result.content["status"] == "created"
+    assert harness.workspace_root.joinpath("hello-demo/hello.txt").read_text(
+        encoding="utf-8"
+    ) == "Hello World"
+
+    replay = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments={**arguments, "approval_id": approval_id},
+        principal=principal(),
+        session_id="session-1",
+    )
+    assert replay.status == "denied"
+    assert harness.approval_service.get(approval_id).status.value == "executed"
+
+
+def test_sandbox_artifact_write_rejects_scope_mismatch_without_write(tmp_path: Path) -> None:
+    harness = make_sandbox_artifact_harness(tmp_path)
+    arguments: JsonObject = {
+        "sandbox_id": "local-demo-sandbox",
+        "relative_path": "hello-demo/hello.txt",
+        "content": "Hello World",
+    }
+    request = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments=arguments,
+        principal=principal(),
+        session_id="session-1",
+    )
+    approval_id = cast(str, request.content["approval_id"])
+    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+
+    result = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments={**arguments, "content": "Changed", "approval_id": approval_id},
+        principal=principal(),
+        session_id="session-1",
+    )
+
+    assert result.status == "denied"
+    assert not harness.workspace_root.joinpath("hello-demo/hello.txt").exists()
+
+
+def test_sandbox_artifact_write_denies_unsafe_paths(tmp_path: Path) -> None:
+    harness = make_sandbox_artifact_harness(tmp_path)
+
+    result = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments={
+            "sandbox_id": "local-demo-sandbox",
+            "relative_path": "../hello.txt",
+            "content": "Hello World",
+        },
+        principal=principal(),
+        session_id="session-1",
+    )
+
+    assert result.status == "denied"
+    assert result.content == {"reason": "artifact path escapes the sandbox scope"}
+
+
+def test_sandbox_artifact_write_audit_metadata_is_secret_free(tmp_path: Path) -> None:
+    harness = make_sandbox_artifact_harness(tmp_path)
+    arguments: JsonObject = {
+        "sandbox_id": "local-demo-sandbox",
+        "relative_path": "hello-demo/hello.txt",
+        "content": "Hello World",
+    }
+    request = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments=arguments,
+        principal=principal(),
+        session_id="session-1",
+    )
+    approval_id = cast(str, request.content["approval_id"])
+    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments={**arguments, "approval_id": approval_id},
+        principal=principal(),
+        session_id="session-1",
+    )
+
+    audit_text = (tmp_path / "audit.jsonl").read_text(encoding="utf-8")
+    assert "Hello World" not in audit_text
+    assert "content_sha256" in audit_text
+
+
+def test_sandbox_artifact_write_rejects_existing_non_utf8_target_safely(
+    tmp_path: Path,
+) -> None:
+    harness = make_sandbox_artifact_harness(tmp_path)
+    target = harness.workspace_root / "hello-demo" / "hello.txt"
+    target.write_bytes(b"\xff\xfe\x00")
+    arguments: JsonObject = {
+        "sandbox_id": "local-demo-sandbox",
+        "relative_path": "hello-demo/hello.txt",
+        "content": "Hello World",
+        "overwrite": True,
+    }
+    request = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments=arguments,
+        principal=principal(),
+        session_id="session-1",
+    )
+    approval_id = cast(str, request.content["approval_id"])
+    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+
+    result = harness.service.call_tool(
+        tool_name="sandbox.artifact.write_text",
+        arguments={**arguments, "approval_id": approval_id},
+        principal=principal(),
+        session_id="session-1",
+    )
+
+    assert result.status == "denied"
+    assert result.content == {"reason": "artifact path is not UTF-8 text"}
+    assert target.read_bytes() == b"\xff\xfe\x00"
 
 
 def principal() -> JsonObject:

@@ -19,7 +19,7 @@ ROADMAP_DOC = ROOT / "docs/codex/v1.0-rc-roadmap.md"
 REQUIRED_PHRASES = [
     "Status: roadmap and sequencing target only.",
     "Ithildin v1.0 RC is a local-first governed MCP workbench",
-    "Current governed tool count: `23`",
+    "Current governed tool count: `24`",
     "Current selected capability: `not selected`",
     "Most recent capability state: `project.risk.summary` is implemented",
     "Phase 1: Finish The Read-Only Metadata Surface",
@@ -99,7 +99,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "roadmap_doc": doc_rel,
         "phase_count": len(phases),
-        "tool_count": 23,
+        "tool_count": 24,
         "selected_capability": "not selected",
         "runtime_changes_allowed": False,
         "new_power_classes_allowed": False,

@@ -95,7 +95,7 @@ The packet records:
 
 This is intentionally not a live governance claim. It is the baseline artifact/evidence shape that
 Stage 1 Part 2 can wrap with Mission Control mission metadata while keeping the Ithildin-only result
-stable. The tool count remains `23`; this lab does not add governed tools, manifests, executors,
+stable. The tool count remains `24`; this lab does not add governed tools, manifests, executors,
 policy rules, API/MCP behavior, UI runtime behavior, or sandbox orchestration.
 
 ### Stage 1 Part 2: Mission Control Wrapper

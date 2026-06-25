@@ -11,7 +11,7 @@ closure.
 
 - Tool candidate: `project.risk.summary`.
 - Resource type: `project_risk`.
-- Current tool count is `23`.
+- Current tool count is `24`.
 - Runtime implementation is present.
 - Finding namespace: `EXT-RISK-SUMMARY-###`.
 - This lane remains source-review pending until a focused reviewer disposition exists.

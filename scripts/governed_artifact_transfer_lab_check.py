@@ -35,7 +35,7 @@ REQUIRED_DOC_PHRASES = [
     "vm_or_sandbox: `false`",
     "mission_control_integration: `metadata_only`",
     "vm_or_sandbox: `simulated_directory_only`",
-    "tool count remains `23`",
+    "tool count remains `24`",
     "does not add governed tools",
 ]
 
@@ -144,7 +144,7 @@ def _packet_report(repo_root: Path) -> dict[str, Any]:
         stage2_manifest = json.loads(stage2_manifest_path.read_text(encoding="utf-8"))
         handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
         hashes = json.loads(hash_path.read_text(encoding="utf-8"))
-        if manifest.get("tool_count") != 23:
+        if manifest.get("tool_count") != 24:
             failures.append("generated manifest has unexpected tool_count")
         if manifest.get("mission_control_integration") is not False:
             failures.append("generated manifest must keep Mission Control disabled for Part 1")

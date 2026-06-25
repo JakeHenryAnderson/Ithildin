@@ -24,8 +24,8 @@ ROADMAP_DOC = ROOT / "docs/codex/hello-world-sandbox-demo-roadmap.md"
 REQUIRED_DOC_PHRASES = [
     "make hello-world-sandbox-demo-packet",
     "make hello-world-sandbox-demo-packet-check",
-    "runtime write powers remain blocked",
-    "tool count remains `23`",
+    "bounded sandbox artifact write is implemented",
+    "tool count remains `24`",
 ]
 
 
@@ -87,8 +87,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "tool_count": tool_surface.get("tool_count"),
-        "runtime_changes_allowed": False,
-        "write_capability_implemented": False,
+        "runtime_changes_allowed": True,
+        "write_capability_implemented": True,
         "mission_control_runtime_behavior": False,
         "real_vm_or_container_started": False,
         "packet": packet_report,
@@ -128,7 +128,6 @@ def _packet_report(repo_root: Path) -> dict[str, Any]:
         if hello_text != hello_world_sandbox_demo_packet.HELLO_CONTENT:
             failures.append("hello fixture content does not match expected fixture")
         for key in [
-            "runtime_write_capability_implemented",
             "governed_tool_calls_performed",
             "mission_control_runtime_behavior",
             "real_vm_or_container_started",
@@ -138,7 +137,7 @@ def _packet_report(repo_root: Path) -> dict[str, Any]:
         ]:
             if manifest.get(key) is not False:
                 failures.append(f"demo manifest must report {key}: false")
-        if manifest.get("tool_count") != 23:
+        if manifest.get("tool_count") != 24:
             failures.append("demo manifest has unexpected tool_count")
         checks = manifest.get("checks", {})
         for key in [
@@ -160,7 +159,6 @@ def _packet_report(repo_root: Path) -> dict[str, Any]:
             encoding="utf-8"
         )
         for forbidden in [
-            "runtime write capability implemented: `true`",
             "governed tool calls performed: `true`",
             "real VM or container started: `true`",
             "host promotion performed: `true`",
@@ -175,8 +173,8 @@ def render_report(report: dict[str, Any]) -> str:
         "Ithildin Hello World sandbox demo packet check",
         f"valid: {str(report['valid']).lower()}",
         f"tool_count: {report.get('tool_count', 'unknown')}",
-        "runtime_changes_allowed: false",
-        "write_capability_implemented: false",
+        "runtime_changes_allowed: true",
+        "write_capability_implemented: true",
         "mission_control_runtime_behavior: false",
         "real_vm_or_container_started: false",
     ]

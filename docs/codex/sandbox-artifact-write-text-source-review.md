@@ -1,25 +1,25 @@
 # sandbox.artifact.write_text Source Review Handoff
 
-Status: future source-review handoff only. No runtime behavior.
+Status: runtime source-review handoff pending.
 
-This document defines the future source-review lane for `sandbox.artifact.write_text`. The tool is
-not implemented. This handoff exists so a later implementation cannot skip the same review
-machinery used by the existing local-preview capabilities.
+This document defines the source-review lane for the bounded local-preview
+`sandbox.artifact.write_text` implementation. The tool is implemented, but this document does not
+claim external/source-review closure.
 
 ## Current Decision
 
 - Tool candidate: `sandbox.artifact.write_text`.
-- Current state: design and implementation planning only.
-- Runtime implementation: blocked.
-- Manifest: absent by design.
-- Tool count: remains `23`.
+- Current state: bounded local-preview runtime implementation present.
+- Runtime implementation: approval-bound sandbox text artifact creation only.
+- Manifest: present.
+- Tool count: remains `24`.
 - Mission Control runtime behavior: not implemented.
 - VM lifecycle control: not implemented.
 - Host promotion: not implemented.
 
-## Future Reviewer Scope
+## Reviewer Scope
 
-A future reviewer must inspect:
+A reviewer must inspect:
 
 - manifest/schema and manifest-lock update;
 - executor implementation and filesystem path handling;
@@ -32,7 +32,7 @@ A future reviewer must inspect:
 - promotion separation from artifact creation;
 - Mission Control evidence attachment semantics.
 
-## Future Closure Questions
+## Closure Questions
 
 A reviewer should answer whether the lane can close for the v0.1 local-preview runtime boundary:
 
@@ -44,23 +44,21 @@ A reviewer should answer whether the lane can close for the v0.1 local-preview r
    environment values, shell output, VM logs, and unrelated listings?
 6. Does Mission Control remain an operator/evidence surface rather than an independent authority?
 
-## Required Future Commands
+## Required Commands
 
-A future implementation must add and pass commands equivalent to:
+The implementation must pass:
 
 ```sh
 make sandbox-artifact-write-text-implementation-gate
-make sandbox-artifact-write-text-preimplementation-check
-make sandbox-artifact-write-text-review-handoff-check
-make sandbox-artifact-write-text-source-review-bundle
 make policy-parity
 make release-check
 ```
 
-This current planning slice adds only `make sandbox-artifact-write-text-preimplementation-check`.
+Future closure work should add a focused source-review bundle and negative transcript generator if
+this lane is sent for external/source review.
 
 ## Finding Namespace
 
-Future source-review findings should use `EXT-SANDBOX-WRITE-###`.
+Source-review findings should use `EXT-SANDBOX-WRITE-###`.
 
 No source-review closure is claimed by this document.

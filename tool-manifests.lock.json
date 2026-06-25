@@ -139,6 +139,12 @@
       "name": "project.test.summary",
       "path": "tool-manifests/project-test-summary.yaml",
       "version": "0.1.0"
+    },
+    {
+      "manifest_hash": "sha256:f6ebe1d6504d007aff320500483e263ba2ed210ad3facd971b8c96aca11fe59f",
+      "name": "sandbox.artifact.write_text",
+      "path": "tool-manifests/sandbox-artifact-write-text.yaml",
+      "version": "0.1.0"
     }
   ]
 }

@@ -1,0 +1,52 @@
+name: sandbox.artifact.write_text
+version: 0.1.0
+title: Write a bounded sandbox text artifact
+risk: write
+category: sandbox
+mcp:
+  exposed: true
+  annotations:
+    readOnlyHint: false
+input_schema:
+  type: object
+  additionalProperties: false
+  required:
+    - relative_path
+    - content
+  properties:
+    workspace_id:
+      type: string
+      default: default
+      minLength: 1
+      maxLength: 120
+    sandbox_id:
+      type: string
+      default: local-demo-sandbox
+      minLength: 1
+      maxLength: 120
+      pattern: "^[A-Za-z0-9_.:-]+$"
+    root:
+      type: string
+      default: "."
+      minLength: 1
+      maxLength: 240
+    relative_path:
+      type: string
+      minLength: 1
+      maxLength: 240
+    content:
+      type: string
+      maxLength: 4096
+    create_parent_directories:
+      type: boolean
+      default: false
+    overwrite:
+      type: boolean
+      default: false
+    idempotency_key:
+      type: string
+      default: ""
+      maxLength: 120
+    approval_id:
+      type: string
+      pattern: "^appr_[0-9a-f]+$"

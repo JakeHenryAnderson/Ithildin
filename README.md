@@ -227,20 +227,18 @@ checked with `make control-mapping-readiness`.
   Stage 2 simulated sandbox-transfer evidence packet without starting a real VM or sandbox.
 - `make governed-artifact-transfer-stage2-check` - validate the Mission Control handoff metadata,
   simulated sandbox copy/return hashes, VM-readiness plan, and no-new-powers boundary.
-- `make hello-world-sandbox-demo-check` - validate the design/preimplementation roadmap for the
-  Mission Control + local LLM Hello World sandbox demo and confirm runtime write powers remain
-  blocked.
+- `make hello-world-sandbox-demo-check` - validate the staged roadmap for the Mission Control +
+  local LLM Hello World sandbox demo and confirm the bounded sandbox artifact write boundary.
 - `make hello-world-sandbox-demo-packet` - generate an ignored evidence-only Hello World sandbox
   demo packet under `var/review-packets/v3/hello-world-sandbox-demo/` without governed tool calls,
   real VM startup, Mission Control runtime behavior, or host promotion.
 - `make hello-world-sandbox-demo-packet-check` - validate the generated packet shape in a temporary
-  directory and confirm runtime write powers remain blocked.
-- `make sandbox-artifact-write-text-preimplementation-check` - validate the future
-  `sandbox.artifact.write_text` implementation plan, fixture contract, negative transcript plan,
-  source-review handoff, and manifest-absent boundary while keeping runtime write powers blocked.
-- `make sandbox-artifact-write-text-implementation-gate` - validate the approved future
-  implementation boundary for `sandbox.artifact.write_text` while confirming the manifest and
-  runtime implementation remain absent until the next explicit runtime sprint.
+  directory while confirming it performs no governed tool calls, VM startup, Mission Control
+  runtime behavior, or host promotion.
+- `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
+  boundary check retained for lineage; active release readiness now uses the implementation gate.
+- `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
+  runtime implementation for `sandbox.artifact.write_text`.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -595,11 +593,11 @@ implementation decision.
 The Hello World sandbox demo roadmap is in
 [docs/codex/hello-world-sandbox-demo-roadmap.md](docs/codex/hello-world-sandbox-demo-roadmap.md)
 and is checked with `make hello-world-sandbox-demo-check`; it defines the end-to-end Mission
-Control + local LLM + Ithildin demo target while keeping `sandbox.artifact.write_text` design-only
-and the tool count remains `23`.
+Control + local LLM + Ithildin demo target around bounded `sandbox.artifact.write_text`, and the
+tool count remains `24`.
 Generate the evidence-only packet with `make hello-world-sandbox-demo-packet`; validate it with
 `make hello-world-sandbox-demo-packet-check`. The packet writes only ignored/local review artifacts,
-records that runtime write powers remain blocked, and does not perform governed tool calls,
+records that the bounded sandbox write capability exists, but does not perform governed tool calls,
 Mission Control runtime behavior, real VM startup, sandbox orchestration, shell execution, or host
 promotion.
 Its implementation-planning packet is
@@ -610,12 +608,13 @@ and
 [docs/codex/sandbox-artifact-write-text-negative-transcripts.md](docs/codex/sandbox-artifact-write-text-negative-transcripts.md);
 the future source-review lane is
 [docs/codex/sandbox-artifact-write-text-source-review.md](docs/codex/sandbox-artifact-write-text-source-review.md).
-All are checked with `make sandbox-artifact-write-text-preimplementation-check`, which confirms the
-manifest remains absent and runtime write powers remain blocked.
+The historical preimplementation check remains available for lineage, but active readiness now uses
+the runtime implementation gate.
 The approved future implementation boundary is recorded in
 [docs/codex/sandbox-artifact-write-text-implementation-decision.md](docs/codex/sandbox-artifact-write-text-implementation-decision.md)
-and checked with `make sandbox-artifact-write-text-implementation-gate`; the gate approves only a
-later bounded local-preview runtime sprint and still confirms `runtime_implemented: false`.
+and checked with `make sandbox-artifact-write-text-implementation-gate`; the gate confirms the
+bounded local-preview runtime implementation and keeps host promotion, VM/container lifecycle,
+Mission Control runtime behavior, shell execution, and broad writes blocked.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in

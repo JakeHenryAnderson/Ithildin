@@ -38,6 +38,7 @@ EXPECTED_TOOL_NAMES = [
     "project.risk.summary",
     "project.structure.summary",
     "project.test.summary",
+    "sandbox.artifact.write_text",
 ]
 EXPECTED_DEFERRED_BOUNDARIES = [
     "shell execution",

@@ -1,6 +1,6 @@
 # Hello World Sandbox Demo Roadmap
 
-Status: roadmap and preimplementation target only.
+Status: roadmap and staged demo target.
 
 This roadmap defines the concrete end-to-end proof of concept for Mission Control, a local LLM,
 Ithildin, and an operator-managed sandbox or VM:
@@ -18,10 +18,11 @@ Mission Control intent
 The demo goal is intentionally tiny: create a directory named `hello-demo` and a text file named
 `hello.txt` containing `Hello World`, then prove where that artifact came from and how it moved.
 
-This document does not add a governed tool, executor, policy rule, MCP/API behavior, Mission
-Control runtime behavior, VM lifecycle control, shell execution, sandbox orchestration, broad
-filesystem writes, SIEM adapter behavior, production identity, runtime Postgres, hosted telemetry,
-remote MCP hosting, plugin SDK behavior, compliance automation, or public/security-product claims.
+This document now tracks the staged demo path around the bounded
+`sandbox.artifact.write_text` tool. It does not add Mission Control runtime behavior, VM lifecycle
+control, shell execution, sandbox orchestration, broad filesystem writes, SIEM adapter behavior,
+production identity, runtime Postgres, hosted telemetry, remote MCP hosting, plugin SDK behavior,
+compliance automation, or public/security-product claims.
 
 ## Current Baseline
 
@@ -49,8 +50,8 @@ var/review-packets/v3/hello-world-sandbox-demo/
 
 The Hello World packet is evidence-only:
 
-- runtime write powers remain blocked;
-- tool count remains `23`;
+- bounded sandbox artifact write is implemented;
+- tool count remains `24`;
 - no governed tool calls are performed;
 - no Mission Control runtime behavior is performed;
 - no real VM startup, sandbox orchestration, shell execution, or host promotion occurs.

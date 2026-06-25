@@ -63,6 +63,7 @@ from ithildin_api.policy_preview import (
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry, ToolRegistryError
+from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
 from ithildin_api.security_status import (
     LOCAL_CORS_ORIGINS,
     security_status,
@@ -156,6 +157,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 workspace_registry=workspace_registry,
             )
             app_instance.state.read_tool_executor = read_tool_executor
+            sandbox_artifact_service = SandboxArtifactWriteService.from_read_executor(
+                read_tool_executor
+            )
+            app_instance.state.sandbox_artifact_service = sandbox_artifact_service
             app_instance.state.policy_preview_service = PolicyPreviewService(
                 registry,
                 policy_evaluator,

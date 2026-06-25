@@ -17,8 +17,12 @@ from scripts.capability_expansion_gate import EXPECTED_DEFERRED_BOUNDARIES
 from scripts.tool_surface_invariant_gate import EXPECTED_TOOL_NAMES, EXPECTED_TOOL_RISKS
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED_CATEGORIES = {"filesystem", "git", "network", "project"}
-ALLOWED_WRITE_TOOLS = {"fs.patch.apply", "fs.patch.propose"}
+ALLOWED_CATEGORIES = {"filesystem", "git", "network", "project", "sandbox"}
+ALLOWED_WRITE_TOOLS = {
+    "fs.patch.apply",
+    "fs.patch.propose",
+    "sandbox.artifact.write_text",
+}
 ALLOWED_NETWORK_TOOLS = {"http.fetch"}
 ALLOWED_NEW_READ_TOOLS = {
     "git.show.commit_metadata",
@@ -120,9 +124,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.extend(_validate_manifest(tool_manifest, repo_root, path))
 
     if names != EXPECTED_TOOL_NAMES:
-        failures.append("governed tool names changed outside the approved v0.9 read capability")
+        failures.append("governed tool names changed outside approved capabilities")
     if len(names) != len(EXPECTED_TOOL_NAMES):
-        failures.append("governed tool count changed outside the approved v0.9 read capability")
+        failures.append("governed tool count changed outside approved capabilities")
 
     return {
         "schema_version": "1",
@@ -136,6 +140,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "approved_new_read_tools": sorted(ALLOWED_NEW_READ_TOOLS),
         "new_power_classes_allowed": False,
+        "approved_bounded_sandbox_write": "sandbox.artifact.write_text" in names,
     }
 
 

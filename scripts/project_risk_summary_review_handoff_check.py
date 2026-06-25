@@ -116,7 +116,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "Status: implemented source-review handoff",
             "project.risk.summary",
             "Resource type: `project_risk`",
-            "Current tool count is `23`",
+            "Current tool count is `24`",
             "Runtime implementation is present",
             "Finding namespace: `EXT-RISK-SUMMARY-###`",
             "manifest/schema shape",
@@ -155,10 +155,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("implementation gate must report runtime_implemented: true")
     if implementation_gate.get("future_runtime_implementation_allowed") is not False:
         failures.append("implementation gate must not allow another runtime sprint")
-    if implementation_gate.get("tool_count") != 23:
-        failures.append("implementation gate tool count is not 23")
-    if tool_surface.get("tool_count") != 23:
-        failures.append("tool surface tool count is not 23")
+    if implementation_gate.get("tool_count") != 24:
+        failures.append("implementation gate tool count is not 24")
+    if tool_surface.get("tool_count") != 24:
+        failures.append("tool surface tool count is not 24")
     if no_new_powers.get("new_power_classes_allowed") is not False:
         failures.append("no-new-powers guardrail allows new power classes")
 

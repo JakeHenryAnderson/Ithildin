@@ -78,7 +78,7 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "operator_intent": "create hello-demo/hello.txt containing Hello World",
         "mission_control_runtime_behavior": False,
         "mission_control_authority": "metadata_only",
-        "tool_count": 23,
+        "tool_count": 24,
     }
     plan = {
         "schema_version": "1",
@@ -136,8 +136,8 @@ def build_packet(*, repo_root: Path, output_dir: Path, allow_dirty: bool = False
         "status": "evidence_only_simulation",
         "commit": commit,
         "dirty": dirty,
-        "tool_count": 23,
-        "runtime_write_capability_implemented": False,
+        "tool_count": 24,
+        "runtime_write_capability_implemented": True,
         "governed_tool_calls_performed": False,
         "mission_control_runtime_behavior": False,
         "real_vm_or_container_started": False,

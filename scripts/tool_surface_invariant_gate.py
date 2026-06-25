@@ -34,6 +34,7 @@ EXPECTED_TOOL_NAMES = [
     "project.risk.summary",
     "project.structure.summary",
     "project.test.summary",
+    "sandbox.artifact.write_text",
 ]
 EXPECTED_TOOL_RISKS = {
     "fs.list": "read",
@@ -59,6 +60,7 @@ EXPECTED_TOOL_RISKS = {
     "project.risk.summary": "read",
     "project.structure.summary": "read",
     "project.test.summary": "read",
+    "sandbox.artifact.write_text": "write",
 }
 FORBIDDEN_MANIFEST_MARKERS = [
     "shell",

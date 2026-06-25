@@ -22,6 +22,7 @@ from ithildin_api.policy import load_policy_engine
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
+from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
 from ithildin_api.security_status import validate_security_settings
 from ithildin_api.storage import validate_storage_settings
 from ithildin_api.telemetry import configure_telemetry
@@ -204,18 +205,20 @@ def create_adapter(settings: Settings | None = None) -> IthildinMcpAdapter:
         read_tool_executor.filesystems,
         read_tool_executor.default_workspace_id,
     )
+    sandbox_artifact_service = SandboxArtifactWriteService.from_read_executor(read_tool_executor)
     tool_call_service = GovernedToolCallService(
-        registry,
-        policy_evaluator,
-        approval_service,
-        audit_writer,
-        read_tool_executor,
-        patch_proposal_service,
-        http_fetch_executor,
-        redaction_service,
-        principal_registry,
-        telemetry,
-        agent_run_store,
+        registry=registry,
+        policy_evaluator=policy_evaluator,
+        approval_service=approval_service,
+        audit_writer=audit_writer,
+        read_tool_executor=read_tool_executor,
+        patch_proposal_service=patch_proposal_service,
+        http_fetch_executor=http_fetch_executor,
+        redaction_service=redaction_service,
+        principal_registry=principal_registry,
+        telemetry=telemetry,
+        agent_run_store=agent_run_store,
+        sandbox_artifact_service=sandbox_artifact_service,
     )
     return IthildinMcpAdapter(
         registry=registry,

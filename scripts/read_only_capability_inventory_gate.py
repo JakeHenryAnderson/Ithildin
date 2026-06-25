@@ -182,7 +182,7 @@ REQUIRED_INVENTORY_PHRASES = [
     "project.ci.summary",
     "project.release.summary",
     "project.risk.summary",
-    "tool count `23`",
+    "tool count `24`",
     "no shell",
     "no broad filesystem writes",
     "no arbitrary Git command execution",

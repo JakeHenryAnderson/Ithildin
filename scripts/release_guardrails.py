@@ -90,7 +90,6 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "governed-artifact-transfer-stage2-check",
     "hello-world-sandbox-demo-packet-check",
     "hello-world-sandbox-demo-check",
-    "sandbox-artifact-write-text-preimplementation-check",
     "sandbox-artifact-write-text-implementation-gate",
     "siem-evidence-design-check",
     "data-classification-design-check",

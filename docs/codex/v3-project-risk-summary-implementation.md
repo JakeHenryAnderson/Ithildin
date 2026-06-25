@@ -24,7 +24,7 @@ Approved shape:
 
 Current state:
 
-- tool count is `23`;
+- tool count is `24`;
 - runtime manifest is present;
 - runtime implementation is present;
 - no new power class is approved.

@@ -26,6 +26,22 @@ cases:
     expect_decision: require_approval
     expect_runtime_status: approval_required
 
+  - id: sandbox_artifact_write_preview_matches_runtime
+    description: Sandbox artifact write preview and runtime policy evidence agree on approval requirement.
+    tool_name: sandbox.artifact.write_text
+    arguments:
+      sandbox_id: local-demo-sandbox
+      relative_path: hello-demo/hello.txt
+      content: Hello World
+      idempotency_key: parity-hello-world
+    principal:
+      id: agent:mcp-local
+    session_id: parity-sandbox-artifact-write
+    expect_decision: require_approval
+    expect_runtime_status: approval_required
+    expect_resource_type: sandbox_artifact
+    expect_resource_in_scope: true
+
   - id: proposal_preview_matches_runtime
     description: Patch proposal preview and runtime policy evidence agree.
     tool_name: fs.patch.propose

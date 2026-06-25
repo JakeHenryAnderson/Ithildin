@@ -4,7 +4,7 @@ Status: approved read-only metadata inventory. This document records the bounded
 capabilities that have moved beyond design-only planning through explicit implementation gates and
 source-review handoff artifacts.
 
-The governed tool surface has tool count `23`. The inventory below distinguishes the original
+The governed tool surface has tool count `24`. The inventory below distinguishes the original
 local-preview filesystem/Git/HTTP tools from the later bounded metadata additions so reviewers can
 see which closure evidence applies to each surface. It authorizes no shell, no broad filesystem
 writes, no arbitrary Git command execution, no remote fetch, no browser automation, no
@@ -15,7 +15,7 @@ explicit implementation decision, and release gates are recorded.
 
 This map intentionally keeps the guardrail phrases `no broad filesystem writes` and `Broader capability expansion remains blocked` visible for review-gate checks.
 
-## 23-Tool Surface Context
+## 24-Tool Surface Context
 
 This table is a review map, not a new approval. The original local-preview tools remain governed by
 their existing lane docs and release gates. The metadata additions have per-tool implementation

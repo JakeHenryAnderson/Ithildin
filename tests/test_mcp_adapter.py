@@ -24,6 +24,7 @@ from ithildin_api.manifest_lock import (
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_mcp_server import IthildinMcpAdapter, create_mcp_server
@@ -176,6 +177,44 @@ input_schema:
   oneOf:
     - required: ["proposal_id"]
     - required: ["approval_id"]
+""",
+        encoding="utf-8",
+    )
+
+
+def write_sandbox_artifact_write_text_manifest(manifest_dir: Path) -> None:
+    manifest_dir.joinpath("sandbox-artifact-write-text.yaml").write_text(
+        """
+name: sandbox.artifact.write_text
+version: 1.0.0
+title: Write sandbox text artifact
+risk: write
+category: sandbox
+mcp:
+  exposed: true
+input_schema:
+  type: object
+  additionalProperties: false
+  required: ["relative_path", "content"]
+  properties:
+    workspace_id:
+      type: string
+    sandbox_id:
+      type: string
+    root:
+      type: string
+    relative_path:
+      type: string
+    content:
+      type: string
+    create_parent_directories:
+      type: boolean
+    overwrite:
+      type: boolean
+    idempotency_key:
+      type: string
+    approval_id:
+      type: string
 """,
         encoding="utf-8",
     )
@@ -522,6 +561,7 @@ def make_adapter_harness(
     write_manifest(manifest_dir, "fs.apply_patch", "write")
     write_patch_propose_manifest(manifest_dir)
     write_patch_apply_manifest(manifest_dir)
+    write_sandbox_artifact_write_text_manifest(manifest_dir)
     write_http_fetch_manifest(manifest_dir)
     write_git_commit_metadata_manifest(manifest_dir)
     write_git_ref_summary_manifest(manifest_dir)
@@ -550,6 +590,7 @@ input_schema:
     db_path = tmp_path / "ithildin.sqlite3"
     workspace_root = tmp_path / "workspace"
     workspace_root.mkdir()
+    workspace_root.joinpath("hello-demo").mkdir()
     workspace_root.joinpath("README.md").write_text("hello from mcp\n", encoding="utf-8")
     workspace_root.joinpath("package.json").write_text(
         json.dumps(
@@ -624,6 +665,7 @@ jobs:
         ),
         http_executor,
         principal_registry=principal_registry,
+        sandbox_artifact_service=SandboxArtifactWriteService.from_read_executor(read_executor),
     )
     return McpAdapterHarness(
         adapter=IthildinMcpAdapter(
@@ -668,6 +710,7 @@ def test_mcp_tools_list_returns_exposed_registry_tools(tmp_path: Path) -> None:
         "project.manifest.summary",
         "project.release.summary",
         "project.risk.summary",
+        "sandbox.artifact.write_text",
     ]
     assert all(tool.inputSchema["type"] == "object" for tool in tools)
 
@@ -747,6 +790,33 @@ def test_mcp_call_returns_real_http_fetch_output(tmp_path: Path) -> None:
     assert result.structuredContent["status"] == "completed"
     assert result.structuredContent["body_text"] == "mcp network"
     assert result.structuredContent["url"] == "https://example.com/data"
+
+
+def test_mcp_call_requests_sandbox_artifact_write_approval(tmp_path: Path) -> None:
+    harness = make_adapter_harness(tmp_path)
+    tools = asyncio.run(harness.adapter.list_tools())
+
+    assert any(tool.name == "sandbox.artifact.write_text" for tool in tools)
+    result = asyncio.run(
+        harness.adapter.call_tool(
+            "sandbox.artifact.write_text",
+            {
+                "sandbox_id": "local-demo-sandbox",
+                "relative_path": "hello-demo/hello.txt",
+                "content": "Hello World",
+                "idempotency_key": "mcp-hello-world",
+            },
+        )
+    )
+
+    assert result.isError is False
+    assert result.structuredContent is not None
+    assert result.structuredContent["status"] == "approval_required"
+    assert result.structuredContent["artifact_label"] == (
+        "sandbox://local-demo-sandbox/hello-demo/hello.txt"
+    )
+    assert "content" not in result.structuredContent
+    assert "Hello World" not in json.dumps(result.structuredContent)
 
 
 def test_mcp_call_returns_real_git_commit_metadata_output(tmp_path: Path) -> None:

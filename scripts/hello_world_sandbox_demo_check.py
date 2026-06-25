@@ -19,7 +19,7 @@ PROPOSAL = ROOT / "docs/codex/capability-proposals/sandbox-artifact-write-text.m
 PROMOTION_CONTRACT = ROOT / "docs/codex/sandbox-promotion-evidence-contract.md"
 
 REQUIRED_ROADMAP_PHRASES = [
-    "Status: roadmap and preimplementation target only.",
+    "Status: roadmap and staged demo target.",
     "hello-demo",
     "hello.txt",
     "Hello World",
@@ -35,7 +35,7 @@ REQUIRED_ROADMAP_PHRASES = [
     "Phase 6: Host Promotion",
     "make governed-artifact-transfer-stage2",
     "sandbox.artifact.write_text",
-    "Implementation remains blocked",
+    "bounded sandbox artifact write is implemented",
 ]
 REQUIRED_PROPOSAL_PHRASES = [
     "Status: design-only proposal",
@@ -121,7 +121,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("hello-world-sandbox-demo-check is missing from release-check")
     if "make hello-world-sandbox-demo-check" not in readme:
         failures.append("README is missing make hello-world-sandbox-demo-check")
-    if "tool count remains `23`" not in readme:
+    if "tool count remains `24`" not in readme:
         failures.append("README is missing current tool count reference")
 
     return {
@@ -129,9 +129,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "tool_count": tool_surface.get("tool_count"),
-        "runtime_changes_allowed": False,
+        "runtime_changes_allowed": True,
         "new_power_classes_allowed": False,
-        "write_capability_implemented": False,
+        "write_capability_implemented": True,
         "mission_control_runtime_behavior_allowed": False,
         "vm_orchestration_allowed": False,
     }
@@ -165,12 +165,12 @@ def _check_doc(
 
 def render_report(report: dict[str, Any]) -> str:
     lines = [
-        "Ithildin Hello World sandbox demo preimplementation check",
+        "Ithildin Hello World sandbox demo check",
         f"valid: {str(report['valid']).lower()}",
         f"tool_count: {report.get('tool_count', 'unknown')}",
-        "runtime_changes_allowed: false",
+        "runtime_changes_allowed: true",
         "new_power_classes_allowed: false",
-        "write_capability_implemented: false",
+        "write_capability_implemented: true",
         "mission_control_runtime_behavior_allowed: false",
         "vm_orchestration_allowed: false",
     ]

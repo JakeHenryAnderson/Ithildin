@@ -39,7 +39,7 @@ REQUIRED_PHRASES = [
     "make v1-rc-packet",
     "make release-check",
     "make review-candidate",
-    "governed tool count remains `23`",
+    "governed tool count remains `24`",
     "latest implemented tool remains `project.risk.summary`",
     "no next capability is selected",
     "capability expansion remains blocked",
@@ -94,8 +94,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     assurance = reports["assurance"]
     packet_redaction = reports["packet_redaction"]
     packet_redaction_findings = len(packet_redaction.get("findings", []))
-    if status["tool_count"] != 23:
-        failures.append("v1 RC readiness requires tool count 23")
+    if status["tool_count"] != 24:
+        failures.append("v1 RC readiness requires tool count 24")
     if status["latest_implemented_tool"] != "project.risk.summary":
         failures.append("v1 RC readiness requires project.risk.summary as latest tool")
     if status["selected_capability"] != "not selected":

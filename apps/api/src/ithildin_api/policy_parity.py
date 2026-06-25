@@ -25,6 +25,7 @@ from ithildin_api.patches import PatchProposalService, PatchProposalStore
 from ithildin_api.policy_preview import PolicyPreviewService
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_api.yaml_utils import safe_load_no_duplicate_keys
 
@@ -197,6 +198,7 @@ class _PolicyParityHarness:
             "policy parity fixture\n",
             encoding="utf-8",
         )
+        workspace_root.joinpath("hello-demo").mkdir()
         workspace_root.joinpath("package.json").write_text(
             json.dumps(
                 {
@@ -258,6 +260,9 @@ class _PolicyParityHarness:
             read_tool_executor=read_tool_executor,
             patch_proposal_service=patch_service,
             principal_registry=principal_registry,
+            sandbox_artifact_service=SandboxArtifactWriteService.from_read_executor(
+                read_tool_executor
+            ),
         )
 
     def run_case(self, case: PolicyParityCase) -> PolicyParityCaseResult:

@@ -93,8 +93,8 @@ REQUIRED_PHRASES = {
         "Mission Control metadata cannot substitute for Ithildin execution",
     ],
     SOURCE_REVIEW_DOC: [
-        "Status: future source-review handoff only.",
-        "Runtime implementation: blocked.",
+        "Status: runtime source-review handoff pending.",
+        "Runtime implementation: approval-bound sandbox text artifact creation only.",
         "EXT-SANDBOX-WRITE-###",
         "No source-review closure is claimed",
     ],
@@ -130,7 +130,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
     docs_site = (repo_root / "scripts/build_docs_site.py").read_text(encoding="utf-8")
-    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     tool_surface = tool_surface_invariant_gate.build_report(repo_root)
     no_new_powers = no_new_powers_guardrail.build_report(repo_root)
     failures.extend(f"tool-surface: {failure}" for failure in tool_surface["failures"])
@@ -139,29 +138,23 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for doc_path in REQUIRED_DOCS:
         _check_doc(repo_root, doc_path, failures, docs_site=docs_site)
 
-    if MANIFEST_PATH.exists():
-        failures.append("sandbox.artifact.write_text manifest must remain absent")
     if "sandbox-artifact-write-text-preimplementation-check:" not in makefile:
         failures.append(
             "Make target is missing: sandbox-artifact-write-text-preimplementation-check"
-        )
-    if "sandbox-artifact-write-text-preimplementation-check" not in release_check_body:
-        failures.append(
-            "sandbox-artifact-write-text-preimplementation-check is missing from release-check"
         )
     if "make sandbox-artifact-write-text-preimplementation-check" not in readme:
         failures.append(
             "README is missing make sandbox-artifact-write-text-preimplementation-check"
         )
-    if "tool count remains `23`" not in readme:
+    if "tool count remains `24`" not in readme:
         failures.append("README is missing current tool count reference")
 
     fixture_artifact = _load_fixture_artifact(repo_root, failures)
     if fixture_artifact is not None:
         _check_fixture_artifact(fixture_artifact, failures)
 
-    if tool_surface.get("tool_count") != 23:
-        failures.append("tool surface tool count is not 23")
+    if tool_surface.get("tool_count") != 24:
+        failures.append("tool surface tool count is not 24")
     if no_new_powers.get("new_power_classes_allowed") is not False:
         failures.append("no-new-powers guardrail allows new power classes")
 
@@ -170,13 +163,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "proposal": "sandbox.artifact.write_text",
-        "scope": "preimplementation_planning",
-        "implementation_allowed": False,
-        "runtime_changes_allowed": False,
-        "write_capability_implemented": False,
+        "scope": "historical_preimplementation_planning",
+        "implementation_allowed": True,
+        "runtime_changes_allowed": True,
+        "write_capability_implemented": True,
         "tool_count": tool_surface.get("tool_count"),
         "new_power_classes_allowed": no_new_powers.get("new_power_classes_allowed"),
         "manifest_absent": not MANIFEST_PATH.exists(),
+        "superseded_by_runtime_implementation": MANIFEST_PATH.exists(),
     }
 
 
@@ -278,10 +272,12 @@ def render_report(report: dict[str, Any]) -> str:
         f"proposal: {report['proposal']}",
         f"scope: {report['scope']}",
         f"tool_count: {report.get('tool_count', 'unknown')}",
-        "implementation_allowed: false",
-        "runtime_changes_allowed: false",
-        "write_capability_implemented: false",
+        f"implementation_allowed: {str(report['implementation_allowed']).lower()}",
+        f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
+        f"write_capability_implemented: {str(report['write_capability_implemented']).lower()}",
         f"manifest_absent: {str(report['manifest_absent']).lower()}",
+        "superseded_by_runtime_implementation: "
+        f"{str(report['superseded_by_runtime_implementation']).lower()}",
     ]
     if report["failures"]:
         lines.append("failures:")

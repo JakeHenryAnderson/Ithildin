@@ -1,16 +1,17 @@
 # sandbox.artifact.write_text Implementation Decision
 
-Status: implementation boundary approved for a later bounded local-preview sprint.
-Runtime implementation remains absent.
+Status: runtime implementation approved for bounded local-preview use.
+Runtime implementation is present for the single governed tool described here.
 
-This decision authorizes only a future implementation sprint for `sandbox.artifact.write_text` under
-the conditions below. It does not add a manifest, executor, policy rule, API/MCP behavior,
-Mission Control runtime behavior, VM lifecycle control, UI runtime behavior, approval mutation,
-audit mutation, or runtime write behavior.
+This decision authorizes only the bounded `sandbox.artifact.write_text` implementation under the
+conditions below. It adds one manifest, one executor, policy/resource parity, approval-bound
+execution, audit evidence, and MCP exposure through the governed path. It does not add Mission
+Control runtime behavior, VM lifecycle control, UI runtime behavior, automatic host promotion,
+delete/move/chmod/archive behavior, broad filesystem writes, or sandbox orchestration.
 
-## Approved Future Boundary
+## Approved Runtime Boundary
 
-The future implementation may create a single governed tool only if it preserves this boundary:
+The runtime implementation creates a single governed tool and preserves this boundary:
 
 - tool name: `sandbox.artifact.write_text`;
 - risk: `write`;
@@ -18,13 +19,14 @@ The future implementation may create a single governed tool only if it preserves
 - resource type: `sandbox_artifact`;
 - transport: existing governed API/MCP path only;
 - input: closed schema with `workspace_id`, `sandbox_id`, `root`, `relative_path`, `content`,
-  `create_parent_directories`, `overwrite`, and `idempotency_key`;
+  `create_parent_directories`, `overwrite`, `idempotency_key`, and `approval_id` for consuming an
+  already-approved action;
 - output: artifact label, content hash, byte count, approval evidence, and output-policy flags;
 - first demo target: `hello-demo/hello.txt` containing `Hello World`.
 
 ## Required Runtime Constraints
 
-The future implementation must:
+The implementation must:
 
 - write only under an operator-approved sandbox or staging profile;
 - deny direct trusted-host writes;
@@ -35,11 +37,11 @@ The future implementation must:
   `.git`, symlinks, hardlinks, unsupported encodings, binary/NUL content, oversized content, and
   missing sandbox profiles;
 - use atomic write behavior appropriate to the approved path and operation;
-- record recovery/diagnostic evidence for incomplete attempts without automatic repair.
+- record safe execution evidence without automatic repair or host promotion.
 
 ## Required Evidence
 
-The future implementation must bind approval and audit evidence to:
+The implementation binds approval and audit evidence to:
 
 - workspace ID;
 - sandbox ID;
@@ -56,14 +58,18 @@ The future implementation must bind approval and audit evidence to:
 - expiry;
 - idempotency key.
 
+The approval scope stores content hash and action metadata, not the artifact text. The caller must
+resubmit matching content with the approved `approval_id`, and execution fails closed if the content
+hash or other bound action metadata differs.
+
 Responses, audit metadata, diagnostics, and Mission Control handoffs must not include file
 contents, raw host paths, prompts, chain-of-thought, secrets, environment values, shell output,
 VM logs, unrelated listings, sandbox root internals, production identity claims, or compliance
 claims.
 
-## Required Gates Before Runtime Acceptance
+## Runtime Acceptance Gates
 
-A future implementation sprint must add and pass:
+The runtime implementation must pass:
 
 - manifest and manifest-lock update;
 - policy preview/runtime parity for `sandbox_artifact`;

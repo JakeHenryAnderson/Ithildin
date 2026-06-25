@@ -2,7 +2,7 @@
 
 Status: design-only candidate selection.
 
-`project.ci.summary` is selected as the next bounded read-only project-intelligence candidate. The current governed tool count remains `23`, and implementation remains blocked until a later explicit implementation-boundary sprint approves a manifest, executor, policy/runtime resource wiring, MCP exposure, audit coverage, negative transcripts, and source-review handoff.
+`project.ci.summary` is selected as the next bounded read-only project-intelligence candidate. The current governed tool count remains `24`, and implementation remains blocked until a later explicit implementation-boundary sprint approves a manifest, executor, policy/runtime resource wiring, MCP exposure, audit coverage, negative transcripts, and source-review handoff.
 
 ## Selection Rationale
 

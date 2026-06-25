@@ -52,7 +52,7 @@ REQUIRED_DOC_PHRASES = [
     "project.ci.summary",
     "project.release.summary",
     "project.risk.summary",
-    "Tool count: `23`",
+    "Tool count: `24`",
     "Selected candidate: not selected",
     "Selected candidate status: pending selection",
     "Most recent implementation: `project.risk.summary`, approved bounded read-only runtime",

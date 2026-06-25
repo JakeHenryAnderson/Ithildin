@@ -20,7 +20,7 @@ decision, source-review handoff, and local lane closure.
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,
   `project.docs.summary`, `project.language.summary`, `project.config.summary`,
   `project.ci.summary`, `project.release.summary`, and `project.risk.summary`.
-- Current tool count: `23`.
+- Current tool count: `24`.
 - Selected candidate: not selected.
 - Selected candidate status: pending selection.
 - Most recent implemented candidate: `project.risk.summary`.

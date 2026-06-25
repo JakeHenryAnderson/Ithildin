@@ -33,7 +33,7 @@ REQUIRED_COMMANDS = [
 
 REQUIRED_PHRASES = [
     "Status: local-preview operator quickstart for the v1.0 RC path.",
-    "Current governed tool count: `23`",
+    "Current governed tool count: `24`",
     "Zero-To-One Command Path",
     "Manual Review Steps",
     "Evidence Reading Order",
@@ -121,8 +121,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("v1.0 operator quickstart is missing from docs-site inputs")
     if "v1.0 operator quickstart" not in readme:
         failures.append("README is missing v1.0 operator quickstart reference")
-    if tool_surface.get("tool_count") != 23:
-        failures.append("tool surface tool count is not 23")
+    if tool_surface.get("tool_count") != 24:
+        failures.append("tool surface tool count is not 24")
 
     return {
         "schema_version": "1",

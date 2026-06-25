@@ -19,7 +19,7 @@ STATUS_DOC = ROOT / "docs/codex/v1.0-rc-status.md"
 REQUIRED_PHRASES = [
     "Status: canonical local-preview release-candidate status.",
     "Current Truth Table",
-    "Governed tool count | `23`",
+    "Governed tool count | `24`",
     "Latest implemented tool | `project.risk.summary`",
     "Capability expansion | Blocked",
     "Public/security-product positioning | Blocked",
@@ -29,7 +29,7 @@ REQUIRED_PHRASES = [
     "`make release-check` passes from a clean tree",
     "`make review-candidate` passes",
     "`make v1-rc-status-check`",
-    "tool count remains `23`",
+    "tool count remains `24`",
     "public/security-product positioning remains blocked",
     "install, demo, workbench, evidence, and shutdown instructions",
 ]
@@ -99,8 +99,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             if phrase in lowered:
                 failures.append(f"v1.0 RC status doc contains forbidden phrase: {phrase}")
 
-    if tool_surface.get("tool_count") != 23:
-        failures.append("tool surface tool count is not 23")
+    if tool_surface.get("tool_count") != 24:
+        failures.append("tool surface tool count is not 24")
     if doc_rel not in review_docs.REVIEW_DOCS:
         failures.append("v1.0 RC status doc is missing from review docs")
     if doc_rel not in docs_site:

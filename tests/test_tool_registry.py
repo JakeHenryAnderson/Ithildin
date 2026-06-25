@@ -257,6 +257,7 @@ def test_committed_read_tool_manifests_load() -> None:
         "project.risk.summary",
         "project.structure.summary",
         "project.test.summary",
+        "sandbox.artifact.write_text",
     ]
 
 

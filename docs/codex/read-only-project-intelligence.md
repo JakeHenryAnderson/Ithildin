@@ -55,7 +55,7 @@ Expected operator interpretation:
   production hardening claims, compliance evidence, vulnerability scans, dependency scans, or
   public/security-product positioning.
 - `read-only-capability-inventory.md` is the closure map for gates, source-review bundles, policy
-  resources, and current lane status across the full 23-tool surface.
+  resources, and current lane status across the full 24-tool surface.
 
 In the operator workbench story, the family should appear as a quiet inspection layer: a reviewer
 can see registered tools, policy/audit evidence, and safe summaries, then follow each lane's
@@ -78,7 +78,7 @@ Every tool in this family must preserve:
 
 ## Current Position
 
-- Tool count: `23`.
+- Tool count: `24`.
 - Approved read-only project intelligence tools: `git.show.commit_metadata`,
   `git.show.ref_summary`, `git.show.tag_metadata`, `project.manifest.summary`,
   `project.dependency.summary`, `project.structure.summary`, `project.test.summary`,

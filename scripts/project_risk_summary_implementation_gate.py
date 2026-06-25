@@ -30,7 +30,7 @@ REQUIRED_DOC_PHRASES = [
     "no scanner execution",
     "no vulnerability finding generation",
     "no compliance or security assurance claims",
-    "tool count is `23`",
+    "tool count is `24`",
     "runtime manifest is present",
     "runtime implementation is present",
     "workspace_id",

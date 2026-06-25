@@ -5,7 +5,7 @@ This decision records the narrow implemented boundary for `project.release.summa
 exactly one bounded read-only manifest and executor path, with governed MCP exposure, policy
 preview/runtime resource parity, and count-only audit metadata. It does not approve additional
 policy rules, API behavior, UI behavior, approval behavior, broad traversal, execution behavior, or
-future runtime changes outside this fixed surface. Tool count is `23`.
+future runtime changes outside this fixed surface. Tool count is `24`.
 
 `project.release.summary` is approved only as a count-oriented local project release metadata
 capability. It remains a narrow continuation of the read-only local metadata lane, not a new

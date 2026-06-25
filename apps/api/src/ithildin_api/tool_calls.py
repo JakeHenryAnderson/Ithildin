@@ -43,6 +43,11 @@ from ithildin_api.read_tools import ReadToolError, ReadToolExecutor
 from ithildin_api.redaction import RedactionResult, RedactionService, RedactionSummary
 from ithildin_api.registry import ToolRegistry, UnknownToolDenied
 from ithildin_api.resources import resource_from_arguments
+from ithildin_api.sandbox_artifacts import (
+    SANDBOX_ARTIFACT_WRITE_TEXT_TOOL,
+    SandboxArtifactError,
+    SandboxArtifactWriteService,
+)
 from ithildin_api.schema_validation import safe_json_schema_error
 from ithildin_api.telemetry import Telemetry, safe_span_attributes
 
@@ -70,6 +75,7 @@ class GovernedToolCallService:
         principal_registry: PrincipalRegistry | None = None,
         telemetry: Telemetry | None = None,
         agent_run_store: AgentRunStore | None = None,
+        sandbox_artifact_service: SandboxArtifactWriteService | None = None,
     ) -> None:
         self.registry = registry
         self.policy_evaluator = policy_evaluator
@@ -78,6 +84,7 @@ class GovernedToolCallService:
         self.read_tool_executor = read_tool_executor
         self.patch_proposal_service = patch_proposal_service
         self.http_fetch_executor = http_fetch_executor
+        self.sandbox_artifact_service = sandbox_artifact_service
         self.redaction_service = redaction_service or RedactionService()
         self.principal_registry = principal_registry
         self.agent_run_store = agent_run_store
@@ -280,6 +287,110 @@ class GovernedToolCallService:
             )
 
         if policy_decision.decision == PolicyDecisionValue.REQUIRE_APPROVAL:
+            if (
+                self.sandbox_artifact_service is not None
+                and tool_name == SANDBOX_ARTIFACT_WRITE_TEXT_TOOL
+            ):
+                if "approval_id" in arguments:
+                    return self._execute_approved_sandbox_artifact_write(
+                        request_id=request_id,
+                        principal=principal,
+                        tool_name=tool_name,
+                        resource=resource,
+                        input_hash=request_hash,
+                        approval_id=_string_argument(arguments, "approval_id"),
+                        arguments=arguments,
+                        manifest_hash=registered_tool.manifest_hash,
+                        manifest_version=manifest.version,
+                        tool_input_schema_hash=sha256_digest(manifest.input_schema),
+                        policy_engine=self.policy_evaluator.engine_name,
+                        policy_hash=self.policy_evaluator.policy_hash,
+                        policy_version=policy_decision.policy_version,
+                        policy_document_version=self.policy_evaluator.document_version,
+                        matched_rules=policy_decision.matched_rules,
+                        redaction_keys=redaction_keys,
+                        agent_run=agent_run,
+                    )
+                approval_expires_at = datetime.now(UTC) + self.approval_service.default_expiry
+                try:
+                    one_time_scope = self.sandbox_artifact_service.approval_scope(
+                        arguments,
+                        manifest_hash=registered_tool.manifest_hash,
+                        manifest_version=manifest.version,
+                        tool_input_schema_hash=sha256_digest(manifest.input_schema),
+                        policy_engine=self.policy_evaluator.engine_name,
+                        policy_hash=self.policy_evaluator.policy_hash,
+                        policy_version=policy_decision.policy_version,
+                        policy_document_version=self.policy_evaluator.document_version,
+                        matched_rules=policy_decision.matched_rules,
+                        requesting_principal=principal,
+                        request_hash=request_hash,
+                        expires_at=approval_expires_at,
+                    )
+                except SandboxArtifactError as exc:
+                    return GovernedToolCallResult(
+                        status="denied",
+                        request_id=request_id,
+                        tool_name=tool_name,
+                        content=self._redact_content(
+                            {"reason": str(exc)},
+                            extra_keys=redaction_keys,
+                        ).value,
+                        is_error=True,
+                    )
+                approval = self.approval_service.create_pending(
+                    CreateApprovalInput(
+                        request_id=request_id,
+                        request_hash=request_hash,
+                        principal=principal,
+                        tool_name=tool_name,
+                        resource=resource,
+                        summary=f"Write sandbox artifact {one_time_scope['artifact_label']}",
+                        one_time_scope=one_time_scope,
+                        expires_at=approval_expires_at,
+                        metadata=cast(JsonObject, {
+                            "policy_reason": policy_decision.reason,
+                            "policy_engine": self.policy_evaluator.engine_name,
+                            "policy_hash": self.policy_evaluator.policy_hash,
+                            "policy_version": policy_decision.policy_version,
+                            "policy_document_version": self.policy_evaluator.document_version,
+                            "matched_rules": policy_decision.matched_rules,
+                            "manifest_hash": registered_tool.manifest_hash,
+                            "manifest_version": manifest.version,
+                            "tool_input_schema_hash": sha256_digest(manifest.input_schema),
+                            "approval_scope_hash": sha256_digest(one_time_scope),
+                            "workspace_id": one_time_scope["workspace_id"],
+                            "sandbox_id": one_time_scope["sandbox_id"],
+                            "artifact_label": one_time_scope["artifact_label"],
+                            "content_sha256": one_time_scope["content_sha256"],
+                            "content_bytes": one_time_scope["content_bytes"],
+                            **_agent_run_metadata(agent_run),
+                        }),
+                    )
+                )
+                content = self._redact_content(
+                    {
+                        "approval_id": approval.approval_id,
+                        "request_id": request_id,
+                        "tool_name": tool_name,
+                        "workspace_id": one_time_scope["workspace_id"],
+                        "sandbox_id": one_time_scope["sandbox_id"],
+                        "artifact_label": one_time_scope["artifact_label"],
+                        "content_sha256": one_time_scope["content_sha256"],
+                        "content_bytes": one_time_scope["content_bytes"],
+                        "summary": approval.summary,
+                        "expires_at": approval.expires_at.isoformat(),
+                        "policy_reason": policy_decision.reason,
+                    },
+                    extra_keys=redaction_keys,
+                ).value
+                return GovernedToolCallResult(
+                    status="approval_required",
+                    request_id=request_id,
+                    tool_name=tool_name,
+                    content=content,
+                )
+
             if self.patch_proposal_service is not None and tool_name == PATCH_APPLY_TOOL:
                 if "approval_id" in arguments:
                     return self._execute_approved_patch(
@@ -885,6 +996,135 @@ class GovernedToolCallService:
             request_id=request_id,
             tool_name=tool_name,
             content=completed_redacted.value,
+        )
+
+    def _execute_approved_sandbox_artifact_write(
+        self,
+        *,
+        request_id: str,
+        principal: JsonObject,
+        tool_name: str,
+        resource: JsonObject,
+        input_hash: str,
+        approval_id: str,
+        arguments: JsonObject,
+        manifest_hash: str,
+        manifest_version: str,
+        tool_input_schema_hash: str,
+        policy_engine: str,
+        policy_hash: str,
+        policy_version: str,
+        policy_document_version: str,
+        matched_rules: list[str],
+        redaction_keys: set[str] | None = None,
+        agent_run: AgentRunContext | None = None,
+    ) -> GovernedToolCallResult:
+        if self.sandbox_artifact_service is None:
+            return GovernedToolCallResult(
+                status="denied",
+                request_id=request_id,
+                tool_name=tool_name,
+                content=self._redact_content(
+                    {"reason": "sandbox artifact writes are not configured"},
+                    extra_keys=redaction_keys,
+                ).value,
+                is_error=True,
+            )
+
+        self._audit_execution(
+            event_type=AuditEventType.TOOL_EXECUTION_STARTED,
+            request_id=request_id,
+            principal=principal,
+            tool_name=tool_name,
+            resource=resource,
+            input_hash=input_hash,
+            metadata={"executor": "sandbox_artifact_write", "approval_id": approval_id},
+            agent_run=agent_run,
+        )
+        try:
+            with self.telemetry.start_span(
+                "ithildin.tool.execute",
+                safe_span_attributes(tool_name=tool_name, executor="sandbox_artifact_write"),
+            ):
+                content = self.sandbox_artifact_service.apply_approved(
+                    approval_service=self.approval_service,
+                    approval_id=approval_id,
+                    arguments=arguments,
+                    expected_manifest_hash=manifest_hash,
+                    expected_manifest_version=manifest_version,
+                    expected_tool_input_schema_hash=tool_input_schema_hash,
+                    expected_policy_engine=policy_engine,
+                    expected_policy_hash=policy_hash,
+                    expected_policy_version=policy_version,
+                    expected_policy_document_version=policy_document_version,
+                    expected_matched_rules=matched_rules,
+                    expected_principal=principal,
+                )
+        except (ApprovalError, SandboxArtifactError) as exc:
+            redacted = self._redact_content(
+                {"reason": str(exc)},
+                extra_keys=redaction_keys,
+            )
+            self._audit_execution(
+                event_type=AuditEventType.TOOL_EXECUTION_FAILED,
+                request_id=request_id,
+                principal=principal,
+                tool_name=tool_name,
+                resource=resource,
+                input_hash=input_hash,
+                metadata=_with_redaction_summary(
+                    {
+                        "executor": "sandbox_artifact_write",
+                        "approval_id": approval_id,
+                        "approval_binding_verified": False,
+                        "reason": str(exc),
+                    },
+                    redacted.summary,
+                ),
+                agent_run=agent_run,
+            )
+            return GovernedToolCallResult(
+                status="denied",
+                request_id=request_id,
+                tool_name=tool_name,
+                content=redacted.value,
+                is_error=True,
+            )
+
+        redacted = self._redact_content(content, extra_keys=redaction_keys)
+        self._audit_execution(
+            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+            request_id=request_id,
+            principal=principal,
+            tool_name=tool_name,
+            resource=resource,
+            input_hash=input_hash,
+            metadata=_with_redaction_summary(
+                {
+                    "executor": "sandbox_artifact_write",
+                    "approval_id": approval_id,
+                    "approval_binding_verified": True,
+                    "workspace_id": content.get("workspace_id"),
+                    "sandbox_id": content.get("sandbox_id"),
+                    "artifact_label": content.get("artifact_label"),
+                    "content_sha256": content.get("content_sha256"),
+                    "content_bytes": content.get("content_bytes"),
+                    "status": content.get("status"),
+                    "parent_created": content.get("parent_created"),
+                    "manifest_hash": manifest_hash,
+                    "manifest_version": manifest_version,
+                    "policy_hash": policy_hash,
+                    "policy_version": policy_version,
+                },
+                redacted.summary,
+            ),
+            agent_run=agent_run,
+        )
+        return GovernedToolCallResult(
+            status="completed",
+            request_id=request_id,
+            tool_name=tool_name,
+            content=redacted.value,
         )
 
     def _redact_content(
