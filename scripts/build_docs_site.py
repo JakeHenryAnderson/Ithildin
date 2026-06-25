@@ -212,6 +212,7 @@ DEFAULT_DOCS = [
     "docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md",
     "docs/codex/sandbox-artifact-write-text-fixture-plan.md",
     "docs/codex/sandbox-artifact-write-text-negative-transcripts.md",
+    "docs/codex/sandbox-artifact-observed-demo.md",
     "docs/codex/sandbox-artifact-write-text-source-review.md",
     "docs/codex/sandbox-artifact-write-text-implementation-decision.md",
     "docs/codex/v3-sandbox-artifact-write-text-internal-review.md",

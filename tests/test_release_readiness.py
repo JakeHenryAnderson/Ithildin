@@ -161,6 +161,8 @@ from scripts import (
     review_run_manifest_refresh,
     reviewer_artifact_manifest,
     reviewer_findings,
+    sandbox_artifact_observed_demo,
+    sandbox_artifact_observed_demo_check,
     sandbox_artifact_write_text_implementation_gate,
     sandbox_artifact_write_text_negative_transcripts,
     sandbox_artifact_write_text_preimplementation_check,
@@ -12808,6 +12810,53 @@ def test_sandbox_artifact_write_text_negative_transcripts_are_observed(
     assert "Existing Non-UTF-8 Target Denial" in transcript
     assert "Observed status: `denied`" in transcript
     assert "redacted fixture text" not in transcript
+
+
+def test_sandbox_artifact_observed_demo_is_wired(tmp_path: Path) -> None:
+    report = sandbox_artifact_observed_demo_check.build_report(Path.cwd())
+    output_dir = sandbox_artifact_observed_demo.build_demo(tmp_path / "sandbox-observed")
+    payload = json.loads(
+        output_dir.joinpath(sandbox_artifact_observed_demo.JSON_NAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    transcript = output_dir.joinpath(sandbox_artifact_observed_demo.TRANSCRIPT_NAME).read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert payload["status"] == "observed_local_fixture"
+    assert payload["tool_name"] == "sandbox.artifact.write_text"
+    assert payload["governed_tool_calls_performed"] is True
+    assert payload["request"]["status"] == "approval_required"
+    assert payload["approval"]["status"] == "executed"
+    assert payload["approval"]["raw_content_stored_in_scope"] is False
+    assert payload["execution"]["status"] == "completed"
+    assert payload["artifact"]["present"] is True
+    assert payload["artifact"]["content_matches_execution_hash"] is True
+    assert payload["audit"]["verification"]["valid"] is True
+    assert "Hello World" not in transcript
+    assert "host promotion performed: `false`" in transcript.lower()
+    assert "make sandbox-artifact-observed-demo" in readme
+    assert "make sandbox-artifact-observed-demo-check" in readme
+    assert "sandbox-artifact-observed-demo:" in makefile
+    assert "sandbox-artifact-observed-demo-check:" in makefile
+    assert "sandbox-artifact-observed-demo-check" in release_check_body
+    assert "$(MAKE) sandbox-artifact-observed-demo" in review_candidate_body
+    assert "sandbox-artifact-observed-demo-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-artifact-observed-demo" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/sandbox-artifact-observed-demo.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/sandbox-artifact-observed-demo.md" in docs_site
 
 
 def test_sandbox_artifact_write_text_source_review_bundle_is_wired(

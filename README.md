@@ -241,6 +241,11 @@ checked with `make control-mapping-readiness`.
   runtime implementation for `sandbox.artifact.write_text`.
 - `make sandbox-artifact-write-text-negative-transcripts` - generate observed local fixture denial
   transcripts for the sandbox artifact write path.
+- `make sandbox-artifact-observed-demo` - generate an observed local fixture approval/execution
+  packet for `sandbox.artifact.write_text` without Mission Control runtime behavior, VM/container
+  lifecycle, shell execution, or host promotion.
+- `make sandbox-artifact-observed-demo-check` - validate the observed demo packet shape, docs
+  wiring, and no-new-powers boundary.
 - `make sandbox-artifact-write-text-source-review-bundle` - generate the focused source-review
   handoff packet for the sandbox artifact write path.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
@@ -610,6 +615,9 @@ fixture and denial expectations are in
 [docs/codex/sandbox-artifact-write-text-fixture-plan.md](docs/codex/sandbox-artifact-write-text-fixture-plan.md)
 and
 [docs/codex/sandbox-artifact-write-text-negative-transcripts.md](docs/codex/sandbox-artifact-write-text-negative-transcripts.md);
+observed local fixture approval/execution evidence is in
+[docs/codex/sandbox-artifact-observed-demo.md](docs/codex/sandbox-artifact-observed-demo.md)
+and generated with `make sandbox-artifact-observed-demo`;
 the future source-review lane is
 [docs/codex/sandbox-artifact-write-text-source-review.md](docs/codex/sandbox-artifact-write-text-source-review.md).
 Generate observed denial transcripts with `make sandbox-artifact-write-text-negative-transcripts`;

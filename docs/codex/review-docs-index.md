@@ -228,6 +228,7 @@ externally closed.
 - [Implementation-Planning Packet: sandbox.artifact.write_text](capability-implementation-plans/sandbox-artifact-write-text.md)
 - [sandbox.artifact.write_text Fixture Plan](sandbox-artifact-write-text-fixture-plan.md)
 - [sandbox.artifact.write_text Negative Transcript Plan](sandbox-artifact-write-text-negative-transcripts.md)
+- [Sandbox Artifact Observed Demo](sandbox-artifact-observed-demo.md)
 - [sandbox.artifact.write_text Source Review Handoff](sandbox-artifact-write-text-source-review.md)
 - [sandbox.artifact.write_text Implementation Decision](sandbox-artifact-write-text-implementation-decision.md)
 - [sandbox.artifact.write_text Internal Source Review](v3-sandbox-artifact-write-text-internal-review.md)
