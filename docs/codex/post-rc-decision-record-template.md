@@ -18,6 +18,7 @@ Decision record status: `draft | approved_for_planning | no_go | superseded`.
 
 See [Post-RC Decision Record Examples](post-rc-decision-record-examples.md) for concrete
 planning-only and no-go records.
+See [Post-RC Decision Register](post-rc-decision-register.md) for the current lane statuses.
 
 ## Decision Header
 

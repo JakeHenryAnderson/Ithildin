@@ -81,6 +81,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "post-rc-decision-gate",
     "post-rc-decision-record-template-check",
     "post-rc-decision-record-examples-check",
+    "post-rc-decision-register-check",
     "mission-control-display-integration-proposal-check",
     "mission-control-display-review-packet-check",
     "mission-control-handoff-schema-contract-check",

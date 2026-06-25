@@ -50,6 +50,8 @@ field layout.
 Use the [Post-RC Decision Record Examples](post-rc-decision-record-examples.md) to compare new
 Mission Control, sandbox/VM, or post-freeze capability decisions against known planning-only and
 no-go shapes.
+Use the [Post-RC Decision Register](post-rc-decision-register.md) as the current lane status source
+of truth.
 
 ## Lanes Requiring This Gate
 

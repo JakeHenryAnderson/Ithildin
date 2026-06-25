@@ -350,6 +350,8 @@ checked with `make control-mapping-readiness`.
   template for future post-freeze lane decisions.
 - `make post-rc-decision-record-examples-check` - validate example post-RC decision records for
   Mission Control display planning, sandbox/VM no-go, and post-freeze capability no-go lanes.
+- `make post-rc-decision-register-check` - validate the current post-RC decision register across
+  planning-only, no-go, and blocked enterprise-readiness lanes.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -701,6 +703,10 @@ Use the example decision records at
 checked with `make post-rc-decision-record-examples-check`, as the baseline shape for
 Mission Control planning-only, sandbox/VM no-go, and post-freeze capability no-go decisions; these
 post-RC decision record examples are sample records, not runtime approvals.
+Use the post-RC decision register at
+[docs/codex/post-rc-decision-register.md](docs/codex/post-rc-decision-register.md), checked with
+`make post-rc-decision-register-check`, as the current source of truth for which enterprise lanes
+are planning-only, no-go, or still blocked.
 The Mission Control display integration proposal is
 [docs/codex/mission-control-display-integration-proposal.md](docs/codex/mission-control-display-integration-proposal.md)
 and is checked with `make mission-control-display-integration-proposal-check`; it keeps the first

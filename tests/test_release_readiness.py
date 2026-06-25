@@ -103,6 +103,7 @@ from scripts import (
     post_rc_decision_gate,
     post_rc_decision_record_examples_check,
     post_rc_decision_record_template_check,
+    post_rc_decision_register_check,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -1104,6 +1105,84 @@ def test_post_rc_decision_record_examples_are_wired() -> None:
     assert "docs/codex/post-rc-decision-record-examples.md" in docs_site
     assert "docs/codex/post-rc-decision-record-examples.md" in review_docs.REVIEW_DOCS
     assert "Post-RC Decision Record Examples" in review_index
+
+
+def test_post_rc_decision_register_is_wired() -> None:
+    report = post_rc_decision_register_check.build_report(Path.cwd())
+    doc = Path("docs/codex/post-rc-decision-register.md").read_text(encoding="utf-8")
+    normalized_doc = " ".join(doc.split())
+    gate_doc = Path("docs/codex/post-rc-decision-gate.md").read_text(encoding="utf-8")
+    template_doc = Path("docs/codex/post-rc-decision-record-template.md").read_text(
+        encoding="utf-8"
+    )
+    examples_doc = Path("docs/codex/post-rc-decision-record-examples.md").read_text(
+        encoding="utf-8"
+    )
+    runway_doc = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["registered_decision_count"] == 5
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_live_preflight_allowed"] is False
+    assert report["new_capability_runtime_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    for phrase in [
+        "Status: current register for post-v1.0 RC boundary decisions.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "PRD-MC-DISPLAY-001",
+        "Mission Control display importer continuation",
+        "Prepare display-only schema, packet, static fixtures, and source-review handoff",
+        "runtime behavior remains blocked",
+        "PRD-SANDBOX-PREFLIGHT-001",
+        "Live sandbox/VM preflight",
+        "Continue static fixture evidence and source-review disposition only",
+        "live runtime behavior remains blocked",
+        "PRD-CAPABILITY-001",
+        "New governed tool after RC freeze",
+        "Candidate selection and design packet only",
+        "no new governed tool is approved by this register",
+        "PRD-TRUSTED-HOST-001",
+        "Trusted-host promotion lane",
+        "trusted-host promotion remains blocked",
+        "PRD-SIEM-EXPORT-001",
+        "SIEM-shaped export adapter lane",
+        "SIEM adapter work remains blocked",
+        "make post-rc-decision-register-check",
+    ]:
+        assert phrase in normalized_doc
+    for forbidden in [
+        "capability expansion allowed now",
+        "Mission Control may execute",
+        "trusted-host promotion is implemented",
+        "compliance automation approved",
+        "public security product approved",
+        "sandbox orchestration is implemented",
+        "local model invocation is implemented",
+        "SIEM adapter is implemented",
+    ]:
+        assert forbidden not in doc
+    assert "Post-RC Decision Register" in gate_doc
+    assert "Post-RC Decision Register" in template_doc
+    assert "Post-RC Decision Register" in examples_doc
+    assert "post-rc-decision-register.md" in runway_doc
+    assert "post-rc-decision-register-check:" in makefile
+    assert "post-rc-decision-register-check" in release_check_body
+    assert "make post-rc-decision-register-check" in readme
+    assert "post-RC decision register" in readme
+    assert "docs/codex/post-rc-decision-register.md" in docs_site
+    assert "docs/codex/post-rc-decision-register.md" in review_docs.REVIEW_DOCS
+    assert "Post-RC Decision Register" in review_index
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

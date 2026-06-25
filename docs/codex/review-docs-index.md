@@ -230,6 +230,7 @@ externally closed.
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)
 - [Post-RC Decision Record Examples](post-rc-decision-record-examples.md)
+- [Post-RC Decision Register](post-rc-decision-register.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
 - [Mission Control Handoff Schema Contract](mission-control-handoff-schema-contract.md)
 - [Mission Control Handoff Negative Fixtures](mission-control-handoff-negative-fixtures.md)

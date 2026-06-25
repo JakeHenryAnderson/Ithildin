@@ -231,12 +231,16 @@ CLI fixture runner, source-review packet, and internal source-review pass also n
 The current enterprise-path action is external/source review disposition of the static preflight
 lane, followed by a separate post-RC decision before any live VM/container inspection, local-model
 invocation, Mission Control runtime importer, sandbox orchestration, or trusted-host promotion work.
+The current lane statuses are tracked in
+[post-rc-decision-register.md](post-rc-decision-register.md), which keeps Mission Control display
+planning separate from no-go runtime lanes.
 
 Current status anchors:
 
 - static preflight CLI fixture runner exists;
 - static preflight lane remains local-preview fixture evidence only;
 - external/source review disposition is still required before any live sandbox/VM lane.
+- post-RC decision register validation is required before any frozen lane moves.
 
 The sandbox/VM worker proof-of-concept boundary packet remains the boundary handoff lineage; it
 prepared review of profile/preflight planning without enabling runtime sandbox control.

@@ -14,6 +14,9 @@ Current governed tool count: `24`.
 
 Current selected capability: `not selected`.
 
+The current active lane statuses are tracked in the
+[Post-RC Decision Register](post-rc-decision-register.md).
+
 ## Example PRD-MC-DISPLAY-001
 
 - Decision ID: `PRD-MC-DISPLAY-001`
