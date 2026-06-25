@@ -36,6 +36,7 @@ Current selected capability: `not selected`.
 | --- | --- | --- | --- | --- | --- |
 | `PRD-MC-DISPLAY-001` | Mission Control display importer continuation | `approved_for_planning` | Prepare display-only schema, packet, static fixtures, and source-review handoff | `false` | Mission Control-side review packet and implementation plan before runtime importer work |
 | `PRD-SANDBOX-PREFLIGHT-001` | Live sandbox/VM preflight | `no_go` | Continue static fixture evidence and source-review disposition only | `false` | Separate live-preflight decision record, implementation plan, and external/source review |
+| `PRD-SANDBOX-LIVE-POC-001` | Live sandbox/VM worker proof of concept | `no_go` | Maintain the decision-intake packet and wait for favorable `ERG-003` disposition | `false` | Favorable static-preflight disposition, live POC decision record, implementation plan, cleanup/failure transcripts, and external/source review |
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
 | `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, negative transcripts, and external/source review |
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema and offline export design only | `false` | Delivery model, redaction policy, compatibility tests, and external/source review |
@@ -63,6 +64,20 @@ Current selected capability: `not selected`.
   preflight runner behavior, production identity, and remote control-plane behavior.
 - Current implementation posture: live runtime behavior remains blocked.
 - Current warning language: Ithildin does not start, inspect, or manage VMs/containers in this lane.
+
+### PRD-SANDBOX-LIVE-POC-001
+
+- Status: `no_go`.
+- Current allowed scope: decision-intake evidence in
+  `sandbox-vm-live-poc-decision-intake.md`, favorable `ERG-003` disposition tracking,
+  decision-record drafting, docs, review packets, and operator warnings.
+- Current forbidden scope: live VM/container inspection, local model invocation, Mission Control
+  runtime behavior, sandbox orchestration, SSH, shell, Docker socket access, Kubernetes tools,
+  browser automation, arbitrary HTTP, broad filesystem writes, trusted-host promotion, runtime
+  profile loading, production identity, SIEM adapters, and public/security-product positioning.
+- Current implementation posture: live worker runtime behavior remains blocked.
+- Current warning language: Ithildin does not run a local model, inspect a live VM/container,
+  orchestrate a sandbox, or promote sandbox artifacts in this lane.
 
 ### PRD-CAPABILITY-001
 

@@ -105,6 +105,56 @@ The current active lane statuses are tracked in the
   this decision.
 - Go/no-go outcome: no-go for live runtime behavior.
 
+## Example PRD-SANDBOX-LIVE-POC-001
+
+- Decision ID: `PRD-SANDBOX-LIVE-POC-001`
+- Decision record status: `no_go`
+- Target lane: live sandbox/VM worker proof of concept.
+- Trigger: operator wants to run a local model or agent inside an operator-managed VM/container and
+  compare Ithildin evidence with sandbox/workshop evidence.
+- Requested change: plan or run a live worker POC that invokes a local model inside a VM/container,
+  observes sandbox posture, and prepares artifacts for later host-side review.
+- Current boundary being changed: live worker execution, local model invocation, and sandbox run
+  evidence would move beyond static fixture evidence and the current local-preview runtime boundary.
+- Allowed scope: the decision-intake packet in
+  `sandbox-vm-live-poc-decision-intake.md`, favorable `ERG-003` disposition tracking, decision-record
+  drafting, docs, review packets, and operator warnings.
+- Explicitly forbidden scope: live VM/container inspection, local model invocation, Mission Control
+  runtime behavior, sandbox orchestration, SSH, shell, Docker socket access, Kubernetes tools,
+  browser automation, arbitrary HTTP, broad filesystem writes, trusted-host promotion, runtime
+  profile loading, production identity, SIEM adapters, and public/security-product positioning.
+- Runtime surfaces touched: none.
+- Runtime surfaces not touched: manifests, executors, policy/rules, API/MCP behavior, approval/audit
+  logic, UI runtime behavior, Mission Control runtime behavior, sandbox/VM runtime behavior, local
+  model invocation, trusted-host promotion, SIEM/telemetry, identity, storage, and remote services.
+- Tool count impact: none; remains `24`.
+- Manifest impact: none.
+- Policy/rule impact: none.
+- API/MCP impact: none.
+- UI runtime impact: none.
+- Mission Control impact: display-only boundary discussion only.
+- Sandbox/VM impact: decision-intake evidence only.
+- Local model impact: none; invocation remains blocked.
+- Trusted-host promotion impact: none.
+- SIEM/telemetry impact: none.
+- Identity/storage/remote impact: none.
+- Compliance/public-positioning impact: none.
+- Required source-review or external-review evidence: favorable `ERG-003` disposition and a separate
+  source/external review before any implementation plan may be proposed.
+- Required implementation plan: missing; live worker behavior remains blocked.
+- Required tests: decision-intake check, post-RC decision gates, packet redaction, and future
+  negative transcripts before any live implementation planning.
+- Required gates: `make sandbox-vm-live-poc-decision-intake-check`,
+  `make post-rc-decision-gate`, `make post-rc-decision-record-template-check`, and
+  `make post-rc-decision-record-examples-check`.
+- Required packet artifacts: sandbox/VM live POC decision intake and a future focused review packet.
+- Required negative transcripts: cleanup transcript and failure transcript are required before
+  implementation planning, not created by this no-go example.
+- Required accepted-risk update: required before live worker implementation planning.
+- Required operator warning language: Ithildin does not run a local model, inspect a live
+  VM/container, orchestrate a sandbox, or promote sandbox artifacts in this decision.
+- Go/no-go outcome: no-go for live worker runtime behavior; go only for decision-intake evidence.
+
 ## Example PRD-CAPABILITY-001
 
 - Decision ID: `PRD-CAPABILITY-001`

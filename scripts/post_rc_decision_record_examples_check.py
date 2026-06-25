@@ -42,6 +42,12 @@ REQUIRED_PHRASES = [
     "Kubernetes tools",
     "runtime preflight runner behavior",
     "no-go for live runtime behavior.",
+    "PRD-SANDBOX-LIVE-POC-001",
+    "live sandbox/VM worker proof of concept",
+    "sandbox-vm-live-poc-decision-intake.md",
+    "favorable `ERG-003` disposition tracking",
+    "cleanup transcript and failure transcript",
+    "no-go for live worker runtime behavior; go only for decision-intake evidence.",
     "PRD-CAPABILITY-001",
     "new governed tool after the v1.0 RC freeze",
     "manifest addition",
@@ -131,7 +137,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if "Post-RC Decision Record Examples" not in review_index:
         failures.append("review docs index is missing post-RC decision record examples")
 
-    for example_id in ["PRD-MC-DISPLAY-001", "PRD-SANDBOX-PREFLIGHT-001", "PRD-CAPABILITY-001"]:
+    for example_id in [
+        "PRD-MC-DISPLAY-001",
+        "PRD-SANDBOX-PREFLIGHT-001",
+        "PRD-SANDBOX-LIVE-POC-001",
+        "PRD-CAPABILITY-001",
+    ]:
         if text.count(example_id) < 2:
             failures.append(f"post-RC decision record example is under-referenced: {example_id}")
 

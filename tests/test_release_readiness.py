@@ -1219,10 +1219,11 @@ def test_post_rc_decision_register_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["registered_decision_count"] == 5
+    assert report["registered_decision_count"] == 6
     assert report["mission_control_planning_allowed"] is True
     assert report["mission_control_runtime_allowed"] is False
     assert report["sandbox_live_preflight_allowed"] is False
+    assert report["sandbox_live_worker_poc_allowed"] is False
     assert report["new_capability_runtime_allowed"] is False
     assert report["trusted_host_promotion_allowed"] is False
     assert report["siem_adapter_allowed"] is False
@@ -1240,6 +1241,10 @@ def test_post_rc_decision_register_is_wired() -> None:
         "Live sandbox/VM preflight",
         "Continue static fixture evidence and source-review disposition only",
         "live runtime behavior remains blocked",
+        "PRD-SANDBOX-LIVE-POC-001",
+        "Live sandbox/VM worker proof of concept",
+        "Maintain the decision-intake packet and wait for favorable `ERG-003` disposition",
+        "live worker runtime behavior remains blocked",
         "PRD-CAPABILITY-001",
         "New governed tool after RC freeze",
         "Candidate selection and design packet only",

@@ -36,6 +36,10 @@ REQUIRED_PHRASES = [
     "Live sandbox/VM preflight",
     "Continue static fixture evidence and source-review disposition only",
     "live runtime behavior remains blocked",
+    "PRD-SANDBOX-LIVE-POC-001",
+    "Live sandbox/VM worker proof of concept",
+    "Maintain the decision-intake packet and wait for favorable `ERG-003` disposition",
+    "live worker runtime behavior remains blocked",
     "PRD-CAPABILITY-001",
     "New governed tool after RC freeze",
     "Candidate selection and design packet only",
@@ -67,6 +71,7 @@ FORBIDDEN_PHRASES = [
 DECISION_IDS = [
     "PRD-MC-DISPLAY-001",
     "PRD-SANDBOX-PREFLIGHT-001",
+    "PRD-SANDBOX-LIVE-POC-001",
     "PRD-CAPABILITY-001",
     "PRD-TRUSTED-HOST-001",
     "PRD-SIEM-EXPORT-001",
@@ -153,6 +158,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "mission_control_planning_allowed": True,
         "mission_control_runtime_allowed": False,
         "sandbox_live_preflight_allowed": False,
+        "sandbox_live_worker_poc_allowed": False,
         "new_capability_runtime_allowed": False,
         "trusted_host_promotion_allowed": False,
         "siem_adapter_allowed": False,
@@ -173,6 +179,8 @@ def render_report(report: dict[str, Any]) -> str:
         "mission_control_runtime_allowed: "
         f"{str(report['mission_control_runtime_allowed']).lower()}",
         f"sandbox_live_preflight_allowed: {str(report['sandbox_live_preflight_allowed']).lower()}",
+        "sandbox_live_worker_poc_allowed: "
+        f"{str(report['sandbox_live_worker_poc_allowed']).lower()}",
         f"new_capability_runtime_allowed: {str(report['new_capability_runtime_allowed']).lower()}",
         f"trusted_host_promotion_allowed: {str(report['trusted_host_promotion_allowed']).lower()}",
         f"siem_adapter_allowed: {str(report['siem_adapter_allowed']).lower()}",
