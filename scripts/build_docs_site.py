@@ -214,6 +214,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-artifact-write-text-negative-transcripts.md",
     "docs/codex/sandbox-artifact-write-text-source-review.md",
     "docs/codex/sandbox-artifact-write-text-implementation-decision.md",
+    "docs/codex/v3-sandbox-artifact-write-text-internal-review.md",
     "docs/codex/sandbox-promotion-evidence-contract.md",
     "docs/codex/v3-readiness-debt-register.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",

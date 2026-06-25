@@ -335,7 +335,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert report["public_security_product_positioning_allowed"] is False
     assert status_report["valid"] is True
     assert status_report["tool_count"] == 24
-    assert status_report["latest_implemented_tool"] == "project.risk.summary"
+    assert status_report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert status_report["selected_capability"] == "not selected"
     assert status_report["capability_expansion_allowed"] is False
     assert status_report["public_security_product_positioning_allowed"] is False
@@ -356,7 +356,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert assurance_report["capability_expansion_allowed"] is False
     assert readiness_report["valid"] is True
     assert readiness_report["tool_count"] == 24
-    assert readiness_report["latest_implemented_tool"] == "project.risk.summary"
+    assert readiness_report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert readiness_report["selected_capability"] == "not selected"
     assert readiness_report["packet_redaction_findings"] == 0
     assert readiness_report["capability_expansion_allowed"] is False
@@ -374,7 +374,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     for phrase in [
         "Status: canonical local-preview release-candidate status.",
         "Governed tool count | `24`",
-        "Latest implemented tool | `project.risk.summary`",
+        "Latest implemented tool | `sandbox.artifact.write_text`",
         "Capability expansion | Blocked",
         "Public/security-product positioning | Blocked",
         "v1.0 RC Exit Criteria",
@@ -435,7 +435,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
         "make release-check",
         "make review-candidate",
         "governed tool count remains `24`",
-        "latest implemented tool remains `project.risk.summary`",
+        "latest implemented tool remains `sandbox.artifact.write_text`",
         "no next capability is selected",
         "capability expansion remains blocked",
         "public/security-product positioning remains blocked",
@@ -12720,6 +12720,7 @@ def test_sandbox_artifact_write_text_preimplementation_is_historical() -> None:
         "docs/codex/sandbox-artifact-write-text-fixture-plan.md",
         "docs/codex/sandbox-artifact-write-text-negative-transcripts.md",
         "docs/codex/sandbox-artifact-write-text-source-review.md",
+        "docs/codex/v3-sandbox-artifact-write-text-internal-review.md",
     ]:
         assert path in review_docs.REVIEW_DOCS
         assert path in docs_site
@@ -12769,6 +12770,24 @@ def test_sandbox_artifact_write_text_implementation_gate_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "docs/codex/sandbox-artifact-write-text-implementation-decision.md" in docs_site
+    assert (
+        "docs/codex/v3-sandbox-artifact-write-text-internal-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/v3-sandbox-artifact-write-text-internal-review.md" in docs_site
+    internal_review = Path(
+        "docs/codex/v3-sandbox-artifact-write-text-internal-review.md"
+    ).read_text(encoding="utf-8")
+    finding = Path(
+        "docs/codex/findings/xh-sandbox-write-001-filesystem-race-residual.md"
+    ).read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    assert "XH-SANDBOX-WRITE-001" in internal_review
+    assert "Disposition: deferred" in finding
+    assert "sandbox.artifact.write_text source-review lane" in matrix
+    assert "internal reviewed; pending external/source disposition" in matrix
 
 
 def test_sandbox_artifact_write_text_negative_transcripts_are_observed(

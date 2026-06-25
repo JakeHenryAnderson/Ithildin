@@ -230,6 +230,7 @@ externally closed.
 - [sandbox.artifact.write_text Negative Transcript Plan](sandbox-artifact-write-text-negative-transcripts.md)
 - [sandbox.artifact.write_text Source Review Handoff](sandbox-artifact-write-text-source-review.md)
 - [sandbox.artifact.write_text Implementation Decision](sandbox-artifact-write-text-implementation-decision.md)
+- [sandbox.artifact.write_text Internal Source Review](v3-sandbox-artifact-write-text-internal-review.md)
 - [Sandbox Promotion Evidence Contract](sandbox-promotion-evidence-contract.md)
 - [v3 Readiness Debt Register](v3-readiness-debt-register.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)

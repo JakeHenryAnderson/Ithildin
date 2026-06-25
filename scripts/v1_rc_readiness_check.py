@@ -40,7 +40,7 @@ REQUIRED_PHRASES = [
     "make release-check",
     "make review-candidate",
     "governed tool count remains `24`",
-    "latest implemented tool remains `project.risk.summary`",
+    "latest implemented tool remains `sandbox.artifact.write_text`",
     "no next capability is selected",
     "capability expansion remains blocked",
     "public/security-product positioning remains blocked",
@@ -96,8 +96,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     packet_redaction_findings = len(packet_redaction.get("findings", []))
     if status["tool_count"] != 24:
         failures.append("v1 RC readiness requires tool count 24")
-    if status["latest_implemented_tool"] != "project.risk.summary":
-        failures.append("v1 RC readiness requires project.risk.summary as latest tool")
+    if status["latest_implemented_tool"] != "sandbox.artifact.write_text":
+        failures.append("v1 RC readiness requires sandbox.artifact.write_text as latest tool")
     if status["selected_capability"] != "not selected":
         failures.append("v1 RC readiness requires no selected next capability")
     if status["capability_expansion_allowed"] is not False:
