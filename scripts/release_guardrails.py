@@ -78,6 +78,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v1-assurance-closure-check",
     "v1-rc-readiness",
     "enterprise-readiness-runway-check",
+    "post-rc-decision-gate",
     "mission-control-display-integration-proposal-check",
     "mission-control-display-review-packet-check",
     "mission-control-handoff-schema-contract-check",

@@ -100,6 +100,7 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    post_rc_decision_gate,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -885,6 +886,76 @@ def test_enterprise_readiness_runway_is_wired() -> None:
     assert "docs/codex/enterprise-readiness-runway.md" in docs_site
     assert "docs/codex/enterprise-readiness-runway.md" in review_docs.REVIEW_DOCS
     assert "Ithildin Enterprise Readiness Runway" in review_index
+
+
+def test_post_rc_decision_gate_is_wired() -> None:
+    report = post_rc_decision_gate.build_report(Path.cwd())
+    doc = Path("docs/codex/post-rc-decision-gate.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["capability_expansion_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    for phrase in [
+        "Status: process gate for post-v1.0 RC boundary decisions.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "Capability expansion remains blocked.",
+        "Mission Control runtime behavior remains blocked.",
+        "Live sandbox/VM/container inspection remains blocked.",
+        "Local model invocation remains blocked.",
+        "Trusted-host promotion remains blocked.",
+        "SIEM adapter work remains blocked.",
+        "Decision Record Required Fields",
+        "Required source-review or external-review evidence.",
+        "Required implementation plan.",
+        "Tool count and manifest impact.",
+        "Go/no-go outcome.",
+        "Lanes Requiring This Gate",
+        "New governed tool or capability implementation after the v1.0 RC freeze.",
+        "Mission Control runtime importer",
+        "Live sandbox/VM/container inspection.",
+        "Local model invocation.",
+        "Trusted-host promotion.",
+        "Remote MCP or hosted MCP.",
+        "Broad filesystem, network, or write expansion.",
+        "v1.0-rc-feature-freeze.md",
+        "enterprise-readiness-runway.md",
+        "mission-control-display-integration-proposal.md",
+        "sandbox-vm-static-preflight-source-review.md",
+        "sandbox-promotion-evidence-contract.md",
+        "make post-rc-decision-gate",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "capability expansion allowed now",
+        "Mission Control may execute",
+        "trusted-host promotion is implemented",
+        "compliance automation approved",
+        "public security product approved",
+        "sandbox orchestration is implemented",
+        "local model invocation is implemented",
+    ]:
+        assert forbidden not in doc
+    assert "post-rc-decision-gate:" in makefile
+    assert "post-rc-decision-gate" in release_check_body
+    assert "make post-rc-decision-gate" in readme
+    assert "post-RC decision gate" in readme
+    assert "docs/codex/post-rc-decision-gate.md" in docs_site
+    assert "docs/codex/post-rc-decision-gate.md" in review_docs.REVIEW_DOCS
+    assert "Post-RC Decision Gate" in review_index
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

@@ -211,6 +211,7 @@ DEFAULT_DOCS = [
     "docs/codex/v1.0-assurance-closure.md",
     "docs/codex/v1.0-rc-readiness-gate.md",
     "docs/codex/enterprise-readiness-runway.md",
+    "docs/codex/post-rc-decision-gate.md",
     "docs/codex/mission-control-display-integration-proposal.md",
     "docs/codex/mission-control-handoff-schema-contract.md",
     "docs/codex/mission-control-handoff-negative-fixtures.md",

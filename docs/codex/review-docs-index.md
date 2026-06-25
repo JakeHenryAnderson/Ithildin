@@ -227,6 +227,7 @@ externally closed.
 - [Ithildin v1.0 Assurance Closure](v1.0-assurance-closure.md)
 - [Ithildin v1.0 RC Readiness Gate](v1.0-rc-readiness-gate.md)
 - [Ithildin Enterprise Readiness Runway](enterprise-readiness-runway.md)
+- [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
 - [Mission Control Handoff Schema Contract](mission-control-handoff-schema-contract.md)
 - [Mission Control Handoff Negative Fixtures](mission-control-handoff-negative-fixtures.md)
