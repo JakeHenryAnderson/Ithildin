@@ -6088,6 +6088,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "make agent-run-correlation-packet" in evidence
     assert "command execution skipped for fixture/test packet generation" in evidence
     assert "var/review-packets/v3/operator-sandbox-demo/" in pointers
+    assert "var/review-packets/v3/sandbox-artifact-observed-demo/" in pointers
     assert "var/review-packets/v3/agent-run-correlation/" in pointers
     assert "Live Demo Smoke Transcript" in smoke
     assert "make compose-up" in smoke
@@ -6096,11 +6097,13 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "Live Demo Operator Index" in operator_index
     assert "Happy Path" in operator_index
     assert "If Something Fails" in operator_index
+    assert "sandbox_artifact_observed_demo" in operator_index
     assert "cleanup needed" in operator_index
     assert "Live Demo Operator Index" in operator_index_bundle
     assert "Live Demo Evidence Summary" in summary
     assert "signed_evidence_demo_summary" in summary
     assert "negative_review_transcripts" in summary
+    assert "sandbox_artifact_observed_demo" in summary
     assert "agent_run_correlation_packet" in summary
     assert "operator_sandbox_demo_packet" in summary
     assert "consolidated_review_packet" in summary
@@ -12078,6 +12081,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "command execution skipped for fixture/test packet generation" in evidence
     assert "var/review-packets/v3/live-demo" in pointers
     assert "var/review-packets/v3/operator-sandbox-demo" in pointers
+    assert "var/review-packets/v3/sandbox-artifact-observed-demo" in pointers
     assert "var/review-packets/v3/agent-run-correlation" in pointers
     assert "Workbench Demo Smoke Transcript" in smoke
     assert "make compose-up && make compose-smoke" in smoke
@@ -12089,6 +12093,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "ready/missing/optional/deferred" in readiness_summary
     assert "Workbench Demo Happy Path Story" in story
     assert "make demo-flow" in story
+    assert "observed approval-gated sandbox" in story
     assert "not a runtime fixture loader" in story
     assert "Operator Demo Guide" in operator_guide
     assert "Demo Path" in operator_guide
@@ -12128,6 +12133,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "DEMO_READINESS_SUMMARY.md" in demo_index
     assert "WORKBENCH_DEMO_SMOKE.md" in demo_index
     assert "var/review-packets/v3/live-demo/" in demo_index
+    assert "var/review-packets/v3/sandbox-artifact-observed-demo/" in demo_index
     assert "run evidence/export docs" in demo_index
     assert "Artifact Hashes" in demo_index
     assert "make workbench-readiness" in readme
@@ -12137,6 +12143,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make operator-demo-guide" in readme
     assert "make demo-state-report" in readme
     assert "make demo-reset-guide" in readme
+    assert "make sandbox-artifact-observed-demo" in readme
     assert "demo-observed-summary:" in makefile
     assert "make demo-flow-readiness" in readme
     assert "make guided-demo" in readme
@@ -12163,6 +12170,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "$(MAKE) demo-state-report" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-observed-summary" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-reset-guide" in makefile.partition("demo-workbench:")[2]
+    assert "$(MAKE) sandbox-artifact-observed-demo" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) demo-workbench-smoke" in makefile.partition("demo-workbench:")[2]
     assert "$(MAKE) guided-demo" in review_candidate_body
     assert "$(MAKE) workbench-evidence-packet" in review_candidate_body
@@ -12184,6 +12192,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
     assert "make operator-demo-guide" in reproduction_map
     assert "make demo-state-report" in reproduction_map
     assert "make demo-reset-guide" in reproduction_map
+    assert "make sandbox-artifact-observed-demo" in reproduction_map
     assert "make demo-flow-readiness" in reproduction_map
     assert "make guided-demo" in reproduction_map
     assert "make guided-demo-readiness" in reproduction_map
@@ -12216,6 +12225,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "make operator-demo-guide",
         "make demo-state-report",
         "make demo-reset-guide",
+        "make sandbox-artifact-observed-demo",
         "make demo-flow-readiness",
         "make demo-workbench-smoke",
         "WORKBENCH_DEMO_INDEX.md",
@@ -12231,6 +12241,7 @@ def test_operator_workbench_readiness_and_packet_are_wired(tmp_path: Path) -> No
         "07_WORKBENCH_DEMO_STORY.md",
         "12_OPERATOR_DEMO_WALKTHROUGH.md",
         "WORKBENCH_DEMO_SMOKE.md",
+        "sandbox-artifact-observed-demo",
         "newest reading order",
         "summary",
         "does not start services",

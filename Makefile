@@ -198,6 +198,7 @@ demo-workbench:
 	$(MAKE) live-demo-preflight
 	$(MAKE) live-demo-status
 	$(MAKE) live-demo-smoke
+	$(MAKE) sandbox-artifact-observed-demo
 	$(MAKE) live-demo-evidence-summary
 	$(MAKE) demo-state-report
 	$(MAKE) demo-observed-summary
@@ -690,6 +691,7 @@ review-candidate:
 	$(MAKE) agent-run-correlation-packet
 	$(MAKE) live-demo-status
 	$(MAKE) live-demo-smoke
+	$(MAKE) sandbox-artifact-observed-demo
 	$(MAKE) live-demo-evidence-summary
 	$(MAKE) live-demo-packet
 	$(MAKE) guided-demo
@@ -701,7 +703,6 @@ review-candidate:
 	$(MAKE) governed-artifact-transfer-lab-check
 	$(MAKE) governed-artifact-transfer-stage2
 	$(MAKE) governed-artifact-transfer-stage2-check
-	$(MAKE) sandbox-artifact-observed-demo
 	$(MAKE) v06-review-dispatch-packets
 	$(MAKE) review-packet-bundle
 	$(MAKE) review-packet-consolidated

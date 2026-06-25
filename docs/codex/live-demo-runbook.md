@@ -116,8 +116,9 @@ operator index with paths, status, and cleanup reminders.
 secret-free transcript of readiness checks plus the operator-run sequence.
 `make live-demo-evidence-summary` writes
 `var/review-packets/v3/live-demo/LIVE_DEMO_EVIDENCE_SUMMARY.md`, a secret-free digest of live-demo
-status, smoke evidence, signed fixture evidence, negative transcripts, Agent Run correlation,
-operator sandbox packet, and consolidated handoff artifact presence.
+status, smoke evidence, signed fixture evidence, negative transcripts, observed sandbox artifact
+write evidence, Agent Run correlation, operator sandbox packet, and consolidated handoff artifact
+presence.
 
 For the full handoff bundle, run:
 
@@ -132,8 +133,9 @@ or approve actions, run:
 make demo-workbench
 ```
 
-This refreshes live-demo status, smoke, evidence summary, operator sandbox packet, Agent Run
-correlation packet, demo readiness summary, and the focused operator workbench packet.
+This refreshes live-demo status, smoke, observed sandbox artifact write evidence, evidence summary,
+operator sandbox packet, Agent Run correlation packet, demo readiness summary, and the focused
+operator workbench packet.
 
 For a one-page readiness digest without regenerating the full packet, run:
 

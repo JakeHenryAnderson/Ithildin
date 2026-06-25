@@ -51,6 +51,8 @@ The workbench should let a local operator answer four questions without reading 
   `make demo-evidence-readiness` validate and package the optional demo result evidence for review.
 - `make live-demo-status`, `make live-demo-smoke`, `make live-demo-evidence-summary`, and
   `make live-demo-packet` record live-demo handoff evidence.
+- `make sandbox-artifact-observed-demo` records observed local fixture approval/execution evidence
+  for the bounded `sandbox.artifact.write_text` path.
 - `make demo-workbench-smoke` records a deterministic operator-flow smoke transcript.
 - `make workbench-evidence-packet` packages the operator workbench story into one focused review
   packet.
@@ -63,6 +65,7 @@ demo evidence commands:
 - `make live-demo-preflight`;
 - `make live-demo-status`;
 - `make live-demo-smoke`;
+- `make sandbox-artifact-observed-demo`;
 - `make live-demo-evidence-summary`;
 - `make demo-readiness-summary`;
 - `make demo-operator-walkthrough`;
@@ -76,8 +79,10 @@ demo evidence commands:
 - `make agent-run-correlation-packet`;
 - `make workbench-evidence-packet`.
 
-It does not start services, stop services, mutate governed workspaces, call governed tools, approve
-actions, repair diagnostics, or manage containers.
+It does not start services, stop services, mutate governed workspaces, repair diagnostics, or manage
+containers. It includes one temporary local fixture governed call through
+`sandbox.artifact.write_text` to record observed approval/execution evidence; that fixture does not
+touch the configured demo workspace or promote artifacts to the host.
 
 ## Evidence Bundle
 
@@ -102,13 +107,16 @@ actions, repair diagnostics, or manage containers.
 - command evidence;
 - artifact pointers;
 - artifact hashes.
+- `var/review-packets/v3/sandbox-artifact-observed-demo/` observed sandbox artifact write
+  approval/execution evidence.
 
 `WORKBENCH_DEMO_INDEX.md` is the first file to open. Its newest reading order is:
 `WORKBENCH_DEMO_INDEX.md`, `OPERATOR_DEMO_WALKTHROUGH.md`, `DEMO_OBSERVED_SUMMARY.md`,
 `DEMO_FLOW_RESULT.md` after `make demo-flow`, `RUN_EVIDENCE_EXPORT.json`,
 `OPERATOR_DEMO_GUIDE.md`, `DEMO_STATE_REPORT.md`, `DEMO_READINESS_SUMMARY.md`,
 `WORKBENCH_DEMO_SMOKE.md`, `DEMO_RESET_GUIDE.md`, the workbench packet boundary, the live-demo
-packet, and the run evidence/export docs. `OPERATOR_DEMO_WALKTHROUGH.md` gives the first human
+packet, the observed sandbox artifact write evidence, and the run evidence/export docs.
+`OPERATOR_DEMO_WALKTHROUGH.md` gives the first human
 path with expected screens, expected evidence files, next steps, and reset guidance.
 `07_WORKBENCH_DEMO_STORY.md` gives the happy path from preflight through cleanup,
 `OPERATOR_DEMO_GUIDE.md` gives the operator-facing stage table, `DEMO_STATE_REPORT.md` records
@@ -117,10 +125,10 @@ recovery guidance. The run evidence export includes a safe
 `summary` object with principal, workspace, session, status, tools used, decision counts, approval
 count, patch diagnostic count, audit event count, warning count, policy hash, and manifest-lock hash.
 
-The packet points to existing live-demo, operator sandbox, Agent Run correlation, signed evidence,
-negative transcript, and consolidated review artifacts. It is a reviewer convenience artifact, not
-notarization, SIEM custody, compliance automation, production security, or proof of activity outside
-Ithildin-mediated actions.
+The packet points to existing live-demo, operator sandbox, observed sandbox artifact write, Agent Run
+correlation, signed evidence, negative transcript, and consolidated review artifacts. It is a
+reviewer convenience artifact, not notarization, SIEM custody, compliance automation, production
+security, or proof of activity outside Ithildin-mediated actions.
 
 When demoing the read-only project-intelligence family from the workbench, the operator should
 frame these tools as safe workspace orientation: counts, allowlisted labels, truncation, and policy

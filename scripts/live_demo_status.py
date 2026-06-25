@@ -36,6 +36,13 @@ ARTIFACTS = [
         Path("var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"),
     ),
     (
+        "sandbox_artifact_observed_demo",
+        Path(
+            "var/review-packets/v3/sandbox-artifact-observed-demo/"
+            "SANDBOX_ARTIFACT_OBSERVED_DEMO.md"
+        ),
+    ),
+    (
         "consolidated_review_packet",
         Path("var/review-packets/v0.2/GPT-5.5-Pro-consolidated"),
     ),

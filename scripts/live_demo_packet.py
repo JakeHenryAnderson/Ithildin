@@ -188,6 +188,7 @@ Please review:
   tool-surface count, telemetry posture, HTTP allowlist posture, and demo inputs;
 - whether the packet points clearly to operator-managed sandbox/workbench evidence, Agent Run
   correlation evidence, signed fixture evidence, negative transcripts, and review-candidate output;
+- whether the packet points to observed approval-gated `sandbox.artifact.write_text` evidence;
 - whether the wording avoids claims of sandbox lifecycle control, OS isolation, SIEM custody,
   compliance automation, production security, public/security-product approval, or new tool powers.
 
@@ -257,6 +258,7 @@ Generate these ignored artifacts during a full handoff:
 - `var/review-packets/v3/agent-run-correlation/`
 - `var/review-packets/v0.2/signed-evidence-demo/`
 - `var/review-packets/v0.2/negative-review-transcripts/`
+- `var/review-packets/v3/sandbox-artifact-observed-demo/`
 - `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`
 
 These artifacts are local evidence and reviewer convenience only. They are not notarization, SIEM

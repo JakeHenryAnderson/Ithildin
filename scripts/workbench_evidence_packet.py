@@ -62,6 +62,7 @@ COMMANDS = [
 POINTERS = [
     Path("var/review-packets/v3/live-demo"),
     Path("var/review-packets/v3/operator-sandbox-demo"),
+    Path("var/review-packets/v3/sandbox-artifact-observed-demo"),
     Path("var/review-packets/v3/agent-run-correlation"),
     Path("var/review-packets/v0.2/signed-evidence-demo"),
     Path("var/review-packets/v0.2/negative-review-transcripts"),
@@ -256,6 +257,7 @@ Please review whether the packet coherently shows how a local operator can:
 - inspect `DEMO_FLOW_RESULT.md` and `DEMO_RESET_GUIDE.md` after the optional mediated flow;
 - connect live-demo, operator-managed sandbox, Agent Run correlation, signed fixture evidence, and
   negative transcript artifacts.
+- connect observed approval-gated `sandbox.artifact.write_text` evidence to the workbench story.
 
 ## Required Disposition
 
@@ -506,7 +508,7 @@ workspaces, or manage sandbox lifecycle.
 - commit: `{context["commit"]}`
 - dirty: `{str(context["dirty"]).lower()}`
 - command_evidence_executed: `{str(context["run_commands"]).lower()}`
-- tool_count: `17`
+- tool_count: `24`
 
 ## Happy Path Narrative
 
@@ -533,6 +535,8 @@ workspaces, or manage sandbox lifecycle.
   after `make demo-flow`.
 - `DEMO_OBSERVED_SUMMARY.md` for the compact result, run evidence export pointer, and quickest
   post-demo reading order.
+- `var/review-packets/v3/sandbox-artifact-observed-demo/` for observed approval-gated sandbox
+  artifact write evidence.
 - `RUN_EVIDENCE_EXPORT.json` for the selected run's safe run evidence export when captured.
 - `DEMO_RESET_GUIDE.md` for read-only reset/recovery guidance.
 - `WORKBENCH_DEMO_SMOKE.md` for observed readiness commands and manual demo sequence.
@@ -560,7 +564,7 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         f"- commit: `{context['commit']}`",
         f"- dirty: `{str(context['dirty']).lower()}`",
         f"- command_evidence_executed: `{str(context['run_commands']).lower()}`",
-        "- tool_count: `17`",
+        "- tool_count: `24`",
         "",
         "## Newest Reading Order",
         "",
@@ -577,7 +581,9 @@ def _demo_index(output_dir: Path, context: dict[str, Any]) -> str:
         "10. `DEMO_RESET_GUIDE.md` for safe reset/recovery guidance.",
         "11. `00_OPERATOR_WORKBENCH_INDEX.md` for the workbench packet boundary.",
         "12. `var/review-packets/v3/live-demo/` for the live-demo packet.",
-        "13. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
+        "13. `var/review-packets/v3/sandbox-artifact-observed-demo/` for observed",
+        "    approval-gated sandbox artifact write evidence.",
+        "14. `02_OPERATOR_WORKBENCH_DOCS.md` for run evidence/export docs.",
         "",
         "## Supporting Artifacts",
         "",

@@ -206,7 +206,7 @@ checked with `make control-mapping-readiness`.
 - `make agent-run-operations-readiness` - validate the read-only Agent Run operations dashboard, filters, summaries, and no-new-powers wiring.
 - `make agent-run-timeline-readiness` - validate Agent Run store/API/UI timeline readiness without run-control behavior.
 - `make workbench-readiness` - validate the local operator workbench surface, docs, evidence packet wiring, and no-new-powers posture.
-- `make workbench-evidence-packet` - generate an ignored operator workbench evidence packet tying together Agent Runs, approvals, audit, live demo, sandbox/workspace posture, and handoff artifacts.
+- `make workbench-evidence-packet` - generate an ignored operator workbench evidence packet tying together Agent Runs, approvals, audit, live demo, observed sandbox artifact evidence, sandbox/workspace posture, and handoff artifacts.
 - `make demo-readiness-summary` - generate a secret-free operator demo readiness summary with ready, missing, optional/manual, deferred, and next-command sections.
 - `make demo-operator-walkthrough` - generate the front-door operator demo walkthrough with expected screens, evidence files, next human steps, and reset guidance.
 - `make operator-demo-guide` - generate a secret-free preflight-to-cleanup operator demo guide for the local workbench path.

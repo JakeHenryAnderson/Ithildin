@@ -31,6 +31,7 @@ REQUIRED_DOC_PHRASES = [
     "make demo-workbench-smoke",
     "make workbench-evidence-packet",
     "make live-demo-evidence-summary",
+    "make sandbox-artifact-observed-demo",
     "WORKBENCH_DEMO_INDEX.md",
     "DEMO_READINESS_SUMMARY.md",
     "OPERATOR_DEMO_WALKTHROUGH.md",
@@ -42,6 +43,7 @@ REQUIRED_DOC_PHRASES = [
     "10_DEMO_RESET_GUIDE.md",
     "12_OPERATOR_DEMO_WALKTHROUGH.md",
     "WORKBENCH_DEMO_SMOKE.md",
+    "sandbox-artifact-observed-demo",
     "newest reading order",
     "summary",
     "does not start services",
@@ -103,6 +105,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("workbench-evidence-packet is missing from review-candidate")
     if "$(MAKE) demo-workbench-smoke" not in makefile.partition("demo-workbench:")[2]:
         failures.append("demo-workbench-smoke is missing from demo-workbench")
+    if "$(MAKE) sandbox-artifact-observed-demo" not in makefile.partition("demo-workbench:")[2]:
+        failures.append("sandbox-artifact-observed-demo is missing from demo-workbench")
     if "$(MAKE) demo-readiness-summary" not in makefile.partition("demo-workbench:")[2]:
         failures.append("demo-readiness-summary is missing from demo-workbench")
     if "$(MAKE) demo-operator-walkthrough" not in makefile.partition("demo-workbench:")[2]:
@@ -195,6 +199,7 @@ def _validate_doc(*, readme: str, reproduction_map: str, docs_site: str) -> list
         "make operator-demo-guide",
         "make demo-state-report",
         "make demo-reset-guide",
+        "make sandbox-artifact-observed-demo",
         "make demo-workbench-smoke",
         "make demo-workbench",
     ]:

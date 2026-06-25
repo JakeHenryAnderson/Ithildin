@@ -35,6 +35,9 @@ ARTIFACTS = {
     "negative_review_transcripts": Path(
         "var/review-packets/v0.2/negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"
     ),
+    "sandbox_artifact_observed_demo": Path(
+        "var/review-packets/v3/sandbox-artifact-observed-demo/SANDBOX_ARTIFACT_OBSERVED_DEMO.md"
+    ),
     "agent_run_correlation_packet": Path("var/review-packets/v3/agent-run-correlation"),
     "operator_sandbox_demo_packet": Path("var/review-packets/v3/operator-sandbox-demo"),
     "consolidated_review_packet": Path(
@@ -152,8 +155,10 @@ def render_summary(report: dict[str, Any]) -> str:
             "2. `LIVE_DEMO_SMOKE.md` for the generated smoke transcript.",
             "3. `SIGNED_EVIDENCE_DEMO.md` for non-production local signing verification.",
             "4. `NEGATIVE_REVIEW_TRANSCRIPTS.md` for observed safe denials.",
-            "5. Agent Run correlation and operator sandbox demo packets for evidence flow.",
-            "6. The consolidated review packet for the broader handoff context.",
+            "5. `SANDBOX_ARTIFACT_OBSERVED_DEMO.md` for observed approval-gated sandbox",
+            "   artifact write evidence.",
+            "6. Agent Run correlation and operator sandbox demo packets for evidence flow.",
+            "7. The consolidated review packet for the broader handoff context.",
             "",
             "## Boundary",
             "",
