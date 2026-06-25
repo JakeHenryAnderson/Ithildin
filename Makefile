@@ -801,7 +801,8 @@ review-candidate:
 	$(MAKE) review-packet-consolidated
 	$(MAKE) packet-redaction-scan
 	$(MAKE) docs-site
-	@echo "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated"
+	@echo "v1.0 RC packet ready: var/review-packets/v1.0/rc"
+	@echo "Historical consolidated packet ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated"
 
 v05-review-candidate:
 	$(MAKE) review-candidate

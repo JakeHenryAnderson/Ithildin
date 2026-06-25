@@ -6308,7 +6308,12 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
     ]
     positions = [body.index(command) for command in expected_commands]
     assert positions == sorted(positions)
-    assert "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated" in body
+    assert "v1.0 RC packet ready: var/review-packets/v1.0/rc" in body
+    assert (
+        "Historical consolidated packet ready: "
+        "var/review-packets/v0.2/GPT-5.5-Pro-consolidated"
+    ) in body
+    assert "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated" not in body
 
 
 def test_consolidated_review_packet_generation(

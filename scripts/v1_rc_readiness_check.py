@@ -133,6 +133,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
     if "$(MAKE) v1-rc-packet" not in review_candidate_body:
         failures.append("v1-rc-packet is missing from review-candidate")
+    if "v1.0 RC packet ready: var/review-packets/v1.0/rc" not in review_candidate_body:
+        failures.append("review-candidate output is missing the v1.0 RC packet path")
+    if (
+        "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated"
+        in review_candidate_body
+    ):
+        failures.append("review-candidate output still points only to the historical v0.2 packet")
     if "v1-rc-readiness" not in release_check_body:
         failures.append("v1-rc-readiness is missing from release-check")
     if "make v1-rc-readiness" not in readme or "make v1-rc-packet" not in readme:
