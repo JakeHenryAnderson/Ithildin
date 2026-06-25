@@ -83,6 +83,12 @@ ARTIFACT_REFERENCES = [
         "does_not_prove": "Mission Control execution authority or policy authority",
     },
     {
+        "path": "var/review-packets/v3/mission-control-display",
+        "purpose": "focused Mission Control display/import review packet",
+        "proves": "proposal, schema, negative fixtures, seed handoff, and command evidence align",
+        "does_not_prove": "Mission Control runtime importer behavior or authority transfer",
+    },
+    {
         "path": "docs/codex/sandbox-promotion-evidence-contract.md",
         "purpose": "future trusted-host promotion evidence contract",
         "proves": "promotion states and zone labels are documented as future evidence only",

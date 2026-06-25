@@ -82,6 +82,7 @@ from scripts import (
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
     mission_control_display_integration_proposal_check,
+    mission_control_display_review_packet,
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_schema_contract_check,
     next_capability_candidate_evaluation_2_check,
@@ -543,6 +544,8 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "var/review-packets/v3/operator-workbench" in artifacts
     assert "var/review-packets/v3/hello-world-sandbox-observed-demo" in artifacts
     assert "var/review-packets/v3/hello-world-mission-control-handoff" in artifacts
+    assert "var/review-packets/v3/mission-control-display" in artifacts
+    assert "proposal, schema, negative fixtures, seed handoff" in artifacts
     assert "docs/codex/sandbox-promotion-evidence-contract.md" in artifacts
     assert "promotion only as `not_promoted`" in artifacts
     assert "host promotion is implemented or approved" in artifacts
@@ -704,6 +707,72 @@ def test_mission_control_handoff_negative_fixtures_are_wired() -> None:
     assert "docs/codex/mission-control-handoff-negative-fixtures.md" in docs_site
     assert "docs/codex/mission-control-handoff-negative-fixtures.md" in review_docs.REVIEW_DOCS
     assert "Mission Control Handoff Negative Fixtures" in review_index
+
+
+def test_mission_control_display_review_packet_is_wired(tmp_path: Path) -> None:
+    report = mission_control_display_review_packet.build_check_report(Path.cwd())
+    output_dir = tmp_path / "mission-control-display"
+    mission_control_display_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    index = output_dir.joinpath("00_MISSION_CONTROL_DISPLAY_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = output_dir.joinpath("01_MISSION_CONTROL_DISPLAY_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    contracts = output_dir.joinpath("02_MISSION_CONTROL_DISPLAY_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    negative = output_dir.joinpath("04_MISSION_CONTROL_NEGATIVE_FIXTURES.md").read_text(
+        encoding="utf-8"
+    )
+    hashes = json.loads(
+        output_dir.joinpath("mission-control-display-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "Mission Control Display Review Packet" in index
+    assert "Mission Control may be planned as an evidence viewer only" in index
+    assert "EXT-MC-DISPLAY-###" in prompt
+    assert "Mission Control Display Integration Proposal" in contracts
+    assert "Mission Control Handoff Schema Contract" in contracts
+    assert "MC-HANDOFF-NEG-014" in negative
+    assert "make mission-control-display-review-packet" in readme
+    assert "mission-control-display-review-packet:" in makefile
+    assert "mission-control-display-review-packet-check:" in makefile
+    assert "mission-control-display-review-packet-check" in release_check_body
+    assert "$(MAKE) mission-control-display-review-packet" in review_candidate_body
+    assert "mission-control-display-review-packet-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-display-review-packet" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert {entry["path"] for entry in hashes["artifacts"]} == {
+        "00_MISSION_CONTROL_DISPLAY_INDEX.md",
+        "01_MISSION_CONTROL_DISPLAY_REVIEW_PROMPT.md",
+        "02_MISSION_CONTROL_DISPLAY_CONTRACTS.md",
+        "03_MISSION_CONTROL_HANDOFF_SEED.md",
+        "04_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
+        "05_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md",
+    }
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

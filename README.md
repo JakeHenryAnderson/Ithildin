@@ -339,6 +339,9 @@ checked with `make control-mapping-readiness`.
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
   sandbox orchestrator, or trusted-host promotion path.
+- `make mission-control-display-review-packet` - generate the focused Mission Control display
+  review packet with proposal, schema, negative fixtures, seed handoff evidence, command evidence,
+  and artifact hashes.
 - `make mission-control-handoff-schema-contract-check` - validate the Ithildin-side Mission
   Control handoff schema contract and the current `mission-control-handoff.json` seed payload while
   keeping the integration file/import-only and display-only.
@@ -644,6 +647,10 @@ and is checked with `make mission-control-handoff-negative-fixtures-check`; it m
 handoff seed in memory and verifies that schema mismatches, live-integration claims, authority
 overclaims, unsafe paths, missing warning/denylist fields, raw contents, and raw prompts are
 rejected before any Mission Control importer is implemented.
+Generate the focused Mission Control display review packet with
+`make mission-control-display-review-packet`; it bundles the display proposal, handoff schema,
+negative fixtures, Hello World seed evidence, command evidence, and artifact hashes for future
+Mission Control-side planning while keeping runtime importer behavior blocked.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control
