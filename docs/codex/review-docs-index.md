@@ -235,6 +235,7 @@ externally closed.
 - [Post-RC Decision Record Examples](post-rc-decision-record-examples.md)
 - [Post-RC Decision Register](post-rc-decision-register.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
+- [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [SIEM Export Adapter Architecture](siem-export-adapter-architecture.md)
 - [Compliance Mapping Architecture](compliance-mapping-architecture.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)

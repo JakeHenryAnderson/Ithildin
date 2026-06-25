@@ -383,6 +383,9 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-architecture-check` - validate the design-only architecture
   packet for production identity and durable storage while keeping production IAM, runtime Postgres,
   remote admin use, and custody-grade audit claims blocked.
+- `make production-identity-storage-disposition-packet` - generate the focused architecture
+  disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
+  runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
 - `make siem-export-adapter-architecture-check` - validate the design-only SIEM export adapter
   architecture packet while keeping adapter runtime behavior, hosted telemetry, remote delivery,
   and SIEM custody claims blocked.
@@ -762,6 +765,12 @@ and is checked with `make production-identity-storage-architecture-check`; it de
 `ERG-006`/`ERG-007` identity, tenancy, storage, migration, retention, backup/restore, and evidence
 questions while keeping production IAM, runtime Postgres, remote admin use, and custody-grade audit
 claims blocked.
+Generate the production identity and storage disposition packet with
+`make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
+architecture evidence is coherent enough to continue planning while keeping production identity,
+not runtime Postgres, database migrations, backup/restore runtime behavior, retention enforcement,
+hosted control plane, custody-grade audit claims, compliance automation, and public/security-product
+positioning blocked.
 The SIEM export adapter architecture packet is
 [docs/codex/siem-export-adapter-architecture.md](docs/codex/siem-export-adapter-architecture.md)
 and is checked with `make siem-export-adapter-architecture-check`; it defines future adapter

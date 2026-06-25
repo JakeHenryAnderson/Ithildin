@@ -183,6 +183,10 @@ Current selected capability: `not selected`.
   `production-identity-storage-architecture.md` defines the `ERG-006`/`ERG-007` identity, tenancy,
   storage, migration, backup/restore, retention, and evidence questions before any future runtime
   decision.
+- Current disposition evidence:
+  `production-identity-storage-disposition-packet.md` asks whether the current architecture
+  evidence is coherent enough for continued planning while runtime identity and storage behavior
+  remain blocked.
 
 ## Validation
 

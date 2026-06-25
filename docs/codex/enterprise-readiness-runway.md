@@ -184,6 +184,12 @@ The design-only architecture packet for this phase is
 validated with `make production-identity-storage-architecture-check`. It records the future
 identity, tenancy, storage, migration, backup/restore, retention, and evidence questions while
 keeping production IAM, runtime Postgres, remote admin use, and custody-grade audit claims blocked.
+The focused architecture disposition packet is
+[production-identity-storage-disposition-packet.md](production-identity-storage-disposition-packet.md)
+and is generated with `make production-identity-storage-disposition-packet`. It asks whether
+`ERG-006`/`ERG-007` may continue architecture planning while production identity, runtime Postgres,
+database migrations, retention enforcement, hosted control plane, custody claims, and
+public/security-product positioning remain blocked.
 
 Required design decisions:
 

@@ -112,6 +112,7 @@ from scripts import (
     post_rc_decision_record_template_check,
     post_rc_decision_register_check,
     production_identity_storage_architecture_check,
+    production_identity_storage_disposition_packet,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -1378,6 +1379,92 @@ def test_production_identity_storage_architecture_is_wired() -> None:
     assert "production-identity-storage-architecture.md" in runway
     assert "production-identity-storage-architecture.md" in gap_matrix
     assert "production-identity-storage-architecture.md" in decision_register
+
+
+def test_production_identity_storage_disposition_packet_is_wired(tmp_path: Path) -> None:
+    report = production_identity_storage_disposition_packet.build_check_report(Path.cwd())
+    output_dir = tmp_path / "production-identity-storage-disposition"
+    production_identity_storage_disposition_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    index = output_dir.joinpath(
+        "00_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    evidence = output_dir.joinpath(
+        "04_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "production-identity-storage-disposition-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["enterprise_rbac_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["closes_erg_006"] is False
+    assert report["closes_erg_007"] is False
+    assert "does not close `ERG-006` or `ERG-007`" in index
+    assert "EXT-PROD-IAM-STORAGE-###" in prompt
+    assert "continue_architecture_planning" in prompt
+    assert '"production_identity_allowed": false' in evidence
+    assert '"runtime_postgres_allowed": false' in evidence
+    assert '"closes_erg_006": false' in evidence
+    assert '"closes_erg_007": false' in evidence
+    assert "make production-identity-storage-disposition-packet" in readme
+    assert "production-identity-storage-disposition-packet:" in makefile
+    assert "production-identity-storage-disposition-packet-check:" in makefile
+    assert "production-identity-storage-disposition-packet-check" in release_check_body
+    assert "$(MAKE) production-identity-storage-disposition-packet" in review_candidate_body
+    assert "production-identity-storage-disposition-packet-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) production-identity-storage-disposition-packet" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/production-identity-storage-disposition-packet.md" in docs_site
+    assert "docs/codex/production-identity-storage-disposition-packet.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Production Identity And Storage Disposition Packet" in review_index
+    assert "production-identity-storage-disposition-packet.md" in runway
+    assert "production-identity-storage-disposition-packet.md" in gap_matrix
+    assert "production-identity-storage-disposition-packet.md" in decision_register
+    assert {entry["path"] for entry in hashes["artifacts"]} == {
+        "00_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_INDEX.md",
+        "01_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_PROMPT.md",
+        "02_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_AND_ARCHITECTURE.md",
+        "03_PRODUCTION_IDENTITY_STORAGE_REVIEW_POINTERS.md",
+        "04_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_COMMAND_EVIDENCE.md",
+    }
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:
