@@ -80,6 +80,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "enterprise-readiness-runway-check",
     "post-rc-decision-gate",
     "post-rc-decision-record-template-check",
+    "post-rc-decision-record-examples-check",
     "mission-control-display-integration-proposal-check",
     "mission-control-display-review-packet-check",
     "mission-control-handoff-schema-contract-check",

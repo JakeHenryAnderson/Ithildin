@@ -47,6 +47,9 @@ Every post-RC decision record must include:
 
 Use the [Post-RC Decision Record Template](post-rc-decision-record-template.md) for the canonical
 field layout.
+Use the [Post-RC Decision Record Examples](post-rc-decision-record-examples.md) to compare new
+Mission Control, sandbox/VM, or post-freeze capability decisions against known planning-only and
+no-go shapes.
 
 ## Lanes Requiring This Gate
 

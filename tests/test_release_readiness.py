@@ -101,6 +101,7 @@ from scripts import (
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
     post_rc_decision_gate,
+    post_rc_decision_record_examples_check,
     post_rc_decision_record_template_check,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
@@ -1032,6 +1033,77 @@ def test_post_rc_decision_record_template_is_wired() -> None:
     assert "docs/codex/post-rc-decision-record-template.md" in docs_site
     assert "docs/codex/post-rc-decision-record-template.md" in review_docs.REVIEW_DOCS
     assert "Post-RC Decision Record Template" in review_index
+
+
+def test_post_rc_decision_record_examples_are_wired() -> None:
+    report = post_rc_decision_record_examples_check.build_report(Path.cwd())
+    doc = Path("docs/codex/post-rc-decision-record-examples.md").read_text(encoding="utf-8")
+    normalized_doc = " ".join(doc.split())
+    gate_doc = Path("docs/codex/post-rc-decision-gate.md").read_text(encoding="utf-8")
+    template_doc = Path("docs/codex/post-rc-decision-record-template.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_capability_runtime_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    for phrase in [
+        "Status: example pack for post-v1.0 RC boundary decisions.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "PRD-MC-DISPLAY-001",
+        "Decision record status: `approved_for_planning`",
+        "go for planning only; no-go for runtime behavior.",
+        "Mission Control execution authority",
+        "local-model runner behavior",
+        "sandbox orchestration",
+        "trusted-host promotion",
+        "PRD-SANDBOX-PREFLIGHT-001",
+        "Decision record status: `no_go`",
+        "live VM/container inspection",
+        "runtime preflight runner behavior",
+        "no-go for live runtime behavior.",
+        "PRD-CAPABILITY-001",
+        "manifest addition",
+        "executor code",
+        "policy/rule semantics",
+        "MCP/API behavior",
+        "no-go for runtime implementation; go for design packet work only.",
+        "Tool count impact: none",
+        "Runtime surfaces touched: none.",
+        "make post-rc-decision-record-examples-check",
+    ]:
+        assert phrase in normalized_doc
+    for forbidden in [
+        "capability expansion allowed now",
+        "Mission Control may execute",
+        "trusted-host promotion is implemented",
+        "compliance automation approved",
+        "public security product approved",
+        "sandbox orchestration is implemented",
+        "local model invocation is implemented",
+    ]:
+        assert forbidden not in doc
+    assert "Post-RC Decision Record Examples" in gate_doc
+    assert "Post-RC Decision Record Examples" in template_doc
+    assert "post-rc-decision-record-examples-check:" in makefile
+    assert "post-rc-decision-record-examples-check" in release_check_body
+    assert "make post-rc-decision-record-examples-check" in readme
+    assert "post-RC decision record examples" in readme
+    assert "docs/codex/post-rc-decision-record-examples.md" in docs_site
+    assert "docs/codex/post-rc-decision-record-examples.md" in review_docs.REVIEW_DOCS
+    assert "Post-RC Decision Record Examples" in review_index
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

@@ -348,6 +348,8 @@ checked with `make control-mapping-readiness`.
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
   template for future post-freeze lane decisions.
+- `make post-rc-decision-record-examples-check` - validate example post-RC decision records for
+  Mission Control display planning, sandbox/VM no-go, and post-freeze capability no-go lanes.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -694,6 +696,11 @@ frozen lane can move beyond documentation or planning.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.
+Use the example decision records at
+[docs/codex/post-rc-decision-record-examples.md](docs/codex/post-rc-decision-record-examples.md),
+checked with `make post-rc-decision-record-examples-check`, as the baseline shape for
+Mission Control planning-only, sandbox/VM no-go, and post-freeze capability no-go decisions; these
+post-RC decision record examples are sample records, not runtime approvals.
 The Mission Control display integration proposal is
 [docs/codex/mission-control-display-integration-proposal.md](docs/codex/mission-control-display-integration-proposal.md)
 and is checked with `make mission-control-display-integration-proposal-check`; it keeps the first

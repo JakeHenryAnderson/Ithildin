@@ -213,6 +213,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-readiness-runway.md",
     "docs/codex/post-rc-decision-gate.md",
     "docs/codex/post-rc-decision-record-template.md",
+    "docs/codex/post-rc-decision-record-examples.md",
     "docs/codex/mission-control-display-integration-proposal.md",
     "docs/codex/mission-control-handoff-schema-contract.md",
     "docs/codex/mission-control-handoff-negative-fixtures.md",
