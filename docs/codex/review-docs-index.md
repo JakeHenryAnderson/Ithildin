@@ -225,6 +225,7 @@ externally closed.
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
 - [Hello World Sandbox Demo Roadmap](hello-world-sandbox-demo-roadmap.md)
 - [Hello World Sandbox Observed Demo](hello-world-sandbox-observed-demo.md)
+- [Hello World Mission Control Handoff](hello-world-mission-control-handoff.md)
 - [Capability Proposal: sandbox.artifact.write_text](capability-proposals/sandbox-artifact-write-text.md)
 - [Implementation-Planning Packet: sandbox.artifact.write_text](capability-implementation-plans/sandbox-artifact-write-text.md)
 - [sandbox.artifact.write_text Fixture Plan](sandbox-artifact-write-text-fixture-plan.md)

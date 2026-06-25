@@ -42,6 +42,10 @@ ARTIFACTS = {
         "var/review-packets/v3/hello-world-sandbox-observed-demo/"
         "HELLO_WORLD_SANDBOX_OBSERVED_DEMO.md"
     ),
+    "hello_world_mission_control_handoff": Path(
+        "var/review-packets/v3/hello-world-mission-control-handoff/"
+        "HELLO_WORLD_MISSION_CONTROL_HANDOFF.md"
+    ),
     "agent_run_correlation_packet": Path("var/review-packets/v3/agent-run-correlation"),
     "operator_sandbox_demo_packet": Path("var/review-packets/v3/operator-sandbox-demo"),
     "consolidated_review_packet": Path(
@@ -163,8 +167,10 @@ def render_summary(report: dict[str, Any]) -> str:
             "   artifact write evidence.",
             "6. `HELLO_WORLD_SANDBOX_OBSERVED_DEMO.md` for the operator-facing Hello",
             "   World version of the observed governed artifact flow.",
-            "7. Agent Run correlation and operator sandbox demo packets for evidence flow.",
-            "8. The consolidated review packet for the broader handoff context.",
+            "7. `HELLO_WORLD_MISSION_CONTROL_HANDOFF.md` for the metadata-only",
+            "   Mission Control display/import handoff around that observed evidence.",
+            "8. Agent Run correlation and operator sandbox demo packets for evidence flow.",
+            "9. The consolidated review packet for the broader handoff context.",
             "",
             "## Boundary",
             "",

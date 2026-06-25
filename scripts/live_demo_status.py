@@ -50,6 +50,13 @@ ARTIFACTS = [
         ),
     ),
     (
+        "hello_world_mission_control_handoff",
+        Path(
+            "var/review-packets/v3/hello-world-mission-control-handoff/"
+            "HELLO_WORLD_MISSION_CONTROL_HANDOFF.md"
+        ),
+    ),
+    (
         "consolidated_review_packet",
         Path("var/review-packets/v0.2/GPT-5.5-Pro-consolidated"),
     ),

@@ -260,6 +260,7 @@ Generate these ignored artifacts during a full handoff:
 - `var/review-packets/v0.2/negative-review-transcripts/`
 - `var/review-packets/v3/sandbox-artifact-observed-demo/`
 - `var/review-packets/v3/hello-world-sandbox-observed-demo/`
+- `var/review-packets/v3/hello-world-mission-control-handoff/`
 - `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`
 
 These artifacts are local evidence and reviewer convenience only. They are not notarization, SIEM

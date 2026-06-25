@@ -63,6 +63,8 @@ from scripts import (
     governed_artifact_transfer_lab_check,
     guided_demo,
     guided_demo_readiness,
+    hello_world_mission_control_handoff,
+    hello_world_mission_control_handoff_check,
     hello_world_sandbox_demo_check,
     hello_world_sandbox_demo_packet,
     hello_world_sandbox_demo_packet_check,
@@ -12746,6 +12748,76 @@ def test_hello_world_sandbox_observed_demo_is_wired(tmp_path: Path) -> None:
     )
     assert "docs/codex/hello-world-sandbox-observed-demo.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/hello-world-sandbox-observed-demo.md" in docs_site
+
+
+def test_hello_world_mission_control_handoff_is_wired(tmp_path: Path) -> None:
+    report = hello_world_mission_control_handoff_check.build_report(Path.cwd())
+    output_dir = hello_world_mission_control_handoff.build_handoff(tmp_path / "mc-handoff")
+    payload = json.loads(
+        output_dir.joinpath(hello_world_mission_control_handoff.JSON_NAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    index = output_dir.joinpath(hello_world_mission_control_handoff.INDEX_NAME).read_text(
+        encoding="utf-8"
+    )
+    hashes = json.loads(
+        output_dir.joinpath(hello_world_mission_control_handoff.HASHES_NAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["status"] == "metadata_only"
+    assert report["mission_control_runtime_behavior"] is False
+    assert report["local_llm_runtime_behavior"] is False
+    assert report["real_vm_or_container_started"] is False
+    assert report["host_promotion_performed"] is False
+    assert payload["status"] == "metadata_only"
+    assert payload["ithildin_remains_policy_authority"] is True
+    assert payload["mission_control_runtime_behavior"] is False
+    assert payload["mission_control_authority"] == "display_and_operator_review_only"
+    assert payload["local_llm_runtime_behavior"] is False
+    assert payload["real_vm_or_container_started"] is False
+    assert payload["sandbox_orchestration_performed"] is False
+    assert payload["shell_execution_performed"] is False
+    assert payload["host_promotion_performed"] is False
+    assert payload["ithildin_evidence"]["request_status"] == "approval_required"
+    assert payload["ithildin_evidence"]["approval_status"] == "executed"
+    assert payload["ithildin_evidence"]["execution_status"] == "completed"
+    assert payload["ithildin_evidence"]["artifact_hash_matches_execution"] is True
+    assert payload["ithildin_evidence"]["audit_valid"] is True
+    assert payload["mission"]["promotion_status"] == "not_promoted"
+    assert "content\":" not in index
+    assert "production-ready" not in index
+    assert "compliance-grade" not in index
+    assert "mission control runtime behavior: `false`" in index.lower()
+    assert {
+        hello_world_mission_control_handoff.INDEX_NAME,
+        hello_world_mission_control_handoff.JSON_NAME,
+        "observed-hello-world/HELLO_WORLD_SANDBOX_OBSERVED_DEMO.md",
+        "observed-hello-world/hello-world-sandbox-observed-demo.json",
+    }.issubset({entry["path"] for entry in hashes["artifacts"]})
+    assert "make hello-world-mission-control-handoff" in readme
+    assert "make hello-world-mission-control-handoff-check" in readme
+    assert "hello-world-mission-control-handoff:" in makefile
+    assert "hello-world-mission-control-handoff-check:" in makefile
+    assert "hello-world-mission-control-handoff-check" in release_check_body
+    assert "$(MAKE) hello-world-mission-control-handoff" in review_candidate_body
+    assert "hello-world-mission-control-handoff-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) hello-world-mission-control-handoff" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/hello-world-mission-control-handoff.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/hello-world-mission-control-handoff.md" in docs_site
 
 
 def test_sandbox_artifact_write_text_preimplementation_is_historical() -> None:

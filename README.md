@@ -240,6 +240,10 @@ checked with `make control-mapping-readiness`.
   metadata labels.
 - `make hello-world-sandbox-observed-demo-check` - validate the observed Hello World packet, docs
   wiring, governed-tool evidence, and no-VM/no-Mission-Control-runtime/no-host-promotion boundary.
+- `make hello-world-mission-control-handoff` - generate a metadata-only Mission Control
+  display/import handoff for the observed Hello World evidence.
+- `make hello-world-mission-control-handoff-check` - validate the Mission Control handoff packet,
+  docs wiring, and no-runtime/no-local-model/no-VM/no-host-promotion boundary.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -619,6 +623,11 @@ with `make hello-world-sandbox-observed-demo-check`. That packet performs the ex
 `sandbox.artifact.write_text` approval/execution flow in a temporary local fixture workspace while
 keeping Mission Control, local LLM execution, VM/container lifecycle, sandbox orchestration, shell
 execution, and host promotion disabled.
+Generate the Mission Control handoff packet with `make hello-world-mission-control-handoff`;
+validate it with `make hello-world-mission-control-handoff-check`. That packet is metadata-only:
+Mission Control may display/import evidence labels, hashes, approval status, and warning chips, but
+it does not execute governed actions, replace Ithildin policy, call a local model, start a
+VM/container, orchestrate a sandbox, or promote files to the trusted host.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

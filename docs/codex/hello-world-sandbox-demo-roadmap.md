@@ -41,6 +41,8 @@ make hello-world-sandbox-demo-packet
 make hello-world-sandbox-demo-packet-check
 make hello-world-sandbox-observed-demo
 make hello-world-sandbox-observed-demo-check
+make hello-world-mission-control-handoff
+make hello-world-mission-control-handoff-check
 ```
 
 Generated packet:
@@ -49,6 +51,7 @@ Generated packet:
 var/review-packets/v3/governed-artifact-transfer-lab/
 var/review-packets/v3/hello-world-sandbox-demo/
 var/review-packets/v3/hello-world-sandbox-observed-demo/
+var/review-packets/v3/hello-world-mission-control-handoff/
 ```
 
 The Hello World packet is evidence-only:
@@ -63,6 +66,11 @@ The observed Hello World packet performs the existing governed `sandbox.artifact
 approval/execution path in a temporary local fixture workspace, while Mission Control behavior,
 local LLM execution, real VM/container lifecycle, sandbox orchestration, shell execution, and host
 promotion remain disabled.
+
+The Mission Control handoff packet is metadata-only. It wraps the observed Hello World evidence in
+a display/import contract for Mission Control, but Mission Control does not execute the action,
+replace Ithildin policy, call a local model, start a VM/container, orchestrate a sandbox, approve
+promotion, or write to the trusted host.
 
 ## Phase 1: Mission Control Evidence Attachment
 
