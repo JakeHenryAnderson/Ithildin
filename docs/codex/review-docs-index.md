@@ -227,6 +227,7 @@ externally closed.
 - [Ithildin v1.0 Assurance Closure](v1.0-assurance-closure.md)
 - [Ithildin v1.0 RC Readiness Gate](v1.0-rc-readiness-gate.md)
 - [Ithildin Enterprise Readiness Runway](enterprise-readiness-runway.md)
+- [Ithildin Enterprise Readiness Gap Matrix](enterprise-readiness-gap-matrix.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)
 - [Post-RC Decision Record Examples](post-rc-decision-record-examples.md)

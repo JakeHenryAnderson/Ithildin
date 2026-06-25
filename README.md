@@ -344,6 +344,9 @@ checked with `make control-mapping-readiness`.
   local-preview RC toward Mission Control display integration, sandbox/VM proof of concept,
   trusted-host promotion, production IAM/storage, SIEM-shaped exports, and compliance mapping
   support without enabling those powers today.
+- `make enterprise-readiness-gap-matrix-check` - validate the enterprise readiness gap matrix that
+  maps post-RC lanes to blockers, required evidence, allowed planning states, and blocked
+  production/security claims.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -690,6 +693,11 @@ checked with `make enterprise-readiness-runway-check`; it defines the post-v1 pa
 Control display integration, sandbox/VM proof of concept, trusted-host promotion, production
 IAM/storage/audit architecture, SIEM-shaped exports, and compliance mapping support while
 keeping all enterprise powers design-only today.
+The enterprise readiness gap matrix is
+[docs/codex/enterprise-readiness-gap-matrix.md](docs/codex/enterprise-readiness-gap-matrix.md),
+checked with `make enterprise-readiness-gap-matrix-check`; it records which enterprise lanes are
+closed only for local preview, planning-only, external-review-required, or blocked, and which
+production/security claims remain unavailable.
 The post-RC decision gate is
 [docs/codex/post-rc-decision-gate.md](docs/codex/post-rc-decision-gate.md) and is checked with
 `make post-rc-decision-gate`; it requires a written decision record, scope, forbidden scope,

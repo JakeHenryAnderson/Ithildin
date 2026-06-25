@@ -39,6 +39,7 @@ from scripts import (
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
+    enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -889,6 +890,92 @@ def test_enterprise_readiness_runway_is_wired() -> None:
     assert "docs/codex/enterprise-readiness-runway.md" in docs_site
     assert "docs/codex/enterprise-readiness-runway.md" in review_docs.REVIEW_DOCS
     assert "Ithildin Enterprise Readiness Runway" in review_index
+
+
+def test_enterprise_readiness_gap_matrix_is_wired() -> None:
+    report = enterprise_readiness_gap_matrix_check.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(encoding="utf-8")
+    runway_doc = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    register_doc = Path("docs/codex/post-rc-decision-register.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["gap_count"] == 10
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    for gap_id in [
+        "ERG-001",
+        "ERG-002",
+        "ERG-003",
+        "ERG-004",
+        "ERG-005",
+        "ERG-006",
+        "ERG-007",
+        "ERG-008",
+        "ERG-009",
+        "ERG-010",
+    ]:
+        assert f"`{gap_id}`" in doc
+    for phrase in [
+        "Status: design-only enterprise gap matrix beyond the v1.0 local-preview RC.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "closed_local_preview",
+        "planning_only",
+        "external_review_required",
+        "Mission Control display/importer",
+        "Live sandbox/VM worker proof of concept",
+        "Production identity and multi-user authorization",
+        "Durable runtime storage and retention",
+        "SIEM-shaped export adapter",
+        "Public/security-product positioning",
+        "Allowed current claims",
+        "Blocked current claims",
+        "Mission Control outside execution, policy, approval, audit authority",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "production deployment readiness",
+        "organization identity/RBAC",
+        "OS-isolated sandbox guarantee",
+        "SIEM custody",
+        "custody-grade or regulatory audit guarantee",
+        "HIPAA/GLBA/SOX/GDPR compliance automation",
+        "Mission Control execution authority",
+        "Ithildin-managed VM/container lifecycle",
+        "trusted-host promotion",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime behavior is approved",
+        "Mission Control may execute",
+        "Ithildin starts containers",
+        "trusted-host promotion is implemented",
+        "production identity is implemented",
+        "runtime Postgres is enabled",
+        "SIEM custody is implemented",
+    ]:
+        assert forbidden not in doc
+    assert "enterprise-readiness-gap-matrix-check:" in makefile
+    assert "enterprise-readiness-gap-matrix-check" in release_check_body
+    assert "make enterprise-readiness-gap-matrix-check" in readme
+    assert "docs/codex/enterprise-readiness-gap-matrix.md" in readme
+    assert "enterprise-readiness-gap-matrix.md" in runway_doc
+    assert "enterprise-readiness-gap-matrix.md" in register_doc
+    assert "docs/codex/enterprise-readiness-gap-matrix.md" in docs_site
+    assert "docs/codex/enterprise-readiness-gap-matrix.md" in review_docs.REVIEW_DOCS
+    assert "Ithildin Enterprise Readiness Gap Matrix" in review_index
 
 
 def test_post_rc_decision_gate_is_wired() -> None:

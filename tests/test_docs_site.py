@@ -122,6 +122,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v1.0-assurance-closure.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-readiness-runway.md" in DEFAULT_DOCS
+    assert "docs/codex/enterprise-readiness-gap-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-gate.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-record-template.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-record-examples.md" in DEFAULT_DOCS

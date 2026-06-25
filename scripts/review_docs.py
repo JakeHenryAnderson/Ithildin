@@ -248,6 +248,7 @@ REVIEW_DOCS = [
     "docs/codex/v1.0-assurance-closure.md",
     "docs/codex/v1.0-rc-readiness-gate.md",
     "docs/codex/enterprise-readiness-runway.md",
+    "docs/codex/enterprise-readiness-gap-matrix.md",
     "docs/codex/post-rc-decision-gate.md",
     "docs/codex/post-rc-decision-record-template.md",
     "docs/codex/post-rc-decision-record-examples.md",

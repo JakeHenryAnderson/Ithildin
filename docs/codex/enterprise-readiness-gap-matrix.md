@@ -1,0 +1,81 @@
+# Ithildin Enterprise Readiness Gap Matrix
+
+Status: design-only enterprise gap matrix beyond the v1.0 local-preview RC.
+
+This matrix translates the enterprise-readiness runway into reviewable gaps. It does not approve
+runtime behavior, tool manifests, executors, policy rules, API endpoints, MCP transports, Mission
+Control runtime behavior, sandbox orchestration, SIEM adapters, production identity, runtime
+Postgres, hosted telemetry, shell, Docker/Kubernetes/browser governed powers, arbitrary HTTP, broad
+filesystem writes, compliance automation, or public/security-product claims.
+
+Current governed tool count: `24`.
+
+Current selected capability: `not selected`.
+
+## Matrix Rules
+
+- A row marked `closed_local_preview` is closed only for the v1.0 local-preview boundary.
+- A row marked `planning_only` may receive docs, schemas, static fixtures, packets, and review
+  prompts only.
+- A row marked `blocked` requires a post-RC decision record before any implementation work begins.
+- A row marked `external_review_required` cannot support broader claims until source or external
+  review disposition is recorded.
+- No row in this matrix authorizes production identity, runtime Postgres, hosted telemetry, remote
+  MCP, Mission Control execution authority, live VM/container control, trusted-host promotion, SIEM
+  custody, compliance automation, or public/security-product positioning.
+
+## Gap Matrix
+
+| Gap ID | Area | Current status | Blocks claim/capability | Required evidence before implementation or stronger claim |
+| --- | --- | --- | --- | --- |
+| `ERG-001` | Local-preview RC operator trial | `closed_local_preview` | Broader public/security-product positioning | Same-commit `make release-check`, `make review-candidate`, packet redaction `findings: 0`, and no critical/high local-preview findings |
+| `ERG-002` | Mission Control display/importer | `planning_only` | Mission Control runtime importer and operator dashboard integration | Mission Control-side implementation plan, display-only schema, stale/mismatched packet fixtures, source-review handoff, and post-RC decision record |
+| `ERG-003` | Sandbox/VM static preflight | `external_review_required` | Live VM/container inspection and sandbox posture claims | External/source review disposition of static preflight implementation, negative fixtures, profile contract, and unsupported-profile warnings |
+| `ERG-004` | Live sandbox/VM worker proof of concept | `blocked` | Local model invocation inside a VM/container and sandbox run evidence | Live-preflight decision record, operator-managed VM profile, network/mount/root contract, cleanup transcript, failure transcript, and external/source review |
+| `ERG-005` | Trusted-host artifact promotion | `blocked` | Moving sandbox outputs into host staging/approved zones | Artifact hash-binding model, approval model, promotion state machine, conflict/replay/path-escape negative transcripts, and external/source review |
+| `ERG-006` | Production identity and multi-user authorization | `blocked` | Enterprise identity, RBAC, tenant/team authorization, and remote admin use | Identity provider design, local-principal mapping, tenant/workspace model, session/admin model, audit attribution model, and external architecture review |
+| `ERG-007` | Durable runtime storage and retention | `blocked` | Runtime Postgres, multi-user concurrency, retention policy, backup/restore, and production custody | Storage architecture decision, migration plan, backup/restore plan, retention model, failure-mode tests, and source review |
+| `ERG-008` | SIEM-shaped export adapter | `planning_only` | SIEM integration, delivery/retry behavior, and security-ops ingestion | Stable event schema, redaction policy, delivery/backpressure model, compatibility tests, signing/verification story, and external/source review |
+| `ERG-009` | Compliance mapping support | `planning_only` | HIPAA/GLBA/SOX/GDPR or other compliance claims | Control mapping templates, legal-review boundary, operator responsibility language, evidence reconstruction guide, and explicit no-compliance-automation wording |
+| `ERG-010` | Public/security-product positioning | `blocked` | Marketing as production security control, sandbox, EDR/MDM, SIEM, or compliance system | Independent review, resolved accepted risks, production identity/storage decisions, deployment hardening, support model, and claim review |
+
+## Claim Boundary Summary
+
+Allowed current claims:
+
+- local-preview governed MCP/tool gateway;
+- bounded read-only metadata tools and approval-gated patch apply under the current manifests;
+- local, tamper-evident evidence and locally signed exports where configured;
+- operator workbench and Mission Control handoff packets as evidence/display planning surfaces.
+
+Blocked current claims, written without product-marketing claim phrases:
+
+- production deployment readiness;
+- organization identity/RBAC;
+- OS-isolated sandbox guarantee;
+- SIEM custody;
+- custody-grade or regulatory audit guarantee;
+- HIPAA/GLBA/SOX/GDPR compliance automation;
+- Mission Control execution authority;
+- Ithildin-managed VM/container lifecycle;
+- trusted-host promotion.
+
+## Next Enterprise Action
+
+The next enterprise-readiness action is to choose one matrix row and create or update a post-RC
+decision record before implementation begins. The most conservative next lane remains Mission
+Control display/importer planning (`ERG-002`) because it can improve operator usability while keeping
+Mission Control outside execution, policy, approval, audit authority, local-model invocation,
+sandbox orchestration, and trusted-host promotion.
+
+## Validation
+
+Run:
+
+```sh
+make enterprise-readiness-gap-matrix-check
+make enterprise-readiness-runway-check
+make post-rc-decision-register-check
+```
+
+All checks must remain green before `make release-check` can pass.

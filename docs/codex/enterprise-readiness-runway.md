@@ -234,10 +234,14 @@ invocation, Mission Control runtime importer, sandbox orchestration, or trusted-
 The current lane statuses are tracked in
 [post-rc-decision-register.md](post-rc-decision-register.md), which keeps Mission Control display
 planning separate from no-go runtime lanes.
+The enterprise gap and claim blockers are tracked in
+[enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md), validated with
+`make enterprise-readiness-gap-matrix-check`.
 
 Current status anchors:
 
 - static preflight CLI fixture runner exists;
+- enterprise readiness gap status is matrixed before implementation claims;
 - static preflight lane remains local-preview fixture evidence only;
 - external/source review disposition is still required before any live sandbox/VM lane.
 - post-RC decision register validation is required before any frozen lane moves.

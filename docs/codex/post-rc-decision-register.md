@@ -8,6 +8,10 @@ from planning to implementation still requires a dedicated decision record, impl
 source-review or external-review evidence, tests, gates, packet artifacts, and an explicit go/no-go
 outcome.
 
+The broader enterprise gap map is
+[enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md). This register records the
+current lane decision status; the matrix records the claim/capability each unresolved gap blocks.
+
 Current governed tool count: `24`.
 
 Current selected capability: `not selected`.
