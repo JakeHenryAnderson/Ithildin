@@ -117,6 +117,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-readiness-gate.md" in DEFAULT_DOCS
+    assert "docs/codex/enterprise-readiness-runway.md" in DEFAULT_DOCS
     assert "docs/codex/governed-artifact-transfer-lab.md" in DEFAULT_DOCS
     assert "docs/codex/hello-world-sandbox-demo-roadmap.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/sandbox-artifact-write-text.md" in DEFAULT_DOCS

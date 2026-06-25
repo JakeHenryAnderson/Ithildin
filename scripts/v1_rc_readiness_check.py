@@ -45,6 +45,7 @@ REQUIRED_PHRASES = [
     "capability expansion remains blocked",
     "public/security-product positioning remains blocked",
     "external/source-review pending rows remain visible",
+    "enterprise readiness",
     "compact artifact map",
     "`make review-candidate` regenerates the v1.0 RC packet",
 ]

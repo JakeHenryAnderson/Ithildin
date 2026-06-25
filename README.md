@@ -331,6 +331,10 @@ checked with `make control-mapping-readiness`.
   workbench/evidence, assurance, tool-surface, no-new-powers, and packet redaction gates.
 - `make v1-rc-packet` - generate a compact ignored v1.0 RC handoff packet under
   `var/review-packets/v1.0/rc/`.
+- `make enterprise-readiness-runway-check` - validate the design-only runway from v1.0
+  local-preview RC toward Mission Control display integration, sandbox/VM proof of concept,
+  trusted-host promotion, production IAM/storage, SIEM-shaped exports, and compliance mapping
+  support without enabling those powers today.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -607,6 +611,12 @@ The v1.0 RC readiness gate is
 `make review-candidate` regenerates that compact packet as part of the broader local handoff gate so
 the v1.0 RC status, workbench evidence map, Mission Control handoff, sandbox-promotion evidence
 contract, and artifact hashes are refreshed together.
+The enterprise readiness runway is
+[docs/codex/enterprise-readiness-runway.md](docs/codex/enterprise-readiness-runway.md) and is
+checked with `make enterprise-readiness-runway-check`; it defines the post-v1 path through Mission
+Control display integration, sandbox/VM proof of concept, trusted-host promotion, production
+IAM/storage/audit architecture, SIEM-shaped exports, and compliance mapping support while
+keeping all enterprise powers design-only today.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

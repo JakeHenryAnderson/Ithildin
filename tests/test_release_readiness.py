@@ -39,6 +39,7 @@ from scripts import (
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
+    enterprise_readiness_runway_check,
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
@@ -447,6 +448,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
         "no next capability is selected",
         "capability expansion remains blocked",
         "public/security-product positioning remains blocked",
+        "enterprise readiness",
         "compact artifact map",
         "`make review-candidate` regenerates the v1.0 RC packet",
     ]:
@@ -499,17 +501,22 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 9
+    assert packet["artifact_count"] == 10
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
-    artifacts = output_dir.joinpath("06_V1_RC_ARTIFACTS.md").read_text(encoding="utf-8")
-    commands = output_dir.joinpath("07_V1_RC_COMMANDS.md").read_text(encoding="utf-8")
+    runway = output_dir.joinpath("06_ENTERPRISE_READINESS_RUNWAY.md").read_text(
+        encoding="utf-8"
+    )
+    artifacts = output_dir.joinpath("07_V1_RC_ARTIFACTS.md").read_text(encoding="utf-8")
+    commands = output_dir.joinpath("08_V1_RC_COMMANDS.md").read_text(encoding="utf-8")
     hashes = json.loads(
         output_dir.joinpath("v1-rc-artifact-hashes.json").read_text(encoding="utf-8")
     )
 
     assert not output_dir.joinpath("06_V1_RC_COMMANDS.md").exists()
-    assert "6. `06_V1_RC_ARTIFACTS.md`" in index
-    assert "7. `07_V1_RC_COMMANDS.md`" in index
+    assert "6. `06_ENTERPRISE_READINESS_RUNWAY.md`" in index
+    assert "7. `07_V1_RC_ARTIFACTS.md`" in index
+    assert "8. `08_V1_RC_COMMANDS.md`" in index
+    assert "Ithildin Enterprise Readiness Runway" in runway
     assert "v1.0 RC Artifact Map" in artifacts
     assert "var/review-packets/v3/live-demo" in artifacts
     assert "var/review-packets/v3/operator-workbench" in artifacts
@@ -519,7 +526,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "promotion only as `not_promoted`" in artifacts
     assert "host promotion is implemented or approved" in artifacts
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 8
+    assert len(hashes["artifacts"]) == 9
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
@@ -527,9 +534,61 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
         "03_V1_WORKBENCH_EVIDENCE_CLOSURE.md",
         "04_V1_ASSURANCE_CLOSURE.md",
         "05_V1_RC_READINESS_GATE.md",
-        "06_V1_RC_ARTIFACTS.md",
-        "07_V1_RC_COMMANDS.md",
+        "06_ENTERPRISE_READINESS_RUNWAY.md",
+        "07_V1_RC_ARTIFACTS.md",
+        "08_V1_RC_COMMANDS.md",
     }
+
+
+def test_enterprise_readiness_runway_is_wired() -> None:
+    report = enterprise_readiness_runway_check.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["phase_count"] == 7
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    for phrase in [
+        "Status: design-only runway beyond the v1.0 local-preview RC.",
+        "Phase E1: Local RC Freeze And Trusted User Trial",
+        "Phase E2: Mission Control Display Integration",
+        "Phase E3: Sandbox/VM Worker Proof Of Concept",
+        "Phase E4: Trusted-Host Promotion Lane",
+        "Phase E5: Production IAM And Storage Architecture",
+        "Phase E6: Evidence Export And SIEM Adapter Lane",
+        "Phase E7: Compliance Mapping Support",
+        "Current Next Best Action",
+        "design-only Mission Control display integration proposal",
+        "evidence viewer, not an execution or policy authority",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Mission Control execution authority",
+        "Ithildin starting containers or VMs",
+        "direct trusted-host writes",
+        "runtime Postgres",
+        "hosted telemetry by default",
+        "claims of HIPAA, GLBA, SOX, GDPR",
+    ]:
+        assert phrase in doc
+    assert "enterprise-readiness-runway-check:" in makefile
+    assert "enterprise-readiness-runway-check" in release_check_body
+    assert "make enterprise-readiness-runway-check" in readme
+    assert "docs/codex/enterprise-readiness-runway.md" in docs_site
+    assert "docs/codex/enterprise-readiness-runway.md" in review_docs.REVIEW_DOCS
+    assert "Ithildin Enterprise Readiness Runway" in review_index
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

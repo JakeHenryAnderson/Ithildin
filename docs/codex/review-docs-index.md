@@ -222,6 +222,7 @@ externally closed.
 - [Ithildin v1.0 Workbench And Evidence Closure](v1.0-workbench-evidence-closure.md)
 - [Ithildin v1.0 Assurance Closure](v1.0-assurance-closure.md)
 - [Ithildin v1.0 RC Readiness Gate](v1.0-rc-readiness-gate.md)
+- [Ithildin Enterprise Readiness Runway](enterprise-readiness-runway.md)
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
 - [Hello World Sandbox Demo Roadmap](hello-world-sandbox-demo-roadmap.md)
 - [Hello World Sandbox Observed Demo](hello-world-sandbox-observed-demo.md)

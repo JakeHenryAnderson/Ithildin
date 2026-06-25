@@ -206,6 +206,7 @@ DEFAULT_DOCS = [
     "docs/codex/v1.0-workbench-evidence-closure.md",
     "docs/codex/v1.0-assurance-closure.md",
     "docs/codex/v1.0-rc-readiness-gate.md",
+    "docs/codex/enterprise-readiness-runway.md",
     "docs/codex/governed-artifact-transfer-lab.md",
     "docs/codex/hello-world-sandbox-demo-roadmap.md",
     "docs/codex/hello-world-sandbox-observed-demo.md",
