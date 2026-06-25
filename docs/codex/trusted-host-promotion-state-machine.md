@@ -23,6 +23,10 @@ Validate this state-machine contract with:
 make trusted-host-promotion-state-machine-check
 ```
 
+The matching negative fixture contract is
+[trusted-host-promotion-negative-fixtures.md](trusted-host-promotion-negative-fixtures.md), validated
+with `make trusted-host-promotion-negative-fixtures-check`.
+
 ## State Vocabulary
 
 Only `not_promoted` is valid in current runtime/demo evidence. Every other state below is a future

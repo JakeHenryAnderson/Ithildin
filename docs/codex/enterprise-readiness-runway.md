@@ -137,6 +137,9 @@ design-only outcomes and the evidence required before any promotion implementati
 The design-only state machine for the lane is
 [trusted-host-promotion-state-machine.md](trusted-host-promotion-state-machine.md) and is validated
 with `make trusted-host-promotion-state-machine-check`.
+The design-only negative fixture contract is
+[trusted-host-promotion-negative-fixtures.md](trusted-host-promotion-negative-fixtures.md) and is
+validated with `make trusted-host-promotion-negative-fixtures-check`.
 
 Current permitted state:
 

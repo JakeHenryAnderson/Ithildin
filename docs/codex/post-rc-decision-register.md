@@ -113,6 +113,10 @@ Current selected capability: `not selected`.
   `trusted-host-promotion-state-machine.md` defines future state labels, allowed transitions, safe
   evidence fields, and transition-denial cases while keeping current runtime evidence at
   `not_promoted`.
+- Current negative-fixture evidence:
+  `trusted-host-promotion-negative-fixtures.md` defines future denial fixture IDs, transcript shape,
+  safe reason labels, and product-boundary overclaim cases while keeping trusted-host promotion
+  blocked.
 
 ### PRD-SIEM-EXPORT-001
 

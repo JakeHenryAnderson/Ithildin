@@ -63,10 +63,11 @@ A future decision record must include at least:
 | Artifact hash-binding model | future implementation-planning packet |
 | Approval binding model | future implementation-planning packet |
 | Promotion state machine | `trusted-host-promotion-state-machine.md` |
+| Negative fixture contract | `trusted-host-promotion-negative-fixtures.md` |
 | Zone contract | future implementation-planning packet |
-| Conflict negative transcripts | future transcript generator and review packet |
-| Replay negative transcripts | future transcript generator and review packet |
-| Path escape negative transcripts | future transcript generator and review packet |
+| Conflict negative transcripts | `trusted-host-promotion-negative-fixtures.md` and future transcript generator |
+| Replay negative transcripts | `trusted-host-promotion-negative-fixtures.md` and future transcript generator |
+| Path escape negative transcripts | `trusted-host-promotion-negative-fixtures.md` and future transcript generator |
 | External/source review | future source-review handoff and disposition |
 
 ## Allowed Future Decision Outcomes
@@ -110,6 +111,9 @@ source-review questions, and operator warnings. It does not approve runtime beha
 The state-machine sketch is recorded in
 [trusted-host-promotion-state-machine.md](trusted-host-promotion-state-machine.md) and validated
 with `make trusted-host-promotion-state-machine-check`.
+The negative fixture contract is recorded in
+[trusted-host-promotion-negative-fixtures.md](trusted-host-promotion-negative-fixtures.md) and
+validated with `make trusted-host-promotion-negative-fixtures-check`.
 
 Current output must continue to report:
 

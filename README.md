@@ -250,6 +250,8 @@ checked with `make control-mapping-readiness`.
   checklist for the trusted-host promotion lane while keeping host promotion blocked.
 - `make trusted-host-promotion-state-machine-check` - validate the design-only promotion state
   machine, transition evidence, and denial plan while keeping host promotion blocked.
+- `make trusted-host-promotion-negative-fixtures-check` - validate the design-only promotion
+  denial fixtures and transcript shape while keeping host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -873,6 +875,11 @@ The design-only trusted-host promotion state machine is in
 [docs/codex/trusted-host-promotion-state-machine.md](docs/codex/trusted-host-promotion-state-machine.md)
 and is checked with `make trusted-host-promotion-state-machine-check`; it defines future state
 labels, allowed transitions, safe evidence fields, and transition-denial cases.
+The design-only trusted-host promotion negative fixture contract is in
+[docs/codex/trusted-host-promotion-negative-fixtures.md](docs/codex/trusted-host-promotion-negative-fixtures.md)
+and is checked with `make trusted-host-promotion-negative-fixtures-check`; it defines the future
+denial transcript families for conflict, replay, stale evidence, unsafe labels, sensitive payloads,
+and product-boundary overclaims before any promotion implementation can be considered.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

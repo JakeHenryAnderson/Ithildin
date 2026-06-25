@@ -206,6 +206,7 @@ from scripts import (
     test_determinism_gate,
     tool_surface_invariant_gate,
     trusted_host_promotion_decision_intake_check,
+    trusted_host_promotion_negative_fixtures_check,
     trusted_host_promotion_state_machine_check,
     v04_review_packet,
     v05_boundary_decision_draft_check,
@@ -14850,6 +14851,91 @@ def test_trusted_host_promotion_state_machine_is_wired() -> None:
     assert "trusted-host-promotion-state-machine.md" in gap_matrix
     assert "trusted-host-promotion-state-machine.md" in decision_register
     assert "trusted-host-promotion-state-machine.md" in intake
+
+
+def test_trusted_host_promotion_negative_fixtures_are_wired() -> None:
+    report = trusted_host_promotion_negative_fixtures_check.build_report(Path.cwd())
+    fixtures = Path("docs/codex/trusted-host-promotion-negative-fixtures.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    intake = Path("docs/codex/trusted-host-promotion-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    state_machine = Path("docs/codex/trusted-host-promotion-state-machine.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "blocked"
+    assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
+    assert report["negative_case_count"] == 24
+    assert report["negative_cases_rejected"] == 24
+    assert report["decision_record_required"] is True
+    assert report["implementation_approved"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["promotion_without_exact_artifact_hash_binding_allowed"] is False
+    assert report["promotion_without_approval_evidence_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: design-only negative fixture contract for `ERG-005`",
+        "TRUSTED-PROMOTION-NEG-001",
+        "TRUSTED-PROMOTION-NEG-024",
+        "Required Transcript Shape",
+        "reason_label",
+        "trusted_host_write_performed",
+        "safe_metadata_only",
+        "trusted-host promotion allowed: `false`",
+    ]:
+        assert phrase in fixtures
+    for forbidden in [
+        "trusted-host promotion is implemented",
+        "host writes are approved",
+        "automatic promotion is approved",
+        "overwrite is approved",
+        "delete is approved",
+        "archive extraction is approved",
+    ]:
+        assert forbidden not in fixtures
+    assert "trusted-host-promotion-negative-fixtures-check:" in makefile
+    assert "trusted-host-promotion-negative-fixtures-check" in release_check_body
+    assert "make trusted-host-promotion-negative-fixtures-check" in readme
+    assert (
+        "trusted-host-promotion-negative-fixtures-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/trusted-host-promotion-negative-fixtures.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/trusted-host-promotion-negative-fixtures.md" in docs_site
+    assert "Trusted-Host Promotion Negative Fixtures" in review_index
+    assert "trusted-host-promotion-negative-fixtures.md" in enterprise
+    assert "trusted-host-promotion-negative-fixtures.md" in gap_matrix
+    assert "trusted-host-promotion-negative-fixtures.md" in decision_register
+    assert "trusted-host-promotion-negative-fixtures.md" in intake
+    assert "trusted-host-promotion-negative-fixtures.md" in state_machine
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

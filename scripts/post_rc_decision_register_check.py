@@ -49,6 +49,7 @@ REQUIRED_PHRASES = [
     "Promotion state-machine design, decision-intake, and evidence contract discussion only",
     "trusted-host-promotion-decision-intake.md",
     "trusted-host-promotion-state-machine.md",
+    "trusted-host-promotion-negative-fixtures.md",
     "state-machine evidence",
     "trusted-host promotion remains blocked",
     "PRD-SIEM-EXPORT-001",

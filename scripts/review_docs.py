@@ -287,6 +287,7 @@ REVIEW_DOCS = [
     "docs/codex/sandbox-promotion-evidence-contract.md",
     "docs/codex/trusted-host-promotion-decision-intake.md",
     "docs/codex/trusted-host-promotion-state-machine.md",
+    "docs/codex/trusted-host-promotion-negative-fixtures.md",
     "docs/codex/v3-readiness-debt-register.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",
