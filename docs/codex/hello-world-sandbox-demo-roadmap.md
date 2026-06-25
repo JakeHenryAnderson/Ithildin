@@ -43,6 +43,7 @@ make hello-world-sandbox-observed-demo
 make hello-world-sandbox-observed-demo-check
 make hello-world-mission-control-handoff
 make hello-world-mission-control-handoff-check
+make sandbox-promotion-evidence-contract-check
 ```
 
 Generated packet:
@@ -71,6 +72,10 @@ The Mission Control handoff packet is metadata-only. It wraps the observed Hello
 a display/import contract for Mission Control, but Mission Control does not execute the action,
 replace Ithildin policy, call a local model, start a VM/container, orchestrate a sandbox, approve
 promotion, or write to the trusted host.
+
+The sandbox promotion evidence contract defines the future trusted-host movement evidence shape,
+including `not_promoted`, `promotion_requested`, `promotion_approved`, `promotion_completed`, and
+`promotion_rejected` states. The current Hello World flow records only `not_promoted`.
 
 ## Phase 1: Mission Control Evidence Attachment
 

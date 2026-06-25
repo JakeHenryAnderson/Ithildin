@@ -57,6 +57,8 @@ The workbench should let a local operator answer four questions without reading 
   observed governed artifact path.
 - `make hello-world-mission-control-handoff` records the metadata-only Mission Control display/import
   handoff for the observed Hello World evidence.
+- `make sandbox-promotion-evidence-contract-check` validates the future trusted-host promotion
+  evidence contract while keeping promotion unimplemented.
 - `make demo-workbench-smoke` records a deterministic operator-flow smoke transcript.
 - `make workbench-evidence-packet` packages the operator workbench story into one focused review
   packet.
@@ -72,6 +74,7 @@ demo evidence commands:
 - `make sandbox-artifact-observed-demo`;
 - `make hello-world-sandbox-observed-demo`;
 - `make hello-world-mission-control-handoff`;
+- `make sandbox-promotion-evidence-contract-check`;
 - `make live-demo-evidence-summary`;
 - `make demo-readiness-summary`;
 - `make demo-operator-walkthrough`;
@@ -130,6 +133,8 @@ The observed Hello World sandbox artifact evidence sits immediately after the ge
 sandbox artifact write packet in that reading order.
 The Mission Control handoff packet sits immediately after the observed Hello World evidence and is
 metadata-only display/import guidance, not Mission Control execution or policy authority.
+The sandbox promotion evidence contract is the next review lane for trusted-host movement, but the
+current workbench records only `not_promoted` evidence and does not perform promotion.
 `OPERATOR_DEMO_WALKTHROUGH.md` gives the first human
 path with expected screens, expected evidence files, next steps, and reset guidance.
 `07_WORKBENCH_DEMO_STORY.md` gives the happy path from preflight through cleanup,

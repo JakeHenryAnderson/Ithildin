@@ -171,6 +171,7 @@ from scripts import (
     sandbox_artifact_write_text_negative_transcripts,
     sandbox_artifact_write_text_preimplementation_check,
     sandbox_artifact_write_text_source_review_bundle,
+    sandbox_promotion_evidence_contract_check,
     siem_evidence_design_check,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
@@ -12645,6 +12646,49 @@ def test_hello_world_sandbox_demo_preimplementation_is_wired() -> None:
         assert forbidden not in roadmap.lower()
         assert forbidden not in proposal.lower()
         assert forbidden not in promotion.lower()
+
+
+def test_sandbox_promotion_evidence_contract_is_wired() -> None:
+    report = sandbox_promotion_evidence_contract_check.build_report(Path.cwd())
+    contract = Path("docs/codex/sandbox-promotion-evidence-contract.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    demo_workbench_body = makefile.partition("demo-workbench:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["scope"] == "design_only_evidence_contract"
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["host_promotion_implemented"] is False
+    assert report["mission_control_runtime_behavior_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "not_promoted" in contract
+    assert "promotion_requested" in contract
+    assert "promotion_approved" in contract
+    assert "promotion_completed" in contract
+    assert "promotion_rejected" in contract
+    assert "sandbox://..." in contract
+    assert "host-staging://..." in contract
+    assert "approved://..." in contract
+    assert (
+        "Any other state requires a future explicitly approved promotion implementation"
+        in contract
+    )
+    assert "make sandbox-promotion-evidence-contract-check" in readme
+    assert "sandbox-promotion-evidence-contract-check:" in makefile
+    assert "sandbox-promotion-evidence-contract-check" in release_check_body
+    assert "$(MAKE) sandbox-promotion-evidence-contract-check" in demo_workbench_body
+    assert (
+        "sandbox-promotion-evidence-contract-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-promotion-evidence-contract.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/sandbox-promotion-evidence-contract.md" in docs_site
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

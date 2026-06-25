@@ -244,6 +244,8 @@ checked with `make control-mapping-readiness`.
   display/import handoff for the observed Hello World evidence.
 - `make hello-world-mission-control-handoff-check` - validate the Mission Control handoff packet,
   docs wiring, and no-runtime/no-local-model/no-VM/no-host-promotion boundary.
+- `make sandbox-promotion-evidence-contract-check` - validate the future trusted-host promotion
+  evidence contract while confirming host promotion remains unimplemented.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -628,6 +630,9 @@ validate it with `make hello-world-mission-control-handoff-check`. That packet i
 Mission Control may display/import evidence labels, hashes, approval status, and warning chips, but
 it does not execute governed actions, replace Ithildin policy, call a local model, start a
 VM/container, orchestrate a sandbox, or promote files to the trusted host.
+Validate the future promotion evidence shape with `make sandbox-promotion-evidence-contract-check`;
+that contract defines labels, hashes, approval evidence, and review states for a later explicit
+promotion implementation, but it does not approve trusted-host writes today.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

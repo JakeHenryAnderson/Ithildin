@@ -53,6 +53,7 @@ COMMANDS = [
     ["make", "live-demo-preflight"],
     ["make", "live-demo-status"],
     ["make", "live-demo-smoke"],
+    ["make", "sandbox-promotion-evidence-contract-check"],
     ["make", "live-demo-evidence-summary"],
     ["make", "operator-sandbox-demo-packet"],
     ["make", "agent-run-correlation-packet"],
