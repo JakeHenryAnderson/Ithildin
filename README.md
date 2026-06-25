@@ -227,6 +227,9 @@ checked with `make control-mapping-readiness`.
   Stage 2 simulated sandbox-transfer evidence packet without starting a real VM or sandbox.
 - `make governed-artifact-transfer-stage2-check` - validate the Mission Control handoff metadata,
   simulated sandbox copy/return hashes, VM-readiness plan, and no-new-powers boundary.
+- `make hello-world-sandbox-demo-check` - validate the design/preimplementation roadmap for the
+  Mission Control + local LLM Hello World sandbox demo and confirm runtime write powers remain
+  blocked.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -578,6 +581,11 @@ it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part
 handoff wrapper, and a Stage 2 simulated sandbox transfer generated with
 `make governed-artifact-transfer-stage2`; real VM/sandbox orchestration remains a future gated
 implementation decision.
+The Hello World sandbox demo roadmap is in
+[docs/codex/hello-world-sandbox-demo-roadmap.md](docs/codex/hello-world-sandbox-demo-roadmap.md)
+and is checked with `make hello-world-sandbox-demo-check`; it defines the end-to-end Mission
+Control + local LLM + Ithildin demo target while keeping `sandbox.artifact.write_text` design-only
+and the tool count remains `23`.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in

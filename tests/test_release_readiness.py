@@ -63,6 +63,7 @@ from scripts import (
     governed_artifact_transfer_lab_check,
     guided_demo,
     guided_demo_readiness,
+    hello_world_sandbox_demo_check,
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
@@ -12557,6 +12558,60 @@ def test_governed_artifact_transfer_lab_is_wired(tmp_path: Path) -> None:
     ]:
         assert forbidden not in index
         assert forbidden not in summary
+
+
+def test_hello_world_sandbox_demo_preimplementation_is_wired() -> None:
+    report = hello_world_sandbox_demo_check.build_report(Path.cwd())
+    roadmap = Path("docs/codex/hello-world-sandbox-demo-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+    proposal = Path("docs/codex/capability-proposals/sandbox-artifact-write-text.md").read_text(
+        encoding="utf-8"
+    )
+    promotion = Path("docs/codex/sandbox-promotion-evidence-contract.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 23
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["write_capability_implemented"] is False
+    assert report["mission_control_runtime_behavior_allowed"] is False
+    assert report["vm_orchestration_allowed"] is False
+    assert "hello-demo" in roadmap
+    assert "hello.txt" in roadmap
+    assert "Hello World" in roadmap
+    assert "Implementation remains blocked" in roadmap
+    assert "sandbox.artifact.write_text" in proposal
+    assert "Status: design-only proposal" in proposal
+    assert "approval binding" in proposal
+    assert "promotion_id" in promotion
+    assert "auto_promotion_performed" in promotion
+    assert "make hello-world-sandbox-demo-check" in readme
+    assert "hello-world-sandbox-demo-check:" in makefile
+    assert "hello-world-sandbox-demo-check" in release_check_body
+    assert "hello-world-sandbox-demo-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    for path in [
+        "docs/codex/hello-world-sandbox-demo-roadmap.md",
+        "docs/codex/capability-proposals/sandbox-artifact-write-text.md",
+        "docs/codex/sandbox-promotion-evidence-contract.md",
+    ]:
+        assert path in review_docs.REVIEW_DOCS
+        assert path in docs_site
+    for forbidden in [
+        "production-ready",
+        "compliance-grade",
+        "tamper-proof",
+        "safe arbitrary tool use",
+    ]:
+        assert forbidden not in roadmap.lower()
+        assert forbidden not in proposal.lower()
+        assert forbidden not in promotion.lower()
 
 
 def test_control_mapping_readiness_gate_is_wired() -> None:

@@ -88,6 +88,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "demo-evidence-readiness",
     "governed-artifact-transfer-lab-check",
     "governed-artifact-transfer-stage2-check",
+    "hello-world-sandbox-demo-check",
     "siem-evidence-design-check",
     "data-classification-design-check",
     "control-mapping-design-check",
