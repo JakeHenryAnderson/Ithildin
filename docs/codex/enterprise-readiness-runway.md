@@ -288,9 +288,14 @@ behavior, trusted-host promotion, or network expansion.
 
 The source-review handoff is
 [sandbox-vm-static-preflight-source-review.md](sandbox-vm-static-preflight-source-review.md) and is
-generated with `make sandbox-vm-static-preflight-source-review-packet`. It packages the static
-profile preflight plan, fixture contract, negative fixtures, command evidence, POC packet pointer,
-and artifact hashes so a reviewer can decide whether planning a future read-only fixture-only
-preflight runner is coherent. It does not approve live sandbox orchestration, local model
-invocation, Mission Control runtime behavior, trusted-host promotion, or any new governed tool
-power.
+generated with `make sandbox-vm-static-preflight-source-review-packet`. It packages the CLI-only
+fixture preflight runner, static profile plan, fixture contract, negative fixtures, command
+evidence, POC packet pointer, and artifact hashes so a reviewer can inspect the static preflight
+lane. It does not approve live sandbox orchestration, local model invocation, Mission Control
+runtime behavior, trusted-host promotion, or any new governed tool power.
+
+The internal source-review pass is
+[v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
+It records the CLI-only fixture preflight runner as locally reviewed after tightening raw
+path-shaped label suppression, while leaving external/source disposition, live VM inspection,
+Mission Control runtime behavior, local model invocation, and sandbox orchestration blocked.

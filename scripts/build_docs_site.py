@@ -219,6 +219,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-static-profile-negative-fixtures.md",
     "docs/codex/sandbox-vm-static-preflight-implementation-decision.md",
     "docs/codex/sandbox-vm-static-preflight-source-review.md",
+    "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md",
     "docs/codex/governed-artifact-transfer-lab.md",
     "docs/codex/hello-world-sandbox-demo-roadmap.md",
     "docs/codex/hello-world-sandbox-observed-demo.md",

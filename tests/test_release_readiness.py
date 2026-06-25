@@ -1250,6 +1250,12 @@ def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
     decision = Path(
         "docs/codex/sandbox-vm-static-preflight-implementation-decision.md"
     ).read_text(encoding="utf-8")
+    internal_review = Path(
+        "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md"
+    ).read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True
@@ -1286,9 +1292,24 @@ def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "sandbox-vm-static-preflight-implementation-decision.md" in enterprise
+    assert "v3-sandbox-vm-static-preflight-internal-review.md" in enterprise
     assert "CLI-only fixture preflight runner allowed: `true`" in decision
     assert "CLI-only fixture preflight runner implemented: `true`" in decision
     assert "runtime sandbox control allowed: `false`" in decision
+    assert (
+        "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "XH-SANDBOX-PREFLIGHT-001" in internal_review
+    assert "Disposition | Recommended fix" in internal_review
+    assert "fixed by making `_safe_labelish` reject leading `/`" in internal_review
+    assert "Sandbox/VM static preflight lane" in matrix
+    assert "internal reviewed; pending external/source disposition" in matrix
+    assert "XH-SANDBOX-PREFLIGHT-001 fixed" in matrix
 
 
 def test_sandbox_vm_static_preflight_runner_and_transcripts_are_safe(
@@ -1318,6 +1339,13 @@ def test_sandbox_vm_static_preflight_runner_and_transcripts_are_safe(
     assert bad_report["decision"] == "no_go"
     assert "sensitive_payload_shape" in bad_report["safe_reasons"]
     assert "/Users/demo/workspace" not in json.dumps(bad_report)
+
+    fixture["workspace_id"] = "/opt/demo/workspace"
+    raw_label_fixture = tmp_path / "raw-label-fixture.json"
+    raw_label_fixture.write_text(json.dumps(fixture), encoding="utf-8")
+    raw_label_report = sandbox_vm_static_preflight.build_report(raw_label_fixture)
+    assert raw_label_report["workspace_id"] is None
+    assert "/opt/demo/workspace" not in json.dumps(raw_label_report)
 
     transcript_path = sandbox_vm_static_preflight_negative_transcripts.build_transcripts(
         tmp_path / "transcripts"

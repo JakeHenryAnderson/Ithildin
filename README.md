@@ -720,9 +720,14 @@ CLI-only fixture preflight runner, not API/MCP behavior, sandbox orchestration, 
 Control runtime behavior, local model invocation, trusted-host promotion, or new governed powers.
 The focused source-review handoff is
 [docs/codex/sandbox-vm-static-preflight-source-review.md](docs/codex/sandbox-vm-static-preflight-source-review.md)
-and is generated with `make sandbox-vm-static-preflight-source-review-packet`; it asks whether a
-future read-only fixture-only preflight runner may be planned without approving live VM control,
-Mission Control runtime behavior, local model invocation, or trusted-host promotion.
+and is generated with `make sandbox-vm-static-preflight-source-review-packet`; it packages the
+CLI-only fixture preflight runner for focused review without approving live VM control, Mission
+Control runtime behavior, local model invocation, or trusted-host promotion.
+The internal source-review pass is
+[docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
+it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label
+handling, while keeping external/source review, live VM inspection, Mission Control runtime
+behavior, and sandbox orchestration pending or blocked.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

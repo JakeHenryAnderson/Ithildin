@@ -236,7 +236,11 @@ def _safe_count(payload: Mapping[str, Any] | None, path: tuple[str, ...]) -> int
 def _safe_labelish(value: str) -> bool:
     if any(pattern.search(value) for pattern in SENSITIVE_PATTERNS):
         return False
-    return bool(re.fullmatch(r"[A-Za-z0-9_.:/-]{1,96}", value))
+    if value.startswith(("/", "~")) or "\\" in value:
+        return False
+    if "://" in value:
+        return bool(re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,31}://[A-Za-z0-9_.-]{1,64}", value))
+    return bool(re.fullmatch(r"[A-Za-z0-9_.-]{1,96}", value))
 
 
 def render_report(report: dict[str, Any]) -> str:
