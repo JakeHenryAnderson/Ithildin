@@ -34,6 +34,12 @@ REQUIRED_PHRASES = [
     "Mission Control display proposal, handoff schema, negative fixtures",
     "focused display review",
     "packet now exist",
+    "static preflight CLI fixture runner",
+    "internal source-review pass also now exist",
+    "current enterprise-path action is external/source review disposition",
+    "separate post-RC decision",
+    "live VM/container inspection",
+    "Mission Control runtime importer",
     "sandbox/VM worker proof-of-concept boundary",
     "sandbox-vm-worker-boundary-charter.md",
     "make sandbox-vm-worker-boundary-charter-check",
@@ -49,6 +55,12 @@ REQUIRED_PHRASES = [
     "make sandbox-vm-static-profile-fixture-contract-check",
     "sandbox-vm-static-profile-negative-fixtures.md",
     "make sandbox-vm-static-profile-negative-fixtures-check",
+    "sandbox-vm-static-preflight-implementation-decision.md",
+    "make sandbox-vm-static-preflight-implementation-gate",
+    "sandbox-vm-static-preflight-source-review.md",
+    "make sandbox-vm-static-preflight-source-review-packet",
+    "v3-sandbox-vm-static-preflight-internal-review.md",
+    "static preflight lane remains local-preview fixture evidence only",
     "platform matrix",
     "mount/root posture",
     "network posture",
@@ -80,6 +92,7 @@ FORBIDDEN_PHRASES = [
     "Mission Control may execute",
     "Ithildin starts containers",
     "trusted-host promotion is implemented",
+    "before any real VM, local-model, importer, or preflight-runner runtime work begins",
 ]
 
 

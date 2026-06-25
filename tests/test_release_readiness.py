@@ -835,6 +835,12 @@ def test_enterprise_readiness_runway_is_wired() -> None:
         "Mission Control display proposal, handoff schema, negative fixtures",
         "focused display review",
         "packet now exist",
+        "static preflight CLI fixture runner",
+        "internal source-review pass also now exist",
+        "current enterprise-path action is external/source review disposition",
+        "separate post-RC decision",
+        "live VM/container inspection",
+        "Mission Control runtime importer",
         "sandbox/VM worker proof-of-concept boundary",
         "sandbox-vm-worker-boundary-charter.md",
         "make sandbox-vm-worker-boundary-charter-check",
@@ -842,6 +848,12 @@ def test_enterprise_readiness_runway_is_wired() -> None:
         "make sandbox-vm-profile-contract-check",
         "sandbox-vm-preflight-contract.md",
         "make sandbox-vm-preflight-contract-check",
+        "sandbox-vm-static-preflight-implementation-decision.md",
+        "make sandbox-vm-static-preflight-implementation-gate",
+        "sandbox-vm-static-preflight-source-review.md",
+        "make sandbox-vm-static-preflight-source-review-packet",
+        "v3-sandbox-vm-static-preflight-internal-review.md",
+        "static preflight lane remains local-preview fixture evidence only",
         "platform matrix",
         "mount/root posture",
         "network posture",
@@ -864,6 +876,10 @@ def test_enterprise_readiness_runway_is_wired() -> None:
     ]:
         assert phrase in doc
     assert "enterprise-readiness-runway-check:" in makefile
+    assert (
+        "before any real VM, local-model, importer, or preflight-runner runtime work begins"
+        not in doc
+    )
     assert "enterprise-readiness-runway-check" in release_check_body
     assert "make enterprise-readiness-runway-check" in readme
     assert "docs/codex/enterprise-readiness-runway.md" in docs_site

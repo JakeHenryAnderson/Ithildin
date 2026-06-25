@@ -226,12 +226,20 @@ Stop enterprise-readiness work and reassess if:
 
 The Mission Control display proposal, handoff schema, negative fixtures, and focused display review
 packet now exist on the Ithildin side. The sandbox/VM worker boundary charter, profile contract,
-and preflight contract also now exist. The current enterprise-path action is to generate and review
-the focused sandbox/VM proof-of-concept review packet before any real VM, local-model, importer, or
-preflight-runner runtime work begins.
+preflight contract, proof-of-concept review packet, static profile fixture contract, static preflight
+CLI fixture runner, source-review packet, and internal source-review pass also now exist.
+The current enterprise-path action is external/source review disposition of the static preflight
+lane, followed by a separate post-RC decision before any live VM/container inspection, local-model
+invocation, Mission Control runtime importer, sandbox orchestration, or trusted-host promotion work.
 
-This packet is the current sandbox/VM worker proof-of-concept boundary handoff; it prepares review
-of future profile/preflight planning without enabling runtime sandbox control.
+Current status anchors:
+
+- static preflight CLI fixture runner exists;
+- static preflight lane remains local-preview fixture evidence only;
+- external/source review disposition is still required before any live sandbox/VM lane.
+
+The sandbox/VM worker proof-of-concept boundary packet remains the boundary handoff lineage; it
+prepared review of profile/preflight planning without enabling runtime sandbox control.
 
 Use
 [sandbox-vm-worker-boundary-charter.md](sandbox-vm-worker-boundary-charter.md) and validate it with
@@ -299,3 +307,8 @@ The internal source-review pass is
 It records the CLI-only fixture preflight runner as locally reviewed after tightening raw
 path-shaped label suppression, while leaving external/source disposition, live VM inspection,
 Mission Control runtime behavior, local model invocation, and sandbox orchestration blocked.
+
+Until that external/source disposition is recorded, the static preflight lane remains local-preview
+fixture evidence only. It does not approve real VM/container lifecycle control, Mission Control
+execution, local model invocation, network expansion, trusted-host promotion, public/security-product
+positioning, or enterprise deployment claims.
