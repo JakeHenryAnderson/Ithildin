@@ -32,6 +32,10 @@ SOURCE_DOCS = [
         "07_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
         ROOT / "docs/codex/mission-control-display-integration-proposal.md",
     ),
+    (
+        "08_MISSION_CONTROL_HANDOFF_SCHEMA.md",
+        ROOT / "docs/codex/mission-control-handoff-schema-contract.md",
+    ),
 ]
 ARTIFACT_REFERENCES = [
     {
@@ -123,11 +127,11 @@ def build_packet(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
         files.append(destination)
 
-    artifacts_path = output_dir / "08_V1_RC_ARTIFACTS.md"
+    artifacts_path = output_dir / "09_V1_RC_ARTIFACTS.md"
     artifacts_path.write_text(_artifacts_markdown(repo_root), encoding="utf-8")
     files.append(artifacts_path)
 
-    commands_path = output_dir / "09_V1_RC_COMMANDS.md"
+    commands_path = output_dir / "10_V1_RC_COMMANDS.md"
     commands_path.write_text(_commands_markdown(readiness), encoding="utf-8")
     files.append(commands_path)
 
@@ -169,9 +173,10 @@ def _index_markdown(commit: str, readiness: dict[str, Any]) -> str:
             "5. `05_V1_RC_READINESS_GATE.md`",
             "6. `06_ENTERPRISE_READINESS_RUNWAY.md`",
             "7. `07_MISSION_CONTROL_DISPLAY_PROPOSAL.md`",
-            "8. `08_V1_RC_ARTIFACTS.md`",
-            "9. `09_V1_RC_COMMANDS.md`",
-            "10. `v1-rc-artifact-hashes.json`",
+            "8. `08_MISSION_CONTROL_HANDOFF_SCHEMA.md`",
+            "9. `09_V1_RC_ARTIFACTS.md`",
+            "10. `10_V1_RC_COMMANDS.md`",
+            "11. `v1-rc-artifact-hashes.json`",
             "",
             "This packet is local handoff evidence only. It is not production approval, external",
             "source-review closure, custody-grade audit, sandbox approval, SIEM approval, or",

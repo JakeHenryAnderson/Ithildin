@@ -339,6 +339,9 @@ checked with `make control-mapping-readiness`.
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
   sandbox orchestrator, or trusted-host promotion path.
+- `make mission-control-handoff-schema-contract-check` - validate the Ithildin-side Mission
+  Control handoff schema contract and the current `mission-control-handoff.json` seed payload while
+  keeping the integration file/import-only and display-only.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -627,6 +630,11 @@ and is checked with `make mission-control-display-integration-proposal-check`; i
 cross-project step to file/import display of Ithildin evidence labels, hashes, warnings, and links,
 with Mission Control explicitly outside execution, policy, approval, audit, local-model, VM,
 sandbox-orchestration, and trusted-host promotion authority.
+The Ithildin-side handoff schema contract is
+[docs/codex/mission-control-handoff-schema-contract.md](docs/codex/mission-control-handoff-schema-contract.md)
+and is checked with `make mission-control-handoff-schema-contract-check`; it validates the current
+`mission-control-handoff.json` seed shape, required false authority flags, display allowlist,
+hidden-field denylist, relative attachment paths, and no-runtime/no-new-powers boundary.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

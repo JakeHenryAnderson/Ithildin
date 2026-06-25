@@ -70,6 +70,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v1-rc-roadmap-check",
     "enterprise-readiness-runway-check",
     "mission-control-display-integration-proposal-check",
+    "mission-control-handoff-schema-contract-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",

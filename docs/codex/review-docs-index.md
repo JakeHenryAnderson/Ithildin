@@ -224,6 +224,7 @@ externally closed.
 - [Ithildin v1.0 RC Readiness Gate](v1.0-rc-readiness-gate.md)
 - [Ithildin Enterprise Readiness Runway](enterprise-readiness-runway.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
+- [Mission Control Handoff Schema Contract](mission-control-handoff-schema-contract.md)
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
 - [Hello World Sandbox Demo Roadmap](hello-world-sandbox-demo-roadmap.md)
 - [Hello World Sandbox Observed Demo](hello-world-sandbox-observed-demo.md)
