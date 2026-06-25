@@ -177,6 +177,7 @@ from scripts import (
     sandbox_artifact_write_text_preimplementation_check,
     sandbox_artifact_write_text_source_review_bundle,
     sandbox_promotion_evidence_contract_check,
+    sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
     sandbox_vm_worker_boundary_charter_check,
     siem_evidence_design_check,
@@ -607,6 +608,13 @@ def test_enterprise_readiness_runway_is_wired() -> None:
         "make sandbox-vm-worker-boundary-charter-check",
         "sandbox-vm-profile-contract.md",
         "make sandbox-vm-profile-contract-check",
+        "sandbox-vm-preflight-contract.md",
+        "make sandbox-vm-preflight-contract-check",
+        "platform matrix",
+        "mount/root posture",
+        "network posture",
+        "artifact ingress/egress",
+        "failure/cleanup transcript",
         "promotion_status",
         "not_promoted",
         "Mission Control as the",
@@ -851,6 +859,40 @@ def test_sandbox_vm_profile_contract_is_wired() -> None:
     assert "sandbox-vm-profile-contract.md" in enterprise
     assert "promotion_status" in enterprise
     assert "not_promoted" in enterprise
+
+
+def test_sandbox_vm_preflight_contract_is_wired() -> None:
+    report = sandbox_vm_preflight_contract_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make sandbox-vm-preflight-contract-check" in readme
+    assert "sandbox-vm-preflight-contract-check:" in makefile
+    assert "sandbox-vm-preflight-contract-check" in release_check_body
+    assert "sandbox-vm-preflight-contract-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-preflight-contract.md" in docs_site
+    assert "docs/codex/sandbox-vm-preflight-contract.md" in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Preflight Contract" in review_index
+    assert "sandbox-vm-preflight-contract.md" in enterprise
+    assert "platform matrix" in enterprise
+    assert "failure/cleanup transcript" in enterprise
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

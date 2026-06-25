@@ -228,6 +228,7 @@ externally closed.
 - [Mission Control Handoff Negative Fixtures](mission-control-handoff-negative-fixtures.md)
 - [Sandbox/VM Worker Boundary Charter](sandbox-vm-worker-boundary-charter.md)
 - [Sandbox/VM Profile Contract](sandbox-vm-profile-contract.md)
+- [Sandbox/VM Preflight Contract](sandbox-vm-preflight-contract.md)
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
 - [Hello World Sandbox Demo Roadmap](hello-world-sandbox-demo-roadmap.md)
 - [Hello World Sandbox Observed Demo](hello-world-sandbox-observed-demo.md)

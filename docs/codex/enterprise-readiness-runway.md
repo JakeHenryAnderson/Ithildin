@@ -102,6 +102,8 @@ Required before implementation:
 - network posture contract;
 - artifact ingress/egress contract;
 - failure and cleanup transcripts;
+- sandbox/VM preflight contract tying the matrix, posture, ingress/egress, warning, and cleanup
+  evidence into one go/no-go decision;
 - external/source review before any claim of sandbox safety.
 
 Blocked:
@@ -239,3 +241,9 @@ Then use [sandbox-vm-profile-contract.md](sandbox-vm-profile-contract.md) and va
 sandbox metadata shape, forbidden fields, validation decisions, and `promotion_status:
 not_promoted` posture before any live profile loader, local-model invocation, VM/container
 lifecycle, or Mission Control importer is implemented.
+
+Then use [sandbox-vm-preflight-contract.md](sandbox-vm-preflight-contract.md) and validate it with
+`make sandbox-vm-preflight-contract-check`. The preflight contract defines the future platform
+matrix, mount/root posture, network posture, artifact ingress/egress posture, warning chips, and
+failure/cleanup transcript requirements before any live sandbox preflight, local model action, or
+Mission Control importer is implemented.

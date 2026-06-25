@@ -354,6 +354,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-profile-contract-check` - validate the design-only sandbox/VM profile contract
   for future operator-supplied sandbox metadata while confirming no runtime profile loader,
   sandbox orchestration, local model invocation, or trusted-host promotion is added.
+- `make sandbox-vm-preflight-contract-check` - validate the design-only sandbox/VM preflight
+  contract for future platform, mount/root, network, ingress/egress, cleanup, and warning evidence
+  while confirming no live preflight runner or sandbox control is added.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -667,6 +670,11 @@ The companion profile contract is
 checked with `make sandbox-vm-profile-contract-check`; it defines the future operator-supplied
 profile fields, forbidden fields, validation decisions, and `not_promoted` posture without adding a
 runtime profile loader or sandbox control.
+The follow-on preflight contract is
+[docs/codex/sandbox-vm-preflight-contract.md](docs/codex/sandbox-vm-preflight-contract.md) and is
+checked with `make sandbox-vm-preflight-contract-check`; it defines the future go/no-go evidence for
+platform support, mount/root labels, network posture, artifact ingress/egress, cleanup/failure
+transcripts, and warning chips without adding a live preflight runner.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control
