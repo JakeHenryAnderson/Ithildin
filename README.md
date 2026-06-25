@@ -230,6 +230,11 @@ checked with `make control-mapping-readiness`.
 - `make hello-world-sandbox-demo-check` - validate the design/preimplementation roadmap for the
   Mission Control + local LLM Hello World sandbox demo and confirm runtime write powers remain
   blocked.
+- `make hello-world-sandbox-demo-packet` - generate an ignored evidence-only Hello World sandbox
+  demo packet under `var/review-packets/v3/hello-world-sandbox-demo/` without governed tool calls,
+  real VM startup, Mission Control runtime behavior, or host promotion.
+- `make hello-world-sandbox-demo-packet-check` - validate the generated packet shape in a temporary
+  directory and confirm runtime write powers remain blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - validate the future
   `sandbox.artifact.write_text` implementation plan, fixture contract, negative transcript plan,
   source-review handoff, and manifest-absent boundary while keeping runtime write powers blocked.
@@ -589,6 +594,11 @@ The Hello World sandbox demo roadmap is in
 and is checked with `make hello-world-sandbox-demo-check`; it defines the end-to-end Mission
 Control + local LLM + Ithildin demo target while keeping `sandbox.artifact.write_text` design-only
 and the tool count remains `23`.
+Generate the evidence-only packet with `make hello-world-sandbox-demo-packet`; validate it with
+`make hello-world-sandbox-demo-packet-check`. The packet writes only ignored/local review artifacts,
+records that runtime write powers remain blocked, and does not perform governed tool calls,
+Mission Control runtime behavior, real VM startup, sandbox orchestration, shell execution, or host
+promotion.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

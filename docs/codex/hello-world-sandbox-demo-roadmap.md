@@ -36,13 +36,24 @@ Run:
 ```sh
 make governed-artifact-transfer-stage2
 make governed-artifact-transfer-stage2-check
+make hello-world-sandbox-demo-packet
+make hello-world-sandbox-demo-packet-check
 ```
 
 Generated packet:
 
 ```text
 var/review-packets/v3/governed-artifact-transfer-lab/
+var/review-packets/v3/hello-world-sandbox-demo/
 ```
+
+The Hello World packet is evidence-only:
+
+- runtime write powers remain blocked;
+- tool count remains `23`;
+- no governed tool calls are performed;
+- no Mission Control runtime behavior is performed;
+- no real VM startup, sandbox orchestration, shell execution, or host promotion occurs.
 
 ## Phase 1: Mission Control Evidence Attachment
 

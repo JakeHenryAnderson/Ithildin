@@ -64,6 +64,8 @@ from scripts import (
     guided_demo,
     guided_demo_readiness,
     hello_world_sandbox_demo_check,
+    hello_world_sandbox_demo_packet,
+    hello_world_sandbox_demo_packet_check,
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
@@ -12594,9 +12596,18 @@ def test_hello_world_sandbox_demo_preimplementation_is_wired() -> None:
     assert "promotion_id" in promotion
     assert "auto_promotion_performed" in promotion
     assert "make hello-world-sandbox-demo-check" in readme
+    assert "make hello-world-sandbox-demo-packet" in readme
+    assert "make hello-world-sandbox-demo-packet-check" in readme
     assert "hello-world-sandbox-demo-check:" in makefile
+    assert "hello-world-sandbox-demo-packet:" in makefile
+    assert "hello-world-sandbox-demo-packet-check:" in makefile
     assert "hello-world-sandbox-demo-check" in release_check_body
+    assert "hello-world-sandbox-demo-packet-check" in release_check_body
     assert "hello-world-sandbox-demo-check" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert (
+        "hello-world-sandbox-demo-packet-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
     for path in [
         "docs/codex/hello-world-sandbox-demo-roadmap.md",
         "docs/codex/capability-proposals/sandbox-artifact-write-text.md",
@@ -12613,6 +12624,51 @@ def test_hello_world_sandbox_demo_preimplementation_is_wired() -> None:
         assert forbidden not in roadmap.lower()
         assert forbidden not in proposal.lower()
         assert forbidden not in promotion.lower()
+
+
+def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:
+    report = hello_world_sandbox_demo_packet_check.build_report(Path.cwd())
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 23
+    assert report["runtime_changes_allowed"] is False
+    assert report["write_capability_implemented"] is False
+    assert report["mission_control_runtime_behavior"] is False
+    assert report["real_vm_or_container_started"] is False
+    assert report["packet"]["valid"] is True
+
+
+def test_hello_world_sandbox_demo_packet_builds_from_fixture(tmp_path: Path) -> None:
+    output_dir = tmp_path / "packet"
+
+    hello_world_sandbox_demo_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    manifest = json.loads((output_dir / "evidence/demo-manifest.json").read_text())
+    promotion = json.loads((output_dir / "evidence/promotion-evidence-draft.json").read_text())
+    artifact = output_dir / "simulated-sandbox/hello-demo/hello.txt"
+    hashes = json.loads((output_dir / "artifact-hashes.json").read_text())
+    artifact_paths = {entry["path"] for entry in hashes["artifacts"]}
+
+    assert artifact.read_text(encoding="utf-8") == "Hello World\n"
+    assert manifest["status"] == "evidence_only_simulation"
+    assert manifest["tool_count"] == 23
+    assert manifest["runtime_write_capability_implemented"] is False
+    assert manifest["governed_tool_calls_performed"] is False
+    assert manifest["mission_control_runtime_behavior"] is False
+    assert manifest["real_vm_or_container_started"] is False
+    assert manifest["sandbox_orchestration_performed"] is False
+    assert manifest["shell_execution_performed"] is False
+    assert manifest["host_promotion_performed"] is False
+    assert all(manifest["checks"].values())
+    assert promotion["auto_promotion_performed"] is False
+    assert promotion["real_host_promotion_performed"] is False
+    assert "simulated-sandbox/hello-demo/hello.txt" in artifact_paths
+    assert "host-staging/hello-demo/hello.txt" in artifact_paths
+    assert "approved-host/hello-demo/hello.txt" in artifact_paths
 
 
 def test_sandbox_artifact_write_text_preimplementation_is_wired() -> None:
