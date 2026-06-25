@@ -312,6 +312,13 @@ evidence, POC packet pointer, and artifact hashes so a reviewer can inspect the 
 lane. It does not approve live sandbox orchestration, local model invocation, Mission Control
 runtime behavior, trusted-host promotion, or any new governed tool power.
 
+The external disposition plan is
+[sandbox-vm-static-preflight-disposition-plan.md](sandbox-vm-static-preflight-disposition-plan.md)
+and is validated with `make sandbox-vm-static-preflight-disposition-plan-check`. It defines the
+questions and allowed outcomes for recording an external/source-review response to `ERG-003` without
+turning static fixture evidence into live VM/container control, sandbox orchestration, local model
+invocation, Mission Control runtime behavior, or trusted-host promotion.
+
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
 It records the CLI-only fixture preflight runner as locally reviewed after tightening raw

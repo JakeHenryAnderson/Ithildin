@@ -242,6 +242,7 @@ externally closed.
 - [Sandbox/VM Preflight Contract](sandbox-vm-preflight-contract.md)
 - [Sandbox/VM Static Preflight Implementation Decision](sandbox-vm-static-preflight-implementation-decision.md)
 - [Sandbox/VM Static Preflight Source Review Handoff](sandbox-vm-static-preflight-source-review.md)
+- [Sandbox/VM Static Preflight External Disposition Plan](sandbox-vm-static-preflight-disposition-plan.md)
 - [Sandbox/VM Static Preflight Internal Source Review](v3-sandbox-vm-static-preflight-internal-review.md)
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
 - [Hello World Sandbox Demo Roadmap](hello-world-sandbox-demo-roadmap.md)

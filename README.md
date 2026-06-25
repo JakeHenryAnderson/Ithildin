@@ -794,6 +794,11 @@ The focused source-review handoff is
 and is generated with `make sandbox-vm-static-preflight-source-review-packet`; it packages the
 CLI-only fixture preflight runner for focused review without approving live VM control, Mission
 Control runtime behavior, local model invocation, or trusted-host promotion.
+The external disposition plan is
+[docs/codex/sandbox-vm-static-preflight-disposition-plan.md](docs/codex/sandbox-vm-static-preflight-disposition-plan.md)
+and is checked with `make sandbox-vm-static-preflight-disposition-plan-check`; it defines the
+reviewer questions, allowed outcomes, closure evidence, and post-disposition boundary for `ERG-003`
+without closing the lane or approving live sandbox/VM runtime work.
 The internal source-review pass is
 [docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
 it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label

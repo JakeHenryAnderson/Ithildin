@@ -40,6 +40,7 @@ CONTRACT_DOCS = [
     Path("docs/codex/sandbox-vm-static-profile-negative-fixtures.md"),
     Path("docs/codex/sandbox-vm-static-preflight-implementation-decision.md"),
     Path("docs/codex/sandbox-vm-static-preflight-source-review.md"),
+    Path("docs/codex/sandbox-vm-static-preflight-disposition-plan.md"),
     Path("docs/codex/sandbox-vm-preflight-contract.md"),
     Path("docs/codex/sandbox-vm-profile-contract.md"),
     Path("docs/codex/sandbox-vm-worker-boundary-charter.md"),

@@ -188,6 +188,7 @@ from scripts import (
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
     sandbox_vm_static_preflight,
+    sandbox_vm_static_preflight_disposition_plan_check,
     sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_negative_transcripts,
     sandbox_vm_static_preflight_source_review_packet,
@@ -1951,6 +1952,7 @@ def test_sandbox_vm_static_preflight_source_review_packet_is_wired(
     assert "sandbox-vm-static-profile-negative-fixtures.md" in contracts
     assert "sandbox-vm-static-preflight-implementation-decision.md" in contracts
     assert "sandbox-vm-static-preflight-source-review.md" in contracts
+    assert "sandbox-vm-static-preflight-disposition-plan.md" in contracts
     assert "sandbox-vm-static-profile.local-preview.example.json" in fixtures
     assert "runtime_changes_allowed" in validation
     assert "mission_control_runtime_allowed" in validation
@@ -1982,6 +1984,71 @@ def test_sandbox_vm_static_preflight_source_review_packet_is_wired(
         in review_docs.REVIEW_DOCS
     )
     assert "sandbox-vm-static-preflight-source-review.md" in enterprise
+
+
+def test_sandbox_vm_static_preflight_disposition_plan_is_wired() -> None:
+    report = sandbox_vm_static_preflight_disposition_plan_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-static-preflight-disposition-plan.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: external-disposition planning packet for `ERG-003`.",
+        "Required External Reviewer Disposition",
+        "Allowed Outcomes",
+        "Required Evidence To Record Closure",
+        "Post-Disposition Boundary",
+        "closed_local_preview_static_preflight",
+        "does not approve live sandbox/VM runtime work",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "live VM/container inspection",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "API/MCP profile loading",
+    ]:
+        assert blocked in doc
+    assert "make sandbox-vm-static-preflight-disposition-plan-check" in readme
+    assert "sandbox-vm-static-preflight-disposition-plan-check:" in makefile
+    assert "sandbox-vm-static-preflight-disposition-plan-check" in release_check_body
+    assert "sandbox-vm-static-preflight-disposition-plan-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-static-preflight-disposition-plan.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-disposition-plan.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight External Disposition Plan" in review_index
+    assert "sandbox-vm-static-preflight-disposition-plan.md" in enterprise
+    assert "sandbox-vm-static-preflight-disposition-plan.md" in gap_matrix
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
