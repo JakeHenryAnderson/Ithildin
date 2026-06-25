@@ -82,6 +82,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/control-mapping-design.md" in DEFAULT_DOCS
     assert "docs/codex/incident-reconstruction-guide.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-architecture.md" in DEFAULT_DOCS
+    assert "docs/codex/compliance-mapping-disposition-packet.md" in DEFAULT_DOCS
     assert "docs/codex/observability-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/control-mapping-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/git-show-ref-summary.md" in DEFAULT_DOCS
@@ -133,6 +134,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/siem-export-adapter-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/siem-export-adapter-disposition-packet.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-architecture.md" in DEFAULT_DOCS
+    assert "docs/codex/compliance-mapping-disposition-packet.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-integration-proposal.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-importer-plan.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-disposition-packet.md" in DEFAULT_DOCS

@@ -256,7 +256,8 @@ Allowed design scope:
 - policy decision and approval evidence mapping;
 - operator checklists;
 - reviewer packets.
-- the design-only architecture packet in `compliance-mapping-architecture.md`.
+- the design-only architecture packet in `compliance-mapping-architecture.md`;
+- the focused disposition packet in `compliance-mapping-disposition-packet.md`.
 
 Blocked:
 
@@ -273,6 +274,10 @@ Current evidence:
 - `make compliance-mapping-architecture-check` validates the planning-only posture and confirms
   compliance mapping runtime behavior, legal advice, automated certification, custody-grade audit
   claims, and new power classes remain blocked.
+- `make compliance-mapping-disposition-packet` generates the focused handoff asking whether
+  `ERG-009` may continue architecture planning while runtime compliance mapping, legal advice,
+  automated certification, regulated-industry compliance claims, custody claims, and
+  public/security-product positioning remain blocked.
 
 ## Stop Conditions
 

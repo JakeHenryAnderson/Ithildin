@@ -40,7 +40,7 @@ Current selected capability: `not selected`.
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
 | `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, implementation-plan skeleton, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, and external/source review |
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
-| `PRD-COMPLIANCE-MAPPING-001` | Compliance mapping support lane | `approved_for_planning` | Mapping-template architecture, operator responsibility language, legal-review boundary, and evidence-field planning only | `false` | The architecture packet in `compliance-mapping-architecture.md`, exact framework scope, template schema, evidence allowlist/denylist, accepted-risk impact review, post-RC decision record, and external/source review before runtime work |
+| `PRD-COMPLIANCE-MAPPING-001` | Compliance mapping support lane | `approved_for_planning` | Mapping-template architecture, operator responsibility language, legal-review boundary, and evidence-field planning only | `false` | The architecture packet in `compliance-mapping-architecture.md`, the disposition packet in `compliance-mapping-disposition-packet.md`, exact framework scope, template schema, evidence allowlist/denylist, accepted-risk impact review, post-RC decision record, and external/source review before runtime work |
 | `PRD-PROD-IAM-STORAGE-001` | Production identity and durable storage architecture | `approved_for_planning` | Maintain the architecture packet, threat model questions, migration/retention/backup planning, and external architecture review preparation | `false` | Post-RC decision record, identity provider design, tenant/workspace model, storage/migration plan, backup/restore plan, failure-mode tests, and external architecture review before runtime work |
 
 ## Decision Details
@@ -169,6 +169,11 @@ Current selected capability: `not selected`.
   `compliance-mapping-architecture.md` defines future mapping template requirements, legal-review
   boundary, operator responsibility model, evidence non-goals, and review requirements before any
   future runtime decision.
+- Current disposition evidence:
+  `compliance-mapping-disposition-packet.md` packages the architecture, control-mapping,
+  incident-reconstruction, accepted-risk, and post-RC decision evidence for reviewer disposition
+  while keeping runtime compliance mapping, legal advice, automated certification, regulated-industry
+  compliance claims, and public/security-product positioning blocked.
 
 ### PRD-PROD-IAM-STORAGE-001
 

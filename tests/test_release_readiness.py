@@ -27,6 +27,7 @@ from scripts import (
     capability_expansion_gate,
     closure_matrix_evidence_sync,
     compliance_mapping_architecture_check,
+    compliance_mapping_disposition_packet,
     consolidate_review_packet,
     control_mapping_design_check,
     control_mapping_readiness,
@@ -14334,6 +14335,120 @@ def test_compliance_mapping_architecture_is_wired() -> None:
     assert "compliance-mapping-architecture.md" in runway
     assert "compliance-mapping-architecture.md" in gap_matrix
     assert "compliance-mapping-architecture.md" in decision_register
+
+
+def test_compliance_mapping_disposition_packet_is_wired(tmp_path: Path) -> None:
+    report = compliance_mapping_disposition_packet.build_check_report(Path.cwd())
+    output_dir = tmp_path / "compliance-mapping-disposition"
+    compliance_mapping_disposition_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    hashes = json.loads(
+        (
+            output_dir
+            / "compliance-mapping-disposition-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    prompt = (output_dir / "01_COMPLIANCE_MAPPING_DISPOSITION_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    index = (output_dir / "00_COMPLIANCE_MAPPING_DISPOSITION_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (
+        output_dir / "04_COMPLIANCE_MAPPING_DISPOSITION_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_guardrails = Path("scripts/release_guardrails.py").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_009_status"] == "planning_only"
+    assert report["prd_id"] == "PRD-COMPLIANCE-MAPPING-001"
+    assert report["runtime_changes_allowed"] is False
+    assert report["compliance_mapping_planning_allowed"] is True
+    assert report["compliance_mapping_runtime_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["legal_advice_allowed"] is False
+    assert report["automated_certification_allowed"] is False
+    assert report["regulated_industry_compliance_claims_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_009"] is False
+    for phrase in [
+        "Finding namespace: `EXT-COMPLIANCE-MAPPING-###`",
+        "continue_architecture_planning",
+        "revise_before_more_planning",
+        "block_runtime_implementation",
+        "Compliance mapping support",
+    ]:
+        assert phrase in prompt
+    for phrase in [
+        "What This Packet Does Not Prove",
+        "does not approve runtime compliance mapping",
+        "does not close `ERG-009`",
+    ]:
+        assert phrase in index
+    for phrase in [
+        '"runtime_changes_allowed": false',
+        '"compliance_mapping_planning_allowed": true',
+        '"compliance_mapping_runtime_allowed": false',
+        '"compliance_automation_allowed": false',
+        '"legal_advice_allowed": false',
+        '"automated_certification_allowed": false',
+        '"regulated_industry_compliance_claims_allowed": false',
+        '"custody_grade_audit_allowed": false',
+        '"production_identity_allowed": false',
+        '"runtime_postgres_allowed": false',
+        '"siem_adapter_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"public_security_product_positioning_allowed": false',
+        '"closes_erg_009": false',
+    ]:
+        assert phrase in evidence
+    assert "compliance-mapping-disposition-packet:" in makefile
+    assert "compliance-mapping-disposition-packet-check:" in makefile
+    assert "compliance-mapping-disposition-packet-check" in release_check_body
+    assert "$(MAKE) compliance-mapping-disposition-packet" in review_candidate_body
+    assert "compliance-mapping-disposition-packet-check" in release_guardrails
+    assert "make compliance-mapping-disposition-packet" in readme
+    assert "docs/codex/compliance-mapping-disposition-packet.md" in docs_site
+    assert (
+        "docs/codex/compliance-mapping-disposition-packet.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Compliance Mapping Disposition Packet" in review_index
+    assert "compliance-mapping-disposition-packet.md" in runway
+    assert "compliance-mapping-disposition-packet.md" in gap_matrix
+    assert "compliance-mapping-disposition-packet.md" in decision_register
+    assert {entry["path"] for entry in hashes["artifacts"]} == {
+        "00_COMPLIANCE_MAPPING_DISPOSITION_INDEX.md",
+        "01_COMPLIANCE_MAPPING_DISPOSITION_PROMPT.md",
+        "02_COMPLIANCE_MAPPING_DISPOSITION_AND_ARCHITECTURE.md",
+        "03_COMPLIANCE_MAPPING_REVIEW_POINTERS.md",
+        "04_COMPLIANCE_MAPPING_DISPOSITION_COMMAND_EVIDENCE.md",
+    }
 
 
 def test_data_classification_design_check_is_wired() -> None:

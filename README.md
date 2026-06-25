@@ -395,6 +395,10 @@ checked with `make control-mapping-readiness`.
 - `make compliance-mapping-architecture-check` - validate the design-only compliance mapping
   architecture packet while keeping compliance automation, legal conclusions, and regulated-industry
   compliance claims blocked.
+- `make compliance-mapping-disposition-packet` - generate the focused compliance mapping
+  disposition packet asking whether ERG-009 may continue architecture planning while runtime mapping,
+  compliance automation, legal conclusions, automated certification, and regulated-industry
+  compliance claims remain blocked.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -791,6 +795,11 @@ and is checked with `make compliance-mapping-architecture-check`; it defines fut
 scope, mapping-template, evidence allowlist/denylist, operator responsibility, legal-review, and
 accepted-risk questions while keeping compliance automation, legal conclusions, automated
 certification, and regulated-industry compliance claims blocked.
+Generate the compliance mapping disposition packet with
+`make compliance-mapping-disposition-packet`; it asks whether the current ERG-009 architecture
+evidence is coherent enough to continue planning while runtime compliance mapping, legal advice,
+automated certification, regulated-industry compliance claims, custody claims, and
+public/security-product positioning remain blocked.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.
