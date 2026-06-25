@@ -125,6 +125,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v1.0-rc-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-readiness-runway.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-readiness-gap-matrix.md" in DEFAULT_DOCS
+    assert "docs/codex/enterprise-sandbox-control-plane-readiness.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-gate.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-record-template.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-record-examples.md" in DEFAULT_DOCS
@@ -159,6 +160,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/sandbox-vm-static-preflight-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-decision-intake.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-evidence-contract.md" in DEFAULT_DOCS
+    assert "docs/codex/sandbox-vm-live-poc-decision-packet.md" in DEFAULT_DOCS
     assert "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md" in DEFAULT_DOCS
     assert "docs/codex/governed-artifact-transfer-lab.md" in DEFAULT_DOCS
     assert "docs/codex/hello-world-sandbox-demo-roadmap.md" in DEFAULT_DOCS

@@ -399,6 +399,10 @@ checked with `make control-mapping-readiness`.
   disposition packet asking whether ERG-009 may continue architecture planning while runtime mapping,
   compliance automation, legal conclusions, automated certification, and regulated-industry
   compliance claims remain blocked.
+- `make enterprise-sandbox-control-plane-readiness-check` - validate the design-only enterprise
+  sandbox/control-plane readiness map while keeping live VM/container inspection, sandbox
+  orchestration, Mission Control runtime behavior, local model invocation, trusted-host promotion,
+  SIEM adapter behavior, compliance automation, and new governed powers blocked.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -429,6 +433,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-evidence-contract-check` - validate the future live sandbox/VM POC
   evidence contract while confirming cross-source evidence planning does not approve live runtime
   authority.
+- `make sandbox-vm-live-poc-decision-packet` - generate the blocked `ERG-004` external decision
+  packet with readiness evidence, prerequisite static-preflight pointers, reviewer questions,
+  command evidence, and artifact hashes without approving live sandbox/VM runtime work.
 - `make sandbox-vm-static-preflight-disposition-packet` - generate the `ERG-003` external
   disposition handoff packet,
   [docs/codex/sandbox-vm-static-preflight-disposition-packet.md](docs/codex/sandbox-vm-static-preflight-disposition-packet.md),
@@ -761,6 +768,12 @@ The enterprise readiness gap matrix is
 checked with `make enterprise-readiness-gap-matrix-check`; it records which enterprise lanes are
 closed only for local preview, planning-only, external-review-required, or blocked, and which
 production/security claims remain unavailable.
+The sandbox/control-plane readiness map is
+[docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
+and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission
+Control display planning, sandbox/VM static preflight, live sandbox/VM POC decision evidence, and
+trusted-host promotion into one status source while keeping runtime sandbox, local-model, promotion,
+SIEM, compliance, and security-product claims blocked.
 The post-RC decision gate is
 [docs/codex/post-rc-decision-gate.md](docs/codex/post-rc-decision-gate.md) and is checked with
 `make post-rc-decision-gate`; it requires a written decision record, scope, forbidden scope,
@@ -933,6 +946,11 @@ and is checked with `make sandbox-vm-live-poc-evidence-contract-check`; it defin
 cross-source evidence bundle for operator intent, Ithildin run/audit evidence, operator-managed
 sandbox evidence, local model/client evidence, and optional Mission Control display evidence without
 approving live VM/container inspection or runtime authority.
+The live sandbox/VM POC decision packet is
+[docs/codex/sandbox-vm-live-poc-decision-packet.md](docs/codex/sandbox-vm-live-poc-decision-packet.md)
+and is generated with `make sandbox-vm-live-poc-decision-packet`; it packages the decision intake,
+evidence contract, enterprise sandbox readiness map, prerequisite static-preflight disposition
+evidence, command output, and artifact hashes while keeping `ERG-004` blocked.
 The internal source-review pass is
 [docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
 it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label

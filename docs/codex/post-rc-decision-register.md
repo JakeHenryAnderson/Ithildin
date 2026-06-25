@@ -75,7 +75,9 @@ Current selected capability: `not selected`.
 - Status: `no_go`.
 - Current allowed scope: decision-intake evidence in
   `sandbox-vm-live-poc-decision-intake.md`, favorable `ERG-003` disposition tracking,
-  decision-record drafting, docs, review packets, and operator warnings.
+  decision-record drafting, docs, review packets, the readiness map in
+  `enterprise-sandbox-control-plane-readiness.md`, the decision packet in
+  `sandbox-vm-live-poc-decision-packet.md`, and operator warnings.
 - Current forbidden scope: live VM/container inspection, local model invocation, Mission Control
   runtime behavior, sandbox orchestration, SSH, shell, Docker socket access, Kubernetes tools,
   browser automation, arbitrary HTTP, broad filesystem writes, trusted-host promotion, runtime

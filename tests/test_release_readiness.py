@@ -43,6 +43,7 @@ from scripts import (
     demo_state_report,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
+    enterprise_sandbox_control_plane_readiness_check,
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
@@ -192,6 +193,7 @@ from scripts import (
     sandbox_artifact_write_text_source_review_bundle,
     sandbox_promotion_evidence_contract_check,
     sandbox_vm_live_poc_decision_intake_check,
+    sandbox_vm_live_poc_decision_packet,
     sandbox_vm_live_poc_evidence_contract_check,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
@@ -2796,6 +2798,176 @@ def test_sandbox_vm_live_poc_evidence_contract_is_wired() -> None:
     assert "docs/codex/sandbox-vm-live-poc-evidence-contract.md" in review_docs.REVIEW_DOCS
     assert "sandbox-vm-live-poc-evidence-contract.md" in enterprise
     assert "sandbox-vm-live-poc-evidence-contract.md" in gap_matrix
+
+
+def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:
+    report = enterprise_sandbox_control_plane_readiness_check.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_004_status"] == "blocked"
+    assert report["erg_005_status"] == "blocked"
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_enterprise_gap"] is False
+    for phrase in [
+        "Status: design-only readiness map for the post-v1.0 sandbox/control-plane path.",
+        "`ERG-002` Mission Control display/importer",
+        "`ERG-003` Sandbox/VM static preflight",
+        "`ERG-004` Live sandbox/VM worker proof of concept",
+        "`ERG-005` Trusted-host artifact promotion",
+        "sandbox-vm-live-poc-decision-packet.md",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "does not approve live VM/container inspection",
+        "does not approve sandbox orchestration",
+        "does not approve local model invocation",
+        "Mission Control may be discussed as a display/import planning surface only",
+    ]:
+        assert blocked in doc
+    assert "make enterprise-sandbox-control-plane-readiness-check" in readme
+    assert "enterprise-sandbox-control-plane-readiness-check:" in makefile
+    assert "enterprise-sandbox-control-plane-readiness-check" in release_check_body
+    assert "enterprise-sandbox-control-plane-readiness-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/enterprise-sandbox-control-plane-readiness.md" in docs_site
+    assert (
+        "docs/codex/enterprise-sandbox-control-plane-readiness.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Sandbox Control-Plane Readiness" in review_index
+    assert "enterprise-sandbox-control-plane-readiness.md" in enterprise
+    assert "enterprise-sandbox-control-plane-readiness.md" in gap_matrix
+    assert "enterprise-sandbox-control-plane-readiness.md" in decision_register
+
+
+def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
+    report = sandbox_vm_live_poc_decision_packet.build_check_report(Path.cwd())
+    output_dir = tmp_path / "sandbox-vm-live-poc-decision"
+    sandbox_vm_live_poc_decision_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    hashes = json.loads(
+        (output_dir / "sandbox-vm-live-poc-decision-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    prompt = (output_dir / "01_SANDBOX_VM_LIVE_POC_DECISION_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    index = (output_dir / "00_SANDBOX_VM_LIVE_POC_DECISION_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (
+        output_dir / "04_SANDBOX_VM_LIVE_POC_DECISION_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_guardrails = Path("scripts/release_guardrails.py").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "blocked"
+    assert report["prd_id"] == "PRD-SANDBOX-LIVE-POC-001"
+    assert report["requires_erg_003_favorable_disposition"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        "Finding namespace: `EXT-LIVE-POC-###`",
+        "continue_design_only",
+        "approve_limited_operator_managed_poc_planning",
+        "block_live_poc",
+        "Does the reviewer agree `ERG-004` remains blocked",
+    ]:
+        assert phrase in prompt
+    for phrase in [
+        "What This Packet Does Not Prove",
+        "does not approve live VM/container inspection",
+        "does not close `ERG-004`",
+    ]:
+        assert phrase in index
+    for phrase in [
+        '"runtime_changes_allowed": false',
+        '"live_vm_inspection_allowed": false',
+        '"mission_control_runtime_allowed": false',
+        '"local_model_invocation_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"trusted_host_promotion_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"closes_erg_004": false',
+    ]:
+        assert phrase in evidence
+    assert "sandbox-vm-live-poc-decision-packet:" in makefile
+    assert "sandbox-vm-live-poc-decision-packet-check:" in makefile
+    assert "sandbox-vm-live-poc-decision-packet-check" in release_check_body
+    assert "$(MAKE) sandbox-vm-live-poc-decision-packet" in review_candidate_body
+    assert "sandbox-vm-live-poc-decision-packet-check" in release_guardrails
+    assert "make sandbox-vm-live-poc-decision-packet" in readme
+    assert "docs/codex/sandbox-vm-live-poc-decision-packet.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-live-poc-decision-packet.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Decision Packet" in review_index
+    assert "sandbox-vm-live-poc-decision-packet.md" in runway
+    assert "sandbox-vm-live-poc-decision-packet.md" in gap_matrix
+    assert "sandbox-vm-live-poc-decision-packet.md" in decision_register
+    assert {entry["path"] for entry in hashes["artifacts"]} == {
+        "00_SANDBOX_VM_LIVE_POC_DECISION_INDEX.md",
+        "01_SANDBOX_VM_LIVE_POC_DECISION_PROMPT.md",
+        "02_SANDBOX_VM_LIVE_POC_DECISION_AND_READINESS.md",
+        "03_SANDBOX_VM_LIVE_POC_REVIEW_POINTERS.md",
+        "04_SANDBOX_VM_LIVE_POC_DECISION_COMMAND_EVIDENCE.md",
+    }
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:

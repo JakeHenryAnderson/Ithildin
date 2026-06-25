@@ -87,6 +87,19 @@ Blocked:
 Goal: demonstrate a local agent working inside an operator-managed sandbox/VM while Ithildin records
 governed evidence.
 
+Current readiness evidence:
+
+- the sandbox/control-plane readiness map in
+  [enterprise-sandbox-control-plane-readiness.md](enterprise-sandbox-control-plane-readiness.md),
+  validated with `make enterprise-sandbox-control-plane-readiness-check`;
+- the live POC decision intake in
+  [sandbox-vm-live-poc-decision-intake.md](sandbox-vm-live-poc-decision-intake.md);
+- the live POC evidence contract in
+  [sandbox-vm-live-poc-evidence-contract.md](sandbox-vm-live-poc-evidence-contract.md);
+- the blocked live POC decision packet in
+  [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md), generated with
+  `make sandbox-vm-live-poc-decision-packet`.
+
 Allowed design scope:
 
 - sandbox identity and posture evidence;
