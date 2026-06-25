@@ -129,6 +129,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/post-rc-decision-register.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-integration-proposal.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-importer-plan.md" in DEFAULT_DOCS
+    assert "docs/codex/mission-control-side-handoff-plan.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-handoff-schema-contract.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-handoff-negative-fixtures.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-worker-boundary-charter.md" in DEFAULT_DOCS

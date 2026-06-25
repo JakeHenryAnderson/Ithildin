@@ -87,6 +87,7 @@ from scripts import (
     mission_control_display_review_packet,
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_schema_contract_check,
+    mission_control_side_handoff_plan_check,
     next_capability_candidate_evaluation_2_check,
     next_capability_readiness,
     no_new_powers_guardrail,
@@ -1362,6 +1363,63 @@ def test_mission_control_display_importer_plan_is_wired() -> None:
     assert "Mission Control Display Importer Implementation Plan" in review_index
 
 
+def test_mission_control_side_handoff_plan_is_wired() -> None:
+    report = mission_control_side_handoff_plan_check.build_report(Path.cwd())
+    doc = Path("docs/codex/mission-control-side-handoff-plan.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["mission_control_side_runtime_implementation_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: planning-only cross-repo handoff",
+        "Mission Control-side work order",
+        "Required Mission Control Validation",
+        "Required Mission Control Tests",
+        "Required Mission Control Evidence",
+        "Stop Conditions For Mission Control Work",
+        "Runtime importer implementation remains blocked",
+        "not_imported",
+        "imported_valid",
+        "hash_mismatch",
+        "authority_overclaim",
+        "content_leak_rejected",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "Mission Control may execute",
+        "Mission Control may approve",
+        "runtime importer is approved",
+        "trusted-host promotion is implemented",
+    ]:
+        assert forbidden not in doc
+    assert "make mission-control-side-handoff-plan-check" in readme
+    assert "mission-control-side-handoff-plan-check:" in makefile
+    assert "mission-control-side-handoff-plan-check" in release_check_body
+    assert "mission-control-side-handoff-plan-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-side-handoff-plan.md" in docs_site
+    assert "docs/codex/mission-control-side-handoff-plan.md" in review_docs.REVIEW_DOCS
+    assert "Mission Control-Side Display Importer Handoff Plan" in review_index
+
+
 def test_mission_control_handoff_schema_contract_is_wired() -> None:
     report = mission_control_handoff_schema_contract_check.build_report(Path.cwd())
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -1465,7 +1523,9 @@ def test_mission_control_display_review_packet_is_wired(tmp_path: Path) -> None:
     assert "EXT-MC-DISPLAY-###" in prompt
     assert "Mission Control Display Integration Proposal" in contracts
     assert "Mission Control Display Importer Implementation Plan" in contracts
+    assert "Mission Control-Side Display Importer Handoff Plan" in contracts
     assert "make mission-control-display-importer-plan-check" in contracts
+    assert "make mission-control-side-handoff-plan-check" in contracts
     assert "Mission Control Handoff Schema Contract" in contracts
     assert "MC-HANDOFF-NEG-014" in negative
     assert "make mission-control-display-review-packet" in readme

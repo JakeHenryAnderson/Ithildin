@@ -24,6 +24,7 @@ PROJECT_MARKERS = [
 CONTRACT_DOCS = [
     Path("docs/codex/mission-control-display-integration-proposal.md"),
     Path("docs/codex/mission-control-display-importer-plan.md"),
+    Path("docs/codex/mission-control-side-handoff-plan.md"),
     Path("docs/codex/mission-control-handoff-schema-contract.md"),
     Path("docs/codex/mission-control-handoff-negative-fixtures.md"),
     Path("docs/codex/hello-world-mission-control-handoff.md"),
@@ -32,6 +33,7 @@ CONTRACT_DOCS = [
 COMMANDS = [
     ["make", "mission-control-display-integration-proposal-check"],
     ["make", "mission-control-display-importer-plan-check"],
+    ["make", "mission-control-side-handoff-plan-check"],
     ["make", "mission-control-handoff-schema-contract-check"],
     ["make", "mission-control-handoff-negative-fixtures-check"],
     ["make", "hello-world-mission-control-handoff-check"],
@@ -180,8 +182,9 @@ def _index(context: dict[str, Any]) -> str:
     return f"""# Mission Control Display Review Packet
 
 This packet packages Ithildin's current Mission Control display/import proposal, handoff schema
-contract, negative fixture plan, Hello World seed payload evidence, and command evidence. It is a
-review/design handoff for display-only integration planning.
+contract, Mission Control-side handoff plan, negative fixture plan, Hello World seed payload
+evidence, and command evidence. It is a review/design handoff for display-only integration
+planning.
 
 ## Boundary
 
@@ -232,6 +235,8 @@ Please review:
 
 - whether the display proposal gives Mission Control enough safe fields to be useful as an evidence
   viewer;
+- whether the Mission Control-side handoff plan is specific enough for a display-only importer
+  implementation task without granting Mission Control authority;
 - whether the handoff schema clearly keeps Ithildin as policy, approval, execution, and audit
   authority;
 - whether the negative fixture plan covers malformed, stale, unsafe-path, authority-overclaiming,

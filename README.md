@@ -728,6 +728,11 @@ The Mission Control display importer implementation plan is
 and is checked with `make mission-control-display-importer-plan-check`; it defines the future
 file/import validation order, display states, warning chips, and negative fixture coverage while
 keeping runtime importer implementation blocked.
+The Mission Control-side handoff plan is
+[docs/codex/mission-control-side-handoff-plan.md](docs/codex/mission-control-side-handoff-plan.md)
+and is checked with `make mission-control-side-handoff-plan-check`; it is the paste-ready
+Mission Control repository work order for a future display-only importer, with explicit inputs,
+validation stages, tests, evidence, stop conditions, and no authority transfer.
 The Ithildin-side handoff schema contract is
 [docs/codex/mission-control-handoff-schema-contract.md](docs/codex/mission-control-handoff-schema-contract.md)
 and is checked with `make mission-control-handoff-schema-contract-check`; it validates the current
