@@ -180,6 +180,7 @@ from scripts import (
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
+    sandbox_vm_static_profile_preflight_plan_check,
     sandbox_vm_worker_boundary_charter_check,
     siem_evidence_design_check,
     signed_evidence_source_review_bundle,
@@ -981,6 +982,48 @@ def test_sandbox_vm_poc_review_packet_is_wired(tmp_path: Path) -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "sandbox/VM proof-of-concept review packet" in enterprise
+
+
+def test_sandbox_vm_static_profile_preflight_plan_is_wired() -> None:
+    report = sandbox_vm_static_profile_preflight_plan_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    plan = Path("docs/codex/sandbox-vm-static-profile-preflight-plan.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make sandbox-vm-static-profile-preflight-plan-check" in readme
+    assert "sandbox-vm-static-profile-preflight-plan-check:" in makefile
+    assert "sandbox-vm-static-profile-preflight-plan-check" in release_check_body
+    assert "sandbox-vm-static-profile-preflight-plan-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-static-profile-preflight-plan.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-static-profile-preflight-plan.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "sandbox-vm-static-profile-preflight-plan.md" in enterprise
+    assert "Future Static Profile Fixture" in plan
+    assert "Future Read-Only Preflight Runner" in plan
+    assert "Future Negative Transcript Plan" in plan
+    assert "Future Source Review Requirements" in plan
+    assert "Implementation state: blocked." in plan
+    assert "live VM control" in enterprise
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

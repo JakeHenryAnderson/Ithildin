@@ -360,6 +360,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-poc-review-packet` - generate the focused sandbox/VM proof-of-concept review
   packet with boundary, profile, preflight, Mission Control handoff, Hello World artifact evidence,
   promotion evidence, command evidence, and artifact hashes.
+- `make sandbox-vm-static-profile-preflight-plan-check` - validate the design-only implementation
+  plan for a future static operator-managed sandbox profile fixture and read-only preflight runner
+  while confirming runtime sandbox control remains blocked.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -683,6 +686,11 @@ Generate the focused sandbox/VM proof-of-concept review packet with
 preflight contract, Mission Control handoff docs, Hello World observed artifact evidence, artifact
 write source-review handoff, promotion evidence contract, command evidence, and artifact hashes for
 review before any live VM, local-model, or preflight-runner implementation is planned.
+The follow-on implementation-planning packet is
+[docs/codex/sandbox-vm-static-profile-preflight-plan.md](docs/codex/sandbox-vm-static-profile-preflight-plan.md)
+and is checked with `make sandbox-vm-static-profile-preflight-plan-check`; it defines the future
+static profile fixture and read-only preflight runner boundary while keeping live VM control,
+Mission Control runtime behavior, local model invocation, and trusted-host promotion blocked.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

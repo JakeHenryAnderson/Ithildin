@@ -256,3 +256,10 @@ The packet bundles the boundary, profile, preflight, Mission Control handoff, He
 sandbox artifact evidence, artifact-write source-review handoff, promotion evidence contract,
 command evidence, and artifact hashes. This is the review handoff for deciding whether a later
 static operator-managed sandbox profile fixture and preflight runner may be planned.
+
+The follow-on implementation-planning packet is
+[sandbox-vm-static-profile-preflight-plan.md](sandbox-vm-static-profile-preflight-plan.md) and is
+validated with `make sandbox-vm-static-profile-preflight-plan-check`. It defines the future static
+profile fixture, read-only preflight runner, negative transcripts, output contract, and source
+review requirements while keeping live VM control, Mission Control runtime behavior, local model
+invocation, sandbox orchestration, and trusted-host promotion blocked.

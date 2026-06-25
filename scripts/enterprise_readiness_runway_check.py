@@ -43,6 +43,8 @@ REQUIRED_PHRASES = [
     "make sandbox-vm-preflight-contract-check",
     "sandbox/VM proof-of-concept review packet",
     "make sandbox-vm-poc-review-packet",
+    "sandbox-vm-static-profile-preflight-plan.md",
+    "make sandbox-vm-static-profile-preflight-plan-check",
     "platform matrix",
     "mount/root posture",
     "network posture",
@@ -127,6 +129,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("README is missing enterprise readiness runway reference")
     if "make sandbox-vm-poc-review-packet" not in readme:
         failures.append("README is missing sandbox/VM POC review packet command")
+    if "make sandbox-vm-static-profile-preflight-plan-check" not in readme:
+        failures.append("README is missing sandbox/VM static profile preflight plan command")
 
     phases = [line for line in text.splitlines() if line.startswith("## Phase E")]
     return {
