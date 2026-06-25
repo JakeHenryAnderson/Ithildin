@@ -224,6 +224,7 @@ DEFAULT_DOCS = [
     "docs/codex/mission-control-display-integration-proposal.md",
     "docs/codex/mission-control-display-importer-plan.md",
     "docs/codex/mission-control-display-decision-intake.md",
+    "docs/codex/mission-control-display-disposition-packet.md",
     "docs/codex/mission-control-side-handoff-plan.md",
     "docs/codex/mission-control-integration-implementation-ticket.md",
     "docs/codex/mission-control-handoff-schema-contract.md",

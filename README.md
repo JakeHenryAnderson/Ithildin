@@ -400,6 +400,9 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-review-packet` - generate the focused Mission Control display
   review packet with proposal, schema, negative fixtures, seed handoff evidence, command evidence,
   and artifact hashes.
+- `make mission-control-display-disposition-packet` - generate the Mission Control display
+  disposition packet asking whether ERG-002 may continue design-only planning while runtime importer
+  behavior and authority transfer remain blocked.
 - `make mission-control-integration-implementation-ticket-check` - validate the planning-only
   Mission Control repository implementation ticket for a future display-only importer while keeping
   Mission Control outside Ithildin execution, policy, approval, audit, sandbox, local-model,
@@ -824,6 +827,12 @@ Generate the focused Mission Control display review packet with
 `make mission-control-display-review-packet`; it bundles the display proposal, handoff schema,
 negative fixtures, Hello World seed evidence, command evidence, and artifact hashes for future
 Mission Control-side planning while keeping runtime importer behavior blocked.
+Generate the Mission Control display disposition packet with
+`make mission-control-display-disposition-packet`; it asks whether the current ERG-002 evidence is
+coherent enough to continue design-only Mission Control-side planning, while keeping runtime
+importer behavior, execution authority, policy authority, approval authority, audit authority, local
+model invocation, sandbox orchestration, trusted-host promotion, SIEM adapter behavior, and new
+power classes blocked.
 The next sandbox/VM planning artifact is
 [docs/codex/sandbox-vm-worker-boundary-charter.md](docs/codex/sandbox-vm-worker-boundary-charter.md)
 and is checked with `make sandbox-vm-worker-boundary-charter-check`; it defines future sandbox

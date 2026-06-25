@@ -240,6 +240,7 @@ externally closed.
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
 - [Mission Control Display Importer Implementation Plan](mission-control-display-importer-plan.md)
 - [Mission Control Display Decision Intake](mission-control-display-decision-intake.md)
+- [Mission Control Display Disposition Packet](mission-control-display-disposition-packet.md)
 - [Mission Control-Side Display Importer Handoff Plan](mission-control-side-handoff-plan.md)
 - [Mission Control Integration Implementation Ticket](mission-control-integration-implementation-ticket.md)
 - [Mission Control Handoff Schema Contract](mission-control-handoff-schema-contract.md)

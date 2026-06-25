@@ -304,6 +304,8 @@ Current status anchors:
 - Mission Control display importer planning remains file/import display only;
 - Mission Control display implementation decisions must pass
   `mission-control-display-decision-intake.md`;
+- Mission Control display disposition must pass
+  `mission-control-display-disposition-packet.md`;
 - static preflight lane remains local-preview fixture evidence only;
 - external/source review disposition is still required before any live sandbox/VM lane.
 - post-RC decision register validation is required before any frozen lane moves.

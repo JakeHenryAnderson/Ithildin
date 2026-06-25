@@ -84,6 +84,7 @@ from scripts import (
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
     mission_control_display_decision_intake_check,
+    mission_control_display_disposition_packet,
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
     mission_control_display_review_packet,
@@ -1802,6 +1803,85 @@ def test_mission_control_display_review_packet_is_wired(tmp_path: Path) -> None:
         "03_MISSION_CONTROL_HANDOFF_SEED.md",
         "04_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
         "05_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md",
+    }
+
+
+def test_mission_control_display_disposition_packet_is_wired(tmp_path: Path) -> None:
+    report = mission_control_display_disposition_packet.build_check_report(Path.cwd())
+    output_dir = tmp_path / "mission-control-display-disposition"
+    mission_control_display_disposition_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    index = output_dir.joinpath("00_MISSION_CONTROL_DISPLAY_DISPOSITION_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = output_dir.joinpath("01_MISSION_CONTROL_DISPLAY_DISPOSITION_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = output_dir.joinpath(
+        "04_MISSION_CONTROL_DISPLAY_DISPOSITION_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "mission-control-display-disposition-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_002"] is False
+    assert "does not close `ERG-002`" in index
+    assert "EXT-MC-DISPLAY-DISP-###" in prompt
+    assert "continue_design_only" in prompt
+    assert '"mission_control_runtime_allowed": false' in evidence
+    assert '"closes_erg_002": false' in evidence
+    assert "make mission-control-display-disposition-packet" in readme
+    assert "mission-control-display-disposition-packet:" in makefile
+    assert "mission-control-display-disposition-packet-check:" in makefile
+    assert "mission-control-display-disposition-packet-check" in release_check_body
+    assert "$(MAKE) mission-control-display-disposition-packet" in review_candidate_body
+    assert "mission-control-display-disposition-packet-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-display-disposition-packet" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/mission-control-display-disposition-packet.md" in docs_site
+    assert "docs/codex/mission-control-display-disposition-packet.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Disposition Packet" in review_index
+    assert "mission-control-display-disposition-packet.md" in runway
+    assert "mission-control-display-disposition-packet.md" in gap_matrix
+    assert {entry["path"] for entry in hashes["artifacts"]} == {
+        "00_MISSION_CONTROL_DISPLAY_DISPOSITION_INDEX.md",
+        "01_MISSION_CONTROL_DISPLAY_DISPOSITION_PROMPT.md",
+        "02_MISSION_CONTROL_DISPLAY_DISPOSITION_AND_INTAKE.md",
+        "03_MISSION_CONTROL_DISPLAY_REVIEW_POINTERS.md",
+        "04_MISSION_CONTROL_DISPLAY_DISPOSITION_COMMAND_EVIDENCE.md",
     }
 
 
