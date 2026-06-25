@@ -274,6 +274,7 @@ REVIEW_DOCS = [
     "docs/codex/sandbox-vm-static-preflight-implementation-decision.md",
     "docs/codex/sandbox-vm-static-preflight-source-review.md",
     "docs/codex/sandbox-vm-static-preflight-disposition-plan.md",
+    "docs/codex/sandbox-vm-static-preflight-disposition-packet.md",
     "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
     "docs/codex/sandbox-vm-live-poc-decision-intake.md",
     "docs/codex/sandbox-vm-live-poc-evidence-contract.md",

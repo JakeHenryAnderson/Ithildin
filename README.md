@@ -412,6 +412,11 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-evidence-contract-check` - validate the future live sandbox/VM POC
   evidence contract while confirming cross-source evidence planning does not approve live runtime
   authority.
+- `make sandbox-vm-static-preflight-disposition-packet` - generate the `ERG-003` external
+  disposition handoff packet,
+  [docs/codex/sandbox-vm-static-preflight-disposition-packet.md](docs/codex/sandbox-vm-static-preflight-disposition-packet.md),
+  with source-review pointers, reviewer questions, intake instructions, command evidence, and
+  artifact hashes while keeping live sandbox/VM runtime work blocked.
 - `make sandbox-vm-profile-contract-check` - validate the design-only sandbox/VM profile contract
   for future operator-supplied sandbox metadata while confirming no runtime profile loader,
   sandbox orchestration, local model invocation, or trusted-host promotion is added.
@@ -861,6 +866,12 @@ The focused source-review handoff is
 and is generated with `make sandbox-vm-static-preflight-source-review-packet`; it packages the
 CLI-only fixture preflight runner for focused review without approving live VM control, Mission
 Control runtime behavior, local model invocation, or trusted-host promotion.
+Generate the external disposition packet,
+[docs/codex/sandbox-vm-static-preflight-disposition-packet.md](docs/codex/sandbox-vm-static-preflight-disposition-packet.md),
+with `make sandbox-vm-static-preflight-disposition-packet`; it packages the source-review packet
+pointer, disposition questions, intake template, command evidence, and artifact hashes for deciding
+whether `ERG-003` can later move to `closed_local_preview_static_preflight` without approving live
+sandbox/VM runtime work.
 The external disposition plan is
 [docs/codex/sandbox-vm-static-preflight-disposition-plan.md](docs/codex/sandbox-vm-static-preflight-disposition-plan.md)
 and is checked with `make sandbox-vm-static-preflight-disposition-plan-check`; it defines the

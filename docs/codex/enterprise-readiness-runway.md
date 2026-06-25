@@ -367,6 +367,13 @@ evidence, POC packet pointer, and artifact hashes so a reviewer can inspect the 
 lane. It does not approve live sandbox orchestration, local model invocation, Mission Control
 runtime behavior, trusted-host promotion, or any new governed tool power.
 
+The external disposition packet is
+[sandbox-vm-static-preflight-disposition-packet.md](sandbox-vm-static-preflight-disposition-packet.md)
+and is generated with `make sandbox-vm-static-preflight-disposition-packet`. It packages the
+source-review packet pointer, `ERG-003` disposition question set, response-intake guidance, command
+evidence, and artifact hashes for reviewer handoff. It does not close `ERG-003` or approve live
+sandbox/VM runtime work.
+
 The external disposition plan is
 [sandbox-vm-static-preflight-disposition-plan.md](sandbox-vm-static-preflight-disposition-plan.md)
 and is validated with `make sandbox-vm-static-preflight-disposition-plan-check`. It defines the
