@@ -238,6 +238,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-artifact-write-text-preimplementation-check` - validate the future
   `sandbox.artifact.write_text` implementation plan, fixture contract, negative transcript plan,
   source-review handoff, and manifest-absent boundary while keeping runtime write powers blocked.
+- `make sandbox-artifact-write-text-implementation-gate` - validate the approved future
+  implementation boundary for `sandbox.artifact.write_text` while confirming the manifest and
+  runtime implementation remain absent until the next explicit runtime sprint.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -609,6 +612,10 @@ the future source-review lane is
 [docs/codex/sandbox-artifact-write-text-source-review.md](docs/codex/sandbox-artifact-write-text-source-review.md).
 All are checked with `make sandbox-artifact-write-text-preimplementation-check`, which confirms the
 manifest remains absent and runtime write powers remain blocked.
+The approved future implementation boundary is recorded in
+[docs/codex/sandbox-artifact-write-text-implementation-decision.md](docs/codex/sandbox-artifact-write-text-implementation-decision.md)
+and checked with `make sandbox-artifact-write-text-implementation-gate`; the gate approves only a
+later bounded local-preview runtime sprint and still confirms `runtime_implemented: false`.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in

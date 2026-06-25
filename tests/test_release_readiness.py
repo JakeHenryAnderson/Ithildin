@@ -161,6 +161,7 @@ from scripts import (
     review_run_manifest_refresh,
     reviewer_artifact_manifest,
     reviewer_findings,
+    sandbox_artifact_write_text_implementation_gate,
     sandbox_artifact_write_text_preimplementation_check,
     siem_evidence_design_check,
     signed_evidence_source_review_bundle,
@@ -12721,6 +12722,44 @@ def test_sandbox_artifact_write_text_preimplementation_is_wired() -> None:
     ]:
         assert path in review_docs.REVIEW_DOCS
         assert path in docs_site
+
+
+def test_sandbox_artifact_write_text_implementation_gate_is_wired() -> None:
+    report = sandbox_artifact_write_text_implementation_gate.build_report(Path.cwd())
+    decision = Path("docs/codex/sandbox-artifact-write-text-implementation-decision.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_name"] == "sandbox.artifact.write_text"
+    assert report["implementation_status"] == "approved_future_bounded_write_boundary"
+    assert report["runtime_implemented"] is False
+    assert report["runtime_changes_allowed_now"] is False
+    assert report["future_runtime_implementation_allowed"] is True
+    assert report["tool_count"] == 23
+    assert report["manifest_absent"] is True
+    assert "Status: implementation boundary approved" in decision
+    assert "Runtime implementation remains absent" in decision
+    assert "resource type: `sandbox_artifact`" in decision
+    assert "deny direct trusted-host writes" in decision
+    assert "This decision does not approve shell execution" in decision
+    assert "make sandbox-artifact-write-text-implementation-gate" in readme
+    assert "sandbox-artifact-write-text-implementation-gate:" in makefile
+    assert "sandbox-artifact-write-text-implementation-gate" in release_check_body
+    assert (
+        "sandbox-artifact-write-text-implementation-gate"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert not Path("tool-manifests/sandbox-artifact-write-text.yaml").exists()
+    assert (
+        "docs/codex/sandbox-artifact-write-text-implementation-decision.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/sandbox-artifact-write-text-implementation-decision.md" in docs_site
 
 
 def test_sandbox_artifact_write_text_fixture_artifact_is_wired() -> None:
