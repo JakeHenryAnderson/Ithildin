@@ -101,6 +101,7 @@ from scripts import (
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
     post_rc_decision_gate,
+    post_rc_decision_record_template_check,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -956,6 +957,81 @@ def test_post_rc_decision_gate_is_wired() -> None:
     assert "docs/codex/post-rc-decision-gate.md" in docs_site
     assert "docs/codex/post-rc-decision-gate.md" in review_docs.REVIEW_DOCS
     assert "Post-RC Decision Gate" in review_index
+
+
+def test_post_rc_decision_record_template_is_wired() -> None:
+    report = post_rc_decision_record_template_check.build_report(Path.cwd())
+    doc = Path("docs/codex/post-rc-decision-record-template.md").read_text(encoding="utf-8")
+    gate_doc = Path("docs/codex/post-rc-decision-gate.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["capability_expansion_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    for phrase in [
+        "Status: template for post-v1.0 RC boundary decisions.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "Decision record status: `draft | approved_for_planning | no_go | superseded`.",
+        "Decision Header",
+        "Decision ID:",
+        "Target lane:",
+        "Trigger And Requested Change",
+        "Current boundary being changed:",
+        "Allowed scope:",
+        "Explicitly forbidden scope:",
+        "Runtime surfaces touched:",
+        "Runtime surfaces not touched:",
+        "Tool count impact:",
+        "Manifest impact:",
+        "Policy/rule impact:",
+        "Mission Control impact:",
+        "Sandbox/VM impact:",
+        "Local model impact:",
+        "Trusted-host promotion impact:",
+        "Required source-review or external-review evidence:",
+        "Required implementation plan:",
+        "Required tests:",
+        "Required gates:",
+        "Required negative transcripts:",
+        "Accepted-risk impact:",
+        "Go/no-go outcome:",
+        "Implementation Preconditions",
+        "Blocked-by-Default Lanes",
+        "make post-rc-decision-record-template-check",
+        "make post-rc-decision-gate",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "capability expansion allowed now",
+        "Mission Control may execute",
+        "trusted-host promotion is implemented",
+        "compliance automation approved",
+        "public security product approved",
+        "sandbox orchestration is implemented",
+        "local model invocation is implemented",
+    ]:
+        assert forbidden not in doc
+    assert "Post-RC Decision Record Template" in gate_doc
+    assert "post-rc-decision-record-template-check:" in makefile
+    assert "post-rc-decision-record-template-check" in release_check_body
+    assert "make post-rc-decision-record-template-check" in readme
+    assert "post-RC decision record template" in readme
+    assert "docs/codex/post-rc-decision-record-template.md" in docs_site
+    assert "docs/codex/post-rc-decision-record-template.md" in review_docs.REVIEW_DOCS
+    assert "Post-RC Decision Record Template" in review_index
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

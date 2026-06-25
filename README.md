@@ -346,6 +346,8 @@ checked with `make control-mapping-readiness`.
   support without enabling those powers today.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
+- `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
+  template for future post-freeze lane decisions.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -689,6 +691,9 @@ The post-RC decision gate is
 `make post-rc-decision-gate`; it requires a written decision record, scope, forbidden scope,
 review evidence, tests, accepted-risk impact, tool-count impact, and go/no-go outcome before any
 frozen lane can move beyond documentation or planning.
+Use the post-RC decision record template at
+[docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
+checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.
 The Mission Control display integration proposal is
 [docs/codex/mission-control-display-integration-proposal.md](docs/codex/mission-control-display-integration-proposal.md)
 and is checked with `make mission-control-display-integration-proposal-check`; it keeps the first

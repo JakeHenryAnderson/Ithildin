@@ -45,6 +45,9 @@ Every post-RC decision record must include:
 - User/operator warning language.
 - Go/no-go outcome.
 
+Use the [Post-RC Decision Record Template](post-rc-decision-record-template.md) for the canonical
+field layout.
+
 ## Lanes Requiring This Gate
 
 This gate is required before any of these lanes may move beyond documentation or planning:
