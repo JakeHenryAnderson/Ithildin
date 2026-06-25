@@ -234,6 +234,7 @@ externally closed.
 - [Post-RC Decision Register](post-rc-decision-register.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
 - [Mission Control Display Importer Implementation Plan](mission-control-display-importer-plan.md)
+- [Mission Control Display Decision Intake](mission-control-display-decision-intake.md)
 - [Mission Control-Side Display Importer Handoff Plan](mission-control-side-handoff-plan.md)
 - [Mission Control Handoff Schema Contract](mission-control-handoff-schema-contract.md)
 - [Mission Control Handoff Negative Fixtures](mission-control-handoff-negative-fixtures.md)

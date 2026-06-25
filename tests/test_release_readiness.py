@@ -82,6 +82,7 @@ from scripts import (
     live_demo_status,
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
+    mission_control_display_decision_intake_check,
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
     mission_control_display_review_packet,
@@ -1370,6 +1371,82 @@ def test_mission_control_display_importer_plan_is_wired() -> None:
     assert "docs/codex/mission-control-display-importer-plan.md" in docs_site
     assert "docs/codex/mission-control-display-importer-plan.md" in review_docs.REVIEW_DOCS
     assert "Mission Control Display Importer Implementation Plan" in review_index
+
+
+def test_mission_control_display_decision_intake_is_wired() -> None:
+    report = mission_control_display_decision_intake_check.build_report(Path.cwd())
+    doc = Path("docs/codex/mission-control-display-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert report["prd_id"] == "PRD-MC-DISPLAY-001"
+    assert report["mission_control_planning_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: decision-intake planning packet for `ERG-002`",
+        "Required Decision Evidence",
+        "Allowed Future Decision Outcomes",
+        "Required Negative Evidence",
+        "go_for_mission_control_side_display_importer_planning",
+        "conditional_go_for_display_only_importer_implementation",
+        "Mission Control runtime allowed: `false`",
+        "Mission Control execution authority allowed: `false`",
+        "Mission Control policy authority allowed: `false`",
+        "Mission Control approval authority allowed: `false`",
+        "Mission Control audit authority allowed: `false`",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime importer is approved",
+        "Mission Control may execute",
+        "Mission Control may approve",
+        "Mission Control is policy authority",
+        "Mission Control is audit authority",
+    ]:
+        assert forbidden not in doc
+    assert "make mission-control-display-decision-intake-check" in readme
+    assert "mission-control-display-decision-intake-check:" in makefile
+    assert "mission-control-display-decision-intake-check" in release_check_body
+    assert "mission-control-display-decision-intake-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-display-decision-intake.md" in docs_site
+    assert (
+        "docs/codex/mission-control-display-decision-intake.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Decision Intake" in review_index
+    assert "mission-control-display-decision-intake.md" in enterprise
+    assert "mission-control-display-decision-intake.md" in gap_matrix
+    assert "mission-control-display-decision-intake.md" in decision_register
 
 
 def test_mission_control_side_handoff_plan_is_wired() -> None:

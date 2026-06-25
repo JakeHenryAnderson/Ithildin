@@ -53,6 +53,9 @@ Current selected capability: `not selected`.
   trusted-host promotion, file mutation, runtime importer behavior, and production identity.
 - Current implementation posture: runtime behavior remains blocked.
 - Current warning language: Mission Control remains an evidence display/import planning surface only.
+- Current decision-intake evidence:
+  `mission-control-display-decision-intake.md` defines the preconditions, allowed outcomes, negative
+  evidence, and forbidden authority claims before any runtime importer decision can be recorded.
 
 ### PRD-SANDBOX-PREFLIGHT-001
 

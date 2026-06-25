@@ -361,6 +361,8 @@ checked with `make control-mapping-readiness`.
   sandbox orchestrator, or trusted-host promotion path.
 - `make mission-control-display-importer-plan-check` - validate the planning-only future Mission
   Control display importer implementation packet while keeping runtime importer behavior blocked.
+- `make mission-control-display-decision-intake-check` - validate the post-RC decision-intake
+  checklist for any future Mission Control display/importer implementation decision.
 - `make mission-control-display-review-packet` - generate the focused Mission Control display
   review packet with proposal, schema, negative fixtures, seed handoff evidence, command evidence,
   and artifact hashes.
@@ -731,6 +733,11 @@ The Mission Control display importer implementation plan is
 and is checked with `make mission-control-display-importer-plan-check`; it defines the future
 file/import validation order, display states, warning chips, and negative fixture coverage while
 keeping runtime importer implementation blocked.
+The Mission Control display decision intake is
+[docs/codex/mission-control-display-decision-intake.md](docs/codex/mission-control-display-decision-intake.md)
+and is checked with `make mission-control-display-decision-intake-check`; it records the exact
+preconditions, allowed outcomes, negative evidence, and blocked authority claims before any future
+Mission Control display/importer implementation decision may be recorded.
 The Mission Control-side handoff plan is
 [docs/codex/mission-control-side-handoff-plan.md](docs/codex/mission-control-side-handoff-plan.md)
 and is checked with `make mission-control-side-handoff-plan-check`; it is the paste-ready

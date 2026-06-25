@@ -225,8 +225,9 @@ Stop enterprise-readiness work and reassess if:
 ## Current Next Best Action
 
 The Mission Control display proposal, handoff schema, negative fixtures, and focused display review
-packet now exist on the Ithildin side. The Mission Control display importer implementation plan now
-also exists as planning-only evidence. The sandbox/VM worker boundary charter, profile contract,
+packet now exist on the Ithildin side. The Mission Control display post-RC decision intake now also
+exists as planning-only evidence. The Mission Control display importer implementation plan now also
+exists as planning-only evidence. The sandbox/VM worker boundary charter, profile contract,
 preflight contract, proof-of-concept review packet, static profile fixture contract, static preflight
 CLI fixture runner, source-review packet, and internal source-review pass also now exist.
 The current enterprise-path action is external/source review disposition of the static preflight
@@ -244,6 +245,8 @@ Current status anchors:
 - static preflight CLI fixture runner exists;
 - enterprise readiness gap status is matrixed before implementation claims;
 - Mission Control display importer planning remains file/import display only;
+- Mission Control display implementation decisions must pass
+  `mission-control-display-decision-intake.md`;
 - static preflight lane remains local-preview fixture evidence only;
 - external/source review disposition is still required before any live sandbox/VM lane.
 - post-RC decision register validation is required before any frozen lane moves.

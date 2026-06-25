@@ -218,6 +218,7 @@ DEFAULT_DOCS = [
     "docs/codex/post-rc-decision-register.md",
     "docs/codex/mission-control-display-integration-proposal.md",
     "docs/codex/mission-control-display-importer-plan.md",
+    "docs/codex/mission-control-display-decision-intake.md",
     "docs/codex/mission-control-side-handoff-plan.md",
     "docs/codex/mission-control-handoff-schema-contract.md",
     "docs/codex/mission-control-handoff-negative-fixtures.md",
