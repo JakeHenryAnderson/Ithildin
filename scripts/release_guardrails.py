@@ -84,6 +84,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "post-rc-decision-record-examples-check",
     "post-rc-decision-register-check",
     "mission-control-display-integration-proposal-check",
+    "mission-control-display-importer-plan-check",
     "mission-control-display-review-packet-check",
     "mission-control-handoff-schema-contract-check",
     "mission-control-handoff-negative-fixtures-check",

@@ -23,6 +23,7 @@ PROJECT_MARKERS = [
 ]
 CONTRACT_DOCS = [
     Path("docs/codex/mission-control-display-integration-proposal.md"),
+    Path("docs/codex/mission-control-display-importer-plan.md"),
     Path("docs/codex/mission-control-handoff-schema-contract.md"),
     Path("docs/codex/mission-control-handoff-negative-fixtures.md"),
     Path("docs/codex/hello-world-mission-control-handoff.md"),
@@ -30,6 +31,7 @@ CONTRACT_DOCS = [
 ]
 COMMANDS = [
     ["make", "mission-control-display-integration-proposal-check"],
+    ["make", "mission-control-display-importer-plan-check"],
     ["make", "mission-control-handoff-schema-contract-check"],
     ["make", "mission-control-handoff-negative-fixtures-check"],
     ["make", "hello-world-mission-control-handoff-check"],

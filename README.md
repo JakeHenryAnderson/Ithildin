@@ -359,6 +359,8 @@ checked with `make control-mapping-readiness`.
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
   sandbox orchestrator, or trusted-host promotion path.
+- `make mission-control-display-importer-plan-check` - validate the planning-only future Mission
+  Control display importer implementation packet while keeping runtime importer behavior blocked.
 - `make mission-control-display-review-packet` - generate the focused Mission Control display
   review packet with proposal, schema, negative fixtures, seed handoff evidence, command evidence,
   and artifact hashes.
@@ -721,6 +723,11 @@ and is checked with `make mission-control-display-integration-proposal-check`; i
 cross-project step to file/import display of Ithildin evidence labels, hashes, warnings, and links,
 with Mission Control explicitly outside execution, policy, approval, audit, local-model, VM,
 sandbox-orchestration, and trusted-host promotion authority.
+The Mission Control display importer implementation plan is
+[docs/codex/mission-control-display-importer-plan.md](docs/codex/mission-control-display-importer-plan.md)
+and is checked with `make mission-control-display-importer-plan-check`; it defines the future
+file/import validation order, display states, warning chips, and negative fixture coverage while
+keeping runtime importer implementation blocked.
 The Ithildin-side handoff schema contract is
 [docs/codex/mission-control-handoff-schema-contract.md](docs/codex/mission-control-handoff-schema-contract.md)
 and is checked with `make mission-control-handoff-schema-contract-check`; it validates the current

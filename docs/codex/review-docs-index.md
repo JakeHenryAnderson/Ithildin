@@ -233,6 +233,7 @@ externally closed.
 - [Post-RC Decision Record Examples](post-rc-decision-record-examples.md)
 - [Post-RC Decision Register](post-rc-decision-register.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
+- [Mission Control Display Importer Implementation Plan](mission-control-display-importer-plan.md)
 - [Mission Control Handoff Schema Contract](mission-control-handoff-schema-contract.md)
 - [Mission Control Handoff Negative Fixtures](mission-control-handoff-negative-fixtures.md)
 - [Sandbox/VM Worker Boundary Charter](sandbox-vm-worker-boundary-charter.md)
