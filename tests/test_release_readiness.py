@@ -81,6 +81,7 @@ from scripts import (
     live_demo_status,
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
+    mission_control_display_integration_proposal_check,
     next_capability_candidate_evaluation_2_check,
     next_capability_readiness,
     no_new_powers_guardrail,
@@ -501,22 +502,28 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 10
+    assert packet["artifact_count"] == 11
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
     runway = output_dir.joinpath("06_ENTERPRISE_READINESS_RUNWAY.md").read_text(
         encoding="utf-8"
     )
-    artifacts = output_dir.joinpath("07_V1_RC_ARTIFACTS.md").read_text(encoding="utf-8")
-    commands = output_dir.joinpath("08_V1_RC_COMMANDS.md").read_text(encoding="utf-8")
+    mission_control_display = output_dir.joinpath(
+        "07_MISSION_CONTROL_DISPLAY_PROPOSAL.md"
+    ).read_text(encoding="utf-8")
+    artifacts = output_dir.joinpath("08_V1_RC_ARTIFACTS.md").read_text(encoding="utf-8")
+    commands = output_dir.joinpath("09_V1_RC_COMMANDS.md").read_text(encoding="utf-8")
     hashes = json.loads(
         output_dir.joinpath("v1-rc-artifact-hashes.json").read_text(encoding="utf-8")
     )
 
     assert not output_dir.joinpath("06_V1_RC_COMMANDS.md").exists()
     assert "6. `06_ENTERPRISE_READINESS_RUNWAY.md`" in index
-    assert "7. `07_V1_RC_ARTIFACTS.md`" in index
-    assert "8. `08_V1_RC_COMMANDS.md`" in index
+    assert "7. `07_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
+    assert "8. `08_V1_RC_ARTIFACTS.md`" in index
+    assert "9. `09_V1_RC_COMMANDS.md`" in index
     assert "Ithildin Enterprise Readiness Runway" in runway
+    assert "Mission Control Display Integration Proposal" in mission_control_display
+    assert "file/import contract, not a live integration" in mission_control_display
     assert "v1.0 RC Artifact Map" in artifacts
     assert "var/review-packets/v3/live-demo" in artifacts
     assert "var/review-packets/v3/operator-workbench" in artifacts
@@ -526,7 +533,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "promotion only as `not_promoted`" in artifacts
     assert "host promotion is implemented or approved" in artifacts
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 9
+    assert len(hashes["artifacts"]) == 10
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
@@ -535,8 +542,9 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
         "04_V1_ASSURANCE_CLOSURE.md",
         "05_V1_RC_READINESS_GATE.md",
         "06_ENTERPRISE_READINESS_RUNWAY.md",
-        "07_V1_RC_ARTIFACTS.md",
-        "08_V1_RC_COMMANDS.md",
+        "07_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
+        "08_V1_RC_ARTIFACTS.md",
+        "09_V1_RC_COMMANDS.md",
     }
 
 
@@ -589,6 +597,38 @@ def test_enterprise_readiness_runway_is_wired() -> None:
     assert "docs/codex/enterprise-readiness-runway.md" in docs_site
     assert "docs/codex/enterprise-readiness-runway.md" in review_docs.REVIEW_DOCS
     assert "Ithildin Enterprise Readiness Runway" in review_index
+
+
+def test_mission_control_display_integration_proposal_is_wired() -> None:
+    report = mission_control_display_integration_proposal_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make mission-control-display-integration-proposal-check" in readme
+    assert "mission-control-display-integration-proposal-check:" in makefile
+    assert "mission-control-display-integration-proposal-check" in release_check_body
+    assert "mission-control-display-integration-proposal-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-display-integration-proposal.md" in docs_site
+    assert (
+        "docs/codex/mission-control-display-integration-proposal.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Integration Proposal" in review_index
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:

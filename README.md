@@ -335,6 +335,10 @@ checked with `make control-mapping-readiness`.
   local-preview RC toward Mission Control display integration, sandbox/VM proof of concept,
   trusted-host promotion, production IAM/storage, SIEM-shaped exports, and compliance mapping
   support without enabling those powers today.
+- `make mission-control-display-integration-proposal-check` - validate the design-only Mission
+  Control display/import proposal while confirming Mission Control does not become the executor,
+  policy authority, approval authority, audit authority, local-model runner, VM/container manager,
+  sandbox orchestrator, or trusted-host promotion path.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -617,6 +621,12 @@ checked with `make enterprise-readiness-runway-check`; it defines the post-v1 pa
 Control display integration, sandbox/VM proof of concept, trusted-host promotion, production
 IAM/storage/audit architecture, SIEM-shaped exports, and compliance mapping support while
 keeping all enterprise powers design-only today.
+The Mission Control display integration proposal is
+[docs/codex/mission-control-display-integration-proposal.md](docs/codex/mission-control-display-integration-proposal.md)
+and is checked with `make mission-control-display-integration-proposal-check`; it keeps the first
+cross-project step to file/import display of Ithildin evidence labels, hashes, warnings, and links,
+with Mission Control explicitly outside execution, policy, approval, audit, local-model, VM,
+sandbox-orchestration, and trusted-host promotion authority.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

@@ -69,6 +69,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "next-capability-candidate-evaluation-2-check",
     "v1-rc-roadmap-check",
     "enterprise-readiness-runway-check",
+    "mission-control-display-integration-proposal-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",
