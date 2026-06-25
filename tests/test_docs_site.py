@@ -114,6 +114,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v1.0-rc-roadmap.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-status.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-feature-freeze.md" in DEFAULT_DOCS
+    assert "docs/codex/v1.0-rc-external-review-prompt.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-operator-quickstart.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in DEFAULT_DOCS

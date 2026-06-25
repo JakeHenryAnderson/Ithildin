@@ -324,6 +324,8 @@ checked with `make control-mapping-readiness`.
 - `make v1-rc-feature-freeze` - validate the v1.0 RC feature-freeze decision: tool count `24`,
   no selected next capability, blocked capability expansion, and no public/security-product
   positioning.
+- `make v1-rc-external-review-prompt-check` - validate the v1.0 RC external/human reviewer prompt
+  and confirm it is included in the compact v1.0 RC packet.
 - `make v1-operator-quickstart-check` - validate the v1.0 local-preview operator quickstart,
   demo command order, evidence reading order, and no-new-powers boundaries.
 - `make v1-workbench-evidence-check` - validate the v1.0 workbench/evidence closure map across
@@ -639,6 +641,10 @@ The v1.0 RC feature-freeze decision is
 `make v1-rc-feature-freeze`; it blocks new manifests, executors, policy powers, MCP/API behavior,
 UI runtime controls, and product-positioning expansion unless a post-RC decision explicitly
 unfreezes a lane.
+The v1.0 external review prompt is
+[docs/codex/v1.0-rc-external-review-prompt.md](docs/codex/v1.0-rc-external-review-prompt.md) and is
+checked with `make v1-rc-external-review-prompt-check`; it is the current prompt to send with the
+compact v1.0 RC packet for GPT 5.5 Pro / Very High or human review.
 The v1.0 operator quickstart is
 [docs/codex/v1.0-operator-quickstart.md](docs/codex/v1.0-operator-quickstart.md) and is checked
 with `make v1-operator-quickstart-check`; it is the current zero-to-one local demo path from

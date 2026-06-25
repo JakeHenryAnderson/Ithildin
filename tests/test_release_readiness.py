@@ -210,6 +210,7 @@ from scripts import (
     v09_design_review_packet,
     v1_assurance_closure_check,
     v1_operator_quickstart_check,
+    v1_rc_external_review_prompt_check,
     v1_rc_feature_freeze_check,
     v1_rc_packet,
     v1_rc_readiness_check,
@@ -333,9 +334,13 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assurance_report = v1_assurance_closure_check.build_report(Path.cwd())
     readiness_report = v1_rc_readiness_check.build_report(Path.cwd())
     feature_freeze_report = v1_rc_feature_freeze_check.build_report(Path.cwd())
+    external_prompt_report = v1_rc_external_review_prompt_check.build_report(Path.cwd())
     roadmap = Path("docs/codex/v1.0-rc-roadmap.md").read_text(encoding="utf-8")
     status = Path("docs/codex/v1.0-rc-status.md").read_text(encoding="utf-8")
     feature_freeze = Path("docs/codex/v1.0-rc-feature-freeze.md").read_text(
+        encoding="utf-8"
+    )
+    external_prompt = Path("docs/codex/v1.0-rc-external-review-prompt.md").read_text(
         encoding="utf-8"
     )
     quickstart = Path("docs/codex/v1.0-operator-quickstart.md").read_text(
@@ -403,6 +408,19 @@ def test_v1_rc_roadmap_is_wired() -> None:
     )
     assert feature_freeze_report["runtime_changes_allowed"] is False
     assert feature_freeze_report["new_power_classes_allowed"] is False
+    assert external_prompt_report["valid"] is True
+    assert external_prompt_report["tool_count"] == 24
+    assert (
+        external_prompt_report["latest_implemented_tool"]
+        == "sandbox.artifact.write_text"
+    )
+    assert external_prompt_report["selected_capability"] == "not selected"
+    assert external_prompt_report["capability_expansion_allowed"] is False
+    assert (
+        external_prompt_report["public_security_product_positioning_allowed"]
+        is False
+    )
+    assert external_prompt_report["runtime_changes_allowed"] is False
     for phrase in [
         "Ithildin v1.0 RC is a local-first governed MCP workbench",
         "Phase 1: Finish The Read-Only Metadata Surface",
@@ -440,6 +458,30 @@ def test_v1_rc_roadmap_is_wired() -> None:
         "Stop Conditions",
     ]:
         assert phrase in feature_freeze
+    for phrase in [
+        "Status: v1.0 local-preview external handoff prompt.",
+        "Use this prompt with GPT 5.5 Pro / Very High or a human expert reviewer",
+        "v1.0 local-preview release-candidate packet review",
+        "The governed tool count is 24.",
+        "The latest implemented governed tool is sandbox.artifact.write_text.",
+        "No next capability is selected.",
+        "Capability expansion is feature-frozen for v1.0 RC.",
+        "Public/security-product positioning remains blocked.",
+        "Production/security/compliance positioning remains blocked.",
+        "Internal AI/subagent review is supporting evidence only",
+        "feature-freeze boundary is clear",
+        "external/source-review pending rows",
+        "accepted-deferred risks",
+        "Blockers before v1.0 local-preview RC labeling.",
+        "Do-not-add-yet list.",
+        "distinguish packet/evidence confidence from implementation confidence",
+        "Attachments To Send",
+        "var/review-packets/v1.0/rc/",
+        "05_V1_RC_FEATURE_FREEZE.md",
+        "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
+        "v1-rc-artifact-hashes.json",
+    ]:
+        assert phrase in external_prompt
     for phrase in [
         "Status: local-preview operator quickstart for the v1.0 RC path.",
         "Current governed tool count: `24`",
@@ -506,6 +548,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "v1-rc-roadmap-check:" in makefile
     assert "v1-rc-status-check:" in makefile
     assert "v1-rc-feature-freeze:" in makefile
+    assert "v1-rc-external-review-prompt-check:" in makefile
     assert "v1-operator-quickstart-check:" in makefile
     assert "v1-workbench-evidence-check:" in makefile
     assert "v1-assurance-closure-check:" in makefile
@@ -514,6 +557,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "v1-rc-roadmap-check" in release_check_body
     assert "v1-rc-status-check" in release_check_body
     assert "v1-rc-feature-freeze" in release_check_body
+    assert "v1-rc-external-review-prompt-check" in release_check_body
     assert "v1-operator-quickstart-check" in release_check_body
     assert "v1-workbench-evidence-check" in release_check_body
     assert "v1-assurance-closure-check" in release_check_body
@@ -522,6 +566,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "make v1-rc-roadmap-check" in readme
     assert "make v1-rc-status-check" in readme
     assert "make v1-rc-feature-freeze" in readme
+    assert "make v1-rc-external-review-prompt-check" in readme
     assert "make v1-operator-quickstart-check" in readme
     assert "make v1-workbench-evidence-check" in readme
     assert "make v1-assurance-closure-check" in readme
@@ -530,6 +575,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "docs/codex/v1.0-rc-roadmap.md" in docs_site
     assert "docs/codex/v1.0-rc-status.md" in docs_site
     assert "docs/codex/v1.0-rc-feature-freeze.md" in docs_site
+    assert "docs/codex/v1.0-rc-external-review-prompt.md" in docs_site
     assert "docs/codex/v1.0-operator-quickstart.md" in docs_site
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in docs_site
     assert "docs/codex/v1.0-assurance-closure.md" in docs_site
@@ -537,6 +583,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "docs/codex/v1.0-rc-roadmap.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-status.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-feature-freeze.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v1.0-rc-external-review-prompt.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-operator-quickstart.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in review_docs.REVIEW_DOCS
@@ -544,6 +591,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "Ithildin v1.0 RC Roadmap" in review_index
     assert "Ithildin v1.0 RC Status" in review_index
     assert "Ithildin v1.0 RC Feature Freeze" in review_index
+    assert "Ithildin v1.0 RC External Review Prompt" in review_index
     assert "Ithildin v1.0 Operator Quickstart" in review_index
     assert "Ithildin v1.0 Workbench And Evidence Closure" in review_index
     assert "Ithildin v1.0 Assurance Closure" in review_index
@@ -553,37 +601,49 @@ def test_v1_rc_roadmap_is_wired() -> None:
 def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     output_dir = tmp_path / "v1-rc"
     output_dir.mkdir()
-    output_dir.joinpath("06_V1_RC_COMMANDS.md").write_text("stale\n", encoding="utf-8")
+    output_dir.joinpath("11_V1_RC_COMMANDS.md").write_text("stale\n", encoding="utf-8")
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 13
+    assert packet["artifact_count"] == 15
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
-    runway = output_dir.joinpath("06_ENTERPRISE_READINESS_RUNWAY.md").read_text(
+    feature_freeze = output_dir.joinpath("05_V1_RC_FEATURE_FREEZE.md").read_text(
+        encoding="utf-8"
+    )
+    runway = output_dir.joinpath("07_ENTERPRISE_READINESS_RUNWAY.md").read_text(
         encoding="utf-8"
     )
     mission_control_display = output_dir.joinpath(
-        "07_MISSION_CONTROL_DISPLAY_PROPOSAL.md"
+        "08_MISSION_CONTROL_DISPLAY_PROPOSAL.md"
     ).read_text(encoding="utf-8")
-    schema_contract = output_dir.joinpath("08_MISSION_CONTROL_HANDOFF_SCHEMA.md").read_text(
+    schema_contract = output_dir.joinpath("09_MISSION_CONTROL_HANDOFF_SCHEMA.md").read_text(
         encoding="utf-8"
     )
     negative_fixtures = output_dir.joinpath(
-        "09_MISSION_CONTROL_NEGATIVE_FIXTURES.md"
+        "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md"
     ).read_text(encoding="utf-8")
-    artifacts = output_dir.joinpath("10_V1_RC_ARTIFACTS.md").read_text(encoding="utf-8")
-    commands = output_dir.joinpath("11_V1_RC_COMMANDS.md").read_text(encoding="utf-8")
+    external_prompt = output_dir.joinpath("11_V1_RC_EXTERNAL_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    artifacts = output_dir.joinpath("12_V1_RC_ARTIFACTS.md").read_text(encoding="utf-8")
+    commands = output_dir.joinpath("13_V1_RC_COMMANDS.md").read_text(encoding="utf-8")
     hashes = json.loads(
         output_dir.joinpath("v1-rc-artifact-hashes.json").read_text(encoding="utf-8")
     )
 
-    assert not output_dir.joinpath("06_V1_RC_COMMANDS.md").exists()
-    assert "6. `06_ENTERPRISE_READINESS_RUNWAY.md`" in index
-    assert "7. `07_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
-    assert "8. `08_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
-    assert "9. `09_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
-    assert "10. `10_V1_RC_ARTIFACTS.md`" in index
-    assert "11. `11_V1_RC_COMMANDS.md`" in index
+    assert not output_dir.joinpath("11_V1_RC_COMMANDS.md").exists()
+    assert "5. `05_V1_RC_FEATURE_FREEZE.md`" in index
+    assert "6. `06_V1_RC_READINESS_GATE.md`" in index
+    assert "7. `07_ENTERPRISE_READINESS_RUNWAY.md`" in index
+    assert "8. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
+    assert "9. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
+    assert "10. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
+    assert "11. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
+    assert "12. `12_V1_RC_ARTIFACTS.md`" in index
+    assert "13. `13_V1_RC_COMMANDS.md`" in index
+    assert "14. `v1-rc-artifact-hashes.json`" in index
+    assert "Ithildin v1.0 RC Feature Freeze" in feature_freeze
+    assert "capability expansion remains blocked" in feature_freeze
     assert "Ithildin Enterprise Readiness Runway" in runway
     assert "Mission Control Display Integration Proposal" in mission_control_display
     assert "file/import contract, not a live integration" in mission_control_display
@@ -591,6 +651,8 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "Top-Level Required Fields" in schema_contract
     assert "Mission Control Handoff Negative Fixtures" in negative_fixtures
     assert "MC-HANDOFF-NEG-014" in negative_fixtures
+    assert "Ithildin v1.0 RC External Review Prompt" in external_prompt
+    assert "Blockers before v1.0 local-preview RC labeling" in external_prompt
     assert "v1.0 RC Artifact Map" in artifacts
     assert "var/review-packets/v3/live-demo" in artifacts
     assert "var/review-packets/v3/operator-workbench" in artifacts
@@ -602,20 +664,22 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "promotion only as `not_promoted`" in artifacts
     assert "host promotion is implemented or approved" in artifacts
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 12
+    assert len(hashes["artifacts"]) == 14
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
         "02_V1_OPERATOR_QUICKSTART.md",
         "03_V1_WORKBENCH_EVIDENCE_CLOSURE.md",
         "04_V1_ASSURANCE_CLOSURE.md",
-        "05_V1_RC_READINESS_GATE.md",
-        "06_ENTERPRISE_READINESS_RUNWAY.md",
-        "07_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
-        "08_MISSION_CONTROL_HANDOFF_SCHEMA.md",
-        "09_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
-        "10_V1_RC_ARTIFACTS.md",
-        "11_V1_RC_COMMANDS.md",
+        "05_V1_RC_FEATURE_FREEZE.md",
+        "06_V1_RC_READINESS_GATE.md",
+        "07_ENTERPRISE_READINESS_RUNWAY.md",
+        "08_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
+        "09_MISSION_CONTROL_HANDOFF_SCHEMA.md",
+        "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
+        "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
+        "12_V1_RC_ARTIFACTS.md",
+        "13_V1_RC_COMMANDS.md",
     }
 
 

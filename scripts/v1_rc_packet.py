@@ -26,19 +26,24 @@ SOURCE_DOCS = [
         ROOT / "docs/codex/v1.0-workbench-evidence-closure.md",
     ),
     ("04_V1_ASSURANCE_CLOSURE.md", ROOT / "docs/codex/v1.0-assurance-closure.md"),
-    ("05_V1_RC_READINESS_GATE.md", ROOT / "docs/codex/v1.0-rc-readiness-gate.md"),
-    ("06_ENTERPRISE_READINESS_RUNWAY.md", ROOT / "docs/codex/enterprise-readiness-runway.md"),
+    ("05_V1_RC_FEATURE_FREEZE.md", ROOT / "docs/codex/v1.0-rc-feature-freeze.md"),
+    ("06_V1_RC_READINESS_GATE.md", ROOT / "docs/codex/v1.0-rc-readiness-gate.md"),
+    ("07_ENTERPRISE_READINESS_RUNWAY.md", ROOT / "docs/codex/enterprise-readiness-runway.md"),
     (
-        "07_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
+        "08_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
         ROOT / "docs/codex/mission-control-display-integration-proposal.md",
     ),
     (
-        "08_MISSION_CONTROL_HANDOFF_SCHEMA.md",
+        "09_MISSION_CONTROL_HANDOFF_SCHEMA.md",
         ROOT / "docs/codex/mission-control-handoff-schema-contract.md",
     ),
     (
-        "09_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
+        "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
         ROOT / "docs/codex/mission-control-handoff-negative-fixtures.md",
+    ),
+    (
+        "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
+        ROOT / "docs/codex/v1.0-rc-external-review-prompt.md",
     ),
 ]
 ARTIFACT_REFERENCES = [
@@ -137,11 +142,11 @@ def build_packet(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
         files.append(destination)
 
-    artifacts_path = output_dir / "10_V1_RC_ARTIFACTS.md"
+    artifacts_path = output_dir / "12_V1_RC_ARTIFACTS.md"
     artifacts_path.write_text(_artifacts_markdown(repo_root), encoding="utf-8")
     files.append(artifacts_path)
 
-    commands_path = output_dir / "11_V1_RC_COMMANDS.md"
+    commands_path = output_dir / "13_V1_RC_COMMANDS.md"
     commands_path.write_text(_commands_markdown(readiness), encoding="utf-8")
     files.append(commands_path)
 
@@ -180,14 +185,16 @@ def _index_markdown(commit: str, readiness: dict[str, Any]) -> str:
             "2. `02_V1_OPERATOR_QUICKSTART.md`",
             "3. `03_V1_WORKBENCH_EVIDENCE_CLOSURE.md`",
             "4. `04_V1_ASSURANCE_CLOSURE.md`",
-            "5. `05_V1_RC_READINESS_GATE.md`",
-            "6. `06_ENTERPRISE_READINESS_RUNWAY.md`",
-            "7. `07_MISSION_CONTROL_DISPLAY_PROPOSAL.md`",
-            "8. `08_MISSION_CONTROL_HANDOFF_SCHEMA.md`",
-            "9. `09_MISSION_CONTROL_NEGATIVE_FIXTURES.md`",
-            "10. `10_V1_RC_ARTIFACTS.md`",
-            "11. `11_V1_RC_COMMANDS.md`",
-            "12. `v1-rc-artifact-hashes.json`",
+            "5. `05_V1_RC_FEATURE_FREEZE.md`",
+            "6. `06_V1_RC_READINESS_GATE.md`",
+            "7. `07_ENTERPRISE_READINESS_RUNWAY.md`",
+            "8. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`",
+            "9. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`",
+            "10. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`",
+            "11. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`",
+            "12. `12_V1_RC_ARTIFACTS.md`",
+            "13. `13_V1_RC_COMMANDS.md`",
+            "14. `v1-rc-artifact-hashes.json`",
             "",
             "This packet is local handoff evidence only. It is not production approval, external",
             "source-review closure, custody-grade audit, sandbox approval, SIEM approval, or",
