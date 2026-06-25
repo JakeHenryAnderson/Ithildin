@@ -123,7 +123,7 @@ Goal: move approved sandbox artifacts into a host staging/approved zone with str
 Required before implementation:
 
 - explicit capability proposal;
-- implementation plan;
+- implementation-plan skeleton and later exact implementation plan;
 - approval binding model;
 - promotion state machine;
 - source and destination zone contract;
@@ -143,6 +143,9 @@ validated with `make trusted-host-promotion-negative-fixtures-check`.
 The design-only zone contract is
 [trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md) and is validated
 with `make trusted-host-promotion-zone-contract-check`.
+The design-only implementation-plan skeleton is
+[trusted-host-promotion-implementation-plan.md](trusted-host-promotion-implementation-plan.md) and is
+validated with `make trusted-host-promotion-implementation-plan-check`.
 
 Current permitted state:
 

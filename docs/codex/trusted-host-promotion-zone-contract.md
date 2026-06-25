@@ -23,6 +23,10 @@ Validate this zone contract with:
 make trusted-host-promotion-zone-contract-check
 ```
 
+The matching implementation-plan skeleton is
+[trusted-host-promotion-implementation-plan.md](trusted-host-promotion-implementation-plan.md),
+validated with `make trusted-host-promotion-implementation-plan-check`.
+
 ## Zone Vocabulary
 
 Current runtime/demo evidence may only report `promotion_status: not_promoted`. The labels below are

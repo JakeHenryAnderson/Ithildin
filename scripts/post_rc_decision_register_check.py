@@ -46,12 +46,17 @@ REQUIRED_PHRASES = [
     "no new governed tool is approved by this register",
     "PRD-TRUSTED-HOST-001",
     "Trusted-host promotion lane",
-    "Promotion state-machine design, decision-intake, and evidence contract discussion only",
+    (
+        "Promotion state-machine design, decision-intake, implementation-plan skeleton, "
+        "and evidence contract discussion only"
+    ),
     "trusted-host-promotion-decision-intake.md",
     "trusted-host-promotion-state-machine.md",
     "trusted-host-promotion-negative-fixtures.md",
     "trusted-host-promotion-zone-contract.md",
+    "trusted-host-promotion-implementation-plan.md",
     "state-machine evidence",
+    "implementation-plan skeleton",
     "trusted-host promotion remains blocked",
     "PRD-SIEM-EXPORT-001",
     "SIEM-shaped export adapter lane",

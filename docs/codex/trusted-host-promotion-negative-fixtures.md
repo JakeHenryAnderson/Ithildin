@@ -27,6 +27,9 @@ make trusted-host-promotion-negative-fixtures-check
 The matching source/destination zone contract is
 [trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md), validated with
 `make trusted-host-promotion-zone-contract-check`.
+The matching implementation-plan skeleton is
+[trusted-host-promotion-implementation-plan.md](trusted-host-promotion-implementation-plan.md),
+validated with `make trusted-host-promotion-implementation-plan-check`.
 
 ## Fixture Scope
 

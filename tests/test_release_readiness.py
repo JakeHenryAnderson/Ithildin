@@ -206,6 +206,7 @@ from scripts import (
     test_determinism_gate,
     tool_surface_invariant_gate,
     trusted_host_promotion_decision_intake_check,
+    trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_negative_fixtures_check,
     trusted_host_promotion_state_machine_check,
     trusted_host_promotion_zone_contract_check,
@@ -15033,6 +15034,103 @@ def test_trusted_host_promotion_zone_contract_is_wired() -> None:
     assert "trusted-host-promotion-zone-contract.md" in intake
     assert "trusted-host-promotion-zone-contract.md" in state_machine
     assert "trusted-host-promotion-zone-contract.md" in negative_fixtures
+
+
+def test_trusted_host_promotion_implementation_plan_is_wired() -> None:
+    report = trusted_host_promotion_implementation_plan_check.build_report(Path.cwd())
+    plan = Path("docs/codex/trusted-host-promotion-implementation-plan.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    intake = Path("docs/codex/trusted-host-promotion-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    state_machine = Path("docs/codex/trusted-host-promotion-state-machine.md").read_text(
+        encoding="utf-8"
+    )
+    negative_fixtures = Path(
+        "docs/codex/trusted-host-promotion-negative-fixtures.md"
+    ).read_text(encoding="utf-8")
+    zone_contract = Path("docs/codex/trusted-host-promotion-zone-contract.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "blocked"
+    assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
+    assert report["required_artifact_count"] == 8
+    assert report["stop_condition_count"] >= 20
+    assert report["decision_record_required"] is True
+    assert report["implementation_approved"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["promotion_without_exact_artifact_hash_binding_allowed"] is False
+    assert report["promotion_without_approval_evidence_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: implementation-planning skeleton for `ERG-005`",
+        "Required Inputs",
+        "Future Runtime Shape",
+        "Required Future Components",
+        "Implementation Gate Preconditions",
+        "Product-Boundary Stop Conditions",
+        "sandbox://artifact -> host-staging://artifact -> approved://artifact",
+        "one artifact, one approval, one promotion attempt",
+        "does not implement a tool, endpoint, executor",
+        "trusted-host promotion allowed: `false`",
+    ]:
+        assert phrase in plan
+    for forbidden in [
+        "trusted-host promotion is implemented",
+        "host writes are approved",
+        "automatic promotion is approved",
+        "implementation approved: `true`",
+        "runtime changes allowed: `true`",
+    ]:
+        assert forbidden not in plan
+    assert "trusted-host-promotion-implementation-plan-check:" in makefile
+    assert "trusted-host-promotion-implementation-plan-check" in release_check_body
+    assert "make trusted-host-promotion-implementation-plan-check" in readme
+    assert (
+        "trusted-host-promotion-implementation-plan-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-implementation-plan.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-host-promotion-implementation-plan.md" in docs_site
+    assert "Trusted-Host Promotion Implementation Plan" in review_index
+    assert "trusted-host-promotion-implementation-plan.md" in enterprise
+    assert "trusted-host-promotion-implementation-plan.md" in gap_matrix
+    assert "trusted-host-promotion-implementation-plan.md" in decision_register
+    assert "trusted-host-promotion-implementation-plan.md" in intake
+    assert "trusted-host-promotion-implementation-plan.md" in state_machine
+    assert "trusted-host-promotion-implementation-plan.md" in negative_fixtures
+    assert "trusted-host-promotion-implementation-plan.md" in zone_contract
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:
