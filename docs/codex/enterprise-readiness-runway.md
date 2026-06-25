@@ -278,3 +278,12 @@ is validated with `make sandbox-vm-static-profile-negative-fixtures-check`. It m
 profile example in memory and requires unsupported schemas, raw path-shaped labels, network
 overclaims, promotion claims, missing warnings, and authority-flag overclaims to fail closed with
 safe reason labels only.
+
+The source-review handoff is
+[sandbox-vm-static-preflight-source-review.md](sandbox-vm-static-preflight-source-review.md) and is
+generated with `make sandbox-vm-static-preflight-source-review-packet`. It packages the static
+profile preflight plan, fixture contract, negative fixtures, command evidence, POC packet pointer,
+and artifact hashes so a reviewer can decide whether planning a future read-only fixture-only
+preflight runner is coherent. It does not approve live sandbox orchestration, local model
+invocation, Mission Control runtime behavior, trusted-host promotion, or any new governed tool
+power.

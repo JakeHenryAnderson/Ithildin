@@ -363,6 +363,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-profile-preflight-plan-check` - validate the design-only implementation
   plan for a future static operator-managed sandbox profile fixture and read-only preflight runner
   while confirming runtime sandbox control remains blocked.
+- `make sandbox-vm-static-preflight-source-review-packet` - generate the focused source-review
+  handoff packet for deciding whether a future read-only static profile preflight runner may be
+  planned; it remains fixture/design-only and adds no runtime sandbox control.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -702,6 +705,11 @@ The negative fixture plan is
 and is checked with `make sandbox-vm-static-profile-negative-fixtures-check`; it mutates the
 static profile example in memory to prove overclaims, raw path-shaped fields, broad network
 posture, promotion claims, and authority flags fail closed with safe reason labels.
+The focused source-review handoff is
+[docs/codex/sandbox-vm-static-preflight-source-review.md](docs/codex/sandbox-vm-static-preflight-source-review.md)
+and is generated with `make sandbox-vm-static-preflight-source-review-packet`; it asks whether a
+future read-only fixture-only preflight runner may be planned without approving live VM control,
+Mission Control runtime behavior, local model invocation, or trusted-host promotion.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

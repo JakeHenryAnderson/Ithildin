@@ -180,6 +180,7 @@ from scripts import (
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
+    sandbox_vm_static_preflight_source_review_packet,
     sandbox_vm_static_profile_fixture_contract_check,
     sandbox_vm_static_profile_negative_fixtures_check,
     sandbox_vm_static_profile_preflight_plan_check,
@@ -1121,6 +1122,113 @@ def test_sandbox_vm_static_profile_negative_fixtures_are_wired() -> None:
     assert "SANDBOX-PROFILE-NEG-001" in negative_doc
     assert "SANDBOX-PROFILE-NEG-018" in negative_doc
     assert "Safe Error Expectations" in negative_doc
+
+
+def test_sandbox_vm_static_preflight_source_review_packet_is_wired(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "sandbox-vm-static-preflight-source-review"
+    report = sandbox_vm_static_preflight_source_review_packet.build_check_report(Path.cwd())
+    sandbox_vm_static_preflight_source_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_SANDBOX_VM_STATIC_PREFLIGHT_SOURCE_REVIEW_INDEX.md",
+        "01_SANDBOX_VM_STATIC_PREFLIGHT_SOURCE_REVIEW_PROMPT.md",
+        "02_SANDBOX_VM_STATIC_PREFLIGHT_CONTRACTS.md",
+        "03_SANDBOX_VM_STATIC_PREFLIGHT_FIXTURES.md",
+        "04_SANDBOX_VM_STATIC_PREFLIGHT_VALIDATION.md",
+        "05_SANDBOX_VM_STATIC_PREFLIGHT_POC_EVIDENCE.md",
+        "06_SANDBOX_VM_STATIC_PREFLIGHT_INTAKE_COMMANDS.md",
+        "sandbox-vm-static-preflight-source-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir
+            / "sandbox-vm-static-preflight-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_SANDBOX_VM_STATIC_PREFLIGHT_SOURCE_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = (
+        output_dir / "01_SANDBOX_VM_STATIC_PREFLIGHT_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    contracts = (output_dir / "02_SANDBOX_VM_STATIC_PREFLIGHT_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    fixtures = (output_dir / "03_SANDBOX_VM_STATIC_PREFLIGHT_FIXTURES.md").read_text(
+        encoding="utf-8"
+    )
+    validation = (output_dir / "04_SANDBOX_VM_STATIC_PREFLIGHT_VALIDATION.md").read_text(
+        encoding="utf-8"
+    )
+    commands = (output_dir / "06_SANDBOX_VM_STATIC_PREFLIGHT_INTAKE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "sandbox-vm-static-preflight-source-review-artifact-hashes.json"
+    }
+    assert "tool count remains `24`" in index
+    assert "What This Packet Does Not Prove" in index
+    assert "Finding namespace: `EXT-SANDBOX-PREFLIGHT-###`" in prompt
+    assert "read-only fixture-only preflight runner" in prompt
+    assert "sandbox-vm-static-profile-preflight-plan.md" in contracts
+    assert "sandbox-vm-static-profile-fixture-contract.md" in contracts
+    assert "sandbox-vm-static-profile-negative-fixtures.md" in contracts
+    assert "sandbox-vm-static-preflight-source-review.md" in contracts
+    assert "sandbox-vm-static-profile.local-preview.example.json" in fixtures
+    assert "runtime_changes_allowed" in validation
+    assert "mission_control_runtime_allowed" in validation
+    assert "local_model_invocation_allowed" in validation
+    assert "sandbox_orchestration_allowed" in validation
+    assert "trusted_host_promotion_allowed" in validation
+    assert "new_power_classes_allowed" in validation
+    assert "make sandbox-vm-static-profile-negative-fixtures-check" in commands
+    assert "command execution skipped for fixture/test packet generation" in commands
+    assert "make sandbox-vm-static-preflight-source-review-packet" in readme
+    assert "sandbox-vm-static-preflight-source-review-packet:" in makefile
+    assert "sandbox-vm-static-preflight-source-review-packet-check:" in makefile
+    assert "sandbox-vm-static-preflight-source-review-packet-check" in release_check_body
+    assert "$(MAKE) sandbox-vm-static-preflight-source-review-packet" in (
+        review_candidate_body
+    )
+    assert "sandbox-vm-static-preflight-source-review-packet-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-static-preflight-source-review-packet" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/sandbox-vm-static-preflight-source-review.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-source-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "sandbox-vm-static-preflight-source-review.md" in enterprise
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
