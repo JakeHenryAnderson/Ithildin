@@ -804,6 +804,12 @@ The external response intake template is
 and is checked with `make sandbox-vm-static-preflight-external-response-intake-check`; it defines
 the `EXT-SVP-###` namespace and normalizer command for reviewer responses without mutating findings,
 closing `ERG-003`, or approving live sandbox/VM runtime work.
+The live sandbox/VM POC decision intake is
+[docs/codex/sandbox-vm-live-poc-decision-intake.md](docs/codex/sandbox-vm-live-poc-decision-intake.md)
+and is checked with `make sandbox-vm-live-poc-decision-intake-check`; it records the evidence
+required before a future post-RC decision record may consider `ERG-004`, while keeping live
+VM/container inspection, Mission Control runtime behavior, local model invocation, sandbox
+orchestration, trusted-host promotion, and public/security-product positioning blocked.
 The internal source-review pass is
 [docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
 it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label

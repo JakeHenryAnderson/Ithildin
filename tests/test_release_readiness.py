@@ -184,6 +184,7 @@ from scripts import (
     sandbox_artifact_write_text_preimplementation_check,
     sandbox_artifact_write_text_source_review_bundle,
     sandbox_promotion_evidence_contract_check,
+    sandbox_vm_live_poc_decision_intake_check,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
@@ -2117,6 +2118,75 @@ def test_sandbox_vm_static_preflight_external_response_intake_is_wired() -> None
     assert "Sandbox/VM Static Preflight External Response Intake" in review_index
     assert "sandbox-vm-static-preflight-external-response-intake.md" in enterprise
     assert "sandbox-vm-static-preflight-external-response-intake.md" in gap_matrix
+
+
+def test_sandbox_vm_live_poc_decision_intake_is_wired() -> None:
+    report = sandbox_vm_live_poc_decision_intake_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-live-poc-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "blocked"
+    assert report["requires_erg_003_favorable_disposition"] is True
+    assert report["decision_record_required"] is True
+    assert report["implementation_approved"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: decision-intake planning packet for `ERG-004`.",
+        "Current `ERG-004` status: `blocked`.",
+        "Current selected capability: `not selected`.",
+        "Requires favorable `ERG-003` disposition before implementation planning.",
+        "post-RC decision record",
+        "operator-managed VM profile",
+        "network/mount/root contract",
+        "cleanup transcript",
+        "failure transcript",
+        "Ithildin-governed tool boundary",
+        "Mission Control display-only boundary",
+        "implementation_approved: false",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "live VM/container inspection",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "no Docker socket",
+        "no arbitrary HTTP",
+        "public/security-product positioning remains blocked",
+    ]:
+        assert blocked in doc
+    assert "make sandbox-vm-live-poc-decision-intake-check" in readme
+    assert "sandbox-vm-live-poc-decision-intake-check:" in makefile
+    assert "sandbox-vm-live-poc-decision-intake-check" in release_check_body
+    assert "sandbox-vm-live-poc-decision-intake-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-decision-intake.md" in docs_site
+    assert "docs/codex/sandbox-vm-live-poc-decision-intake.md" in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Decision Intake" in review_index
+    assert "sandbox-vm-live-poc-decision-intake.md" in enterprise
+    assert "sandbox-vm-live-poc-decision-intake.md" in gap_matrix
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:

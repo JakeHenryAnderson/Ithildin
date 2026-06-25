@@ -325,6 +325,13 @@ and is validated with `make sandbox-vm-static-preflight-external-response-intake
 the `EXT-SVP-###` finding namespace and normalizer command for recording a reviewer response without
 mutating findings, closing `ERG-003`, or approving live sandbox/VM runtime work.
 
+The live sandbox/VM POC decision intake is
+[sandbox-vm-live-poc-decision-intake.md](sandbox-vm-live-poc-decision-intake.md) and is validated
+with `make sandbox-vm-live-poc-decision-intake-check`. It defines the evidence required before a
+future post-RC decision record may even consider moving `ERG-004` out of `blocked`; it does not
+approve live VM/container inspection, Mission Control runtime behavior, local model invocation,
+sandbox orchestration, trusted-host promotion, or public/security-product positioning.
+
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
 It records the CLI-only fixture preflight runner as locally reviewed after tightening raw
