@@ -1,0 +1,63 @@
+{
+  "schema_version": "1",
+  "sandbox_id": "sandbox://demo",
+  "workspace_id": "workspace://demo",
+  "profile_label": "local-preview-demo-static-profile",
+  "trusted_config_source": "committed-demo-fixture",
+  "support_status": "review_required",
+  "platform": {
+    "os_family": "macos_or_linux",
+    "support_profile": "operator_managed_local_preview",
+    "windows_wsl_security_supported": false
+  },
+  "mounts": {
+    "root_label": "sandbox://demo",
+    "working_label": "sandbox-working://demo",
+    "staging_label": "host-staging://demo",
+    "approved_label": "approved://demo",
+    "evidence_label": "evidence://demo",
+    "raw_paths_present": false
+  },
+  "network": {
+    "posture": "operator_managed",
+    "broad_network_access": false,
+    "external_service_access": false
+  },
+  "ingress_egress": {
+    "inbox_label": "sandbox-inbox://demo",
+    "working_label": "sandbox-working://demo",
+    "staging_label": "host-staging://demo",
+    "approved_label": "approved://demo",
+    "zones_collapsed": false
+  },
+  "cleanup": {
+    "cleanup_transcript_expected": true,
+    "cleanup_status": "operator_required",
+    "automatic_cleanup_enabled": false
+  },
+  "warnings": [
+    "not_os_isolation_proof",
+    "operator_managed",
+    "local_preview_only"
+  ],
+  "decision": {
+    "decision": "review_required",
+    "promotion_status": "not_promoted",
+    "safe_reasons": [
+      "static_fixture_only",
+      "no_runtime_authority",
+      "operator_managed_boundary"
+    ],
+    "false_authority_flags": {
+      "ithildin_starts_vm": false,
+      "ithildin_starts_container": false,
+      "ithildin_has_docker_socket": false,
+      "ithildin_has_kubernetes_control": false,
+      "ithildin_runs_shell": false,
+      "mission_control_executes_actions": false,
+      "local_model_invoked": false,
+      "trusted_host_promotion_enabled": false,
+      "broad_network_access": false
+    }
+  }
+}

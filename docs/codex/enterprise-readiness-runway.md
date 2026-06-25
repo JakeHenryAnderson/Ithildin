@@ -263,3 +263,11 @@ validated with `make sandbox-vm-static-profile-preflight-plan-check`. It defines
 profile fixture, read-only preflight runner, negative transcripts, output contract, and source
 review requirements while keeping live VM control, Mission Control runtime behavior, local model
 invocation, sandbox orchestration, and trusted-host promotion blocked.
+
+The fixture contract is
+[sandbox-vm-static-profile-fixture-contract.md](sandbox-vm-static-profile-fixture-contract.md) and
+is validated with `make sandbox-vm-static-profile-fixture-contract-check`. It commits a
+non-production static profile example with coarse labels, required warnings, and false authority
+flags only. It does not add a runtime profile loader, preflight runner, VM/container lifecycle
+control, Mission Control execution, local model invocation, trusted-host promotion, or network
+expansion.
