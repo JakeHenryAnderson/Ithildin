@@ -71,6 +71,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "enterprise-readiness-runway-check",
     "mission-control-display-integration-proposal-check",
     "mission-control-handoff-schema-contract-check",
+    "mission-control-handoff-negative-fixtures-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",

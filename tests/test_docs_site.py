@@ -120,6 +120,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/enterprise-readiness-runway.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-integration-proposal.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-handoff-schema-contract.md" in DEFAULT_DOCS
+    assert "docs/codex/mission-control-handoff-negative-fixtures.md" in DEFAULT_DOCS
     assert "docs/codex/governed-artifact-transfer-lab.md" in DEFAULT_DOCS
     assert "docs/codex/hello-world-sandbox-demo-roadmap.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/sandbox-artifact-write-text.md" in DEFAULT_DOCS
