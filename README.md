@@ -348,6 +348,9 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-handoff-negative-fixtures-check` - validate the future Mission Control
   importer/display negative cases for malformed, stale, unsafe-path, overclaiming, or content-leaking
   handoff payloads without calling Mission Control or adding runtime behavior.
+- `make sandbox-vm-worker-boundary-charter-check` - validate the design-only sandbox/VM worker
+  boundary charter for future operator-managed sandbox proof-of-concept planning while confirming
+  Ithildin still does not orchestrate a VM/container or claim OS isolation.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -651,6 +654,11 @@ Generate the focused Mission Control display review packet with
 `make mission-control-display-review-packet`; it bundles the display proposal, handoff schema,
 negative fixtures, Hello World seed evidence, command evidence, and artifact hashes for future
 Mission Control-side planning while keeping runtime importer behavior blocked.
+The next sandbox/VM planning artifact is
+[docs/codex/sandbox-vm-worker-boundary-charter.md](docs/codex/sandbox-vm-worker-boundary-charter.md)
+and is checked with `make sandbox-vm-worker-boundary-charter-check`; it defines future sandbox
+profile evidence, negative cases, and role separation while keeping VM/container lifecycle, local
+model invocation, sandbox orchestration, and host promotion unimplemented.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

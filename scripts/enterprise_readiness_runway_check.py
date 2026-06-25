@@ -31,8 +31,15 @@ REQUIRED_PHRASES = [
     "Phase E6: Evidence Export And SIEM Adapter Lane",
     "Phase E7: Compliance Mapping Support",
     "Current Next Best Action",
-    "design-only Mission Control display integration proposal",
-    "evidence viewer, not an execution or policy authority",
+    "Mission Control display proposal, handoff schema, negative fixtures",
+    "focused display review",
+    "packet now exist",
+    "sandbox/VM worker proof-of-concept boundary",
+    "sandbox-vm-worker-boundary-charter.md",
+    "make sandbox-vm-worker-boundary-charter-check",
+    "Mission Control as the",
+    "evidence viewer",
+    "runtime sandbox control",
 ]
 
 REQUIRED_BLOCKED_PHRASES = [

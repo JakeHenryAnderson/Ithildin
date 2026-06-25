@@ -221,7 +221,14 @@ Stop enterprise-readiness work and reassess if:
 
 ## Current Next Best Action
 
-After the v1.0 local-preview RC packet remains green, the next enterprise-path action should be a
-design-only Mission Control display integration proposal. It should use the existing Hello World
-Mission Control handoff as the seed and continue treating Mission Control as an evidence viewer, not
-an execution or policy authority. In short: Mission Control is the evidence viewer, not an execution or policy authority.
+The Mission Control display proposal, handoff schema, negative fixtures, and focused display review
+packet now exist on the Ithildin side. The next enterprise-path action is to prepare the
+sandbox/VM worker proof-of-concept boundary before any real VM, local-model, or importer runtime
+work begins.
+
+Start with
+[sandbox-vm-worker-boundary-charter.md](sandbox-vm-worker-boundary-charter.md) and validate it with
+`make sandbox-vm-worker-boundary-charter-check`. The charter must keep Mission Control as the
+evidence viewer, Ithildin as the governed mediation/evidence gateway, and the sandbox/VM layer as
+operator-managed infrastructure. In short: prepare the sandbox worker boundary before touching
+runtime sandbox control.

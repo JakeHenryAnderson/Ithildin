@@ -177,6 +177,7 @@ from scripts import (
     sandbox_artifact_write_text_preimplementation_check,
     sandbox_artifact_write_text_source_review_bundle,
     sandbox_promotion_evidence_contract_check,
+    sandbox_vm_worker_boundary_charter_check,
     siem_evidence_design_check,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
@@ -597,8 +598,15 @@ def test_enterprise_readiness_runway_is_wired() -> None:
         "Phase E6: Evidence Export And SIEM Adapter Lane",
         "Phase E7: Compliance Mapping Support",
         "Current Next Best Action",
-        "design-only Mission Control display integration proposal",
-        "evidence viewer, not an execution or policy authority",
+        "Mission Control display proposal, handoff schema, negative fixtures",
+        "focused display review",
+        "packet now exist",
+        "sandbox/VM worker proof-of-concept boundary",
+        "sandbox-vm-worker-boundary-charter.md",
+        "make sandbox-vm-worker-boundary-charter-check",
+        "Mission Control as the",
+        "evidence viewer",
+        "runtime sandbox control",
     ]:
         assert phrase in doc
     for phrase in [
@@ -773,6 +781,38 @@ def test_mission_control_display_review_packet_is_wired(tmp_path: Path) -> None:
         "04_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
         "05_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md",
     }
+
+
+def test_sandbox_vm_worker_boundary_charter_is_wired() -> None:
+    report = sandbox_vm_worker_boundary_charter_check.build_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "make sandbox-vm-worker-boundary-charter-check" in readme
+    assert "sandbox-vm-worker-boundary-charter-check:" in makefile
+    assert "sandbox-vm-worker-boundary-charter-check" in release_check_body
+    assert "sandbox-vm-worker-boundary-charter-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-worker-boundary-charter.md" in docs_site
+    assert "docs/codex/sandbox-vm-worker-boundary-charter.md" in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Worker Boundary Charter" in review_index
+    assert "Mission Control display proposal, handoff schema, negative fixtures" in enterprise
+    assert "runtime sandbox control" in enterprise
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
