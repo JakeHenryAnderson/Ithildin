@@ -24,6 +24,10 @@ Validate this negative fixture contract with:
 make trusted-host-promotion-negative-fixtures-check
 ```
 
+The matching source/destination zone contract is
+[trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md), validated with
+`make trusted-host-promotion-zone-contract-check`.
+
 ## Fixture Scope
 
 These are static contract fixtures only. They do not write host files, promote artifacts, inspect a

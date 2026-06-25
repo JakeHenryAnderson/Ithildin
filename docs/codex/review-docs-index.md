@@ -264,6 +264,7 @@ externally closed.
 - [Trusted-Host Promotion Decision Intake](trusted-host-promotion-decision-intake.md)
 - [Trusted-Host Promotion State Machine](trusted-host-promotion-state-machine.md)
 - [Trusted-Host Promotion Negative Fixtures](trusted-host-promotion-negative-fixtures.md)
+- [Trusted-Host Promotion Zone Contract](trusted-host-promotion-zone-contract.md)
 - [v3 Readiness Debt Register](v3-readiness-debt-register.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)
 - [v0.6 Internal Review Execution Wave 2](v0.6-internal-review-execution-wave-2.md)

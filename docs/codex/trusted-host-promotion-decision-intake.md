@@ -64,7 +64,7 @@ A future decision record must include at least:
 | Approval binding model | future implementation-planning packet |
 | Promotion state machine | `trusted-host-promotion-state-machine.md` |
 | Negative fixture contract | `trusted-host-promotion-negative-fixtures.md` |
-| Zone contract | future implementation-planning packet |
+| Zone contract | `trusted-host-promotion-zone-contract.md` |
 | Conflict negative transcripts | `trusted-host-promotion-negative-fixtures.md` and future transcript generator |
 | Replay negative transcripts | `trusted-host-promotion-negative-fixtures.md` and future transcript generator |
 | Path escape negative transcripts | `trusted-host-promotion-negative-fixtures.md` and future transcript generator |
@@ -114,6 +114,9 @@ with `make trusted-host-promotion-state-machine-check`.
 The negative fixture contract is recorded in
 [trusted-host-promotion-negative-fixtures.md](trusted-host-promotion-negative-fixtures.md) and
 validated with `make trusted-host-promotion-negative-fixtures-check`.
+The zone contract is recorded in
+[trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md) and validated
+with `make trusted-host-promotion-zone-contract-check`.
 
 Current output must continue to report:
 

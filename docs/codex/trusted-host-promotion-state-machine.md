@@ -26,6 +26,9 @@ make trusted-host-promotion-state-machine-check
 The matching negative fixture contract is
 [trusted-host-promotion-negative-fixtures.md](trusted-host-promotion-negative-fixtures.md), validated
 with `make trusted-host-promotion-negative-fixtures-check`.
+The matching zone contract is
+[trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md), validated with
+`make trusted-host-promotion-zone-contract-check`.
 
 ## State Vocabulary
 

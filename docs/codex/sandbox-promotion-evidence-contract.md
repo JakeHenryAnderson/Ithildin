@@ -72,6 +72,10 @@ Promotion evidence should use labels, not raw host paths:
 These labels are not filesystem authority by themselves. They are evidence identifiers that must be
 resolved by a future explicitly approved promotion implementation.
 
+The stricter source/destination zone contract is recorded in
+[trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md) and validated with
+`make trusted-host-promotion-zone-contract-check`.
+
 ## Non-Goals
 
 This contract is not a SIEM adapter, custody-grade audit, compliance automation, production identity

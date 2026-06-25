@@ -140,6 +140,9 @@ with `make trusted-host-promotion-state-machine-check`.
 The design-only negative fixture contract is
 [trusted-host-promotion-negative-fixtures.md](trusted-host-promotion-negative-fixtures.md) and is
 validated with `make trusted-host-promotion-negative-fixtures-check`.
+The design-only zone contract is
+[trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md) and is validated
+with `make trusted-host-promotion-zone-contract-check`.
 
 Current permitted state:
 
