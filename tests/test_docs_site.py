@@ -167,6 +167,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/trusted-host-promotion-negative-fixtures.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-zone-contract.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-implementation-plan.md" in DEFAULT_DOCS
+    assert "docs/codex/trusted-host-promotion-source-review.md" in DEFAULT_DOCS
     assert "docs/codex/v3-readiness-debt-register.md" in DEFAULT_DOCS
     assert "docs/codex/local-prompt-triage.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS

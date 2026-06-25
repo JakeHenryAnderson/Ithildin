@@ -146,6 +146,10 @@ with `make trusted-host-promotion-zone-contract-check`.
 The design-only implementation-plan skeleton is
 [trusted-host-promotion-implementation-plan.md](trusted-host-promotion-implementation-plan.md) and is
 validated with `make trusted-host-promotion-implementation-plan-check`.
+The focused design/source-review handoff is
+[trusted-host-promotion-source-review.md](trusted-host-promotion-source-review.md) and is generated
+with `make trusted-host-promotion-source-review-packet`; it packages the promotion evidence
+contracts for reviewer disposition while keeping trusted-host promotion blocked.
 
 Current permitted state:
 

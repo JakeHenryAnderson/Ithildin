@@ -208,6 +208,7 @@ from scripts import (
     trusted_host_promotion_decision_intake_check,
     trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_negative_fixtures_check,
+    trusted_host_promotion_source_review_packet,
     trusted_host_promotion_state_machine_check,
     trusted_host_promotion_zone_contract_check,
     v04_review_packet,
@@ -15131,6 +15132,97 @@ def test_trusted_host_promotion_implementation_plan_is_wired() -> None:
     assert "trusted-host-promotion-implementation-plan.md" in state_machine
     assert "trusted-host-promotion-implementation-plan.md" in negative_fixtures
     assert "trusted-host-promotion-implementation-plan.md" in zone_contract
+
+
+def test_trusted_host_promotion_source_review_packet_is_wired() -> None:
+    report = trusted_host_promotion_source_review_packet.build_check_report(Path.cwd())
+    source_review = Path("docs/codex/trusted-host-promotion-source-review.md").read_text(
+        encoding="utf-8"
+    )
+    implementation_plan = Path(
+        "docs/codex/trusted-host-promotion-implementation-plan.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == 8
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "blocked"
+    assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
+    assert report["finding_namespace"] == "EXT-TRUSTED-HOST-###"
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: design/source-review handoff for `ERG-005`",
+        "Current Output Flags",
+        "Required Disposition",
+        "continue_design_only",
+        "revise_before_more_planning",
+        "block_runtime_implementation",
+        "Finding namespace: `EXT-TRUSTED-HOST-###`",
+        "trusted-host promotion allowed: `false`",
+        "direct host writes allowed: `false`",
+        "runtime changes allowed: `false`",
+        "does not implement promotion behavior",
+    ]:
+        assert phrase in source_review
+    for forbidden in [
+        "trusted-host promotion is implemented",
+        "runtime implementation is approved",
+        "direct host writes are approved",
+        "trusted-host promotion allowed: `true`",
+        "runtime changes allowed: `true`",
+    ]:
+        assert forbidden not in source_review
+    assert "trusted-host-promotion-source-review-packet:" in makefile
+    assert "trusted-host-promotion-source-review-packet-check:" in makefile
+    assert "trusted-host-promotion-source-review-packet-check" in release_check_body
+    assert "$(MAKE) trusted-host-promotion-source-review-packet" in review_candidate_body
+    assert "make trusted-host-promotion-source-review-packet" in readme
+    assert "make trusted-host-promotion-source-review-packet-check" in readme
+    assert (
+        "trusted-host-promotion-source-review-packet-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) trusted-host-promotion-source-review-packet" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-source-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-host-promotion-source-review.md" in docs_site
+    assert "Trusted-Host Promotion Source Review" in review_index
+    assert "trusted-host-promotion-source-review.md" in runway
+    assert "trusted-host-promotion-source-review.md" in gap_matrix
+    assert "trusted-host-promotion-source-review.md" in decision_register
+    assert "trusted-host-promotion-source-review.md" in implementation_plan
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

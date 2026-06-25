@@ -256,6 +256,10 @@ checked with `make control-mapping-readiness`.
   source/staging/approved zone labels while keeping host promotion blocked.
 - `make trusted-host-promotion-implementation-plan-check` - validate the design-only promotion
   implementation-plan skeleton while keeping host promotion blocked.
+- `make trusted-host-promotion-source-review-packet` - generate the focused design/source-review
+  packet for trusted-host promotion while keeping host promotion blocked.
+- `make trusted-host-promotion-source-review-packet-check` - validate the trusted-host promotion
+  source-review packet wiring and artifact hashes.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -894,6 +898,10 @@ The design-only trusted-host promotion implementation-plan skeleton is in
 and is checked with `make trusted-host-promotion-implementation-plan-check`; it gathers the
 evidence contract, decision intake, state machine, negative fixtures, and zone contract into the
 minimum future runtime-plan checklist while keeping host promotion unapproved.
+The focused trusted-host promotion source-review handoff is in
+[docs/codex/trusted-host-promotion-source-review.md](docs/codex/trusted-host-promotion-source-review.md)
+and is generated with `make trusted-host-promotion-source-review-packet`; it asks reviewers whether
+the lane may continue as design-only planning and does not approve runtime host promotion.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

@@ -124,6 +124,9 @@ Current selected capability: `not selected`.
   `trusted-host-promotion-implementation-plan.md` gathers the evidence contract, decision intake,
   state machine, negative fixtures, and zone contract into the minimum future runtime-plan checklist
   while keeping trusted-host promotion blocked.
+- Current source-review handoff evidence:
+  `trusted-host-promotion-source-review.md` packages the design-only trusted-host promotion lane for
+  reviewer disposition while keeping runtime promotion, host writes, and automatic promotion blocked.
 
 ### PRD-SIEM-EXPORT-001
 
