@@ -246,6 +246,8 @@ checked with `make control-mapping-readiness`.
   docs wiring, and no-runtime/no-local-model/no-VM/no-host-promotion boundary.
 - `make sandbox-promotion-evidence-contract-check` - validate the future trusted-host promotion
   evidence contract while confirming host promotion remains unimplemented.
+- `make trusted-host-promotion-decision-intake-check` - validate the post-RC decision-intake
+  checklist for the trusted-host promotion lane while keeping host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
@@ -860,6 +862,11 @@ VM/container, orchestrate a sandbox, or promote files to the trusted host.
 Validate the future promotion evidence shape with `make sandbox-promotion-evidence-contract-check`;
 that contract defines labels, hashes, approval evidence, and review states for a later explicit
 promotion implementation, but it does not approve trusted-host writes today.
+The trusted-host promotion decision intake is in
+[docs/codex/trusted-host-promotion-decision-intake.md](docs/codex/trusted-host-promotion-decision-intake.md)
+and is checked with `make trusted-host-promotion-decision-intake-check`; it defines the required
+decision evidence, negative evidence, and allowed future outcomes before any promotion runtime path
+can be considered.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

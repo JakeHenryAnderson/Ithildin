@@ -130,6 +130,11 @@ Required before implementation:
 - stale artifact, hash mismatch, replay, path escape, overwrite, and conflict negative transcripts;
 - external/source review.
 
+The decision-intake checklist for this lane is
+[trusted-host-promotion-decision-intake.md](trusted-host-promotion-decision-intake.md) and is
+validated with `make trusted-host-promotion-decision-intake-check`. It records the allowed
+design-only outcomes and the evidence required before any promotion implementation decision.
+
 Current permitted state:
 
 - current packets may record only `promotion_status: not_promoted`;

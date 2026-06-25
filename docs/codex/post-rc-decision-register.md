@@ -38,7 +38,7 @@ Current selected capability: `not selected`.
 | `PRD-SANDBOX-PREFLIGHT-001` | Live sandbox/VM preflight | `no_go` | Continue static fixture evidence and source-review disposition only | `false` | Separate live-preflight decision record, implementation plan, and external/source review |
 | `PRD-SANDBOX-LIVE-POC-001` | Live sandbox/VM worker proof of concept | `no_go` | Maintain the decision-intake packet and wait for favorable `ERG-003` disposition | `false` | Favorable static-preflight disposition, live POC decision record, implementation plan, cleanup/failure transcripts, and external/source review |
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
-| `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, negative transcripts, and external/source review |
+| `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, negative transcripts, decision-intake evidence, and external/source review |
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema and offline export design only | `false` | Delivery model, redaction policy, compatibility tests, and external/source review |
 
 ## Decision Details
@@ -105,6 +105,10 @@ Current selected capability: `not selected`.
 - Current implementation posture: trusted-host promotion remains blocked.
 - Current warning language: sandbox outputs may be described as staged evidence only, not promoted
   host artifacts.
+- Current decision-intake evidence:
+  `trusted-host-promotion-decision-intake.md` defines the preconditions, allowed outcomes, negative
+  evidence, and forbidden authority claims before any trusted-host promotion decision can be
+  recorded.
 
 ### PRD-SIEM-EXPORT-001
 

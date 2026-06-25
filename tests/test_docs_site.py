@@ -162,6 +162,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/sandbox-artifact-write-text-source-review.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-artifact-write-text-implementation-decision.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-promotion-evidence-contract.md" in DEFAULT_DOCS
+    assert "docs/codex/trusted-host-promotion-decision-intake.md" in DEFAULT_DOCS
     assert "docs/codex/v3-readiness-debt-register.md" in DEFAULT_DOCS
     assert "docs/codex/local-prompt-triage.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS

@@ -205,6 +205,7 @@ from scripts import (
     source_review_transcript_packet,
     test_determinism_gate,
     tool_surface_invariant_gate,
+    trusted_host_promotion_decision_intake_check,
     v04_review_packet,
     v05_boundary_decision_draft_check,
     v05_handoff_packet_check,
@@ -14686,6 +14687,83 @@ def test_sandbox_promotion_evidence_contract_is_wired() -> None:
     )
     assert "docs/codex/sandbox-promotion-evidence-contract.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/sandbox-promotion-evidence-contract.md" in docs_site
+
+
+def test_trusted_host_promotion_decision_intake_is_wired() -> None:
+    report = trusted_host_promotion_decision_intake_check.build_report(Path.cwd())
+    intake = Path("docs/codex/trusted-host-promotion-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "blocked"
+    assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
+    assert report["decision_record_required"] is True
+    assert report["implementation_approved"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["promotion_without_exact_artifact_hash_binding_allowed"] is False
+    assert report["promotion_without_approval_evidence_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: decision-intake planning packet for `ERG-005`",
+        "artifact hash-binding model",
+        "approval model binds the exact artifact hash",
+        "promotion state machine",
+        "source and destination zone contract",
+        "conflict negative transcripts",
+        "replay negative transcripts",
+        "path escape negative transcripts",
+        "conditional_go_for_bounded_promotion_implementation",
+        "decision record required: `true`",
+        "implementation approved: `false`",
+        "trusted-host promotion allowed: `false`",
+    ]:
+        assert phrase in intake
+    for forbidden in [
+        "trusted-host promotion is implemented",
+        "host writes are approved",
+        "automatic promotion is approved",
+        "overwrite is approved",
+        "delete is approved",
+        "archive extraction is approved",
+    ]:
+        assert forbidden not in intake
+    assert "trusted-host-promotion-decision-intake-check:" in makefile
+    assert "trusted-host-promotion-decision-intake-check" in release_check_body
+    assert "make trusted-host-promotion-decision-intake-check" in readme
+    assert (
+        "trusted-host-promotion-decision-intake-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/trusted-host-promotion-decision-intake.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/trusted-host-promotion-decision-intake.md" in docs_site
+    assert "Trusted-Host Promotion Decision Intake" in review_index
+    assert "trusted-host-promotion-decision-intake.md" in enterprise
+    assert "trusted-host-promotion-decision-intake.md" in gap_matrix
+    assert "trusted-host-promotion-decision-intake.md" in decision_register
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:
