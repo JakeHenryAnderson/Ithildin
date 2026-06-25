@@ -1,6 +1,6 @@
 # Governed Artifact Transfer Lab
 
-Status: future goal with Stage 1 Part 1 Ithildin-only proof-of-concept packet.
+Status: Stage 1 Part 1, Stage 1 Part 2, and Stage 2 simulated-sandbox proof-of-concept packet.
 
 This lab is the first practical bridge between Ithildin and Mission Control. It keeps the projects
 distinct: Mission Control is the operator/control plane, Ithildin is the governed MCP/tool gateway,
@@ -105,6 +105,17 @@ operator-facing mission/evidence layer. The expected comparison is simple: Missi
 operator intent and evidence attachments; Ithildin keeps the local gateway/evidence packet; neither
 part introduces a VM yet.
 
+The generated packet now includes:
+
+- `mission-control-handoff/mission-control-handoff.json`;
+- `mission-control-handoff/MISSION_CONTROL_HANDOFF.md`;
+- mission_control_integration: `metadata_only`;
+- source/output hashes copied from the Stage 1 Ithildin manifest;
+- review and promotion statuses for Mission Control to display.
+
+Mission Control should treat these files as metadata/evidence attachments. It must not claim that it
+executed the governed action, replaced Ithildin policy, started a VM, or provided OS isolation.
+
 ## Stage 2: VM Working Copy Summary
 
 Goal: prove artifact transfer into a disposable workshop.
@@ -123,6 +134,56 @@ Evidence to collect:
 - output hash inside the sandbox;
 - promotion approval ID;
 - final host staging hash.
+
+### Stage 2A: Transfer Evidence Contract
+
+The Stage 2 packet records the following secret-free evidence fields:
+
+- host source label, byte count, and SHA-256 hash;
+- sandbox copy label, byte count, sandbox ID label, and SHA-256 hash;
+- sandbox output label, byte count, and SHA-256 hash;
+- returned host staging output label, byte count, and SHA-256 hash;
+- comparison checks for host-to-sandbox copy and sandbox-output-to-host-staging return;
+- approval metadata showing that trusted promotion is required and automatic promotion did not run.
+
+### Stage 2B: Simulated Sandbox Working Copy
+
+The current Stage 2 implementation is a deterministic fixture simulation using generated ignored
+directories only:
+
+```text
+simulated-sandbox/host-source/
+simulated-sandbox/sandbox-working-copy/
+simulated-sandbox/sandbox-output/
+simulated-sandbox/host-staging/
+```
+
+Run:
+
+```sh
+make governed-artifact-transfer-stage2
+make governed-artifact-transfer-stage2-check
+```
+
+The generated packet records:
+
+- mission_control_integration: `metadata_only`;
+- vm_or_sandbox: `simulated_directory_only`;
+- `real_vm_or_container_started: false`;
+- `sandbox_lifecycle_control: false`;
+- copied-source hash equality between host source and sandbox working copy;
+- output hash equality between sandbox output and returned host staging output.
+
+This proves the evidence model and operator workflow shape before introducing platform-specific VM
+or sandbox mechanics.
+
+### Stage 2C: Real VM Readiness Plan
+
+The packet also includes `STAGE_2_REAL_VM_READINESS_PLAN.md`. This is design/readiness only. A real
+VM-backed implementation requires a later explicit implementation decision and must stop if it would
+require Ithildin to run shell commands, control VM/container lifecycle, access Docker or Kubernetes,
+perform broad writes, or imply compliance automation, production security control, or OS isolation
+proof.
 
 ## Stage 3: Promotion With Before/After Approval
 

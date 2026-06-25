@@ -223,6 +223,10 @@ checked with `make control-mapping-readiness`.
   artifact transfer lab packet under `var/review-packets/v3/governed-artifact-transfer-lab/`.
 - `make governed-artifact-transfer-lab-check` - validate the Stage 1 lab packet, docs wiring,
   no-new-powers boundary, and Mission-Control/VM-disabled posture.
+- `make governed-artifact-transfer-stage2` - generate the Stage 1 Mission Control handoff and
+  Stage 2 simulated sandbox-transfer evidence packet without starting a real VM or sandbox.
+- `make governed-artifact-transfer-stage2-check` - validate the Mission Control handoff metadata,
+  simulated sandbox copy/return hashes, VM-readiness plan, and no-new-powers boundary.
 - `make demo-workbench-smoke` - generate a deterministic, secret-free operator workbench smoke transcript with required and optional/manual demo steps.
 - `make demo-workbench` - run the evidence-only workbench demo wrapper without starting services or adding run/sandbox controls.
 - `make operator-action-states-check` - validate future operator action state vocabulary without runtime controls.
@@ -570,8 +574,10 @@ The v1.0 RC readiness gate is
 `make v1-rc-readiness`; use `make v1-rc-packet` for the compact ignored handoff packet.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
-it now includes a Stage 1 Part 1 Ithildin-only known-good packet generated with
-`make governed-artifact-transfer-lab`, before the later Mission Control and VM/sandbox parts.
+it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control
+handoff wrapper, and a Stage 2 simulated sandbox transfer generated with
+`make governed-artifact-transfer-stage2`; real VM/sandbox orchestration remains a future gated
+implementation decision.
 The v0.6 preflight transition note is in
 [docs/codex/v0.6-preflight-transition.md](docs/codex/v0.6-preflight-transition.md).
 The v0.6 external-review execution charter is in

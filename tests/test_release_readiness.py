@@ -12435,12 +12435,26 @@ def test_governed_artifact_transfer_lab_is_wired(tmp_path: Path) -> None:
         "STAGE_1_LAB_INDEX.md",
         "STAGE_1_LAB_TRANSCRIPT.md",
         "STAGE_1_PART_2_MISSION_CONTROL_NOTES.md",
+        "STAGE_2_SIMULATED_SANDBOX_TRANSFER.md",
+        "STAGE_2_REAL_VM_READINESS_PLAN.md",
         "artifact-hashes.json",
         "staging",
         "evidence",
+        "mission-control-handoff",
+        "simulated-sandbox",
     }
     generated = {path.name for path in output_dir.iterdir()}
     manifest = json.loads((output_dir / "evidence/manifest.json").read_text(encoding="utf-8"))
+    stage2_manifest = json.loads(
+        (output_dir / "evidence/stage2-simulated-sandbox-manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    handoff = json.loads(
+        (output_dir / "mission-control-handoff/mission-control-handoff.json").read_text(
+            encoding="utf-8"
+        )
+    )
     hashes = json.loads((output_dir / "artifact-hashes.json").read_text(encoding="utf-8"))
     artifact_paths = {entry["path"] for entry in hashes["artifacts"]}
     summary = (output_dir / "staging/summary.md").read_text(encoding="utf-8")
@@ -12467,9 +12481,31 @@ def test_governed_artifact_transfer_lab_is_wired(tmp_path: Path) -> None:
     assert manifest["promotion_required_for_trusted_write"] is True
     assert "no_new_governed_tools" in manifest["boundaries"]
     assert "no_shell_execution" in manifest["boundaries"]
+    assert handoff["mission_control_integration"] == "metadata_only"
+    assert handoff["source_sha256"] == manifest["source"]["sha256"]
+    assert handoff["output_sha256"] == manifest["output"]["sha256"]
+    assert handoff["review_status"] == "pending_operator_review"
+    assert handoff["promotion_status"] == "not_promoted"
+    assert stage2_manifest["lab"] == "governed-artifact-transfer-stage-2-simulated-sandbox"
+    assert stage2_manifest["mission_control_integration"] == "metadata_only"
+    assert stage2_manifest["vm_or_sandbox"] == "simulated_directory_only"
+    assert stage2_manifest["real_vm_or_container_started"] is False
+    assert stage2_manifest["sandbox_lifecycle_control"] is False
+    assert stage2_manifest["approval"]["promotion_approval_required"] is True
+    assert stage2_manifest["approval"]["auto_promotion_performed"] is False
+    assert all(stage2_manifest["checks"].values())
     assert "staging/summary.md" in artifact_paths
     assert "evidence/manifest.json" in artifact_paths
+    assert "evidence/stage2-simulated-sandbox-manifest.json" in artifact_paths
+    assert "mission-control-handoff/mission-control-handoff.json" in artifact_paths
+    assert "mission-control-handoff/MISSION_CONTROL_HANDOFF.md" in artifact_paths
+    assert "simulated-sandbox/host-source/article.txt" in artifact_paths
+    assert "simulated-sandbox/sandbox-working-copy/article.txt" in artifact_paths
+    assert "simulated-sandbox/sandbox-output/summary.md" in artifact_paths
+    assert "simulated-sandbox/host-staging/summary.md" in artifact_paths
     assert "STAGE_1_PART_2_MISSION_CONTROL_NOTES.md" in artifact_paths
+    assert "STAGE_2_SIMULATED_SANDBOX_TRANSFER.md" in artifact_paths
+    assert "STAGE_2_REAL_VM_READINESS_PLAN.md" in artifact_paths
     assert "Deterministic Summary" in summary
     assert "mission_control_integration: `false`" in summary
     assert "vm_or_sandbox: `false`" in summary
@@ -12477,21 +12513,38 @@ def test_governed_artifact_transfer_lab_is_wired(tmp_path: Path) -> None:
     assert "Stage 1 Part 1: Ithildin-Only Known Good" in doc
     assert "make governed-artifact-transfer-lab" in doc
     assert "make governed-artifact-transfer-lab-check" in doc
+    assert "make governed-artifact-transfer-stage2" in doc
+    assert "make governed-artifact-transfer-stage2-check" in doc
     assert "tool count remains `23`" in doc
     assert "does not add governed tools" in doc
     assert "make governed-artifact-transfer-lab" in readme
     assert "make governed-artifact-transfer-lab-check" in readme
+    assert "make governed-artifact-transfer-stage2" in readme
+    assert "make governed-artifact-transfer-stage2-check" in readme
     assert "governed-artifact-transfer-lab:" in makefile
     assert "governed-artifact-transfer-lab-check:" in makefile
+    assert "governed-artifact-transfer-stage2:" in makefile
+    assert "governed-artifact-transfer-stage2-check:" in makefile
     assert "governed-artifact-transfer-lab-check" in release_check_body
+    assert "governed-artifact-transfer-stage2-check" in release_check_body
     assert "$(MAKE) governed-artifact-transfer-lab" in review_candidate_body
     assert "$(MAKE) governed-artifact-transfer-lab-check" in review_candidate_body
+    assert "$(MAKE) governed-artifact-transfer-stage2" in review_candidate_body
+    assert "$(MAKE) governed-artifact-transfer-stage2-check" in review_candidate_body
     assert (
         "governed-artifact-transfer-lab-check"
         in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert (
         "$(MAKE) governed-artifact-transfer-lab"
+        in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert (
+        "governed-artifact-transfer-stage2-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "$(MAKE) governed-artifact-transfer-stage2"
         in release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
     assert "docs/codex/governed-artifact-transfer-lab.md" in review_docs.REVIEW_DOCS
