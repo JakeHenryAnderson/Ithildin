@@ -202,6 +202,7 @@ DEFAULT_DOCS = [
     "docs/codex/read-only-capability-source-review-template.md",
     "docs/codex/v1.0-rc-roadmap.md",
     "docs/codex/v1.0-rc-status.md",
+    "docs/codex/v1.0-rc-feature-freeze.md",
     "docs/codex/v1.0-operator-quickstart.md",
     "docs/codex/v1.0-workbench-evidence-closure.md",
     "docs/codex/v1.0-assurance-closure.md",

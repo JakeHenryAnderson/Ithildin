@@ -210,6 +210,7 @@ from scripts import (
     v09_design_review_packet,
     v1_assurance_closure_check,
     v1_operator_quickstart_check,
+    v1_rc_feature_freeze_check,
     v1_rc_packet,
     v1_rc_readiness_check,
     v1_rc_roadmap_check,
@@ -331,8 +332,12 @@ def test_v1_rc_roadmap_is_wired() -> None:
     workbench_report = v1_workbench_evidence_check.build_report(Path.cwd())
     assurance_report = v1_assurance_closure_check.build_report(Path.cwd())
     readiness_report = v1_rc_readiness_check.build_report(Path.cwd())
+    feature_freeze_report = v1_rc_feature_freeze_check.build_report(Path.cwd())
     roadmap = Path("docs/codex/v1.0-rc-roadmap.md").read_text(encoding="utf-8")
     status = Path("docs/codex/v1.0-rc-status.md").read_text(encoding="utf-8")
+    feature_freeze = Path("docs/codex/v1.0-rc-feature-freeze.md").read_text(
+        encoding="utf-8"
+    )
     quickstart = Path("docs/codex/v1.0-operator-quickstart.md").read_text(
         encoding="utf-8"
     )
@@ -384,6 +389,20 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert readiness_report["selected_capability"] == "not selected"
     assert readiness_report["packet_redaction_findings"] == 0
     assert readiness_report["capability_expansion_allowed"] is False
+    assert feature_freeze_report["valid"] is True
+    assert feature_freeze_report["tool_count"] == 24
+    assert (
+        feature_freeze_report["latest_implemented_tool"]
+        == "sandbox.artifact.write_text"
+    )
+    assert feature_freeze_report["selected_capability"] == "not selected"
+    assert feature_freeze_report["capability_decision"] == "blocked"
+    assert feature_freeze_report["capability_expansion_allowed"] is False
+    assert (
+        feature_freeze_report["public_security_product_positioning_allowed"] is False
+    )
+    assert feature_freeze_report["runtime_changes_allowed"] is False
+    assert feature_freeze_report["new_power_classes_allowed"] is False
     for phrase in [
         "Ithildin v1.0 RC is a local-first governed MCP workbench",
         "Phase 1: Finish The Read-Only Metadata Surface",
@@ -405,6 +424,22 @@ def test_v1_rc_roadmap_is_wired() -> None:
         "install, demo, workbench, evidence, and shutdown instructions",
     ]:
         assert phrase in status
+    for phrase in [
+        "Status: v1.0 local-preview feature-freeze gate.",
+        "Freeze Decision",
+        "governed tool count remains `24`",
+        "latest implemented governed tool remains `sandbox.artifact.write_text`",
+        "no next capability is selected",
+        "capability expansion remains blocked",
+        "public/security-product positioning remains blocked",
+        "runtime changes are allowed only for blocking release fixes",
+        "Allowed During Freeze",
+        "Blocked During Freeze",
+        "Unfreeze Conditions",
+        "make v1-rc-feature-freeze",
+        "Stop Conditions",
+    ]:
+        assert phrase in feature_freeze
     for phrase in [
         "Status: local-preview operator quickstart for the v1.0 RC path.",
         "Current governed tool count: `24`",
@@ -470,6 +505,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
         assert phrase in readiness_gate
     assert "v1-rc-roadmap-check:" in makefile
     assert "v1-rc-status-check:" in makefile
+    assert "v1-rc-feature-freeze:" in makefile
     assert "v1-operator-quickstart-check:" in makefile
     assert "v1-workbench-evidence-check:" in makefile
     assert "v1-assurance-closure-check:" in makefile
@@ -477,6 +513,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "v1-rc-packet:" in makefile
     assert "v1-rc-roadmap-check" in release_check_body
     assert "v1-rc-status-check" in release_check_body
+    assert "v1-rc-feature-freeze" in release_check_body
     assert "v1-operator-quickstart-check" in release_check_body
     assert "v1-workbench-evidence-check" in release_check_body
     assert "v1-assurance-closure-check" in release_check_body
@@ -484,6 +521,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "$(MAKE) v1-rc-packet" in makefile.partition("review-candidate:")[2]
     assert "make v1-rc-roadmap-check" in readme
     assert "make v1-rc-status-check" in readme
+    assert "make v1-rc-feature-freeze" in readme
     assert "make v1-operator-quickstart-check" in readme
     assert "make v1-workbench-evidence-check" in readme
     assert "make v1-assurance-closure-check" in readme
@@ -491,18 +529,21 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "make v1-rc-packet" in readme
     assert "docs/codex/v1.0-rc-roadmap.md" in docs_site
     assert "docs/codex/v1.0-rc-status.md" in docs_site
+    assert "docs/codex/v1.0-rc-feature-freeze.md" in docs_site
     assert "docs/codex/v1.0-operator-quickstart.md" in docs_site
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in docs_site
     assert "docs/codex/v1.0-assurance-closure.md" in docs_site
     assert "docs/codex/v1.0-rc-readiness-gate.md" in docs_site
     assert "docs/codex/v1.0-rc-roadmap.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-status.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v1.0-rc-feature-freeze.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-operator-quickstart.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-readiness-gate.md" in review_docs.REVIEW_DOCS
     assert "Ithildin v1.0 RC Roadmap" in review_index
     assert "Ithildin v1.0 RC Status" in review_index
+    assert "Ithildin v1.0 RC Feature Freeze" in review_index
     assert "Ithildin v1.0 Operator Quickstart" in review_index
     assert "Ithildin v1.0 Workbench And Evidence Closure" in review_index
     assert "Ithildin v1.0 Assurance Closure" in review_index

@@ -321,6 +321,9 @@ checked with `make control-mapping-readiness`.
   and no-new-powers boundaries.
 - `make v1-rc-status-check` - validate the canonical v1.0 RC status map, current tool count,
   blocked/deferred boundaries, and release-check/docs wiring.
+- `make v1-rc-feature-freeze` - validate the v1.0 RC feature-freeze decision: tool count `24`,
+  no selected next capability, blocked capability expansion, and no public/security-product
+  positioning.
 - `make v1-operator-quickstart-check` - validate the v1.0 local-preview operator quickstart,
   demo command order, evidence reading order, and no-new-powers boundaries.
 - `make v1-workbench-evidence-check` - validate the v1.0 workbench/evidence closure map across
@@ -631,6 +634,11 @@ The canonical v1.0 RC status map is
 [docs/codex/v1.0-rc-status.md](docs/codex/v1.0-rc-status.md) and is checked with
 `make v1-rc-status-check`; read it before historical v0.x/v3 packet archaeology when deciding what
 is implemented, blocked, deferred, or still pending for local-preview RC.
+The v1.0 RC feature-freeze decision is
+[docs/codex/v1.0-rc-feature-freeze.md](docs/codex/v1.0-rc-feature-freeze.md) and is checked with
+`make v1-rc-feature-freeze`; it blocks new manifests, executors, policy powers, MCP/API behavior,
+UI runtime controls, and product-positioning expansion unless a post-RC decision explicitly
+unfreezes a lane.
 The v1.0 operator quickstart is
 [docs/codex/v1.0-operator-quickstart.md](docs/codex/v1.0-operator-quickstart.md) and is checked
 with `make v1-operator-quickstart-check`; it is the current zero-to-one local demo path from

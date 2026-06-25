@@ -218,6 +218,7 @@ externally closed.
 - [Read-Only Capability Source Review Template](read-only-capability-source-review-template.md)
 - [Ithildin v1.0 RC Roadmap](v1.0-rc-roadmap.md)
 - [Ithildin v1.0 RC Status](v1.0-rc-status.md)
+- [Ithildin v1.0 RC Feature Freeze](v1.0-rc-feature-freeze.md)
 - [Ithildin v1.0 Operator Quickstart](v1.0-operator-quickstart.md)
 - [Ithildin v1.0 Workbench And Evidence Closure](v1.0-workbench-evidence-closure.md)
 - [Ithildin v1.0 Assurance Closure](v1.0-assurance-closure.md)
