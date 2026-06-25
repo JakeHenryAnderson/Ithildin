@@ -208,6 +208,7 @@ from scripts import (
     sandbox_vm_worker_boundary_charter_check,
     siem_evidence_design_check,
     siem_export_adapter_architecture_check,
+    siem_export_adapter_disposition_packet,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
     test_determinism_gate,
@@ -14160,6 +14161,92 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
     assert "siem-export-adapter-architecture.md" in runway
     assert "siem-export-adapter-architecture.md" in gap_matrix
     assert "siem-export-adapter-architecture.md" in decision_register
+
+
+def test_siem_export_adapter_disposition_packet_is_wired(tmp_path: Path) -> None:
+    report = siem_export_adapter_disposition_packet.build_check_report(Path.cwd())
+    output_dir = tmp_path / "siem-export-adapter-disposition"
+    siem_export_adapter_disposition_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    index = output_dir.joinpath("00_SIEM_EXPORT_ADAPTER_DISPOSITION_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = output_dir.joinpath("01_SIEM_EXPORT_ADAPTER_DISPOSITION_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = output_dir.joinpath(
+        "04_SIEM_EXPORT_ADAPTER_DISPOSITION_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath("siem-export-adapter-disposition-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_008_status"] == "planning_only"
+    assert report["runtime_changes_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_delivery_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["security_operations_control_plane_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_008"] is False
+    assert "does not close `ERG-008`" in index
+    assert "EXT-SIEM-ADAPTER-###" in prompt
+    assert "continue_architecture_planning" in prompt
+    assert '"siem_adapter_allowed": false' in evidence
+    assert '"hosted_telemetry_allowed": false' in evidence
+    assert '"remote_delivery_allowed": false' in evidence
+    assert '"closes_erg_008": false' in evidence
+    assert "make siem-export-adapter-disposition-packet" in readme
+    assert "siem-export-adapter-disposition-packet:" in makefile
+    assert "siem-export-adapter-disposition-packet-check:" in makefile
+    assert "siem-export-adapter-disposition-packet-check" in release_check_body
+    assert "$(MAKE) siem-export-adapter-disposition-packet" in review_candidate_body
+    assert "siem-export-adapter-disposition-packet-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) siem-export-adapter-disposition-packet" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/siem-export-adapter-disposition-packet.md" in docs_site
+    assert "docs/codex/siem-export-adapter-disposition-packet.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "SIEM Export Adapter Disposition Packet" in review_index
+    assert "siem-export-adapter-disposition-packet.md" in runway
+    assert "siem-export-adapter-disposition-packet.md" in gap_matrix
+    assert "siem-export-adapter-disposition-packet.md" in decision_register
+    assert {entry["path"] for entry in hashes["artifacts"]} == {
+        "00_SIEM_EXPORT_ADAPTER_DISPOSITION_INDEX.md",
+        "01_SIEM_EXPORT_ADAPTER_DISPOSITION_PROMPT.md",
+        "02_SIEM_EXPORT_ADAPTER_DISPOSITION_AND_ARCHITECTURE.md",
+        "03_SIEM_EXPORT_ADAPTER_REVIEW_POINTERS.md",
+        "04_SIEM_EXPORT_ADAPTER_DISPOSITION_COMMAND_EVIDENCE.md",
+    }
 
 
 def test_compliance_mapping_architecture_is_wired() -> None:

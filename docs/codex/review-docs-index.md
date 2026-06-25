@@ -237,6 +237,7 @@ externally closed.
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [SIEM Export Adapter Architecture](siem-export-adapter-architecture.md)
+- [SIEM Export Adapter Disposition Packet](siem-export-adapter-disposition-packet.md)
 - [Compliance Mapping Architecture](compliance-mapping-architecture.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
 - [Mission Control Display Importer Implementation Plan](mission-control-display-importer-plan.md)

@@ -146,6 +146,10 @@ Current selected capability: `not selected`.
   `siem-export-adapter-architecture.md` defines the future adapter profile, delivery, retry,
   backpressure, compatibility, signing, diagnostics, and review questions before any future runtime
   decision.
+- Current disposition evidence:
+  `siem-export-adapter-disposition-packet.md` asks whether the current adapter architecture
+  evidence is coherent enough for continued planning while SIEM adapter runtime behavior remains
+  blocked.
 
 ### PRD-COMPLIANCE-MAPPING-001
 

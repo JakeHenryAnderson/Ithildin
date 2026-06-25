@@ -220,6 +220,11 @@ The design-only adapter architecture packet for this phase is
 delivery-profile, compatibility, retry, backpressure, signing, diagnostics, and review requirements
 while keeping SIEM adapter runtime behavior, hosted telemetry, remote delivery, and custody-grade
 audit claims blocked.
+The focused adapter disposition packet is
+[siem-export-adapter-disposition-packet.md](siem-export-adapter-disposition-packet.md) and is
+generated with `make siem-export-adapter-disposition-packet`. It asks whether `ERG-008` may
+continue architecture planning while adapter runtime behavior, hosted telemetry, remote delivery,
+custody claims, external notarization, immutable storage, and compliance automation remain blocked.
 
 Required before implementation:
 

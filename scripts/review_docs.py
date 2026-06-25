@@ -258,6 +258,7 @@ REVIEW_DOCS = [
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
     "docs/codex/siem-export-adapter-architecture.md",
+    "docs/codex/siem-export-adapter-disposition-packet.md",
     "docs/codex/compliance-mapping-architecture.md",
     "docs/codex/mission-control-display-integration-proposal.md",
     "docs/codex/mission-control-display-importer-plan.md",
