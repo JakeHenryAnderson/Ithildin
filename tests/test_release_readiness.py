@@ -108,6 +108,7 @@ from scripts import (
     post_rc_decision_record_examples_check,
     post_rc_decision_record_template_check,
     post_rc_decision_register_check,
+    production_identity_storage_architecture_check,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -1228,7 +1229,7 @@ def test_post_rc_decision_register_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["registered_decision_count"] == 6
+    assert report["registered_decision_count"] == 7
     assert report["mission_control_planning_allowed"] is True
     assert report["mission_control_runtime_allowed"] is False
     assert report["sandbox_live_preflight_allowed"] is False
@@ -1264,6 +1265,10 @@ def test_post_rc_decision_register_is_wired() -> None:
         "PRD-SIEM-EXPORT-001",
         "SIEM-shaped export adapter lane",
         "SIEM adapter work remains blocked",
+        "PRD-PROD-IAM-STORAGE-001",
+        "Production identity and durable storage architecture",
+        "production-identity-storage-architecture.md",
+        "runtime identity and storage behavior remain blocked",
         "make post-rc-decision-register-check",
     ]:
         assert phrase in normalized_doc
@@ -1289,6 +1294,76 @@ def test_post_rc_decision_register_is_wired() -> None:
     assert "docs/codex/post-rc-decision-register.md" in docs_site
     assert "docs/codex/post-rc-decision-register.md" in review_docs.REVIEW_DOCS
     assert "Post-RC Decision Register" in review_index
+
+
+def test_production_identity_storage_architecture_is_wired() -> None:
+    report = production_identity_storage_architecture_check.build_report(Path.cwd())
+    doc = Path("docs/codex/production-identity-storage-architecture.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["enterprise_rbac_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["remote_admin_allowed"] is False
+    assert report["hosted_control_plane_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    for phrase in [
+        "Status: design-only architecture packet for `ERG-006` and `ERG-007`.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "`ERG-006`: production identity and multi-user authorization.",
+        "`ERG-007`: durable runtime storage and retention.",
+        "local principal labels, not enterprise authentication",
+        "SQLite runtime storage, not runtime Postgres",
+        "Future Identity Architecture Questions",
+        "Future Storage Architecture Questions",
+        "Evidence Contract",
+        "Required Before Implementation",
+        "external architecture review",
+        "The current decision is `planning_only`.",
+        "Runtime implementation remains blocked",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "production IAM is implemented",
+        "enterprise RBAC is implemented",
+        "runtime Postgres is enabled",
+        "remote admin use is approved",
+        "custody-grade audit is implemented",
+        "compliance automation is approved",
+        "public security product approved",
+        "hosted control plane is implemented",
+    ]:
+        assert phrase not in doc
+    assert "production-identity-storage-architecture-check:" in makefile
+    assert "production-identity-storage-architecture-check" in release_check_body
+    assert "make production-identity-storage-architecture-check" in readme
+    assert "docs/codex/production-identity-storage-architecture.md" in readme
+    assert "docs/codex/production-identity-storage-architecture.md" in docs_site
+    assert "docs/codex/production-identity-storage-architecture.md" in review_docs.REVIEW_DOCS
+    assert "Production Identity And Storage Architecture" in review_index
+    assert "production-identity-storage-architecture.md" in runway
+    assert "production-identity-storage-architecture.md" in gap_matrix
+    assert "production-identity-storage-architecture.md" in decision_register
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

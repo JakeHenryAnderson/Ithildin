@@ -83,6 +83,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "post-rc-decision-record-template-check",
     "post-rc-decision-record-examples-check",
     "post-rc-decision-register-check",
+    "production-identity-storage-architecture-check",
     "mission-control-display-integration-proposal-check",
     "mission-control-display-importer-plan-check",
     "mission-control-display-decision-intake-check",

@@ -173,6 +173,12 @@ Blocked:
 
 Goal: decide the production-grade identity and persistence model before multi-user or remote use.
 
+The design-only architecture packet for this phase is
+[production-identity-storage-architecture.md](production-identity-storage-architecture.md) and is
+validated with `make production-identity-storage-architecture-check`. It records the future
+identity, tenancy, storage, migration, backup/restore, retention, and evidence questions while
+keeping production IAM, runtime Postgres, remote admin use, and custody-grade audit claims blocked.
+
 Required design decisions:
 
 - identity provider and local principal mapping;

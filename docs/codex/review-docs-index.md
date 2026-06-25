@@ -232,6 +232,7 @@ externally closed.
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)
 - [Post-RC Decision Record Examples](post-rc-decision-record-examples.md)
 - [Post-RC Decision Register](post-rc-decision-register.md)
+- [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
 - [Mission Control Display Importer Implementation Plan](mission-control-display-importer-plan.md)
 - [Mission Control Display Decision Intake](mission-control-display-decision-intake.md)

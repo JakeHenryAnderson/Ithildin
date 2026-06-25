@@ -62,6 +62,14 @@ REQUIRED_PHRASES = [
     "SIEM-shaped export adapter lane",
     "Stable schema and offline export design only",
     "SIEM adapter work remains blocked",
+    "PRD-PROD-IAM-STORAGE-001",
+    "Production identity and durable storage architecture",
+    (
+        "Maintain the architecture packet, threat model questions, "
+        "migration/retention/backup planning, and external architecture review preparation"
+    ),
+    "production-identity-storage-architecture.md",
+    "runtime identity and storage behavior remain blocked",
     "make post-rc-decision-register-check",
     "make post-rc-decision-record-examples-check",
     "make post-rc-decision-gate",
@@ -85,6 +93,7 @@ DECISION_IDS = [
     "PRD-CAPABILITY-001",
     "PRD-TRUSTED-HOST-001",
     "PRD-SIEM-EXPORT-001",
+    "PRD-PROD-IAM-STORAGE-001",
 ]
 
 

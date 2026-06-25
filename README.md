@@ -371,6 +371,9 @@ checked with `make control-mapping-readiness`.
   Mission Control display planning, sandbox/VM no-go, and post-freeze capability no-go lanes.
 - `make post-rc-decision-register-check` - validate the current post-RC decision register across
   planning-only, no-go, and blocked enterprise-readiness lanes.
+- `make production-identity-storage-architecture-check` - validate the design-only architecture
+  packet for production identity and durable storage while keeping production IAM, runtime Postgres,
+  remote admin use, and custody-grade audit claims blocked.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -726,6 +729,12 @@ The post-RC decision gate is
 `make post-rc-decision-gate`; it requires a written decision record, scope, forbidden scope,
 review evidence, tests, accepted-risk impact, tool-count impact, and go/no-go outcome before any
 frozen lane can move beyond documentation or planning.
+The production identity and storage architecture packet is
+[docs/codex/production-identity-storage-architecture.md](docs/codex/production-identity-storage-architecture.md)
+and is checked with `make production-identity-storage-architecture-check`; it defines the future
+`ERG-006`/`ERG-007` identity, tenancy, storage, migration, retention, backup/restore, and evidence
+questions while keeping production IAM, runtime Postgres, remote admin use, and custody-grade audit
+claims blocked.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.

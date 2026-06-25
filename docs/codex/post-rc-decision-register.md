@@ -40,6 +40,7 @@ Current selected capability: `not selected`.
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
 | `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, implementation-plan skeleton, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, and external/source review |
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema and offline export design only | `false` | Delivery model, redaction policy, compatibility tests, and external/source review |
+| `PRD-PROD-IAM-STORAGE-001` | Production identity and durable storage architecture | `approved_for_planning` | Maintain the architecture packet, threat model questions, migration/retention/backup planning, and external architecture review preparation | `false` | Post-RC decision record, identity provider design, tenant/workspace model, storage/migration plan, backup/restore plan, failure-mode tests, and external architecture review before runtime work |
 
 ## Decision Details
 
@@ -140,6 +141,24 @@ Current selected capability: `not selected`.
 - Current implementation posture: SIEM adapter work remains blocked.
 - Current warning language: Ithildin may support control mapping and evidence export design, not
   SIEM custody or automated compliance.
+
+### PRD-PROD-IAM-STORAGE-001
+
+- Status: `approved_for_planning`.
+- Current allowed scope: production identity and durable storage architecture documentation,
+  evidence-field design, migration and backup/restore planning, retention-model planning, and
+  external architecture review preparation.
+- Current forbidden scope: production IAM, enterprise RBAC runtime behavior, tenant/team
+  authorization runtime behavior, remote admin use, runtime Postgres, database migrations,
+  backup/restore runtime behavior, retention enforcement, hosted control plane, custody-grade audit
+  claims, compliance automation, and public/security-product positioning.
+- Current implementation posture: runtime identity and storage behavior remain blocked.
+- Current warning language: Ithildin may discuss production identity and durable storage
+  architecture, but the current runtime remains local-preview with local principal labels and SQLite.
+- Current architecture evidence:
+  `production-identity-storage-architecture.md` defines the `ERG-006`/`ERG-007` identity, tenancy,
+  storage, migration, backup/restore, retention, and evidence questions before any future runtime
+  decision.
 
 ## Validation
 
