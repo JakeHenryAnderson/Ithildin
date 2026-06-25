@@ -37,6 +37,10 @@ REQUIRED_PHRASES = [
     "var/review-packets/v1.0/rc/",
     "05_V1_RC_FEATURE_FREEZE.md",
     "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
+    "12_V1_RC_FINAL_HANDOFF.md",
+    "13_V1_RC_POST_REVIEW_TRIAGE.md",
+    "14_V1_RC_ARTIFACTS.md",
+    "15_V1_RC_COMMANDS.md",
     "v1-rc-artifact-hashes.json",
 ]
 

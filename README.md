@@ -328,6 +328,8 @@ checked with `make control-mapping-readiness`.
   and confirm it is included in the compact v1.0 RC packet.
 - `make v1-rc-final-handoff-check` - validate the current v1.0 RC final handoff map, go/no-go
   state, packet reading order, command expectations, and no-overclaim boundaries.
+- `make v1-rc-post-review-triage-check` - validate the v1.0 RC post-review triage map for
+  normalizing reviewer responses without mutating findings or unfreezing capabilities.
 - `make v1-operator-quickstart-check` - validate the v1.0 local-preview operator quickstart,
   demo command order, evidence reading order, and no-new-powers boundaries.
 - `make v1-workbench-evidence-check` - validate the v1.0 workbench/evidence closure map across
@@ -651,6 +653,10 @@ The v1.0 final handoff map is
 [docs/codex/v1.0-rc-final-handoff.md](docs/codex/v1.0-rc-final-handoff.md) and is checked with
 `make v1-rc-final-handoff-check`; it records current go/no-go status, packet order, required
 commands, and what the handoff does and does not prove.
+The v1.0 post-review triage map is
+[docs/codex/v1.0-rc-post-review-triage.md](docs/codex/v1.0-rc-post-review-triage.md) and is
+checked with `make v1-rc-post-review-triage-check`; it records how to normalize external feedback,
+create findings, and preserve the feature freeze after review.
 The v1.0 operator quickstart is
 [docs/codex/v1.0-operator-quickstart.md](docs/codex/v1.0-operator-quickstart.md) and is checked
 with `make v1-operator-quickstart-check`; it is the current zero-to-one local demo path from
