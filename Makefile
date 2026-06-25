@@ -530,7 +530,7 @@ v05-boundary-decision-draft-check:
 	uv run python scripts/v05_boundary_decision_draft_check.py
 
 v05-handoff-packet-check:
-	uv run python scripts/v05-handoff-packet-check.py
+	uv run python scripts/v05_handoff_packet_check.py
 
 review-run-manifest-check:
 	uv run python scripts/review_run_manifest.py
