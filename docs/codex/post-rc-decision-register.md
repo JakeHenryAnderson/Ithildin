@@ -39,7 +39,7 @@ Current selected capability: `not selected`.
 | `PRD-SANDBOX-LIVE-POC-001` | Live sandbox/VM worker proof of concept | `no_go` | Maintain the decision-intake packet and wait for favorable `ERG-003` disposition | `false` | Favorable static-preflight disposition, live POC decision record, implementation plan, cleanup/failure transcripts, and external/source review |
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
 | `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, implementation-plan skeleton, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, and external/source review |
-| `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema and offline export design only | `false` | Delivery model, redaction policy, compatibility tests, and external/source review |
+| `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
 | `PRD-PROD-IAM-STORAGE-001` | Production identity and durable storage architecture | `approved_for_planning` | Maintain the architecture packet, threat model questions, migration/retention/backup planning, and external architecture review preparation | `false` | Post-RC decision record, identity provider design, tenant/workspace model, storage/migration plan, backup/restore plan, failure-mode tests, and external architecture review before runtime work |
 
 ## Decision Details
@@ -132,8 +132,8 @@ Current selected capability: `not selected`.
 ### PRD-SIEM-EXPORT-001
 
 - Status: `no_go`.
-- Current allowed scope: stable event schema design, redaction policy design, offline export shape,
-  compatibility tests, and source-review preparation.
+- Current allowed scope: stable event schema design, adapter architecture documentation, redaction
+  policy design, offline export shape, compatibility tests, and source-review preparation.
 - Current forbidden scope: hosted telemetry by default, custody-grade audit claims, stronger audit
   guarantee claims, compliance automation claims, and exporting prompts, file contents, diffs,
   response bodies, secrets, dependency names, package scripts, raw sensitive paths, or raw sandbox
@@ -141,6 +141,10 @@ Current selected capability: `not selected`.
 - Current implementation posture: SIEM adapter work remains blocked.
 - Current warning language: Ithildin may support control mapping and evidence export design, not
   SIEM custody or automated compliance.
+- Current architecture evidence:
+  `siem-export-adapter-architecture.md` defines the future adapter profile, delivery, retry,
+  backpressure, compatibility, signing, diagnostics, and review questions before any future runtime
+  decision.
 
 ### PRD-PROD-IAM-STORAGE-001
 

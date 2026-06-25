@@ -202,6 +202,7 @@ from scripts import (
     sandbox_vm_static_profile_preflight_plan_check,
     sandbox_vm_worker_boundary_charter_check,
     siem_evidence_design_check,
+    siem_export_adapter_architecture_check,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
     test_determinism_gate,
@@ -13716,6 +13717,73 @@ def test_siem_evidence_design_check_is_wired() -> None:
         "response bodies",
     ]:
         assert phrase in design
+
+
+def test_siem_export_adapter_architecture_is_wired() -> None:
+    report = siem_export_adapter_architecture_check.build_report(Path.cwd())
+    architecture = Path("docs/codex/siem-export-adapter-architecture.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["erg_008_status"] == "planning_only"
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_delivery_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["security_operations_control_plane_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: design-only architecture packet for `ERG-008`.",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "`ERG-008`: SIEM-shaped export adapter",
+        "siem-shaped-evidence-design.md",
+        "Future Adapter Architecture Questions",
+        "Event Schema Requirements",
+        "Delivery Requirements",
+        "Export Non-Goals",
+        "Required Before Implementation",
+        "external/source review",
+        "The current decision is `planning_only`.",
+        "Runtime adapter implementation remains blocked",
+    ]:
+        assert phrase in architecture
+    for phrase in [
+        "SIEM adapter is implemented",
+        "hosted telemetry is enabled",
+        "remote delivery is approved",
+        "custody-grade audit is implemented",
+        "compliance automation is approved",
+        "security operations control plane is implemented",
+        "public security product approved",
+    ]:
+        assert phrase not in architecture
+    assert "siem-export-adapter-architecture-check:" in makefile
+    assert "siem-export-adapter-architecture-check" in release_check_body
+    assert "make siem-export-adapter-architecture-check" in readme
+    assert "docs/codex/siem-export-adapter-architecture.md" in readme
+    assert "docs/codex/siem-export-adapter-architecture.md" in docs_site
+    assert "docs/codex/siem-export-adapter-architecture.md" in review_docs.REVIEW_DOCS
+    assert "SIEM Export Adapter Architecture" in review_index
+    assert "siem-export-adapter-architecture.md" in runway
+    assert "siem-export-adapter-architecture.md" in gap_matrix
+    assert "siem-export-adapter-architecture.md" in decision_register
 
 
 def test_data_classification_design_check_is_wired() -> None:

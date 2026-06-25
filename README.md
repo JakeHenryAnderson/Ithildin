@@ -374,6 +374,9 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-architecture-check` - validate the design-only architecture
   packet for production identity and durable storage while keeping production IAM, runtime Postgres,
   remote admin use, and custody-grade audit claims blocked.
+- `make siem-export-adapter-architecture-check` - validate the design-only SIEM export adapter
+  architecture packet while keeping adapter runtime behavior, hosted telemetry, remote delivery,
+  and SIEM custody claims blocked.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -735,6 +738,12 @@ and is checked with `make production-identity-storage-architecture-check`; it de
 `ERG-006`/`ERG-007` identity, tenancy, storage, migration, retention, backup/restore, and evidence
 questions while keeping production IAM, runtime Postgres, remote admin use, and custody-grade audit
 claims blocked.
+The SIEM export adapter architecture packet is
+[docs/codex/siem-export-adapter-architecture.md](docs/codex/siem-export-adapter-architecture.md)
+and is checked with `make siem-export-adapter-architecture-check`; it defines future adapter
+profile, schema compatibility, delivery, retry, backpressure, signing, diagnostics, and review
+questions while keeping SIEM adapter runtime behavior, hosted telemetry, remote delivery, and
+security-operations control-plane claims blocked.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.

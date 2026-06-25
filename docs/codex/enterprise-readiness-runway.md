@@ -202,6 +202,13 @@ Blocked until this phase is implemented and reviewed:
 
 Goal: provide SIEM-shaped exports without claiming SIEM custody.
 
+The design-only adapter architecture packet for this phase is
+[siem-export-adapter-architecture.md](siem-export-adapter-architecture.md) and is validated with
+`make siem-export-adapter-architecture-check`. It extends the SIEM-shaped evidence design with
+delivery-profile, compatibility, retry, backpressure, signing, diagnostics, and review requirements
+while keeping SIEM adapter runtime behavior, hosted telemetry, remote delivery, and custody-grade
+audit claims blocked.
+
 Required before implementation:
 
 - stable event schema;
