@@ -76,6 +76,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-worker-boundary-charter-check",
     "sandbox-vm-profile-contract-check",
     "sandbox-vm-preflight-contract-check",
+    "sandbox-vm-poc-review-packet-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",

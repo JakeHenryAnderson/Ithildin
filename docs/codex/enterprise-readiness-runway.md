@@ -225,25 +225,34 @@ Stop enterprise-readiness work and reassess if:
 ## Current Next Best Action
 
 The Mission Control display proposal, handoff schema, negative fixtures, and focused display review
-packet now exist on the Ithildin side. The next enterprise-path action is to prepare the
-sandbox/VM worker proof-of-concept boundary before any real VM, local-model, or importer runtime
-work begins.
+packet now exist on the Ithildin side. The sandbox/VM worker boundary charter, profile contract,
+and preflight contract also now exist. The current enterprise-path action is to generate and review
+the focused sandbox/VM proof-of-concept review packet before any real VM, local-model, importer, or
+preflight-runner runtime work begins.
 
-Start with
+This packet is the current sandbox/VM worker proof-of-concept boundary handoff; it prepares review
+of future profile/preflight planning without enabling runtime sandbox control.
+
+Use
 [sandbox-vm-worker-boundary-charter.md](sandbox-vm-worker-boundary-charter.md) and validate it with
-`make sandbox-vm-worker-boundary-charter-check`. The charter must keep Mission Control as the
+`make sandbox-vm-worker-boundary-charter-check`. The charter keeps Mission Control as the
 evidence viewer, Ithildin as the governed mediation/evidence gateway, and the sandbox/VM layer as
-operator-managed infrastructure. In short: prepare the sandbox worker boundary before touching
-runtime sandbox control.
+operator-managed infrastructure.
 
-Then use [sandbox-vm-profile-contract.md](sandbox-vm-profile-contract.md) and validate it with
+Use [sandbox-vm-profile-contract.md](sandbox-vm-profile-contract.md) and validate it with
 `make sandbox-vm-profile-contract-check`. The profile contract defines the future operator-supplied
 sandbox metadata shape, forbidden fields, validation decisions, and `promotion_status:
 not_promoted` posture before any live profile loader, local-model invocation, VM/container
 lifecycle, or Mission Control importer is implemented.
 
-Then use [sandbox-vm-preflight-contract.md](sandbox-vm-preflight-contract.md) and validate it with
+Use [sandbox-vm-preflight-contract.md](sandbox-vm-preflight-contract.md) and validate it with
 `make sandbox-vm-preflight-contract-check`. The preflight contract defines the future platform
 matrix, mount/root posture, network posture, artifact ingress/egress posture, warning chips, and
 failure/cleanup transcript requirements before any live sandbox preflight, local model action, or
 Mission Control importer is implemented.
+
+Generate the sandbox/VM proof-of-concept review packet with `make sandbox-vm-poc-review-packet`.
+The packet bundles the boundary, profile, preflight, Mission Control handoff, Hello World observed
+sandbox artifact evidence, artifact-write source-review handoff, promotion evidence contract,
+command evidence, and artifact hashes. This is the review handoff for deciding whether a later
+static operator-managed sandbox profile fixture and preflight runner may be planned.

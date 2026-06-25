@@ -357,6 +357,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-preflight-contract-check` - validate the design-only sandbox/VM preflight
   contract for future platform, mount/root, network, ingress/egress, cleanup, and warning evidence
   while confirming no live preflight runner or sandbox control is added.
+- `make sandbox-vm-poc-review-packet` - generate the focused sandbox/VM proof-of-concept review
+  packet with boundary, profile, preflight, Mission Control handoff, Hello World artifact evidence,
+  promotion evidence, command evidence, and artifact hashes.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -675,6 +678,11 @@ The follow-on preflight contract is
 checked with `make sandbox-vm-preflight-contract-check`; it defines the future go/no-go evidence for
 platform support, mount/root labels, network posture, artifact ingress/egress, cleanup/failure
 transcripts, and warning chips without adding a live preflight runner.
+Generate the focused sandbox/VM proof-of-concept review packet with
+`make sandbox-vm-poc-review-packet`; it bundles the sandbox/VM boundary charter, profile contract,
+preflight contract, Mission Control handoff docs, Hello World observed artifact evidence, artifact
+write source-review handoff, promotion evidence contract, command evidence, and artifact hashes for
+review before any live VM, local-model, or preflight-runner implementation is planned.
 The governed artifact transfer lab note is
 [docs/codex/governed-artifact-transfer-lab.md](docs/codex/governed-artifact-transfer-lab.md);
 it now includes a Stage 1 Part 1 Ithildin-only known-good packet, a Stage 1 Part 2 Mission Control

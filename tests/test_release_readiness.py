@@ -177,6 +177,7 @@ from scripts import (
     sandbox_artifact_write_text_preimplementation_check,
     sandbox_artifact_write_text_source_review_bundle,
     sandbox_promotion_evidence_contract_check,
+    sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
     sandbox_vm_worker_boundary_charter_check,
@@ -893,6 +894,93 @@ def test_sandbox_vm_preflight_contract_is_wired() -> None:
     assert "sandbox-vm-preflight-contract.md" in enterprise
     assert "platform matrix" in enterprise
     assert "failure/cleanup transcript" in enterprise
+
+
+def test_sandbox_vm_poc_review_packet_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "sandbox-vm-poc-review"
+    report = sandbox_vm_poc_review_packet.build_check_report(Path.cwd())
+    sandbox_vm_poc_review_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    expected = {
+        "00_SANDBOX_VM_POC_REVIEW_INDEX.md",
+        "01_SANDBOX_VM_POC_REVIEW_PROMPT.md",
+        "02_SANDBOX_VM_BOUNDARY_CONTRACTS.md",
+        "03_HELLO_WORLD_AND_MISSION_CONTROL_HANDOFF.md",
+        "04_ARTIFACT_WRITE_AND_PROMOTION_CONTRACTS.md",
+        "05_SANDBOX_VM_POC_COMMAND_EVIDENCE.md",
+        "sandbox-vm-poc-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (output_dir / "sandbox-vm-poc-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    index = (output_dir / "00_SANDBOX_VM_POC_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = (output_dir / "01_SANDBOX_VM_POC_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    boundary = (output_dir / "02_SANDBOX_VM_BOUNDARY_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    handoff = (
+        output_dir / "03_HELLO_WORLD_AND_MISSION_CONTROL_HANDOFF.md"
+    ).read_text(encoding="utf-8")
+    artifact_contracts = (
+        output_dir / "04_ARTIFACT_WRITE_AND_PROMOTION_CONTRACTS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (output_dir / "05_SANDBOX_VM_POC_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "sandbox-vm-poc-review-artifact-hashes.json"
+    }
+    assert "tool count remains `24`" in index
+    assert "pre-runtime proof-of-concept review packet" in index
+    assert "Finding namespace: `EXT-SANDBOX-VM-POC-###`" in prompt
+    assert "operator-managed sandbox/VM profile fixture" in prompt
+    assert "sandbox-vm-worker-boundary-charter.md" in boundary
+    assert "sandbox-vm-profile-contract.md" in boundary
+    assert "sandbox-vm-preflight-contract.md" in boundary
+    assert "hello-world-sandbox-observed-demo.md" in handoff
+    assert "hello-world-mission-control-handoff.md" in handoff
+    assert "sandbox-artifact-write-text-source-review.md" in artifact_contracts
+    assert "sandbox-promotion-evidence-contract.md" in artifact_contracts
+    assert "make sandbox-vm-preflight-contract-check" in evidence
+    assert "make sandbox-artifact-write-text-negative-transcripts" in evidence
+    assert "command execution skipped for fixture/test packet generation" in evidence
+    assert "make sandbox-vm-poc-review-packet" in readme
+    assert "sandbox-vm-poc-review-packet:" in makefile
+    assert "sandbox-vm-poc-review-packet-check:" in makefile
+    assert "sandbox-vm-poc-review-packet-check" in release_check_body
+    assert "$(MAKE) sandbox-vm-poc-review-packet" in review_candidate_body
+    assert "sandbox-vm-poc-review-packet-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "sandbox/VM proof-of-concept review packet" in enterprise
 
 
 def test_low_implementer_delegation_pilot_is_wired(tmp_path: Path) -> None:
