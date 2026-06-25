@@ -245,6 +245,7 @@ externally closed.
 - [Sandbox/VM Static Preflight External Disposition Plan](sandbox-vm-static-preflight-disposition-plan.md)
 - [Sandbox/VM Static Preflight External Response Intake](sandbox-vm-static-preflight-external-response-intake.md)
 - [Sandbox/VM Live POC Decision Intake](sandbox-vm-live-poc-decision-intake.md)
+- [Sandbox/VM Live POC Evidence Contract](sandbox-vm-live-poc-evidence-contract.md)
 - [Sandbox/VM Static Preflight Internal Source Review](v3-sandbox-vm-static-preflight-internal-review.md)
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
 - [Hello World Sandbox Demo Roadmap](hello-world-sandbox-demo-roadmap.md)

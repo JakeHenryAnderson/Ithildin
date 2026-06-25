@@ -233,6 +233,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-static-preflight-disposition-plan.md",
     "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
     "docs/codex/sandbox-vm-live-poc-decision-intake.md",
+    "docs/codex/sandbox-vm-live-poc-evidence-contract.md",
     "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md",
     "docs/codex/governed-artifact-transfer-lab.md",
     "docs/codex/hello-world-sandbox-demo-roadmap.md",

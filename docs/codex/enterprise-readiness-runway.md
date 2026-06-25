@@ -332,6 +332,15 @@ future post-RC decision record may even consider moving `ERG-004` out of `blocke
 approve live VM/container inspection, Mission Control runtime behavior, local model invocation,
 sandbox orchestration, trusted-host promotion, or public/security-product positioning.
 
+The live sandbox/VM POC evidence contract is
+[sandbox-vm-live-poc-evidence-contract.md](sandbox-vm-live-poc-evidence-contract.md) and is
+validated with `make sandbox-vm-live-poc-evidence-contract-check`. It defines the future
+cross-source evidence bundle that would have to correlate operator intent, Ithildin run/audit
+evidence, operator-managed sandbox evidence, local model/client evidence, and optional Mission
+Control display evidence without approving live VM/container inspection, Mission Control runtime
+behavior, local model invocation, sandbox orchestration, trusted-host promotion, SIEM delivery, or
+public/security-product positioning.
+
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
 It records the CLI-only fixture preflight runner as locally reviewed after tightening raw

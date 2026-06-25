@@ -373,6 +373,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-worker-boundary-charter-check` - validate the design-only sandbox/VM worker
   boundary charter for future operator-managed sandbox proof-of-concept planning while confirming
   Ithildin still does not orchestrate a VM/container or claim OS isolation.
+- `make sandbox-vm-live-poc-evidence-contract-check` - validate the future live sandbox/VM POC
+  evidence contract while confirming cross-source evidence planning does not approve live runtime
+  authority.
 - `make sandbox-vm-profile-contract-check` - validate the design-only sandbox/VM profile contract
   for future operator-supplied sandbox metadata while confirming no runtime profile loader,
   sandbox orchestration, local model invocation, or trusted-host promotion is added.
@@ -810,6 +813,12 @@ and is checked with `make sandbox-vm-live-poc-decision-intake-check`; it records
 required before a future post-RC decision record may consider `ERG-004`, while keeping live
 VM/container inspection, Mission Control runtime behavior, local model invocation, sandbox
 orchestration, trusted-host promotion, and public/security-product positioning blocked.
+The live sandbox/VM POC evidence contract is
+[docs/codex/sandbox-vm-live-poc-evidence-contract.md](docs/codex/sandbox-vm-live-poc-evidence-contract.md)
+and is checked with `make sandbox-vm-live-poc-evidence-contract-check`; it defines the future
+cross-source evidence bundle for operator intent, Ithildin run/audit evidence, operator-managed
+sandbox evidence, local model/client evidence, and optional Mission Control display evidence without
+approving live VM/container inspection or runtime authority.
 The internal source-review pass is
 [docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
 it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label

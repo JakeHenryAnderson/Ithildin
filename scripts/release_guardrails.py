@@ -103,6 +103,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-static-preflight-disposition-plan-check",
     "sandbox-vm-static-preflight-external-response-intake-check",
     "sandbox-vm-live-poc-decision-intake-check",
+    "sandbox-vm-live-poc-evidence-contract-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",
     "low-implementer-delegation-check",
