@@ -110,6 +110,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "mission-control-display-integration-proposal-check",
     "mission-control-display-importer-plan-check",
     "mission-control-display-decision-intake-check",
+    "mission-control-display-decision-record-skeleton-check",
     "mission-control-display-review-packet-check",
     "mission-control-display-disposition-packet-check",
     "mission-control-display-external-review-bundle-check",

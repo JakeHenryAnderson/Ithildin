@@ -73,6 +73,8 @@ If the closure gate eventually reports `closure_ready: true`, a separate committ
 must still:
 
 - record the raw reviewer response and normalized response path;
+- use [mission-control-display-decision-record-skeleton.md](mission-control-display-decision-record-skeleton.md)
+  for any design-only decision record;
 - record reviewer label, source access, reviewed commit, and reviewed packet hash;
 - add or update any `EXT-MC-DISPLAY-###` finding files;
 - update [enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md);

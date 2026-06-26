@@ -79,6 +79,11 @@ Current selected capability: `not selected`.
   normalized-response examples, closure commands, boundary status, command evidence, and artifact
   hashes for the real reviewer-response path without recording review, closing `ERG-002`, or
   approving runtime importer behavior.
+- Current decision-record skeleton evidence:
+  `mission-control-display-decision-record-skeleton.md` defines the only design-only decision
+  record shape a favorable normalized response may support. It can move `ERG-002` only toward
+  `ready_for_design_only_decision_record` and does not approve runtime importer behavior or Mission
+  Control execution, policy, approval, or audit authority.
 
 ### PRD-SANDBOX-PREFLIGHT-001
 

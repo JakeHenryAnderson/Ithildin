@@ -92,6 +92,7 @@ from scripts import (
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
     mission_control_display_decision_intake_check,
+    mission_control_display_decision_record_skeleton_check,
     mission_control_display_disposition_closure_check,
     mission_control_display_disposition_packet,
     mission_control_display_external_response_intake_check,
@@ -18334,6 +18335,112 @@ def test_mission_control_display_disposition_closure_gate_is_wired() -> None:
     assert "mission-control-display-disposition-closure-gate.md" in disposition_packet
     assert "mission-control-display-disposition-closure-gate.md" in decision_intake
     assert "mission-control-display-disposition-closure-gate.md" in readiness_packet
+
+
+def test_mission_control_display_decision_record_skeleton_is_wired() -> None:
+    report = mission_control_display_decision_record_skeleton_check.build_report(Path.cwd())
+    doc = Path("docs/codex/mission-control-display-decision-record-skeleton.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    decision_intake = Path("docs/codex/mission-control-display-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    closure_gate = Path(
+        "docs/codex/mission-control-display-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    response_kit = Path("docs/codex/mission-control-display-response-kit.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert report["allowed_future_status"] == "ready_for_design_only_decision_record"
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["runtime_importer_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["api_callbacks_allowed"] is False
+    assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_002"] is False
+    for phrase in [
+        "Status: design-only decision-record skeleton for `ERG-002` and `PRD-MC-DISPLAY-001`.",
+        "Current governed tool count: `24`.",
+        "Current `ERG-002` status: `planning_only`.",
+        "make mission-control-display-decision-record-skeleton-check",
+        "var/review-runs/mission-control-display/normalized-response.json",
+        "disposition_outcome: continue_design_only",
+        "approved_for_planning",
+        "ERG-002: planning_only -> ready_for_design_only_decision_record",
+        "Runtime surfaces touched: none.",
+        "Tool count impact: none; remains `24`.",
+        "Mission Control impact: planning artifacts only.",
+        "go for design-only Mission Control-side planning; no-go for runtime importer",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "Mission Control runtime importer",
+        "Mission Control execution authority",
+        "Mission Control policy authority",
+        "Mission Control approval authority",
+        "Mission Control audit authority",
+        "API callbacks",
+        "polling or mutating Ithildin APIs",
+        "local model invocation",
+        "sandbox orchestration",
+        "trusted-host promotion",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "Mission Control may execute",
+        "Mission Control may approve",
+        "Mission Control is policy authority",
+        "Mission Control is audit authority",
+        "runtime importer is approved",
+        "runtime importer behavior is approved",
+        "public security product approved",
+    ]:
+        assert forbidden not in doc
+    assert "make mission-control-display-decision-record-skeleton-check" in readme
+    assert "mission-control-display-decision-record-skeleton-check:" in makefile
+    assert "mission-control-display-decision-record-skeleton-check" in release_check_body
+    assert "mission-control-display-decision-record-skeleton-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-display-decision-record-skeleton.md" in docs_site
+    assert "docs/codex/mission-control-display-decision-record-skeleton.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Decision Record Skeleton" in review_index
+    assert "mission-control-display-decision-record-skeleton.md" in runway
+    assert "mission-control-display-decision-record-skeleton.md" in gap_matrix
+    assert "mission-control-display-decision-record-skeleton.md" in decision_register
+    assert "mission-control-display-decision-record-skeleton.md" in decision_intake
+    assert "mission-control-display-decision-record-skeleton.md" in closure_gate
+    assert "mission-control-display-decision-record-skeleton.md" in response_kit
 
 
 def test_mission_control_display_response_dry_run_is_wired() -> None:

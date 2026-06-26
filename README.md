@@ -481,6 +481,10 @@ checked with `make control-mapping-readiness`.
   Control display importer implementation packet while keeping runtime importer behavior blocked.
 - `make mission-control-display-decision-intake-check` - validate the post-RC decision-intake
   checklist for any future Mission Control display/importer implementation decision.
+- `make mission-control-display-decision-record-skeleton-check` - validate the design-only
+  Mission Control display decision-record skeleton that can be used after favorable normalized
+  review evidence, while keeping runtime importer behavior and Mission Control authority transfer
+  blocked.
 - `make mission-control-display-review-packet` - generate the focused Mission Control display
   review packet with proposal, schema, negative fixtures, seed handoff evidence, command evidence,
   and artifact hashes.
@@ -1101,6 +1105,11 @@ and is generated with `make mission-control-display-response-kit`; it packages r
 guidance, normalized-response examples, closure commands, boundary status, command evidence, and
 artifact hashes without recording review, closing `ERG-002`, or approving runtime importer
 behavior.
+The Mission Control display decision-record skeleton is in
+[docs/codex/mission-control-display-decision-record-skeleton.md](docs/codex/mission-control-display-decision-record-skeleton.md)
+and is checked with `make mission-control-display-decision-record-skeleton-check`; it defines the
+only design-only post-RC decision shape a favorable normalized ERG-002 response may support, while
+keeping Mission Control runtime importer behavior and authority transfer blocked.
 Generate the Mission Control integration readiness packet with
 `make mission-control-integration-readiness-packet`; it consolidates the display proposal, importer
 plan, disposition packet, handoff schema, negative fixtures, side handoff, implementation ticket,

@@ -63,3 +63,6 @@ compliance automation, or public/security-product positioning.
 Only a later committed triage update may move `ERG-002`, and only if real normalized response
 evidence passes `make mission-control-display-disposition-closure-check` with
 `closure_ready: true`.
+Any later design-only decision record must use
+`mission-control-display-decision-record-skeleton.md`; that skeleton keeps runtime importer behavior
+and Mission Control execution, policy, approval, and audit authority blocked.

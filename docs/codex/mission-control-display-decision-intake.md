@@ -20,6 +20,7 @@ Validate this intake with:
 
 ```sh
 make mission-control-display-decision-intake-check
+make mission-control-display-decision-record-skeleton-check
 make mission-control-display-external-response-intake-check
 make mission-control-display-disposition-closure-check
 ```
@@ -45,6 +46,9 @@ Any future implementation decision for `PRD-MC-DISPLAY-001` must prove:
 - any favorable reviewer response satisfies
   `mission-control-display-disposition-closure-gate.md` before a separate committed triage update
   uses it for a design-only continuation decision.
+- any design-only continuation decision uses
+  `mission-control-display-decision-record-skeleton.md` and does not approve runtime importer
+  behavior or authority transfer.
 
 ## Required Decision Evidence
 
@@ -61,6 +65,7 @@ A future decision record must include at least:
 | Seed handoff evidence | `make hello-world-mission-control-handoff-check` |
 | No-new-powers evidence | `make no-new-powers-guardrail` and `make tool-surface-invariant-gate` |
 | Post-RC decision evidence | `make post-rc-decision-register-check` |
+| Decision-record skeleton | `mission-control-display-decision-record-skeleton.md` |
 
 ## Allowed Future Decision Outcomes
 

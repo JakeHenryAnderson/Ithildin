@@ -14,7 +14,7 @@ WORKFLOW_DOC = Path("docs/codex/agent-workflow-instruction-layer.md")
 REQUIRED_AGENTS_PHRASES = [
     "coordination guidance, not a security boundary",
     "local-preview governed MCP/tool gateway",
-    "Current governed tool count is 22",
+    "Current governed tool count is 24",
     "Low Codex implementers are the preferred mechanical delegation path",
     "Use `gpt-5.4-mini` with low",
     "Use one Low Codex implementer at a time by default",
@@ -46,7 +46,7 @@ REQUIRED_WORKFLOW_PHRASES = [
     "Gemma/local-model suggester",
     "Delegation Packet Shape",
     "Forbidden changes",
-    "The current governed tool count is 22",
+    "The current governed tool count is 24",
     "make agent-workflow-check",
 ]
 
