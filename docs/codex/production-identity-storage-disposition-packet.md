@@ -60,6 +60,7 @@ The reviewer should inspect:
 | Evidence | Source |
 | --- | --- |
 | Architecture packet | `production-identity-storage-architecture.md` |
+| External response intake | `production-identity-storage-external-response-intake.md` |
 | Post-RC decision register | `post-rc-decision-register.md` |
 | Post-RC decision gate | `post-rc-decision-gate.md` |
 | Enterprise gap matrix | `enterprise-readiness-gap-matrix.md` |
@@ -127,3 +128,8 @@ This packet supports architecture docs, schema sketches, static examples, threat
 review packets, and operator warning design. It does not close `ERG-006` or `ERG-007`, and it does
 not authorize production identity or durable storage runtime behavior. A later post-RC decision
 record must record reviewer disposition before any implementation plan moves.
+
+Reviewer responses should be recorded through
+[production-identity-storage-external-response-intake.md](production-identity-storage-external-response-intake.md)
+after this packet is reviewed. That intake captures `EXT-PROD-IAM-STORAGE-###` findings without
+mutating findings, closing `ERG-006`/`ERG-007`, or approving runtime identity/storage behavior.

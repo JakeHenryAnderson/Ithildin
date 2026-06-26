@@ -128,6 +128,11 @@ The current decision is `planning_only`.
 Architecture discussion and review packets may continue. Runtime implementation remains blocked
 until a separate post-RC decision record approves a specific identity or storage implementation plan.
 
+Reviewer responses to the architecture disposition packet should be captured through
+[production-identity-storage-external-response-intake.md](production-identity-storage-external-response-intake.md),
+which validates the `EXT-PROD-IAM-STORAGE-###` finding namespace while keeping `ERG-006` and
+`ERG-007` planning-only until a later committed triage update changes the decision register.
+
 ## Validation
 
 Run:

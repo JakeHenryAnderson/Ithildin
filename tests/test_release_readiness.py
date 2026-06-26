@@ -116,6 +116,7 @@ from scripts import (
     post_rc_decision_register_check,
     production_identity_storage_architecture_check,
     production_identity_storage_disposition_packet,
+    production_identity_storage_external_response_intake_check,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -1474,6 +1475,107 @@ def test_production_identity_storage_disposition_packet_is_wired(tmp_path: Path)
         "03_PRODUCTION_IDENTITY_STORAGE_REVIEW_POINTERS.md",
         "04_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_COMMAND_EVIDENCE.md",
     }
+
+
+def test_production_identity_storage_external_response_intake_is_wired() -> None:
+    report = production_identity_storage_external_response_intake_check.build_report(
+        Path.cwd()
+    )
+    doc = Path("docs/codex/production-identity-storage-external-response-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "production-identity-storage"
+    assert report["finding_namespace"] == "EXT-PROD-IAM-STORAGE-###"
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["mutates_findings"] is False
+    assert report["closes_external_review"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["enterprise_rbac_allowed"] is False
+    assert report["tenant_team_authorization_allowed"] is False
+    assert report["remote_admin_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["backup_restore_runtime_allowed"] is False
+    assert report["retention_enforcement_allowed"] is False
+    assert report["hosted_control_plane_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: response-intake template for planning-only `ERG-006` and `ERG-007`.",
+        "Finding namespace: `EXT-PROD-IAM-STORAGE-###`.",
+        "Reviewed area for normalization: `production-identity-storage`.",
+        "Required Disposition Answers",
+        "Finding Extraction Table",
+        "--area production-identity-storage",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "Only a later committed triage update may move `ERG-006` or `ERG-007` away",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning without a later committed decision record",
+        "runtime implementation",
+        "production IAM",
+        "enterprise RBAC",
+        "tenant/team authorization runtime behavior",
+        "remote admin use",
+        "runtime Postgres",
+        "database migrations",
+        "backup/restore runtime behavior",
+        "retention enforcement",
+        "hosted control plane",
+        "custody-grade audit claims",
+        "compliance automation",
+        "SIEM adapter behavior",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make production-identity-storage-external-response-intake-check" in readme
+    assert "production-identity-storage-external-response-intake-check:" in makefile
+    assert (
+        "production-identity-storage-external-response-intake-check"
+        in release_check_body
+    )
+    assert "production-identity-storage-external-response-intake-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/production-identity-storage-external-response-intake.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/production-identity-storage-external-response-intake.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Production Identity And Storage External Response Intake" in review_index
+    assert "production-identity-storage-external-response-intake.md" in runway
+    assert "production-identity-storage-external-response-intake.md" in gap_matrix
+    assert (
+        "production-identity-storage-external-response-intake.md"
+        in decision_register
+    )
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:
@@ -12438,6 +12540,36 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
         == "EXT-TRUSTED-HOST-001"
     )
     assert trusted_host_normalized["findings"][0]["area"] == "trusted-host-promotion"
+
+    production_identity_storage_response = "\n".join(
+        [
+            "# Production Identity/Storage Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-PROD-IAM-STORAGE-001 | medium | production-identity-storage | "
+            "docs/codex/production-identity-storage-disposition-packet.md | "
+            "should-fix | open | clarify architecture disposition wording |",
+        ]
+    )
+    production_identity_storage_normalized = external_response_normalize.normalize_response(
+        production_identity_storage_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="packet-and-source",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="production-identity-storage",
+    )
+    assert (
+        production_identity_storage_normalized["findings"][0]["finding_id"]
+        == "EXT-PROD-IAM-STORAGE-001"
+    )
+    assert (
+        production_identity_storage_normalized["findings"][0]["area"]
+        == "production-identity-storage"
+    )
 
 
 def test_external_response_normalization_binds_area_and_namespace() -> None:

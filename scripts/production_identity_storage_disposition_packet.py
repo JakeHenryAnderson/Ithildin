@@ -38,6 +38,7 @@ PROJECT_MARKERS = [
 DISPOSITION_DOCS = [
     Path("docs/codex/production-identity-storage-disposition-packet.md"),
     Path("docs/codex/production-identity-storage-architecture.md"),
+    Path("docs/codex/production-identity-storage-external-response-intake.md"),
 ]
 REVIEW_POINTER_DOCS = [
     Path("docs/codex/post-rc-decision-register.md"),

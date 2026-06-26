@@ -222,6 +222,7 @@ DEFAULT_DOCS = [
     "docs/codex/post-rc-decision-register.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
+    "docs/codex/production-identity-storage-external-response-intake.md",
     "docs/codex/siem-export-adapter-architecture.md",
     "docs/codex/siem-export-adapter-disposition-packet.md",
     "docs/codex/compliance-mapping-architecture.md",

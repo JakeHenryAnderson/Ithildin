@@ -215,6 +215,12 @@ and is generated with `make production-identity-storage-disposition-packet`. It 
 `ERG-006`/`ERG-007` may continue architecture planning while production identity, runtime Postgres,
 database migrations, retention enforcement, hosted control plane, custody claims, and
 public/security-product positioning remain blocked.
+The production identity/storage external response intake template is
+[production-identity-storage-external-response-intake.md](production-identity-storage-external-response-intake.md)
+and is validated with `make production-identity-storage-external-response-intake-check`; it defines
+the `EXT-PROD-IAM-STORAGE-###` finding namespace and `production-identity-storage` normalizer
+command for recording reviewer responses without mutating findings, closing `ERG-006`/`ERG-007`,
+or approving runtime identity/storage behavior.
 
 Required design decisions:
 
