@@ -247,6 +247,7 @@ from scripts import (
     trusted_host_promotion_disposition_closure_check,
     trusted_host_promotion_disposition_packet,
     trusted_host_promotion_external_response_intake_check,
+    trusted_host_promotion_external_review_bundle,
     trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_internal_review_check,
     trusted_host_promotion_negative_fixtures_check,
@@ -19267,6 +19268,163 @@ def test_trusted_host_promotion_disposition_packet_is_wired(tmp_path: Path) -> N
     assert "Trusted-Host Promotion Disposition Packet" in review_index
     assert "trusted-host-promotion-disposition-packet.md" in runway
     assert "trusted-host-promotion-disposition-packet.md" in gap_matrix
+
+
+def test_trusted_host_promotion_external_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    report = trusted_host_promotion_external_review_bundle.build_check_report(Path.cwd())
+    output_dir = tmp_path / "trusted-host-promotion-external-review"
+    trusted_host_promotion_external_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_TRUSTED_HOST_PROMOTION_EXTERNAL_REVIEW_INDEX.md",
+        "01_TRUSTED_HOST_PROMOTION_EXTERNAL_REVIEW_PROMPT.md",
+        "02_TRUSTED_HOST_PROMOTION_SOURCE_PACKET.md",
+        "03_TRUSTED_HOST_PROMOTION_DISPOSITION_PACKET.md",
+        "04_TRUSTED_HOST_PROMOTION_CONTRACTS.md",
+        "05_TRUSTED_HOST_PROMOTION_FIXTURES_NEGATIVES.md",
+        "06_TRUSTED_HOST_PROMOTION_RESPONSE_CLOSURE_DRY_RUN.md",
+        "07_TRUSTED_HOST_PROMOTION_REPRODUCTION_QUEUE_STATUS.md",
+        "08_TRUSTED_HOST_PROMOTION_COMMAND_EVIDENCE.md",
+        "trusted-host-promotion-external-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir / "trusted-host-promotion-external-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_TRUSTED_HOST_PROMOTION_EXTERNAL_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = (
+        output_dir / "01_TRUSTED_HOST_PROMOTION_EXTERNAL_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    source_packet = (
+        output_dir / "02_TRUSTED_HOST_PROMOTION_SOURCE_PACKET.md"
+    ).read_text(encoding="utf-8")
+    disposition_packet = (
+        output_dir / "03_TRUSTED_HOST_PROMOTION_DISPOSITION_PACKET.md"
+    ).read_text(encoding="utf-8")
+    contracts = (
+        output_dir / "04_TRUSTED_HOST_PROMOTION_CONTRACTS.md"
+    ).read_text(encoding="utf-8")
+    negatives = (
+        output_dir / "05_TRUSTED_HOST_PROMOTION_FIXTURES_NEGATIVES.md"
+    ).read_text(encoding="utf-8")
+    response = (
+        output_dir / "06_TRUSTED_HOST_PROMOTION_RESPONSE_CLOSURE_DRY_RUN.md"
+    ).read_text(encoding="utf-8")
+    reproduction = (
+        output_dir / "07_TRUSTED_HOST_PROMOTION_REPRODUCTION_QUEUE_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (
+        output_dir / "08_TRUSTED_HOST_PROMOTION_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "blocked"
+    assert report["recommended_next_review"] == "ERG-005"
+    assert report["closes_erg_005"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["promotion_without_hash_binding_allowed"] is False
+    assert report["promotion_without_approval_evidence_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "trusted-host-promotion-external-review-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "does not close `ERG-005`" in index
+    assert "does not approve trusted-host promotion" in index
+    assert "Finding namespace: `EXT-TRUSTED-HOST-###`" in prompt
+    assert "Can `ERG-005` continue design-only planning" in prompt
+    assert "Do not approve trusted-host promotion" in prompt
+    assert "Do not approve direct host writes" in prompt
+    assert "TRUSTED_HOST_PROMOTION_SOURCE_REVIEW_PROMPT" in source_packet
+    assert "TRUSTED_HOST_PROMOTION_DISPOSITION_PROMPT" in disposition_packet
+    assert "trusted-host-promotion-state-machine.md" in contracts
+    assert "trusted-host-promotion-zone-contract.md" in contracts
+    assert "trusted-host-promotion-negative-fixtures.md" in negatives
+    assert "sandbox-artifact-observed-demo.md" in negatives
+    assert "trusted-host-promotion-external-response-intake.md" in response
+    assert "trusted-host-promotion-disposition-closure-gate.md" in response
+    assert "trusted-host-promotion-response-dry-run.md" in response
+    assert "enterprise-external-review-queue.md" in reproduction
+    assert "trusted-host-promotion-source-review.md" in reproduction
+    assert "trusted-host-promotion-disposition-packet.md" in reproduction
+    for flag in [
+        '"runtime_changes_allowed": false',
+        '"trusted_host_promotion_allowed": false',
+        '"direct_host_writes_allowed": false',
+        '"overwrite_delete_move_allowed": false',
+        '"automatic_promotion_allowed": false',
+        '"mission_control_runtime_allowed": false',
+        '"local_model_invocation_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"siem_adapter_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"closes_erg_005": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make trusted-host-promotion-source-review-packet-check" in evidence
+    assert "make trusted-host-promotion-external-review-bundle" in readme
+    assert "trusted-host-promotion-external-review-bundle:" in makefile
+    assert "trusted-host-promotion-external-review-bundle-check:" in makefile
+    assert "trusted-host-promotion-external-review-bundle-check" in release_check_body
+    assert "$(MAKE) trusted-host-promotion-external-review-bundle" in review_candidate_body
+    assert "trusted-host-promotion-external-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) trusted-host-promotion-external-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-external-review-bundle.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-host-promotion-external-review-bundle.md" in docs_site
+    assert "Trusted-Host Promotion External Review Bundle" in review_index
+    assert "trusted-host-promotion-external-review-bundle.md" in runway
+    assert "trusted-host-promotion-external-review-bundle.md" in gap_matrix
+    assert "trusted-host-promotion-external-review-bundle.md" in queue
 
 
 def test_trusted_host_promotion_external_response_intake_is_wired() -> None:

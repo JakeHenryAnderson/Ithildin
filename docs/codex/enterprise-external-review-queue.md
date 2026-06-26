@@ -38,7 +38,7 @@ make enterprise-external-review-queue-check
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `ERG-003` / `PRD-SANDBOX-PREFLIGHT-001` | `external_review_required` | `sandbox-vm-static-preflight-external-review-bundle.md` plus `sandbox-vm-static-preflight-disposition-packet.md` | `sandbox-vm-static-preflight-external-response-intake.md` plus `sandbox-vm-static-preflight-disposition-closure-gate.md`, `sandbox-vm-static-preflight-response-dry-run.md`, and `sandbox-vm-static-preflight-triage-update.md` | External/source review disposition of static preflight fixture evidence | `false` |
 | 2 | `ERG-002` / `PRD-MC-DISPLAY-001` | `planning_only` | `mission-control-display-external-review-bundle.md` plus `mission-control-integration-readiness-packet.md` | `mission-control-display-external-response-intake.md` plus `mission-control-display-disposition-closure-gate.md` and `mission-control-display-response-dry-run.md` | Mission Control-side display/importer planning review only | `false` |
-| 3 | `ERG-005` / `PRD-TRUSTED-HOST-001` | `blocked` | `trusted-host-promotion-disposition-packet.md` | `trusted-host-promotion-external-response-intake.md` plus `trusted-host-promotion-disposition-closure-gate.md` and `trusted-host-promotion-response-dry-run.md` | Review of design-only promotion evidence and negative fixtures | `false` |
+| 3 | `ERG-005` / `PRD-TRUSTED-HOST-001` | `blocked` | `trusted-host-promotion-external-review-bundle.md` plus `trusted-host-promotion-disposition-packet.md` | `trusted-host-promotion-external-response-intake.md` plus `trusted-host-promotion-disposition-closure-gate.md` and `trusted-host-promotion-response-dry-run.md` | Review of design-only promotion evidence and negative fixtures | `false` |
 | 4 | `ERG-006` + `ERG-007` / `PRD-PROD-IAM-STORAGE-001` | `planning_only` | `production-identity-storage-disposition-packet.md` | `production-identity-storage-external-response-intake.md` plus `production-identity-storage-disposition-closure-gate.md` and `production-identity-storage-response-dry-run.md` | Architecture review for identity, tenancy, storage, retention, and custody boundaries | `false` |
 | 5 | `ERG-008` / `PRD-SIEM-EXPORT-001` | `planning_only` | `siem-export-adapter-disposition-packet.md` | `siem-export-adapter-external-response-intake.md` plus `siem-export-adapter-disposition-closure-gate.md` and `siem-export-adapter-response-dry-run.md` | Design review for offline/export adapter shape and delivery questions | `false` |
 | 6 | `ERG-009` / `PRD-COMPLIANCE-MAPPING-001` | `planning_only` | `compliance-mapping-disposition-packet.md` | `compliance-mapping-external-response-intake.md` plus `compliance-mapping-disposition-closure-gate.md` and `compliance-mapping-response-dry-run.md` | Design review for control-mapping support and operator responsibility language | `false` |
@@ -65,7 +65,8 @@ keeping `ERG-004` and live runtime work blocked.
    `mission-control-display-disposition-closure-gate.md`, and its response dry run is
    `mission-control-display-response-dry-run.md`.
 3. `ERG-005` remains blocked until sandbox artifact evidence, exact hash binding, approval
-   binding, and negative fixtures receive review; its fail-closed closure gate is
+   binding, and negative fixtures receive review. Its consolidated launch bundle is
+   `trusted-host-promotion-external-review-bundle.md`, its fail-closed closure gate is
    `trusted-host-promotion-disposition-closure-gate.md`, and its response dry run is
    `trusted-host-promotion-response-dry-run.md`.
 4. `ERG-006` and `ERG-007` must remain architecture-only until identity, tenancy, storage,

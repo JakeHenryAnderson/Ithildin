@@ -301,6 +301,7 @@ DEFAULT_DOCS = [
     "docs/codex/trusted-host-promotion-implementation-plan.md",
     "docs/codex/trusted-host-promotion-source-review.md",
     "docs/codex/trusted-host-promotion-disposition-packet.md",
+    "docs/codex/trusted-host-promotion-external-review-bundle.md",
     "docs/codex/trusted-host-promotion-disposition-closure-gate.md",
     "docs/codex/trusted-host-promotion-external-response-intake.md",
     "docs/codex/trusted-host-promotion-response-dry-run.md",

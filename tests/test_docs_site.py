@@ -225,6 +225,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/trusted-host-promotion-implementation-plan.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-source-review.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-disposition-packet.md" in DEFAULT_DOCS
+    assert "docs/codex/trusted-host-promotion-external-review-bundle.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-disposition-closure-gate.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-response-dry-run.md" in DEFAULT_DOCS

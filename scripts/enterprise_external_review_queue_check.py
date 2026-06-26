@@ -20,7 +20,7 @@ DOC_NAME = "enterprise-external-review-queue.md"
 QUEUE_ROWS = [
     ("ERG-003", "PRD-SANDBOX-PREFLIGHT-001", "sandbox-vm-static-preflight-disposition-packet.md"),
     ("ERG-002", "PRD-MC-DISPLAY-001", "mission-control-display-external-review-bundle.md"),
-    ("ERG-005", "PRD-TRUSTED-HOST-001", "trusted-host-promotion-disposition-packet.md"),
+    ("ERG-005", "PRD-TRUSTED-HOST-001", "trusted-host-promotion-external-review-bundle.md"),
     ("ERG-006", "PRD-PROD-IAM-STORAGE-001", "production-identity-storage-disposition-packet.md"),
     ("ERG-007", "PRD-PROD-IAM-STORAGE-001", "production-identity-storage-disposition-packet.md"),
     ("ERG-008", "PRD-SIEM-EXPORT-001", "siem-export-adapter-disposition-packet.md"),
@@ -140,6 +140,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "docs/codex/mission-control-integration-readiness-packet.md",
         "docs/codex/mission-control-display-external-response-intake.md",
         "docs/codex/trusted-host-promotion-disposition-packet.md",
+        "docs/codex/trusted-host-promotion-external-review-bundle.md",
         "docs/codex/trusted-host-promotion-external-response-intake.md",
         "docs/codex/production-identity-storage-disposition-packet.md",
         "docs/codex/production-identity-storage-external-response-intake.md",

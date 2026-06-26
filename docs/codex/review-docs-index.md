@@ -313,6 +313,7 @@ externally closed.
 - [Trusted-Host Promotion Implementation Plan](trusted-host-promotion-implementation-plan.md)
 - [Trusted-Host Promotion Source Review](trusted-host-promotion-source-review.md)
 - [Trusted-Host Promotion Disposition Packet](trusted-host-promotion-disposition-packet.md)
+- [Trusted-Host Promotion External Review Bundle](trusted-host-promotion-external-review-bundle.md)
 - [Trusted-Host Promotion Disposition Closure Gate](trusted-host-promotion-disposition-closure-gate.md)
 - [Trusted-Host Promotion External Response Intake](trusted-host-promotion-external-response-intake.md)
 - [Trusted-Host Promotion Response Dry Run](trusted-host-promotion-response-dry-run.md)

@@ -269,6 +269,12 @@ checked with `make control-mapping-readiness`.
   packet for the trusted-host promotion planning lane while keeping host promotion blocked.
 - `make trusted-host-promotion-disposition-packet-check` - validate the trusted-host promotion
   disposition packet wiring and artifact hashes.
+- `make trusted-host-promotion-external-review-bundle` - generate the consolidated external-review
+  launch bundle for `ERG-005`, combining the source packet, disposition packet, contracts, negative
+  fixtures, response/closure dry run, queue status, and command evidence while keeping host
+  promotion blocked.
+- `make trusted-host-promotion-external-review-bundle-check` - validate the trusted-host promotion
+  external-review launch bundle wiring, boundary flags, and artifact hashes.
 - `make trusted-host-promotion-disposition-closure-check` - validate the fail-closed trusted-host
   promotion closure gate while keeping host promotion blocked.
 - `make trusted-host-promotion-response-dry-run` - exercise temporary normalized-response fixtures
