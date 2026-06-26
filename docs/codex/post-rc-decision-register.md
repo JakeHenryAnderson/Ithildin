@@ -74,6 +74,11 @@ Current selected capability: `not selected`.
 - Current response dry-run evidence:
   `mission-control-display-response-dry-run.md` exercises favorable and unfavorable normalized
   response fixtures while restoring ignored local evidence and without closing `ERG-002`.
+- Current response-kit evidence:
+  `mission-control-display-response-kit.md` packages response-intake guidance,
+  normalized-response examples, closure commands, boundary status, command evidence, and artifact
+  hashes for the real reviewer-response path without recording review, closing `ERG-002`, or
+  approving runtime importer behavior.
 
 ### PRD-SANDBOX-PREFLIGHT-001
 

@@ -255,6 +255,7 @@ DEFAULT_DOCS = [
     "docs/codex/mission-control-display-external-response-intake.md",
     "docs/codex/mission-control-display-disposition-closure-gate.md",
     "docs/codex/mission-control-display-response-dry-run.md",
+    "docs/codex/mission-control-display-response-kit.md",
     "docs/codex/mission-control-integration-readiness-packet.md",
     "docs/codex/mission-control-side-handoff-plan.md",
     "docs/codex/mission-control-integration-implementation-ticket.md",

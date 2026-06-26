@@ -29,6 +29,7 @@ touching that repository:
 - the side handoff plan and concrete implementation ticket;
 - the metadata-only handoff schema contract;
 - the negative fixture expectations;
+- the response kit for external-review response intake and closure commands;
 - the observed hello-world Mission Control handoff seed;
 - command evidence proving the Ithildin-side planning checks still pass.
 
@@ -95,3 +96,6 @@ This readiness artifact is complete when:
 - the fail-closed closure gate in `mission-control-display-disposition-closure-gate.md` keeps
   `ERG-002` planning-only unless normalized source-level response evidence explicitly supports
   design-only continuation and contains no critical/high findings.
+- the response kit in `mission-control-display-response-kit.md` packages normalized-response
+  examples, closure commands, boundary status, command evidence, and artifact hashes without
+  recording review, closing `ERG-002`, or approving runtime importer behavior.

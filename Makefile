@@ -104,6 +104,12 @@ mission-control-display-external-review-bundle:
 mission-control-display-external-review-bundle-check:
 	uv run python scripts/mission_control_display_external_review_bundle.py --check
 
+mission-control-display-response-kit:
+	uv run python scripts/mission_control_display_response_kit.py
+
+mission-control-display-response-kit-check:
+	uv run python scripts/mission_control_display_response_kit.py --check
+
 mission-control-display-external-response-intake-check:
 	uv run python scripts/mission_control_display_external_response_intake_check.py
 
@@ -1041,6 +1047,7 @@ review-candidate:
 	$(MAKE) mission-control-display-disposition-packet
 	$(MAKE) mission-control-integration-readiness-packet
 	$(MAKE) mission-control-display-external-review-bundle
+	$(MAKE) mission-control-display-response-kit
 	$(MAKE) production-identity-storage-disposition-packet
 	$(MAKE) production-identity-storage-external-review-bundle
 	$(MAKE) siem-export-adapter-disposition-packet
@@ -1121,6 +1128,7 @@ release-check: sandbox-vm-live-poc-decision-closure-check
 release-check: sandbox-vm-live-poc-response-dry-run
 release-check: mission-control-display-response-dry-run
 release-check: mission-control-display-external-review-bundle-check
+release-check: mission-control-display-response-kit-check
 
 release-check: sandbox-vm-static-preflight-triage-update-check
 

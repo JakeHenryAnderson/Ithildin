@@ -99,6 +99,7 @@ from scripts import (
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
     mission_control_display_response_dry_run,
+    mission_control_display_response_kit,
     mission_control_display_review_packet,
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_schema_contract_check,
@@ -3193,6 +3194,142 @@ def test_mission_control_display_external_review_bundle_is_wired(
     assert "mission-control-display-external-review-bundle.md" in runway
     assert "mission-control-display-external-review-bundle.md" in gap_matrix
     assert "mission-control-display-external-review-bundle.md" in queue
+
+
+def test_mission_control_display_response_kit_is_wired(tmp_path: Path) -> None:
+    report = mission_control_display_response_kit.build_check_report(Path.cwd())
+    output_dir = tmp_path / "mission-control-display-response-kit"
+    mission_control_display_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_MISSION_CONTROL_DISPLAY_RESPONSE_KIT_INDEX.md",
+        "01_MISSION_CONTROL_DISPLAY_RESPONSE_INTAKE_GUIDE.md",
+        "02_MISSION_CONTROL_DISPLAY_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_MISSION_CONTROL_DISPLAY_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_MISSION_CONTROL_DISPLAY_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_MISSION_CONTROL_DISPLAY_RESPONSE_KIT_EVIDENCE.md",
+        "mission-control-display-response-kit-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (output_dir / "mission-control-display-response-kit-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    index = (output_dir / "00_MISSION_CONTROL_DISPLAY_RESPONSE_KIT_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    guide = (output_dir / "01_MISSION_CONTROL_DISPLAY_RESPONSE_INTAKE_GUIDE.md").read_text(
+        encoding="utf-8"
+    )
+    examples = (
+        output_dir / "02_MISSION_CONTROL_DISPLAY_NORMALIZED_RESPONSE_EXAMPLES.md"
+    ).read_text(encoding="utf-8")
+    commands = (output_dir / "03_MISSION_CONTROL_DISPLAY_CLOSURE_TRIAGE_COMMANDS.md").read_text(
+        encoding="utf-8"
+    )
+    boundary = (output_dir / "04_MISSION_CONTROL_DISPLAY_QUEUE_AND_BOUNDARY_STATUS.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "05_MISSION_CONTROL_DISPLAY_RESPONSE_KIT_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(encoding="utf-8")
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert report["recommended_next_review"] == "ERG-002"
+    assert report["mission_control_planning_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["runtime_importer_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["api_callbacks_allowed"] is False
+    assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_002"] is False
+    assert report["artifact_count"] == len(expected)
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "mission-control-display-response-kit-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-002`" in index
+    assert "does not approve Mission Control runtime importer behavior" in index
+    assert "Mission Control execution authority" in index
+    assert "Finding namespace: `EXT-MC-DISPLAY-###`" in guide
+    assert "var/review-runs/mission-control-display/normalized-response.json" in guide
+    assert "Only a later committed triage update may move `ERG-002`" in guide
+    assert '"response_type": "ithildin.external_review.normalized_response"' in examples
+    assert '"area": "mission-control-display"' in examples
+    assert '"source_access": "source-level"' in examples
+    assert '"source_access": "packet-only"' in examples
+    assert '"closes_external_review": false' in examples
+    assert "make mission-control-display-external-response-intake-check" in commands
+    assert "make mission-control-display-disposition-closure-check" in commands
+    assert "make mission-control-display-response-dry-run" in commands
+    assert "make release-check" in commands
+    assert "make review-candidate" in commands
+    assert "ERG-002" in boundary
+    assert "Mission Control execution authority" in boundary
+    assert "Mission Control policy authority" in boundary
+    assert "trusted-host promotion" in boundary
+    for flag in [
+        '"response_kit_boundary"',
+        '"runtime_changes_allowed": false',
+        '"mission_control_runtime_allowed": false',
+        '"runtime_importer_allowed": false',
+        '"mission_control_execution_authority_allowed": false',
+        '"mission_control_policy_authority_allowed": false',
+        '"mission_control_approval_authority_allowed": false',
+        '"mission_control_audit_authority_allowed": false',
+        '"closes_erg_002": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make mission-control-display-response-kit" in readme
+    assert "mission-control-display-response-kit:" in makefile
+    assert "mission-control-display-response-kit-check:" in makefile
+    assert (
+        "mission-control-display-response-kit-check" in release_check_body
+        or "release-check: mission-control-display-response-kit-check" in makefile
+    )
+    assert "$(MAKE) mission-control-display-response-kit" in review_candidate_body
+    assert "mission-control-display-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-display-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/mission-control-display-response-kit.md" in docs_site
+    assert "docs/codex/mission-control-display-response-kit.md" in review_docs.REVIEW_DOCS
+    assert "Mission Control Display Response Kit" in review_index
+    assert "mission-control-display-response-kit.md" in runway
+    assert "mission-control-display-response-kit.md" in gap_matrix
+    assert "mission-control-display-response-kit.md" in queue
+    assert "mission-control-display-response-kit.md" in decision_register
 
 
 def test_mission_control_integration_readiness_packet_is_wired(tmp_path: Path) -> None:

@@ -497,6 +497,9 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-response-dry-run` - exercise temporary normalized-response fixtures
   for the Mission Control display/importer closure gate while restoring the ignored response path
   and keeping `ERG-002` planning-only.
+- `make mission-control-display-response-kit` - generate the Mission Control display/importer
+  response-intake kit with normalized-response examples, closure commands, boundary evidence, and
+  artifact hashes while keeping runtime importer behavior blocked.
 - `make mission-control-integration-readiness-packet` - generate the consolidated Mission Control
   display/importer readiness handoff packet for the future Mission Control-side file/import display
   task while keeping Ithildin runtime behavior and Mission Control authority transfer blocked.
@@ -1092,6 +1095,12 @@ The Mission Control display response dry run is in
 and is checked with `make mission-control-display-response-dry-run`; it temporarily exercises
 favorable and unfavorable normalized-response fixtures while restoring the ignored response path and
 without closing `ERG-002` or approving runtime importer behavior.
+The Mission Control display response kit is in
+[docs/codex/mission-control-display-response-kit.md](docs/codex/mission-control-display-response-kit.md)
+and is generated with `make mission-control-display-response-kit`; it packages response-intake
+guidance, normalized-response examples, closure commands, boundary status, command evidence, and
+artifact hashes without recording review, closing `ERG-002`, or approving runtime importer
+behavior.
 Generate the Mission Control integration readiness packet with
 `make mission-control-integration-readiness-packet`; it consolidates the display proposal, importer
 plan, disposition packet, handoff schema, negative fixtures, side handoff, implementation ticket,

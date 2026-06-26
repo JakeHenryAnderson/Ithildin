@@ -410,7 +410,11 @@ keeps `ERG-002` planning-only unless normalized source-level response evidence e
 design-only continuation and contains no critical/high findings. The response dry run in
 [mission-control-display-response-dry-run.md](mission-control-display-response-dry-run.md)
 temporarily verifies favorable and unfavorable normalized-response fixtures while restoring the
-ignored response path and not closing `ERG-002`. The
+ignored response path and not closing `ERG-002`. The response kit in
+[mission-control-display-response-kit.md](mission-control-display-response-kit.md) packages the
+response-intake guide, normalized-response examples, closure commands, boundary status, command
+evidence, and artifact hashes for the real response path without recording review, closing
+`ERG-002`, or approving runtime importer behavior. The
 sandbox/VM worker boundary charter, profile contract, preflight contract, proof-of-concept review
 packet, static profile fixture contract, static preflight CLI fixture runner, source-review packet,
 and internal source-review pass also now exist.

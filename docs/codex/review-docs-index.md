@@ -274,6 +274,7 @@ externally closed.
 - [Mission Control Display External Response Intake](mission-control-display-external-response-intake.md)
 - [Mission Control Display Disposition Closure Gate](mission-control-display-disposition-closure-gate.md)
 - [Mission Control Display Response Dry Run](mission-control-display-response-dry-run.md)
+- [Mission Control Display Response Kit](mission-control-display-response-kit.md)
 - [Mission Control Integration Readiness Packet](mission-control-integration-readiness-packet.md)
 - [Mission Control-Side Display Importer Handoff Plan](mission-control-side-handoff-plan.md)
 - [Mission Control Integration Implementation Ticket](mission-control-integration-implementation-ticket.md)
