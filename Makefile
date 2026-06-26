@@ -537,6 +537,12 @@ trusted-host-promotion-external-response-intake-check:
 trusted-host-promotion-response-dry-run:
 	uv run python scripts/trusted_host_promotion_response_dry_run.py
 
+trusted-host-promotion-response-kit:
+	uv run python scripts/trusted_host_promotion_response_kit.py
+
+trusted-host-promotion-response-kit-check:
+	uv run python scripts/trusted_host_promotion_response_kit.py --check
+
 trusted-host-promotion-internal-review-check:
 	uv run python scripts/trusted_host_promotion_internal_review_check.py
 
@@ -1082,6 +1088,7 @@ review-candidate:
 	$(MAKE) trusted-host-promotion-source-review-packet
 	$(MAKE) trusted-host-promotion-disposition-packet
 	$(MAKE) trusted-host-promotion-external-review-bundle
+	$(MAKE) trusted-host-promotion-response-kit
 	$(MAKE) public-positioning-external-review-bundle
 	$(MAKE) live-demo-evidence-summary
 	$(MAKE) live-demo-packet
@@ -1155,6 +1162,7 @@ release-check: sandbox-vm-static-preflight-triage-update-check
 
 release-check: trusted-host-promotion-disposition-closure-check
 release-check: trusted-host-promotion-response-dry-run
+release-check: trusted-host-promotion-response-kit-check
 release-check: production-identity-storage-disposition-closure-check
 release-check: production-identity-storage-response-dry-run
 release-check: production-identity-storage-external-review-bundle-check

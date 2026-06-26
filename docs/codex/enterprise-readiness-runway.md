@@ -194,6 +194,12 @@ and is generated with `make trusted-host-promotion-external-review-bundle`; it c
 source packet, disposition packet, promotion contracts, negative fixtures, response intake, closure
 gate, response dry run, queue status, command evidence, and artifact hashes for reviewer handoff
 without closing `ERG-005` or approving host promotion.
+The trusted-host promotion response kit is
+[trusted-host-promotion-response-kit.md](trusted-host-promotion-response-kit.md) and is generated
+with `make trusted-host-promotion-response-kit`; it packages response-intake guidance,
+normalized-response examples, closure commands, queue status, command evidence, and artifact hashes
+for real reviewer feedback without closing `ERG-005`, approving implementation planning, or
+approving trusted-host promotion.
 The external response intake template is
 [trusted-host-promotion-external-response-intake.md](trusted-host-promotion-external-response-intake.md)
 and is validated with `make trusted-host-promotion-external-response-intake-check`; it defines the

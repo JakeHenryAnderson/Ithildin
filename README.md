@@ -280,6 +280,9 @@ checked with `make control-mapping-readiness`.
 - `make trusted-host-promotion-response-dry-run` - exercise temporary normalized-response fixtures
   for the trusted-host promotion closure gate while restoring the ignored response path and keeping
   `ERG-005` blocked.
+- `make trusted-host-promotion-response-kit` - generate the response-intake kit for converting real
+  `ERG-005` reviewer feedback into normalized evidence while keeping trusted-host promotion,
+  implementation planning, host writes, and automatic promotion blocked.
 - `make trusted-host-promotion-external-response-intake-check` - validate the external response
   intake template for the trusted-host promotion lane while keeping host promotion blocked.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
@@ -1374,6 +1377,12 @@ The trusted-host promotion response dry run is in
 and is checked with `make trusted-host-promotion-response-dry-run`; it temporarily exercises
 favorable and unfavorable normalized-response fixtures while restoring the ignored response path and
 without closing `ERG-005` or approving implementation planning.
+The trusted-host promotion response kit is in
+[docs/codex/trusted-host-promotion-response-kit.md](docs/codex/trusted-host-promotion-response-kit.md)
+and is generated with `make trusted-host-promotion-response-kit`; it packages response-intake
+guidance, normalized-response examples, closure commands, queue status, command evidence, and
+artifact hashes for real reviewer feedback without closing `ERG-005`, approving implementation
+planning, or approving trusted-host promotion.
 The internal trusted-host promotion source-review pass is in
 [docs/codex/v3-trusted-host-promotion-internal-review.md](docs/codex/v3-trusted-host-promotion-internal-review.md)
 and is checked with `make trusted-host-promotion-internal-review-check`; it records

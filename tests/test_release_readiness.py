@@ -263,6 +263,7 @@ from scripts import (
     trusted_host_promotion_internal_review_check,
     trusted_host_promotion_negative_fixtures_check,
     trusted_host_promotion_response_dry_run,
+    trusted_host_promotion_response_kit,
     trusted_host_promotion_source_review_packet,
     trusted_host_promotion_state_machine_check,
     trusted_host_promotion_zone_contract_check,
@@ -21291,6 +21292,150 @@ def test_trusted_host_promotion_response_dry_run_is_wired() -> None:
     assert "trusted-host-promotion-response-dry-run.md" in queue
     assert "trusted-host-promotion-response-dry-run.md" in decision_register
     assert "trusted-host-promotion-response-dry-run.md" in readiness
+
+
+def test_trusted_host_promotion_response_kit_is_wired(tmp_path: Path) -> None:
+    report = trusted_host_promotion_response_kit.build_check_report(Path.cwd())
+    output_dir = tmp_path / "trusted-host-promotion-response-kit"
+    trusted_host_promotion_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_TRUSTED_HOST_PROMOTION_RESPONSE_KIT_INDEX.md",
+        "01_TRUSTED_HOST_PROMOTION_RESPONSE_INTAKE_GUIDE.md",
+        "02_TRUSTED_HOST_PROMOTION_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_TRUSTED_HOST_PROMOTION_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_TRUSTED_HOST_PROMOTION_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_TRUSTED_HOST_PROMOTION_RESPONSE_KIT_EVIDENCE.md",
+        "trusted-host-promotion-response-kit-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (output_dir / "trusted-host-promotion-response-kit-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    index = (output_dir / "00_TRUSTED_HOST_PROMOTION_RESPONSE_KIT_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    guide = (output_dir / "01_TRUSTED_HOST_PROMOTION_RESPONSE_INTAKE_GUIDE.md").read_text(
+        encoding="utf-8"
+    )
+    examples = (
+        output_dir / "02_TRUSTED_HOST_PROMOTION_NORMALIZED_RESPONSE_EXAMPLES.md"
+    ).read_text(encoding="utf-8")
+    commands = (
+        output_dir / "03_TRUSTED_HOST_PROMOTION_CLOSURE_TRIAGE_COMMANDS.md"
+    ).read_text(encoding="utf-8")
+    boundary = (
+        output_dir / "04_TRUSTED_HOST_PROMOTION_QUEUE_AND_BOUNDARY_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (
+        output_dir / "05_TRUSTED_HOST_PROMOTION_RESPONSE_KIT_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "blocked"
+    assert report["recommended_next_review"] == "ERG-005"
+    assert report["runtime_changes_allowed"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["promotion_without_hash_binding_allowed"] is False
+    assert report["promotion_without_approval_evidence_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["erg_005_closed"] is False
+    assert report["artifact_count"] == len(expected)
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "trusted-host-promotion-response-kit-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-005`" in index
+    assert "does not approve trusted-host promotion" in index
+    assert "does not approve implementation planning" in index
+    assert "Finding namespace: `EXT-TRUSTED-HOST-###`" in guide
+    assert "var/review-runs/trusted-host-promotion/normalized-response.json" in guide
+    assert "Only a later committed triage update may move `ERG-005`" in guide
+    assert '"response_type": "ithildin.external_review.normalized_response"' in examples
+    assert '"area": "trusted-host-promotion"' in examples
+    assert '"source_access": "source-level"' in examples
+    assert '"source_access": "packet-only"' in examples
+    assert '"disposition_outcome": "continue_design_only"' in examples
+    assert '"closes_external_review": false' in examples
+    assert "make trusted-host-promotion-disposition-closure-check" in commands
+    assert "make trusted-host-promotion-response-dry-run" in commands
+    assert "make trusted-host-promotion-external-response-intake-check" in commands
+    assert "make release-check" in commands
+    assert "make review-candidate" in commands
+    assert "ERG-005" in boundary
+    assert "trusted-host promotion" in boundary
+    assert "direct host writes" in boundary
+    assert "automatic promotion" in boundary
+    for flag in [
+        '"response_kit_boundary"',
+        '"runtime_changes_allowed": false',
+        '"implementation_planning_allowed": false',
+        '"trusted_host_promotion_allowed": false',
+        '"direct_host_writes_allowed": false',
+        '"overwrite_delete_move_allowed": false',
+        '"automatic_promotion_allowed": false',
+        '"erg_005_closed": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make trusted-host-promotion-response-kit" in readme
+    assert "trusted-host-promotion-response-kit:" in makefile
+    assert "trusted-host-promotion-response-kit-check:" in makefile
+    assert (
+        "trusted-host-promotion-response-kit-check" in release_check_body
+        or "release-check: trusted-host-promotion-response-kit-check" in makefile
+    )
+    assert "$(MAKE) trusted-host-promotion-response-kit" in review_candidate_body
+    assert "trusted-host-promotion-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) trusted-host-promotion-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/trusted-host-promotion-response-kit.md" in docs_site
+    assert "docs/codex/trusted-host-promotion-response-kit.md" in review_docs.REVIEW_DOCS
+    assert "Trusted-Host Promotion Response Kit" in review_index
+    assert "trusted-host-promotion-response-kit.md" in enterprise
+    assert "trusted-host-promotion-response-kit.md" in gap_matrix
+    assert "trusted-host-promotion-response-kit.md" in queue
+    assert "trusted-host-promotion-response-kit.md" in decision_register
 
 
 def test_trusted_host_promotion_internal_review_is_wired() -> None:

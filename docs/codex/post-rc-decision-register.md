@@ -214,6 +214,11 @@ Current selected capability: `not selected`.
   `trusted-host-promotion-external-response-intake.md` defines the `EXT-TRUSTED-HOST-###` finding
   namespace and `trusted-host-promotion` normalizer command for recording reviewer responses without
   mutating findings, closing `ERG-005`, or approving runtime promotion.
+- Current response-kit evidence:
+  `trusted-host-promotion-response-kit.md` packages response-intake guidance, normalized-response
+  examples, closure commands, queue status, command evidence, and artifact hashes for real reviewer
+  feedback while keeping `ERG-005`, implementation planning, runtime promotion, host writes, and
+  automatic promotion blocked.
 - Current disposition closure evidence:
   `trusted-host-promotion-disposition-closure-gate.md` keeps `ERG-005` blocked unless normalized
   source-level response evidence supports design-only continuation and contains no critical/high
