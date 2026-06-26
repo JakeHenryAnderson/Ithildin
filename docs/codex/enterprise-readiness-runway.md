@@ -108,10 +108,13 @@ Current readiness evidence:
   validated with `make sandbox-vm-live-poc-prerequisite-disposition-dry-run`;
 - the blocked live POC decision packet in
   [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md), generated with
-  `make sandbox-vm-live-poc-decision-packet`.
+  `make sandbox-vm-live-poc-decision-packet`;
+- the live POC response kit in
+  [sandbox-vm-live-poc-response-kit.md](sandbox-vm-live-poc-response-kit.md), generated with
+  `make sandbox-vm-live-poc-response-kit`;
 - the blocked live POC decision-record skeleton in
   [sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md),
-  validated with `make sandbox-vm-live-poc-decision-record-skeleton-check`.
+  validated with `make sandbox-vm-live-poc-decision-record-skeleton-check`;
 - the live POC external response intake template in
   [sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md),
   validated with `make sandbox-vm-live-poc-external-response-intake-check`.
@@ -649,6 +652,13 @@ implementation-planning-only decision shape a favorable normalized `ERG-004` res
 while keeping runtime implementation, live VM/container inspection, sandbox orchestration, Mission
 Control runtime behavior, local model invocation, trusted-host promotion, and new tool powers
 blocked.
+
+The live sandbox/VM POC response kit is
+[sandbox-vm-live-poc-response-kit.md](sandbox-vm-live-poc-response-kit.md) and is generated with
+`make sandbox-vm-live-poc-response-kit`. It packages response-intake guidance,
+normalized-response examples, closure and decision-record commands, queue/precondition status,
+command evidence, and artifact hashes for real `ERG-004` decision-packet feedback without closing
+`ERG-004`, approving implementation planning, or approving live sandbox/VM runtime work.
 
 The live sandbox/VM POC response dry run is
 [sandbox-vm-live-poc-response-dry-run.md](sandbox-vm-live-poc-response-dry-run.md) and is validated

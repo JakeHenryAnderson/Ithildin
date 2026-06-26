@@ -221,6 +221,7 @@ from scripts import (
     sandbox_vm_live_poc_preconditions_map_check,
     sandbox_vm_live_poc_prerequisite_disposition_dry_run,
     sandbox_vm_live_poc_response_dry_run,
+    sandbox_vm_live_poc_response_kit,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
@@ -5643,6 +5644,153 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
         "03_SANDBOX_VM_LIVE_POC_REVIEW_POINTERS.md",
         "04_SANDBOX_VM_LIVE_POC_DECISION_COMMAND_EVIDENCE.md",
     }
+
+
+def test_sandbox_vm_live_poc_response_kit_is_wired(tmp_path: Path) -> None:
+    report = sandbox_vm_live_poc_response_kit.build_check_report(Path.cwd())
+    output_dir = tmp_path / "sandbox-vm-live-poc-response-kit"
+    sandbox_vm_live_poc_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_SANDBOX_VM_LIVE_POC_RESPONSE_KIT_INDEX.md",
+        "01_SANDBOX_VM_LIVE_POC_RESPONSE_INTAKE_GUIDE.md",
+        "02_SANDBOX_VM_LIVE_POC_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_SANDBOX_VM_LIVE_POC_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_SANDBOX_VM_LIVE_POC_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_SANDBOX_VM_LIVE_POC_RESPONSE_KIT_EVIDENCE.md",
+        "sandbox-vm-live-poc-response-kit-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (output_dir / "sandbox-vm-live-poc-response-kit-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    index = (output_dir / "00_SANDBOX_VM_LIVE_POC_RESPONSE_KIT_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    guide = (
+        output_dir / "01_SANDBOX_VM_LIVE_POC_RESPONSE_INTAKE_GUIDE.md"
+    ).read_text(encoding="utf-8")
+    examples = (
+        output_dir / "02_SANDBOX_VM_LIVE_POC_NORMALIZED_RESPONSE_EXAMPLES.md"
+    ).read_text(encoding="utf-8")
+    commands = (
+        output_dir / "03_SANDBOX_VM_LIVE_POC_CLOSURE_TRIAGE_COMMANDS.md"
+    ).read_text(encoding="utf-8")
+    boundary = (
+        output_dir / "04_SANDBOX_VM_LIVE_POC_QUEUE_AND_BOUNDARY_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (
+        output_dir / "05_SANDBOX_VM_LIVE_POC_RESPONSE_KIT_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    preconditions = Path("docs/codex/sandbox-vm-live-poc-preconditions-map.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_004_status"] == "blocked"
+    assert report["runtime_changes_allowed"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["erg_004_closed"] is False
+    assert report["decision_record_recorded"] is False
+    assert report["artifact_count"] == len(expected)
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "sandbox-vm-live-poc-response-kit-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-004`" in index
+    assert "does not approve live VM/container inspection" in index
+    assert "does not approve implementation planning" in index
+    assert "Finding namespace: `EXT-LIVE-POC-###`" in guide
+    assert "var/review-runs/sandbox-vm-live-poc/normalized-response.json" in guide
+    assert "Only a later committed decision-record update may move `ERG-004`" in guide
+    assert '"response_type": "ithildin.external_review.normalized_response"' in examples
+    assert '"area": "sandbox-vm-live-poc"' in examples
+    assert '"source_access": "source-level"' in examples
+    assert '"source_access": "packet-only"' in examples
+    assert '"erg_003_favorable_disposition": true' in examples
+    assert '"decision_outcome": "approve_limited_operator_managed_poc_planning"' in examples
+    assert '"closes_external_review": false' in examples
+    assert "make sandbox-vm-live-poc-decision-closure-check" in commands
+    assert "make sandbox-vm-live-poc-decision-record-skeleton-check" in commands
+    assert "make sandbox-vm-live-poc-response-dry-run" in commands
+    assert "make sandbox-vm-live-poc-prerequisite-disposition-dry-run" in commands
+    assert "make release-check" in commands
+    assert "make review-candidate" in commands
+    assert "ERG-003" in boundary
+    assert "ERG-004" in boundary
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in boundary
+    assert "live VM/container inspection" in boundary
+    for flag in [
+        '"response_kit_boundary"',
+        '"runtime_changes_allowed": false',
+        '"implementation_planning_allowed": false',
+        '"live_vm_inspection_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"local_model_invocation_allowed": false',
+        '"erg_004_closed": false',
+        '"decision_record_recorded": false',
+        '"prerequisite_disposition_dry_run"',
+        '"erg_004_unblocked": false',
+    ]:
+        assert flag in evidence
+    assert "make sandbox-vm-live-poc-response-kit" in readme
+    assert "sandbox-vm-live-poc-response-kit:" in makefile
+    assert "sandbox-vm-live-poc-response-kit-check:" in makefile
+    assert (
+        "sandbox-vm-live-poc-response-kit-check" in release_check_body
+        or "release-check: sandbox-vm-live-poc-response-kit-check" in makefile
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-response-kit" in review_candidate_body
+    assert "sandbox-vm-live-poc-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-response-kit.md" in docs_site
+    assert "docs/codex/sandbox-vm-live-poc-response-kit.md" in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Response Kit" in review_index
+    assert "sandbox-vm-live-poc-response-kit.md" in enterprise
+    assert "sandbox-vm-live-poc-response-kit.md" in gap_matrix
+    assert "sandbox-vm-live-poc-response-kit.md" in queue
+    assert "sandbox-vm-live-poc-response-kit.md" in decision_register
+    assert "sandbox-vm-live-poc-response-kit.md" in preconditions
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:

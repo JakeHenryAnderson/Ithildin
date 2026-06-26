@@ -473,6 +473,10 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-preflight-response-kit` - generate the response-intake kit for
   converting real `ERG-003` reviewer feedback into normalized evidence while keeping `ERG-003`
   open until a later committed triage update and keeping `ERG-004` blocked.
+- `make sandbox-vm-live-poc-response-kit` - generate the response-intake kit for converting real
+  `ERG-004` decision-packet feedback into normalized evidence while keeping live POC implementation,
+  runtime VM/container inspection, Mission Control runtime behavior, and new governed powers
+  blocked.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -1190,6 +1194,12 @@ with `make sandbox-vm-static-preflight-response-kit`; it packages response-intak
 normalized-response examples, closure/triage commands, queue status, and artifact hashes for real
 reviewer feedback without closing `ERG-003`, unblocking `ERG-004`, or approving live sandbox/VM
 runtime work.
+The live POC response kit is
+[docs/codex/sandbox-vm-live-poc-response-kit.md](docs/codex/sandbox-vm-live-poc-response-kit.md),
+with `make sandbox-vm-live-poc-response-kit`; it packages response-intake guidance,
+normalized-response examples, closure/decision-record commands, queue status, and artifact hashes
+for real `ERG-004` decision-packet feedback without closing `ERG-004`, approving implementation
+planning, or approving live sandbox/VM runtime work.
 The external disposition plan is
 [docs/codex/sandbox-vm-static-preflight-disposition-plan.md](docs/codex/sandbox-vm-static-preflight-disposition-plan.md)
 and is checked with `make sandbox-vm-static-preflight-disposition-plan-check`; it defines the

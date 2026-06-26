@@ -238,7 +238,13 @@ sandbox-vm-live-poc-response-dry-run:
 sandbox-vm-live-poc-prerequisite-disposition-dry-run:
 	uv run python scripts/sandbox_vm_live_poc_prerequisite_disposition_dry_run.py
 
-.PHONY: sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-decision-record-skeleton-check sandbox-vm-live-poc-response-dry-run sandbox-vm-live-poc-prerequisite-disposition-dry-run
+sandbox-vm-live-poc-response-kit:
+	uv run python scripts/sandbox_vm_live_poc_response_kit.py
+
+sandbox-vm-live-poc-response-kit-check:
+	uv run python scripts/sandbox_vm_live_poc_response_kit.py --check
+
+.PHONY: sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-decision-record-skeleton-check sandbox-vm-live-poc-response-dry-run sandbox-vm-live-poc-prerequisite-disposition-dry-run sandbox-vm-live-poc-response-kit sandbox-vm-live-poc-response-kit-check
 
 enterprise-sandbox-control-plane-readiness-check:
 	uv run python scripts/enterprise_sandbox_control_plane_readiness_check.py
@@ -1072,6 +1078,7 @@ review-candidate:
 	$(MAKE) sandbox-vm-static-preflight-external-review-bundle
 	$(MAKE) sandbox-vm-static-preflight-response-kit
 	$(MAKE) sandbox-vm-live-poc-decision-packet
+	$(MAKE) sandbox-vm-live-poc-response-kit
 	$(MAKE) trusted-host-promotion-source-review-packet
 	$(MAKE) trusted-host-promotion-disposition-packet
 	$(MAKE) trusted-host-promotion-external-review-bundle
@@ -1139,6 +1146,7 @@ release-check: sandbox-vm-static-preflight-response-kit-check
 release-check: sandbox-vm-live-poc-decision-closure-check
 release-check: sandbox-vm-live-poc-decision-record-skeleton-check
 release-check: sandbox-vm-live-poc-response-dry-run
+release-check: sandbox-vm-live-poc-response-kit-check
 release-check: mission-control-display-response-dry-run
 release-check: mission-control-display-external-review-bundle-check
 release-check: mission-control-display-response-kit-check
