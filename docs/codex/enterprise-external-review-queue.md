@@ -121,6 +121,15 @@ For a cross-lane operator send-readiness summary, run:
 make enterprise-review-send-readiness
 ```
 
+When sending the current two recommended packets together, generate the compact operator pointer
+with:
+
+```sh
+make enterprise-dual-review-handoff
+```
+
+See [Enterprise Dual Review Handoff](enterprise-dual-review-handoff.md).
+
 That command is documented in `enterprise-review-send-readiness.md`; it reports packet handoff
 readiness for `ERG-003`, `ERG-002`, and the remaining enterprise lanes while keeping implementation
 approval, runtime behavior, and lane closure blocked.

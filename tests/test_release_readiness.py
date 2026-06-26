@@ -47,6 +47,7 @@ from scripts import (
     demo_reset_guide,
     demo_state_report,
     docs_claims_public_preview_disposition_closure_check,
+    enterprise_dual_review_handoff,
     enterprise_external_review_queue_check,
     enterprise_next_review_handoff,
     enterprise_next_review_ready_check,
@@ -1402,6 +1403,103 @@ def test_enterprise_review_send_readiness_is_wired() -> None:
     assert "docs/codex/enterprise-review-send-readiness.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Review Send Readiness" in review_index
     assert "enterprise-review-send-readiness" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_dual_review_handoff_is_wired() -> None:
+    report = enterprise_dual_review_handoff.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-dual-review-handoff.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    send_readiness = Path("docs/codex/enterprise-review-send-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-dual-review-handoff")
+    generated = generated_dir / "ENTERPRISE_DUAL_REVIEW_HANDOFF.md"
+    generated_json = generated_dir / "enterprise-dual-review-handoff.json"
+    generated_hashes = json.loads(
+        (generated_dir / "enterprise-dual-review-handoff-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["artifact_hashes_match_files"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    for phrase in [
+        "Status: operator handoff pointer for the two currently send-ready enterprise reviews.",
+        "make enterprise-dual-review-handoff",
+        "make enterprise-dual-review-handoff-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not close either lane",
+        "does not approve Mission Control runtime behavior",
+        "does not approve live VM/container inspection",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Recommended enterprise reviews: `ERG-003`, `ERG-002`",
+        "Attach `ERG-003` packet",
+        "Attach `ERG-002` packet",
+        "Response paths after review",
+        "What remains blocked",
+        "EXT-SVP-###",
+        "EXT-MC-DISPLAY-###",
+        "hash manifest matches files: `true`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"handoff_type": "ithildin.enterprise_dual_review"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"runtime_changes_allowed": false',
+        '"mission_control_runtime_allowed": false',
+        '"live_vm_inspection_allowed": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+        '"hash_manifest_matches_files": true',
+    ]:
+        assert phrase in generated_json_text
+    assert {artifact["path"] for artifact in generated_hashes["artifacts"]} == {
+        "ENTERPRISE_DUAL_REVIEW_HANDOFF.md",
+        "enterprise-dual-review-handoff.json",
+    }
+    assert "enterprise-dual-review-handoff:" in makefile
+    assert "enterprise-dual-review-handoff-check:" in makefile
+    assert "enterprise-dual-review-handoff-check" in release_check_body
+    assert "$(MAKE) enterprise-dual-review-handoff" in review_candidate_body
+    assert "make enterprise-dual-review-handoff" in readme
+    assert "make enterprise-dual-review-handoff" in queue
+    assert "enterprise-dual-review-handoff.md" in send_readiness
+    assert "docs/codex/enterprise-dual-review-handoff.md" in docs_site
+    assert "docs/codex/enterprise-dual-review-handoff.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Dual Review Handoff" in review_index
+    assert "enterprise-dual-review-handoff-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

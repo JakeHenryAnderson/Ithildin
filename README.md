@@ -410,6 +410,8 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-readiness` - summarize which enterprise external-review packets are
   mechanically ready for operator handoff while keeping implementation approval, runtime behavior,
   and lane closure blocked.
+- `make enterprise-dual-review-handoff` - generate the compact pointer for sending the current two
+  recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -977,6 +979,10 @@ The enterprise review send-readiness summary is
 checked with `make enterprise-review-send-readiness`; it summarizes packet handoff readiness across
 enterprise review lanes while keeping implementation approval, runtime behavior, and lane closure
 separate.
+The dual-review handoff is
+[docs/codex/enterprise-dual-review-handoff.md](docs/codex/enterprise-dual-review-handoff.md),
+generated with `make enterprise-dual-review-handoff`; it points to the current `ERG-003` and
+`ERG-002` packets and their response paths without closing either lane or approving runtime powers.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

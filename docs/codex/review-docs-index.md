@@ -248,6 +248,7 @@ externally closed.
 - [Enterprise Next Review Handoff](enterprise-next-review-handoff.md)
 - [Enterprise Next Review Ready Check](enterprise-next-review-ready-check.md)
 - [Enterprise Review Send Readiness](enterprise-review-send-readiness.md)
+- [Enterprise Dual Review Handoff](enterprise-dual-review-handoff.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)

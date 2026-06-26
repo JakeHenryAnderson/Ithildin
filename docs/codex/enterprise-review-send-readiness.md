@@ -33,6 +33,10 @@ Recommended now:
 - `ERG-002`: send `var/review-packets/v3/mission-control-display-external-review/` as the
   conservative parallel Mission Control display/import planning review.
 
+Use `make enterprise-dual-review-handoff` to generate the compact pointer for sending both current
+recommendations, and see `enterprise-dual-review-handoff.md` for attachment and response-path
+details.
+
 Not recommended now:
 
 - `ERG-004` remains blocked on favorable `ERG-003` static preflight disposition.
