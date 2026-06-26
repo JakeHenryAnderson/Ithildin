@@ -331,6 +331,7 @@ REVIEW_DOCS = [
     "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-decision-packet.md",
     "docs/codex/sandbox-vm-live-poc-response-kit.md",
+    "docs/codex/sandbox-vm-live-poc-external-review-bundle.md",
     "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md",
     "docs/codex/governed-artifact-transfer-lab.md",
     "docs/codex/hello-world-sandbox-demo-roadmap.md",

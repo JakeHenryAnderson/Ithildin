@@ -144,6 +144,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     )
     assert "docs/codex/sandbox-vm-static-preflight-response-kit.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-response-kit.md" in DEFAULT_DOCS
+    assert "docs/codex/sandbox-vm-live-poc-external-review-bundle.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-response-kit.md" in DEFAULT_DOCS
     assert (
         "docs/codex/docs-claims-public-preview-disposition-closure-gate.md"
@@ -227,6 +228,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/sandbox-vm-live-poc-decision-closure-gate.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-response-dry-run.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-decision-packet.md" in DEFAULT_DOCS
+    assert "docs/codex/sandbox-vm-live-poc-external-review-bundle.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md" in DEFAULT_DOCS
     assert "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md" in DEFAULT_DOCS
     assert "docs/codex/governed-artifact-transfer-lab.md" in DEFAULT_DOCS

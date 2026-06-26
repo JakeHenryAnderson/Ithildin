@@ -119,7 +119,8 @@ Current selected capability: `not selected`.
   decision-record drafting, docs, review packets, the readiness map in
   `enterprise-sandbox-control-plane-readiness.md`, the preconditions map in
   `sandbox-vm-live-poc-preconditions-map.md`, the decision packet in
-  `sandbox-vm-live-poc-decision-packet.md`, the response kit in
+  `sandbox-vm-live-poc-decision-packet.md`, the launch bundle in
+  `sandbox-vm-live-poc-external-review-bundle.md`, the response kit in
   `sandbox-vm-live-poc-response-kit.md`, the external response intake template in
   `sandbox-vm-live-poc-external-response-intake.md`, the fail-closed closure gate in
   `sandbox-vm-live-poc-decision-closure-gate.md`, the decision-record skeleton in

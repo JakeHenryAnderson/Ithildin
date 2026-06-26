@@ -42,7 +42,7 @@ make enterprise-external-review-queue-check
 | 4 | `ERG-006` + `ERG-007` / `PRD-PROD-IAM-STORAGE-001` | `planning_only` | `production-identity-storage-external-review-bundle.md` plus `production-identity-storage-disposition-packet.md` | `production-identity-storage-response-kit.md`, `production-identity-storage-external-response-intake.md`, `production-identity-storage-disposition-closure-gate.md`, and `production-identity-storage-response-dry-run.md` | Architecture review for identity, tenancy, storage, retention, and custody boundaries | `false` |
 | 5 | `ERG-008` / `PRD-SIEM-EXPORT-001` | `planning_only` | `siem-export-adapter-external-review-bundle.md` plus `siem-export-adapter-disposition-packet.md` | `siem-export-adapter-response-kit.md`, `siem-export-adapter-external-response-intake.md`, `siem-export-adapter-disposition-closure-gate.md`, and `siem-export-adapter-response-dry-run.md` | Design review for offline/export adapter shape and delivery questions | `false` |
 | 6 | `ERG-009` / `PRD-COMPLIANCE-MAPPING-001` | `planning_only` | `compliance-mapping-external-review-bundle.md` plus `compliance-mapping-disposition-packet.md` | `compliance-mapping-response-kit.md`, `compliance-mapping-external-response-intake.md`, `compliance-mapping-disposition-closure-gate.md`, and `compliance-mapping-response-dry-run.md` | Design review for control-mapping support and operator responsibility language | `false` |
-| 7 | `ERG-004` / `PRD-SANDBOX-LIVE-POC-001` | `blocked` | `sandbox-vm-live-poc-decision-packet.md` | `sandbox-vm-live-poc-response-kit.md`, `sandbox-vm-live-poc-external-response-intake.md`, `sandbox-vm-live-poc-decision-closure-gate.md`, `sandbox-vm-live-poc-response-dry-run.md`, and `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md` | Keep live sandbox/VM worker POC blocked until `ERG-003` receives favorable disposition | `false` |
+| 7 | `ERG-004` / `PRD-SANDBOX-LIVE-POC-001` | `blocked` | `sandbox-vm-live-poc-external-review-bundle.md` plus `sandbox-vm-live-poc-decision-packet.md` | `sandbox-vm-live-poc-response-kit.md`, `sandbox-vm-live-poc-external-response-intake.md`, `sandbox-vm-live-poc-decision-closure-gate.md`, `sandbox-vm-live-poc-response-dry-run.md`, and `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md` | Keep live sandbox/VM worker POC blocked until `ERG-003` receives favorable disposition | `false` |
 | 8 | `ERG-010` / `PRD-PUBLIC-POSITIONING-001` | `blocked` | `public-positioning-external-review-bundle.md` plus `public-security-product-positioning-decision-intake.md` | `public-security-product-positioning-response-kit.md`, `public-security-product-positioning-decision-closure-gate.md`, and later claim-review response intake | Claim-review preparation and warning-packet review only | `false` |
 
 The `ERG-003` row also depends on
@@ -88,7 +88,8 @@ keeping `ERG-004` and live runtime work blocked.
    its response kit is `compliance-mapping-response-kit.md`, and its response dry run is
    `compliance-mapping-response-dry-run.md`.
 7. `ERG-004` cannot move until `ERG-003` receives favorable disposition and a later post-RC
-   decision record approves implementation planning. Its fail-closed closure gate is
+   decision record approves implementation planning. Its consolidated launch bundle is
+   `sandbox-vm-live-poc-external-review-bundle.md`, its fail-closed closure gate is
    `sandbox-vm-live-poc-decision-closure-gate.md`, its response dry run is
    `sandbox-vm-live-poc-response-dry-run.md`, and its prerequisite disposition dry run is
    `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md`.

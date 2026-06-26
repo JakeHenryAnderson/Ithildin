@@ -244,7 +244,13 @@ sandbox-vm-live-poc-response-kit:
 sandbox-vm-live-poc-response-kit-check:
 	uv run python scripts/sandbox_vm_live_poc_response_kit.py --check
 
-.PHONY: sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-decision-record-skeleton-check sandbox-vm-live-poc-response-dry-run sandbox-vm-live-poc-prerequisite-disposition-dry-run sandbox-vm-live-poc-response-kit sandbox-vm-live-poc-response-kit-check
+sandbox-vm-live-poc-external-review-bundle:
+	uv run python scripts/sandbox_vm_live_poc_external_review_bundle.py
+
+sandbox-vm-live-poc-external-review-bundle-check:
+	uv run python scripts/sandbox_vm_live_poc_external_review_bundle.py --check
+
+.PHONY: sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-decision-record-skeleton-check sandbox-vm-live-poc-response-dry-run sandbox-vm-live-poc-prerequisite-disposition-dry-run sandbox-vm-live-poc-response-kit sandbox-vm-live-poc-response-kit-check sandbox-vm-live-poc-external-review-bundle sandbox-vm-live-poc-external-review-bundle-check
 
 enterprise-sandbox-control-plane-readiness-check:
 	uv run python scripts/enterprise_sandbox_control_plane_readiness_check.py
@@ -1111,6 +1117,7 @@ review-candidate:
 	$(MAKE) sandbox-vm-static-preflight-external-review-bundle
 	$(MAKE) sandbox-vm-static-preflight-response-kit
 	$(MAKE) sandbox-vm-live-poc-decision-packet
+	$(MAKE) sandbox-vm-live-poc-external-review-bundle
 	$(MAKE) sandbox-vm-live-poc-response-kit
 	$(MAKE) trusted-host-promotion-source-review-packet
 	$(MAKE) trusted-host-promotion-disposition-packet
@@ -1182,6 +1189,7 @@ release-check: sandbox-vm-live-poc-decision-closure-check
 release-check: sandbox-vm-live-poc-decision-record-skeleton-check
 release-check: sandbox-vm-live-poc-response-dry-run
 release-check: sandbox-vm-live-poc-response-kit-check
+release-check: sandbox-vm-live-poc-external-review-bundle-check
 release-check: mission-control-display-response-dry-run
 release-check: mission-control-display-external-review-bundle-check
 release-check: mission-control-display-response-kit-check

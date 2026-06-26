@@ -109,6 +109,9 @@ Current readiness evidence:
 - the blocked live POC decision packet in
   [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md), generated with
   `make sandbox-vm-live-poc-decision-packet`;
+- the blocked live POC external-review launch bundle in
+  [sandbox-vm-live-poc-external-review-bundle.md](sandbox-vm-live-poc-external-review-bundle.md),
+  generated with `make sandbox-vm-live-poc-external-review-bundle`;
 - the live POC response kit in
   [sandbox-vm-live-poc-response-kit.md](sandbox-vm-live-poc-response-kit.md), generated with
   `make sandbox-vm-live-poc-response-kit`;
@@ -688,6 +691,13 @@ The live sandbox/VM POC response kit is
 normalized-response examples, closure and decision-record commands, queue/precondition status,
 command evidence, and artifact hashes for real `ERG-004` decision-packet feedback without closing
 `ERG-004`, approving implementation planning, or approving live sandbox/VM runtime work.
+
+The live sandbox/VM POC external-review launch bundle is
+[sandbox-vm-live-poc-external-review-bundle.md](sandbox-vm-live-poc-external-review-bundle.md) and
+is generated with `make sandbox-vm-live-poc-external-review-bundle`. It consolidates the blocked
+`ERG-004` decision packet, contracts, preconditions, response/closure dry runs, queue status,
+command evidence, and artifact hashes without closing `ERG-004`, approving implementation planning,
+or approving live sandbox/VM runtime work.
 
 The live sandbox/VM POC response dry run is
 [sandbox-vm-live-poc-response-dry-run.md](sandbox-vm-live-poc-response-dry-run.md) and is validated

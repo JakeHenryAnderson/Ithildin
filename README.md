@@ -570,6 +570,10 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-decision-packet` - generate the blocked `ERG-004` external decision
   packet with readiness evidence, prerequisite static-preflight pointers, reviewer questions,
   command evidence, and artifact hashes without approving live sandbox/VM runtime work.
+- `make sandbox-vm-live-poc-external-review-bundle` - generate the blocked `ERG-004` external
+  review launch bundle that consolidates the decision packet, evidence contract, preconditions,
+  response/closure dry runs, queue status, command evidence, and artifact hashes without approving
+  implementation planning or live sandbox/VM runtime work.
 - `make sandbox-vm-static-preflight-disposition-packet` - generate the `ERG-003` external
   disposition handoff packet,
   [docs/codex/sandbox-vm-static-preflight-disposition-packet.md](docs/codex/sandbox-vm-static-preflight-disposition-packet.md),
@@ -1242,6 +1246,12 @@ with `make sandbox-vm-live-poc-response-kit`; it packages response-intake guidan
 normalized-response examples, closure/decision-record commands, queue status, and artifact hashes
 for real `ERG-004` decision-packet feedback without closing `ERG-004`, approving implementation
 planning, or approving live sandbox/VM runtime work.
+The live POC external-review launch bundle is
+[docs/codex/sandbox-vm-live-poc-external-review-bundle.md](docs/codex/sandbox-vm-live-poc-external-review-bundle.md),
+with `make sandbox-vm-live-poc-external-review-bundle`; it consolidates the blocked `ERG-004`
+decision packet, contracts, preconditions, response/closure dry runs, queue status, command
+evidence, and artifact hashes into one reviewer handoff without closing `ERG-004`, approving
+implementation planning, or approving live sandbox/VM runtime work.
 The external disposition plan is
 [docs/codex/sandbox-vm-static-preflight-disposition-plan.md](docs/codex/sandbox-vm-static-preflight-disposition-plan.md)
 and is checked with `make sandbox-vm-static-preflight-disposition-plan-check`; it defines the

@@ -307,6 +307,7 @@ externally closed.
 - [Sandbox/VM Live POC Evidence Contract](sandbox-vm-live-poc-evidence-contract.md)
 - [Sandbox/VM Live POC Preconditions Map](sandbox-vm-live-poc-preconditions-map.md)
 - [Sandbox/VM Live POC Decision Packet](sandbox-vm-live-poc-decision-packet.md)
+- [Sandbox/VM Live POC External Review Bundle](sandbox-vm-live-poc-external-review-bundle.md)
 - [Sandbox/VM Live POC Decision Record Skeleton](sandbox-vm-live-poc-decision-record-skeleton.md)
 - [Sandbox/VM Static Preflight Internal Source Review](v3-sandbox-vm-static-preflight-internal-review.md)
 - [Governed Artifact Transfer Lab](governed-artifact-transfer-lab.md)
