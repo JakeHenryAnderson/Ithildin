@@ -378,6 +378,10 @@ checked with `make control-mapping-readiness`.
   demo command order, evidence reading order, and no-new-powers boundaries.
 - `make v1-operator-trial-checklist-check` - validate the v1.0 local-preview operator trial
   checklist for pass/fail demo evidence, Compose cleanup, non-Compose evidence, and blocked claims.
+- `make v1-operator-trial-record` - generate a secret-free v1.0 local-preview operator trial
+  evidence record under `var/review-packets/v1.0/operator-trial/`.
+- `make v1-operator-trial-record-check` - validate the generated-record workflow, packet wiring,
+  docs inclusion, no-new-powers posture, and blocked claims.
 - `make v1-workbench-evidence-check` - validate the v1.0 workbench/evidence closure map across
   Agent Run, approval, audit, signed evidence, demo, and packet readiness.
 - `make v1-assurance-closure-check` - validate the v1.0 local-preview assurance ledger across
@@ -904,6 +908,11 @@ The v1.0 operator trial checklist is
 [docs/codex/v1.0-operator-trial-checklist.md](docs/codex/v1.0-operator-trial-checklist.md) and is
 checked with `make v1-operator-trial-checklist-check`; it turns the quickstart into a repeatable
 pass/fail local trial record without approving runtime powers or product-positioning claims.
+The v1.0 operator trial record is
+[docs/codex/v1.0-operator-trial-record.md](docs/codex/v1.0-operator-trial-record.md), generated
+with `make v1-operator-trial-record`, and checked with `make v1-operator-trial-record-check`; it
+captures the current checklist-style handoff state as ignored local evidence without starting
+services, calling governed tools, or approving public/security-product positioning.
 The v1.0 workbench/evidence closure map is
 [docs/codex/v1.0-workbench-evidence-closure.md](docs/codex/v1.0-workbench-evidence-closure.md)
 and is checked with `make v1-workbench-evidence-check`; it ties the local review console, Agent Run
