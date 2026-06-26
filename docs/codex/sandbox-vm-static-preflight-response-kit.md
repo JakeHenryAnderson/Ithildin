@@ -64,3 +64,5 @@ public/security-product positioning.
 Only a later committed triage update may move `ERG-003`, and only if real normalized response
 evidence passes `make sandbox-vm-static-preflight-disposition-closure-check` with
 `closure_ready: true`.
+That future committed update must use `sandbox-vm-static-preflight-disposition-record-skeleton.md`
+as the disposition-record shape and must keep `ERG-004` blocked.

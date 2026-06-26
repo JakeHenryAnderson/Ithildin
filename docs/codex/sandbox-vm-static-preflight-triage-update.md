@@ -112,6 +112,8 @@ The triage update must keep these blocked:
 `ERG-004 remains blocked` after this triage update. A favorable `ERG-003` disposition may satisfy
 one prerequisite for a later live POC decision record, but it does not approve live POC
 implementation planning and does not authorize local model or VM/container runtime work.
+Use `sandbox-vm-static-preflight-disposition-record-skeleton.md` as the committed disposition-record
+shape if favorable source-level static preflight evidence is ever recorded.
 
 ## Negative Triage Outcomes
 

@@ -139,6 +139,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-static-preflight-response-kit-check",
     "sandbox-vm-static-preflight-disposition-plan-check",
     "sandbox-vm-static-preflight-disposition-closure-check",
+    "sandbox-vm-static-preflight-disposition-record-skeleton-check",
     "sandbox-vm-static-preflight-external-response-intake-check",
     "sandbox-vm-static-preflight-response-dry-run",
     "sandbox-vm-static-preflight-triage-update-check",

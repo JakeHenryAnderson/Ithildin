@@ -227,6 +227,7 @@ from scripts import (
     sandbox_vm_static_preflight_disposition_closure_check,
     sandbox_vm_static_preflight_disposition_packet,
     sandbox_vm_static_preflight_disposition_plan_check,
+    sandbox_vm_static_preflight_disposition_record_skeleton_check,
     sandbox_vm_static_preflight_external_response_intake_check,
     sandbox_vm_static_preflight_external_review_bundle,
     sandbox_vm_static_preflight_implementation_gate,
@@ -18442,6 +18443,144 @@ def test_mission_control_display_decision_record_skeleton_is_wired() -> None:
     assert "mission-control-display-decision-record-skeleton.md" in decision_intake
     assert "mission-control-display-decision-record-skeleton.md" in closure_gate
     assert "mission-control-display-decision-record-skeleton.md" in response_kit
+
+
+def test_sandbox_vm_static_preflight_disposition_record_skeleton_is_wired() -> None:
+    report = sandbox_vm_static_preflight_disposition_record_skeleton_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    disposition_plan = Path(
+        "docs/codex/sandbox-vm-static-preflight-disposition-plan.md"
+    ).read_text(encoding="utf-8")
+    closure_gate = Path(
+        "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    triage_update = Path(
+        "docs/codex/sandbox-vm-static-preflight-triage-update.md"
+    ).read_text(encoding="utf-8")
+    reproduction_map = Path(
+        "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md"
+    ).read_text(encoding="utf-8")
+    response_kit = Path(
+        "docs/codex/sandbox-vm-static-preflight-response-kit.md"
+    ).read_text(encoding="utf-8")
+    preconditions = Path("docs/codex/sandbox-vm-live-poc-preconditions-map.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["allowed_future_status"] == "closed_local_preview_static_preflight"
+    assert report["runtime_changes_allowed"] is False
+    assert report["implementation_planning_allowed_now"] is False
+    assert report["static_preflight_disposition_after_favorable_review_allowed"] is True
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["erg_004_unblocked"] is False
+    assert report["closes_erg_003"] is False
+    for phrase in [
+        "Status: design-only disposition-record skeleton for `ERG-003`.",
+        "Current governed tool count: `24`.",
+        "Current `ERG-003` status: `external_review_required`.",
+        "Current selected capability: `not selected`.",
+        "does not close `ERG-003` by itself",
+        "closed_local_preview_static_preflight",
+        "ERG-003: external_review_required -> closed_local_preview_static_preflight",
+        "Runtime surfaces touched: none.",
+        "Tool count impact: none; remains `24`.",
+        "ERG-004 remains blocked",
+        "make sandbox-vm-static-preflight-disposition-record-skeleton-check",
+        "make sandbox-vm-static-preflight-disposition-closure-check",
+        "make release-check",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "live VM/container inspection",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "SIEM adapter behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "trusted-host promotion is approved",
+        "SIEM adapter behavior is approved",
+        "ERG-003 is closed",
+        "ERG-004 is unblocked",
+        "live POC planning is approved",
+        "public security product approved",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-static-preflight-disposition-record-skeleton-check" in readme
+    assert "sandbox-vm-static-preflight-disposition-record-skeleton-check:" in makefile
+    assert "sandbox-vm-static-preflight-disposition-record-skeleton-check" in (
+        release_check_body
+    )
+    assert "sandbox-vm-static-preflight-disposition-record-skeleton-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Disposition Record Skeleton" in review_index
+    for source in [
+        runway,
+        gap_matrix,
+        queue,
+        decision_register,
+        disposition_plan,
+        closure_gate,
+        triage_update,
+        reproduction_map,
+        response_kit,
+        preconditions,
+    ]:
+        assert "sandbox-vm-static-preflight-disposition-record-skeleton.md" in source
 
 
 def test_sandbox_vm_live_poc_decision_record_skeleton_is_wired() -> None:

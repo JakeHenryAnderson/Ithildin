@@ -135,6 +135,10 @@ This map does not prove external review has happened, does not close `ERG-003`, 
 does not authorize runtime work. It only defines the preconditions that must be satisfied before a
 future decision record may permit implementation planning.
 
+The `ERG-003` prerequisite must be recorded through
+`sandbox-vm-static-preflight-disposition-record-skeleton.md` after favorable source-level static
+preflight evidence. Without that disposition record, `ERG-004` remains blocked.
+
 Validate this map with:
 
 ```sh

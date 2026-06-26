@@ -82,6 +82,11 @@ validation only
 and keeps broader public/security-product, production/security/compliance, sandbox, EDR/MDM, SIEM
 custody, and compliance-product claims blocked.
 
+The only future `ERG-003` static preflight disposition-record shape is
+`sandbox-vm-static-preflight-disposition-record-skeleton.md`. It may be used only after favorable
+source-level evidence passes the closure gate and still keeps `ERG-004` and live sandbox/VM runtime
+work blocked.
+
 ## Validation
 
 Run:

@@ -347,4 +347,10 @@ make post-rc-decision-record-examples-check
 make post-rc-decision-gate
 ```
 
+For `ERG-003`, the future static preflight disposition-record shape is
+`sandbox-vm-static-preflight-disposition-record-skeleton.md`. It supports only a favorable
+source-reviewed local-preview static preflight disposition and keeps `ERG-004`, live POC planning,
+runtime implementation, Mission Control runtime behavior, local model invocation, trusted-host
+promotion, and new powers blocked.
+
 All checks must remain green before `make release-check` can pass.

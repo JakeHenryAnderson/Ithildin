@@ -108,6 +108,10 @@ make sandbox-vm-static-preflight-reviewer-reproduction-map-check
 make enterprise-external-review-queue-check
 ```
 
+After a favorable source-level response, the committed update path must use
+`sandbox-vm-static-preflight-disposition-record-skeleton.md` as the disposition-record shape. The
+skeleton permits only the static-preflight local-preview disposition and does not unblock `ERG-004`.
+
 ## Stop Conditions
 
 Stop the queue and keep affected lanes blocked if:

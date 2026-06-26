@@ -121,6 +121,8 @@ Only a later committed triage update may move `ERG-003` away from
 `external_review_required`. This reproduction map is not that triage update.
 Use `sandbox-vm-static-preflight-triage-update.md` as the safe committed update checklist after
 real favorable source-level evidence is recorded.
+Use `sandbox-vm-static-preflight-disposition-record-skeleton.md` as the companion disposition-record
+shape for that future favorable static preflight update.
 
 ## What This Map Does Not Prove
 

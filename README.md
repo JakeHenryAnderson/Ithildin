@@ -536,6 +536,10 @@ checked with `make control-mapping-readiness`.
   decision-record skeleton for a future implementation-planning-only decision while keeping live
   VM/container inspection, sandbox orchestration, Mission Control runtime behavior, local model
   invocation, and runtime implementation blocked.
+- `make sandbox-vm-static-preflight-disposition-record-skeleton-check` - validate the `ERG-003`
+  static preflight disposition-record skeleton for a future source-reviewed local-preview static
+  preflight disposition while keeping `ERG-004`, live sandbox/VM work, runtime implementation, and
+  new powers blocked.
 - `make sandbox-vm-live-poc-response-dry-run` - exercise temporary normalized-response fixtures
   against the blocked `ERG-004` closure gate while restoring the ignored response path and not
   recording external review or approving live sandbox/VM runtime work.
@@ -1193,6 +1197,13 @@ The fail-closed disposition closure gate is
 and is checked with `make sandbox-vm-static-preflight-disposition-closure-check`; it reports
 `closure_ready: false` until normalized source-level response evidence exists, and it still does not
 approve live sandbox/VM runtime work.
+The static preflight disposition-record skeleton is
+[docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md](docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md)
+and is checked with `make sandbox-vm-static-preflight-disposition-record-skeleton-check`; it defines
+the only future `ERG-003` movement to `closed_local_preview_static_preflight` after favorable
+source-level evidence while keeping `ERG-004`, live POC planning, runtime implementation, sandbox
+orchestration, Mission Control runtime behavior, local model invocation, trusted-host promotion, and
+new governed tool powers blocked.
 The external response intake template is
 [docs/codex/sandbox-vm-static-preflight-external-response-intake.md](docs/codex/sandbox-vm-static-preflight-external-response-intake.md)
 and is checked with `make sandbox-vm-static-preflight-external-response-intake-check`; it defines

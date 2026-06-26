@@ -292,6 +292,7 @@ externally closed.
 - [Sandbox/VM Static Preflight Disposition Packet](sandbox-vm-static-preflight-disposition-packet.md)
 - [Sandbox/VM Static Preflight External Disposition Plan](sandbox-vm-static-preflight-disposition-plan.md)
 - [Sandbox/VM Static Preflight Disposition Closure Gate](sandbox-vm-static-preflight-disposition-closure-gate.md)
+- [Sandbox/VM Static Preflight Disposition Record Skeleton](sandbox-vm-static-preflight-disposition-record-skeleton.md)
 - [Sandbox/VM Static Preflight External Response Intake](sandbox-vm-static-preflight-external-response-intake.md)
 - [Sandbox/VM Static Preflight Response Dry Run](sandbox-vm-static-preflight-response-dry-run.md)
 - [Sandbox/VM Static Preflight Triage Update](sandbox-vm-static-preflight-triage-update.md)

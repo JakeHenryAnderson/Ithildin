@@ -199,6 +199,10 @@ def test_default_docs_include_v02_review_packet() -> None:
         "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md"
         in DEFAULT_DOCS
     )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md"
+        in DEFAULT_DOCS
+    )
     assert "docs/codex/sandbox-vm-static-preflight-disposition-packet.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-static-preflight-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-static-preflight-response-dry-run.md" in DEFAULT_DOCS

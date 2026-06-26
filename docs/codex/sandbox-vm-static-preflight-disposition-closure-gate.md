@@ -81,7 +81,9 @@ If this gate reports `closure_ready: true`, a separate committed triage update m
 4. update `source-review-closure-matrix.md` and `enterprise-readiness-gap-matrix.md`;
 5. update `post-rc-decision-register.md` without approving live runtime work;
 6. follow `sandbox-vm-static-preflight-triage-update.md` for the safe committed update path;
-7. rerun `make release-check` and `make review-candidate`.
+7. use `sandbox-vm-static-preflight-disposition-record-skeleton.md` as the disposition-record
+   shape for a favorable source-reviewed static preflight disposition;
+8. rerun `make release-check` and `make review-candidate`.
 
 ## Validation
 

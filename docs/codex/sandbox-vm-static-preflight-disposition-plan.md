@@ -93,6 +93,10 @@ update; the closure gate passes without response evidence but reports `closure_r
 does not close `ERG-003`.
 Use [sandbox-vm-static-preflight-triage-update.md](sandbox-vm-static-preflight-triage-update.md)
 for the safe committed update checklist after real favorable evidence is recorded.
+Use
+[sandbox-vm-static-preflight-disposition-record-skeleton.md](sandbox-vm-static-preflight-disposition-record-skeleton.md)
+as the only future disposition-record shape for a favorable source-reviewed `ERG-003` static
+preflight outcome. The skeleton keeps `ERG-004` and live sandbox/VM runtime work blocked.
 
 ## Post-Disposition Boundary
 

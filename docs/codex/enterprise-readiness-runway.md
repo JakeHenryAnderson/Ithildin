@@ -664,3 +664,9 @@ Until that external/source disposition is recorded, the static preflight lane re
 fixture evidence only. It does not approve real VM/container lifecycle control, Mission Control
 execution, local model invocation, network expansion, trusted-host promotion, public/security-product
 positioning, or enterprise deployment claims.
+
+The future committed disposition shape is defined in
+`sandbox-vm-static-preflight-disposition-record-skeleton.md`. That skeleton is only for a favorable
+source-level `ERG-003` static preflight disposition and keeps `ERG-004`, live POC planning, runtime
+implementation, Mission Control runtime behavior, local model invocation, trusted-host promotion,
+and new governed tool powers blocked.
