@@ -357,6 +357,11 @@ planning separate from no-go runtime lanes.
 The enterprise gap and claim blockers are tracked in
 [enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md), validated with
 `make enterprise-readiness-gap-matrix-check`.
+The enterprise external-review queue is tracked in
+[enterprise-external-review-queue.md](enterprise-external-review-queue.md), validated with
+`make enterprise-external-review-queue-check`; it names the current packet/intake path for each
+post-RC enterprise lane and recommends `ERG-003` static sandbox/VM preflight disposition as the next
+review before live sandbox/VM worker planning.
 Public/security-product positioning is tracked as an explicit no-go lane in
 [public-security-product-positioning-decision-intake.md](public-security-product-positioning-decision-intake.md),
 validated with `make public-security-product-positioning-decision-intake-check`; it allows

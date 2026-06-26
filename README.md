@@ -374,6 +374,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-readiness-gap-matrix-check` - validate the enterprise readiness gap matrix that
   maps post-RC lanes to blockers, required evidence, allowed planning states, and blocked
   production/security claims.
+- `make enterprise-external-review-queue-check` - validate the post-RC enterprise external-review
+  queue that orders ERG-002 through ERG-010 review lanes, points to the current packets/intake
+  docs, and keeps runtime behavior blocked.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -800,6 +803,12 @@ The enterprise readiness gap matrix is
 checked with `make enterprise-readiness-gap-matrix-check`; it records which enterprise lanes are
 closed only for local preview, planning-only, external-review-required, or blocked, and which
 production/security claims remain unavailable.
+The enterprise external-review queue is
+[docs/codex/enterprise-external-review-queue.md](docs/codex/enterprise-external-review-queue.md),
+checked with `make enterprise-external-review-queue-check`; it orders the post-RC review lanes,
+points to each current packet and response-intake path, names `ERG-003` static sandbox/VM preflight
+as the next recommended review, and keeps every queued lane runtime-disabled until a later committed
+decision record changes that posture.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

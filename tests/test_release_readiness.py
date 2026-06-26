@@ -42,6 +42,7 @@ from scripts import (
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
+    enterprise_external_review_queue_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     enterprise_sandbox_control_plane_readiness_check,
@@ -1012,6 +1013,88 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
     assert "docs/codex/enterprise-readiness-gap-matrix.md" in docs_site
     assert "docs/codex/enterprise-readiness-gap-matrix.md" in review_docs.REVIEW_DOCS
     assert "Ithildin Enterprise Readiness Gap Matrix" in review_index
+
+
+def test_enterprise_external_review_queue_is_wired() -> None:
+    report = enterprise_external_review_queue_check.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    register = Path("docs/codex/post-rc-decision-register.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["queue_row_count"] == 8
+    assert report["recommended_next_review"] == "ERG-003"
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: planning-only queue for post-RC enterprise review lanes.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "Recommended next review: `ERG-003` static sandbox/VM preflight disposition.",
+        "sandbox-vm-static-preflight-disposition-packet.md",
+        "mission-control-integration-readiness-packet.md",
+        "trusted-host-promotion-disposition-packet.md",
+        "production-identity-storage-disposition-packet.md",
+        "siem-export-adapter-disposition-packet.md",
+        "compliance-mapping-disposition-packet.md",
+        "sandbox-vm-live-poc-decision-packet.md",
+        "public-security-product-positioning-decision-intake.md",
+        "public/security-product positioning remains a no-go lane",
+    ]:
+        assert phrase in doc
+    for gap_id in [
+        "ERG-002",
+        "ERG-003",
+        "ERG-004",
+        "ERG-005",
+        "ERG-006",
+        "ERG-007",
+        "ERG-008",
+        "ERG-009",
+        "ERG-010",
+    ]:
+        assert f"`{gap_id}`" in doc
+    for forbidden in [
+        "runtime behavior is approved",
+        "Mission Control may execute",
+        "live sandbox work is approved",
+        "trusted-host promotion is implemented",
+        "SIEM adapter is implemented",
+        "compliance automation approved",
+        "public security product approved",
+    ]:
+        assert forbidden not in doc
+    assert "enterprise-external-review-queue-check:" in makefile
+    assert "enterprise-external-review-queue-check" in release_check_body
+    assert "enterprise-external-review-queue-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "make enterprise-external-review-queue-check" in readme
+    assert "docs/codex/enterprise-external-review-queue.md" in readme
+    assert "docs/codex/enterprise-external-review-queue.md" in docs_site
+    assert "docs/codex/enterprise-external-review-queue.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise External Review Queue" in review_index
+    assert "enterprise-external-review-queue.md" in runway
+    assert "enterprise-external-review-queue.md" in matrix
+    assert "enterprise-external-review-queue.md" in register
 
 
 def test_post_rc_decision_gate_is_wired() -> None:

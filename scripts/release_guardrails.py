@@ -79,6 +79,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v1-rc-readiness",
     "enterprise-readiness-runway-check",
     "enterprise-readiness-gap-matrix-check",
+    "enterprise-external-review-queue-check",
     "enterprise-sandbox-control-plane-readiness-check",
     "post-rc-decision-gate",
     "post-rc-decision-record-template-check",

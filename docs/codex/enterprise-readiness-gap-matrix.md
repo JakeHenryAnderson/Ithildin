@@ -47,6 +47,7 @@ Allowed current claims:
 - bounded read-only metadata tools and approval-gated patch apply under the current manifests;
 - local, tamper-evident evidence and locally signed exports where configured;
 - operator workbench and Mission Control handoff packets as evidence/display planning surfaces.
+- Mission Control outside execution, policy, approval, audit authority.
 
 Blocked current claims, written without product-marketing claim phrases:
 
@@ -63,11 +64,14 @@ Blocked current claims, written without product-marketing claim phrases:
 ## Next Enterprise Action
 
 The next enterprise-readiness action is to choose one matrix row and create or update a post-RC
-decision record before implementation begins. Mission Control display/importer planning (`ERG-002`)
-remains the most conservative usability lane because it can improve operator visibility while
-keeping Mission Control outside execution, policy, approval, audit authority, local-model
-invocation, sandbox orchestration, and trusted-host promotion. Compliance mapping support
-(`ERG-009`) now has the planning-only architecture packet in
+decision record before implementation begins. The review sequence is tracked in
+`enterprise-external-review-queue.md`, which currently recommends `ERG-003` static sandbox/VM
+preflight disposition as the next external/source review because it gates later live sandbox/VM
+worker planning. Mission Control display/importer planning (`ERG-002`) remains the most
+conservative usability lane because it can improve operator visibility while keeping Mission
+Control outside execution, policy, approval, audit authority, local-model invocation, sandbox
+orchestration, and trusted-host promotion. Compliance mapping support (`ERG-009`) now has the
+planning-only architecture packet in
 `compliance-mapping-architecture.md` and the focused disposition packet in
 `compliance-mapping-disposition-packet.md`; it may support future operator control mapping only and
 still blocks compliance automation, legal conclusions, and regulated-industry compliance claims.

@@ -236,6 +236,7 @@ externally closed.
 - [Ithildin v1.0 RC Readiness Gate](v1.0-rc-readiness-gate.md)
 - [Ithildin Enterprise Readiness Runway](enterprise-readiness-runway.md)
 - [Ithildin Enterprise Readiness Gap Matrix](enterprise-readiness-gap-matrix.md)
+- [Enterprise External Review Queue](enterprise-external-review-queue.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)

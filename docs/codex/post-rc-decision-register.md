@@ -11,6 +11,10 @@ outcome.
 The broader enterprise gap map is
 [enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md). This register records the
 current lane decision status; the matrix records the claim/capability each unresolved gap blocks.
+The enterprise external-review queue is
+[enterprise-external-review-queue.md](enterprise-external-review-queue.md). It records the current
+review order, packet pointers, response-intake paths, and runtime-disabled posture for post-RC
+enterprise lanes.
 
 Current governed tool count: `24`.
 
