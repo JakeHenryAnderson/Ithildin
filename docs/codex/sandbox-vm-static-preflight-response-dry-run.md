@@ -31,6 +31,7 @@ It verifies:
   report `closure_ready: true` for later committed triage;
 - packet-only evidence is rejected for closure;
 - malformed packet hashes are rejected;
+- mismatched packet hashes are rejected;
 - critical/high findings are rejected;
 - responses that try to close external review directly are rejected;
 - the original ignored response path is restored after the run.
@@ -61,6 +62,8 @@ It also does not approve:
 `ERG-003` remains `external_review_required` unless a real normalized response is recorded, the
 closure gate reports `closure_ready: true`, and a later committed triage update records the
 reviewer, source access, reviewed commit, packet hash, findings, matrix changes, and release gates.
+The packet hash must match the SHA-256 digest of the current ERG-003 external-review artifact-hash
+manifest.
 
 Run this dry run alongside:
 

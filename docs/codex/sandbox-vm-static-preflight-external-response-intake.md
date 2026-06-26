@@ -25,7 +25,8 @@ Reviewed area for normalization: `sandbox-vm-static-preflight`.
 - Source access: `source-level` / `packet-and-source` / `packet-only` / `docs-only`
 - Reviewed commit:
 - Reviewed packet path:
-- Reviewed packet artifact hash:
+- Reviewed packet artifact hash: SHA-256 of
+  `var/review-packets/v3/sandbox-vm-static-preflight-external-review/sandbox-vm-static-preflight-external-review-artifact-hashes.json`
 - Reviewed response transcript path:
 - Review date:
 
@@ -70,7 +71,7 @@ uv run python scripts/external_response_normalize.py \
   --reviewer-type "gpt-5.5-pro-or-human" \
   --source-access packet-and-source \
   --reviewed-commit "$(git rev-parse HEAD)" \
-  --reviewed-packet-hash "sha256:<packet-hash>" \
+  --reviewed-packet-hash "sha256:<artifact-hash-manifest-digest>" \
   --area sandbox-vm-static-preflight \
   --output var/review-runs/sandbox-vm-static-preflight/normalized-response.json
 ```

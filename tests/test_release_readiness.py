@@ -4839,6 +4839,8 @@ def test_sandbox_vm_static_preflight_disposition_closure_gate_is_wired() -> None
     assert report["tool_count"] == 24
     assert report["area"] == "sandbox-vm-static-preflight"
     assert report["finding_namespace"] == "EXT-SVP-###"
+    expected_hash = report["expected_reviewed_packet_hash"]
+    assert expected_hash is None or str(expected_hash).startswith("sha256:")
     assert report["normalized_response_present"] is False
     assert report["closure_ready"] is False
     assert report["erg_003_status"] == "external_review_required"
@@ -4859,6 +4861,8 @@ def test_sandbox_vm_static_preflight_disposition_closure_gate_is_wired() -> None
         "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
         "ithildin.external_review.normalized_response",
         "reviewed area: `sandbox-vm-static-preflight`",
+        "reviewed packet hash source:",
+        "var/review-packets/v3/sandbox-vm-static-preflight-external-review/sandbox-vm-static-preflight-external-review-artifact-hashes.json",
         "finding namespace: `EXT-SVP-###`",
         "can_close_source_rows: true",
         "mutates_findings: false",
@@ -5017,6 +5021,7 @@ def test_sandbox_vm_static_preflight_response_dry_run_is_wired() -> None:
         "valid_response_accepts": True,
         "packet_only_rejected": True,
         "bad_hash_rejected": True,
+        "wrong_packet_hash_rejected": True,
         "critical_high_finding_rejected": True,
         "direct_external_closure_rejected": True,
     }
@@ -5027,6 +5032,7 @@ def test_sandbox_vm_static_preflight_response_dry_run_is_wired() -> None:
         "absent normalized response keeps `closure_ready: false`",
         "packet-only evidence is rejected for closure",
         "critical/high findings are rejected",
+        "mismatched packet hashes are rejected",
         "responses that try to close external review directly are rejected",
         "It does not prove that an external reviewer has inspected",
         "`ERG-003` remains `external_review_required`",

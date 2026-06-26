@@ -30,6 +30,8 @@ Before a later committed triage update may change `ERG-003`, the following evide
 - reviewed area: `sandbox-vm-static-preflight`;
 - reviewer source access: `source-level` or `packet-and-source`;
 - reviewed packet hash: `sha256:<64 lowercase hex chars>`;
+- reviewed packet hash source:
+  `var/review-packets/v3/sandbox-vm-static-preflight-external-review/sandbox-vm-static-preflight-external-review-artifact-hashes.json`;
 - finding namespace: `EXT-SVP-###`;
 - `can_close_source_rows: true`;
 - `mutates_findings: false`;
@@ -40,6 +42,8 @@ Before a later committed triage update may change `ERG-003`, the following evide
 
 If the normalized response is absent, the gate must pass as a readiness check but report
 `closure_ready: false`. Absence of a response means the lane remains `external_review_required`.
+If a normalized response is present, `reviewed_packet_hash` must exactly match the SHA-256 digest
+of the current ERG-003 external-review artifact-hash manifest.
 
 ## Allowed Closure Result
 

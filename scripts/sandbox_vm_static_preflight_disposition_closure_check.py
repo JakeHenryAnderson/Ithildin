@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -20,6 +21,10 @@ DOC_NAME = "sandbox-vm-static-preflight-disposition-closure-gate.md"
 NORMALIZED_RESPONSE_REL = (
     "var/review-runs/sandbox-vm-static-preflight/normalized-response.json"
 )
+REVIEW_PACKET_HASH_MANIFEST_REL = (
+    "var/review-packets/v3/sandbox-vm-static-preflight-external-review/"
+    "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
+)
 EXPECTED_AREA = "sandbox-vm-static-preflight"
 EXPECTED_NAMESPACE = "EXT-SVP-###"
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -33,6 +38,8 @@ REQUIRED_PHRASES = [
     "ithildin.external_review.normalized_response",
     "reviewed area: `sandbox-vm-static-preflight`",
     "source-level` or `packet-and-source`",
+    "reviewed packet hash source:",
+    REVIEW_PACKET_HASH_MANIFEST_REL,
     "finding namespace: `EXT-SVP-###`",
     "can_close_source_rows: true",
     "mutates_findings: false",
@@ -88,7 +95,9 @@ def main() -> int:
     return 0 if report["valid"] else 1
 
 
-def build_report(repo_root: Path) -> dict[str, Any]:
+def build_report(
+    repo_root: Path, *, expected_reviewed_packet_hash_override: str | None = None
+) -> dict[str, Any]:
     failures: list[str] = []
     doc_path = repo_root / DOC_REL
     normalized_response_path = repo_root / NORMALIZED_RESPONSE_REL
@@ -135,7 +144,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(f"closure gate doc contains forbidden phrase: {phrase}")
 
     response_present = normalized_response_path.exists()
-    response_report = _validate_normalized_response(normalized_response_path)
+    expected_reviewed_packet_hash: str | None
+    if expected_reviewed_packet_hash_override is not None:
+        expected_reviewed_packet_hash = expected_reviewed_packet_hash_override
+    elif response_present or (repo_root / REVIEW_PACKET_HASH_MANIFEST_REL).exists():
+        expected_reviewed_packet_hash = _current_reviewed_packet_hash(repo_root, failures)
+    else:
+        expected_reviewed_packet_hash = None
+    response_report = _validate_normalized_response(
+        normalized_response_path,
+        expected_reviewed_packet_hash=expected_reviewed_packet_hash,
+    )
     failures.extend(response_report["failures"])
     closure_ready = response_report["closure_ready"]
 
@@ -180,6 +199,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "area": EXPECTED_AREA,
         "finding_namespace": EXPECTED_NAMESPACE,
+        "expected_reviewed_packet_hash": expected_reviewed_packet_hash,
         "runtime_changes_allowed": False,
         "live_vm_inspection_allowed": False,
         "mission_control_runtime_allowed": False,
@@ -193,7 +213,22 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     }
 
 
-def _validate_normalized_response(path: Path) -> dict[str, Any]:
+def _current_reviewed_packet_hash(repo_root: Path, failures: list[str]) -> str | None:
+    path = repo_root / REVIEW_PACKET_HASH_MANIFEST_REL
+    if not path.exists():
+        failures.append("review packet hash manifest is missing")
+        return None
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def current_reviewed_packet_hash(repo_root: Path) -> str:
+    path = repo_root / REVIEW_PACKET_HASH_MANIFEST_REL
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _validate_normalized_response(
+    path: Path, *, expected_reviewed_packet_hash: str | None
+) -> dict[str, Any]:
     if not path.exists():
         return {
             "failures": [],
@@ -222,8 +257,15 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
         failures.append("normalized response must not mutate findings")
     if payload.get("closes_external_review") is not False:
         failures.append("normalized response must not close external review directly")
-    if not SHA256_PATTERN.match(str(payload.get("reviewed_packet_hash", ""))):
+    reviewed_packet_hash = str(payload.get("reviewed_packet_hash", ""))
+    if not SHA256_PATTERN.match(reviewed_packet_hash):
         failures.append("normalized response reviewed_packet_hash is not a sha256 digest")
+    elif expected_reviewed_packet_hash is None:
+        failures.append("cannot validate normalized response reviewed_packet_hash")
+    elif reviewed_packet_hash != expected_reviewed_packet_hash:
+        failures.append(
+            "normalized response reviewed_packet_hash does not match current ERG-003 packet hash"
+        )
 
     findings = payload.get("findings", [])
     if not isinstance(findings, list):
@@ -262,6 +304,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"erg_003_status: {report['erg_003_status']}",
         f"allowed_closure_state: {report['allowed_closure_state']}",
         f"tool_count: {report['tool_count']}",
+        f"expected_reviewed_packet_hash: {report['expected_reviewed_packet_hash']}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"live_vm_inspection_allowed: {str(report['live_vm_inspection_allowed']).lower()}",
         "mission_control_runtime_allowed: "

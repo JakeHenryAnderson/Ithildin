@@ -31,35 +31,76 @@ def main() -> int:
     return 0 if report["valid"] else 1
 
 
-def run_dry_run(repo_root: Path) -> dict[str, Any]:
+def run_dry_run(
+    repo_root: Path, *, reviewed_packet_hash_override: str | None = None
+) -> dict[str, Any]:
     failures: list[str] = []
     response_path = repo_root / closure.NORMALIZED_RESPONSE_REL
     original = response_path.read_bytes() if response_path.exists() else None
     original_present = original is not None
     cases: dict[str, bool] = {}
+    reviewed_packet_hash = reviewed_packet_hash_override
+    reviewed_packet_hash_source = "caller_supplied"
+    if reviewed_packet_hash is None:
+        try:
+            reviewed_packet_hash = closure.current_reviewed_packet_hash(repo_root)
+            reviewed_packet_hash_source = "current_external_review_artifact_hash_manifest"
+        except FileNotFoundError:
+            reviewed_packet_hash = "sha256:" + "1" * 64
+            reviewed_packet_hash_source = "fixture_missing_external_review_manifest"
 
     try:
         if response_path.exists():
             response_path.unlink()
-        absent_report = closure.build_report(repo_root)
+        absent_report = closure.build_report(
+            repo_root,
+            expected_reviewed_packet_hash_override=reviewed_packet_hash,
+        )
         cases["absent_response_valid"] = absent_report["valid"] is True
         cases["absent_response_not_ready"] = absent_report["closure_ready"] is False
 
         response_path.parent.mkdir(parents=True, exist_ok=True)
 
-        _write_response(response_path, _valid_response())
-        valid_report = closure.build_report(repo_root)
+        _write_response(response_path, _valid_response(reviewed_packet_hash=reviewed_packet_hash))
+        valid_report = closure.build_report(
+            repo_root,
+            expected_reviewed_packet_hash_override=reviewed_packet_hash,
+        )
         cases["valid_response_accepts"] = (
             valid_report["valid"] is True
             and valid_report["closure_ready"] is True
             and valid_report["erg_003_status"] == "ready_for_triage_update"
         )
 
-        _write_response(response_path, _valid_response(source_access="packet-only"))
-        cases["packet_only_rejected"] = _is_rejected(closure.build_report(repo_root))
+        _write_response(
+            response_path,
+            _valid_response(
+                source_access="packet-only",
+                reviewed_packet_hash=reviewed_packet_hash,
+            ),
+        )
+        cases["packet_only_rejected"] = _is_rejected(
+            closure.build_report(
+                repo_root,
+                expected_reviewed_packet_hash_override=reviewed_packet_hash,
+            )
+        )
 
         _write_response(response_path, _valid_response(reviewed_packet_hash="sha256:not-a-hash"))
-        cases["bad_hash_rejected"] = _is_rejected(closure.build_report(repo_root))
+        cases["bad_hash_rejected"] = _is_rejected(
+            closure.build_report(
+                repo_root,
+                expected_reviewed_packet_hash_override=reviewed_packet_hash,
+            )
+        )
+
+        _write_response(response_path, _valid_response(reviewed_packet_hash="sha256:" + "2" * 64))
+        cases["wrong_packet_hash_rejected"] = _is_rejected(
+            closure.build_report(
+                repo_root,
+                expected_reviewed_packet_hash_override=reviewed_packet_hash,
+            )
+        )
 
         high_finding = {
             "finding_id": "EXT-SVP-001",
@@ -70,14 +111,32 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
             "disposition": "open",
             "recommended_fix": "dry-run negative fixture",
         }
-        _write_response(response_path, _valid_response(findings=[high_finding]))
+        _write_response(
+            response_path,
+            _valid_response(
+                findings=[high_finding],
+                reviewed_packet_hash=reviewed_packet_hash,
+            ),
+        )
         cases["critical_high_finding_rejected"] = _is_rejected(
-            closure.build_report(repo_root)
+            closure.build_report(
+                repo_root,
+                expected_reviewed_packet_hash_override=reviewed_packet_hash,
+            )
         )
 
-        _write_response(response_path, _valid_response(closes_external_review=True))
+        _write_response(
+            response_path,
+            _valid_response(
+                closes_external_review=True,
+                reviewed_packet_hash=reviewed_packet_hash,
+            ),
+        )
         cases["direct_external_closure_rejected"] = _is_rejected(
-            closure.build_report(repo_root)
+            closure.build_report(
+                repo_root,
+                expected_reviewed_packet_hash_override=reviewed_packet_hash,
+            )
         )
     finally:
         if original is None:
@@ -106,6 +165,7 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
         "normalized_response_path": closure.NORMALIZED_RESPONSE_REL,
         "area": closure.EXPECTED_AREA,
         "finding_namespace": closure.EXPECTED_NAMESPACE,
+        "reviewed_packet_hash_source": reviewed_packet_hash_source,
         "tool_count": 24,
         "original_response_present": original_present,
         "response_restored": not failures
@@ -165,6 +225,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"normalized_response_path: {report['normalized_response_path']}",
         f"area: {report['area']}",
         f"finding_namespace: {report['finding_namespace']}",
+        f"reviewed_packet_hash_source: {report['reviewed_packet_hash_source']}",
         f"tool_count: {report['tool_count']}",
         f"original_response_present: {str(report['original_response_present']).lower()}",
         f"response_restored: {str(report['response_restored']).lower()}",

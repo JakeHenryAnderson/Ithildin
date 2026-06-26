@@ -24,6 +24,8 @@ REQUIRED_PHRASES = [
     "Current `ERG-003` status before reviewer disposition: `external_review_required`.",
     "Finding namespace: `EXT-SVP-###`.",
     "Reviewed area for normalization: `sandbox-vm-static-preflight`.",
+    "Reviewed packet artifact hash: SHA-256 of",
+    "sandbox-vm-static-preflight-external-review-artifact-hashes.json",
     "Required Disposition Answers",
     "Finding Extraction Table",
     "EXT-SVP-###",
