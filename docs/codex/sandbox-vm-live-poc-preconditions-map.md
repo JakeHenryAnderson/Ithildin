@@ -65,6 +65,7 @@ Review these artifacts before any decision about live POC planning:
 - `docs/codex/sandbox-vm-live-poc-decision-intake.md`
 - `docs/codex/sandbox-vm-live-poc-evidence-contract.md`
 - `docs/codex/sandbox-vm-live-poc-decision-packet.md`
+- `docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md`
 - `docs/codex/sandbox-vm-live-poc-external-response-intake.md`
 - `docs/codex/sandbox-vm-live-poc-decision-closure-gate.md`
 - `docs/codex/enterprise-sandbox-control-plane-readiness.md`
@@ -92,6 +93,7 @@ make sandbox-vm-live-poc-decision-intake-check
 make sandbox-vm-live-poc-evidence-contract-check
 make sandbox-vm-live-poc-decision-packet
 make sandbox-vm-live-poc-decision-packet-check
+make sandbox-vm-live-poc-decision-record-skeleton-check
 make sandbox-vm-live-poc-preconditions-map-check
 make sandbox-vm-live-poc-external-response-intake-check
 make external-findings-intake-dry-run

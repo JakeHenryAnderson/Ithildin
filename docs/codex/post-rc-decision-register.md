@@ -121,7 +121,8 @@ Current selected capability: `not selected`.
   `sandbox-vm-live-poc-preconditions-map.md`, the decision packet in
   `sandbox-vm-live-poc-decision-packet.md`, the external response intake template in
   `sandbox-vm-live-poc-external-response-intake.md`, the fail-closed closure gate in
-  `sandbox-vm-live-poc-decision-closure-gate.md`, the response dry-run fixture checker in
+  `sandbox-vm-live-poc-decision-closure-gate.md`, the decision-record skeleton in
+  `sandbox-vm-live-poc-decision-record-skeleton.md`, the response dry-run fixture checker in
   `sandbox-vm-live-poc-response-dry-run.md`, and operator warnings.
 - Current forbidden scope: live VM/container inspection, local model invocation, Mission Control
   runtime behavior, sandbox orchestration, SSH, shell, Docker socket access, Kubernetes tools,
@@ -130,6 +131,12 @@ Current selected capability: `not selected`.
 - Current implementation posture: live worker runtime behavior remains blocked.
 - Current warning language: Ithildin does not run a local model, inspect a live VM/container,
   orchestrate a sandbox, or promote sandbox artifacts in this lane.
+- Current decision-record skeleton evidence:
+  `sandbox-vm-live-poc-decision-record-skeleton.md` defines the only implementation-planning-only
+  decision shape a favorable normalized response may support. It can move `ERG-004` only toward
+  `ready_for_implementation_planning_only` and does not approve runtime implementation, live
+  VM/container inspection, sandbox orchestration, Mission Control runtime behavior, local model
+  invocation, trusted-host promotion, SIEM adapter behavior, or new governed tool powers.
 
 ### PRD-CAPABILITY-001
 

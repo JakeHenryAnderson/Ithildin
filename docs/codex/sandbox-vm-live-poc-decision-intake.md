@@ -26,6 +26,10 @@ This intake does not approve Mission Control runtime behavior.
 A future post-RC decision record must exist before `ERG-004` can move out of `blocked`. That record
 must name the reviewed commit, reference this intake packet, and state whether the live POC remains
 blocked, may move to implementation planning, or must be split into smaller decision records.
+The future decision record must use
+[sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md)
+so any movement is limited to implementation-planning-only status and keeps live runtime behavior
+blocked.
 
 The decision record must include:
 
@@ -108,3 +112,10 @@ Stop the lane and keep `ERG-004` blocked if any of these are true:
 The only allowed output of this intake lane is a decision-intake-ready status for a future
 post-RC decision record. It is not an implementation approval, not a runtime profile loader, not a
 live preflight runner, not a Mission Control integration, and not a local model worker.
+
+Validate the intake and decision-record skeleton with:
+
+```sh
+make sandbox-vm-live-poc-decision-intake-check
+make sandbox-vm-live-poc-decision-record-skeleton-check
+```

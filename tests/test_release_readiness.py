@@ -215,6 +215,7 @@ from scripts import (
     sandbox_vm_live_poc_decision_closure_check,
     sandbox_vm_live_poc_decision_intake_check,
     sandbox_vm_live_poc_decision_packet,
+    sandbox_vm_live_poc_decision_record_skeleton_check,
     sandbox_vm_live_poc_evidence_contract_check,
     sandbox_vm_live_poc_external_response_intake_check,
     sandbox_vm_live_poc_preconditions_map_check,
@@ -18441,6 +18442,117 @@ def test_mission_control_display_decision_record_skeleton_is_wired() -> None:
     assert "mission-control-display-decision-record-skeleton.md" in decision_intake
     assert "mission-control-display-decision-record-skeleton.md" in closure_gate
     assert "mission-control-display-decision-record-skeleton.md" in response_kit
+
+
+def test_sandbox_vm_live_poc_decision_record_skeleton_is_wired() -> None:
+    report = sandbox_vm_live_poc_decision_record_skeleton_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    decision_intake = Path("docs/codex/sandbox-vm-live-poc-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    preconditions = Path("docs/codex/sandbox-vm-live-poc-preconditions-map.md").read_text(
+        encoding="utf-8"
+    )
+    closure_gate = Path("docs/codex/sandbox-vm-live-poc-decision-closure-gate.md").read_text(
+        encoding="utf-8"
+    )
+    decision_packet = Path("docs/codex/sandbox-vm-live-poc-decision-packet.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "blocked"
+    assert report["allowed_future_status"] == "ready_for_implementation_planning_only"
+    assert report["runtime_changes_allowed"] is False
+    assert report["implementation_planning_allowed_now"] is False
+    assert report["implementation_planning_after_favorable_review_allowed"] is True
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        "Status: design-only decision-record skeleton for blocked `ERG-004`",
+        "`PRD-SANDBOX-LIVE-POC-001`",
+        "Current governed tool count: `24`.",
+        "Current `ERG-004` status: `blocked`.",
+        "approved_for_implementation_planning_only",
+        "ERG-004: blocked -> ready_for_implementation_planning_only",
+        "Live sandbox/VM runtime behavior remains blocked.",
+        "Runtime surfaces touched: none.",
+        "Tool count impact: none; remains `24`.",
+        "Required prior-lane evidence: favorable `ERG-003` static preflight disposition.",
+        "make sandbox-vm-live-poc-decision-record-skeleton-check",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "live VM/container inspection",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "SIEM adapter behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "trusted-host promotion is approved",
+        "SIEM adapter behavior is approved",
+        "ERG-004 is closed",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-live-poc-decision-record-skeleton-check" in readme
+    assert "sandbox-vm-live-poc-decision-record-skeleton-check:" in makefile
+    assert "sandbox-vm-live-poc-decision-record-skeleton-check" in release_check_body
+    assert "sandbox-vm-live-poc-decision-record-skeleton-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md" in docs_site
+    assert "docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Decision Record Skeleton" in review_index
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in runway
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in gap_matrix
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in decision_register
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in decision_intake
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in preconditions
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in closure_gate
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in decision_packet
+    assert "sandbox-vm-live-poc-decision-record-skeleton.md" in readiness
 
 
 def test_mission_control_display_response_dry_run_is_wired() -> None:

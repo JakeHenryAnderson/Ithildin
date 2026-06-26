@@ -532,6 +532,10 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-decision-closure-check` - validate the blocked `ERG-004` fail-closed
   closure gate while confirming normalized source-level response evidence and favorable `ERG-003`
   disposition are required before any later decision-record consideration.
+- `make sandbox-vm-live-poc-decision-record-skeleton-check` - validate the blocked `ERG-004`
+  decision-record skeleton for a future implementation-planning-only decision while keeping live
+  VM/container inspection, sandbox orchestration, Mission Control runtime behavior, local model
+  invocation, and runtime implementation blocked.
 - `make sandbox-vm-live-poc-response-dry-run` - exercise temporary normalized-response fixtures
   against the blocked `ERG-004` closure gate while restoring the ignored response path and not
   recording external review or approving live sandbox/VM runtime work.
@@ -1239,6 +1243,13 @@ The live sandbox/VM POC decision closure gate is
 and is checked with `make sandbox-vm-live-poc-decision-closure-check`; it reports
 `closure_ready: false` until normalized source-level response evidence exists, favorable `ERG-003`
 disposition is recorded, and a reviewer allows only later implementation-planning consideration.
+The live sandbox/VM POC decision-record skeleton is in
+[docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md](docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md)
+and is checked with `make sandbox-vm-live-poc-decision-record-skeleton-check`; it defines the only
+implementation-planning-only post-RC decision shape a favorable normalized ERG-004 response may
+support, while keeping runtime implementation, live VM/container inspection, sandbox orchestration,
+Mission Control runtime behavior, local model invocation, trusted-host promotion, and new tool
+powers blocked.
 The live sandbox/VM POC response dry run is
 [docs/codex/sandbox-vm-live-poc-response-dry-run.md](docs/codex/sandbox-vm-live-poc-response-dry-run.md)
 and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily exercises favorable

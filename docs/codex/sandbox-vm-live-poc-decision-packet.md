@@ -20,7 +20,8 @@ Before a reviewer can recommend moving `ERG-004` beyond blocked status, the pack
 
 - favorable `ERG-003` external/source disposition for static preflight;
 - no unresolved critical/high static-preflight findings;
-- a post-RC decision-record path for `PRD-SANDBOX-LIVE-POC-001`;
+- a post-RC decision-record path for `PRD-SANDBOX-LIVE-POC-001` using
+  [sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md);
 - an operator-managed VM/container profile contract;
 - a network/mount/root contract;
 - cleanup transcript requirements;

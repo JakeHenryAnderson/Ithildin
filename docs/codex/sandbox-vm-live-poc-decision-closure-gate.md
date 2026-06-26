@@ -71,6 +71,8 @@ If the closure gate eventually reports `closure_ready: true`, a separate committ
 must still:
 
 - record the raw reviewer response and normalized response path;
+- use [sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md)
+  as the decision-record shape;
 - record reviewer label, source access, reviewed commit, and reviewed packet hash;
 - add or update any `EXT-LIVE-POC-###` finding files;
 - update [enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md);
@@ -78,6 +80,9 @@ must still:
 - update [enterprise-sandbox-control-plane-readiness.md](enterprise-sandbox-control-plane-readiness.md);
 - preserve implementation status as planning-only unless a later implementation sprint is explicitly
   approved;
+- preserve runtime implementation, live VM/container inspection, sandbox orchestration, Mission
+  Control runtime behavior, local model invocation, trusted-host promotion, API/MCP profile loading,
+  SIEM adapter behavior, and new governed tool powers as blocked;
 - rerun `make release-check`;
 - rerun `make review-candidate`.
 

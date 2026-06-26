@@ -106,6 +106,9 @@ Current readiness evidence:
 - the blocked live POC decision packet in
   [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md), generated with
   `make sandbox-vm-live-poc-decision-packet`.
+- the blocked live POC decision-record skeleton in
+  [sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md),
+  validated with `make sandbox-vm-live-poc-decision-record-skeleton-check`.
 - the live POC external response intake template in
   [sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md),
   validated with `make sandbox-vm-live-poc-external-response-intake-check`.
@@ -635,6 +638,14 @@ validated with `make sandbox-vm-live-poc-decision-closure-check`. It reports
 disposition is recorded, and the reviewer outcome can support only a later committed decision
 record. It keeps live VM/container inspection, local model invocation, sandbox orchestration,
 Mission Control runtime behavior, trusted-host promotion, and runtime implementation blocked.
+
+The live sandbox/VM POC decision-record skeleton is
+[sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md)
+and is validated with `make sandbox-vm-live-poc-decision-record-skeleton-check`. It defines the only
+implementation-planning-only decision shape a favorable normalized `ERG-004` response may support
+while keeping runtime implementation, live VM/container inspection, sandbox orchestration, Mission
+Control runtime behavior, local model invocation, trusted-host promotion, and new tool powers
+blocked.
 
 The live sandbox/VM POC response dry run is
 [sandbox-vm-live-poc-response-dry-run.md](sandbox-vm-live-poc-response-dry-run.md) and is validated
