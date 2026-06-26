@@ -79,6 +79,10 @@ Reviewer responses should be recorded through
 [trusted-host-promotion-external-response-intake.md](trusted-host-promotion-external-response-intake.md)
 after this packet is reviewed. That intake captures `EXT-TRUSTED-HOST-###` findings without
 mutating findings, closing `ERG-005`, or approving runtime host promotion.
+The fail-closed closure gate is
+[trusted-host-promotion-disposition-closure-gate.md](trusted-host-promotion-disposition-closure-gate.md);
+it keeps `ERG-005` blocked unless normalized source-level response evidence supports
+`continue_design_only` and contains no critical/high findings.
 
 ## Validation
 

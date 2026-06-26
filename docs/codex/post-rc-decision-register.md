@@ -176,6 +176,10 @@ Current selected capability: `not selected`.
   `trusted-host-promotion-external-response-intake.md` defines the `EXT-TRUSTED-HOST-###` finding
   namespace and `trusted-host-promotion` normalizer command for recording reviewer responses without
   mutating findings, closing `ERG-005`, or approving runtime promotion.
+- Current disposition closure evidence:
+  `trusted-host-promotion-disposition-closure-gate.md` keeps `ERG-005` blocked unless normalized
+  source-level response evidence supports design-only continuation and contains no critical/high
+  findings.
 
 ### PRD-SIEM-EXPORT-001
 

@@ -181,6 +181,11 @@ and is validated with `make trusted-host-promotion-external-response-intake-chec
 `EXT-TRUSTED-HOST-###` finding namespace and `trusted-host-promotion` normalizer command for
 recording reviewer responses without mutating findings, closing `ERG-005`, or approving runtime
 host promotion.
+The trusted-host promotion disposition closure gate is in
+[trusted-host-promotion-disposition-closure-gate.md](trusted-host-promotion-disposition-closure-gate.md)
+and is validated with `make trusted-host-promotion-disposition-closure-check`; it keeps `ERG-005`
+blocked unless normalized source-level response evidence supports design-only continuation and has
+no critical/high findings.
 The internal design/source-review pass is
 [v3-trusted-host-promotion-internal-review.md](v3-trusted-host-promotion-internal-review.md) and is
 validated with `make trusted-host-promotion-internal-review-check`; it records

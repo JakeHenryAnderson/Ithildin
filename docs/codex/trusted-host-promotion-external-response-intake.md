@@ -89,6 +89,10 @@ uv run python scripts/external_response_normalize.py \
 The normalized response is intake evidence only. It sets `mutates_findings: false` and
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the
 enterprise gap matrix or post-RC decision register, and rerun release gates.
+If a reviewer response is favorable, record `disposition_outcome: continue_design_only` in the
+normalized response before running
+[trusted-host-promotion-disposition-closure-gate.md](trusted-host-promotion-disposition-closure-gate.md).
+The closure gate still cannot close `ERG-005` by itself.
 
 ## Allowed Intake Outcomes
 
@@ -137,6 +141,7 @@ Run:
 
 ```sh
 make trusted-host-promotion-external-response-intake-check
+make trusted-host-promotion-disposition-closure-check
 make external-findings-intake-dry-run
 make trusted-host-promotion-disposition-packet-check
 make trusted-host-promotion-source-review-packet-check

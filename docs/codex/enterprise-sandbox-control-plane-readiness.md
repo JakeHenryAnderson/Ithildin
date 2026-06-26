@@ -26,7 +26,7 @@ The live sandbox/VM proof-of-concept lane remains blocked.
 | `ERG-002` Mission Control display/importer | `planning_only` | `mission-control-display-disposition-packet.md`, `mission-control-side-handoff-plan.md`, `mission-control-integration-implementation-ticket.md` | Mission Control-side display-only planning and source-review preparation |
 | `ERG-003` Sandbox/VM static preflight | `external_review_required` | `sandbox-vm-static-preflight-disposition-packet.md`, `sandbox-vm-static-preflight-disposition-plan.md`, `sandbox-vm-static-preflight-external-response-intake.md` | External/source disposition of the CLI-only static preflight lane |
 | `ERG-004` Live sandbox/VM worker proof of concept | `blocked` | `sandbox-vm-live-poc-decision-intake.md`, `sandbox-vm-live-poc-evidence-contract.md`, `sandbox-vm-live-poc-decision-packet.md`, `sandbox-vm-live-poc-decision-closure-gate.md` | Decision-packet review only after favorable `ERG-003` disposition |
-| `ERG-005` Trusted-host artifact promotion | `blocked` | `trusted-host-promotion-source-review.md`, `trusted-host-promotion-disposition-packet.md`, `v3-trusted-host-promotion-internal-review.md` | Disposition review and design-only cleanup |
+| `ERG-005` Trusted-host artifact promotion | `blocked` | `trusted-host-promotion-source-review.md`, `trusted-host-promotion-disposition-packet.md`, `trusted-host-promotion-disposition-closure-gate.md`, `v3-trusted-host-promotion-internal-review.md` | Disposition review and design-only cleanup |
 
 ## Enterprise Claim Map
 
