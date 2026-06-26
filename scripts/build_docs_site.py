@@ -288,6 +288,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-live-poc-decision-closure-gate.md",
     "docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md",
     "docs/codex/sandbox-vm-live-poc-response-dry-run.md",
+    "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-decision-packet.md",
     "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md",
     "docs/codex/governed-artifact-transfer-lab.md",

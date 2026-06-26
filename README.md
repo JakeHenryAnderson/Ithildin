@@ -543,6 +543,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-response-dry-run` - exercise temporary normalized-response fixtures
   against the blocked `ERG-004` closure gate while restoring the ignored response path and not
   recording external review or approving live sandbox/VM runtime work.
+- `make sandbox-vm-live-poc-prerequisite-disposition-dry-run` - exercise temporary `ERG-003`
+  disposition-record fixtures before live POC planning while proving favorable static-preflight
+  evidence satisfies only a prerequisite and does not unblock `ERG-004`.
 - `make sandbox-vm-live-poc-decision-packet` - generate the blocked `ERG-004` external decision
   packet with readiness evidence, prerequisite static-preflight pointers, reviewer questions,
   command evidence, and artifact hashes without approving live sandbox/VM runtime work.
@@ -1267,6 +1270,12 @@ and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily 
 and unfavorable normalized-response fixtures, including missing favorable `ERG-003` disposition,
 then restores the ignored response path without recording external review or approving live
 sandbox/VM runtime work.
+The live sandbox/VM POC prerequisite disposition dry run is
+[docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md](docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md)
+and is checked with `make sandbox-vm-live-poc-prerequisite-disposition-dry-run`; it temporarily
+exercises favorable and unfavorable `ERG-003` disposition-record fixtures before live POC planning
+while proving that favorable static-preflight evidence satisfies only a prerequisite and does not
+unblock `ERG-004`.
 The live sandbox/VM POC decision packet is
 [docs/codex/sandbox-vm-live-poc-decision-packet.md](docs/codex/sandbox-vm-live-poc-decision-packet.md)
 and is generated with `make sandbox-vm-live-poc-decision-packet`; it packages the decision intake,

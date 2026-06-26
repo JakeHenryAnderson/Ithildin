@@ -219,6 +219,7 @@ from scripts import (
     sandbox_vm_live_poc_evidence_contract_check,
     sandbox_vm_live_poc_external_response_intake_check,
     sandbox_vm_live_poc_preconditions_map_check,
+    sandbox_vm_live_poc_prerequisite_disposition_dry_run,
     sandbox_vm_live_poc_response_dry_run,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
@@ -5320,6 +5321,146 @@ def test_sandbox_vm_live_poc_response_dry_run_is_wired() -> None:
     assert "sandbox-vm-live-poc-response-dry-run.md" in queue
     assert "sandbox-vm-live-poc-response-dry-run.md" in decision_register
     assert "sandbox-vm-live-poc-response-dry-run.md" in readiness
+
+
+def test_sandbox_vm_live_poc_prerequisite_disposition_dry_run_is_wired() -> None:
+    report = sandbox_vm_live_poc_prerequisite_disposition_dry_run.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    preconditions = Path("docs/codex/sandbox-vm-live-poc-preconditions-map.md").read_text(
+        encoding="utf-8"
+    )
+    response_dry_run = Path("docs/codex/sandbox-vm-live-poc-response-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    decision_skeleton = Path(
+        "docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    readiness = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert (
+        report["dry_run_doc"]
+        == "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md"
+    )
+    assert (
+        report["record_type"]
+        == "ithildin.sandbox_vm_static_preflight.disposition_record"
+    )
+    assert report["decision_id"] == "PRD-SANDBOX-STATIC-PREFLIGHT-001"
+    assert report["target_lane"] == "ERG-003"
+    assert report["allowed_disposition_outcome"] == (
+        "closed_local_preview_static_preflight"
+    )
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_004_status"] == "blocked"
+    assert all(report["cases"].values())
+    assert report["temporary_fixtures_only"] is True
+    assert report["real_normalized_response_mutated"] is False
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_003_closed"] is False
+    assert report["erg_004_unblocked"] is False
+    assert report["decision_record_recorded"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_management_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: temporary fixture dry run for the blocked `ERG-004` prerequisite chain.",
+        "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
+        "missing static-preflight disposition record is rejected",
+        "favorable `ERG-003` static-preflight disposition record satisfies only the "
+        "prerequisite fixture",
+        "committed_findings_mutated: false",
+        "external_review_recorded: false",
+        "erg_003_closed: false",
+        "erg_004_unblocked: false",
+        "decision_record_recorded: false",
+        "implementation_planning_allowed: false",
+        "runtime_changes_allowed: false",
+        "live_vm_inspection_allowed: false",
+        "vm_container_lifecycle_management_allowed: false",
+        "mission_control_runtime_allowed: false",
+        "local_model_invocation_allowed: false",
+        "sandbox_orchestration_allowed: false",
+        "trusted_host_promotion_allowed: false",
+        "public_security_product_positioning_allowed: false",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "implementation planning is approved",
+        "runtime implementation is approved",
+        "live VM control is approved",
+        "sandbox orchestration is approved",
+        "local model invocation is approved",
+        "ERG-003 is closed",
+        "ERG-004 is unblocked",
+        "production-ready",
+    ]:
+        assert phrase not in doc
+    assert "make sandbox-vm-live-poc-prerequisite-disposition-dry-run" in readme
+    assert "sandbox-vm-live-poc-prerequisite-disposition-dry-run:" in makefile
+    assert (
+        "sandbox-vm-live-poc-prerequisite-disposition-dry-run" in release_check_body
+        or "release-check: sandbox-vm-live-poc-prerequisite-disposition-dry-run"
+        in makefile
+    )
+    assert "sandbox-vm-live-poc-prerequisite-disposition-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Prerequisite Disposition Dry Run" in review_index
+    for source in [
+        enterprise,
+        gap_matrix,
+        queue,
+        decision_register,
+        preconditions,
+        response_dry_run,
+        decision_skeleton,
+        readiness,
+    ]:
+        assert "sandbox-vm-live-poc-prerequisite-disposition-dry-run.md" in source
 
 
 def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:

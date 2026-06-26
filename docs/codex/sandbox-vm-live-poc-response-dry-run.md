@@ -19,6 +19,10 @@ var/review-runs/sandbox-vm-live-poc/normalized-response.json
 
 The original ignored response path is restored before the command exits.
 
+Use `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md` for the separate prerequisite check
+that temporary `ERG-003` disposition-record fixtures satisfy only the static-preflight prerequisite
+and do not unblock `ERG-004`.
+
 ## Cases Exercised
 
 The dry run checks:

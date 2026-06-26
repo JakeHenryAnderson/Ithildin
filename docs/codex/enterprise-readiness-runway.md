@@ -103,6 +103,9 @@ Current readiness evidence:
   [sandbox-vm-live-poc-evidence-contract.md](sandbox-vm-live-poc-evidence-contract.md);
 - the live POC preconditions map in
   [sandbox-vm-live-poc-preconditions-map.md](sandbox-vm-live-poc-preconditions-map.md);
+- the live POC prerequisite disposition dry run in
+  [sandbox-vm-live-poc-prerequisite-disposition-dry-run.md](sandbox-vm-live-poc-prerequisite-disposition-dry-run.md),
+  validated with `make sandbox-vm-live-poc-prerequisite-disposition-dry-run`;
 - the blocked live POC decision packet in
   [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md), generated with
   `make sandbox-vm-live-poc-decision-packet`.

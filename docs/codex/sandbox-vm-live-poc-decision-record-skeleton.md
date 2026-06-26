@@ -20,6 +20,8 @@ writes, plugin SDK behavior, new governed tool powers, or public/security-produc
 Use this skeleton only after:
 
 - favorable `ERG-003` static preflight disposition is recorded;
+- `make sandbox-vm-live-poc-prerequisite-disposition-dry-run` has proven that favorable
+  static-preflight disposition fixtures satisfy only a prerequisite and do not unblock `ERG-004`;
 - `var/review-runs/sandbox-vm-live-poc/normalized-response.json` exists;
 - `make sandbox-vm-live-poc-decision-closure-check` reports `closure_ready: true`;
 - the normalized response records
@@ -105,6 +107,9 @@ Live sandbox/VM runtime behavior remains blocked.
 ## Required Evidence
 
 - Required prior-lane evidence: favorable `ERG-003` static preflight disposition.
+- Required prerequisite dry-run evidence:
+  `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md` evidence showing fixture-only
+  prerequisite validation does not approve live POC planning.
 - Required source-review or external-review evidence:
   `var/review-runs/sandbox-vm-live-poc/normalized-response.json`.
 - Required closure gate: `make sandbox-vm-live-poc-decision-closure-check` reports
