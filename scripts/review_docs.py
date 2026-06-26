@@ -246,6 +246,7 @@ REVIEW_DOCS = [
     "docs/codex/read-only-capability-source-review-template.md",
     "docs/codex/v1.0-rc-roadmap.md",
     "docs/codex/v1.0-rc-status.md",
+    "docs/codex/v1.0-progress-assessment.md",
     "docs/codex/v1.0-rc-feature-freeze.md",
     "docs/codex/v1.0-rc-external-review-prompt.md",
     "docs/codex/v1.0-rc-final-handoff.md",

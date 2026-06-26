@@ -718,6 +718,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
         assert phrase in readiness_gate
     assert "v1-rc-roadmap-check:" in makefile
     assert "v1-rc-status-check:" in makefile
+    assert "v1-progress-assessment:" in makefile
     assert "v1-rc-feature-freeze:" in makefile
     assert "v1-rc-external-review-prompt-check:" in makefile
     assert "v1-rc-final-handoff-check:" in makefile
@@ -729,6 +730,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "v1-rc-packet:" in makefile
     assert "v1-rc-roadmap-check" in release_check_body
     assert "v1-rc-status-check" in release_check_body
+    assert "v1-progress-assessment" in release_check_body
     assert "v1-rc-feature-freeze" in release_check_body
     assert "v1-rc-external-review-prompt-check" in release_check_body
     assert "v1-rc-final-handoff-check" in release_check_body
@@ -740,6 +742,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "$(MAKE) v1-rc-packet" in makefile.partition("review-candidate:")[2]
     assert "make v1-rc-roadmap-check" in readme
     assert "make v1-rc-status-check" in readme
+    assert "make v1-progress-assessment" in readme
     assert "make v1-rc-feature-freeze" in readme
     assert "make v1-rc-external-review-prompt-check" in readme
     assert "make v1-rc-final-handoff-check" in readme
@@ -751,6 +754,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "make v1-rc-packet" in readme
     assert "docs/codex/v1.0-rc-roadmap.md" in docs_site
     assert "docs/codex/v1.0-rc-status.md" in docs_site
+    assert "docs/codex/v1.0-progress-assessment.md" in docs_site
     assert "docs/codex/v1.0-rc-feature-freeze.md" in docs_site
     assert "docs/codex/v1.0-rc-external-review-prompt.md" in docs_site
     assert "docs/codex/v1.0-rc-final-handoff.md" in docs_site
@@ -761,6 +765,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "docs/codex/v1.0-rc-readiness-gate.md" in docs_site
     assert "docs/codex/v1.0-rc-roadmap.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-status.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v1.0-progress-assessment.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-feature-freeze.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-external-review-prompt.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-final-handoff.md" in review_docs.REVIEW_DOCS
@@ -771,6 +776,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "docs/codex/v1.0-rc-readiness-gate.md" in review_docs.REVIEW_DOCS
     assert "Ithildin v1.0 RC Roadmap" in review_index
     assert "Ithildin v1.0 RC Status" in review_index
+    assert "Ithildin v1.0 Progress Assessment" in review_index
     assert "Ithildin v1.0 RC Feature Freeze" in review_index
     assert "Ithildin v1.0 RC External Review Prompt" in review_index
     assert "Ithildin v1.0 RC Final Handoff" in review_index
