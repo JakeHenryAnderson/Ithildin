@@ -357,6 +357,12 @@ planning separate from no-go runtime lanes.
 The enterprise gap and claim blockers are tracked in
 [enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md), validated with
 `make enterprise-readiness-gap-matrix-check`.
+Public/security-product positioning is tracked as an explicit no-go lane in
+[public-security-product-positioning-decision-intake.md](public-security-product-positioning-decision-intake.md),
+validated with `make public-security-product-positioning-decision-intake-check`; it allows
+claim-review and evidence-mapping preparation only while broad public/security-product,
+production/security/compliance, sandbox, EDR/MDM, SIEM custody, compliance automation, hosted trust,
+and enterprise-grade identity claims remain blocked.
 
 Current status anchors:
 

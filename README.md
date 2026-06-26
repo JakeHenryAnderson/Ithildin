@@ -382,6 +382,9 @@ checked with `make control-mapping-readiness`.
   Mission Control display planning, sandbox/VM no-go, and post-freeze capability no-go lanes.
 - `make post-rc-decision-register-check` - validate the current post-RC decision register across
   planning-only, no-go, and blocked enterprise-readiness lanes.
+- `make public-security-product-positioning-decision-intake-check` - validate the `ERG-010`
+  public/security-product positioning decision intake that keeps broader public/security,
+  production, sandbox, EDR/MDM, SIEM custody, and compliance-product claims blocked.
 - `make production-identity-storage-architecture-check` - validate the design-only architecture
   packet for production identity and durable storage while keeping production IAM, runtime Postgres,
   remote admin use, and custody-grade audit claims blocked.
@@ -873,6 +876,13 @@ Use the post-RC decision register at
 [docs/codex/post-rc-decision-register.md](docs/codex/post-rc-decision-register.md), checked with
 `make post-rc-decision-register-check`, as the current source of truth for which enterprise lanes
 are planning-only, no-go, or still blocked.
+The public/security-product positioning decision intake is in
+[docs/codex/public-security-product-positioning-decision-intake.md](docs/codex/public-security-product-positioning-decision-intake.md),
+checked with `make public-security-product-positioning-decision-intake-check`; it records
+`PRD-PUBLIC-POSITIONING-001` as a no-go lane and keeps broad public/security-product,
+production/security/compliance, sandbox, EDR/MDM, SIEM custody, compliance automation, hosted MCP,
+runtime Postgres, production identity, and hosted telemetry claims blocked unless a later committed
+decision record, evidence packet, and external/source review explicitly change that posture.
 The Mission Control display integration proposal is
 [docs/codex/mission-control-display-integration-proposal.md](docs/codex/mission-control-display-integration-proposal.md)
 and is checked with `make mission-control-display-integration-proposal-check`; it keeps the first

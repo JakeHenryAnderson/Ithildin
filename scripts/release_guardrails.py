@@ -84,6 +84,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "post-rc-decision-record-template-check",
     "post-rc-decision-record-examples-check",
     "post-rc-decision-register-check",
+    "public-security-product-positioning-decision-intake-check",
     "production-identity-storage-architecture-check",
     "production-identity-storage-disposition-packet-check",
     "production-identity-storage-external-response-intake-check",

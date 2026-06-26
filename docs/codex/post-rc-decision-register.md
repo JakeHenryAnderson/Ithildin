@@ -42,6 +42,7 @@ Current selected capability: `not selected`.
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, the disposition packet in `siem-export-adapter-disposition-packet.md`, the response intake template in `siem-export-adapter-external-response-intake.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
 | `PRD-COMPLIANCE-MAPPING-001` | Compliance mapping support lane | `approved_for_planning` | Mapping-template architecture, operator responsibility language, legal-review boundary, and evidence-field planning only | `false` | The architecture packet in `compliance-mapping-architecture.md`, the disposition packet in `compliance-mapping-disposition-packet.md`, the response intake template in `compliance-mapping-external-response-intake.md`, exact framework scope, template schema, evidence allowlist/denylist, accepted-risk impact review, post-RC decision record, and external/source review before runtime work |
 | `PRD-PROD-IAM-STORAGE-001` | Production identity and durable storage architecture | `approved_for_planning` | Maintain the architecture packet, threat model questions, migration/retention/backup planning, and external architecture review preparation | `false` | Post-RC decision record, identity provider design, tenant/workspace model, storage/migration plan, backup/restore plan, failure-mode tests, and external architecture review before runtime work |
+| `PRD-PUBLIC-POSITIONING-001` | Public/security-product positioning | `no_go` | Claim-review documentation, warning-packet review, operator support/deployment model planning, evidence mapping, and external review preparation only | `false` | `public-security-product-positioning-decision-intake.md`, resolved claim-dependent external/source review rows, accepted-risk disposition, support/deployment/update/incident-response model, explicit claim wording review, and a later committed go/no-go decision before any broader public/security-product positioning |
 
 ## Decision Details
 
@@ -107,6 +108,28 @@ Current selected capability: `not selected`.
 - Current implementation posture: no new governed tool is approved by this register.
 - Current warning language: post-RC capability work remains design-only until a separate record
   approves implementation.
+
+### PRD-PUBLIC-POSITIONING-001
+
+- Status: `no_go`.
+- Current allowed scope: claim-review documentation, warning-packet review, operator support and
+  deployment model planning, evidence mapping, wording cleanup, and external/source review
+  preparation.
+- Current forbidden scope: broader public/security-product positioning, production deployment
+  readiness, production/security/compliance claims, sandbox guarantee claims, EDR/MDM claims, SIEM
+  custody claims, compliance automation claims, legal conclusions, hosted MCP, remote MCP gateway,
+  managed model serving, production identity, runtime Postgres, hosted telemetry, plugin SDK
+  behavior, shell/Docker/Kubernetes/browser governed powers, arbitrary HTTP, broad writes, and
+  stronger claims based only on internal evidence.
+- Current implementation posture: public/security-product positioning remains blocked.
+- Current warning language: Ithildin may continue local-preview development and limited
+  technical-preview sharing with the warning packet, but broad public/security-product,
+  production/security/compliance, sandbox, EDR/MDM, SIEM custody, compliance automation, hosted
+  trust, and enterprise identity claims remain unavailable.
+- Current decision-intake evidence:
+  `public-security-product-positioning-decision-intake.md` defines the blocked `ERG-010` lane,
+  required preconditions, allowed no-go evidence work, forbidden claims, and validation command
+  before any later public/security-product positioning decision can be recorded.
 
 ### PRD-TRUSTED-HOST-001
 

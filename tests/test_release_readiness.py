@@ -173,6 +173,7 @@ from scripts import (
     project_test_summary_implementation_plan_check,
     project_test_summary_proposal_check,
     project_test_summary_source_review_bundle,
+    public_security_product_positioning_decision_intake_check,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
@@ -1249,7 +1250,7 @@ def test_post_rc_decision_register_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["registered_decision_count"] == 8
+    assert report["registered_decision_count"] == 9
     assert report["mission_control_planning_allowed"] is True
     assert report["mission_control_runtime_allowed"] is False
     assert report["sandbox_live_preflight_allowed"] is False
@@ -1258,6 +1259,7 @@ def test_post_rc_decision_register_is_wired() -> None:
     assert report["trusted_host_promotion_allowed"] is False
     assert report["siem_adapter_allowed"] is False
     assert report["compliance_claims_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     for phrase in [
         "Status: current register for post-v1.0 RC boundary decisions.",
@@ -1293,6 +1295,10 @@ def test_post_rc_decision_register_is_wired() -> None:
         ),
         "compliance-mapping-architecture.md",
         "runtime compliance mapping behavior remains blocked",
+        "PRD-PUBLIC-POSITIONING-001",
+        "Public/security-product positioning",
+        "public-security-product-positioning-decision-intake.md",
+        "public/security-product positioning remains blocked",
         "PRD-PROD-IAM-STORAGE-001",
         "Production identity and durable storage architecture",
         "production-identity-storage-architecture.md",
@@ -1322,6 +1328,91 @@ def test_post_rc_decision_register_is_wired() -> None:
     assert "docs/codex/post-rc-decision-register.md" in docs_site
     assert "docs/codex/post-rc-decision-register.md" in review_docs.REVIEW_DOCS
     assert "Post-RC Decision Register" in review_index
+
+
+def test_public_security_product_positioning_decision_intake_is_wired() -> None:
+    report = public_security_product_positioning_decision_intake_check.build_report(Path.cwd())
+    doc = Path("docs/codex/public-security-product-positioning-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_010_status"] == "blocked"
+    assert report["prd_id"] == "PRD-PUBLIC-POSITIONING-001"
+    assert report["public_security_product_positioning"] == "no_go"
+    assert report["production_security_compliance_positioning"] == "no_go"
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_tool_powers_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_mcp_allowed"] is False
+    assert report["sandbox_claims_allowed"] is False
+    assert report["edr_mdm_claims_allowed"] is False
+    assert report["siem_custody_claims_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["hosted_trust_allowed"] is False
+    for phrase in [
+        "Status: decision-intake planning packet for `ERG-010` and `PRD-PUBLIC-POSITIONING-001`.",
+        "PRD-PUBLIC-POSITIONING-001",
+        "continued local-preview development: `go`",
+        "limited technical-preview sharing with warning packet: `conditional_go`",
+        "broad public/security-product positioning: `no_go`",
+        "production/security/compliance positioning: `no_go`",
+        "public/security-product positioning remains blocked",
+        "make public-security-product-positioning-decision-intake-check",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "production deployment ready wording",
+        "sandbox guarantee language",
+        "EDR/MDM",
+        "SIEM custody",
+        "compliance tool",
+        "hosted MCP",
+        "runtime Postgres",
+        "production identity",
+        "HIPAA/GLBA/SOX/GDPR",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "broader public distribution approved",
+        "production deployment approved",
+        "security-product positioning approved",
+        "compliance positioning approved",
+        "sandbox claims approved",
+        "SIEM custody claims approved",
+    ]:
+        assert forbidden not in doc
+    assert "public-security-product-positioning-decision-intake-check:" in makefile
+    assert "public-security-product-positioning-decision-intake-check" in release_check_body
+    assert "public-security-product-positioning-decision-intake-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "make public-security-product-positioning-decision-intake-check" in readme
+    assert "docs/codex/public-security-product-positioning-decision-intake.md" in readme
+    assert "docs/codex/public-security-product-positioning-decision-intake.md" in docs_site
+    assert "docs/codex/public-security-product-positioning-decision-intake.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Public/Security-Product Positioning Decision Intake" in review_index
+    assert "public-security-product-positioning-decision-intake.md" in runway
+    assert "public-security-product-positioning-decision-intake.md" in gap_matrix
+    assert "public-security-product-positioning-decision-intake.md" in decision_register
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

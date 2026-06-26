@@ -241,6 +241,7 @@ externally closed.
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)
 - [Post-RC Decision Record Examples](post-rc-decision-record-examples.md)
 - [Post-RC Decision Register](post-rc-decision-register.md)
+- [Public/Security-Product Positioning Decision Intake](public-security-product-positioning-decision-intake.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [Production Identity And Storage External Response Intake](production-identity-storage-external-response-intake.md)

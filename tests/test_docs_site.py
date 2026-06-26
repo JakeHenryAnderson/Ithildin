@@ -131,6 +131,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/post-rc-decision-record-template.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-record-examples.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-register.md" in DEFAULT_DOCS
+    assert "docs/codex/public-security-product-positioning-decision-intake.md" in DEFAULT_DOCS
     assert "docs/codex/production-identity-storage-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/production-identity-storage-disposition-packet.md" in DEFAULT_DOCS
     assert "docs/codex/production-identity-storage-external-response-intake.md" in DEFAULT_DOCS

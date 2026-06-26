@@ -71,6 +71,14 @@ REQUIRED_PHRASES = [
     ),
     "compliance-mapping-architecture.md",
     "runtime compliance mapping behavior remains blocked",
+    "PRD-PUBLIC-POSITIONING-001",
+    "Public/security-product positioning",
+    (
+        "Claim-review documentation, warning-packet review, operator support/deployment "
+        "model planning, evidence mapping, and external review preparation only"
+    ),
+    "public-security-product-positioning-decision-intake.md",
+    "public/security-product positioning remains blocked",
     "PRD-PROD-IAM-STORAGE-001",
     "Production identity and durable storage architecture",
     (
@@ -104,6 +112,7 @@ DECISION_IDS = [
     "PRD-SIEM-EXPORT-001",
     "PRD-COMPLIANCE-MAPPING-001",
     "PRD-PROD-IAM-STORAGE-001",
+    "PRD-PUBLIC-POSITIONING-001",
 ]
 
 
@@ -192,6 +201,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "trusted_host_promotion_allowed": False,
         "siem_adapter_allowed": False,
         "compliance_claims_allowed": False,
+        "public_security_product_positioning_allowed": False,
         "runtime_changes_allowed": False,
     }
 
@@ -214,6 +224,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"trusted_host_promotion_allowed: {str(report['trusted_host_promotion_allowed']).lower()}",
         f"siem_adapter_allowed: {str(report['siem_adapter_allowed']).lower()}",
         f"compliance_claims_allowed: {str(report['compliance_claims_allowed']).lower()}",
+        "public_security_product_positioning_allowed: "
+        f"{str(report['public_security_product_positioning_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
     ]
     if report["failures"]:

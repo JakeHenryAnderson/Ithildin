@@ -46,6 +46,7 @@ REQUIRED_PHRASES = [
     "SIEM-shaped export adapter",
     "Compliance mapping support",
     "Public/security-product positioning",
+    "public-security-product-positioning-decision-intake.md",
     "Allowed current claims",
     "Blocked current claims",
     "post-RC decision record",
