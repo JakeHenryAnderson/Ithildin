@@ -83,6 +83,12 @@ The normalized response is intake evidence only. It sets `mutates_findings: fals
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the
 enterprise gap matrix or post-RC decision register, and rerun release gates.
 
+The fail-closed closure gate in
+[sandbox-vm-live-poc-decision-closure-gate.md](sandbox-vm-live-poc-decision-closure-gate.md)
+validates whether the normalized response is strong enough to support a later committed decision
+record. It reports `closure_ready: false` until favorable `ERG-003` disposition, source-level
+review evidence, and the allowed planning-only decision outcome are present.
+
 ## Allowed Intake Outcomes
 
 The intake may record only the outcomes defined in the live POC decision packet:

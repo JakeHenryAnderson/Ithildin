@@ -82,3 +82,9 @@ That intake template uses the `EXT-LIVE-POC-###` finding namespace and `sandbox-
 normalizer area, but it does not close `ERG-004`, mutate findings, approve implementation planning,
 approve runtime implementation, approve live VM/container inspection, approve local model
 invocation, or approve Mission Control runtime behavior.
+
+The fail-closed decision closure gate is
+[sandbox-vm-live-poc-decision-closure-gate.md](sandbox-vm-live-poc-decision-closure-gate.md). It
+reports `closure_ready: false` until normalized source-level response evidence exists, favorable
+`ERG-003` disposition is recorded, and the reviewer outcome can support only a later committed
+decision record.

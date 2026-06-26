@@ -515,6 +515,14 @@ and is validated with `make sandbox-vm-live-poc-external-response-intake-check`.
 reviewer response without mutating findings, closing `ERG-004`, approving implementation planning,
 or approving live sandbox/VM runtime work.
 
+The live sandbox/VM POC decision closure gate is
+[sandbox-vm-live-poc-decision-closure-gate.md](sandbox-vm-live-poc-decision-closure-gate.md) and is
+validated with `make sandbox-vm-live-poc-decision-closure-check`. It reports
+`closure_ready: false` until normalized source-level response evidence exists, favorable `ERG-003`
+disposition is recorded, and the reviewer outcome can support only a later committed decision
+record. It keeps live VM/container inspection, local model invocation, sandbox orchestration,
+Mission Control runtime behavior, trusted-host promotion, and runtime implementation blocked.
+
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
 It records the CLI-only fixture preflight runner as locally reviewed after tightening raw

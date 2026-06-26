@@ -468,6 +468,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-external-response-intake-check` - validate the blocked `ERG-004`
   external response intake template while confirming reviewer responses cannot mutate findings,
   close the gap, or approve live sandbox/VM runtime work.
+- `make sandbox-vm-live-poc-decision-closure-check` - validate the blocked `ERG-004` fail-closed
+  closure gate while confirming normalized source-level response evidence and favorable `ERG-003`
+  disposition are required before any later decision-record consideration.
 - `make sandbox-vm-live-poc-decision-packet` - generate the blocked `ERG-004` external decision
   packet with readiness evidence, prerequisite static-preflight pointers, reviewer questions,
   command evidence, and artifact hashes without approving live sandbox/VM runtime work.
@@ -1045,6 +1048,11 @@ and is checked with `make sandbox-vm-live-poc-external-response-intake-check`; i
 `EXT-LIVE-POC-###` namespace and response-normalizer command for reviewer responses without
 mutating findings, closing `ERG-004`, approving implementation planning, or approving live
 sandbox/VM runtime work.
+The live sandbox/VM POC decision closure gate is
+[docs/codex/sandbox-vm-live-poc-decision-closure-gate.md](docs/codex/sandbox-vm-live-poc-decision-closure-gate.md)
+and is checked with `make sandbox-vm-live-poc-decision-closure-check`; it reports
+`closure_ready: false` until normalized source-level response evidence exists, favorable `ERG-003`
+disposition is recorded, and a reviewer allows only later implementation-planning consideration.
 The live sandbox/VM POC decision packet is
 [docs/codex/sandbox-vm-live-poc-decision-packet.md](docs/codex/sandbox-vm-live-poc-decision-packet.md)
 and is generated with `make sandbox-vm-live-poc-decision-packet`; it packages the decision intake,

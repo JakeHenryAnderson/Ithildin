@@ -198,6 +198,7 @@ from scripts import (
     sandbox_artifact_write_text_preimplementation_check,
     sandbox_artifact_write_text_source_review_bundle,
     sandbox_promotion_evidence_contract_check,
+    sandbox_vm_live_poc_decision_closure_check,
     sandbox_vm_live_poc_decision_intake_check,
     sandbox_vm_live_poc_decision_packet,
     sandbox_vm_live_poc_evidence_contract_check,
@@ -3516,6 +3517,123 @@ def test_sandbox_vm_live_poc_external_response_intake_is_wired() -> None:
     assert "sandbox-vm-live-poc-external-response-intake.md" in enterprise
     assert "sandbox-vm-live-poc-external-response-intake.md" in gap_matrix
     assert "sandbox-vm-live-poc-external-response-intake.md" in decision_register
+
+
+def test_sandbox_vm_live_poc_decision_closure_gate_is_wired() -> None:
+    report = sandbox_vm_live_poc_decision_closure_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-live-poc-decision-closure-gate.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    intake = Path("docs/codex/sandbox-vm-live-poc-external-response-intake.md").read_text(
+        encoding="utf-8"
+    )
+    preconditions = Path("docs/codex/sandbox-vm-live-poc-preconditions-map.md").read_text(
+        encoding="utf-8"
+    )
+    decision_packet = Path("docs/codex/sandbox-vm-live-poc-decision-packet.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-live-poc"
+    assert report["finding_namespace"] == "EXT-LIVE-POC-###"
+    assert report["normalized_response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["erg_003_favorable_disposition"] is False
+    assert report["decision_outcome"] is None
+    assert report["erg_004_status"] == "blocked"
+    assert report["allowed_closure_state"] == "ready_for_decision_record"
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: fail-closed closure gate for blocked `ERG-004`.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "var/review-runs/sandbox-vm-live-poc/normalized-response.json",
+        "reviewed area: `sandbox-vm-live-poc`",
+        "finding namespace: `EXT-LIVE-POC-###`",
+        "can_close_source_rows: true",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "erg_003_favorable_disposition: true",
+        "decision_outcome: approve_limited_operator_managed_poc_planning",
+        "closure_ready: false",
+        "ready_for_decision_record",
+        "separate committed triage update",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "live VM/container inspection",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "API/MCP profile loading",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM control is approved",
+        "ERG-004 is closed",
+        "production-ready",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-live-poc-decision-closure-check" in readme
+    assert "sandbox-vm-live-poc-decision-closure-check:" in makefile
+    assert (
+        "sandbox-vm-live-poc-decision-closure-check" in release_check_body
+        or "release-check: sandbox-vm-live-poc-decision-closure-check" in makefile
+    )
+    assert "sandbox-vm-live-poc-decision-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-decision-closure-gate.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-live-poc-decision-closure-gate.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Decision Closure Gate" in review_index
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in enterprise
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in gap_matrix
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in queue
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in decision_register
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in intake
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in preconditions
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in decision_packet
+    assert "sandbox-vm-live-poc-decision-closure-gate.md" in readiness
 
 
 def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:

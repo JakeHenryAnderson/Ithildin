@@ -126,6 +126,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-evidence-contract-check",
     "sandbox-vm-live-poc-preconditions-map-check",
     "sandbox-vm-live-poc-external-response-intake-check",
+    "sandbox-vm-live-poc-decision-closure-check",
     "sandbox-vm-live-poc-decision-packet-check",
     "trusted-host-promotion-disposition-packet-check",
     "trusted-host-promotion-external-response-intake-check",
@@ -409,7 +410,8 @@ def _check_release_targets() -> list[str]:
     failures: list[str] = []
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     for fragment in REQUIRED_RELEASE_CHECK_FRAGMENTS:
-        if fragment not in release_check_body:
+        additive_release_check = f"release-check: {fragment}"
+        if fragment not in release_check_body and additive_release_check not in makefile:
             failures.append(f"release-check does not include {fragment}")
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
     previous_index = -1

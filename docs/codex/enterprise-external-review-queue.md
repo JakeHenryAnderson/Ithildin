@@ -42,7 +42,7 @@ make enterprise-external-review-queue-check
 | 4 | `ERG-006` + `ERG-007` / `PRD-PROD-IAM-STORAGE-001` | `planning_only` | `production-identity-storage-disposition-packet.md` | `production-identity-storage-external-response-intake.md` | Architecture review for identity, tenancy, storage, retention, and custody boundaries | `false` |
 | 5 | `ERG-008` / `PRD-SIEM-EXPORT-001` | `planning_only` | `siem-export-adapter-disposition-packet.md` | `siem-export-adapter-external-response-intake.md` | Design review for offline/export adapter shape and delivery questions | `false` |
 | 6 | `ERG-009` / `PRD-COMPLIANCE-MAPPING-001` | `planning_only` | `compliance-mapping-disposition-packet.md` | `compliance-mapping-external-response-intake.md` | Design review for control-mapping support and operator responsibility language | `false` |
-| 7 | `ERG-004` / `PRD-SANDBOX-LIVE-POC-001` | `blocked` | `sandbox-vm-live-poc-decision-packet.md` | `sandbox-vm-live-poc-external-response-intake.md` | Keep live sandbox/VM worker POC blocked until `ERG-003` receives favorable disposition | `false` |
+| 7 | `ERG-004` / `PRD-SANDBOX-LIVE-POC-001` | `blocked` | `sandbox-vm-live-poc-decision-packet.md` | `sandbox-vm-live-poc-external-response-intake.md` plus `sandbox-vm-live-poc-decision-closure-gate.md` | Keep live sandbox/VM worker POC blocked until `ERG-003` receives favorable disposition | `false` |
 | 8 | `ERG-010` / `PRD-PUBLIC-POSITIONING-001` | `blocked` | `public-security-product-positioning-decision-intake.md` | later claim-review response intake | Claim-review preparation and warning-packet review only | `false` |
 
 The `ERG-003` row also depends on
@@ -64,7 +64,8 @@ normalized source-level response evidence exists.
 6. `ERG-009` remains mapping-support-only and cannot become compliance automation or legal-review
    substitute.
 7. `ERG-004` cannot move until `ERG-003` receives favorable disposition and a later post-RC
-   decision record approves implementation planning.
+   decision record approves implementation planning. Its fail-closed closure gate is
+   `sandbox-vm-live-poc-decision-closure-gate.md`.
 8. `ERG-010` is last because public/security-product positioning depends on the exact claims that
    prior rows can or cannot support.
 
