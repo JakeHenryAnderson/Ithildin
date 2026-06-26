@@ -73,3 +73,12 @@ This packet does not prove `ERG-004` is closed, does not prove a sandbox is safe
 Mission Control can participate at runtime, and does not prove a local model may be invoked. A later
 committed decision record, implementation plan, source-review result, and explicit go/no-go outcome
 would be required before any implementation work.
+
+## External Response Intake
+
+Record any GPT 5.5 Pro / Very High or human expert response with
+[sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md).
+That intake template uses the `EXT-LIVE-POC-###` finding namespace and `sandbox-vm-live-poc`
+normalizer area, but it does not close `ERG-004`, mutate findings, approve implementation planning,
+approve runtime implementation, approve live VM/container inspection, approve local model
+invocation, or approve Mission Control runtime behavior.

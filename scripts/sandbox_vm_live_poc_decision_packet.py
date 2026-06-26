@@ -37,6 +37,7 @@ DECISION_DOCS = [
     Path("docs/codex/sandbox-vm-live-poc-decision-packet.md"),
     Path("docs/codex/sandbox-vm-live-poc-decision-intake.md"),
     Path("docs/codex/sandbox-vm-live-poc-evidence-contract.md"),
+    Path("docs/codex/sandbox-vm-live-poc-external-response-intake.md"),
     Path("docs/codex/enterprise-sandbox-control-plane-readiness.md"),
 ]
 REVIEW_POINTER_DOCS = [
@@ -53,6 +54,7 @@ COMMANDS = [
     ["make", "enterprise-sandbox-control-plane-readiness-check"],
     ["make", "sandbox-vm-live-poc-decision-intake-check"],
     ["make", "sandbox-vm-live-poc-evidence-contract-check"],
+    ["make", "sandbox-vm-live-poc-external-response-intake-check"],
     ["make", "sandbox-vm-static-preflight-disposition-packet-check"],
     ["make", "sandbox-vm-static-preflight-disposition-plan-check"],
     ["make", "sandbox-vm-static-preflight-external-response-intake-check"],

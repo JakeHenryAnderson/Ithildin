@@ -444,6 +444,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-preconditions-map-check` - validate the blocked `ERG-004`
   preconditions map while confirming favorable `ERG-003` disposition, a later decision record,
   cleanup/failure evidence, and role separation are required before any live POC planning.
+- `make sandbox-vm-live-poc-external-response-intake-check` - validate the blocked `ERG-004`
+  external response intake template while confirming reviewer responses cannot mutate findings,
+  close the gap, or approve live sandbox/VM runtime work.
 - `make sandbox-vm-live-poc-decision-packet` - generate the blocked `ERG-004` external decision
   packet with readiness evidence, prerequisite static-preflight pointers, reviewer questions,
   command evidence, and artifact hashes without approving live sandbox/VM runtime work.
@@ -973,6 +976,12 @@ and is checked with `make sandbox-vm-live-poc-preconditions-map-check`; it ties 
 disposition, the future decision-record path, operator-managed VM/container assumptions,
 cleanup/failure transcripts, and cross-source evidence into one blocked-lane readiness checklist
 without approving live VM/container inspection or runtime authority.
+The live sandbox/VM POC external response intake template is
+[docs/codex/sandbox-vm-live-poc-external-response-intake.md](docs/codex/sandbox-vm-live-poc-external-response-intake.md)
+and is checked with `make sandbox-vm-live-poc-external-response-intake-check`; it defines the
+`EXT-LIVE-POC-###` namespace and response-normalizer command for reviewer responses without
+mutating findings, closing `ERG-004`, approving implementation planning, or approving live
+sandbox/VM runtime work.
 The live sandbox/VM POC decision packet is
 [docs/codex/sandbox-vm-live-poc-decision-packet.md](docs/codex/sandbox-vm-live-poc-decision-packet.md)
 and is generated with `make sandbox-vm-live-poc-decision-packet`; it packages the decision intake,

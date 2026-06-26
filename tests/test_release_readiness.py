@@ -196,6 +196,7 @@ from scripts import (
     sandbox_vm_live_poc_decision_intake_check,
     sandbox_vm_live_poc_decision_packet,
     sandbox_vm_live_poc_evidence_contract_check,
+    sandbox_vm_live_poc_external_response_intake_check,
     sandbox_vm_live_poc_preconditions_map_check,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
@@ -3054,6 +3055,85 @@ def test_sandbox_vm_live_poc_preconditions_map_is_wired() -> None:
     assert "sandbox-vm-live-poc-preconditions-map.md" in decision_register
 
 
+def test_sandbox_vm_live_poc_external_response_intake_is_wired() -> None:
+    report = sandbox_vm_live_poc_external_response_intake_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-live-poc-external-response-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-live-poc"
+    assert report["finding_namespace"] == "EXT-LIVE-POC-###"
+    assert report["erg_004_status"] == "blocked"
+    assert report["mutates_findings"] is False
+    assert report["closes_external_review"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: response-intake template for blocked `ERG-004`.",
+        "Finding namespace: `EXT-LIVE-POC-###`.",
+        "Reviewed area for normalization: `sandbox-vm-live-poc`.",
+        "Required Disposition Answers",
+        "Finding Extraction Table",
+        "--area sandbox-vm-live-poc",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "Only a later committed triage update may move `ERG-004` away from `blocked`",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning without a later committed decision record",
+        "runtime implementation",
+        "live VM/container inspection",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "network expansion",
+        "SIEM adapter behavior",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make sandbox-vm-live-poc-external-response-intake-check" in readme
+    assert "sandbox-vm-live-poc-external-response-intake-check:" in makefile
+    assert "sandbox-vm-live-poc-external-response-intake-check" in release_check_body
+    assert "sandbox-vm-live-poc-external-response-intake-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-external-response-intake.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-live-poc-external-response-intake.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC External Response Intake" in review_index
+    assert "sandbox-vm-live-poc-external-response-intake.md" in enterprise
+    assert "sandbox-vm-live-poc-external-response-intake.md" in gap_matrix
+    assert "sandbox-vm-live-poc-external-response-intake.md" in decision_register
+
+
 def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:
     report = enterprise_sandbox_control_plane_readiness_check.build_report(Path.cwd())
     doc = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
@@ -3215,6 +3295,8 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
     assert "sandbox-vm-live-poc-decision-packet.md" in runway
     assert "sandbox-vm-live-poc-decision-packet.md" in gap_matrix
     assert "sandbox-vm-live-poc-decision-packet.md" in decision_register
+    assert "docs/codex/sandbox-vm-live-poc-external-response-intake.md" in review_docs.REVIEW_DOCS
+    assert "make sandbox-vm-live-poc-external-response-intake-check" in evidence
     assert {entry["path"] for entry in hashes["artifacts"]} == {
         "00_SANDBOX_VM_LIVE_POC_DECISION_INDEX.md",
         "01_SANDBOX_VM_LIVE_POC_DECISION_PROMPT.md",
@@ -12304,6 +12386,30 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
     )
     assert sandbox_normalized["findings"][0]["finding_id"] == "EXT-SVP-001"
     assert sandbox_normalized["findings"][0]["area"] == "sandbox-vm-static-preflight"
+
+    live_poc_response = "\n".join(
+        [
+            "# Sandbox/VM Live POC Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-LIVE-POC-001 | medium | sandbox-vm-live-poc | "
+            "docs/codex/sandbox-vm-live-poc-decision-packet.md | should-fix | open | "
+            "clarify live POC precondition wording |",
+        ]
+    )
+    live_poc_normalized = external_response_normalize.normalize_response(
+        live_poc_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="packet-and-source",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="sandbox-vm-live-poc",
+    )
+    assert live_poc_normalized["findings"][0]["finding_id"] == "EXT-LIVE-POC-001"
+    assert live_poc_normalized["findings"][0]["area"] == "sandbox-vm-live-poc"
 
 
 def test_external_response_normalization_binds_area_and_namespace() -> None:

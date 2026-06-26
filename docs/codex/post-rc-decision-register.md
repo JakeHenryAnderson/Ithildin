@@ -82,7 +82,8 @@ Current selected capability: `not selected`.
   decision-record drafting, docs, review packets, the readiness map in
   `enterprise-sandbox-control-plane-readiness.md`, the preconditions map in
   `sandbox-vm-live-poc-preconditions-map.md`, the decision packet in
-  `sandbox-vm-live-poc-decision-packet.md`, and operator warnings.
+  `sandbox-vm-live-poc-decision-packet.md`, the external response intake template in
+  `sandbox-vm-live-poc-external-response-intake.md`, and operator warnings.
 - Current forbidden scope: live VM/container inspection, local model invocation, Mission Control
   runtime behavior, sandbox orchestration, SSH, shell, Docker socket access, Kubernetes tools,
   browser automation, arbitrary HTTP, broad filesystem writes, trusted-host promotion, runtime

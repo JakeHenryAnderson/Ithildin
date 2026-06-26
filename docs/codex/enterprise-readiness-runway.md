@@ -102,6 +102,9 @@ Current readiness evidence:
 - the blocked live POC decision packet in
   [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md), generated with
   `make sandbox-vm-live-poc-decision-packet`.
+- the live POC external response intake template in
+  [sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md),
+  validated with `make sandbox-vm-live-poc-external-response-intake-check`.
 
 Allowed design scope:
 
@@ -459,6 +462,13 @@ assumptions, cleanup/failure transcript requirements, role separation, and cross
 before any later implementation-planning decision. It keeps `ERG-004` blocked and does not approve
 live VM/container inspection, Mission Control runtime behavior, local model invocation, sandbox
 orchestration, trusted-host promotion, network expansion, or public/security-product positioning.
+
+The live sandbox/VM POC external response intake template is
+[sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md)
+and is validated with `make sandbox-vm-live-poc-external-response-intake-check`. It defines the
+`EXT-LIVE-POC-###` finding namespace and `sandbox-vm-live-poc` normalizer command for recording a
+reviewer response without mutating findings, closing `ERG-004`, approving implementation planning,
+or approving live sandbox/VM runtime work.
 
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
