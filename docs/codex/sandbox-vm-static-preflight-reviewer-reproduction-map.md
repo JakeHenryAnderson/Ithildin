@@ -41,6 +41,7 @@ make sandbox-vm-static-preflight-source-review-packet-check
 make sandbox-vm-static-preflight-disposition-plan-check
 make sandbox-vm-static-preflight-external-response-intake-check
 make sandbox-vm-static-preflight-response-dry-run
+make sandbox-vm-static-preflight-triage-update-check
 make sandbox-vm-static-preflight-disposition-packet
 make sandbox-vm-static-preflight-disposition-packet-check
 make external-findings-intake-dry-run
@@ -73,6 +74,7 @@ Review these committed docs:
 - `docs/codex/sandbox-vm-static-preflight-disposition-plan.md`
 - `docs/codex/sandbox-vm-static-preflight-external-response-intake.md`
 - `docs/codex/sandbox-vm-static-preflight-response-dry-run.md`
+- `docs/codex/sandbox-vm-static-preflight-triage-update.md`
 - `docs/codex/sandbox-vm-static-preflight-disposition-packet.md`
 - `docs/codex/enterprise-readiness-gap-matrix.md`
 - `docs/codex/post-rc-decision-register.md`
@@ -117,6 +119,8 @@ A reviewer may recommend one of the allowed outcomes from
 
 Only a later committed triage update may move `ERG-003` away from
 `external_review_required`. This reproduction map is not that triage update.
+Use `sandbox-vm-static-preflight-triage-update.md` as the safe committed update checklist after
+real favorable source-level evidence is recorded.
 
 ## What This Map Does Not Prove
 
@@ -132,4 +136,5 @@ Run:
 
 ```sh
 make sandbox-vm-static-preflight-reviewer-reproduction-map-check
+make sandbox-vm-static-preflight-triage-update-check
 ```

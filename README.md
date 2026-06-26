@@ -534,6 +534,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-preflight-source-review-packet` - generate the focused source-review
   handoff packet for deciding whether a future read-only static profile preflight runner may be
   planned; it remains fixture/design-only and adds no runtime sandbox control.
+- `make sandbox-vm-static-preflight-triage-update-check` - validate the safe committed triage-update
+  checklist for a future favorable `ERG-003` external/source response while keeping live sandbox/VM
+  runtime work blocked.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -1109,6 +1112,12 @@ The static preflight response dry run is
 and is checked with `make sandbox-vm-static-preflight-response-dry-run`; it temporarily exercises
 favorable and unfavorable normalized-response fixtures against the fail-closed closure gate while
 restoring the ignored response path and without recording external review.
+The static preflight triage-update checklist is
+[docs/codex/sandbox-vm-static-preflight-triage-update.md](docs/codex/sandbox-vm-static-preflight-triage-update.md)
+and is checked with `make sandbox-vm-static-preflight-triage-update-check`; it defines the safe
+committed update path after real favorable `ERG-003` evidence while keeping `ERG-004`, live
+sandbox/VM runtime work, local model invocation, Mission Control runtime behavior, and trusted-host
+promotion blocked.
 The reviewer reproduction map is
 [docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md](docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 and is checked with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`; it gives

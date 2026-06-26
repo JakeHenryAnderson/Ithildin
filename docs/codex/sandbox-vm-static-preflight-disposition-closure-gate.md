@@ -80,7 +80,8 @@ If this gate reports `closure_ready: true`, a separate committed triage update m
 3. add or update reviewer finding files for every finding in the normalized response;
 4. update `source-review-closure-matrix.md` and `enterprise-readiness-gap-matrix.md`;
 5. update `post-rc-decision-register.md` without approving live runtime work;
-6. rerun `make release-check` and `make review-candidate`.
+6. follow `sandbox-vm-static-preflight-triage-update.md` for the safe committed update path;
+7. rerun `make release-check` and `make review-candidate`.
 
 ## Validation
 
@@ -90,5 +91,6 @@ Run:
 make sandbox-vm-static-preflight-disposition-closure-check
 make sandbox-vm-static-preflight-disposition-plan-check
 make sandbox-vm-static-preflight-external-response-intake-check
+make sandbox-vm-static-preflight-triage-update-check
 make enterprise-external-review-queue-check
 ```

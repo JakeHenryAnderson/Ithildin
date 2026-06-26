@@ -226,6 +226,7 @@ from scripts import (
     sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_reviewer_reproduction_map_check,
     sandbox_vm_static_preflight_source_review_packet,
+    sandbox_vm_static_preflight_triage_update_check,
     sandbox_vm_static_profile_fixture_contract_check,
     sandbox_vm_static_profile_negative_fixtures_check,
     sandbox_vm_static_profile_preflight_plan_check,
@@ -3722,6 +3723,115 @@ def test_sandbox_vm_static_preflight_response_dry_run_is_wired() -> None:
     assert "sandbox-vm-static-preflight-response-dry-run.md" in queue
 
 
+def test_sandbox_vm_static_preflight_triage_update_is_wired() -> None:
+    report = sandbox_vm_static_preflight_triage_update_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-static-preflight-triage-update.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    preconditions = Path("docs/codex/sandbox-vm-live-poc-preconditions-map.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["allowed_future_status"] == "closed_local_preview_static_preflight"
+    assert report["closes_erg_003"] is False
+    assert report["erg_004_unblocked"] is False
+    for key in [
+        "runtime_changes_allowed",
+        "live_vm_inspection_allowed",
+        "mission_control_runtime_allowed",
+        "local_model_invocation_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "network_expansion_allowed",
+        "api_mcp_profile_loading_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+
+    for phrase in [
+        "Status: triage-update checklist for `ERG-003` after favorable external evidence.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
+        "sandbox-vm-static-preflight-disposition-closure-check",
+        "sandbox-vm-static-preflight-response-dry-run",
+        "closed_local_preview_static_preflight",
+        "source-review-closure-matrix.md",
+        "enterprise-readiness-gap-matrix.md",
+        "post-rc-decision-register.md",
+        "enterprise-external-review-queue.md",
+        "sandbox-vm-live-poc-preconditions-map.md",
+        "ERG-004 remains blocked",
+        "make release-check",
+        "make review-candidate",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "live VM/container inspection",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "network expansion",
+        "API/MCP profile loading",
+        "production identity",
+        "runtime Postgres",
+        "remote MCP",
+        "SIEM delivery",
+        "compliance automation",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "live VM control is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "trusted-host promotion is approved",
+        "runtime implementation is approved",
+    ]:
+        assert forbidden not in doc
+
+    assert "make sandbox-vm-static-preflight-triage-update-check" in readme
+    assert "sandbox-vm-static-preflight-triage-update-check:" in makefile
+    assert "sandbox-vm-static-preflight-triage-update-check" in release_check_body
+    assert "sandbox-vm-static-preflight-triage-update-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-static-preflight-triage-update.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-triage-update.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Triage Update" in review_index
+    assert "sandbox-vm-static-preflight-triage-update.md" in enterprise
+    assert "sandbox-vm-static-preflight-triage-update.md" in gap_matrix
+    assert "sandbox-vm-static-preflight-triage-update.md" in queue
+    assert "sandbox-vm-static-preflight-triage-update.md" in decision_register
+    assert "sandbox-vm-static-preflight-triage-update.md" in preconditions
+
+
 def test_sandbox_vm_static_preflight_reviewer_reproduction_map_is_wired() -> None:
     report = sandbox_vm_static_preflight_reviewer_reproduction_map_check.build_report(
         Path.cwd()
@@ -3763,9 +3873,11 @@ def test_sandbox_vm_static_preflight_reviewer_reproduction_map_is_wired() -> Non
         "Current `ERG-003` status before reviewer disposition: `external_review_required`.",
         "make sandbox-vm-static-preflight-source-review-packet",
         "make sandbox-vm-static-preflight-response-dry-run",
+        "make sandbox-vm-static-preflight-triage-update-check",
         "make sandbox-vm-static-preflight-disposition-packet",
         "make external-findings-intake-dry-run",
         "docs/codex/sandbox-vm-static-preflight-response-dry-run.md",
+        "docs/codex/sandbox-vm-static-preflight-triage-update.md",
         "var/review-packets/v3/sandbox-vm-static-preflight-source-review/",
         "var/review-packets/v3/sandbox-vm-static-preflight-disposition/",
         "response dry-run evidence shows absent responses stay not-ready",

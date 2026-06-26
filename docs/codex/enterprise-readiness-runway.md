@@ -535,6 +535,12 @@ The static preflight response dry run is
 and is validated with `make sandbox-vm-static-preflight-response-dry-run`. It exercises temporary
 favorable and unfavorable normalized-response fixtures against the fail-closed closure gate, then
 restores the ignored response path without recording external review.
+The static preflight triage-update checklist is
+[sandbox-vm-static-preflight-triage-update.md](sandbox-vm-static-preflight-triage-update.md)
+and is validated with `make sandbox-vm-static-preflight-triage-update-check`. It defines the safe
+committed update path after real favorable `ERG-003` evidence while keeping `ERG-004`, live
+sandbox/VM runtime work, local model invocation, Mission Control runtime behavior, and trusted-host
+promotion blocked.
 The reviewer reproduction map is
 [sandbox-vm-static-preflight-reviewer-reproduction-map.md](sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 and is validated with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`. It gives

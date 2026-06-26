@@ -58,6 +58,7 @@ Review these artifacts before any decision about live POC planning:
 - `docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md`
 - `docs/codex/sandbox-vm-static-preflight-disposition-plan.md`
 - `docs/codex/sandbox-vm-static-preflight-external-response-intake.md`
+- `docs/codex/sandbox-vm-static-preflight-triage-update.md`
 - `docs/codex/sandbox-vm-static-preflight-disposition-packet.md`
 - `docs/codex/sandbox-vm-live-poc-decision-intake.md`
 - `docs/codex/sandbox-vm-live-poc-evidence-contract.md`
@@ -82,6 +83,7 @@ Use this sequence to reproduce the current precondition evidence:
 make sandbox-vm-static-preflight-reviewer-reproduction-map-check
 make sandbox-vm-static-preflight-disposition-packet-check
 make sandbox-vm-static-preflight-external-response-intake-check
+make sandbox-vm-static-preflight-triage-update-check
 make sandbox-vm-live-poc-decision-intake-check
 make sandbox-vm-live-poc-evidence-contract-check
 make sandbox-vm-live-poc-decision-packet

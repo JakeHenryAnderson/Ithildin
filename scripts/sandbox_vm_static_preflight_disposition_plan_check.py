@@ -25,6 +25,8 @@ REQUIRED_PHRASES = [
     "Allowed Outcomes",
     "Required Evidence To Record Closure",
     "Post-Disposition Boundary",
+    "sandbox-vm-static-preflight-triage-update.md",
+    "make sandbox-vm-static-preflight-triage-update-check",
     "closed_local_preview_static_preflight",
     "external_review_required",
     "XH-SANDBOX-PREFLIGHT-001",
@@ -137,6 +139,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         )
     if DOC_REL not in packet_script:
         failures.append("static preflight source-review packet does not bundle disposition plan")
+    if "sandbox-vm-static-preflight-triage-update.md" not in readme:
+        failures.append("README is missing static preflight triage-update checklist")
+    if "sandbox-vm-static-preflight-triage-update.md" not in enterprise:
+        failures.append("enterprise runway is missing static preflight triage-update checklist")
+    if "sandbox-vm-static-preflight-triage-update.md" not in gap_matrix:
+        failures.append("enterprise gap matrix is missing static preflight triage-update checklist")
     if "sandbox-vm-static-preflight-disposition-plan-check:" not in makefile:
         failures.append(
             "Make target is missing: sandbox-vm-static-preflight-disposition-plan-check"

@@ -134,6 +134,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for path in [
         "docs/codex/sandbox-vm-static-preflight-disposition-packet.md",
         "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
+        "docs/codex/sandbox-vm-static-preflight-triage-update.md",
         "docs/codex/mission-control-integration-readiness-packet.md",
         "docs/codex/mission-control-display-external-response-intake.md",
         "docs/codex/trusted-host-promotion-disposition-packet.md",

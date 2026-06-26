@@ -45,6 +45,7 @@ REQUIRED_COMMANDS = [
     "make sandbox-vm-static-preflight-disposition-plan-check",
     "make sandbox-vm-static-preflight-external-response-intake-check",
     "make sandbox-vm-static-preflight-response-dry-run",
+    "make sandbox-vm-static-preflight-triage-update-check",
     "make sandbox-vm-static-preflight-disposition-packet",
     "make sandbox-vm-static-preflight-disposition-packet-check",
     "make external-findings-intake-dry-run",
@@ -58,6 +59,7 @@ REQUIRED_ARTIFACTS = [
     "var/review-packets/v3/sandbox-vm-static-preflight-negative/",
     "var/review-packets/v3/sandbox-vm-poc-review/",
     "docs/codex/sandbox-vm-static-preflight-response-dry-run.md",
+    "docs/codex/sandbox-vm-static-preflight-triage-update.md",
 ]
 
 REQUIRED_BOUNDARIES = [

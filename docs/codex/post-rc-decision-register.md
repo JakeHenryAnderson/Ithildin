@@ -92,6 +92,10 @@ Current selected capability: `not selected`.
 - Current closure-gate evidence:
   `sandbox-vm-static-preflight-disposition-closure-gate.md` keeps `ERG-003` open until normalized
   source-level response evidence exists and still does not approve live sandbox/VM runtime work.
+- Current triage-update evidence:
+  `sandbox-vm-static-preflight-triage-update.md` defines the safe committed update checklist after
+  real favorable `ERG-003` evidence while keeping `ERG-004`, live sandbox/VM runtime work, local
+  model invocation, Mission Control runtime behavior, and trusted-host promotion blocked.
 
 ### PRD-SANDBOX-LIVE-POC-001
 

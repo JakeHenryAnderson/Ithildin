@@ -91,6 +91,8 @@ Use [sandbox-vm-static-preflight-disposition-closure-gate.md](sandbox-vm-static-
 to validate whether normalized response evidence is strong enough for a later committed triage
 update; the closure gate passes without response evidence but reports `closure_ready: false` and
 does not close `ERG-003`.
+Use [sandbox-vm-static-preflight-triage-update.md](sandbox-vm-static-preflight-triage-update.md)
+for the safe committed update checklist after real favorable evidence is recorded.
 
 ## Post-Disposition Boundary
 
@@ -122,6 +124,7 @@ Run:
 make sandbox-vm-static-preflight-disposition-plan-check
 make sandbox-vm-static-preflight-disposition-closure-check
 make sandbox-vm-static-preflight-external-response-intake-check
+make sandbox-vm-static-preflight-triage-update-check
 make sandbox-vm-static-preflight-source-review-packet-check
 make enterprise-readiness-gap-matrix-check
 ```

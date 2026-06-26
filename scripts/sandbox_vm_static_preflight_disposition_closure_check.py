@@ -42,6 +42,8 @@ REQUIRED_PHRASES = [
     "closed_local_preview_static_preflight",
     "The CLI-only static sandbox/VM profile preflight lane is externally reviewed",
     "separate committed triage update",
+    "sandbox-vm-static-preflight-triage-update.md",
+    "make sandbox-vm-static-preflight-triage-update-check",
 ]
 
 REQUIRED_BLOCKED_BOUNDARIES = [
