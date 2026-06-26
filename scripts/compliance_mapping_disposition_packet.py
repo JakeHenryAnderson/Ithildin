@@ -40,6 +40,7 @@ PROJECT_MARKERS = [
 DISPOSITION_DOCS = [
     Path("docs/codex/compliance-mapping-disposition-packet.md"),
     Path("docs/codex/compliance-mapping-architecture.md"),
+    Path("docs/codex/compliance-mapping-external-response-intake.md"),
 ]
 REVIEW_POINTER_DOCS = [
     Path("docs/codex/control-mapping-design.md"),

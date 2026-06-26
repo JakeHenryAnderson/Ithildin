@@ -153,12 +153,19 @@ language, legal-review boundary drafting, and review packets may continue. Runti
 mapping implementation remains blocked until a separate post-RC decision record approves a specific
 implementation plan.
 
+The external response intake template for reviewer feedback is
+[compliance-mapping-external-response-intake.md](compliance-mapping-external-response-intake.md).
+It records allowed reviewer-response outcomes without mutating findings, closing `ERG-009`, or
+approving runtime compliance mapping, compliance automation, legal advice, automated certification,
+regulated-industry compliance claims, or public/security-product positioning.
+
 ## Validation
 
 Run:
 
 ```sh
 make compliance-mapping-architecture-check
+make compliance-mapping-external-response-intake-check
 make control-mapping-design-check
 make incident-reconstruction-check
 make enterprise-readiness-gap-matrix-check

@@ -27,6 +27,7 @@ AREA_NAMESPACES = {
     "trusted-host-promotion": "TRUSTED-HOST",
     "production-identity-storage": "PROD-IAM-STORAGE",
     "siem-export-adapter": "SIEM-ADAPTER",
+    "compliance-mapping": "COMPLIANCE-MAPPING",
 }
 FINDING_PATTERN = re.compile(
     r"^EXT-(([A-Z]+(?:-[A-Z]+)*)-(\d{3}|###)|(\d{3}|###))$"

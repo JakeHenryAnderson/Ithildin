@@ -92,6 +92,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "siem-export-adapter-external-response-intake-check",
     "compliance-mapping-architecture-check",
     "compliance-mapping-disposition-packet-check",
+    "compliance-mapping-external-response-intake-check",
     "mission-control-display-integration-proposal-check",
     "mission-control-display-importer-plan-check",
     "mission-control-display-decision-intake-check",

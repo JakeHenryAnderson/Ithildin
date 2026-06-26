@@ -23,6 +23,14 @@ that architecture is coherent enough to continue design-only planning.
 
 The intended reviewer answer is a narrow disposition, not an implementation approval.
 
+Record reviewer responses with
+[compliance-mapping-external-response-intake.md](compliance-mapping-external-response-intake.md)
+and validate the intake template with:
+
+```sh
+make compliance-mapping-external-response-intake-check
+```
+
 ## Allowed Reviewer Dispositions
 
 - `continue_architecture_planning`: the current architecture evidence is coherent enough for more

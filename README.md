@@ -407,6 +407,10 @@ checked with `make control-mapping-readiness`.
   disposition packet asking whether ERG-009 may continue architecture planning while runtime mapping,
   compliance automation, legal conclusions, automated certification, and regulated-industry
   compliance claims remain blocked.
+- `make compliance-mapping-external-response-intake-check` - validate the response-intake template
+  for compliance mapping reviewer feedback while keeping runtime mapping, compliance automation,
+  legal advice, automated certification, regulated-industry compliance claims, and public/security
+  product positioning blocked.
 - `make enterprise-sandbox-control-plane-readiness-check` - validate the design-only enterprise
   sandbox/control-plane readiness map while keeping live VM/container inspection, sandbox
   orchestration, Mission Control runtime behavior, local model invocation, trusted-host promotion,
@@ -847,6 +851,13 @@ Generate the compliance mapping disposition packet with
 evidence is coherent enough to continue planning while runtime compliance mapping, legal advice,
 automated certification, regulated-industry compliance claims, custody claims, and
 public/security-product positioning remain blocked.
+The compliance mapping external response intake template is in
+[docs/codex/compliance-mapping-external-response-intake.md](docs/codex/compliance-mapping-external-response-intake.md)
+and is checked with `make compliance-mapping-external-response-intake-check`; it defines the
+`EXT-COMPLIANCE-MAPPING-###` finding namespace and `compliance-mapping` normalizer command for
+recording reviewer responses without mutating findings, closing `ERG-009`, or approving runtime
+compliance mapping, compliance automation, legal advice, automated certification, or
+regulated-industry compliance claims.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.

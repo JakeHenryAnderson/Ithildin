@@ -294,7 +294,8 @@ Allowed design scope:
 - operator checklists;
 - reviewer packets.
 - the design-only architecture packet in `compliance-mapping-architecture.md`;
-- the focused disposition packet in `compliance-mapping-disposition-packet.md`.
+- the focused disposition packet in `compliance-mapping-disposition-packet.md`;
+- the external response intake template in `compliance-mapping-external-response-intake.md`.
 
 Blocked:
 
@@ -315,6 +316,11 @@ Current evidence:
   `ERG-009` may continue architecture planning while runtime compliance mapping, legal advice,
   automated certification, regulated-industry compliance claims, custody claims, and
   public/security-product positioning remain blocked.
+- `compliance-mapping-external-response-intake.md` defines the `EXT-COMPLIANCE-MAPPING-###`
+  finding namespace and `compliance-mapping` normalizer command for recording reviewer responses
+  without mutating findings, closing `ERG-009`, or approving runtime compliance mapping,
+  compliance automation, legal advice, automated certification, regulated-industry compliance
+  claims, or public/security-product positioning.
 
 ## Stop Conditions
 

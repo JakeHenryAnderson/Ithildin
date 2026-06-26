@@ -83,6 +83,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/incident-reconstruction-guide.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-disposition-packet.md" in DEFAULT_DOCS
+    assert "docs/codex/compliance-mapping-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/observability-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/control-mapping-readiness-gate.md" in DEFAULT_DOCS
     assert "docs/codex/capability-proposals/git-show-ref-summary.md" in DEFAULT_DOCS
