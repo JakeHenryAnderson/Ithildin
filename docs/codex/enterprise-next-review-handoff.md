@@ -20,6 +20,15 @@ Validate it with:
 make enterprise-next-review-handoff-check
 ```
 
+Before sending the packet, run:
+
+```sh
+make enterprise-next-review-ready-check
+```
+
+That command verifies the packet, handoff pointer, reviewed-packet hash helper, and fail-closed
+closure-gate waiting state without recording review or closing `ERG-003`.
+
 The generated handoff is written under:
 
 ```text

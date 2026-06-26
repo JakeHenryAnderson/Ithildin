@@ -49,6 +49,7 @@ from scripts import (
     docs_claims_public_preview_disposition_closure_check,
     enterprise_external_review_queue_check,
     enterprise_next_review_handoff,
+    enterprise_next_review_ready_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     enterprise_sandbox_control_plane_readiness_check,
@@ -1277,6 +1278,59 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
     assert "docs/codex/enterprise-next-review-handoff.md" in docs_site
     assert "docs/codex/enterprise-next-review-handoff.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Next Review Handoff" in review_index
+
+
+def test_enterprise_next_review_ready_check_is_wired() -> None:
+    report = enterprise_next_review_ready_check.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-next-review-ready-check.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    handoff_doc = Path("docs/codex/enterprise-next-review-handoff.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["ready_to_send"] is True
+    assert report["recommended_gap"] == "ERG-003"
+    assert report["reviewed_packet_hash"].startswith("sha256:")
+    assert report["normalized_response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    for phrase in [
+        "Recommended packet: `var/review-packets/v3/sandbox-vm-static-preflight-external-review/`",
+        "make enterprise-next-review-ready-check",
+        "make sandbox-vm-static-preflight-external-review-bundle",
+        "make sandbox-vm-static-preflight-reviewed-packet-hash",
+        "make enterprise-next-review-handoff",
+        "does not close `ERG-003`",
+        "does not approve live VM/container inspection",
+        "does not approve local model invocation",
+        "does not approve sandbox orchestration",
+    ]:
+        assert phrase in doc
+    assert "enterprise-next-review-ready-check:" in makefile
+    assert "enterprise-next-review-ready-check" in release_check_body
+    assert "make enterprise-next-review-ready-check" in readme
+    assert "make enterprise-next-review-ready-check" in handoff_doc
+    assert "docs/codex/enterprise-next-review-ready-check.md" in docs_site
+    assert "docs/codex/enterprise-next-review-ready-check.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Next Review Ready Check" in review_index
+    assert "enterprise-next-review-ready-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
 
 
 def test_post_rc_decision_gate_is_wired() -> None:
