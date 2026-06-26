@@ -37,7 +37,7 @@ QUEUE_ROWS = [
     (
         "ERG-010",
         "PRD-PUBLIC-POSITIONING-001",
-        "public-security-product-positioning-decision-intake.md",
+        "public-positioning-external-review-bundle.md",
     ),
 ]
 

@@ -435,6 +435,12 @@ Public/security-product positioning is tracked as an explicit no-go lane in
 validated with `make public-security-product-positioning-decision-intake-check`; it allows
 claim-review and evidence-mapping preparation only while broad public/security-product,
 production/security/compliance positioning, and other claim expansion remain blocked. The
+consolidated public positioning external-review bundle is
+[public-positioning-external-review-bundle.md](public-positioning-external-review-bundle.md),
+generated with `make public-positioning-external-review-bundle`; it packages the intake, closure
+gates, current no-go decision evidence, accepted-risk context, enterprise queue status, command
+evidence, and artifact hashes without closing `ERG-010` or approving public/security-product
+positioning. The
 fail-closed public/security-product positioning decision closure gate is in
 [public-security-product-positioning-decision-closure-gate.md](public-security-product-positioning-decision-closure-gate.md)
 and is checked with `make public-security-product-positioning-decision-closure-check`; it keeps

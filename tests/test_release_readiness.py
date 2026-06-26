@@ -186,6 +186,7 @@ from scripts import (
     project_test_summary_source_review_bundle,
     public_security_product_positioning_decision_closure_check,
     public_security_product_positioning_decision_intake_check,
+    public_security_product_positioning_external_review_bundle,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
@@ -1646,6 +1647,128 @@ def test_public_security_product_positioning_decision_closure_gate_is_wired() ->
     assert "public-security-product-positioning-decision-closure-gate.md" in queue
     assert "public-security-product-positioning-decision-closure-gate.md" in decision_register
     assert "public-security-product-positioning-decision-closure-gate.md" in intake
+
+
+def test_public_positioning_external_review_bundle_is_wired(tmp_path: Path) -> None:
+    report = public_security_product_positioning_external_review_bundle.build_check_report(
+        Path.cwd()
+    )
+    output_dir = tmp_path / "public-positioning-external-review"
+    public_security_product_positioning_external_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_PUBLIC_POSITIONING_EXTERNAL_REVIEW_INDEX.md",
+        "01_PUBLIC_POSITIONING_EXTERNAL_REVIEW_PROMPT.md",
+        "02_PUBLIC_POSITIONING_DECISION_INTAKE.md",
+        "03_PUBLIC_POSITIONING_CLOSURE_GATES.md",
+        "04_PUBLIC_POSITIONING_CLAIM_EVIDENCE.md",
+        "05_PUBLIC_POSITIONING_REPRODUCTION_QUEUE_STATUS.md",
+        "06_PUBLIC_POSITIONING_BOUNDARY_EVIDENCE.md",
+        "07_PUBLIC_POSITIONING_COMMAND_EVIDENCE.md",
+        "public-positioning-external-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (output_dir / "public-positioning-external-review-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    index = (output_dir / "00_PUBLIC_POSITIONING_EXTERNAL_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = (output_dir / "01_PUBLIC_POSITIONING_EXTERNAL_REVIEW_PROMPT.md").read_text(
+        encoding="utf-8"
+    )
+    intake = (output_dir / "02_PUBLIC_POSITIONING_DECISION_INTAKE.md").read_text(
+        encoding="utf-8"
+    )
+    closure = (output_dir / "03_PUBLIC_POSITIONING_CLOSURE_GATES.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "07_PUBLIC_POSITIONING_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_010_status"] == "blocked"
+    assert report["recommended_next_review"] == "ERG-010"
+    assert report["runtime_changes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["production_security_compliance_positioning_allowed"] is False
+    assert report["claim_decision_record_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["new_tool_powers_allowed"] is False
+    assert report["closes_erg_010"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "public-positioning-external-review-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "does not close `ERG-010`" in index
+    assert "does not approve public/security-product positioning" in index
+    assert "Finding namespace: `EXT-PUBLIC-POSITIONING-###`" in prompt
+    assert "Can `ERG-010` remain blocked while claim-decision drafting is prepared" in prompt
+    assert "Do not approve public/security-product positioning" in prompt
+    assert "Do not approve production/security/compliance positioning" in prompt
+    assert "public-security-product-positioning-decision-intake.md" in intake
+    assert "public-security-product-positioning-decision-closure-gate.md" in closure
+    assert "docs-claims-public-preview-disposition-closure-gate.md" in closure
+    for flag in [
+        '"runtime_changes_allowed": false',
+        '"public_security_product_positioning_allowed": false',
+        '"production_security_compliance_positioning_allowed": false',
+        '"claim_decision_record_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"closes_erg_010": false',
+    ]:
+        assert flag in evidence
+    assert "make public-security-product-positioning-decision-intake-check" in evidence
+    assert "make public-positioning-external-review-bundle" in readme
+    assert "public-positioning-external-review-bundle:" in makefile
+    assert "public-positioning-external-review-bundle-check:" in makefile
+    assert (
+        "public-positioning-external-review-bundle-check" in release_check_body
+        or "release-check: public-positioning-external-review-bundle-check" in makefile
+    )
+    assert "$(MAKE) public-positioning-external-review-bundle" in review_candidate_body
+    assert "public-positioning-external-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) public-positioning-external-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/public-positioning-external-review-bundle.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/public-positioning-external-review-bundle.md" in docs_site
+    assert "Public Positioning External Review Bundle" in review_index
+    assert "public-positioning-external-review-bundle.md" in runway
+    assert "public-positioning-external-review-bundle.md" in gap_matrix
+    assert "public-positioning-external-review-bundle.md" in queue
+    assert "public-positioning-external-review-bundle.md" in decision_register
 
 
 def test_docs_claims_public_preview_disposition_closure_gate_is_wired() -> None:

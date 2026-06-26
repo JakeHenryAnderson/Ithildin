@@ -1009,6 +1009,12 @@ checked with `make public-security-product-positioning-decision-closure-check`; 
 blocked unless normalized source-level or packet-and-source review evidence supports a future
 claim-specific decision record and contains no critical/high findings, and it still does not approve
 public/security-product positioning or production/security/compliance positioning.
+Generate the consolidated public positioning external-review bundle with
+`make public-positioning-external-review-bundle`; validate its wiring with
+`make public-positioning-external-review-bundle-check`. The bundle packages the ERG-010 intake,
+closure gates, current no-go decision evidence, accepted-risk context, enterprise queue status,
+command evidence, and artifact hashes without closing ERG-010 or approving public/security-product
+positioning.
 The residual docs/claims public-preview disposition closure gate is in
 [docs/codex/docs-claims-public-preview-disposition-closure-gate.md](docs/codex/docs-claims-public-preview-disposition-closure-gate.md),
 checked with `make docs-claims-public-preview-disposition-closure-check`; it keeps legacy
