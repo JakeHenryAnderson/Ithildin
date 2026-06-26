@@ -93,6 +93,7 @@ from scripts import (
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_schema_contract_check,
     mission_control_integration_implementation_ticket_check,
+    mission_control_integration_readiness_packet,
     mission_control_side_handoff_plan_check,
     next_capability_candidate_evaluation_2_check,
     next_capability_readiness,
@@ -1973,6 +1974,98 @@ def test_mission_control_display_disposition_packet_is_wired(tmp_path: Path) -> 
         "02_MISSION_CONTROL_DISPLAY_DISPOSITION_AND_INTAKE.md",
         "03_MISSION_CONTROL_DISPLAY_REVIEW_POINTERS.md",
         "04_MISSION_CONTROL_DISPLAY_DISPOSITION_COMMAND_EVIDENCE.md",
+    }
+
+
+def test_mission_control_integration_readiness_packet_is_wired(tmp_path: Path) -> None:
+    report = mission_control_integration_readiness_packet.build_check_report(Path.cwd())
+    output_dir = tmp_path / "mission-control-integration-readiness"
+    mission_control_integration_readiness_packet.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    index = output_dir.joinpath(
+        "00_MISSION_CONTROL_INTEGRATION_READINESS_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_MISSION_CONTROL_INTEGRATION_READINESS_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    docs = output_dir.joinpath("02_MISSION_CONTROL_INTEGRATION_DOCS.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = output_dir.joinpath(
+        "04_MISSION_CONTROL_INTEGRATION_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "mission-control-integration-readiness-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_002"] is False
+    assert "does not close `ERG-002`" in index
+    assert "does not approve Mission Control runtime importer behavior" in index
+    assert "EXT-MC-INTEGRATION-###" in prompt
+    assert "continue_display_importer_planning" in prompt
+    assert "block_mission_control_runtime_work" in prompt
+    assert "Mission Control Integration Implementation Ticket" in docs
+    assert "Mission Control Handoff Schema Contract" in docs
+    assert "Hello World Mission Control Handoff" in docs
+    assert '"mission_control_runtime_allowed": false' in evidence
+    assert '"mission_control_execution_authority_allowed": false' in evidence
+    assert '"closes_erg_002": false' in evidence
+    assert "make mission-control-integration-readiness-packet" in readme
+    assert "mission-control-integration-readiness-packet:" in makefile
+    assert "mission-control-integration-readiness-packet-check:" in makefile
+    assert "mission-control-integration-readiness-packet-check" in release_check_body
+    assert "$(MAKE) mission-control-integration-readiness-packet" in review_candidate_body
+    assert "mission-control-integration-readiness-packet-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-integration-readiness-packet" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/mission-control-integration-readiness-packet.md" in docs_site
+    assert "docs/codex/mission-control-integration-readiness-packet.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Integration Readiness Packet" in review_index
+    assert "mission-control-integration-readiness-packet.md" in runway
+    assert "mission-control-integration-readiness-packet.md" in gap_matrix
+    assert "mission-control-integration-readiness-packet.md" in decision_register
+    assert {entry["path"] for entry in hashes["artifacts"]} == {
+        "00_MISSION_CONTROL_INTEGRATION_READINESS_INDEX.md",
+        "01_MISSION_CONTROL_INTEGRATION_READINESS_PROMPT.md",
+        "02_MISSION_CONTROL_INTEGRATION_DOCS.md",
+        "03_MISSION_CONTROL_CONTEXT_DOCS.md",
+        "04_MISSION_CONTROL_INTEGRATION_COMMAND_EVIDENCE.md",
     }
 
 

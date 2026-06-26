@@ -72,6 +72,7 @@ Required before implementation:
 - negative cases for stale evidence, mismatched hashes, unsupported packet versions, and missing
   warning state;
 - Mission Control repository implementation ticket;
+- Mission Control integration readiness packet;
 - source-review handoff for both Mission Control and Ithildin changes.
 
 Blocked:
@@ -313,6 +314,8 @@ packet now exist on the Ithildin side. The
 also now exists as a concrete Mission Control repository ticket for the display-only importer. The
 Mission Control display post-RC decision intake now also exists as planning-only evidence. The
 Mission Control display importer implementation plan now also exists as planning-only evidence. The
+Mission Control integration readiness packet now also exists as a consolidated handoff packet for
+the display-only Mission Control-side file/import task. The
 sandbox/VM worker boundary charter, profile contract, preflight contract, proof-of-concept review
 packet, static profile fixture contract, static preflight CLI fixture runner, source-review packet,
 and internal source-review pass also now exist.
@@ -335,6 +338,8 @@ Current status anchors:
   `mission-control-display-decision-intake.md`;
 - Mission Control display disposition must pass
   `mission-control-display-disposition-packet.md`;
+- Mission Control integration readiness must pass
+  `mission-control-integration-readiness-packet.md`;
 - static preflight lane remains local-preview fixture evidence only;
 - external/source review disposition is still required before any live sandbox/VM lane.
 - post-RC decision register validation is required before any frozen lane moves.

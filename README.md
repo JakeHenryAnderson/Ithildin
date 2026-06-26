@@ -417,6 +417,9 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-disposition-packet` - generate the Mission Control display
   disposition packet asking whether ERG-002 may continue design-only planning while runtime importer
   behavior and authority transfer remain blocked.
+- `make mission-control-integration-readiness-packet` - generate the consolidated Mission Control
+  display/importer readiness handoff packet for the future Mission Control-side file/import display
+  task while keeping Ithildin runtime behavior and Mission Control authority transfer blocked.
 - `make mission-control-integration-implementation-ticket-check` - validate the planning-only
   Mission Control repository implementation ticket for a future display-only importer while keeping
   Mission Control outside Ithildin execution, policy, approval, audit, sandbox, local-model,
@@ -872,6 +875,11 @@ coherent enough to continue design-only Mission Control-side planning, while kee
 importer behavior, execution authority, policy authority, approval authority, audit authority, local
 model invocation, sandbox orchestration, trusted-host promotion, SIEM adapter behavior, and new
 power classes blocked.
+Generate the Mission Control integration readiness packet with
+`make mission-control-integration-readiness-packet`; it consolidates the display proposal, importer
+plan, disposition packet, handoff schema, negative fixtures, side handoff, implementation ticket,
+and command evidence into one Mission Control-side handoff packet while keeping `ERG-002`
+planning-only and not closed.
 The next sandbox/VM planning artifact is
 [docs/codex/sandbox-vm-worker-boundary-charter.md](docs/codex/sandbox-vm-worker-boundary-charter.md)
 and is checked with `make sandbox-vm-worker-boundary-charter-check`; it defines future sandbox
