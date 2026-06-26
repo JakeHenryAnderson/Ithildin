@@ -563,6 +563,10 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-preconditions-map-check` - validate the blocked `ERG-004`
   preconditions map while confirming favorable `ERG-003` disposition, a later decision record,
   cleanup/failure evidence, and role separation are required before any live POC planning.
+- `make sandbox-vm-live-poc-preconditions-ready-check` - validate the blocked `ERG-004`
+  aggregate readiness/status check while confirming the lane wiring is valid but implementation
+  planning remains blocked on favorable `ERG-003` disposition and normalized `ERG-004` response
+  evidence.
 - `make sandbox-vm-live-poc-external-response-intake-check` - validate the blocked `ERG-004`
   external response intake template while confirming reviewer responses cannot mutate findings,
   close the gap, or approve live sandbox/VM runtime work.
@@ -1360,6 +1364,11 @@ and is checked with `make sandbox-vm-live-poc-preconditions-map-check`; it ties 
 disposition, the future decision-record path, operator-managed VM/container assumptions,
 cleanup/failure transcripts, and cross-source evidence into one blocked-lane readiness checklist
 without approving live VM/container inspection or runtime authority.
+The live sandbox/VM POC preconditions ready check is
+[docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md](docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md)
+and is checked with `make sandbox-vm-live-poc-preconditions-ready-check`; it aggregates the
+blocked-lane ERG-004 checks and reports that the wiring is valid while implementation planning
+remains blocked on favorable `ERG-003` disposition and normalized `ERG-004` response evidence.
 The live sandbox/VM POC external response intake template is
 [docs/codex/sandbox-vm-live-poc-external-response-intake.md](docs/codex/sandbox-vm-live-poc-external-response-intake.md)
 and is checked with `make sandbox-vm-live-poc-external-response-intake-check`; it defines the

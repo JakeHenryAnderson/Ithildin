@@ -225,6 +225,7 @@ from scripts import (
     sandbox_vm_live_poc_external_response_intake_check,
     sandbox_vm_live_poc_external_review_bundle,
     sandbox_vm_live_poc_preconditions_map_check,
+    sandbox_vm_live_poc_preconditions_ready_check,
     sandbox_vm_live_poc_prerequisite_disposition_dry_run,
     sandbox_vm_live_poc_response_dry_run,
     sandbox_vm_live_poc_response_kit,
@@ -5636,6 +5637,98 @@ def test_sandbox_vm_live_poc_preconditions_map_is_wired() -> None:
     assert "sandbox-vm-live-poc-preconditions-map.md" in enterprise
     assert "sandbox-vm-live-poc-preconditions-map.md" in gap_matrix
     assert "sandbox-vm-live-poc-preconditions-map.md" in decision_register
+
+
+def test_sandbox_vm_live_poc_preconditions_ready_check_is_wired() -> None:
+    report = sandbox_vm_live_poc_preconditions_ready_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_004_status"] == "blocked"
+    assert report["preconditions_map_valid"] is True
+    assert report["decision_intake_valid"] is True
+    assert report["decision_packet_valid"] is True
+    assert report["response_kit_valid"] is True
+    assert report["closure_gate_valid"] is True
+    assert report["normalized_response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["blocking_prerequisite"] == "favorable ERG-003 static preflight disposition"
+    assert report["ready_for_implementation_planning"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        "Status: deterministic readiness check for blocked `ERG-004`.",
+        "ready_for_implementation_planning: false",
+        "blocking_prerequisite: favorable `ERG-003` static preflight disposition",
+        "ERG-004 wiring is ready to await external/source review feedback",
+        "This check does not approve live VM/container inspection",
+        "make sandbox-vm-live-poc-preconditions-ready-check",
+    ]:
+        assert phrase in doc
+    for link in [
+        "sandbox-vm-live-poc-preconditions-map.md",
+        "sandbox-vm-live-poc-decision-intake.md",
+        "sandbox-vm-live-poc-decision-packet.md",
+        "sandbox-vm-live-poc-decision-closure-gate.md",
+        "sandbox-vm-live-poc-response-kit.md",
+    ]:
+        assert link in doc
+    for forbidden in [
+        "ready_for_implementation_planning: true",
+        "implementation planning is approved",
+        "live VM/container inspection is approved",
+        "ERG-004 is closed",
+        "production-ready",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-live-poc-preconditions-ready-check" in readme
+    assert "sandbox-vm-live-poc-preconditions-ready-check:" in makefile
+    assert "sandbox-vm-live-poc-preconditions-ready-check" in release_check_body
+    assert "sandbox-vm-live-poc-preconditions-ready-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Preconditions Ready Check" in review_index
+    assert "sandbox-vm-live-poc-preconditions-ready-check.md" in enterprise
+    assert "sandbox-vm-live-poc-preconditions-ready-check.md" in gap_matrix
+    assert "sandbox-vm-live-poc-preconditions-ready-check.md" in decision_register
+    assert "sandbox-vm-live-poc-preconditions-ready-check.md" in readiness
 
 
 def test_sandbox_vm_live_poc_external_response_intake_is_wired() -> None:

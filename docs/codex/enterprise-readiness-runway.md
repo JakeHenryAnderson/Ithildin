@@ -662,6 +662,13 @@ before any later implementation-planning decision. It keeps `ERG-004` blocked an
 live VM/container inspection, Mission Control runtime behavior, local model invocation, sandbox
 orchestration, trusted-host promotion, network expansion, or public/security-product positioning.
 
+The live sandbox/VM POC preconditions ready check is
+[sandbox-vm-live-poc-preconditions-ready-check.md](sandbox-vm-live-poc-preconditions-ready-check.md)
+and is validated with `make sandbox-vm-live-poc-preconditions-ready-check`. It aggregates the
+blocked-lane `ERG-004` checks, confirms the decision/intake/packet/response-kit/closure wiring is
+valid, and still reports `ready_for_implementation_planning: false` until favorable `ERG-003`
+disposition and normalized `ERG-004` response evidence exist.
+
 The live sandbox/VM POC external response intake template is
 [sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md)
 and is validated with `make sandbox-vm-live-poc-external-response-intake-check`. It defines the

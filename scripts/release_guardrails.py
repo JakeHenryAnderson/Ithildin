@@ -154,6 +154,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-decision-intake-check",
     "sandbox-vm-live-poc-evidence-contract-check",
     "sandbox-vm-live-poc-preconditions-map-check",
+    "sandbox-vm-live-poc-preconditions-ready-check",
     "sandbox-vm-live-poc-external-response-intake-check",
     "sandbox-vm-live-poc-decision-closure-check",
     "sandbox-vm-live-poc-decision-record-skeleton-check",

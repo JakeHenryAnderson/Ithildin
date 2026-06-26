@@ -231,6 +231,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/sandbox-vm-live-poc-decision-intake.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-evidence-contract.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-preconditions-map.md" in DEFAULT_DOCS
+    assert "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-decision-closure-gate.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-response-dry-run.md" in DEFAULT_DOCS
