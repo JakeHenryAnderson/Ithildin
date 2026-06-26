@@ -224,6 +224,7 @@ from scripts import (
     sandbox_vm_worker_boundary_charter_check,
     siem_evidence_design_check,
     siem_export_adapter_architecture_check,
+    siem_export_adapter_disposition_closure_check,
     siem_export_adapter_disposition_packet,
     siem_export_adapter_external_response_intake_check,
     signed_evidence_source_review_bundle,
@@ -15546,6 +15547,87 @@ def test_siem_export_adapter_external_response_intake_is_wired() -> None:
     assert "siem-export-adapter-external-response-intake.md" in runway
     assert "siem-export-adapter-external-response-intake.md" in gap_matrix
     assert "siem-export-adapter-external-response-intake.md" in decision_register
+
+
+def test_siem_export_adapter_disposition_closure_gate_is_wired() -> None:
+    report = siem_export_adapter_disposition_closure_check.build_report(Path.cwd())
+    doc = Path("docs/codex/siem-export-adapter-disposition-closure-gate.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["closure_ready"] is False
+    assert report["normalized_response_present"] is False
+    assert report["erg_008_status"] == "planning_only"
+    assert report["allowed_closure_state"] == "ready_for_architecture_decision_record"
+    assert report["tool_count"] == 24
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_delivery_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["security_operations_control_plane_claims_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: fail-closed closure gate for planning-only `ERG-008`.",
+        "var/review-runs/siem-export-adapter/normalized-response.json",
+        "source-level` or `packet-and-source`",
+        "disposition_outcome: continue_architecture_planning",
+        "closure_ready: false",
+        "erg_008_status: planning_only",
+        "ready_for_architecture_decision_record",
+        "separate committed triage update",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning",
+        "runtime implementation",
+        "SIEM adapter behavior",
+        "hosted telemetry",
+        "remote delivery",
+        "custody-grade audit claims",
+        "external notarization",
+        "immutable storage",
+        "compliance automation",
+        "security-operations control-plane claims",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make siem-export-adapter-disposition-closure-check" in readme
+    assert "siem-export-adapter-disposition-closure-check:" in makefile
+    assert "release-check: siem-export-adapter-disposition-closure-check" in makefile
+    assert "siem-export-adapter-disposition-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/siem-export-adapter-disposition-closure-gate.md" in docs_site
+    assert "docs/codex/siem-export-adapter-disposition-closure-gate.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "SIEM Export Adapter Disposition Closure Gate" in review_index
+    assert "siem-export-adapter-disposition-closure-gate.md" in runway
+    assert "siem-export-adapter-disposition-closure-gate.md" in gap_matrix
+    assert "siem-export-adapter-disposition-closure-gate.md" in review_queue
+    assert "siem-export-adapter-disposition-closure-gate.md" in decision_register
 
 
 def test_compliance_mapping_architecture_is_wired() -> None:

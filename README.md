@@ -408,6 +408,9 @@ checked with `make control-mapping-readiness`.
 - `make siem-export-adapter-disposition-packet` - generate the focused SIEM adapter disposition
   packet asking whether ERG-008 may continue architecture planning while adapter runtime behavior,
   hosted telemetry, remote delivery, custody claims, and compliance claims remain blocked.
+- `make siem-export-adapter-disposition-closure-check` - validate the fail-closed SIEM adapter
+  closure gate that keeps ERG-008 planning-only unless normalized source-level response evidence
+  supports architecture continuation.
 - `make siem-export-adapter-external-response-intake-check` - validate the response-intake
   template for SIEM adapter reviewer feedback while keeping adapter runtime behavior, hosted
   telemetry, remote delivery, and custody claims blocked.
@@ -868,6 +871,11 @@ and is checked with `make siem-export-adapter-external-response-intake-check`; i
 `EXT-SIEM-ADAPTER-###` finding namespace and `siem-export-adapter` normalizer command for recording
 reviewer responses without mutating findings, closing `ERG-008`, or approving SIEM adapter runtime
 behavior.
+The SIEM export adapter disposition closure gate is in
+[docs/codex/siem-export-adapter-disposition-closure-gate.md](docs/codex/siem-export-adapter-disposition-closure-gate.md)
+and is checked with `make siem-export-adapter-disposition-closure-check`; it keeps `ERG-008`
+planning-only unless normalized source-level response evidence supports architecture continuation
+and contains no critical/high findings.
 The compliance mapping architecture packet is
 [docs/codex/compliance-mapping-architecture.md](docs/codex/compliance-mapping-architecture.md)
 and is checked with `make compliance-mapping-architecture-check`; it defines future framework

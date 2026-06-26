@@ -142,6 +142,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/production-identity-storage-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/siem-export-adapter-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/siem-export-adapter-disposition-packet.md" in DEFAULT_DOCS
+    assert "docs/codex/siem-export-adapter-disposition-closure-gate.md" in DEFAULT_DOCS
     assert "docs/codex/siem-export-adapter-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-disposition-packet.md" in DEFAULT_DOCS

@@ -250,6 +250,7 @@ externally closed.
 - [Production Identity And Storage External Response Intake](production-identity-storage-external-response-intake.md)
 - [SIEM Export Adapter Architecture](siem-export-adapter-architecture.md)
 - [SIEM Export Adapter Disposition Packet](siem-export-adapter-disposition-packet.md)
+- [SIEM Export Adapter Disposition Closure Gate](siem-export-adapter-disposition-closure-gate.md)
 - [SIEM Export Adapter External Response Intake](siem-export-adapter-external-response-intake.md)
 - [Compliance Mapping Architecture](compliance-mapping-architecture.md)
 - [Compliance Mapping Disposition Packet](compliance-mapping-disposition-packet.md)

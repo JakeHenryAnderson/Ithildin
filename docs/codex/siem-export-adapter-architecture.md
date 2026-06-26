@@ -134,6 +134,9 @@ The external response intake template for reviewer feedback is
 [siem-export-adapter-external-response-intake.md](siem-export-adapter-external-response-intake.md).
 It records allowed reviewer-response outcomes without mutating findings, closing `ERG-008`, or
 approving runtime adapter behavior.
+Normalized responses must also pass the fail-closed
+[siem-export-adapter-disposition-closure-gate.md](siem-export-adapter-disposition-closure-gate.md)
+before a later triage update may consider an architecture decision record.
 
 ## Validation
 

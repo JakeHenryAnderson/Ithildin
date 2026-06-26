@@ -134,6 +134,11 @@ Run:
 ```sh
 make siem-export-adapter-external-response-intake-check
 make external-findings-intake-dry-run
+make siem-export-adapter-disposition-closure-check
 make siem-export-adapter-disposition-packet-check
 make siem-export-adapter-architecture-check
 ```
+
+Favorable normalized responses must pass
+[siem-export-adapter-disposition-closure-gate.md](siem-export-adapter-disposition-closure-gate.md)
+before any later committed triage update may consider continued architecture planning.

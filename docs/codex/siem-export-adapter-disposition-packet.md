@@ -24,6 +24,7 @@ Validate this packet with:
 
 ```sh
 make siem-export-adapter-disposition-packet-check
+make siem-export-adapter-disposition-closure-check
 ```
 
 Generate the focused disposition handoff with:
@@ -67,6 +68,7 @@ The reviewer should inspect:
 | --- | --- |
 | Adapter architecture packet | `siem-export-adapter-architecture.md` |
 | SIEM-shaped evidence design | `siem-shaped-evidence-design.md` |
+| Fail-closed closure gate | `siem-export-adapter-disposition-closure-gate.md` |
 | Evidence contracts | `evidence-contracts.md` |
 | Post-RC decision register | `post-rc-decision-register.md` |
 | Enterprise gap matrix | `enterprise-readiness-gap-matrix.md` |
@@ -131,3 +133,6 @@ This packet supports architecture docs, schema sketches, static examples, compat
 planning, review packets, and operator warning design. It does not close `ERG-008`, and it does not
 authorize SIEM adapter runtime behavior. A later post-RC decision record must record reviewer
 disposition before any implementation plan moves.
+Normalized responses must also pass
+[siem-export-adapter-disposition-closure-gate.md](siem-export-adapter-disposition-closure-gate.md)
+before a later triage update may consider an architecture decision record.

@@ -272,6 +272,11 @@ and is validated with `make siem-export-adapter-external-response-intake-check`.
 `EXT-SIEM-ADAPTER-###` finding namespace and `siem-export-adapter` normalizer command for recording
 reviewer responses without mutating findings, closing `ERG-008`, or approving adapter runtime
 behavior.
+The fail-closed disposition closure gate is
+[siem-export-adapter-disposition-closure-gate.md](siem-export-adapter-disposition-closure-gate.md)
+and is validated with `make siem-export-adapter-disposition-closure-check`; it keeps `ERG-008`
+planning-only unless normalized source-level response evidence supports continued architecture
+planning and contains no critical/high findings.
 
 Required before implementation:
 
