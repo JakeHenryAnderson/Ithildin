@@ -186,6 +186,11 @@ The trusted-host promotion disposition closure gate is in
 and is validated with `make trusted-host-promotion-disposition-closure-check`; it keeps `ERG-005`
 blocked unless normalized source-level response evidence supports design-only continuation and has
 no critical/high findings.
+The trusted-host promotion response dry run is in
+[trusted-host-promotion-response-dry-run.md](trusted-host-promotion-response-dry-run.md) and is
+validated with `make trusted-host-promotion-response-dry-run`; it exercises favorable and
+unfavorable temporary normalized-response fixtures while restoring the ignored response path and
+without closing `ERG-005` or approving implementation planning.
 The internal design/source-review pass is
 [v3-trusted-host-promotion-internal-review.md](v3-trusted-host-promotion-internal-review.md) and is
 validated with `make trusted-host-promotion-internal-review-check`; it records

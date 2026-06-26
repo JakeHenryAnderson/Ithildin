@@ -138,6 +138,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-decision-packet-check",
     "trusted-host-promotion-disposition-packet-check",
     "trusted-host-promotion-disposition-closure-check",
+    "trusted-host-promotion-response-dry-run",
     "trusted-host-promotion-external-response-intake-check",
     "agent-workflow-check",
     "low-implementer-delegation-packet",

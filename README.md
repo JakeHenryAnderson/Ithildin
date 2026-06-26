@@ -271,6 +271,9 @@ checked with `make control-mapping-readiness`.
   disposition packet wiring and artifact hashes.
 - `make trusted-host-promotion-disposition-closure-check` - validate the fail-closed trusted-host
   promotion closure gate while keeping host promotion blocked.
+- `make trusted-host-promotion-response-dry-run` - exercise temporary normalized-response fixtures
+  for the trusted-host promotion closure gate while restoring the ignored response path and keeping
+  `ERG-005` blocked.
 - `make trusted-host-promotion-external-response-intake-check` - validate the external response
   intake template for the trusted-host promotion lane while keeping host promotion blocked.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
@@ -1195,6 +1198,11 @@ The trusted-host promotion disposition closure gate is in
 and is checked with `make trusted-host-promotion-disposition-closure-check`; it keeps `ERG-005`
 blocked unless normalized source-level response evidence explicitly supports design-only
 continuation and contains no critical/high findings.
+The trusted-host promotion response dry run is in
+[docs/codex/trusted-host-promotion-response-dry-run.md](docs/codex/trusted-host-promotion-response-dry-run.md)
+and is checked with `make trusted-host-promotion-response-dry-run`; it temporarily exercises
+favorable and unfavorable normalized-response fixtures while restoring the ignored response path and
+without closing `ERG-005` or approving implementation planning.
 The internal trusted-host promotion source-review pass is in
 [docs/codex/v3-trusted-host-promotion-internal-review.md](docs/codex/v3-trusted-host-promotion-internal-review.md)
 and is checked with `make trusted-host-promotion-internal-review-check`; it records

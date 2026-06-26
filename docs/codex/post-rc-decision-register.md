@@ -187,6 +187,10 @@ Current selected capability: `not selected`.
   `trusted-host-promotion-disposition-closure-gate.md` keeps `ERG-005` blocked unless normalized
   source-level response evidence supports design-only continuation and contains no critical/high
   findings.
+- Current response dry-run evidence:
+  `trusted-host-promotion-response-dry-run.md` exercises temporary favorable and unfavorable
+  normalized-response fixtures while restoring the ignored response path and without closing
+  `ERG-005` or approving implementation planning.
 
 ### PRD-SIEM-EXPORT-001
 

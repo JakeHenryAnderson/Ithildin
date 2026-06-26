@@ -308,6 +308,7 @@ externally closed.
 - [Trusted-Host Promotion Disposition Packet](trusted-host-promotion-disposition-packet.md)
 - [Trusted-Host Promotion Disposition Closure Gate](trusted-host-promotion-disposition-closure-gate.md)
 - [Trusted-Host Promotion External Response Intake](trusted-host-promotion-external-response-intake.md)
+- [Trusted-Host Promotion Response Dry Run](trusted-host-promotion-response-dry-run.md)
 - [Trusted-Host Promotion Internal Source Review](v3-trusted-host-promotion-internal-review.md)
 - [v3 Readiness Debt Register](v3-readiness-debt-register.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)

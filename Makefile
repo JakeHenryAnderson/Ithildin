@@ -447,6 +447,9 @@ trusted-host-promotion-disposition-closure-check:
 trusted-host-promotion-external-response-intake-check:
 	uv run python scripts/trusted_host_promotion_external_response_intake_check.py
 
+trusted-host-promotion-response-dry-run:
+	uv run python scripts/trusted_host_promotion_response_dry_run.py
+
 trusted-host-promotion-internal-review-check:
 	uv run python scripts/trusted_host_promotion_internal_review_check.py
 
@@ -1044,6 +1047,7 @@ release-check: sandbox-vm-live-poc-decision-closure-check
 release-check: mission-control-display-response-dry-run
 
 release-check: trusted-host-promotion-disposition-closure-check
+release-check: trusted-host-promotion-response-dry-run
 
 release-check: production-identity-storage-disposition-closure-check
 

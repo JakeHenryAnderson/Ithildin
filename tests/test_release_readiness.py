@@ -243,6 +243,7 @@ from scripts import (
     trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_internal_review_check,
     trusted_host_promotion_negative_fixtures_check,
+    trusted_host_promotion_response_dry_run,
     trusted_host_promotion_source_review_packet,
     trusted_host_promotion_state_machine_check,
     trusted_host_promotion_zone_contract_check,
@@ -18591,6 +18592,126 @@ def test_trusted_host_promotion_disposition_closure_gate_is_wired() -> None:
     assert "trusted-host-promotion-disposition-closure-gate.md" in intake
     assert "trusted-host-promotion-disposition-closure-gate.md" in disposition_packet
     assert "trusted-host-promotion-disposition-closure-gate.md" in readiness
+
+
+def test_trusted_host_promotion_response_dry_run_is_wired() -> None:
+    report = trusted_host_promotion_response_dry_run.run_dry_run(Path.cwd())
+    doc = Path("docs/codex/trusted-host-promotion-response-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    normalized_doc = " ".join(doc.split())
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "trusted-host-promotion"
+    assert report["finding_namespace"] == "EXT-TRUSTED-HOST-###"
+    assert report["normalized_response_path"] == (
+        "var/review-runs/trusted-host-promotion/normalized-response.json"
+    )
+    assert report["response_restored"] is True
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_005_closed"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["promotion_without_hash_binding_allowed"] is False
+    assert report["promotion_without_approval_evidence_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["cases"] == {
+        "absent_response_valid": True,
+        "absent_response_not_ready": True,
+        "valid_response_accepts": True,
+        "packet_only_rejected": True,
+        "bad_hash_rejected": True,
+        "critical_high_finding_rejected": True,
+        "direct_external_closure_rejected": True,
+    }
+    for phrase in [
+        "Status: temporary-fixture validation for blocked `ERG-005` normalized response handling.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "make trusted-host-promotion-response-dry-run",
+        "an absent normalized response keeps `closure_ready: false`",
+        "packet-only evidence is rejected for closure",
+        "critical/high findings are rejected",
+        "the ignored normalized-response path is restored after the dry run",
+        "It does not record external review",
+        "not close `ERG-005`",
+        "runtime trusted-host promotion remains blocked",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning",
+        "runtime implementation",
+        "trusted-host promotion",
+        "direct host writes",
+        "overwrite/delete/move behavior",
+        "broad archive extraction",
+        "automatic promotion",
+        "promotion without exact artifact hash binding",
+        "promotion without approval evidence",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "sandbox orchestration",
+        "SIEM adapter behavior",
+        "production identity",
+        "runtime Postgres",
+        "hosted telemetry",
+        "remote MCP",
+        "compliance automation",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in normalized_doc
+    assert "make trusted-host-promotion-response-dry-run" in readme
+    assert "trusted-host-promotion-response-dry-run:" in makefile
+    assert (
+        "trusted-host-promotion-response-dry-run" in release_check_body
+        or "release-check: trusted-host-promotion-response-dry-run" in makefile
+    )
+    assert "trusted-host-promotion-response-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/trusted-host-promotion-response-dry-run.md" in docs_site
+    assert (
+        "docs/codex/trusted-host-promotion-response-dry-run.md" in review_docs.REVIEW_DOCS
+    )
+    assert "Trusted-Host Promotion Response Dry Run" in review_index
+    assert "trusted-host-promotion-response-dry-run.md" in enterprise
+    assert "trusted-host-promotion-response-dry-run.md" in gap_matrix
+    assert "trusted-host-promotion-response-dry-run.md" in queue
+    assert "trusted-host-promotion-response-dry-run.md" in decision_register
+    assert "trusted-host-promotion-response-dry-run.md" in readiness
 
 
 def test_trusted_host_promotion_internal_review_is_wired() -> None:
