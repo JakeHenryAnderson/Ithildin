@@ -31,6 +31,7 @@ REQUIRED_PHRASES = [
     "`ERG-004` Live sandbox/VM worker proof of concept",
     "`ERG-005` Trusted-host artifact promotion",
     "sandbox-vm-live-poc-decision-packet.md",
+    "sandbox-vm-live-poc-response-dry-run.md",
     "make enterprise-sandbox-control-plane-readiness-check",
     "make sandbox-vm-live-poc-decision-packet-check",
     "does not approve live VM/container inspection",

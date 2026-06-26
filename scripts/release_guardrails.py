@@ -138,6 +138,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-preconditions-map-check",
     "sandbox-vm-live-poc-external-response-intake-check",
     "sandbox-vm-live-poc-decision-closure-check",
+    "sandbox-vm-live-poc-response-dry-run",
     "sandbox-vm-live-poc-decision-packet-check",
     "trusted-host-promotion-disposition-packet-check",
     "trusted-host-promotion-disposition-closure-check",

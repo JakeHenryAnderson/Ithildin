@@ -146,6 +146,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "docs/codex/compliance-mapping-external-response-intake.md",
         "docs/codex/sandbox-vm-live-poc-decision-packet.md",
         "docs/codex/sandbox-vm-live-poc-external-response-intake.md",
+        "docs/codex/sandbox-vm-live-poc-response-dry-run.md",
         "docs/codex/public-security-product-positioning-decision-intake.md",
     ]:
         if not (repo_root / path).exists():

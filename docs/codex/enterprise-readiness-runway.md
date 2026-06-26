@@ -581,6 +581,13 @@ disposition is recorded, and the reviewer outcome can support only a later commi
 record. It keeps live VM/container inspection, local model invocation, sandbox orchestration,
 Mission Control runtime behavior, trusted-host promotion, and runtime implementation blocked.
 
+The live sandbox/VM POC response dry run is
+[sandbox-vm-live-poc-response-dry-run.md](sandbox-vm-live-poc-response-dry-run.md) and is validated
+with `make sandbox-vm-live-poc-response-dry-run`. It exercises favorable and unfavorable temporary
+normalized-response fixtures, including a missing favorable `ERG-003` disposition, then restores
+the ignored response path without recording external review or approving live sandbox/VM runtime
+work.
+
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).
 It records the CLI-only fixture preflight runner as locally reviewed after tightening raw

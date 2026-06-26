@@ -123,6 +123,7 @@ externally closed.
 
 - [Sandbox/VM Live POC External Response Intake](sandbox-vm-live-poc-external-response-intake.md)
 - [Sandbox/VM Live POC Decision Closure Gate](sandbox-vm-live-poc-decision-closure-gate.md)
+- [Sandbox/VM Live POC Response Dry Run](sandbox-vm-live-poc-response-dry-run.md)
 - [v3 project.manifest.summary Implementation Decision](v3-project-manifest-summary-implementation.md)
 - [v3 project.manifest.summary Source Review Handoff](v3-project-manifest-summary-source-review.md)
 - [Capability Proposal: project.dependency.summary](capability-proposals/project-dependency-summary.md)

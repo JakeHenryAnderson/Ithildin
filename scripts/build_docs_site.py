@@ -275,6 +275,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-live-poc-preconditions-map.md",
     "docs/codex/sandbox-vm-live-poc-external-response-intake.md",
     "docs/codex/sandbox-vm-live-poc-decision-closure-gate.md",
+    "docs/codex/sandbox-vm-live-poc-response-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-decision-packet.md",
     "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md",
     "docs/codex/governed-artifact-transfer-lab.md",

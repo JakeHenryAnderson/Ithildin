@@ -196,7 +196,10 @@ sandbox-vm-live-poc-external-response-intake-check:
 sandbox-vm-live-poc-decision-closure-check:
 	uv run python scripts/sandbox_vm_live_poc_decision_closure_check.py
 
-.PHONY: sandbox-vm-live-poc-decision-closure-check
+sandbox-vm-live-poc-response-dry-run:
+	uv run python scripts/sandbox_vm_live_poc_response_dry_run.py
+
+.PHONY: sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-response-dry-run
 
 enterprise-sandbox-control-plane-readiness-check:
 	uv run python scripts/enterprise_sandbox_control_plane_readiness_check.py
@@ -1053,6 +1056,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 	npm run build --prefix apps/ui
 
 release-check: sandbox-vm-live-poc-decision-closure-check
+release-check: sandbox-vm-live-poc-response-dry-run
 release-check: mission-control-display-response-dry-run
 
 release-check: trusted-host-promotion-disposition-closure-check

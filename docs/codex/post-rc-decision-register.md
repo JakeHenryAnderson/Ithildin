@@ -103,7 +103,8 @@ Current selected capability: `not selected`.
   `sandbox-vm-live-poc-preconditions-map.md`, the decision packet in
   `sandbox-vm-live-poc-decision-packet.md`, the external response intake template in
   `sandbox-vm-live-poc-external-response-intake.md`, the fail-closed closure gate in
-  `sandbox-vm-live-poc-decision-closure-gate.md`, and operator warnings.
+  `sandbox-vm-live-poc-decision-closure-gate.md`, the response dry-run fixture checker in
+  `sandbox-vm-live-poc-response-dry-run.md`, and operator warnings.
 - Current forbidden scope: live VM/container inspection, local model invocation, Mission Control
   runtime behavior, sandbox orchestration, SSH, shell, Docker socket access, Kubernetes tools,
   browser automation, arbitrary HTTP, broad filesystem writes, trusted-host promotion, runtime
