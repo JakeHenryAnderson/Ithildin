@@ -264,6 +264,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-static-profile-negative-fixtures.md",
     "docs/codex/sandbox-vm-static-preflight-implementation-decision.md",
     "docs/codex/sandbox-vm-static-preflight-source-review.md",
+    "docs/codex/sandbox-vm-static-preflight-external-review-bundle.md",
     "docs/codex/sandbox-vm-static-preflight-disposition-plan.md",
     "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md",
     "docs/codex/sandbox-vm-static-preflight-disposition-packet.md",

@@ -279,6 +279,7 @@ externally closed.
 - [Sandbox/VM Preflight Contract](sandbox-vm-preflight-contract.md)
 - [Sandbox/VM Static Preflight Implementation Decision](sandbox-vm-static-preflight-implementation-decision.md)
 - [Sandbox/VM Static Preflight Source Review Handoff](sandbox-vm-static-preflight-source-review.md)
+- [Sandbox/VM Static Preflight External Review Bundle](sandbox-vm-static-preflight-external-review-bundle.md)
 - [Sandbox/VM Static Preflight Disposition Packet](sandbox-vm-static-preflight-disposition-packet.md)
 - [Sandbox/VM Static Preflight External Disposition Plan](sandbox-vm-static-preflight-disposition-plan.md)
 - [Sandbox/VM Static Preflight Disposition Closure Gate](sandbox-vm-static-preflight-disposition-closure-gate.md)

@@ -56,6 +56,7 @@ preconditions must be true:
 Review these artifacts before any decision about live POC planning:
 
 - `docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md`
+- `docs/codex/sandbox-vm-static-preflight-external-review-bundle.md`
 - `docs/codex/sandbox-vm-static-preflight-disposition-plan.md`
 - `docs/codex/sandbox-vm-static-preflight-external-response-intake.md`
 - `docs/codex/sandbox-vm-static-preflight-triage-update.md`
@@ -81,6 +82,7 @@ Use this sequence to reproduce the current precondition evidence:
 
 ```sh
 make sandbox-vm-static-preflight-reviewer-reproduction-map-check
+make sandbox-vm-static-preflight-external-review-bundle-check
 make sandbox-vm-static-preflight-disposition-packet-check
 make sandbox-vm-static-preflight-external-response-intake-check
 make sandbox-vm-static-preflight-triage-update-check

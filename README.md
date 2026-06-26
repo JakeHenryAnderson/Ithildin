@@ -511,6 +511,9 @@ checked with `make control-mapping-readiness`.
   [docs/codex/sandbox-vm-static-preflight-disposition-packet.md](docs/codex/sandbox-vm-static-preflight-disposition-packet.md),
   with source-review pointers, reviewer questions, intake instructions, command evidence, and
   artifact hashes while keeping live sandbox/VM runtime work blocked.
+- `make sandbox-vm-static-preflight-external-review-bundle` - generate the 10-file launch bundle
+  for the recommended `ERG-003` static sandbox/VM preflight external/source review while keeping
+  live sandbox/VM runtime work blocked.
 - `make sandbox-vm-profile-contract-check` - validate the design-only sandbox/VM profile contract
   for future operator-supplied sandbox metadata while confirming no runtime profile loader,
   sandbox orchestration, local model invocation, or trusted-host promotion is added.
@@ -1092,6 +1095,12 @@ with `make sandbox-vm-static-preflight-disposition-packet`; it packages the sour
 pointer, disposition questions, intake template, command evidence, and artifact hashes for deciding
 whether `ERG-003` can later move to `closed_local_preview_static_preflight` without approving live
 sandbox/VM runtime work.
+The static preflight external-review launch bundle is
+[docs/codex/sandbox-vm-static-preflight-external-review-bundle.md](docs/codex/sandbox-vm-static-preflight-external-review-bundle.md),
+with `make sandbox-vm-static-preflight-external-review-bundle`; it consolidates the source-review
+packet, disposition packet, response/closure/triage path, reproduction map, queue status, and
+command evidence into one 10-file handoff without closing `ERG-003` or approving live sandbox/VM
+runtime work.
 The external disposition plan is
 [docs/codex/sandbox-vm-static-preflight-disposition-plan.md](docs/codex/sandbox-vm-static-preflight-disposition-plan.md)
 and is checked with `make sandbox-vm-static-preflight-disposition-plan-check`; it defines the

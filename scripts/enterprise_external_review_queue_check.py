@@ -132,6 +132,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append("queue doc must mark every review row runtime_allowed false")
 
     for path in [
+        "docs/codex/sandbox-vm-static-preflight-external-review-bundle.md",
         "docs/codex/sandbox-vm-static-preflight-disposition-packet.md",
         "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
         "docs/codex/sandbox-vm-static-preflight-triage-update.md",

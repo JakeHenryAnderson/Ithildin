@@ -512,6 +512,13 @@ source-review packet pointer, `ERG-003` disposition question set, response-intak
 evidence, and artifact hashes for reviewer handoff. It does not close `ERG-003` or approve live
 sandbox/VM runtime work.
 
+The static preflight external-review launch bundle is
+[sandbox-vm-static-preflight-external-review-bundle.md](sandbox-vm-static-preflight-external-review-bundle.md)
+and is generated with `make sandbox-vm-static-preflight-external-review-bundle`. It consolidates the
+source-review packet, disposition packet, response/closure/triage path, reproduction map, queue
+status, and command evidence into one 10-file handoff for the recommended `ERG-003` external/source
+review without closing `ERG-003` or approving live sandbox/VM runtime work.
+
 The external disposition plan is
 [sandbox-vm-static-preflight-disposition-plan.md](sandbox-vm-static-preflight-disposition-plan.md)
 and is validated with `make sandbox-vm-static-preflight-disposition-plan-check`. It defines the

@@ -36,7 +36,7 @@ make enterprise-external-review-queue-check
 
 | Order | Gap / PRD | Status before review | Primary packet or doc | Intake / response path | Allowed next action | Runtime allowed |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `ERG-003` / `PRD-SANDBOX-PREFLIGHT-001` | `external_review_required` | `sandbox-vm-static-preflight-disposition-packet.md` | `sandbox-vm-static-preflight-external-response-intake.md` plus `sandbox-vm-static-preflight-disposition-closure-gate.md`, `sandbox-vm-static-preflight-response-dry-run.md`, and `sandbox-vm-static-preflight-triage-update.md` | External/source review disposition of static preflight fixture evidence | `false` |
+| 1 | `ERG-003` / `PRD-SANDBOX-PREFLIGHT-001` | `external_review_required` | `sandbox-vm-static-preflight-external-review-bundle.md` plus `sandbox-vm-static-preflight-disposition-packet.md` | `sandbox-vm-static-preflight-external-response-intake.md` plus `sandbox-vm-static-preflight-disposition-closure-gate.md`, `sandbox-vm-static-preflight-response-dry-run.md`, and `sandbox-vm-static-preflight-triage-update.md` | External/source review disposition of static preflight fixture evidence | `false` |
 | 2 | `ERG-002` / `PRD-MC-DISPLAY-001` | `planning_only` | `mission-control-integration-readiness-packet.md` | `mission-control-display-external-response-intake.md` plus `mission-control-display-disposition-closure-gate.md` and `mission-control-display-response-dry-run.md` | Mission Control-side display/importer planning review only | `false` |
 | 3 | `ERG-005` / `PRD-TRUSTED-HOST-001` | `blocked` | `trusted-host-promotion-disposition-packet.md` | `trusted-host-promotion-external-response-intake.md` plus `trusted-host-promotion-disposition-closure-gate.md` and `trusted-host-promotion-response-dry-run.md` | Review of design-only promotion evidence and negative fixtures | `false` |
 | 4 | `ERG-006` + `ERG-007` / `PRD-PROD-IAM-STORAGE-001` | `planning_only` | `production-identity-storage-disposition-packet.md` | `production-identity-storage-external-response-intake.md` plus `production-identity-storage-disposition-closure-gate.md` and `production-identity-storage-response-dry-run.md` | Architecture review for identity, tenancy, storage, retention, and custody boundaries | `false` |
@@ -46,7 +46,9 @@ make enterprise-external-review-queue-check
 | 8 | `ERG-010` / `PRD-PUBLIC-POSITIONING-001` | `blocked` | `public-security-product-positioning-decision-intake.md` | `public-security-product-positioning-decision-closure-gate.md` plus later claim-review response intake | Claim-review preparation and warning-packet review only | `false` |
 
 The `ERG-003` row also depends on
-`sandbox-vm-static-preflight-disposition-closure-gate.md`, which keeps the lane open until
+`sandbox-vm-static-preflight-external-review-bundle.md`, which consolidates the source-review and
+disposition artifacts for handoff, and `sandbox-vm-static-preflight-disposition-closure-gate.md`,
+which keeps the lane open until
 normalized source-level response evidence exists, and
 `sandbox-vm-static-preflight-response-dry-run.md`, which verifies favorable and unfavorable
 normalized-response fixtures without recording external review. A future favorable response should
