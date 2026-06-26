@@ -1206,6 +1206,12 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
         "var/review-packets/v3/enterprise-next-review-handoff/"
         "next-enterprise-review-handoff.json"
     ).read_text(encoding="utf-8")
+    generated_dir = Path("var/review-packets/v3/enterprise-next-review-handoff")
+    generated_hashes = json.loads(
+        (generated_dir / "next-enterprise-review-handoff-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
@@ -1219,6 +1225,7 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["recommended_gap"] == "ERG-003"
+    assert report["handoff_hashes_match_files"] is True
     assert report["runtime_changes_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -1245,6 +1252,16 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
     assert "expected hashed files: `9`" in generated_md
     assert "hash manifest self-hashed: `false`" in generated_md
     assert "hash manifest matches files: `true`" in generated_md
+    assert {
+        entry["path"] for entry in generated_hashes["artifacts"]
+    } == {
+        "NEXT_ENTERPRISE_REVIEW_HANDOFF.md",
+        "next-enterprise-review-handoff.json",
+    }
+    for entry in generated_hashes["artifacts"]:
+        data = generated_dir.joinpath(entry["path"]).read_bytes()
+        assert entry["sha256"] == "sha256:" + hashlib.sha256(data).hexdigest()
+        assert entry["bytes"] == len(data)
     assert '"packet_hash_manifest"' in generated_json
     assert '"expected_hashed_file_count": 9' in generated_json
     assert '"hash_manifest_matches_files": true' in generated_json

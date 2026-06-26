@@ -132,6 +132,15 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     markdown_text = _read(output_dir / MARKDOWN_NAME)
     json_text = _read(output_dir / JSON_NAME)
     hash_text = _read(output_dir / HASH_NAME)
+    try:
+        hashes = json.loads(hash_text) if hash_text else {"artifacts": []}
+    except json.JSONDecodeError:
+        hashes = {"artifacts": []}
+        failures.append("handoff hash manifest is not valid JSON")
+    handoff_hashes_match_files = _artifact_hashes_match_files(
+        output_dir=output_dir,
+        hashes=hashes,
+    )
 
     for phrase in [
         "Recommended next enterprise review: `ERG-003`",
@@ -178,6 +187,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"handoff hash manifest is missing artifact: {name}")
     if HASH_NAME in hash_text:
         failures.append("handoff hash manifest must not hash itself")
+    if not handoff_hashes_match_files:
+        failures.append("handoff artifact hashes do not match generated files")
 
     required_wiring = {
         "Make target": "enterprise-next-review-handoff:",
@@ -220,6 +231,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "output_dir": output_dir.as_posix(),
         "recommended_gap": RECOMMENDED_GAP,
         "tool_count": 24,
+        "handoff_hashes_match_files": handoff_hashes_match_files,
         "runtime_changes_allowed": False,
         "live_vm_inspection_allowed": False,
         "mission_control_runtime_allowed": False,
@@ -239,6 +251,7 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"output_dir: {report['output_dir']}",
         f"recommended_gap: {report['recommended_gap']}",
         f"tool_count: {report['tool_count']}",
+        f"handoff_hashes_match_files: {str(report['handoff_hashes_match_files']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"live_vm_inspection_allowed: {str(report['live_vm_inspection_allowed']).lower()}",
         "mission_control_runtime_allowed: "
@@ -476,6 +489,38 @@ def _artifact_hashes(output_dir: Path, names: list[str]) -> dict[str, Any]:
             }
         )
     return {"schema_version": "1", "artifacts": artifacts}
+
+
+def _artifact_hashes_match_files(*, output_dir: Path, hashes: dict[str, Any]) -> bool:
+    artifacts = hashes.get("artifacts")
+    if not isinstance(artifacts, list):
+        return False
+    expected = {MARKDOWN_NAME, JSON_NAME}
+    seen: set[str] = set()
+    for entry in artifacts:
+        if not isinstance(entry, dict):
+            return False
+        path = entry.get("path")
+        sha256 = entry.get("sha256")
+        byte_count = entry.get("bytes")
+        if not isinstance(path, str):
+            return False
+        if path == HASH_NAME:
+            return False
+        if not isinstance(sha256, str) or not sha256.startswith("sha256:"):
+            return False
+        if not isinstance(byte_count, int) or byte_count <= 0:
+            return False
+        artifact_path = output_dir / path
+        if not artifact_path.exists() or not artifact_path.is_file():
+            return False
+        data = artifact_path.read_bytes()
+        if sha256 != "sha256:" + hashlib.sha256(data).hexdigest():
+            return False
+        if byte_count != len(data):
+            return False
+        seen.add(path)
+    return seen == expected
 
 
 def _git(repo_root: Path, args: list[str]) -> str:
