@@ -836,7 +836,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 19
+    assert packet["artifact_count"] == 20
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
     trial_checklist = output_dir.joinpath("02A_V1_OPERATOR_TRIAL_CHECKLIST.md").read_text(
         encoding="utf-8"
@@ -850,6 +850,9 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     runway = output_dir.joinpath("07_ENTERPRISE_READINESS_RUNWAY.md").read_text(
         encoding="utf-8"
     )
+    send_readiness = output_dir.joinpath(
+        "07A_ENTERPRISE_REVIEW_SEND_READINESS.md"
+    ).read_text(encoding="utf-8")
     mission_control_display = output_dir.joinpath(
         "08_MISSION_CONTROL_DISPLAY_PROPOSAL.md"
     ).read_text(encoding="utf-8")
@@ -880,15 +883,16 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "7. `05_V1_RC_FEATURE_FREEZE.md`" in index
     assert "8. `06_V1_RC_READINESS_GATE.md`" in index
     assert "9. `07_ENTERPRISE_READINESS_RUNWAY.md`" in index
-    assert "10. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
-    assert "11. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
-    assert "12. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
-    assert "13. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
-    assert "14. `12_V1_RC_FINAL_HANDOFF.md`" in index
-    assert "15. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
-    assert "16. `14_V1_RC_ARTIFACTS.md`" in index
-    assert "17. `15_V1_RC_COMMANDS.md`" in index
-    assert "18. `v1-rc-artifact-hashes.json`" in index
+    assert "10. `07A_ENTERPRISE_REVIEW_SEND_READINESS.md`" in index
+    assert "11. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
+    assert "12. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
+    assert "13. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
+    assert "14. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
+    assert "15. `12_V1_RC_FINAL_HANDOFF.md`" in index
+    assert "16. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
+    assert "17. `14_V1_RC_ARTIFACTS.md`" in index
+    assert "18. `15_V1_RC_COMMANDS.md`" in index
+    assert "19. `v1-rc-artifact-hashes.json`" in index
     assert "Ithildin v1.0 Operator Trial Checklist" in trial_checklist
     assert "Trial Pass Criteria" in trial_checklist
     assert "make release-check" in trial_checklist
@@ -898,6 +902,10 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "Ithildin v1.0 RC Feature Freeze" in feature_freeze
     assert "capability expansion remains blocked" in feature_freeze
     assert "Ithildin Enterprise Readiness Runway" in runway
+    assert "Enterprise Review Send Readiness" in send_readiness
+    assert "make enterprise-review-send-readiness" in send_readiness
+    assert "`ERG-003`" in send_readiness
+    assert "`ERG-002`" in send_readiness
     assert "Mission Control Display Integration Proposal" in mission_control_display
     assert "file/import contract, not a live integration" in mission_control_display
     assert "Mission Control Handoff Schema Contract" in schema_contract
@@ -923,8 +931,9 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "docs/codex/sandbox-promotion-evidence-contract.md" in artifacts
     assert "promotion only as `not_promoted`" in artifacts
     assert "host promotion is implemented or approved" in artifacts
+    assert "make enterprise-review-send-readiness" in commands
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 18
+    assert len(hashes["artifacts"]) == 19
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
@@ -936,6 +945,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
         "05_V1_RC_FEATURE_FREEZE.md",
         "06_V1_RC_READINESS_GATE.md",
         "07_ENTERPRISE_READINESS_RUNWAY.md",
+        "07A_ENTERPRISE_REVIEW_SEND_READINESS.md",
         "08_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
         "09_MISSION_CONTROL_HANDOFF_SCHEMA.md",
         "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md",

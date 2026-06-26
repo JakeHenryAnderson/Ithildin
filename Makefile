@@ -1156,6 +1156,7 @@ review-candidate:
 	$(MAKE) sandbox-vm-static-preflight-external-review-bundle
 	$(MAKE) sandbox-vm-static-preflight-response-kit
 	$(MAKE) enterprise-next-review-handoff
+	$(MAKE) enterprise-review-send-readiness
 	$(MAKE) sandbox-vm-live-poc-decision-packet
 	$(MAKE) sandbox-vm-live-poc-external-review-bundle
 	$(MAKE) sandbox-vm-live-poc-response-kit
