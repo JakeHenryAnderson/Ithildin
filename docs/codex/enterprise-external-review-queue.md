@@ -115,6 +115,16 @@ That command is documented in `enterprise-next-review-handoff.md`, writes
 `var/review-packets/v3/enterprise-next-review-handoff/`, and points to the exact `ERG-003` upload
 files, reviewer prompt, and fail-closed response path.
 
+For a cross-lane operator send-readiness summary, run:
+
+```sh
+make enterprise-review-send-readiness
+```
+
+That command is documented in `enterprise-review-send-readiness.md`; it reports packet handoff
+readiness for `ERG-003`, `ERG-002`, and the remaining enterprise lanes while keeping implementation
+approval, runtime behavior, and lane closure blocked.
+
 Run:
 
 ```sh

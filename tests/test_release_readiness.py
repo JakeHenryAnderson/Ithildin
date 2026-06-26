@@ -52,6 +52,7 @@ from scripts import (
     enterprise_next_review_ready_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
+    enterprise_review_send_readiness,
     enterprise_sandbox_control_plane_readiness_check,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -1331,6 +1332,66 @@ def test_enterprise_next_review_ready_check_is_wired() -> None:
     assert "docs/codex/enterprise-next-review-ready-check.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Next Review Ready Check" in review_index
     assert "enterprise-next-review-ready-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_review_send_readiness_is_wired() -> None:
+    report = enterprise_review_send_readiness.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["lane_count"] == 8
+    assert report["packet_handoff_ready_count"] == 8
+    assert report["recommended_now"] == ["ERG-003", "ERG-002"]
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for row in report["rows"]:
+        assert row["packet_handoff_ready"] is True
+        assert row["implementation_allowed"] is False
+        assert row["runtime_changes_allowed"] is False
+        assert row["closure_ready"] is False
+        assert row["normalized_response_present"] is False
+    for phrase in [
+        "Status: operator send-readiness summary for enterprise external-review lanes.",
+        "Current governed tool count: `24`.",
+        "make enterprise-review-send-readiness",
+        "packet handoff ready is not implementation approval",
+        "`ERG-003`",
+        "`ERG-002`",
+        "`ERG-004` remains blocked",
+        "does not close any ERG lane",
+        "does not approve Mission Control runtime behavior",
+        "does not approve live VM/container inspection",
+        "does not approve trusted-host promotion",
+    ]:
+        assert phrase in doc
+    assert "enterprise-review-send-readiness:" in makefile
+    assert "enterprise-review-send-readiness" in release_check_body
+    assert "make enterprise-review-send-readiness" in readme
+    assert "make enterprise-review-send-readiness" in queue
+    assert "docs/codex/enterprise-review-send-readiness.md" in docs_site
+    assert "docs/codex/enterprise-review-send-readiness.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Readiness" in review_index
+    assert "enterprise-review-send-readiness" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

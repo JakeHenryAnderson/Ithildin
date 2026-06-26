@@ -407,6 +407,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-next-review-ready-check` - verify the current `ERG-003` external-review bundle,
   reviewed-packet hash helper, handoff pointer, and fail-closed response posture are ready for
   operator handoff without closing the lane.
+- `make enterprise-review-send-readiness` - summarize which enterprise external-review packets are
+  mechanically ready for operator handoff while keeping implementation approval, runtime behavior,
+  and lane closure blocked.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -969,6 +972,11 @@ The next-review ready check is
 [docs/codex/enterprise-next-review-ready-check.md](docs/codex/enterprise-next-review-ready-check.md),
 checked with `make enterprise-next-review-ready-check`; it verifies the `ERG-003` packet, handoff,
 reviewed-packet hash helper, and closure-gate waiting state before operator handoff.
+The enterprise review send-readiness summary is
+[docs/codex/enterprise-review-send-readiness.md](docs/codex/enterprise-review-send-readiness.md),
+checked with `make enterprise-review-send-readiness`; it summarizes packet handoff readiness across
+enterprise review lanes while keeping implementation approval, runtime behavior, and lane closure
+separate.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

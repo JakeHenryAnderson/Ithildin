@@ -82,6 +82,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "enterprise-external-review-queue-check",
     "enterprise-next-review-handoff-check",
     "enterprise-next-review-ready-check",
+    "enterprise-review-send-readiness",
     "enterprise-sandbox-control-plane-readiness-check",
     "post-rc-decision-gate",
     "post-rc-decision-record-template-check",

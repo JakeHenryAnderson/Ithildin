@@ -247,6 +247,7 @@ externally closed.
 - [Enterprise External Review Queue](enterprise-external-review-queue.md)
 - [Enterprise Next Review Handoff](enterprise-next-review-handoff.md)
 - [Enterprise Next Review Ready Check](enterprise-next-review-ready-check.md)
+- [Enterprise Review Send Readiness](enterprise-review-send-readiness.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)
