@@ -3940,8 +3940,10 @@ def test_sandbox_vm_static_preflight_disposition_packet_is_wired(
     assert "What This Packet Does Not Prove" in index
     assert "does not approve live VM/container inspection" in index
     assert "does not close `ERG-003`" in index
+    assert "disposition record skeleton" in index
     assert "Finding namespace: `EXT-SVP-###`" in prompt
     assert "closed_local_preview_static_preflight" in prompt
+    assert "sandbox-vm-static-preflight-disposition-record-skeleton.md" in prompt
     assert "external_review_required" in prompt
     assert "Did the reviewer inspect the static preflight source-review packet" in prompt
     assert "Does the response dry run prove absent responses stay not-ready" in prompt
@@ -3949,6 +3951,7 @@ def test_sandbox_vm_static_preflight_disposition_packet_is_wired(
     assert "sandbox-vm-static-preflight-external-response-intake.md" in intake
     assert "sandbox-vm-static-preflight-response-dry-run.md" in intake
     assert "sandbox-vm-static-preflight-disposition-packet.md" in intake
+    assert "sandbox-vm-static-preflight-disposition-record-skeleton.md" in intake
     assert "sandbox-vm-static-preflight-source-review.md" in pointers
     assert "v3-sandbox-vm-static-preflight-internal-review.md" in pointers
     for flag in [
@@ -4105,6 +4108,7 @@ def test_sandbox_vm_static_preflight_external_review_bundle_is_wired(
     assert "xh-sandbox-preflight-001-safe-label-suppression.md" in fixtures
     assert "sandbox-vm-static-preflight-external-response-intake.md" in response
     assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in response
+    assert "sandbox-vm-static-preflight-disposition-record-skeleton.md" in response
     assert "sandbox-vm-static-preflight-response-dry-run.md" in response
     assert "sandbox-vm-static-preflight-triage-update.md" in response
     assert "enterprise-external-review-queue.md" in reproduction
@@ -4247,12 +4251,14 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
     assert '"source_access": "packet-only"' in examples
     assert '"closes_external_review": false' in examples
     assert "make sandbox-vm-static-preflight-disposition-closure-check" in commands
+    assert "make sandbox-vm-static-preflight-disposition-record-skeleton-check" in commands
     assert "make sandbox-vm-static-preflight-response-dry-run" in commands
     assert "make sandbox-vm-static-preflight-triage-update-check" in commands
     assert "make release-check" in commands
     assert "make review-candidate" in commands
     assert "ERG-003" in boundary
     assert "ERG-004" in boundary
+    assert "sandbox-vm-static-preflight-disposition-record-skeleton.md" in boundary
     assert "live VM/container inspection" in boundary
     for flag in [
         '"response_kit_boundary"',

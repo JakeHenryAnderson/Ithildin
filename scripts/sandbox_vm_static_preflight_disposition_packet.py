@@ -36,6 +36,7 @@ DISPOSITION_DOCS = [
     Path("docs/codex/sandbox-vm-static-preflight-external-response-intake.md"),
     Path("docs/codex/sandbox-vm-static-preflight-response-dry-run.md"),
     Path("docs/codex/sandbox-vm-static-preflight-disposition-packet.md"),
+    Path("docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md"),
 ]
 SOURCE_REVIEW_DOCS = [
     Path("docs/codex/sandbox-vm-static-preflight-source-review.md"),
@@ -157,6 +158,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Finding namespace: `EXT-SVP-###`",
         "closed_local_preview_static_preflight",
+        "sandbox-vm-static-preflight-disposition-record-skeleton.md",
         "external_review_required",
         "Did the reviewer inspect the static preflight source-review packet",
         "Does the response dry run prove absent responses stay not-ready",
@@ -167,6 +169,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "What This Packet Does Not Prove",
         "does not approve live VM/container inspection",
         "does not close `ERG-003`",
+        "disposition record skeleton",
     ]:
         if phrase not in index:
             failures.append(f"packet index is missing phrase: {phrase}")
@@ -317,9 +320,9 @@ def _index(context: dict[str, Any]) -> str:
     return f"""# Sandbox/VM Static Preflight Disposition Packet
 
 This packet packages the `ERG-003` external/source-review disposition question set, response-intake
-template, response dry-run evidence, source-review packet pointers, and command evidence. It is a
-review handoff for deciding whether the CLI-only static preflight lane may be recorded as
-`closed_local_preview_static_preflight`.
+template, disposition record skeleton, response dry-run evidence, source-review packet pointers,
+and command evidence. It is a review handoff for deciding whether the CLI-only static preflight
+lane may later be recorded as `closed_local_preview_static_preflight`.
 
 ## Boundary
 
@@ -342,6 +345,10 @@ review handoff for deciding whether the CLI-only static preflight lane may be re
 4. `03_SANDBOX_VM_STATIC_PREFLIGHT_SOURCE_REVIEW_POINTERS.md`
 5. `04_SANDBOX_VM_STATIC_PREFLIGHT_DISPOSITION_COMMAND_EVIDENCE.md`
 6. `sandbox-vm-static-preflight-disposition-artifact-hashes.json`
+
+The disposition and intake artifact embeds
+`docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md` so a reviewer can see the
+future committed record shape without treating this packet as closure evidence.
 
 ## What This Packet Does Not Prove
 
@@ -379,7 +386,9 @@ Please answer every question:
    external-closure attempts are rejected?
 8. If there are no critical/high findings, can `ERG-003` move from `external_review_required` to
    `closed_local_preview_static_preflight`?
-9. Does the reviewer explicitly avoid approving live VM/container control, Mission Control runtime
+9. Does any favorable disposition require a later committed update using
+   `sandbox-vm-static-preflight-disposition-record-skeleton.md`?
+10. Does the reviewer explicitly avoid approving live VM/container control, Mission Control runtime
    behavior, local model invocation, trusted-host promotion, or production/security-product claims?
 
 Use this exact finding shape for actionable findings:

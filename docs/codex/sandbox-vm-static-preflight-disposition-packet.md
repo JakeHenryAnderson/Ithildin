@@ -67,6 +67,10 @@ The generated disposition packet must contain:
 - `04_SANDBOX_VM_STATIC_PREFLIGHT_DISPOSITION_COMMAND_EVIDENCE.md`
 - `sandbox-vm-static-preflight-disposition-artifact-hashes.json`
 
+`02_SANDBOX_VM_STATIC_PREFLIGHT_DISPOSITION_AND_INTAKE.md` must embed
+`sandbox-vm-static-preflight-disposition-record-skeleton.md` so reviewers can see the future
+committed disposition-record shape without treating the packet as closure evidence.
+
 ## Validation
 
 Run:

@@ -150,6 +150,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "sandbox-vm-static-preflight-external-response-intake.md",
         "sandbox-vm-static-preflight-disposition-closure-gate.md",
+        "sandbox-vm-static-preflight-disposition-record-skeleton.md",
         "sandbox-vm-static-preflight-response-dry-run.md",
         "sandbox-vm-static-preflight-triage-update.md",
     ]:
@@ -306,6 +307,7 @@ def build_bundle(
                 [
                     "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
                     "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md",
+                    "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md",
                     "docs/codex/sandbox-vm-static-preflight-response-dry-run.md",
                     "docs/codex/sandbox-vm-static-preflight-triage-update.md",
                 ],

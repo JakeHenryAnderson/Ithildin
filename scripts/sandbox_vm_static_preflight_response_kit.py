@@ -155,6 +155,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"normalized response examples are missing phrase: {phrase}")
     for phrase in [
         "make sandbox-vm-static-preflight-disposition-closure-check",
+        "make sandbox-vm-static-preflight-disposition-record-skeleton-check",
         "make sandbox-vm-static-preflight-response-dry-run",
         "make sandbox-vm-static-preflight-triage-update-check",
         "make review-run-manifest-refresh",
@@ -275,6 +276,7 @@ def build_kit(
             [
                 "docs/codex/enterprise-external-review-queue.md",
                 "docs/codex/enterprise-readiness-gap-matrix.md",
+                "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md",
                 "docs/codex/sandbox-vm-live-poc-preconditions-map.md",
                 "docs/codex/post-rc-decision-register.md",
             ],
@@ -407,6 +409,7 @@ Run these commands after placing real normalized response evidence under the ign
 
 ```sh
 make sandbox-vm-static-preflight-disposition-closure-check
+make sandbox-vm-static-preflight-disposition-record-skeleton-check
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-triage-update-check
 make enterprise-external-review-queue-check

@@ -66,3 +66,5 @@ evidence passes `make sandbox-vm-static-preflight-disposition-closure-check` wit
 `closure_ready: true`.
 That future committed update must use `sandbox-vm-static-preflight-disposition-record-skeleton.md`
 as the disposition-record shape and must keep `ERG-004` blocked.
+The generated response kit includes that skeleton in its queue/boundary artifact and names
+`make sandbox-vm-static-preflight-disposition-record-skeleton-check` in the closure command list.
