@@ -376,6 +376,8 @@ checked with `make control-mapping-readiness`.
   normalizing reviewer responses without mutating findings or unfreezing capabilities.
 - `make v1-operator-quickstart-check` - validate the v1.0 local-preview operator quickstart,
   demo command order, evidence reading order, and no-new-powers boundaries.
+- `make v1-operator-trial-checklist-check` - validate the v1.0 local-preview operator trial
+  checklist for pass/fail demo evidence, Compose cleanup, non-Compose evidence, and blocked claims.
 - `make v1-workbench-evidence-check` - validate the v1.0 workbench/evidence closure map across
   Agent Run, approval, audit, signed evidence, demo, and packet readiness.
 - `make v1-assurance-closure-check` - validate the v1.0 local-preview assurance ledger across
@@ -898,6 +900,10 @@ The v1.0 operator quickstart is
 [docs/codex/v1.0-operator-quickstart.md](docs/codex/v1.0-operator-quickstart.md) and is checked
 with `make v1-operator-quickstart-check`; it is the current zero-to-one local demo path from
 preflight through cleanup.
+The v1.0 operator trial checklist is
+[docs/codex/v1.0-operator-trial-checklist.md](docs/codex/v1.0-operator-trial-checklist.md) and is
+checked with `make v1-operator-trial-checklist-check`; it turns the quickstart into a repeatable
+pass/fail local trial record without approving runtime powers or product-positioning claims.
 The v1.0 workbench/evidence closure map is
 [docs/codex/v1.0-workbench-evidence-closure.md](docs/codex/v1.0-workbench-evidence-closure.md)
 and is checked with `make v1-workbench-evidence-check`; it ties the local review console, Agent Run

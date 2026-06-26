@@ -237,6 +237,7 @@ externally closed.
 - [Ithildin v1.0 RC Final Handoff](v1.0-rc-final-handoff.md)
 - [Ithildin v1.0 RC Post-Review Triage](v1.0-rc-post-review-triage.md)
 - [Ithildin v1.0 Operator Quickstart](v1.0-operator-quickstart.md)
+- [Ithildin v1.0 Operator Trial Checklist](v1.0-operator-trial-checklist.md)
 - [Ithildin v1.0 Workbench And Evidence Closure](v1.0-workbench-evidence-closure.md)
 - [Ithildin v1.0 Assurance Closure](v1.0-assurance-closure.md)
 - [Ithildin v1.0 RC Readiness Gate](v1.0-rc-readiness-gate.md)

@@ -38,6 +38,7 @@ REQUIRED_PHRASES = [
     "external-pending rows must stay visible instead of being called closed",
     "make review-candidate",
     "var/review-packets/v1.0/rc/",
+    "02A_V1_OPERATOR_TRIAL_CHECKLIST.md",
     "12_V1_RC_FINAL_HANDOFF.md",
     "13_V1_RC_POST_REVIEW_TRIAGE.md",
     "14_V1_RC_ARTIFACTS.md",

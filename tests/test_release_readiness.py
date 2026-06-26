@@ -724,6 +724,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "v1-rc-final-handoff-check:" in makefile
     assert "v1-rc-post-review-triage-check:" in makefile
     assert "v1-operator-quickstart-check:" in makefile
+    assert "v1-operator-trial-checklist-check:" in makefile
     assert "v1-workbench-evidence-check:" in makefile
     assert "v1-assurance-closure-check:" in makefile
     assert "v1-rc-readiness:" in makefile
@@ -736,6 +737,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "v1-rc-final-handoff-check" in release_check_body
     assert "v1-rc-post-review-triage-check" in release_check_body
     assert "v1-operator-quickstart-check" in release_check_body
+    assert "v1-operator-trial-checklist-check" in release_check_body
     assert "v1-workbench-evidence-check" in release_check_body
     assert "v1-assurance-closure-check" in release_check_body
     assert "v1-rc-readiness" in release_check_body
@@ -748,6 +750,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "make v1-rc-final-handoff-check" in readme
     assert "make v1-rc-post-review-triage-check" in readme
     assert "make v1-operator-quickstart-check" in readme
+    assert "make v1-operator-trial-checklist-check" in readme
     assert "make v1-workbench-evidence-check" in readme
     assert "make v1-assurance-closure-check" in readme
     assert "make v1-rc-readiness" in readme
@@ -760,6 +763,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "docs/codex/v1.0-rc-final-handoff.md" in docs_site
     assert "docs/codex/v1.0-rc-post-review-triage.md" in docs_site
     assert "docs/codex/v1.0-operator-quickstart.md" in docs_site
+    assert "docs/codex/v1.0-operator-trial-checklist.md" in docs_site
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in docs_site
     assert "docs/codex/v1.0-assurance-closure.md" in docs_site
     assert "docs/codex/v1.0-rc-readiness-gate.md" in docs_site
@@ -771,6 +775,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "docs/codex/v1.0-rc-final-handoff.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-post-review-triage.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-operator-quickstart.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v1.0-operator-trial-checklist.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-readiness-gate.md" in review_docs.REVIEW_DOCS
@@ -782,6 +787,7 @@ def test_v1_rc_roadmap_is_wired() -> None:
     assert "Ithildin v1.0 RC Final Handoff" in review_index
     assert "Ithildin v1.0 RC Post-Review Triage" in review_index
     assert "Ithildin v1.0 Operator Quickstart" in review_index
+    assert "Ithildin v1.0 Operator Trial Checklist" in review_index
     assert "Ithildin v1.0 Workbench And Evidence Closure" in review_index
     assert "Ithildin v1.0 Assurance Closure" in review_index
     assert "Ithildin v1.0 RC Readiness Gate" in review_index
@@ -794,8 +800,11 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 17
+    assert packet["artifact_count"] == 18
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
+    trial_checklist = output_dir.joinpath("02A_V1_OPERATOR_TRIAL_CHECKLIST.md").read_text(
+        encoding="utf-8"
+    )
     feature_freeze = output_dir.joinpath("05_V1_RC_FEATURE_FREEZE.md").read_text(
         encoding="utf-8"
     )
@@ -827,18 +836,22 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     )
 
     assert not output_dir.joinpath("13_V1_RC_COMMANDS.md").exists()
-    assert "5. `05_V1_RC_FEATURE_FREEZE.md`" in index
-    assert "6. `06_V1_RC_READINESS_GATE.md`" in index
-    assert "7. `07_ENTERPRISE_READINESS_RUNWAY.md`" in index
-    assert "8. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
-    assert "9. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
-    assert "10. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
-    assert "11. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
-    assert "12. `12_V1_RC_FINAL_HANDOFF.md`" in index
-    assert "13. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
-    assert "14. `14_V1_RC_ARTIFACTS.md`" in index
-    assert "15. `15_V1_RC_COMMANDS.md`" in index
-    assert "16. `v1-rc-artifact-hashes.json`" in index
+    assert "3. `02A_V1_OPERATOR_TRIAL_CHECKLIST.md`" in index
+    assert "6. `05_V1_RC_FEATURE_FREEZE.md`" in index
+    assert "7. `06_V1_RC_READINESS_GATE.md`" in index
+    assert "8. `07_ENTERPRISE_READINESS_RUNWAY.md`" in index
+    assert "9. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
+    assert "10. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
+    assert "11. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
+    assert "12. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
+    assert "13. `12_V1_RC_FINAL_HANDOFF.md`" in index
+    assert "14. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
+    assert "15. `14_V1_RC_ARTIFACTS.md`" in index
+    assert "16. `15_V1_RC_COMMANDS.md`" in index
+    assert "17. `v1-rc-artifact-hashes.json`" in index
+    assert "Ithildin v1.0 Operator Trial Checklist" in trial_checklist
+    assert "Trial Pass Criteria" in trial_checklist
+    assert "make release-check" in trial_checklist
     assert "Ithildin v1.0 RC Feature Freeze" in feature_freeze
     assert "capability expansion remains blocked" in feature_freeze
     assert "Ithildin Enterprise Readiness Runway" in runway
@@ -867,11 +880,12 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "promotion only as `not_promoted`" in artifacts
     assert "host promotion is implemented or approved" in artifacts
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 16
+    assert len(hashes["artifacts"]) == 17
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
         "02_V1_OPERATOR_QUICKSTART.md",
+        "02A_V1_OPERATOR_TRIAL_CHECKLIST.md",
         "03_V1_WORKBENCH_EVIDENCE_CLOSURE.md",
         "04_V1_ASSURANCE_CLOSURE.md",
         "05_V1_RC_FEATURE_FREEZE.md",
