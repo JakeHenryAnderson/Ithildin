@@ -4600,10 +4600,15 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
     assert report["erg_004_unblocked"] is False
     assert report["closes_erg_003"] is False
     assert report["artifact_count"] == len(expected)
+    assert report["artifact_hashes_match_files"] is True
     assert generated == expected
     assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
         "sandbox-vm-static-preflight-response-kit-artifact-hashes.json"
     }
+    for entry in hashes["artifacts"]:
+        data = output_dir.joinpath(entry["path"]).read_bytes()
+        assert entry["sha256"] == "sha256:" + hashlib.sha256(data).hexdigest()
+        assert entry["bytes"] == len(data)
     assert "Tool count remains `24`" in index
     assert "What This Kit Does Not Prove" in index
     assert "does not close `ERG-003`" in index
