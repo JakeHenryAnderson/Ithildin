@@ -175,6 +175,12 @@ The external disposition packet is
 generated with `make trusted-host-promotion-disposition-packet`; it packages the source-review
 pointer, disposition question set, command evidence, and artifact hashes for reviewer handoff
 without approving trusted-host promotion, direct host writes, or runtime implementation planning.
+The external response intake template is
+[trusted-host-promotion-external-response-intake.md](trusted-host-promotion-external-response-intake.md)
+and is validated with `make trusted-host-promotion-external-response-intake-check`; it defines the
+`EXT-TRUSTED-HOST-###` finding namespace and `trusted-host-promotion` normalizer command for
+recording reviewer responses without mutating findings, closing `ERG-005`, or approving runtime
+host promotion.
 The internal design/source-review pass is
 [v3-trusted-host-promotion-internal-review.md](v3-trusted-host-promotion-internal-review.md) and is
 validated with `make trusted-host-promotion-internal-review-check`; it records

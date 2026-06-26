@@ -24,9 +24,10 @@ AREA_NAMESPACES = {
     "release-automation": "REL",
     "sandbox-vm-static-preflight": "SVP",
     "sandbox-vm-live-poc": "LIVE-POC",
+    "trusted-host-promotion": "TRUSTED-HOST",
 }
 FINDING_PATTERN = re.compile(
-    r"^EXT-((PA|FS|HTTP|SE|PR|MCP|UI|REL|SVP|LIVE-POC)-(\d{3}|###)|(\d{3}|###))$"
+    r"^EXT-(([A-Z]+(?:-[A-Z]+)*)-(\d{3}|###)|(\d{3}|###))$"
 )
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -187,7 +188,7 @@ def _validate_finding_row(
     if not FINDING_PATTERN.match(finding_id):
         raise ExternalResponseNormalizationError(f"invalid finding ID: {finding_id}")
     expected_namespace = AREA_NAMESPACES[area]
-    namespace_match = re.match(r"^EXT-([A-Z]+(?:-[A-Z]+)?)-", finding_id)
+    namespace_match = re.match(r"^EXT-([A-Z]+(?:-[A-Z]+)*)-", finding_id)
     if namespace_match and namespace_match.group(1) != expected_namespace:
         raise ExternalResponseNormalizationError(
             f"{finding_id} namespace does not match reviewed area: {area}"

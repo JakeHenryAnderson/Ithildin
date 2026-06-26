@@ -137,6 +137,10 @@ Current selected capability: `not selected`.
 - Current source-review handoff evidence:
   `trusted-host-promotion-source-review.md` packages the design-only trusted-host promotion lane for
   reviewer disposition while keeping runtime promotion, host writes, and automatic promotion blocked.
+- Current external response intake evidence:
+  `trusted-host-promotion-external-response-intake.md` defines the `EXT-TRUSTED-HOST-###` finding
+  namespace and `trusted-host-promotion` normalizer command for recording reviewer responses without
+  mutating findings, closing `ERG-005`, or approving runtime promotion.
 
 ### PRD-SIEM-EXPORT-001
 

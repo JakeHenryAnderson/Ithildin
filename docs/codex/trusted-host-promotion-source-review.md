@@ -81,6 +81,11 @@ production identity, runtime Postgres, hosted telemetry, remote MCP, shell/Docke
 governed powers, arbitrary HTTP, broad filesystem writes, compliance automation, or
 public/security-product positioning.
 
+Reviewer responses should be captured through
+[trusted-host-promotion-external-response-intake.md](trusted-host-promotion-external-response-intake.md),
+which validates the `EXT-TRUSTED-HOST-###` finding namespace and keeps `ERG-005` blocked until a
+later committed triage update changes the decision register.
+
 ## Current Boundary
 
 Current runtime/demo evidence may only report `promotion_status: not_promoted`.

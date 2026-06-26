@@ -269,6 +269,8 @@ checked with `make control-mapping-readiness`.
   packet for the trusted-host promotion planning lane while keeping host promotion blocked.
 - `make trusted-host-promotion-disposition-packet-check` - validate the trusted-host promotion
   disposition packet wiring and artifact hashes.
+- `make trusted-host-promotion-external-response-intake-check` - validate the external response
+  intake template for the trusted-host promotion lane while keeping host promotion blocked.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
@@ -1054,6 +1056,12 @@ The trusted-host promotion disposition packet is in
 and is generated with `make trusted-host-promotion-disposition-packet`; it packages the source-review
 pointer, disposition question set, command evidence, and artifact hashes for reviewer handoff
 without approving trusted-host promotion or direct host writes.
+The trusted-host promotion external response intake template is in
+[docs/codex/trusted-host-promotion-external-response-intake.md](docs/codex/trusted-host-promotion-external-response-intake.md)
+and is checked with `make trusted-host-promotion-external-response-intake-check`; it defines the
+`EXT-TRUSTED-HOST-###` finding namespace and `trusted-host-promotion` normalizer command for
+recording reviewer responses without mutating findings, closing `ERG-005`, or approving runtime
+host promotion.
 The internal trusted-host promotion source-review pass is in
 [docs/codex/v3-trusted-host-promotion-internal-review.md](docs/codex/v3-trusted-host-promotion-internal-review.md)
 and is checked with `make trusted-host-promotion-internal-review-check`; it records

@@ -30,6 +30,7 @@ Generate a compact reviewer handoff under
 - the exact `ERG-005` disposition questions;
 - the `EXT-TRUSTED-HOST-###` finding namespace;
 - the source-review packet path and artifact-hash guidance;
+- the external response intake template for normalizing reviewer responses;
 - the internal review and design/source-review evidence pointers;
 - command evidence for the trusted-host promotion planning checks;
 - explicit reminder that a later post-RC decision record is required before any runtime proposal.
@@ -73,6 +74,11 @@ The generated disposition packet must contain:
 - `03_TRUSTED_HOST_PROMOTION_SOURCE_REVIEW_POINTERS.md`
 - `04_TRUSTED_HOST_PROMOTION_DISPOSITION_COMMAND_EVIDENCE.md`
 - `trusted-host-promotion-disposition-artifact-hashes.json`
+
+Reviewer responses should be recorded through
+[trusted-host-promotion-external-response-intake.md](trusted-host-promotion-external-response-intake.md)
+after this packet is reviewed. That intake captures `EXT-TRUSTED-HOST-###` findings without
+mutating findings, closing `ERG-005`, or approving runtime host promotion.
 
 ## Validation
 

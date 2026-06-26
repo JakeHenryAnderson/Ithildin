@@ -39,6 +39,7 @@ PROJECT_MARKERS = [
 DISPOSITION_DOCS = [
     Path("docs/codex/trusted-host-promotion-disposition-packet.md"),
     Path("docs/codex/trusted-host-promotion-decision-intake.md"),
+    Path("docs/codex/trusted-host-promotion-external-response-intake.md"),
 ]
 SOURCE_REVIEW_DOCS = [
     Path("docs/codex/trusted-host-promotion-source-review.md"),
