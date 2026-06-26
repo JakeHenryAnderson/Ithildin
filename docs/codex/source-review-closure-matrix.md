@@ -4,6 +4,10 @@ This matrix tracks external/source review closure for the v0.2 review candidate 
 local-preview runtime boundary. Initial status is `pending external review` until a reviewer records
 findings and disposition.
 
+The residual docs/claims/public-preview wording rows are also tracked by
+`docs-claims-public-preview-disposition-closure-gate.md`; the gate is fail-closed and does not mark
+rows closed without normalized review evidence.
+
 For v0.3-prep, this matrix now separates internal review, internal AI/subagent pressure testing,
 external review, finding records, and closure evidence. The task band is recorded in
 [v0.3-milestone-manifest.md](v0.3-milestone-manifest.md). Internal review can increase confidence

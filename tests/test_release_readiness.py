@@ -43,6 +43,7 @@ from scripts import (
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
+    docs_claims_public_preview_disposition_closure_check,
     enterprise_external_review_queue_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
@@ -1631,6 +1632,118 @@ def test_public_security_product_positioning_decision_closure_gate_is_wired() ->
     assert "public-security-product-positioning-decision-closure-gate.md" in queue
     assert "public-security-product-positioning-decision-closure-gate.md" in decision_register
     assert "public-security-product-positioning-decision-closure-gate.md" in intake
+
+
+def test_docs_claims_public_preview_disposition_closure_gate_is_wired() -> None:
+    report = docs_claims_public_preview_disposition_closure_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/docs-claims-public-preview-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    row_partition = Path("docs/codex/v0.7-external-review-row-partition.md").read_text(
+        encoding="utf-8"
+    )
+    assurance = Path("docs/codex/v1.0-assurance-closure.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "docs-claims-public-preview"
+    assert report["finding_namespace"] == "EXT-DOCS-CLAIMS-###"
+    assert report["normalized_response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["docs_claims_status"] == "external_pending"
+    assert report["allowed_closure_state"] == "closed_local_preview_docs_claims"
+    assert report["residual_row_count"] == 12
+    assert report["docs_claims_public_preview_wording_closed"] is False
+    assert report["capability_expansion_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["production_security_compliance_positioning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["new_tool_powers_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_mapping_runtime_allowed"] is False
+    for row in [
+        "Documentation IA",
+        "Threat model refresh",
+        "v0.4 packet generator",
+        "v0.4 external packet",
+        "v0.5 roadmap",
+        "Capability expansion gate",
+        "Evidence-confusion gate",
+        "v0.5 threat model delta",
+        "v0.5 external review prompt",
+        "v0.5 boundary decision draft",
+        "v0.5 handoff packet",
+        "v0.6 boundary charter",
+    ]:
+        assert row in doc
+    for phrase in [
+        "Status: fail-closed closure gate for residual docs/claims/public-preview wording rows.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "var/review-runs/docs-claims-public-preview/normalized-response.json",
+        "reviewed area: `docs-claims-public-preview`",
+        "finding namespace: `EXT-DOCS-CLAIMS-###`",
+        "can_close_source_rows: true",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "disposition_outcome: close_docs_claims_for_local_preview",
+        "closure_ready: false",
+        "docs_claims_status: external_pending",
+        "docs_claims_public_preview_wording_closed: false",
+        "capability_expansion_allowed: false",
+        "public_security_product_positioning_allowed: false",
+        "runtime_changes_allowed: false",
+        "closed_local_preview_docs_claims",
+        "separate committed matrix update",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "capability expansion is approved",
+        "public/security-product positioning is approved",
+        "production/security/compliance positioning is approved",
+        "runtime behavior is approved",
+        "new governed tool powers are approved",
+        "production-ready",
+        "compliance-grade",
+    ]:
+        assert forbidden not in doc
+    assert "make docs-claims-public-preview-disposition-closure-check" in readme
+    assert "docs-claims-public-preview-disposition-closure-check:" in makefile
+    assert (
+        "docs-claims-public-preview-disposition-closure-check" in release_check_body
+        or "release-check: docs-claims-public-preview-disposition-closure-check"
+        in makefile
+    )
+    assert "docs-claims-public-preview-disposition-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/docs-claims-public-preview-disposition-closure-gate.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/docs-claims-public-preview-disposition-closure-gate.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Docs/Claims Public-Preview Disposition Closure Gate" in review_index
+    assert "docs-claims-public-preview-disposition-closure-gate.md" in matrix
+    assert "docs-claims-public-preview-disposition-closure-gate.md" in row_partition
+    assert "docs-claims-public-preview-disposition-closure-gate.md" in assurance
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

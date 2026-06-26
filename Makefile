@@ -226,6 +226,9 @@ public-security-product-positioning-decision-intake-check:
 public-security-product-positioning-decision-closure-check:
 	uv run python scripts/public_security_product_positioning_decision_closure_check.py
 
+docs-claims-public-preview-disposition-closure-check:
+	uv run python scripts/docs_claims_public_preview_disposition_closure_check.py
+
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
 
@@ -1041,7 +1044,11 @@ release-check: compliance-mapping-disposition-closure-check
 
 release-check: public-security-product-positioning-decision-closure-check
 
+release-check: docs-claims-public-preview-disposition-closure-check
+
 release-check: mission-control-display-disposition-closure-check
+
+.PHONY: docs-claims-public-preview-disposition-closure-check
 
 ui-dev:
 	npm run dev --prefix apps/ui

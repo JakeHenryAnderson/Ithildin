@@ -927,6 +927,12 @@ checked with `make public-security-product-positioning-decision-closure-check`; 
 blocked unless normalized source-level or packet-and-source review evidence supports a future
 claim-specific decision record and contains no critical/high findings, and it still does not approve
 public/security-product positioning or production/security/compliance positioning.
+The residual docs/claims public-preview disposition closure gate is in
+[docs/codex/docs-claims-public-preview-disposition-closure-gate.md](docs/codex/docs-claims-public-preview-disposition-closure-gate.md),
+checked with `make docs-claims-public-preview-disposition-closure-check`; it keeps legacy
+docs/claims rows external-pending unless normalized packet-only or stronger review evidence supports
+local-preview wording closure, and it still does not approve capability expansion, public/security-
+product positioning, runtime behavior, or new governed tool powers.
 The Mission Control display integration proposal is
 [docs/codex/mission-control-display-integration-proposal.md](docs/codex/mission-control-display-integration-proposal.md)
 and is checked with `make mission-control-display-integration-proposal-check`; it keeps the first

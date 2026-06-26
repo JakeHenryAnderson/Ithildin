@@ -263,6 +263,7 @@ REVIEW_DOCS = [
     "docs/codex/post-rc-decision-register.md",
     "docs/codex/public-security-product-positioning-decision-intake.md",
     "docs/codex/public-security-product-positioning-decision-closure-gate.md",
+    "docs/codex/docs-claims-public-preview-disposition-closure-gate.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
     "docs/codex/production-identity-storage-disposition-closure-gate.md",

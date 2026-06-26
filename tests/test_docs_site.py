@@ -137,6 +137,10 @@ def test_default_docs_include_v02_review_packet() -> None:
         "docs/codex/public-security-product-positioning-decision-closure-gate.md"
         in DEFAULT_DOCS
     )
+    assert (
+        "docs/codex/docs-claims-public-preview-disposition-closure-gate.md"
+        in DEFAULT_DOCS
+    )
     assert "docs/codex/production-identity-storage-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/production-identity-storage-disposition-packet.md" in DEFAULT_DOCS
     assert (

@@ -87,6 +87,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "post-rc-decision-register-check",
     "public-security-product-positioning-decision-intake-check",
     "public-security-product-positioning-decision-closure-check",
+    "docs-claims-public-preview-disposition-closure-check",
     "production-identity-storage-architecture-check",
     "production-identity-storage-disposition-packet-check",
     "production-identity-storage-disposition-closure-check",
