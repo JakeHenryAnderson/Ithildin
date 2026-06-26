@@ -437,6 +437,9 @@ checked with `make control-mapping-readiness`.
   external-review-required and blocking live VM/container inspection, sandbox orchestration,
   Mission Control runtime behavior, local model invocation, trusted-host promotion, and network
   expansion.
+- `make sandbox-vm-static-preflight-response-dry-run` - exercise temporary normalized-response
+  fixtures against the `ERG-003` closure gate while restoring the ignored response path and not
+  recording external review or closing the lane.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -1062,6 +1065,11 @@ The external response intake template is
 and is checked with `make sandbox-vm-static-preflight-external-response-intake-check`; it defines
 the `EXT-SVP-###` namespace and normalizer command for reviewer responses without mutating findings,
 closing `ERG-003`, or approving live sandbox/VM runtime work.
+The static preflight response dry run is
+[docs/codex/sandbox-vm-static-preflight-response-dry-run.md](docs/codex/sandbox-vm-static-preflight-response-dry-run.md)
+and is checked with `make sandbox-vm-static-preflight-response-dry-run`; it temporarily exercises
+favorable and unfavorable normalized-response fixtures against the fail-closed closure gate while
+restoring the ignored response path and without recording external review.
 The reviewer reproduction map is
 [docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md](docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 and is checked with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`; it gives

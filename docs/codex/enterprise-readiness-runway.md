@@ -508,6 +508,11 @@ The external response intake template is
 and is validated with `make sandbox-vm-static-preflight-external-response-intake-check`. It defines
 the `EXT-SVP-###` finding namespace and normalizer command for recording a reviewer response without
 mutating findings, closing `ERG-003`, or approving live sandbox/VM runtime work.
+The static preflight response dry run is
+[sandbox-vm-static-preflight-response-dry-run.md](sandbox-vm-static-preflight-response-dry-run.md)
+and is validated with `make sandbox-vm-static-preflight-response-dry-run`. It exercises temporary
+favorable and unfavorable normalized-response fixtures against the fail-closed closure gate, then
+restores the ignored response path without recording external review.
 The reviewer reproduction map is
 [sandbox-vm-static-preflight-reviewer-reproduction-map.md](sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 and is validated with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`. It gives

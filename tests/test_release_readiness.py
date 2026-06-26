@@ -219,6 +219,7 @@ from scripts import (
     sandbox_vm_static_preflight_external_response_intake_check,
     sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_negative_transcripts,
+    sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_reviewer_reproduction_map_check,
     sandbox_vm_static_preflight_source_review_packet,
     sandbox_vm_static_profile_fixture_contract_check,
@@ -3483,6 +3484,89 @@ def test_sandbox_vm_static_preflight_external_response_intake_is_wired() -> None
     assert "Sandbox/VM Static Preflight External Response Intake" in review_index
     assert "sandbox-vm-static-preflight-external-response-intake.md" in enterprise
     assert "sandbox-vm-static-preflight-external-response-intake.md" in gap_matrix
+
+
+def test_sandbox_vm_static_preflight_response_dry_run_is_wired() -> None:
+    report = sandbox_vm_static_preflight_response_dry_run.run_dry_run(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-static-preflight-response-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-static-preflight"
+    assert report["finding_namespace"] == "EXT-SVP-###"
+    assert report["response_restored"] is True
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_003_closed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["cases"] == {
+        "absent_response_valid": True,
+        "absent_response_not_ready": True,
+        "valid_response_accepts": True,
+        "packet_only_rejected": True,
+        "bad_hash_rejected": True,
+        "critical_high_finding_rejected": True,
+        "direct_external_closure_rejected": True,
+    }
+    for phrase in [
+        "Status: temporary-fixture validation for `ERG-003` normalized response handling.",
+        "make sandbox-vm-static-preflight-response-dry-run",
+        "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
+        "absent normalized response keeps `closure_ready: false`",
+        "packet-only evidence is rejected for closure",
+        "critical/high findings are rejected",
+        "responses that try to close external review directly are rejected",
+        "It does not prove that an external reviewer has inspected",
+        "`ERG-003` remains `external_review_required`",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "live VM/container inspection",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "API/MCP profile loading",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make sandbox-vm-static-preflight-response-dry-run" in readme
+    assert "sandbox-vm-static-preflight-response-dry-run:" in makefile
+    assert "sandbox-vm-static-preflight-response-dry-run" in release_check_body
+    assert "sandbox-vm-static-preflight-response-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-static-preflight-response-dry-run.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-response-dry-run.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Response Dry Run" in review_index
+    assert "sandbox-vm-static-preflight-response-dry-run.md" in enterprise
+    assert "sandbox-vm-static-preflight-response-dry-run.md" in gap_matrix
+    assert "sandbox-vm-static-preflight-response-dry-run.md" in queue
 
 
 def test_sandbox_vm_static_preflight_reviewer_reproduction_map_is_wired() -> None:

@@ -47,7 +47,9 @@ make enterprise-external-review-queue-check
 
 The `ERG-003` row also depends on
 `sandbox-vm-static-preflight-disposition-closure-gate.md`, which keeps the lane open until
-normalized source-level response evidence exists.
+normalized source-level response evidence exists, and
+`sandbox-vm-static-preflight-response-dry-run.md`, which verifies favorable and unfavorable
+normalized-response fixtures without recording external review.
 
 ## Dependency Order
 

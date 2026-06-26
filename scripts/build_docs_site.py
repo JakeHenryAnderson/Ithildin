@@ -263,6 +263,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md",
     "docs/codex/sandbox-vm-static-preflight-disposition-packet.md",
     "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
+    "docs/codex/sandbox-vm-static-preflight-response-dry-run.md",
     "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md",
     "docs/codex/sandbox-vm-live-poc-decision-intake.md",
     "docs/codex/sandbox-vm-live-poc-evidence-contract.md",
