@@ -117,6 +117,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-static-preflight-reviewer-reproduction-map-check",
     "sandbox-vm-live-poc-decision-intake-check",
     "sandbox-vm-live-poc-evidence-contract-check",
+    "sandbox-vm-live-poc-preconditions-map-check",
     "sandbox-vm-live-poc-decision-packet-check",
     "trusted-host-promotion-disposition-packet-check",
     "agent-workflow-check",

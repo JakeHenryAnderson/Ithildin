@@ -97,6 +97,8 @@ Current readiness evidence:
   [sandbox-vm-live-poc-decision-intake.md](sandbox-vm-live-poc-decision-intake.md);
 - the live POC evidence contract in
   [sandbox-vm-live-poc-evidence-contract.md](sandbox-vm-live-poc-evidence-contract.md);
+- the live POC preconditions map in
+  [sandbox-vm-live-poc-preconditions-map.md](sandbox-vm-live-poc-preconditions-map.md);
 - the blocked live POC decision packet in
   [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md), generated with
   `make sandbox-vm-live-poc-decision-packet`.
@@ -448,6 +450,15 @@ evidence, operator-managed sandbox evidence, local model/client evidence, and op
 Control display evidence without approving live VM/container inspection, Mission Control runtime
 behavior, local model invocation, sandbox orchestration, trusted-host promotion, SIEM delivery, or
 public/security-product positioning.
+
+The live sandbox/VM POC preconditions map is
+[sandbox-vm-live-poc-preconditions-map.md](sandbox-vm-live-poc-preconditions-map.md) and is
+validated with `make sandbox-vm-live-poc-preconditions-map-check`. It consolidates the required
+favorable `ERG-003` disposition, post-RC decision-record path, operator-managed VM/container
+assumptions, cleanup/failure transcript requirements, role separation, and cross-source evidence
+before any later implementation-planning decision. It keeps `ERG-004` blocked and does not approve
+live VM/container inspection, Mission Control runtime behavior, local model invocation, sandbox
+orchestration, trusted-host promotion, network expansion, or public/security-product positioning.
 
 The internal source-review pass is
 [v3-sandbox-vm-static-preflight-internal-review.md](v3-sandbox-vm-static-preflight-internal-review.md).

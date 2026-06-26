@@ -441,6 +441,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-evidence-contract-check` - validate the future live sandbox/VM POC
   evidence contract while confirming cross-source evidence planning does not approve live runtime
   authority.
+- `make sandbox-vm-live-poc-preconditions-map-check` - validate the blocked `ERG-004`
+  preconditions map while confirming favorable `ERG-003` disposition, a later decision record,
+  cleanup/failure evidence, and role separation are required before any live POC planning.
 - `make sandbox-vm-live-poc-decision-packet` - generate the blocked `ERG-004` external decision
   packet with readiness evidence, prerequisite static-preflight pointers, reviewer questions,
   command evidence, and artifact hashes without approving live sandbox/VM runtime work.
@@ -964,6 +967,12 @@ and is checked with `make sandbox-vm-live-poc-evidence-contract-check`; it defin
 cross-source evidence bundle for operator intent, Ithildin run/audit evidence, operator-managed
 sandbox evidence, local model/client evidence, and optional Mission Control display evidence without
 approving live VM/container inspection or runtime authority.
+The live sandbox/VM POC preconditions map is
+[docs/codex/sandbox-vm-live-poc-preconditions-map.md](docs/codex/sandbox-vm-live-poc-preconditions-map.md)
+and is checked with `make sandbox-vm-live-poc-preconditions-map-check`; it ties favorable `ERG-003`
+disposition, the future decision-record path, operator-managed VM/container assumptions,
+cleanup/failure transcripts, and cross-source evidence into one blocked-lane readiness checklist
+without approving live VM/container inspection or runtime authority.
 The live sandbox/VM POC decision packet is
 [docs/codex/sandbox-vm-live-poc-decision-packet.md](docs/codex/sandbox-vm-live-poc-decision-packet.md)
 and is generated with `make sandbox-vm-live-poc-decision-packet`; it packages the decision intake,

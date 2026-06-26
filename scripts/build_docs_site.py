@@ -250,6 +250,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md",
     "docs/codex/sandbox-vm-live-poc-decision-intake.md",
     "docs/codex/sandbox-vm-live-poc-evidence-contract.md",
+    "docs/codex/sandbox-vm-live-poc-preconditions-map.md",
     "docs/codex/sandbox-vm-live-poc-decision-packet.md",
     "docs/codex/v3-sandbox-vm-static-preflight-internal-review.md",
     "docs/codex/governed-artifact-transfer-lab.md",
