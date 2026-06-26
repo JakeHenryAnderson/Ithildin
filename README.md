@@ -433,6 +433,9 @@ checked with `make control-mapping-readiness`.
 - `make compliance-mapping-disposition-closure-check` - validate the fail-closed compliance mapping
   closure gate that keeps ERG-009 planning-only unless normalized source-level response evidence
   supports continued architecture planning.
+- `make compliance-mapping-response-dry-run` - exercise temporary normalized-response fixtures for
+  the compliance mapping closure gate while restoring the ignored response path and keeping
+  ERG-009 planning-only.
 - `make compliance-mapping-external-response-intake-check` - validate the response-intake template
   for compliance mapping reviewer feedback while keeping runtime mapping, compliance automation,
   legal advice, automated certification, regulated-industry compliance claims, and public/security
@@ -927,6 +930,12 @@ The fail-closed compliance mapping disposition closure gate is in
 and is checked with `make compliance-mapping-disposition-closure-check`; it keeps `ERG-009`
 planning-only unless normalized source-level response evidence supports continued architecture
 planning and contains no critical/high findings.
+The compliance mapping response dry run is in
+[docs/codex/compliance-mapping-response-dry-run.md](docs/codex/compliance-mapping-response-dry-run.md)
+and is checked with `make compliance-mapping-response-dry-run`; it temporarily exercises favorable
+and unfavorable normalized-response fixtures, restores the ignored response path, and does not
+record external review, mutate findings, close `ERG-009`, or approve implementation/runtime
+compliance mapping.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.

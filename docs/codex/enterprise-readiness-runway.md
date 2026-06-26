@@ -354,6 +354,10 @@ Current evidence:
 - `compliance-mapping-disposition-closure-gate.md` validates normalized source-level response
   evidence before any later triage update may move `ERG-009` toward an architecture decision record;
   absent or unfavorable evidence keeps `ERG-009` planning-only.
+- `compliance-mapping-response-dry-run.md` is validated with
+  `make compliance-mapping-response-dry-run`; it exercises favorable and unfavorable temporary
+  normalized-response fixtures, restores the ignored response path, and does not record external
+  review, mutate findings, close `ERG-009`, or approve implementation/runtime compliance mapping.
 
 ## Stop Conditions
 

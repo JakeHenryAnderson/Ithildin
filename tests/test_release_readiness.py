@@ -30,6 +30,7 @@ from scripts import (
     compliance_mapping_disposition_closure_check,
     compliance_mapping_disposition_packet,
     compliance_mapping_external_response_intake_check,
+    compliance_mapping_response_dry_run,
     consolidate_review_packet,
     control_mapping_design_check,
     control_mapping_readiness,
@@ -16609,6 +16610,104 @@ def test_compliance_mapping_disposition_closure_gate_is_wired() -> None:
     assert "compliance-mapping-disposition-closure-gate.md" in gap_matrix
     assert "compliance-mapping-disposition-closure-gate.md" in review_queue
     assert "compliance-mapping-disposition-closure-gate.md" in decision_register
+
+
+def test_compliance_mapping_response_dry_run_is_wired() -> None:
+    report = compliance_mapping_response_dry_run.run_dry_run(Path.cwd())
+    doc = Path("docs/codex/compliance-mapping-response-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["dry_run_doc"] == "docs/codex/compliance-mapping-response-dry-run.md"
+    assert (
+        report["normalized_response_path"]
+        == "var/review-runs/compliance-mapping/normalized-response.json"
+    )
+    assert report["tool_count"] == 24
+    assert report["area"] == "compliance-mapping"
+    assert report["finding_namespace"] == "EXT-COMPLIANCE-MAPPING-###"
+    assert report["response_restored"] is True
+    assert all(report["cases"].values())
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_009_closed"] is False
+    assert report["architecture_planning_recorded"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["compliance_mapping_runtime_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["legal_advice_allowed"] is False
+    assert report["automated_certification_allowed"] is False
+    assert report["regulated_industry_compliance_claims_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: temporary fixture dry run for the planning-only `ERG-009` closure gate.",
+        "make compliance-mapping-response-dry-run",
+        "var/review-runs/compliance-mapping/normalized-response.json",
+        "committed_findings_mutated: false",
+        "external_review_recorded: false",
+        "erg_009_closed: false",
+        "architecture_planning_recorded: false",
+        "implementation_planning_allowed: false",
+        "runtime_changes_allowed: false",
+        "compliance_mapping_runtime_allowed: false",
+        "compliance_automation_allowed: false",
+        "legal_advice_allowed: false",
+        "automated_certification_allowed: false",
+        "regulated_industry_compliance_claims_allowed: false",
+        "public_security_product_positioning_allowed: false",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "implementation planning is approved",
+        "runtime implementation is approved",
+        "compliance automation is approved",
+        "legal advice is approved",
+        "automated certification is approved",
+        "HIPAA compliant",
+        "GDPR compliant",
+        "compliance-grade",
+    ]:
+        assert phrase not in doc
+    assert "make compliance-mapping-response-dry-run" in readme
+    assert "compliance-mapping-response-dry-run:" in makefile
+    assert (
+        "compliance-mapping-response-dry-run" in release_check_body
+        or "release-check: compliance-mapping-response-dry-run" in makefile
+    )
+    assert "compliance-mapping-response-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/compliance-mapping-response-dry-run.md" in docs_site
+    assert "docs/codex/compliance-mapping-response-dry-run.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Compliance Mapping Response Dry Run" in review_index
+    assert "compliance-mapping-response-dry-run.md" in runway
+    assert "compliance-mapping-response-dry-run.md" in gap_matrix
+    assert "compliance-mapping-response-dry-run.md" in review_queue
+    assert "compliance-mapping-response-dry-run.md" in decision_register
 
 
 def test_mission_control_display_external_response_intake_is_wired() -> None:

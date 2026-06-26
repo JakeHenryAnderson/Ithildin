@@ -101,6 +101,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "compliance-mapping-architecture-check",
     "compliance-mapping-disposition-packet-check",
     "compliance-mapping-disposition-closure-check",
+    "compliance-mapping-response-dry-run",
     "compliance-mapping-external-response-intake-check",
     "mission-control-display-integration-proposal-check",
     "mission-control-display-importer-plan-check",
