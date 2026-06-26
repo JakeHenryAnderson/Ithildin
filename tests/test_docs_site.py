@@ -138,6 +138,10 @@ def test_default_docs_include_v02_review_packet() -> None:
         in DEFAULT_DOCS
     )
     assert "docs/codex/public-positioning-external-review-bundle.md" in DEFAULT_DOCS
+    assert (
+        "docs/codex/public-security-product-positioning-response-kit.md"
+        in DEFAULT_DOCS
+    )
     assert "docs/codex/sandbox-vm-static-preflight-response-kit.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-response-kit.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-response-kit.md" in DEFAULT_DOCS

@@ -402,6 +402,9 @@ checked with `make control-mapping-readiness`.
 - `make public-security-product-positioning-decision-intake-check` - validate the `ERG-010`
   public/security-product positioning decision intake that keeps broader public/security,
   production, sandbox, EDR/MDM, SIEM custody, and compliance-product claims blocked.
+- `make public-security-product-positioning-response-kit` - generate the ERG-010 response-intake
+  kit for converting real reviewer feedback into normalized claim-boundary evidence without
+  closing `ERG-010` or approving public/security-product positioning.
 - `make production-identity-storage-architecture-check` - validate the design-only architecture
   packet for production identity and durable storage while keeping production IAM, runtime Postgres,
   remote admin use, and custody-grade audit claims blocked.
@@ -1073,6 +1076,12 @@ Generate the consolidated public positioning external-review bundle with
 closure gates, current no-go decision evidence, accepted-risk context, enterprise queue status,
 command evidence, and artifact hashes without closing ERG-010 or approving public/security-product
 positioning.
+Generate the public/security-product positioning response kit with
+`make public-security-product-positioning-response-kit`; validate its wiring with
+`make public-security-product-positioning-response-kit-check`. The kit packages response-intake
+guidance, normalized response examples, closure triage commands, boundary status, and command
+evidence for converting real reviewer feedback into a later claim-decision record without closing
+ERG-010 or approving public/security-product positioning.
 The residual docs/claims public-preview disposition closure gate is in
 [docs/codex/docs-claims-public-preview-disposition-closure-gate.md](docs/codex/docs-claims-public-preview-disposition-closure-gate.md),
 checked with `make docs-claims-public-preview-disposition-closure-check`; it keeps legacy

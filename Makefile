@@ -291,6 +291,12 @@ public-positioning-external-review-bundle:
 public-positioning-external-review-bundle-check:
 	uv run python scripts/public_security_product_positioning_external_review_bundle.py --check
 
+public-security-product-positioning-response-kit:
+	uv run python scripts/public_security_product_positioning_response_kit.py
+
+public-security-product-positioning-response-kit-check:
+	uv run python scripts/public_security_product_positioning_response_kit.py --check
+
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
 
@@ -1111,6 +1117,7 @@ review-candidate:
 	$(MAKE) trusted-host-promotion-external-review-bundle
 	$(MAKE) trusted-host-promotion-response-kit
 	$(MAKE) public-positioning-external-review-bundle
+	$(MAKE) public-security-product-positioning-response-kit
 	$(MAKE) live-demo-evidence-summary
 	$(MAKE) live-demo-packet
 	$(MAKE) guided-demo
@@ -1200,6 +1207,7 @@ release-check: compliance-mapping-response-kit-check
 
 release-check: public-security-product-positioning-decision-closure-check
 release-check: public-positioning-external-review-bundle-check
+release-check: public-security-product-positioning-response-kit-check
 
 release-check: docs-claims-public-preview-disposition-closure-check
 

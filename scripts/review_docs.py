@@ -265,6 +265,7 @@ REVIEW_DOCS = [
     "docs/codex/public-security-product-positioning-decision-intake.md",
     "docs/codex/public-security-product-positioning-decision-closure-gate.md",
     "docs/codex/public-positioning-external-review-bundle.md",
+    "docs/codex/public-security-product-positioning-response-kit.md",
     "docs/codex/docs-claims-public-preview-disposition-closure-gate.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",

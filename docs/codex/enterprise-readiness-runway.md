@@ -479,7 +479,12 @@ consolidated public positioning external-review bundle is
 generated with `make public-positioning-external-review-bundle`; it packages the intake, closure
 gates, current no-go decision evidence, accepted-risk context, enterprise queue status, command
 evidence, and artifact hashes without closing `ERG-010` or approving public/security-product
-positioning. The
+positioning. The response-intake kit is
+[public-security-product-positioning-response-kit.md](public-security-product-positioning-response-kit.md),
+generated with `make public-security-product-positioning-response-kit`; it packages normalized
+response examples, closure triage commands, queue and boundary status, and command evidence for
+real reviewer feedback without closing `ERG-010` or approving public/security-product positioning.
+The
 fail-closed public/security-product positioning decision closure gate is in
 [public-security-product-positioning-decision-closure-gate.md](public-security-product-positioning-decision-closure-gate.md)
 and is checked with `make public-security-product-positioning-decision-closure-check`; it keeps

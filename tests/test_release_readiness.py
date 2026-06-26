@@ -191,6 +191,7 @@ from scripts import (
     public_security_product_positioning_decision_closure_check,
     public_security_product_positioning_decision_intake_check,
     public_security_product_positioning_external_review_bundle,
+    public_security_product_positioning_response_kit,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
@@ -1780,6 +1781,135 @@ def test_public_positioning_external_review_bundle_is_wired(tmp_path: Path) -> N
     assert "public-positioning-external-review-bundle.md" in gap_matrix
     assert "public-positioning-external-review-bundle.md" in queue
     assert "public-positioning-external-review-bundle.md" in decision_register
+
+
+def test_public_security_product_positioning_response_kit_is_wired(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "public-security-product-positioning-response-kit"
+    built = public_security_product_positioning_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    report = public_security_product_positioning_response_kit.build_check_report(
+        Path.cwd()
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    expected_files = {
+        "00_PUBLIC_SECURITY_PRODUCT_POSITIONING_RESPONSE_KIT_INDEX.md",
+        "01_PUBLIC_SECURITY_PRODUCT_POSITIONING_RESPONSE_INTAKE_GUIDE.md",
+        "02_PUBLIC_SECURITY_PRODUCT_POSITIONING_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_PUBLIC_SECURITY_PRODUCT_POSITIONING_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_PUBLIC_SECURITY_PRODUCT_POSITIONING_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_PUBLIC_SECURITY_PRODUCT_POSITIONING_RESPONSE_KIT_EVIDENCE.md",
+        "public-security-product-positioning-response-kit-artifact-hashes.json",
+    }
+    artifact_names = {path.name for path in built.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir
+            / "public-security-product-positioning-response-kit-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    hashed = {entry["path"] for entry in hashes["artifacts"]}
+    index = (
+        output_dir / "00_PUBLIC_SECURITY_PRODUCT_POSITIONING_RESPONSE_KIT_INDEX.md"
+    ).read_text(encoding="utf-8")
+    evidence = (
+        output_dir / "05_PUBLIC_SECURITY_PRODUCT_POSITIONING_RESPONSE_KIT_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_010_status"] == "blocked"
+    assert report["claim_decision_record_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["production_security_compliance_positioning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["broader_public_distribution_allowed"] is False
+    assert report["sandbox_claims_allowed"] is False
+    assert report["edr_mdm_claims_allowed"] is False
+    assert report["siem_custody_claims_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["remote_mcp_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["erg_010_closed"] is False
+    assert expected_files <= artifact_names
+    assert "public-security-product-positioning-response-kit-artifact-hashes.json" not in hashed
+    assert expected_files - {
+        "public-security-product-positioning-response-kit-artifact-hashes.json"
+    } <= hashed
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-010`" in index
+    assert "does not approve public/security-product positioning" in index
+    assert "does not approve a claim-decision record" in index
+    assert '"response_kit_boundary"' in evidence
+    assert '"runtime_changes_allowed": false' in evidence
+    assert '"claim_decision_record_allowed": false' in evidence
+    assert '"public_security_product_positioning_allowed": false' in evidence
+    assert '"production_security_compliance_positioning_allowed": false' in evidence
+    assert '"broader_public_distribution_allowed": false' in evidence
+    assert '"sandbox_claims_allowed": false' in evidence
+    assert '"edr_mdm_claims_allowed": false' in evidence
+    assert '"siem_custody_claims_allowed": false' in evidence
+    assert '"compliance_claims_allowed": false' in evidence
+    assert '"production_identity_allowed": false' in evidence
+    assert '"runtime_postgres_allowed": false' in evidence
+    assert '"remote_mcp_allowed": false' in evidence
+    assert '"trusted_host_promotion_allowed": false' in evidence
+    assert '"new_power_classes_allowed": false' in evidence
+    assert '"erg_010_closed": false' in evidence
+    assert '"decision_closure_check"' in evidence
+    assert '"closure_ready": false' in evidence
+    assert "make public-security-product-positioning-response-kit" in readme
+    assert "public-security-product-positioning-response-kit:" in makefile
+    assert "public-security-product-positioning-response-kit-check:" in makefile
+    assert (
+        "public-security-product-positioning-response-kit-check" in release_check_body
+        or "release-check: public-security-product-positioning-response-kit-check"
+        in makefile
+    )
+    assert "$(MAKE) public-security-product-positioning-response-kit" in (
+        review_candidate_body
+    )
+    assert "public-security-product-positioning-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) public-security-product-positioning-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/public-security-product-positioning-response-kit.md" in docs_site
+    assert (
+        "docs/codex/public-security-product-positioning-response-kit.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Public Security Product Positioning Response Kit" in review_index
+    assert "public-security-product-positioning-response-kit.md" in runway
+    assert "public-security-product-positioning-response-kit.md" in gap_matrix
+    assert "public-security-product-positioning-response-kit.md" in queue
+    assert "public-security-product-positioning-response-kit.md" in decision_register
 
 
 def test_docs_claims_public_preview_disposition_closure_gate_is_wired() -> None:
