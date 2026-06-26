@@ -130,6 +130,11 @@ Architecture discussion, fixture schema design, compatibility-test planning, and
 continue. Runtime adapter implementation remains blocked until a separate post-RC decision record
 approves a specific adapter implementation plan.
 
+The external response intake template for reviewer feedback is
+[siem-export-adapter-external-response-intake.md](siem-export-adapter-external-response-intake.md).
+It records allowed reviewer-response outcomes without mutating findings, closing `ERG-008`, or
+approving runtime adapter behavior.
+
 ## Validation
 
 Run:

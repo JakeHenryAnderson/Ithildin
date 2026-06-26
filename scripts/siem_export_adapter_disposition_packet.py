@@ -38,6 +38,7 @@ PROJECT_MARKERS = [
 DISPOSITION_DOCS = [
     Path("docs/codex/siem-export-adapter-disposition-packet.md"),
     Path("docs/codex/siem-export-adapter-architecture.md"),
+    Path("docs/codex/siem-export-adapter-external-response-intake.md"),
 ]
 REVIEW_POINTER_DOCS = [
     Path("docs/codex/siem-shaped-evidence-design.md"),

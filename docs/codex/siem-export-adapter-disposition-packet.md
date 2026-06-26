@@ -32,6 +32,14 @@ Generate the focused disposition handoff with:
 make siem-export-adapter-disposition-packet
 ```
 
+Record reviewer responses with
+[siem-export-adapter-external-response-intake.md](siem-export-adapter-external-response-intake.md)
+and validate the intake template with:
+
+```sh
+make siem-export-adapter-external-response-intake-check
+```
+
 ## Required Reviewer Question
 
 A reviewer should answer:

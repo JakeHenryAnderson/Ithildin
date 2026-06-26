@@ -26,6 +26,7 @@ AREA_NAMESPACES = {
     "sandbox-vm-live-poc": "LIVE-POC",
     "trusted-host-promotion": "TRUSTED-HOST",
     "production-identity-storage": "PROD-IAM-STORAGE",
+    "siem-export-adapter": "SIEM-ADAPTER",
 }
 FINDING_PATTERN = re.compile(
     r"^EXT-(([A-Z]+(?:-[A-Z]+)*)-(\d{3}|###)|(\d{3}|###))$"

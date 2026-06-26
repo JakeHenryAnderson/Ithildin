@@ -39,7 +39,7 @@ Current selected capability: `not selected`.
 | `PRD-SANDBOX-LIVE-POC-001` | Live sandbox/VM worker proof of concept | `no_go` | Maintain the decision-intake packet and wait for favorable `ERG-003` disposition | `false` | Favorable static-preflight disposition, live POC decision record, implementation plan, cleanup/failure transcripts, and external/source review |
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
 | `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, implementation-plan skeleton, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, and external/source review |
-| `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
+| `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, the disposition packet in `siem-export-adapter-disposition-packet.md`, the response intake template in `siem-export-adapter-external-response-intake.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
 | `PRD-COMPLIANCE-MAPPING-001` | Compliance mapping support lane | `approved_for_planning` | Mapping-template architecture, operator responsibility language, legal-review boundary, and evidence-field planning only | `false` | The architecture packet in `compliance-mapping-architecture.md`, the disposition packet in `compliance-mapping-disposition-packet.md`, exact framework scope, template schema, evidence allowlist/denylist, accepted-risk impact review, post-RC decision record, and external/source review before runtime work |
 | `PRD-PROD-IAM-STORAGE-001` | Production identity and durable storage architecture | `approved_for_planning` | Maintain the architecture packet, threat model questions, migration/retention/backup planning, and external architecture review preparation | `false` | Post-RC decision record, identity provider design, tenant/workspace model, storage/migration plan, backup/restore plan, failure-mode tests, and external architecture review before runtime work |
 
@@ -162,6 +162,10 @@ Current selected capability: `not selected`.
   `siem-export-adapter-disposition-packet.md` asks whether the current adapter architecture
   evidence is coherent enough for continued planning while SIEM adapter runtime behavior remains
   blocked.
+- Current external response intake evidence:
+  `siem-export-adapter-external-response-intake.md` defines allowed reviewer-response outcomes and
+  the `EXT-SIEM-ADAPTER-###` normalization path without mutating findings, closing `ERG-008`, or
+  approving runtime adapter behavior.
 
 ### PRD-COMPLIANCE-MAPPING-001
 

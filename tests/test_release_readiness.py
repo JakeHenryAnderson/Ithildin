@@ -217,6 +217,7 @@ from scripts import (
     siem_evidence_design_check,
     siem_export_adapter_architecture_check,
     siem_export_adapter_disposition_packet,
+    siem_export_adapter_external_response_intake_check,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
     test_determinism_gate,
@@ -12571,6 +12572,36 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
         == "production-identity-storage"
     )
 
+    siem_export_adapter_response = "\n".join(
+        [
+            "# SIEM Export Adapter Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-SIEM-ADAPTER-001 | medium | siem-export-adapter | "
+            "docs/codex/siem-export-adapter-disposition-packet.md | "
+            "should-fix | open | clarify adapter disposition wording |",
+        ]
+    )
+    siem_export_adapter_normalized = external_response_normalize.normalize_response(
+        siem_export_adapter_response,
+        reviewer="GPT 5.5 Pro",
+        reviewer_type="external-model",
+        source_access="packet-and-source",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="siem-export-adapter",
+    )
+    assert (
+        siem_export_adapter_normalized["findings"][0]["finding_id"]
+        == "EXT-SIEM-ADAPTER-001"
+    )
+    assert (
+        siem_export_adapter_normalized["findings"][0]["area"]
+        == "siem-export-adapter"
+    )
+
 
 def test_external_response_normalization_binds_area_and_namespace() -> None:
     raw_response = "\n".join(
@@ -14940,6 +14971,88 @@ def test_siem_export_adapter_disposition_packet_is_wired(tmp_path: Path) -> None
         "03_SIEM_EXPORT_ADAPTER_REVIEW_POINTERS.md",
         "04_SIEM_EXPORT_ADAPTER_DISPOSITION_COMMAND_EVIDENCE.md",
     }
+
+
+def test_siem_export_adapter_external_response_intake_is_wired() -> None:
+    report = siem_export_adapter_external_response_intake_check.build_report(Path.cwd())
+    doc = Path("docs/codex/siem-export-adapter-external-response-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "siem-export-adapter"
+    assert report["finding_namespace"] == "EXT-SIEM-ADAPTER-###"
+    assert report["erg_008_status"] == "planning_only"
+    assert report["mutates_findings"] is False
+    assert report["closes_external_review"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_delivery_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["security_operations_control_plane_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: response-intake template for planning-only `ERG-008`.",
+        "Finding namespace: `EXT-SIEM-ADAPTER-###`.",
+        "Reviewed area for normalization: `siem-export-adapter`.",
+        "Required Disposition Answers",
+        "Finding Extraction Table",
+        "--area siem-export-adapter",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "Only a later committed triage update may move `ERG-008` away",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning without a later committed decision record",
+        "runtime implementation",
+        "SIEM adapter behavior",
+        "hosted telemetry",
+        "remote delivery",
+        "custody-grade audit claims",
+        "external notarization",
+        "immutable storage",
+        "production identity",
+        "runtime Postgres",
+        "compliance automation",
+        "security-operations control-plane claims",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make siem-export-adapter-external-response-intake-check" in readme
+    assert "siem-export-adapter-external-response-intake-check:" in makefile
+    assert "siem-export-adapter-external-response-intake-check" in release_check_body
+    assert "siem-export-adapter-external-response-intake-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/siem-export-adapter-external-response-intake.md" in docs_site
+    assert "docs/codex/siem-export-adapter-external-response-intake.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "SIEM Export Adapter External Response Intake" in review_index
+    assert "siem-export-adapter-external-response-intake.md" in runway
+    assert "siem-export-adapter-external-response-intake.md" in gap_matrix
+    assert "siem-export-adapter-external-response-intake.md" in decision_register
 
 
 def test_compliance_mapping_architecture_is_wired() -> None:
