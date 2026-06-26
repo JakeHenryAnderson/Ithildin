@@ -226,6 +226,11 @@ and is validated with `make production-identity-storage-external-response-intake
 the `EXT-PROD-IAM-STORAGE-###` finding namespace and `production-identity-storage` normalizer
 command for recording reviewer responses without mutating findings, closing `ERG-006`/`ERG-007`,
 or approving runtime identity/storage behavior.
+The fail-closed disposition closure gate is
+[production-identity-storage-disposition-closure-gate.md](production-identity-storage-disposition-closure-gate.md)
+and is validated with `make production-identity-storage-disposition-closure-check`; it keeps
+`ERG-006`/`ERG-007` planning-only unless normalized source-level response evidence supports
+continued architecture planning and contains no critical/high findings.
 
 Required design decisions:
 

@@ -264,6 +264,7 @@ REVIEW_DOCS = [
     "docs/codex/public-security-product-positioning-decision-intake.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
+    "docs/codex/production-identity-storage-disposition-closure-gate.md",
     "docs/codex/production-identity-storage-external-response-intake.md",
     "docs/codex/siem-export-adapter-architecture.md",
     "docs/codex/siem-export-adapter-disposition-packet.md",

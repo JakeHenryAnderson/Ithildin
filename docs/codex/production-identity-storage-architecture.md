@@ -132,6 +132,9 @@ Reviewer responses to the architecture disposition packet should be captured thr
 [production-identity-storage-external-response-intake.md](production-identity-storage-external-response-intake.md),
 which validates the `EXT-PROD-IAM-STORAGE-###` finding namespace while keeping `ERG-006` and
 `ERG-007` planning-only until a later committed triage update changes the decision register.
+Normalized responses must also pass the fail-closed
+[production-identity-storage-disposition-closure-gate.md](production-identity-storage-disposition-closure-gate.md)
+before that later triage update may consider an architecture decision record.
 
 ## Validation
 

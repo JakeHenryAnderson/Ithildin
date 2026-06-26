@@ -396,6 +396,9 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
+- `make production-identity-storage-disposition-closure-check` - validate the fail-closed
+  production identity/storage closure gate that keeps ERG-006/ERG-007 planning-only unless
+  normalized source-level response evidence supports architecture continuation.
 - `make production-identity-storage-external-response-intake-check` - validate the response-intake
   template for production identity/storage reviewer feedback while keeping runtime identity and
   storage behavior blocked.
@@ -843,6 +846,11 @@ and is checked with `make production-identity-storage-external-response-intake-c
 the `EXT-PROD-IAM-STORAGE-###` finding namespace and `production-identity-storage` normalizer
 command for recording reviewer responses without mutating findings, closing `ERG-006`/`ERG-007`,
 or approving production identity/storage runtime behavior.
+The production identity and storage disposition closure gate is in
+[docs/codex/production-identity-storage-disposition-closure-gate.md](docs/codex/production-identity-storage-disposition-closure-gate.md)
+and is checked with `make production-identity-storage-disposition-closure-check`; it keeps
+`ERG-006` and `ERG-007` planning-only unless normalized source-level response evidence supports
+architecture continuation and contains no critical/high findings.
 The SIEM export adapter architecture packet is
 [docs/codex/siem-export-adapter-architecture.md](docs/codex/siem-export-adapter-architecture.md)
 and is checked with `make siem-export-adapter-architecture-check`; it defines future adapter

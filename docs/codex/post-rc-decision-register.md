@@ -266,6 +266,10 @@ Current selected capability: `not selected`.
   finding namespace and `production-identity-storage` normalizer command for recording reviewer
   responses without mutating findings, closing `ERG-006`/`ERG-007`, or approving runtime identity
   and storage behavior.
+- Current disposition closure evidence:
+  `production-identity-storage-disposition-closure-gate.md` validates normalized source-level
+  response evidence before any later triage update may move `ERG-006` or `ERG-007` toward an
+  architecture decision record; absent or unfavorable evidence keeps both rows planning-only.
 
 ## Validation
 

@@ -141,6 +141,11 @@ Run:
 ```sh
 make production-identity-storage-external-response-intake-check
 make external-findings-intake-dry-run
+make production-identity-storage-disposition-closure-check
 make production-identity-storage-disposition-packet-check
 make production-identity-storage-architecture-check
 ```
+
+Favorable normalized responses must pass
+[production-identity-storage-disposition-closure-gate.md](production-identity-storage-disposition-closure-gate.md)
+before any later committed triage update may consider continued architecture planning.

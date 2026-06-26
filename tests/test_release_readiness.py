@@ -119,6 +119,7 @@ from scripts import (
     post_rc_decision_record_template_check,
     post_rc_decision_register_check,
     production_identity_storage_architecture_check,
+    production_identity_storage_disposition_closure_check,
     production_identity_storage_disposition_packet,
     production_identity_storage_external_response_intake_check,
     project_ci_summary_design_review_packet,
@@ -1757,6 +1758,98 @@ def test_production_identity_storage_external_response_intake_is_wired() -> None
         "production-identity-storage-external-response-intake.md"
         in decision_register
     )
+
+
+def test_production_identity_storage_disposition_closure_gate_is_wired() -> None:
+    report = production_identity_storage_disposition_closure_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/production-identity-storage-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["closure_ready"] is False
+    assert report["normalized_response_present"] is False
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["allowed_closure_state"] == "ready_for_architecture_decision_record"
+    assert report["tool_count"] == 24
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["enterprise_rbac_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["backup_restore_runtime_allowed"] is False
+    assert report["retention_enforcement_allowed"] is False
+    assert report["hosted_control_plane_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: fail-closed closure gate for planning-only `ERG-006` and `ERG-007`.",
+        "var/review-runs/production-identity-storage/normalized-response.json",
+        "source-level` or `packet-and-source`",
+        "disposition_outcome: continue_architecture_planning",
+        "closure_ready: false",
+        "erg_006_status: planning_only",
+        "erg_007_status: planning_only",
+        "ready_for_architecture_decision_record",
+        "separate committed triage update",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning",
+        "runtime implementation",
+        "production IAM",
+        "enterprise RBAC",
+        "runtime Postgres",
+        "database migrations",
+        "backup/restore runtime behavior",
+        "retention enforcement",
+        "hosted control plane",
+        "custody-grade audit claims",
+        "compliance automation",
+        "SIEM adapter behavior",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make production-identity-storage-disposition-closure-check" in readme
+    assert "production-identity-storage-disposition-closure-check:" in makefile
+    assert "release-check: production-identity-storage-disposition-closure-check" in makefile
+    assert "production-identity-storage-disposition-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/production-identity-storage-disposition-closure-gate.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/production-identity-storage-disposition-closure-gate.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Production Identity And Storage Disposition Closure Gate" in review_index
+    assert "production-identity-storage-disposition-closure-gate.md" in runway
+    assert "production-identity-storage-disposition-closure-gate.md" in gap_matrix
+    assert "production-identity-storage-disposition-closure-gate.md" in review_queue
+    assert "production-identity-storage-disposition-closure-gate.md" in decision_register
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

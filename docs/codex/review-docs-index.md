@@ -246,6 +246,7 @@ externally closed.
 - [Public/Security-Product Positioning Decision Intake](public-security-product-positioning-decision-intake.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
+- [Production Identity And Storage Disposition Closure Gate](production-identity-storage-disposition-closure-gate.md)
 - [Production Identity And Storage External Response Intake](production-identity-storage-external-response-intake.md)
 - [SIEM Export Adapter Architecture](siem-export-adapter-architecture.md)
 - [SIEM Export Adapter Disposition Packet](siem-export-adapter-disposition-packet.md)

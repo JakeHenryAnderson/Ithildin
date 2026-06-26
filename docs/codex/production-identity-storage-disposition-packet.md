@@ -26,6 +26,7 @@ Validate this packet with:
 
 ```sh
 make production-identity-storage-disposition-packet-check
+make production-identity-storage-disposition-closure-check
 ```
 
 Generate the focused disposition handoff with:
@@ -61,6 +62,7 @@ The reviewer should inspect:
 | --- | --- |
 | Architecture packet | `production-identity-storage-architecture.md` |
 | External response intake | `production-identity-storage-external-response-intake.md` |
+| Fail-closed closure gate | `production-identity-storage-disposition-closure-gate.md` |
 | Post-RC decision register | `post-rc-decision-register.md` |
 | Post-RC decision gate | `post-rc-decision-gate.md` |
 | Enterprise gap matrix | `enterprise-readiness-gap-matrix.md` |
@@ -133,3 +135,6 @@ Reviewer responses should be recorded through
 [production-identity-storage-external-response-intake.md](production-identity-storage-external-response-intake.md)
 after this packet is reviewed. That intake captures `EXT-PROD-IAM-STORAGE-###` findings without
 mutating findings, closing `ERG-006`/`ERG-007`, or approving runtime identity/storage behavior.
+Normalized responses must also pass
+[production-identity-storage-disposition-closure-gate.md](production-identity-storage-disposition-closure-gate.md)
+before a later triage update may consider an architecture decision record.
