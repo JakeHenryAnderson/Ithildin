@@ -1233,6 +1233,7 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
         "var/review-packets/v3/sandbox-vm-static-preflight-external-review/",
         "EXT-SVP-###",
         "artifact hash manifest",
+        "recomputes the attachment byte counts and SHA-256 digests",
         "make sandbox-vm-static-preflight-response-application-record-check",
         "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
         "does not close `ERG-003`",
@@ -1243,8 +1244,10 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
     assert "Attachment integrity check" in generated_md
     assert "expected hashed files: `9`" in generated_md
     assert "hash manifest self-hashed: `false`" in generated_md
+    assert "hash manifest matches files: `true`" in generated_md
     assert '"packet_hash_manifest"' in generated_json
     assert '"expected_hashed_file_count": 9' in generated_json
+    assert '"hash_manifest_matches_files": true' in generated_json
     assert "enterprise-next-review-handoff:" in makefile
     assert "enterprise-next-review-handoff-check:" in makefile
     assert "enterprise-next-review-handoff-check" in release_check_body

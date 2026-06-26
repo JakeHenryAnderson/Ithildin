@@ -69,8 +69,9 @@ sandbox-vm-static-preflight-external-review-artifact-hashes.json
 ```
 
 The artifact hash manifest must cover the nine markdown attachments and must not hash itself. This
-is handoff integrity evidence only; it is not notarization, custody-grade proof, or a source-review
-disposition.
+handoff check recomputes the attachment byte counts and SHA-256 digests before generating the
+operator pointer. This is handoff integrity evidence only; it is not notarization, custody-grade
+proof, or a source-review disposition.
 
 ## Response Path
 

@@ -157,6 +157,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Response-application check",
         "Attachment integrity check",
         "expected hashed files: `9`",
+        "hash manifest matches files: `true`",
     ]:
         if phrase not in markdown_text:
             failures.append(f"generated handoff is missing phrase: {phrase}")
@@ -168,6 +169,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"response_application_record"',
         '"packet_hash_manifest"',
         '"expected_hashed_file_count": 9',
+        '"hash_manifest_matches_files": true',
     ]:
         if phrase not in json_text:
             failures.append(f"generated handoff JSON is missing phrase: {phrase}")
@@ -336,6 +338,7 @@ Use `{packet_hash_manifest['path']}` to verify the nine review markdown files be
 
 - expected hashed files: `{packet_hash_manifest['expected_hashed_file_count']}`
 - hash manifest self-hashed: `{str(packet_hash_manifest['hash_manifest_self_hashed']).lower()}`
+- hash manifest matches files: `{str(packet_hash_manifest['hash_manifest_matches_files']).lower()}`
 
 ## Reviewer Prompt
 
@@ -433,6 +436,21 @@ def _packet_hash_manifest(packet_dir: Path) -> dict[str, Any]:
             raise EnterpriseNextReviewHandoffError(
                 f"ERG-003 packet hash manifest artifact has invalid byte count: {path}"
             )
+        artifact_path = packet_dir / path
+        if not artifact_path.exists():
+            raise EnterpriseNextReviewHandoffError(
+                f"ERG-003 packet hash manifest artifact file is missing: {path}"
+            )
+        artifact_bytes = artifact_path.read_bytes()
+        actual_sha256 = "sha256:" + hashlib.sha256(artifact_bytes).hexdigest()
+        if sha256 != actual_sha256:
+            raise EnterpriseNextReviewHandoffError(
+                f"ERG-003 packet hash manifest artifact digest mismatch: {path}"
+            )
+        if byte_count != len(artifact_bytes):
+            raise EnterpriseNextReviewHandoffError(
+                f"ERG-003 packet hash manifest artifact byte count mismatch: {path}"
+            )
     return {
         "path": (RECOMMENDED_PACKET_DIR / hash_path.name).as_posix(),
         "expected_hashed_file_count": len(expected_hashed),
@@ -440,6 +458,7 @@ def _packet_hash_manifest(packet_dir: Path) -> dict[str, Any]:
             "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
             in hashed_paths
         ),
+        "hash_manifest_matches_files": True,
         "hashed_files": sorted(hashed_paths),
     }
 
