@@ -326,7 +326,7 @@ REQUIRED_REVIEW_CANDIDATE_STEPS = [
     "$(MAKE) governed-artifact-transfer-stage2-check",
     "$(MAKE) v1-rc-packet",
     "$(MAKE) v06-review-dispatch-packets",
-    "$(MAKE) review-packet-bundle",
+    "scripts/review_packet_bundle.py --release-check-transcript",
     "$(MAKE) review-packet-consolidated",
     "$(MAKE) packet-redaction-scan",
     "$(MAKE) docs-site",

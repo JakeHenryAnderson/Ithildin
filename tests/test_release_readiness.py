@@ -10987,7 +10987,11 @@ def test_reviewer_reproduction_map_references_implemented_targets() -> None:
     assert "40. `make project-structure-summary-implementation-plan-check`" in reproduction_map
     assert "41. `make project-structure-summary-implementation-gate`" in reproduction_map
     assert "42. `make project-structure-summary-design-review-packet`" in reproduction_map
-    assert "43. `make review-packet-bundle`" in reproduction_map
+    assert (
+        "43. `uv run python scripts/review_packet_bundle.py --release-check-transcript "
+        "var/review-packets/v3/review-candidate-release-check.txt`"
+    ) in reproduction_map
+    assert "Standalone `make review-packet-bundle` remains available" in reproduction_map
     assert "44. `make review-packet-consolidated`" in reproduction_map
     assert "45. `make packet-redaction-scan`" in reproduction_map
     assert "46. `make docs-site`" in reproduction_map
@@ -11013,13 +11017,14 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
         "$(MAKE) live-demo-evidence-summary",
         "$(MAKE) live-demo-packet",
         "$(MAKE) v06-review-dispatch-packets",
-        "$(MAKE) review-packet-bundle",
+        "scripts/review_packet_bundle.py --release-check-transcript",
         "$(MAKE) review-packet-consolidated",
         "$(MAKE) packet-redaction-scan",
         "$(MAKE) docs-site",
     ]
     positions = [body.index(command) for command in expected_commands]
     assert positions == sorted(positions)
+    assert "review-candidate-release-check.txt" in body
     assert "v1.0 RC packet ready: var/review-packets/v1.0/rc" in body
     assert (
         "Historical consolidated packet ready: "
@@ -16341,6 +16346,66 @@ def test_review_packet_bundle_layout_and_exclusions(
     assert "v0.8 roadmap/product-risk consultation" in result.path.joinpath(
         "INDEX.md"
     ).read_text(encoding="utf-8")
+
+
+def test_review_packet_bundle_reuses_release_check_transcript(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_project_markers(tmp_path)
+    docs = ["README.md"]
+    tmp_path.joinpath("README.md").write_text("# README\n", encoding="utf-8")
+    transcript = tmp_path / "var/review-packets/v3/review-candidate-release-check.txt"
+    transcript.parent.mkdir(parents=True)
+    transcript.write_text(
+        "$ make release-check\nrelease gate passed\nreturncode=0\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(review_packet_bundle, "REVIEW_DOCS", docs)
+    monkeypatch.setattr(review_packet_bundle, "BUNDLE_DOCS", docs)
+
+    def fake_git(args: list[str]) -> str:
+        if args == ["status", "--short"]:
+            return ""
+        if args == ["rev-parse", "HEAD"]:
+            return "abcdef1234567890"
+        if args == ["branch", "--show-current"]:
+            return "main"
+        if args == ["log", "-12", "--oneline"]:
+            return "abcdef1 test commit"
+        raise AssertionError(args)
+
+    def fake_capture(command: list[str]) -> review_packet_bundle.CommandOutput:
+        assert command != ["make", "release-check"]
+        if "scripts/release_evidence.py" in command:
+            stdout = '{"secret_free": true}\n'
+        elif "scripts/release_packet.py" in command and "--json" in command:
+            stdout = '{"packet": "ok"}\n'
+        else:
+            stdout = "ok\n"
+        return review_packet_bundle.CommandOutput(
+            command=command,
+            returncode=0,
+            stdout=stdout,
+            stderr="",
+        )
+
+    monkeypatch.setattr(review_packet_bundle, "_git", fake_git)
+    monkeypatch.setattr(review_packet_bundle, "_run_capture", fake_capture)
+
+    result = review_packet_bundle.build_bundle(
+        repo_root=tmp_path,
+        output_root=tmp_path / "var/review-packets/v0.2",
+        allow_dirty=False,
+        run_release_check=False,
+        release_check_transcript=transcript,
+    )
+
+    release_check = result.path.joinpath("release-check.txt").read_text(encoding="utf-8")
+    assert "$ make release-check" in release_check
+    assert "release gate passed" in release_check
+    assert "returncode=0" in release_check
 
 
 def test_review_packet_diff_compares_artifact_hashes(tmp_path: Path) -> None:

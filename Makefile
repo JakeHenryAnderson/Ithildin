@@ -1085,7 +1085,9 @@ review-packet-diff-gate:
 	uv run python scripts/review_packet_diff.py --old "$(OLD)" --new "$(NEW)" --gate
 
 review-candidate:
-	$(MAKE) release-check
+	@mkdir -p var/review-packets/v3
+	@{ echo "$$ make release-check"; $(MAKE) release-check; rc=$$?; echo "returncode=$$rc"; exit $$rc; } > var/review-packets/v3/review-candidate-release-check.txt 2>&1 || (cat var/review-packets/v3/review-candidate-release-check.txt; exit 1)
+	@echo "release-check transcript: var/review-packets/v3/review-candidate-release-check.txt"
 	$(MAKE) filesystem-contract-check
 	$(MAKE) signed-evidence-demo
 	$(MAKE) signed-evidence-demo-verify
@@ -1138,7 +1140,7 @@ review-candidate:
 	$(MAKE) governed-artifact-transfer-stage2-check
 	$(MAKE) v1-rc-packet
 	$(MAKE) v06-review-dispatch-packets
-	$(MAKE) review-packet-bundle
+	uv run python scripts/review_packet_bundle.py --release-check-transcript var/review-packets/v3/review-candidate-release-check.txt
 	$(MAKE) review-packet-consolidated
 	$(MAKE) packet-redaction-scan
 	$(MAKE) docs-site

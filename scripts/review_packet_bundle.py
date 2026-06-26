@@ -81,6 +81,13 @@ def main() -> int:
         action="store_true",
         help="allow draft bundle generation from a dirty working tree",
     )
+    parser.add_argument(
+        "--release-check-transcript",
+        help=(
+            "reuse an existing successful make release-check transcript instead of "
+            "running release-check again"
+        ),
+    )
     args = parser.parse_args()
 
     try:
@@ -88,7 +95,12 @@ def main() -> int:
             repo_root=Path.cwd().resolve(),
             output_root=Path(args.output_root),
             allow_dirty=args.allow_dirty,
-            run_release_check=True,
+            run_release_check=args.release_check_transcript is None,
+            release_check_transcript=(
+                Path(args.release_check_transcript)
+                if args.release_check_transcript is not None
+                else None
+            ),
         )
     except BundleError as exc:
         print(f"review packet bundle failed: {exc}", file=sys.stderr)
@@ -106,6 +118,7 @@ def build_bundle(
     output_root: Path,
     allow_dirty: bool,
     run_release_check: bool,
+    release_check_transcript: Path | None = None,
 ) -> BundleResult:
     marker_status = _project_marker_status(repo_root)
     missing_markers = [
@@ -128,7 +141,9 @@ def build_bundle(
         shutil.rmtree(bundle_dir)
     bundle_dir.mkdir(parents=True)
 
-    if run_release_check:
+    if release_check_transcript is not None:
+        release_check = _load_release_check_transcript(release_check_transcript)
+    elif run_release_check:
         release_check = _run_capture(["make", "release-check"])
     else:
         release_check = CommandOutput(
@@ -224,6 +239,22 @@ def _run_capture(command: list[str]) -> CommandOutput:
         returncode=completed.returncode,
         stdout=completed.stdout,
         stderr=completed.stderr,
+    )
+
+
+def _load_release_check_transcript(path: Path) -> CommandOutput:
+    transcript = path.read_text(encoding="utf-8")
+    if "returncode=0" not in transcript:
+        raise BundleError(
+            "release-check transcript must include returncode=0 before it can be reused"
+        )
+    if "make release-check" not in transcript:
+        raise BundleError("release-check transcript must show make release-check was run")
+    return CommandOutput(
+        command=["make", "release-check"],
+        returncode=0,
+        stdout=transcript.rstrip() + "\n",
+        stderr="",
     )
 
 

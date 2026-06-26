@@ -343,12 +343,13 @@ work must stop for status, reassessment, or external consultation.
    Expected outcome: creates an ignored focused design-review handoff under
    `var/review-packets/v3/project-structure-summary-design-review/`.
 
-43. `make review-packet-bundle`
+43. `uv run python scripts/review_packet_bundle.py --release-check-transcript var/review-packets/v3/review-candidate-release-check.txt`
 
-   Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with release
-   command outputs, `filesystem-contract-check.txt`, copied review docs,
-   `review-doc-hashes.json`, `artifact-hashes.json`, and the signed-evidence demo summary when
-   step 9 was run first.
+   Expected outcome: creates an ignored bundle under `var/review-packets/v0.2/` with the
+   same-run release-check transcript captured by `make review-candidate`,
+   `filesystem-contract-check.txt`, copied review docs, `review-doc-hashes.json`,
+   `artifact-hashes.json`, and the signed-evidence demo summary when step 9 was run first.
+   Standalone `make review-packet-bundle` remains available and runs its own release-check.
 
 44. `make review-packet-consolidated`
 
