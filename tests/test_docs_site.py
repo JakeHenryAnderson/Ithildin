@@ -146,6 +146,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/siem-export-adapter-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/compliance-mapping-disposition-packet.md" in DEFAULT_DOCS
+    assert "docs/codex/compliance-mapping-disposition-closure-gate.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-integration-proposal.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-importer-plan.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-disposition-packet.md" in DEFAULT_DOCS

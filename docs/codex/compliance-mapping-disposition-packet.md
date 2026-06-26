@@ -31,6 +31,13 @@ and validate the intake template with:
 make compliance-mapping-external-response-intake-check
 ```
 
+After a response is normalized, validate whether it is strong enough for a later triage update with
+[compliance-mapping-disposition-closure-gate.md](compliance-mapping-disposition-closure-gate.md):
+
+```sh
+make compliance-mapping-disposition-closure-check
+```
+
 ## Allowed Reviewer Dispositions
 
 - `continue_architecture_planning`: the current architecture evidence is coherent enough for more
@@ -113,6 +120,7 @@ Run:
 ```sh
 make compliance-mapping-disposition-packet-check
 make compliance-mapping-disposition-packet
+make compliance-mapping-disposition-closure-check
 make compliance-mapping-architecture-check
 make control-mapping-design-check
 make incident-reconstruction-check

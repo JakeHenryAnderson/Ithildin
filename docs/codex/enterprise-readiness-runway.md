@@ -336,6 +336,9 @@ Current evidence:
   without mutating findings, closing `ERG-009`, or approving runtime compliance mapping,
   compliance automation, legal advice, automated certification, regulated-industry compliance
   claims, or public/security-product positioning.
+- `compliance-mapping-disposition-closure-gate.md` validates normalized source-level response
+  evidence before any later triage update may move `ERG-009` toward an architecture decision record;
+  absent or unfavorable evidence keeps `ERG-009` planning-only.
 
 ## Stop Conditions
 

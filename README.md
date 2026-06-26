@@ -421,6 +421,9 @@ checked with `make control-mapping-readiness`.
   disposition packet asking whether ERG-009 may continue architecture planning while runtime mapping,
   compliance automation, legal conclusions, automated certification, and regulated-industry
   compliance claims remain blocked.
+- `make compliance-mapping-disposition-closure-check` - validate the fail-closed compliance mapping
+  closure gate that keeps ERG-009 planning-only unless normalized source-level response evidence
+  supports continued architecture planning.
 - `make compliance-mapping-external-response-intake-check` - validate the response-intake template
   for compliance mapping reviewer feedback while keeping runtime mapping, compliance automation,
   legal advice, automated certification, regulated-industry compliance claims, and public/security
@@ -894,6 +897,11 @@ and is checked with `make compliance-mapping-external-response-intake-check`; it
 recording reviewer responses without mutating findings, closing `ERG-009`, or approving runtime
 compliance mapping, compliance automation, legal advice, automated certification, or
 regulated-industry compliance claims.
+The fail-closed compliance mapping disposition closure gate is in
+[docs/codex/compliance-mapping-disposition-closure-gate.md](docs/codex/compliance-mapping-disposition-closure-gate.md)
+and is checked with `make compliance-mapping-disposition-closure-check`; it keeps `ERG-009`
+planning-only unless normalized source-level response evidence supports continued architecture
+planning and contains no critical/high findings.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.

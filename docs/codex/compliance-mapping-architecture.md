@@ -159,6 +159,12 @@ It records allowed reviewer-response outcomes without mutating findings, closing
 approving runtime compliance mapping, compliance automation, legal advice, automated certification,
 regulated-industry compliance claims, or public/security-product positioning.
 
+The fail-closed disposition closure gate is
+[compliance-mapping-disposition-closure-gate.md](compliance-mapping-disposition-closure-gate.md).
+It validates normalized source-level response evidence before any later triage update may move
+`ERG-009` toward an architecture decision record; absent or unfavorable evidence keeps `ERG-009`
+planning-only.
+
 ## Validation
 
 Run:
@@ -166,6 +172,7 @@ Run:
 ```sh
 make compliance-mapping-architecture-check
 make compliance-mapping-external-response-intake-check
+make compliance-mapping-disposition-closure-check
 make control-mapping-design-check
 make incident-reconstruction-check
 make enterprise-readiness-gap-matrix-check

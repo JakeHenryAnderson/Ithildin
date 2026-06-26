@@ -27,6 +27,7 @@ from scripts import (
     capability_expansion_gate,
     closure_matrix_evidence_sync,
     compliance_mapping_architecture_check,
+    compliance_mapping_disposition_closure_check,
     compliance_mapping_disposition_packet,
     compliance_mapping_external_response_intake_check,
     consolidate_review_packet,
@@ -15925,6 +15926,85 @@ def test_compliance_mapping_external_response_intake_is_wired() -> None:
     assert "compliance-mapping-external-response-intake.md" in runway
     assert "compliance-mapping-external-response-intake.md" in gap_matrix
     assert "compliance-mapping-external-response-intake.md" in decision_register
+
+
+def test_compliance_mapping_disposition_closure_gate_is_wired() -> None:
+    report = compliance_mapping_disposition_closure_check.build_report(Path.cwd())
+    doc = Path("docs/codex/compliance-mapping-disposition-closure-gate.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["closure_ready"] is False
+    assert report["normalized_response_present"] is False
+    assert report["erg_009_status"] == "planning_only"
+    assert report["allowed_closure_state"] == "ready_for_architecture_decision_record"
+    assert report["tool_count"] == 24
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["compliance_mapping_runtime_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["legal_advice_allowed"] is False
+    assert report["automated_certification_allowed"] is False
+    assert report["regulated_industry_compliance_claims_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: fail-closed closure gate for planning-only `ERG-009`.",
+        "var/review-runs/compliance-mapping/normalized-response.json",
+        "source-level` or `packet-and-source`",
+        "disposition_outcome: continue_architecture_planning",
+        "closure_ready: false",
+        "erg_009_status: planning_only",
+        "ready_for_architecture_decision_record",
+        "separate committed triage update",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning",
+        "runtime implementation",
+        "compliance mapping runtime behavior",
+        "compliance automation",
+        "legal advice",
+        "automated certification",
+        "regulated-industry compliance claims",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make compliance-mapping-disposition-closure-check" in readme
+    assert "compliance-mapping-disposition-closure-check:" in makefile
+    assert "release-check: compliance-mapping-disposition-closure-check" in makefile
+    assert "compliance-mapping-disposition-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/compliance-mapping-disposition-closure-gate.md" in docs_site
+    assert "docs/codex/compliance-mapping-disposition-closure-gate.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Compliance Mapping Disposition Closure Gate" in review_index
+    assert "compliance-mapping-disposition-closure-gate.md" in runway
+    assert "compliance-mapping-disposition-closure-gate.md" in gap_matrix
+    assert "compliance-mapping-disposition-closure-gate.md" in review_queue
+    assert "compliance-mapping-disposition-closure-gate.md" in decision_register
 
 
 def test_mission_control_display_external_response_intake_is_wired() -> None:

@@ -91,6 +91,14 @@ The normalized response is intake evidence only. It sets `mutates_findings: fals
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the
 enterprise gap matrix or post-RC decision register, and rerun release gates.
 
+Validate the normalized response with the fail-closed
+[compliance-mapping-disposition-closure-gate.md](compliance-mapping-disposition-closure-gate.md)
+before any later triage update:
+
+```sh
+make compliance-mapping-disposition-closure-check
+```
+
 ## Allowed Intake Outcomes
 
 The intake may record only the outcomes defined in the compliance mapping disposition packet:
@@ -138,6 +146,7 @@ Run:
 
 ```sh
 make compliance-mapping-external-response-intake-check
+make compliance-mapping-disposition-closure-check
 make external-findings-intake-dry-run
 make compliance-mapping-disposition-packet-check
 make compliance-mapping-architecture-check
