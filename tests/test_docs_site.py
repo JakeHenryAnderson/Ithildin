@@ -159,6 +159,10 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/sandbox-vm-static-preflight-disposition-plan.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-static-preflight-disposition-packet.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-static-preflight-external-response-intake.md" in DEFAULT_DOCS
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md"
+        in DEFAULT_DOCS
+    )
     assert "docs/codex/sandbox-vm-live-poc-decision-intake.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-evidence-contract.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-live-poc-decision-packet.md" in DEFAULT_DOCS

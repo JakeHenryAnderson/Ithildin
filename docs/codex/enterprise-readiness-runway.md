@@ -427,6 +427,11 @@ The external response intake template is
 and is validated with `make sandbox-vm-static-preflight-external-response-intake-check`. It defines
 the `EXT-SVP-###` finding namespace and normalizer command for recording a reviewer response without
 mutating findings, closing `ERG-003`, or approving live sandbox/VM runtime work.
+The reviewer reproduction map is
+[sandbox-vm-static-preflight-reviewer-reproduction-map.md](sandbox-vm-static-preflight-reviewer-reproduction-map.md)
+and is validated with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`. It gives
+reviewers the exact static preflight command sequence and evidence pointers while keeping
+`ERG-003` external-review-required and live sandbox/VM runtime work blocked.
 
 The live sandbox/VM POC decision intake is
 [sandbox-vm-live-poc-decision-intake.md](sandbox-vm-live-poc-decision-intake.md) and is validated

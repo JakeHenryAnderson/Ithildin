@@ -259,6 +259,7 @@ externally closed.
 - [Sandbox/VM Static Preflight Disposition Packet](sandbox-vm-static-preflight-disposition-packet.md)
 - [Sandbox/VM Static Preflight External Disposition Plan](sandbox-vm-static-preflight-disposition-plan.md)
 - [Sandbox/VM Static Preflight External Response Intake](sandbox-vm-static-preflight-external-response-intake.md)
+- [Sandbox/VM Static Preflight Reviewer Reproduction Map](sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 - [Sandbox/VM Live POC Decision Intake](sandbox-vm-live-poc-decision-intake.md)
 - [Sandbox/VM Live POC Evidence Contract](sandbox-vm-live-poc-evidence-contract.md)
 - [Sandbox/VM Live POC Decision Packet](sandbox-vm-live-poc-decision-packet.md)

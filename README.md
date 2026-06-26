@@ -403,6 +403,11 @@ checked with `make control-mapping-readiness`.
   sandbox/control-plane readiness map while keeping live VM/container inspection, sandbox
   orchestration, Mission Control runtime behavior, local model invocation, trusted-host promotion,
   SIEM adapter behavior, compliance automation, and new governed powers blocked.
+- `make sandbox-vm-static-preflight-reviewer-reproduction-map-check` - validate the reviewer
+  reproduction map for the CLI-only static sandbox/VM preflight lane while keeping `ERG-003`
+  external-review-required and blocking live VM/container inspection, sandbox orchestration,
+  Mission Control runtime behavior, local model invocation, trusted-host promotion, and network
+  expansion.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -942,6 +947,11 @@ The external response intake template is
 and is checked with `make sandbox-vm-static-preflight-external-response-intake-check`; it defines
 the `EXT-SVP-###` namespace and normalizer command for reviewer responses without mutating findings,
 closing `ERG-003`, or approving live sandbox/VM runtime work.
+The reviewer reproduction map is
+[docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md](docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md)
+and is checked with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`; it gives
+reviewers a compact command/evidence path for reproducing the static preflight lane while keeping
+`ERG-003` external-review-required until a later committed triage update.
 The live sandbox/VM POC decision intake is
 [docs/codex/sandbox-vm-live-poc-decision-intake.md](docs/codex/sandbox-vm-live-poc-decision-intake.md)
 and is checked with `make sandbox-vm-live-poc-decision-intake-check`; it records the evidence

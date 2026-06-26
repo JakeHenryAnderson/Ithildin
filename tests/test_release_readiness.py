@@ -205,6 +205,7 @@ from scripts import (
     sandbox_vm_static_preflight_external_response_intake_check,
     sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_negative_transcripts,
+    sandbox_vm_static_preflight_reviewer_reproduction_map_check,
     sandbox_vm_static_preflight_source_review_packet,
     sandbox_vm_static_profile_fixture_contract_check,
     sandbox_vm_static_profile_negative_fixtures_check,
@@ -2757,6 +2758,86 @@ def test_sandbox_vm_static_preflight_external_response_intake_is_wired() -> None
     assert "Sandbox/VM Static Preflight External Response Intake" in review_index
     assert "sandbox-vm-static-preflight-external-response-intake.md" in enterprise
     assert "sandbox-vm-static-preflight-external-response-intake.md" in gap_matrix
+
+
+def test_sandbox_vm_static_preflight_reviewer_reproduction_map_is_wired() -> None:
+    report = sandbox_vm_static_preflight_reviewer_reproduction_map_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    for phrase in [
+        "Status: reviewer reproduction map for `ERG-003`.",
+        "Current governed tool count: `24`",
+        "Current `ERG-003` status before reviewer disposition: `external_review_required`.",
+        "make sandbox-vm-static-preflight-source-review-packet",
+        "make sandbox-vm-static-preflight-disposition-packet",
+        "make external-findings-intake-dry-run",
+        "var/review-packets/v3/sandbox-vm-static-preflight-source-review/",
+        "var/review-packets/v3/sandbox-vm-static-preflight-disposition/",
+        "closed_local_preview_static_preflight",
+        "What This Map Does Not Prove",
+        "does not close `ERG-003`",
+        "does not approve live VM/container inspection",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "live VM/container inspection remains blocked",
+        "local model invocation remains blocked",
+        "Mission Control runtime behavior remains blocked",
+        "trusted-host promotion remains blocked",
+        "network expansion remains blocked",
+    ]:
+        assert blocked in doc
+    assert "make sandbox-vm-static-preflight-reviewer-reproduction-map-check" in readme
+    assert "sandbox-vm-static-preflight-reviewer-reproduction-map-check:" in makefile
+    assert "sandbox-vm-static-preflight-reviewer-reproduction-map-check" in (
+        release_check_body
+    )
+    assert "sandbox-vm-static-preflight-reviewer-reproduction-map-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Reviewer Reproduction Map" in review_index
+    assert "sandbox-vm-static-preflight-reviewer-reproduction-map.md" in enterprise
+    assert "sandbox-vm-static-preflight-reviewer-reproduction-map.md" in gap_matrix
+    assert "sandbox-vm-static-preflight-reviewer-reproduction-map.md" in decision_register
 
 
 def test_sandbox_vm_live_poc_decision_intake_is_wired() -> None:

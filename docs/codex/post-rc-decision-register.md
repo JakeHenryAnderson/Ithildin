@@ -63,12 +63,16 @@ Current selected capability: `not selected`.
 
 - Status: `no_go`.
 - Current allowed scope: static fixture evidence, source-review disposition, docs, review packets,
-  negative fixture planning, and operator warnings.
+  negative fixture planning, reviewer reproduction mapping, and operator warnings.
 - Current forbidden scope: live VM/container inspection, SSH, shell, Docker socket access,
   Kubernetes tools, local model invocation, sandbox orchestration, trusted-host promotion, runtime
   preflight runner behavior, production identity, and remote control-plane behavior.
 - Current implementation posture: live runtime behavior remains blocked.
 - Current warning language: Ithildin does not start, inspect, or manage VMs/containers in this lane.
+- Current reproduction-map evidence:
+  `sandbox-vm-static-preflight-reviewer-reproduction-map.md` gives reviewers the exact static
+  preflight command sequence and evidence pointers without closing `ERG-003` or approving live
+  sandbox/VM runtime work.
 
 ### PRD-SANDBOX-LIVE-POC-001
 
