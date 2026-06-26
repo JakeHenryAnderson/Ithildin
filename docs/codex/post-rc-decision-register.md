@@ -342,6 +342,12 @@ Current selected capability: `not selected`.
   `production-identity-storage-response-dry-run.md` exercises temporary favorable and unfavorable
   normalized-response fixtures while restoring the ignored response path and without closing
   `ERG-006`/`ERG-007` or approving implementation planning.
+- Current response-kit evidence:
+  `production-identity-storage-response-kit.md` packages response-intake guidance,
+  normalized-response examples, closure commands, command evidence, and artifact hashes for real
+  reviewer feedback while keeping `ERG-006` and `ERG-007` planning-only and keeping implementation
+  planning, runtime identity, runtime storage, migrations, retention enforcement, and production
+  custody blocked.
 
 ## Validation
 

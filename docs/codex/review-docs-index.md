@@ -256,6 +256,7 @@ externally closed.
 - [Production Identity And Storage External Review Bundle](production-identity-storage-external-review-bundle.md)
 - [Production Identity And Storage Disposition Closure Gate](production-identity-storage-disposition-closure-gate.md)
 - [Production Identity And Storage Response Dry Run](production-identity-storage-response-dry-run.md)
+- [Production Identity And Storage Response Kit](production-identity-storage-response-kit.md)
 - [Production Identity And Storage External Response Intake](production-identity-storage-external-response-intake.md)
 - [SIEM Export Adapter Architecture](siem-export-adapter-architecture.md)
 - [SIEM Export Adapter Disposition Packet](siem-export-adapter-disposition-packet.md)

@@ -132,6 +132,7 @@ from scripts import (
     production_identity_storage_external_response_intake_check,
     production_identity_storage_external_review_bundle,
     production_identity_storage_response_dry_run,
+    production_identity_storage_response_kit,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -2540,6 +2541,107 @@ def test_production_identity_storage_response_dry_run_is_wired() -> None:
     assert "production-identity-storage-response-dry-run.md" in gap_matrix
     assert "production-identity-storage-response-dry-run.md" in review_queue
     assert "production-identity-storage-response-dry-run.md" in decision_register
+
+
+def test_production_identity_storage_response_kit_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "production-identity-storage-response-kit"
+    built = production_identity_storage_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    report = production_identity_storage_response_kit.build_check_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    expected_files = {
+        "00_PRODUCTION_IDENTITY_STORAGE_RESPONSE_KIT_INDEX.md",
+        "01_PRODUCTION_IDENTITY_STORAGE_RESPONSE_INTAKE_GUIDE.md",
+        "02_PRODUCTION_IDENTITY_STORAGE_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_PRODUCTION_IDENTITY_STORAGE_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_PRODUCTION_IDENTITY_STORAGE_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_PRODUCTION_IDENTITY_STORAGE_RESPONSE_KIT_EVIDENCE.md",
+        "production-identity-storage-response-kit-artifact-hashes.json",
+    }
+    artifact_names = {path.name for path in built.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir / "production-identity-storage-response-kit-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    hashed = {entry["path"] for entry in hashes["artifacts"]}
+    index = (
+        output_dir / "00_PRODUCTION_IDENTITY_STORAGE_RESPONSE_KIT_INDEX.md"
+    ).read_text(encoding="utf-8")
+    evidence = (
+        output_dir / "05_PRODUCTION_IDENTITY_STORAGE_RESPONSE_KIT_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["architecture_planning_after_favorable_disposition_allowed"] is True
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["retention_enforcement_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["erg_006_erg_007_closed"] is False
+    assert expected_files <= artifact_names
+    assert "production-identity-storage-response-kit-artifact-hashes.json" not in hashed
+    assert expected_files - {
+        "production-identity-storage-response-kit-artifact-hashes.json"
+    } <= hashed
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-006` or `ERG-007`" in index
+    assert "does not approve production identity or runtime storage" in index
+    assert '"response_kit_boundary"' in evidence
+    assert '"runtime_changes_allowed": false' in evidence
+    assert '"implementation_planning_allowed": false' in evidence
+    assert '"valid_response_accepts": true' in evidence
+    assert "make production-identity-storage-response-kit" in readme
+    assert "production-identity-storage-response-kit:" in makefile
+    assert "production-identity-storage-response-kit-check:" in makefile
+    assert (
+        "production-identity-storage-response-kit-check" in release_check_body
+        or "release-check: production-identity-storage-response-kit-check" in makefile
+    )
+    assert "$(MAKE) production-identity-storage-response-kit" in review_candidate_body
+    assert "production-identity-storage-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) production-identity-storage-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/production-identity-storage-response-kit.md" in docs_site
+    assert (
+        "docs/codex/production-identity-storage-response-kit.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Production Identity And Storage Response Kit" in review_index
+    assert "production-identity-storage-response-kit.md" in runway
+    assert "production-identity-storage-response-kit.md" in gap_matrix
+    assert "production-identity-storage-response-kit.md" in queue
+    assert "production-identity-storage-response-kit.md" in decision_register
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

@@ -306,6 +306,12 @@ production-identity-storage-disposition-closure-check:
 production-identity-storage-response-dry-run:
 	uv run python scripts/production_identity_storage_response_dry_run.py
 
+production-identity-storage-response-kit:
+	uv run python scripts/production_identity_storage_response_kit.py
+
+production-identity-storage-response-kit-check:
+	uv run python scripts/production_identity_storage_response_kit.py --check
+
 production-identity-storage-external-response-intake-check:
 	uv run python scripts/production_identity_storage_external_response_intake_check.py
 
@@ -1074,6 +1080,7 @@ review-candidate:
 	$(MAKE) mission-control-display-response-kit
 	$(MAKE) production-identity-storage-disposition-packet
 	$(MAKE) production-identity-storage-external-review-bundle
+	$(MAKE) production-identity-storage-response-kit
 	$(MAKE) siem-export-adapter-disposition-packet
 	$(MAKE) siem-export-adapter-external-review-bundle
 	$(MAKE) compliance-mapping-disposition-packet
@@ -1166,6 +1173,7 @@ release-check: trusted-host-promotion-response-kit-check
 release-check: production-identity-storage-disposition-closure-check
 release-check: production-identity-storage-response-dry-run
 release-check: production-identity-storage-external-review-bundle-check
+release-check: production-identity-storage-response-kit-check
 
 release-check: siem-export-adapter-disposition-closure-check
 release-check: siem-export-adapter-response-dry-run

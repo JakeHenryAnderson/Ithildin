@@ -420,6 +420,10 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-response-dry-run` - exercise temporary normalized-response
   fixtures for the production identity/storage closure gate while restoring the ignored response
   path and keeping ERG-006/ERG-007 planning-only.
+- `make production-identity-storage-response-kit` - generate the response-intake kit for converting
+  real ERG-006/ERG-007 reviewer feedback into normalized evidence while keeping implementation
+  planning, runtime identity, runtime storage, migrations, retention enforcement, and custody
+  claims blocked.
 - `make production-identity-storage-external-response-intake-check` - validate the response-intake
   template for production identity/storage reviewer feedback while keeping runtime identity and
   storage behavior blocked.
@@ -945,6 +949,12 @@ The production identity and storage response dry run is in
 and is checked with `make production-identity-storage-response-dry-run`; it temporarily exercises
 favorable and unfavorable normalized-response fixtures while restoring the ignored response path and
 without closing `ERG-006`/`ERG-007` or approving implementation planning.
+The production identity and storage response kit is in
+[docs/codex/production-identity-storage-response-kit.md](docs/codex/production-identity-storage-response-kit.md)
+and is generated with `make production-identity-storage-response-kit`; it packages response-intake
+guidance, normalized-response examples, closure commands, command evidence, and artifact hashes for
+real reviewer feedback without closing `ERG-006` or `ERG-007`, approving implementation planning,
+or approving runtime identity/storage behavior.
 The SIEM export adapter architecture packet is
 [docs/codex/siem-export-adapter-architecture.md](docs/codex/siem-export-adapter-architecture.md)
 and is checked with `make siem-export-adapter-architecture-check`; it defines future adapter

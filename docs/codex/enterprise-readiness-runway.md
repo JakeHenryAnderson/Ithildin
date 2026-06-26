@@ -272,6 +272,12 @@ The production identity/storage response dry run is in
 and is validated with `make production-identity-storage-response-dry-run`; it exercises favorable
 and unfavorable temporary normalized-response fixtures while restoring the ignored response path and
 without closing `ERG-006`/`ERG-007` or approving implementation planning.
+The production identity/storage response kit is in
+[production-identity-storage-response-kit.md](production-identity-storage-response-kit.md) and is
+generated with `make production-identity-storage-response-kit`. It packages response-intake
+guidance, normalized-response examples, closure commands, command evidence, and artifact hashes for
+real reviewer feedback without closing `ERG-006` or `ERG-007`, approving implementation planning,
+or approving runtime identity/storage behavior.
 
 Required design decisions:
 
