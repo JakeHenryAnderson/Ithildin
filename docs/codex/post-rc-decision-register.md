@@ -285,6 +285,10 @@ Current selected capability: `not selected`.
   `production-identity-storage-disposition-packet.md` asks whether the current architecture
   evidence is coherent enough for continued planning while runtime identity and storage behavior
   remain blocked.
+- Current launch bundle evidence:
+  `production-identity-storage-external-review-bundle.md` consolidates the architecture/disposition
+  packet, response-intake template, fail-closed closure gate, response dry-run, queue status, and
+  command evidence for external handoff without closing `ERG-006`/`ERG-007`.
 - Current external response intake evidence:
   `production-identity-storage-external-response-intake.md` defines the `EXT-PROD-IAM-STORAGE-###`
   finding namespace and `production-identity-storage` normalizer command for recording reviewer

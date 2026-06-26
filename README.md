@@ -405,6 +405,12 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
+- `make production-identity-storage-external-review-bundle` - generate the consolidated
+  external-review launch bundle for ERG-006/ERG-007 production identity/storage architecture
+  disposition without approving runtime identity, storage, migration, retention, or custody
+  behavior.
+- `make production-identity-storage-external-review-bundle-check` - validate the production
+  identity/storage external-review launch bundle wiring, boundary flags, and artifact hashes.
 - `make production-identity-storage-disposition-closure-check` - validate the fail-closed
   production identity/storage closure gate that keeps ERG-006/ERG-007 planning-only unless
   normalized source-level response evidence supports architecture continuation.
@@ -883,6 +889,12 @@ architecture evidence is coherent enough to continue planning while keeping prod
 not runtime Postgres, database migrations, backup/restore runtime behavior, retention enforcement,
 hosted control plane, custody-grade audit claims, compliance automation, and public/security-product
 positioning blocked.
+The external-review launch bundle is
+[docs/codex/production-identity-storage-external-review-bundle.md](docs/codex/production-identity-storage-external-review-bundle.md)
+and is generated with `make production-identity-storage-external-review-bundle`; it consolidates
+the architecture/disposition packet, response-intake template, fail-closed closure gate,
+response-dry-run evidence, queue status, and command evidence into one reviewer handoff while
+keeping `ERG-006`/`ERG-007` planning-only.
 The production identity and storage external response intake template is in
 [docs/codex/production-identity-storage-external-response-intake.md](docs/codex/production-identity-storage-external-response-intake.md)
 and is checked with `make production-identity-storage-external-response-intake-check`; it defines

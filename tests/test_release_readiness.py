@@ -127,6 +127,7 @@ from scripts import (
     production_identity_storage_disposition_closure_check,
     production_identity_storage_disposition_packet,
     production_identity_storage_external_response_intake_check,
+    production_identity_storage_external_review_bundle,
     production_identity_storage_response_dry_run,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
@@ -1911,6 +1912,174 @@ def test_production_identity_storage_disposition_packet_is_wired(tmp_path: Path)
         "03_PRODUCTION_IDENTITY_STORAGE_REVIEW_POINTERS.md",
         "04_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_COMMAND_EVIDENCE.md",
     }
+
+
+def test_production_identity_storage_external_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    report = production_identity_storage_external_review_bundle.build_check_report(
+        Path.cwd()
+    )
+    output_dir = tmp_path / "production-identity-storage-external-review"
+    production_identity_storage_external_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_INDEX.md",
+        "01_PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_PROMPT.md",
+        "02_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_PACKET.md",
+        "03_PRODUCTION_IDENTITY_STORAGE_ARCHITECTURE_CONTRACTS.md",
+        "04_PRODUCTION_IDENTITY_STORAGE_RESPONSE_CLOSURE_DRY_RUN.md",
+        "05_PRODUCTION_IDENTITY_STORAGE_REPRODUCTION_QUEUE_STATUS.md",
+        "06_PRODUCTION_IDENTITY_STORAGE_BOUNDARY_EVIDENCE.md",
+        "07_PRODUCTION_IDENTITY_STORAGE_COMMAND_EVIDENCE.md",
+        "production-identity-storage-external-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir
+            / "production-identity-storage-external-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = (
+        output_dir / "01_PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    disposition = (
+        output_dir / "02_PRODUCTION_IDENTITY_STORAGE_DISPOSITION_PACKET.md"
+    ).read_text(encoding="utf-8")
+    contracts = (
+        output_dir / "03_PRODUCTION_IDENTITY_STORAGE_ARCHITECTURE_CONTRACTS.md"
+    ).read_text(encoding="utf-8")
+    response = (
+        output_dir / "04_PRODUCTION_IDENTITY_STORAGE_RESPONSE_CLOSURE_DRY_RUN.md"
+    ).read_text(encoding="utf-8")
+    reproduction = (
+        output_dir / "05_PRODUCTION_IDENTITY_STORAGE_REPRODUCTION_QUEUE_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (
+        output_dir / "07_PRODUCTION_IDENTITY_STORAGE_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["recommended_next_review"] == "ERG-006/ERG-007"
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["enterprise_rbac_allowed"] is False
+    assert report["tenant_team_authorization_allowed"] is False
+    assert report["remote_admin_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["backup_restore_runtime_allowed"] is False
+    assert report["retention_enforcement_allowed"] is False
+    assert report["hosted_control_plane_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_006"] is False
+    assert report["closes_erg_007"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "production-identity-storage-external-review-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "does not close `ERG-006` or `ERG-007`" in index
+    assert "does not approve production identity" in index
+    assert "Finding namespace: `EXT-PROD-IAM-STORAGE-###`" in prompt
+    assert "Can `ERG-006` and `ERG-007` continue architecture planning" in prompt
+    assert "Do not approve production identity" in prompt
+    assert "Do not approve runtime Postgres" in prompt
+    assert "PRODUCTION_IDENTITY_STORAGE_DISPOSITION_PROMPT" in disposition
+    assert "production-identity-storage-architecture.md" in contracts
+    assert "post-rc-decision-register.md" in contracts
+    assert "production-identity-storage-external-response-intake.md" in response
+    assert "production-identity-storage-disposition-closure-gate.md" in response
+    assert "production-identity-storage-response-dry-run.md" in response
+    assert "enterprise-external-review-queue.md" in reproduction
+    assert "production-identity-storage-architecture.md" in reproduction
+    assert "production-identity-storage-disposition-packet.md" in reproduction
+    for flag in [
+        '"runtime_changes_allowed": false',
+        '"production_identity_allowed": false',
+        '"enterprise_rbac_allowed": false',
+        '"tenant_team_authorization_allowed": false',
+        '"remote_admin_allowed": false',
+        '"runtime_postgres_allowed": false',
+        '"database_migrations_allowed": false',
+        '"backup_restore_runtime_allowed": false',
+        '"retention_enforcement_allowed": false',
+        '"hosted_control_plane_allowed": false',
+        '"custody_grade_audit_claims_allowed": false',
+        '"compliance_automation_allowed": false',
+        '"siem_adapter_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"closes_erg_006": false',
+        '"closes_erg_007": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make production-identity-storage-disposition-packet-check" in evidence
+    assert "make production-identity-storage-external-review-bundle" in readme
+    assert "production-identity-storage-external-review-bundle:" in makefile
+    assert "production-identity-storage-external-review-bundle-check:" in makefile
+    assert (
+        "production-identity-storage-external-review-bundle-check" in release_check_body
+        or "release-check: production-identity-storage-external-review-bundle-check"
+        in makefile
+    )
+    assert (
+        "$(MAKE) production-identity-storage-external-review-bundle"
+        in review_candidate_body
+    )
+    assert "production-identity-storage-external-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) production-identity-storage-external-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert (
+        "docs/codex/production-identity-storage-external-review-bundle.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "docs/codex/production-identity-storage-external-review-bundle.md"
+        in docs_site
+    )
+    assert "Production Identity And Storage External Review Bundle" in review_index
+    assert "production-identity-storage-external-review-bundle.md" in runway
+    assert "production-identity-storage-external-review-bundle.md" in gap_matrix
+    assert "production-identity-storage-external-review-bundle.md" in queue
 
 
 def test_production_identity_storage_external_response_intake_is_wired() -> None:

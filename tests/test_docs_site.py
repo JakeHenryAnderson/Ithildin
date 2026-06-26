@@ -144,6 +144,10 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/production-identity-storage-architecture.md" in DEFAULT_DOCS
     assert "docs/codex/production-identity-storage-disposition-packet.md" in DEFAULT_DOCS
     assert (
+        "docs/codex/production-identity-storage-external-review-bundle.md"
+        in DEFAULT_DOCS
+    )
+    assert (
         "docs/codex/production-identity-storage-disposition-closure-gate.md"
         in DEFAULT_DOCS
     )

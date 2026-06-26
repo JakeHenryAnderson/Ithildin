@@ -233,6 +233,12 @@ and is generated with `make production-identity-storage-disposition-packet`. It 
 `ERG-006`/`ERG-007` may continue architecture planning while production identity, runtime Postgres,
 database migrations, retention enforcement, hosted control plane, custody claims, and
 public/security-product positioning remain blocked.
+The production identity/storage external-review launch bundle is
+[production-identity-storage-external-review-bundle.md](production-identity-storage-external-review-bundle.md)
+and is generated with `make production-identity-storage-external-review-bundle`; it consolidates
+the architecture/disposition packet, response-intake template, fail-closed closure gate,
+response-dry-run evidence, queue status, and command evidence into one reviewer handoff without
+closing `ERG-006`/`ERG-007` or approving identity/storage runtime behavior.
 The production identity/storage external response intake template is
 [production-identity-storage-external-response-intake.md](production-identity-storage-external-response-intake.md)
 and is validated with `make production-identity-storage-external-response-intake-check`; it defines
