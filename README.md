@@ -921,6 +921,12 @@ checked with `make public-security-product-positioning-decision-intake-check`; i
 production/security/compliance, sandbox, EDR/MDM, SIEM custody, compliance automation, hosted MCP,
 runtime Postgres, production identity, and hosted telemetry claims blocked unless a later committed
 decision record, evidence packet, and external/source review explicitly change that posture.
+The fail-closed public/security-product positioning decision closure gate is in
+[docs/codex/public-security-product-positioning-decision-closure-gate.md](docs/codex/public-security-product-positioning-decision-closure-gate.md),
+checked with `make public-security-product-positioning-decision-closure-check`; it keeps `ERG-010`
+blocked unless normalized source-level or packet-and-source review evidence supports a future
+claim-specific decision record and contains no critical/high findings, and it still does not approve
+public/security-product positioning or production/security/compliance positioning.
 The Mission Control display integration proposal is
 [docs/codex/mission-control-display-integration-proposal.md](docs/codex/mission-control-display-integration-proposal.md)
 and is checked with `make mission-control-display-integration-proposal-check`; it keeps the first

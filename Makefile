@@ -223,6 +223,9 @@ post-rc-decision-register-check:
 public-security-product-positioning-decision-intake-check:
 	uv run python scripts/public_security_product_positioning_decision_intake_check.py
 
+public-security-product-positioning-decision-closure-check:
+	uv run python scripts/public_security_product_positioning_decision_closure_check.py
+
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
 
@@ -1035,6 +1038,8 @@ release-check: production-identity-storage-disposition-closure-check
 release-check: siem-export-adapter-disposition-closure-check
 
 release-check: compliance-mapping-disposition-closure-check
+
+release-check: public-security-product-positioning-decision-closure-check
 
 release-check: mission-control-display-disposition-closure-check
 

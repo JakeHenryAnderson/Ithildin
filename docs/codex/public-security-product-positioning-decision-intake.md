@@ -23,6 +23,12 @@ Validate this intake with:
 make public-security-product-positioning-decision-intake-check
 ```
 
+The fail-closed decision closure gate is in
+`public-security-product-positioning-decision-closure-gate.md` and is checked with
+`make public-security-product-positioning-decision-closure-check`; it keeps `ERG-010` blocked unless
+normalized source-level or packet-and-source review evidence supports a future claim-specific
+decision record and contains no critical/high findings.
+
 ## Current Decision
 
 The current decision remains:

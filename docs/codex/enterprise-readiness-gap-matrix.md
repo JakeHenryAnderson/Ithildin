@@ -37,7 +37,7 @@ Current selected capability: `not selected`.
 | `ERG-007` | Durable runtime storage and retention | `planning_only` | Runtime Postgres, multi-user concurrency, retention policy, backup/restore, and production custody | The design-only architecture packet in `production-identity-storage-architecture.md`, the disposition packet in `production-identity-storage-disposition-packet.md`, the external response intake template in `production-identity-storage-external-response-intake.md`, the fail-closed closure gate in `production-identity-storage-disposition-closure-gate.md`, storage architecture decision, migration plan, backup/restore plan, retention model, failure-mode tests, post-RC decision record, and source review |
 | `ERG-008` | SIEM-shaped export adapter | `planning_only` | SIEM integration, delivery/retry behavior, and security-ops ingestion | The design-only adapter architecture packet in `siem-export-adapter-architecture.md`, the disposition packet in `siem-export-adapter-disposition-packet.md`, the external response intake template in `siem-export-adapter-external-response-intake.md`, the fail-closed closure gate in `siem-export-adapter-disposition-closure-gate.md`, stable event schema, redaction policy, delivery/backpressure model, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
 | `ERG-009` | Compliance mapping support | `planning_only` | HIPAA/GLBA/SOX/GDPR or other compliance claims | The design-only architecture packet in `compliance-mapping-architecture.md`, the disposition packet in `compliance-mapping-disposition-packet.md`, the external response intake template in `compliance-mapping-external-response-intake.md`, the fail-closed closure gate in `compliance-mapping-disposition-closure-gate.md`, control mapping templates, legal-review boundary, operator responsibility language, evidence reconstruction guide, explicit no-compliance-automation wording, post-RC decision record, and external/source review |
-| `ERG-010` | Public/security-product positioning | `blocked` | Marketing as production security control, sandbox, EDR/MDM, SIEM, or compliance system | The no-go decision intake in `public-security-product-positioning-decision-intake.md`, independent review, resolved accepted risks, production identity/storage decisions, deployment hardening, support model, explicit claim wording review, and a later committed go/no-go decision before broader public/security-product positioning |
+| `ERG-010` | Public/security-product positioning | `blocked` | Marketing as production security control, sandbox, EDR/MDM, SIEM, or compliance system | The no-go decision intake in `public-security-product-positioning-decision-intake.md`, the fail-closed closure gate in `public-security-product-positioning-decision-closure-gate.md`, independent review, resolved accepted risks, production identity/storage decisions, deployment hardening, support model, explicit claim wording review, and a later committed go/no-go decision before broader public/security-product positioning |
 
 ## Claim Boundary Summary
 
@@ -76,7 +76,9 @@ planning-only architecture packet in
 `compliance-mapping-disposition-packet.md`; it may support future operator control mapping only and
 still blocks compliance automation, legal conclusions, and regulated-industry compliance claims.
 Public/security-product positioning (`ERG-010`) now has the explicit no-go decision intake in
-`public-security-product-positioning-decision-intake.md`; it supports claim-review preparation only
+`public-security-product-positioning-decision-intake.md`; the fail-closed closure gate in
+`public-security-product-positioning-decision-closure-gate.md` supports claim-review evidence
+validation only
 and keeps broader public/security-product, production/security/compliance, sandbox, EDR/MDM, SIEM
 custody, and compliance-product claims blocked.
 

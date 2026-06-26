@@ -389,6 +389,14 @@ Public/security-product positioning is tracked as an explicit no-go lane in
 [public-security-product-positioning-decision-intake.md](public-security-product-positioning-decision-intake.md),
 validated with `make public-security-product-positioning-decision-intake-check`; it allows
 claim-review and evidence-mapping preparation only while broad public/security-product,
+production/security/compliance positioning, and other claim expansion remain blocked. The
+fail-closed public/security-product positioning decision closure gate is in
+[public-security-product-positioning-decision-closure-gate.md](public-security-product-positioning-decision-closure-gate.md)
+and is checked with `make public-security-product-positioning-decision-closure-check`; it keeps
+`ERG-010` blocked unless normalized source-level or packet-and-source response evidence supports a
+future claim-specific decision record and contains no critical/high findings. Even favorable closure
+evidence does not approve public/security-product positioning, production/security/compliance
+positioning, runtime behavior, or new tool powers.
 production/security/compliance, sandbox, EDR/MDM, SIEM custody, compliance automation, hosted trust,
 and enterprise-grade identity claims remain blocked.
 

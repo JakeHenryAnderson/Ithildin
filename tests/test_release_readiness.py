@@ -177,6 +177,7 @@ from scripts import (
     project_test_summary_implementation_plan_check,
     project_test_summary_proposal_check,
     project_test_summary_source_review_bundle,
+    public_security_product_positioning_decision_closure_check,
     public_security_product_positioning_decision_intake_check,
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
@@ -1503,6 +1504,133 @@ def test_public_security_product_positioning_decision_intake_is_wired() -> None:
     assert "public-security-product-positioning-decision-intake.md" in runway
     assert "public-security-product-positioning-decision-intake.md" in gap_matrix
     assert "public-security-product-positioning-decision-intake.md" in decision_register
+
+
+def test_public_security_product_positioning_decision_closure_gate_is_wired() -> None:
+    report = public_security_product_positioning_decision_closure_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/public-security-product-positioning-decision-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    intake = Path(
+        "docs/codex/public-security-product-positioning-decision-intake.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "public-security-product-positioning"
+    assert report["finding_namespace"] == "EXT-PUBLIC-POSITIONING-###"
+    assert report["normalized_response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["disposition_outcome"] is None
+    assert report["erg_010_status"] == "blocked"
+    assert report["allowed_closure_state"] == "ready_for_claim_decision_record"
+    assert report["claim_decision_record_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["production_security_compliance_positioning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["new_tool_powers_allowed"] is False
+    assert report["broader_public_distribution_allowed"] is False
+    assert report["production_deployment_ready_wording_allowed"] is False
+    assert report["sandbox_claims_allowed"] is False
+    assert report["edr_mdm_claims_allowed"] is False
+    assert report["siem_custody_claims_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_mcp_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_mapping_runtime_allowed"] is False
+    for phrase in [
+        "Status: fail-closed closure gate for blocked `ERG-010` and `PRD-PUBLIC-POSITIONING-001`.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "var/review-runs/public-security-product-positioning/normalized-response.json",
+        "reviewed area: `public-security-product-positioning`",
+        "finding namespace: `EXT-PUBLIC-POSITIONING-###`",
+        "can_close_source_rows: true",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "disposition_outcome: ready_for_claim_decision_record",
+        "closure_ready: false",
+        "erg_010_status: blocked",
+        "public_security_product_positioning_allowed: false",
+        "production_security_compliance_positioning_allowed: false",
+        "claim_decision_record_allowed: false",
+        "ready_for_claim_decision_record",
+        "separate committed triage update",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "broader public distribution",
+        "production deployment ready wording",
+        "security-product positioning",
+        "production/security/compliance positioning",
+        "sandbox guarantee language",
+        "EDR/MDM claims",
+        "SIEM custody claims",
+        "compliance claims",
+        "production identity",
+        "runtime Postgres",
+        "hosted telemetry",
+        "remote MCP transport/gateway claims",
+        "support/deployment/update/incident-response claims",
+        "SIEM adapter behavior",
+        "compliance mapping runtime behavior",
+        "public-security-product-positioning-decision-intake.md",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "public/security-product positioning is approved",
+        "production/security/compliance positioning is approved",
+        "security-product positioning is approved",
+        "ERG-010 is closed",
+        "production-ready",
+    ]:
+        assert forbidden not in doc
+    assert "make public-security-product-positioning-decision-closure-check" in readme
+    assert "public-security-product-positioning-decision-closure-check:" in makefile
+    assert (
+        "public-security-product-positioning-decision-closure-check" in release_check_body
+        or "release-check: public-security-product-positioning-decision-closure-check"
+        in makefile
+    )
+    assert "public-security-product-positioning-decision-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/public-security-product-positioning-decision-closure-gate.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/public-security-product-positioning-decision-closure-gate.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Public/Security-Product Positioning Decision Closure Gate" in review_index
+    assert "public-security-product-positioning-decision-closure-gate.md" in runway
+    assert "public-security-product-positioning-decision-closure-gate.md" in gap_matrix
+    assert "public-security-product-positioning-decision-closure-gate.md" in queue
+    assert "public-security-product-positioning-decision-closure-gate.md" in decision_register
+    assert "public-security-product-positioning-decision-closure-gate.md" in intake
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

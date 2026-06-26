@@ -244,6 +244,7 @@ externally closed.
 - [Post-RC Decision Record Examples](post-rc-decision-record-examples.md)
 - [Post-RC Decision Register](post-rc-decision-register.md)
 - [Public/Security-Product Positioning Decision Intake](public-security-product-positioning-decision-intake.md)
+- [Public/Security-Product Positioning Decision Closure Gate](public-security-product-positioning-decision-closure-gate.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [Production Identity And Storage Disposition Closure Gate](production-identity-storage-disposition-closure-gate.md)
