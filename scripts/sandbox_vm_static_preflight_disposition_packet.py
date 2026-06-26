@@ -18,6 +18,7 @@ if __package__ in {None, ""}:
 from scripts import (
     sandbox_vm_static_preflight_disposition_plan_check,
     sandbox_vm_static_preflight_external_response_intake_check,
+    sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_source_review_packet,
 )
 
@@ -33,6 +34,7 @@ PROJECT_MARKERS = [
 DISPOSITION_DOCS = [
     Path("docs/codex/sandbox-vm-static-preflight-disposition-plan.md"),
     Path("docs/codex/sandbox-vm-static-preflight-external-response-intake.md"),
+    Path("docs/codex/sandbox-vm-static-preflight-response-dry-run.md"),
     Path("docs/codex/sandbox-vm-static-preflight-disposition-packet.md"),
 ]
 SOURCE_REVIEW_DOCS = [
@@ -46,6 +48,7 @@ COMMANDS = [
     ["make", "sandbox-vm-static-preflight-source-review-packet-check"],
     ["make", "sandbox-vm-static-preflight-disposition-plan-check"],
     ["make", "sandbox-vm-static-preflight-external-response-intake-check"],
+    ["make", "sandbox-vm-static-preflight-response-dry-run"],
     ["make", "external-findings-intake-dry-run"],
     ["make", "no-new-powers-guardrail"],
     ["make", "tool-surface-invariant-gate"],
@@ -156,6 +159,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "closed_local_preview_static_preflight",
         "external_review_required",
         "Did the reviewer inspect the static preflight source-review packet",
+        "Does the response dry run prove absent responses stay not-ready",
     ]:
         if phrase not in prompt:
             failures.append(f"packet prompt is missing phrase: {phrase}")
@@ -177,6 +181,17 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     ]:
         if phrase not in evidence:
             failures.append(f"command evidence is missing boundary flag: {phrase}")
+    for phrase in [
+        '"response_dry_run"',
+        '"absent_response_not_ready": true',
+        '"valid_response_accepts": true',
+        '"packet_only_rejected": true',
+        '"bad_hash_rejected": true',
+        '"critical_high_finding_rejected": true',
+        '"direct_external_closure_rejected": true',
+    ]:
+        if phrase not in evidence:
+            failures.append(f"command evidence is missing response dry-run evidence: {phrase}")
     for target in [
         "sandbox-vm-static-preflight-disposition-packet:",
         "sandbox-vm-static-preflight-disposition-packet-check:",
@@ -248,11 +263,14 @@ def build_packet(
     source_packet = sandbox_vm_static_preflight_source_review_packet.build_check_report(repo_root)
     disposition = sandbox_vm_static_preflight_disposition_plan_check.build_report(repo_root)
     intake = sandbox_vm_static_preflight_external_response_intake_check.build_report(repo_root)
+    response_dry_run = sandbox_vm_static_preflight_response_dry_run.run_dry_run(repo_root)
     failures = [
         *(f"source-review packet: {failure}" for failure in source_packet["failures"]),
         *(f"disposition plan: {failure}" for failure in disposition["failures"]),
         *(f"external response intake: {failure}" for failure in intake["failures"]),
     ]
+    if not response_dry_run["valid"]:
+        failures.append("response dry run: report is invalid")
     if failures:
         raise SandboxVmStaticPreflightDispositionPacketError("; ".join(failures))
 
@@ -267,6 +285,7 @@ def build_packet(
         "source_packet": source_packet,
         "disposition": disposition,
         "intake": intake,
+        "response_dry_run": response_dry_run,
     }
     files = {
         "00_SANDBOX_VM_STATIC_PREFLIGHT_DISPOSITION_INDEX.md": _index(context),
@@ -284,6 +303,7 @@ def build_packet(
                 "source_review_packet_check": source_packet,
                 "disposition_plan_check": disposition,
                 "external_response_intake_check": intake,
+                "response_dry_run": response_dry_run,
             },
         ),
     }
@@ -297,8 +317,8 @@ def _index(context: dict[str, Any]) -> str:
     return f"""# Sandbox/VM Static Preflight Disposition Packet
 
 This packet packages the `ERG-003` external/source-review disposition question set, response-intake
-template, source-review packet pointers, and command evidence. It is a review handoff for deciding
-whether the CLI-only static preflight lane may be recorded as
+template, response dry-run evidence, source-review packet pointers, and command evidence. It is a
+review handoff for deciding whether the CLI-only static preflight lane may be recorded as
 `closed_local_preview_static_preflight`.
 
 ## Boundary
@@ -354,9 +374,12 @@ Please answer every question:
 4. Are safe-label and safe-error expectations strong enough for packet/display use?
 5. Does `XH-SANDBOX-PREFLIGHT-001` appear fixed for the local-preview fixture lane?
 6. Are there any critical/high findings?
-7. If there are no critical/high findings, can `ERG-003` move from `external_review_required` to
+7. Does the response dry run prove absent responses stay not-ready, source-level favorable
+   responses are accepted for later triage, and packet-only, bad-hash, critical/high, and direct
+   external-closure attempts are rejected?
+8. If there are no critical/high findings, can `ERG-003` move from `external_review_required` to
    `closed_local_preview_static_preflight`?
-8. Does the reviewer explicitly avoid approving live VM/container control, Mission Control runtime
+9. Does the reviewer explicitly avoid approving live VM/container control, Mission Control runtime
    behavior, local model invocation, trusted-host promotion, or production/security-product claims?
 
 Use this exact finding shape for actionable findings:

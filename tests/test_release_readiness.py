@@ -3210,8 +3210,10 @@ def test_sandbox_vm_static_preflight_disposition_packet_is_wired(
     assert "closed_local_preview_static_preflight" in prompt
     assert "external_review_required" in prompt
     assert "Did the reviewer inspect the static preflight source-review packet" in prompt
+    assert "Does the response dry run prove absent responses stay not-ready" in prompt
     assert "sandbox-vm-static-preflight-disposition-plan.md" in intake
     assert "sandbox-vm-static-preflight-external-response-intake.md" in intake
+    assert "sandbox-vm-static-preflight-response-dry-run.md" in intake
     assert "sandbox-vm-static-preflight-disposition-packet.md" in intake
     assert "sandbox-vm-static-preflight-source-review.md" in pointers
     assert "v3-sandbox-vm-static-preflight-internal-review.md" in pointers
@@ -3226,8 +3228,19 @@ def test_sandbox_vm_static_preflight_disposition_packet_is_wired(
         '"closes_erg_003": false',
     ]:
         assert flag in evidence
+    for dry_run_evidence in [
+        '"response_dry_run"',
+        '"absent_response_not_ready": true',
+        '"valid_response_accepts": true',
+        '"packet_only_rejected": true',
+        '"bad_hash_rejected": true',
+        '"critical_high_finding_rejected": true',
+        '"direct_external_closure_rejected": true',
+    ]:
+        assert dry_run_evidence in evidence
     assert "Command execution skipped for packet check mode." in evidence
     assert "make sandbox-vm-static-preflight-source-review-packet-check" in evidence
+    assert "make sandbox-vm-static-preflight-response-dry-run" in evidence
     assert "make sandbox-vm-static-preflight-disposition-packet" in readme
     assert "sandbox-vm-static-preflight-disposition-packet:" in makefile
     assert "sandbox-vm-static-preflight-disposition-packet-check:" in makefile
@@ -3609,10 +3622,13 @@ def test_sandbox_vm_static_preflight_reviewer_reproduction_map_is_wired() -> Non
         "Current governed tool count: `24`",
         "Current `ERG-003` status before reviewer disposition: `external_review_required`.",
         "make sandbox-vm-static-preflight-source-review-packet",
+        "make sandbox-vm-static-preflight-response-dry-run",
         "make sandbox-vm-static-preflight-disposition-packet",
         "make external-findings-intake-dry-run",
+        "docs/codex/sandbox-vm-static-preflight-response-dry-run.md",
         "var/review-packets/v3/sandbox-vm-static-preflight-source-review/",
         "var/review-packets/v3/sandbox-vm-static-preflight-disposition/",
+        "response dry-run evidence shows absent responses stay not-ready",
         "closed_local_preview_static_preflight",
         "What This Map Does Not Prove",
         "does not close `ERG-003`",

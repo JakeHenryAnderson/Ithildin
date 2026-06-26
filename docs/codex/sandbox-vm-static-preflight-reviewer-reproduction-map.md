@@ -40,6 +40,7 @@ make sandbox-vm-static-preflight-source-review-packet
 make sandbox-vm-static-preflight-source-review-packet-check
 make sandbox-vm-static-preflight-disposition-plan-check
 make sandbox-vm-static-preflight-external-response-intake-check
+make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-disposition-packet
 make sandbox-vm-static-preflight-disposition-packet-check
 make external-findings-intake-dry-run
@@ -71,6 +72,7 @@ Review these committed docs:
 - `docs/codex/findings/xh-sandbox-preflight-001-safe-label-suppression.md`
 - `docs/codex/sandbox-vm-static-preflight-disposition-plan.md`
 - `docs/codex/sandbox-vm-static-preflight-external-response-intake.md`
+- `docs/codex/sandbox-vm-static-preflight-response-dry-run.md`
 - `docs/codex/sandbox-vm-static-preflight-disposition-packet.md`
 - `docs/codex/enterprise-readiness-gap-matrix.md`
 - `docs/codex/post-rc-decision-register.md`
@@ -91,6 +93,9 @@ The reproduction path should show:
 - the CLI-only preflight runner reports static metadata and safe labels only;
 - the source-review packet and disposition packet are generated with artifact hashes;
 - response intake normalization remains non-mutating;
+- response dry-run evidence shows absent responses stay not-ready, source-level favorable responses
+  can become closure-ready for later triage, and packet-only, bad-hash, critical/high-finding, and
+  direct external-closure attempts are rejected;
 - no new governed tool manifests are added;
 - tool count remains `24`;
 - live VM/container inspection remains blocked;
