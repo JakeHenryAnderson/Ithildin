@@ -102,6 +102,7 @@ from scripts import (
     mission_control_display_external_review_bundle,
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
+    mission_control_display_next_review_ready_check,
     mission_control_display_response_dry_run,
     mission_control_display_response_kit,
     mission_control_display_review_packet,
@@ -3771,6 +3772,69 @@ def test_mission_control_display_response_kit_is_wired(tmp_path: Path) -> None:
     assert "mission-control-display-response-kit.md" in gap_matrix
     assert "mission-control-display-response-kit.md" in queue
     assert "mission-control-display-response-kit.md" in decision_register
+
+
+def test_mission_control_display_next_review_ready_check_is_wired() -> None:
+    report = mission_control_display_next_review_ready_check.build_report(Path.cwd())
+    doc = Path("docs/codex/mission-control-display-next-review-ready-check.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["ready_to_send"] is True
+    assert report["recommended_gap"] == "ERG-002"
+    assert (
+        report["recommended_packet"]
+        == "var/review-packets/v3/mission-control-display-external-review/"
+    )
+    assert report["normalized_response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_002"] is False
+    for phrase in [
+        "Status: operator send-readiness check for the `ERG-002` Mission Control "
+        "display/import review lane.",
+        "Current governed tool count: `24`.",
+        "Recommended packet: `var/review-packets/v3/mission-control-display-external-review/`.",
+        "make mission-control-display-next-review-ready-check",
+        "make mission-control-display-external-review-bundle",
+        "make mission-control-integration-readiness-packet",
+        "make mission-control-display-response-kit",
+        "does not close `ERG-002`",
+        "does not approve Mission Control runtime importer behavior",
+        "does not approve Mission Control execution authority",
+        "does not approve local model invocation",
+        "does not approve sandbox orchestration",
+    ]:
+        assert phrase in doc
+    assert "make mission-control-display-next-review-ready-check" in readme
+    assert "mission-control-display-next-review-ready-check:" in makefile
+    assert "mission-control-display-next-review-ready-check" in release_check_body
+    assert "mission-control-display-next-review-ready-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-display-next-review-ready-check.md" in docs_site
+    assert "docs/codex/mission-control-display-next-review-ready-check.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Next Review Ready Check" in review_index
 
 
 def test_mission_control_integration_readiness_packet_is_wired(tmp_path: Path) -> None:

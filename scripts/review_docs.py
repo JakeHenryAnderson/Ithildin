@@ -302,6 +302,7 @@ REVIEW_DOCS = [
     "docs/codex/mission-control-display-disposition-closure-gate.md",
     "docs/codex/mission-control-display-response-dry-run.md",
     "docs/codex/mission-control-display-response-kit.md",
+    "docs/codex/mission-control-display-next-review-ready-check.md",
     "docs/codex/mission-control-display-decision-record-skeleton.md",
     "docs/codex/mission-control-integration-readiness-packet.md",
     "docs/codex/mission-control-side-handoff-plan.md",

@@ -541,6 +541,9 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-response-kit` - generate the Mission Control display/importer
   response-intake kit with normalized-response examples, closure commands, boundary evidence, and
   artifact hashes while keeping runtime importer behavior blocked.
+- `make mission-control-display-next-review-ready-check` - verify the Mission Control
+  display/importer external-review bundle, readiness packet, response kit, dry run, and fail-closed
+  closure posture are ready for operator handoff without closing `ERG-002`.
 - `make mission-control-integration-readiness-packet` - generate the consolidated Mission Control
   display/importer readiness handoff packet for the future Mission Control-side file/import display
   task while keeping Ithildin runtime behavior and Mission Control authority transfer blocked.
@@ -1214,6 +1217,11 @@ and is generated with `make mission-control-display-response-kit`; it packages r
 guidance, normalized-response examples, closure commands, boundary status, command evidence, and
 artifact hashes without recording review, closing `ERG-002`, or approving runtime importer
 behavior.
+The Mission Control display next-review ready check is in
+[docs/codex/mission-control-display-next-review-ready-check.md](docs/codex/mission-control-display-next-review-ready-check.md)
+and is checked with `make mission-control-display-next-review-ready-check`; it verifies the ERG-002
+packet bundle, readiness packet, response kit, dry run, and fail-closed closure posture are ready
+for operator handoff without closing `ERG-002` or approving Mission Control runtime authority.
 The Mission Control display decision-record skeleton is in
 [docs/codex/mission-control-display-decision-record-skeleton.md](docs/codex/mission-control-display-decision-record-skeleton.md)
 and is checked with `make mission-control-display-decision-record-skeleton-check`; it defines the
