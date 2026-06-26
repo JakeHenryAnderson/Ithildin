@@ -1116,6 +1116,7 @@ review-packet-diff-gate:
 
 review-candidate:
 	@mkdir -p var/review-packets/v3
+	@echo "running release-check; transcript will be written to var/review-packets/v3/review-candidate-release-check.txt"
 	@{ echo "$$ make release-check"; $(MAKE) release-check; rc=$$?; echo "returncode=$$rc"; exit $$rc; } > var/review-packets/v3/review-candidate-release-check.txt 2>&1 || (cat var/review-packets/v3/review-candidate-release-check.txt; exit 1)
 	@echo "release-check transcript: var/review-packets/v3/review-candidate-release-check.txt"
 	$(MAKE) filesystem-contract-check
