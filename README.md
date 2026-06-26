@@ -391,6 +391,10 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-external-review-queue-check` - validate the post-RC enterprise external-review
   queue that orders ERG-002 through ERG-010 review lanes, points to the current packets/intake
   docs, and keeps runtime behavior blocked.
+- `make enterprise-next-review-handoff` - generate the compact pointer to the current next
+  enterprise review packet and response path.
+- `make enterprise-next-review-handoff-check` - validate that the next-review handoff still points
+  to `ERG-003` and keeps runtime behavior blocked.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -919,6 +923,10 @@ checked with `make enterprise-external-review-queue-check`; it orders the post-R
 points to each current packet and response-intake path, names `ERG-003` static sandbox/VM preflight
 as the next recommended review, and keeps every queued lane runtime-disabled until a later committed
 decision record changes that posture.
+The compact next-review handoff is
+[docs/codex/enterprise-next-review-handoff.md](docs/codex/enterprise-next-review-handoff.md),
+generated with `make enterprise-next-review-handoff`; it points to the exact `ERG-003` packet files
+to send and the fail-closed response path to use afterward.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

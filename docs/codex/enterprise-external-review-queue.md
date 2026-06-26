@@ -104,6 +104,16 @@ Reason: it is the earliest dependency for the live sandbox/VM worker proof of co
 most complete source-review packet, disposition packet, response-intake template, reviewer
 reproduction map, negative fixtures, and internal review evidence.
 
+For a compact operator handoff pointer, run:
+
+```sh
+make enterprise-next-review-handoff
+```
+
+That command is documented in `enterprise-next-review-handoff.md`, writes
+`var/review-packets/v3/enterprise-next-review-handoff/`, and points to the exact `ERG-003` upload
+files, reviewer prompt, and fail-closed response path.
+
 Run:
 
 ```sh

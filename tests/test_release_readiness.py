@@ -48,6 +48,7 @@ from scripts import (
     demo_state_report,
     docs_claims_public_preview_disposition_closure_check,
     enterprise_external_review_queue_check,
+    enterprise_next_review_handoff,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     enterprise_sandbox_control_plane_readiness_check,
@@ -1132,6 +1133,52 @@ def test_enterprise_external_review_queue_is_wired() -> None:
     assert "enterprise-external-review-queue.md" in runway
     assert "enterprise-external-review-queue.md" in matrix
     assert "enterprise-external-review-queue.md" in register
+
+
+def test_enterprise_next_review_handoff_is_wired() -> None:
+    report = enterprise_next_review_handoff.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-next-review-handoff.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gap"] == "ERG-003"
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    for phrase in [
+        "Recommended next enterprise review: `ERG-003`",
+        "make enterprise-next-review-handoff",
+        "var/review-packets/v3/sandbox-vm-static-preflight-external-review/",
+        "EXT-SVP-###",
+        "does not close `ERG-003`",
+        "does not approve live VM/container inspection",
+        "does not approve local model invocation",
+    ]:
+        assert phrase in doc
+    assert "enterprise-next-review-handoff:" in makefile
+    assert "enterprise-next-review-handoff-check:" in makefile
+    assert "enterprise-next-review-handoff-check" in release_check_body
+    assert "$(MAKE) enterprise-next-review-handoff" in review_candidate_body
+    assert "make enterprise-next-review-handoff" in readme
+    assert "docs/codex/enterprise-next-review-handoff.md" in readme
+    assert "enterprise-next-review-handoff.md" in queue
+    assert "docs/codex/enterprise-next-review-handoff.md" in docs_site
+    assert "docs/codex/enterprise-next-review-handoff.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Next Review Handoff" in review_index
 
 
 def test_post_rc_decision_gate_is_wired() -> None:
