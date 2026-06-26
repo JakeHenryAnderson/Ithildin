@@ -4457,6 +4457,7 @@ def test_sandbox_vm_static_preflight_external_review_bundle_is_wired(
     assert "sandbox-vm-static-preflight-external-response-intake.md" in response
     assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in response
     assert "sandbox-vm-static-preflight-disposition-record-skeleton.md" in response
+    assert "sandbox-vm-static-preflight-response-application-record.md" in response
     assert "sandbox-vm-static-preflight-response-dry-run.md" in response
     assert "sandbox-vm-static-preflight-triage-update.md" in response
     assert "enterprise-external-review-queue.md" in reproduction
@@ -4471,6 +4472,7 @@ def test_sandbox_vm_static_preflight_external_review_bundle_is_wired(
         '"trusted_host_promotion_allowed": false',
         '"new_power_classes_allowed": false',
         '"closes_erg_003": false',
+        '"response_application_record_check"',
         '"response_dry_run"',
         '"valid_response_accepts": true',
     ]:

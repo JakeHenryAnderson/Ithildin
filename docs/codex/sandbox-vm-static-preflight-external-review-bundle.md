@@ -31,8 +31,9 @@ var/review-packets/v3/sandbox-vm-static-preflight-external-review/
 This is the reviewer-friendly launch artifact for the next recommended enterprise review:
 `ERG-003` static sandbox/VM preflight disposition. It consolidates the existing source-review
 packet, disposition packet, implementation contracts, fixture/negative evidence, response intake,
-fail-closed closure gate, disposition-record skeleton, response dry run, triage-update checklist,
-reproduction map, queue status, and command evidence into one 10-file handoff.
+fail-closed closure gate, disposition-record skeleton, response-application record, response dry
+run, triage-update checklist, reproduction map, queue status, and command evidence into one 10-file
+handoff.
 
 The goal is to make the external/source reviewer answer one narrow question:
 
@@ -55,8 +56,10 @@ The generated bundle contains exactly these upload-friendly artifacts:
 - `sandbox-vm-static-preflight-external-review-artifact-hashes.json`
 
 `06_SANDBOX_VM_STATIC_PREFLIGHT_RESPONSE_CLOSURE_TRIAGE.md` must include
-`sandbox-vm-static-preflight-disposition-record-skeleton.md` so the external reviewer sees the
-allowed future record shape while `ERG-003` remains open.
+`sandbox-vm-static-preflight-disposition-record-skeleton.md` and
+`sandbox-vm-static-preflight-response-application-record.md` so the external reviewer sees both the
+allowed future record shape and the manager-owned response application checklist while `ERG-003`
+remains open.
 
 ## Boundary
 
@@ -93,6 +96,7 @@ This bundle wraps and cross-checks:
 - `sandbox-vm-static-preflight-disposition-plan.md`;
 - `sandbox-vm-static-preflight-disposition-closure-gate.md`;
 - `sandbox-vm-static-preflight-external-response-intake.md`;
+- `sandbox-vm-static-preflight-response-application-record.md`;
 - `sandbox-vm-static-preflight-response-dry-run.md`;
 - `sandbox-vm-static-preflight-triage-update.md`;
 - `sandbox-vm-static-preflight-reviewer-reproduction-map.md`;
@@ -106,6 +110,7 @@ Run:
 ```sh
 make sandbox-vm-static-preflight-external-review-bundle-check
 make sandbox-vm-static-preflight-disposition-closure-check
+make sandbox-vm-static-preflight-response-application-record-check
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-triage-update-check
 make enterprise-external-review-queue-check

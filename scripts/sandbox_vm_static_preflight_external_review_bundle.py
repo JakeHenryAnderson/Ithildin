@@ -21,6 +21,7 @@ from scripts import (
     sandbox_vm_static_preflight_disposition_packet,
     sandbox_vm_static_preflight_disposition_plan_check,
     sandbox_vm_static_preflight_external_response_intake_check,
+    sandbox_vm_static_preflight_response_application_record_check,
     sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_reviewer_reproduction_map_check,
     sandbox_vm_static_preflight_source_review_packet,
@@ -151,6 +152,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "sandbox-vm-static-preflight-external-response-intake.md",
         "sandbox-vm-static-preflight-disposition-closure-gate.md",
         "sandbox-vm-static-preflight-disposition-record-skeleton.md",
+        "sandbox-vm-static-preflight-response-application-record.md",
         "sandbox-vm-static-preflight-response-dry-run.md",
         "sandbox-vm-static-preflight-triage-update.md",
     ]:
@@ -172,6 +174,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"trusted_host_promotion_allowed": false',
         '"new_power_classes_allowed": false',
         '"closes_erg_003": false',
+        '"response_application_record_check"',
         '"response_dry_run"',
         '"valid_response_accepts": true',
     ]:
@@ -308,6 +311,7 @@ def build_bundle(
                     "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
                     "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md",
                     "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md",
+                    "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
                     "docs/codex/sandbox-vm-static-preflight-response-dry-run.md",
                     "docs/codex/sandbox-vm-static-preflight-triage-update.md",
                 ],
@@ -452,12 +456,16 @@ def _build_command_reports(repo_root: Path, *, run_commands: bool) -> dict[str, 
         sandbox_vm_static_preflight_reviewer_reproduction_map_check.build_report(repo_root)
     )
     enterprise_queue_report = enterprise_external_review_queue_check.build_report(repo_root)
+    response_application_record_report = (
+        sandbox_vm_static_preflight_response_application_record_check.build_report(repo_root)
+    )
     reports: dict[str, Any] = {
         "source_packet_check": source_packet_report,
         "disposition_packet_check": disposition_packet_report,
         "disposition_plan_check": disposition_plan_report,
         "external_response_intake_check": response_intake_report,
         "closure_gate_check": closure_gate_report,
+        "response_application_record_check": response_application_record_report,
         "response_dry_run": sandbox_vm_static_preflight_response_dry_run.run_dry_run(repo_root),
         "triage_update_check": sandbox_vm_static_preflight_triage_update_check.build_report(
             repo_root
@@ -483,6 +491,7 @@ def _run_shell_commands(repo_root: Path) -> list[dict[str, Any]]:
         ["make", "sandbox-vm-static-preflight-source-review-packet-check"],
         ["make", "sandbox-vm-static-preflight-disposition-packet-check"],
         ["make", "sandbox-vm-static-preflight-disposition-closure-check"],
+        ["make", "sandbox-vm-static-preflight-response-application-record-check"],
         ["make", "sandbox-vm-static-preflight-response-dry-run"],
         ["make", "sandbox-vm-static-preflight-triage-update-check"],
         ["make", "sandbox-vm-static-preflight-reviewer-reproduction-map-check"],
