@@ -21,6 +21,7 @@ Validate this intake with:
 ```sh
 make mission-control-display-decision-intake-check
 make mission-control-display-external-response-intake-check
+make mission-control-display-disposition-closure-check
 ```
 
 ## Required Preconditions
@@ -41,6 +42,9 @@ Any future implementation decision for `PRD-MC-DISPLAY-001` must prove:
 - any external reviewer response is normalized through
   `mission-control-display-external-response-intake.md` before a separate committed triage update
   changes this lane's status.
+- any favorable reviewer response satisfies
+  `mission-control-display-disposition-closure-gate.md` before a separate committed triage update
+  uses it for a design-only continuation decision.
 
 ## Required Decision Evidence
 

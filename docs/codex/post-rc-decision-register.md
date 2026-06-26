@@ -67,6 +67,10 @@ Current selected capability: `not selected`.
   `mission-control-display-external-response-intake.md` defines the `EXT-MC-DISPLAY-###` finding
   namespace, allowed reviewer-response outcomes, and the rule that a favorable response is intake
   evidence only, not runtime importer approval.
+- Current disposition closure evidence:
+  `mission-control-display-disposition-closure-gate.md` keeps `ERG-002` planning-only unless
+  normalized source-level response evidence supports design-only continuation and contains no
+  critical/high findings.
 
 ### PRD-SANDBOX-PREFLIGHT-001
 

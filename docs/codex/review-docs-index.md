@@ -258,6 +258,7 @@ externally closed.
 - [Mission Control Display Decision Intake](mission-control-display-decision-intake.md)
 - [Mission Control Display Disposition Packet](mission-control-display-disposition-packet.md)
 - [Mission Control Display External Response Intake](mission-control-display-external-response-intake.md)
+- [Mission Control Display Disposition Closure Gate](mission-control-display-disposition-closure-gate.md)
 - [Mission Control Integration Readiness Packet](mission-control-integration-readiness-packet.md)
 - [Mission Control-Side Display Importer Handoff Plan](mission-control-side-handoff-plan.md)
 - [Mission Control Integration Implementation Ticket](mission-control-integration-implementation-ticket.md)

@@ -949,6 +949,11 @@ The Mission Control display external response intake template is
 and is checked with `make mission-control-display-external-response-intake-check`; it defines the
 `EXT-MC-DISPLAY-###` finding namespace, allowed reviewer-response outcomes, and the rule that a
 favorable response does not close `ERG-002` or approve runtime importer behavior.
+The Mission Control display disposition closure gate is in
+[docs/codex/mission-control-display-disposition-closure-gate.md](docs/codex/mission-control-display-disposition-closure-gate.md)
+and is checked with `make mission-control-display-disposition-closure-check`; it keeps `ERG-002`
+planning-only unless normalized source-level response evidence explicitly supports design-only
+continuation and contains no critical/high findings.
 Generate the Mission Control integration readiness packet with
 `make mission-control-integration-readiness-packet`; it consolidates the display proposal, importer
 plan, disposition packet, handoff schema, negative fixtures, side handoff, implementation ticket,

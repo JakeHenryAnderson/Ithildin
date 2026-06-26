@@ -23,6 +23,7 @@ Validate this packet with:
 ```sh
 make mission-control-display-disposition-packet-check
 make mission-control-display-external-response-intake-check
+make mission-control-display-disposition-closure-check
 ```
 
 Generate the focused disposition handoff with:
@@ -59,6 +60,7 @@ The reviewer should inspect:
 | Importer plan | `mission-control-display-importer-plan.md` |
 | Decision intake | `mission-control-display-decision-intake.md` |
 | Response intake template | `mission-control-display-external-response-intake.md` |
+| Disposition closure gate | `mission-control-display-disposition-closure-gate.md` |
 | Mission Control-side handoff | `mission-control-side-handoff-plan.md` |
 | Mission Control implementation ticket | `mission-control-integration-implementation-ticket.md` |
 | Handoff schema contract | `mission-control-handoff-schema-contract.md` |
@@ -105,4 +107,7 @@ The disposition review should look for:
 This packet supports docs, schema contracts, static fixtures, review packets, review prompts, and
 operator warning design. It does not close `ERG-002`, and it does not authorize Mission Control
 runtime importer behavior. A later post-RC decision record must record the reviewer response before
-any Mission Control-side importer implementation begins.
+any Mission Control-side importer implementation begins. The fail-closed disposition closure gate in
+`mission-control-display-disposition-closure-gate.md` keeps `ERG-002` planning-only unless
+normalized source-level response evidence supports design-only continuation and contains no
+critical/high findings.

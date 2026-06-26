@@ -349,7 +349,10 @@ also now exists as a concrete Mission Control repository ticket for the display-
 Mission Control display post-RC decision intake now also exists as planning-only evidence. The
 Mission Control display importer implementation plan now also exists as planning-only evidence. The
 Mission Control integration readiness packet now also exists as a consolidated handoff packet for
-the display-only Mission Control-side file/import task. The
+the display-only Mission Control-side file/import task. The fail-closed disposition closure gate in
+[mission-control-display-disposition-closure-gate.md](mission-control-display-disposition-closure-gate.md)
+keeps `ERG-002` planning-only unless normalized source-level response evidence explicitly supports
+design-only continuation and contains no critical/high findings. The
 sandbox/VM worker boundary charter, profile contract, preflight contract, proof-of-concept review
 packet, static profile fixture contract, static preflight CLI fixture runner, source-review packet,
 and internal source-review pass also now exist.
@@ -387,6 +390,8 @@ Current status anchors:
   `mission-control-display-disposition-packet.md`;
 - Mission Control display external response intake must pass
   `mission-control-display-external-response-intake.md`;
+- Mission Control display disposition closure must pass
+  `mission-control-display-disposition-closure-gate.md`;
 - Mission Control integration readiness must pass
   `mission-control-integration-readiness-packet.md`;
 - static preflight lane remains local-preview fixture evidence only;

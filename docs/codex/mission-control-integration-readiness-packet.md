@@ -92,3 +92,6 @@ This readiness artifact is complete when:
 - release/readiness gates include the packet check;
 - `review-candidate` regenerates the packet;
 - the packet still states that `ERG-002` is planning-only and not closed.
+- the fail-closed closure gate in `mission-control-display-disposition-closure-gate.md` keeps
+  `ERG-002` planning-only unless normalized source-level response evidence explicitly supports
+  design-only continuation and contains no critical/high findings.

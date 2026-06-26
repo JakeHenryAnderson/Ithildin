@@ -94,6 +94,9 @@ uv run python scripts/external_response_normalize.py \
 The normalized response is intake evidence only. It sets `mutates_findings: false` and
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the
 enterprise gap matrix or post-RC decision register, and rerun release gates.
+Before a later committed triage update may use the response to support design-only continuation,
+run the fail-closed closure gate in
+[mission-control-display-disposition-closure-gate.md](mission-control-display-disposition-closure-gate.md).
 
 ## Allowed Intake Outcomes
 
@@ -141,6 +144,7 @@ Run:
 
 ```sh
 make mission-control-display-external-response-intake-check
+make mission-control-display-disposition-closure-check
 make external-findings-intake-dry-run
 make mission-control-display-disposition-packet-check
 make mission-control-display-decision-intake-check

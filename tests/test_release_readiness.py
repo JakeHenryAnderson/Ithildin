@@ -88,6 +88,7 @@ from scripts import (
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
     mission_control_display_decision_intake_check,
+    mission_control_display_disposition_closure_check,
     mission_control_display_disposition_packet,
     mission_control_display_external_response_intake_check,
     mission_control_display_importer_plan_check,
@@ -15851,6 +15852,131 @@ def test_mission_control_display_external_response_intake_is_wired() -> None:
     assert "mission-control-display-external-response-intake.md" in runway
     assert "mission-control-display-external-response-intake.md" in gap_matrix
     assert "mission-control-display-external-response-intake.md" in decision_register
+
+
+def test_mission_control_display_disposition_closure_gate_is_wired() -> None:
+    report = mission_control_display_disposition_closure_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/mission-control-display-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    intake = Path("docs/codex/mission-control-display-external-response-intake.md").read_text(
+        encoding="utf-8"
+    )
+    disposition_packet = Path(
+        "docs/codex/mission-control-display-disposition-packet.md"
+    ).read_text(encoding="utf-8")
+    decision_intake = Path("docs/codex/mission-control-display-decision-intake.md").read_text(
+        encoding="utf-8"
+    )
+    readiness_packet = Path(
+        "docs/codex/mission-control-integration-readiness-packet.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["closure_ready"] is False
+    assert report["normalized_response_present"] is False
+    assert report["tool_count"] == 24
+    assert report["area"] == "mission-control-display"
+    assert report["finding_namespace"] == "EXT-MC-DISPLAY-###"
+    assert report["erg_002_status"] == "planning_only"
+    assert report["allowed_closure_state"] == "ready_for_design_only_decision_record"
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["runtime_importer_allowed"] is False
+    assert report["api_callbacks_allowed"] is False
+    assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: fail-closed closure gate for planning-only `ERG-002`.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "make mission-control-display-disposition-closure-check",
+        "var/review-runs/mission-control-display/normalized-response.json",
+        "ithildin.external_review.normalized_response",
+        "reviewed area: `mission-control-display`",
+        "finding namespace: `EXT-MC-DISPLAY-###`",
+        "can_close_source_rows: true",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "disposition_outcome: continue_design_only",
+        "closure_ready: false",
+        "erg_002_status: planning_only",
+        "mission_control_runtime_allowed: false",
+        "runtime_importer_allowed: false",
+        "ready_for_design_only_decision_record",
+        "separate committed triage update",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "Mission Control runtime importer behavior",
+        "Mission Control execution authority",
+        "Mission Control policy authority",
+        "Mission Control approval authority",
+        "Mission Control audit authority",
+        "API callbacks",
+        "polling or mutating Ithildin APIs",
+        "local model invocation",
+        "sandbox orchestration",
+        "trusted-host promotion",
+        "SIEM adapter behavior",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "Mission Control runtime importer behavior is approved",
+        "Mission Control execution authority is approved",
+        "Mission Control policy authority is approved",
+        "Mission Control approval authority is approved",
+        "Mission Control audit authority is approved",
+        "ERG-002 is closed",
+        "production-ready",
+    ]:
+        assert forbidden not in doc
+    assert "make mission-control-display-disposition-closure-check" in readme
+    assert "mission-control-display-disposition-closure-check:" in makefile
+    assert (
+        "mission-control-display-disposition-closure-check" in release_check_body
+        or "release-check: mission-control-display-disposition-closure-check" in makefile
+    )
+    assert "mission-control-display-disposition-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-display-disposition-closure-gate.md" in docs_site
+    assert (
+        "docs/codex/mission-control-display-disposition-closure-gate.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Disposition Closure Gate" in review_index
+    assert "mission-control-display-disposition-closure-gate.md" in runway
+    assert "mission-control-display-disposition-closure-gate.md" in gap_matrix
+    assert "mission-control-display-disposition-closure-gate.md" in queue
+    assert "mission-control-display-disposition-closure-gate.md" in decision_register
+    assert "mission-control-display-disposition-closure-gate.md" in intake
+    assert "mission-control-display-disposition-closure-gate.md" in disposition_packet
+    assert "mission-control-display-disposition-closure-gate.md" in decision_intake
+    assert "mission-control-display-disposition-closure-gate.md" in readiness_packet
 
 
 def test_data_classification_design_check_is_wired() -> None:
