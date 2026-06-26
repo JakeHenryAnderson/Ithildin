@@ -136,6 +136,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "does not approve local model invocation",
         "make sandbox-vm-static-preflight-external-review-bundle",
         "make sandbox-vm-static-preflight-response-kit",
+        "make sandbox-vm-static-preflight-response-application-record-check",
+        "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
     ]:
         if phrase not in handoff_text:
             failures.append(f"handoff doc is missing phrase: {phrase}")
@@ -145,6 +147,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Response path after review",
         "What remains blocked",
         "EXT-SVP-###",
+        "Response-application record",
+        "Response-application check",
     ]:
         if phrase not in markdown_text:
             failures.append(f"generated handoff is missing phrase: {phrase}")
@@ -153,6 +157,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"runtime_changes_allowed": false',
         '"live_vm_inspection_allowed": false',
         '"closes_erg_003": false',
+        '"response_application_record"',
     ]:
         if phrase not in json_text:
             failures.append(f"generated handoff JSON is missing phrase: {phrase}")
@@ -269,6 +274,12 @@ def _handoff_payload(*, commit: str, dirty: bool) -> dict[str, Any]:
             "closure_gate": "make sandbox-vm-static-preflight-disposition-closure-check",
             "dry_run": "make sandbox-vm-static-preflight-response-dry-run",
             "triage_update": "docs/codex/sandbox-vm-static-preflight-triage-update.md",
+            "response_application_record": (
+                "docs/codex/sandbox-vm-static-preflight-response-application-record.md"
+            ),
+            "response_application_check": (
+                "make sandbox-vm-static-preflight-response-application-record-check"
+            ),
         },
         "blocked_boundaries": {name: False for name in BLOCKED_BOUNDARIES},
     }
@@ -319,6 +330,8 @@ preflight fixture lane.
 - Closure gate: `{payload['response_path']['closure_gate']}`
 - Dry run: `{payload['response_path']['dry_run']}`
 - Triage update guide: `{payload['response_path']['triage_update']}`
+- Response-application record: `{payload['response_path']['response_application_record']}`
+- Response-application check: `{payload['response_path']['response_application_check']}`
 
 ## What remains blocked
 
@@ -332,6 +345,7 @@ VM/container inspection, and does not approve local model invocation.
 ```sh
 make sandbox-vm-static-preflight-external-review-bundle
 make sandbox-vm-static-preflight-response-kit
+make sandbox-vm-static-preflight-response-application-record-check
 make enterprise-next-review-handoff
 make enterprise-next-review-handoff-check
 ```

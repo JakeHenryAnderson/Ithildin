@@ -67,12 +67,14 @@ After review, use:
 make sandbox-vm-static-preflight-response-kit
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-disposition-closure-check
+make sandbox-vm-static-preflight-response-application-record-check
 ```
 
 Then follow:
 
 ```text
 docs/codex/sandbox-vm-static-preflight-triage-update.md
+docs/codex/sandbox-vm-static-preflight-response-application-record.md
 ```
 
 Only a later committed triage update may move `ERG-003`, and only if normalized source-level
