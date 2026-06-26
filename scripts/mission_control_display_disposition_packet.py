@@ -40,6 +40,7 @@ PROJECT_MARKERS = [
 DISPOSITION_DOCS = [
     Path("docs/codex/mission-control-display-disposition-packet.md"),
     Path("docs/codex/mission-control-display-decision-intake.md"),
+    Path("docs/codex/mission-control-display-external-response-intake.md"),
 ]
 REVIEW_POINTER_DOCS = [
     Path("docs/codex/mission-control-display-integration-proposal.md"),

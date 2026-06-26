@@ -88,6 +88,7 @@ from scripts import (
     mcp_ingress_source_review_bundle,
     mission_control_display_decision_intake_check,
     mission_control_display_disposition_packet,
+    mission_control_display_external_response_intake_check,
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
     mission_control_display_review_packet,
@@ -15351,6 +15352,108 @@ def test_compliance_mapping_external_response_intake_is_wired() -> None:
     assert "compliance-mapping-external-response-intake.md" in runway
     assert "compliance-mapping-external-response-intake.md" in gap_matrix
     assert "compliance-mapping-external-response-intake.md" in decision_register
+
+
+def test_mission_control_display_external_response_intake_is_wired() -> None:
+    report = mission_control_display_external_response_intake_check.build_report(Path.cwd())
+    doc = Path("docs/codex/mission-control-display-external-response-intake.md").read_text(
+        encoding="utf-8"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    disposition_packet = Path(
+        "docs/codex/mission-control-display-disposition-packet.md"
+    ).read_text(encoding="utf-8")
+    decision_intake = Path(
+        "docs/codex/mission-control-display-decision-intake.md"
+    ).read_text(encoding="utf-8")
+    packet_script = Path(
+        "scripts/mission_control_display_disposition_packet.py"
+    ).read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_guardrails = Path("scripts/release_guardrails.py").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "mission-control-display"
+    assert report["finding_namespace"] == "EXT-MC-DISPLAY-###"
+    assert report["erg_002_status"] == "planning_only"
+    assert report["mutates_findings"] is False
+    assert report["closes_external_review"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["api_callbacks_allowed"] is False
+    assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert external_response_normalize.AREA_NAMESPACES["mission-control-display"] == (
+        "MC-DISPLAY"
+    )
+    for phrase in [
+        "Status: response-intake template for planning-only `ERG-002`.",
+        "Current governed tool count: `24`.",
+        "Current `ERG-002` status before reviewer disposition: `planning_only`.",
+        "Finding namespace: `EXT-MC-DISPLAY-###`.",
+        "Reviewed area for normalization: `mission-control-display`.",
+        "--area mission-control-display",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "continue_design_only",
+        "revise_before_more_planning",
+        "block_runtime_implementation",
+        "Only a later committed triage update may move `ERG-002` away",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "runtime implementation is approved",
+        "Mission Control runtime importer behavior is approved",
+        "Mission Control execution authority is approved",
+        "Mission Control policy authority is approved",
+        "Mission Control approval authority is approved",
+        "Mission Control audit authority is approved",
+        "local model invocation is approved",
+        "sandbox orchestration is approved",
+        "trusted-host promotion is approved",
+        "production-ready",
+        "secure sandbox",
+        "compliance-grade",
+    ]:
+        assert phrase not in doc
+    assert "mission-control-display-external-response-intake-check:" in makefile
+    assert "mission-control-display-external-response-intake-check" in release_check_body
+    assert "mission-control-display-external-response-intake-check" in release_guardrails
+    assert "make mission-control-display-external-response-intake-check" in readme
+    assert "docs/codex/mission-control-display-external-response-intake.md" in readme
+    assert "docs/codex/mission-control-display-external-response-intake.md" in docs_site
+    assert (
+        "docs/codex/mission-control-display-external-response-intake.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display External Response Intake" in review_index
+    assert "mission-control-display-external-response-intake.md" in disposition_packet
+    assert "mission-control-display-external-response-intake.md" in decision_intake
+    assert "mission-control-display-external-response-intake.md" in packet_script
+    assert "mission-control-display-external-response-intake.md" in runway
+    assert "mission-control-display-external-response-intake.md" in gap_matrix
+    assert "mission-control-display-external-response-intake.md" in decision_register
 
 
 def test_data_classification_design_check_is_wired() -> None:

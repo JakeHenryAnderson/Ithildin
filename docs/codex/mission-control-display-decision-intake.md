@@ -20,6 +20,7 @@ Validate this intake with:
 
 ```sh
 make mission-control-display-decision-intake-check
+make mission-control-display-external-response-intake-check
 ```
 
 ## Required Preconditions
@@ -37,6 +38,9 @@ Any future implementation decision for `PRD-MC-DISPLAY-001` must prove:
 - source/review evidence exists for the exact Mission Control-side importer behavior;
 - no post-RC decision record claims Mission Control execution, policy, approval, audit, sandbox,
   local-model, trusted-host promotion, SIEM, identity, storage, remote, or compliance authority.
+- any external reviewer response is normalized through
+  `mission-control-display-external-response-intake.md` before a separate committed triage update
+  changes this lane's status.
 
 ## Required Decision Evidence
 

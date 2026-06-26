@@ -58,6 +58,10 @@ Current selected capability: `not selected`.
 - Current decision-intake evidence:
   `mission-control-display-decision-intake.md` defines the preconditions, allowed outcomes, negative
   evidence, and forbidden authority claims before any runtime importer decision can be recorded.
+- Current response-intake evidence:
+  `mission-control-display-external-response-intake.md` defines the `EXT-MC-DISPLAY-###` finding
+  namespace, allowed reviewer-response outcomes, and the rule that a favorable response is intake
+  evidence only, not runtime importer approval.
 
 ### PRD-SANDBOX-PREFLIGHT-001
 

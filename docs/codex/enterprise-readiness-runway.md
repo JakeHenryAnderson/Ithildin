@@ -367,6 +367,8 @@ Current status anchors:
   `mission-control-display-decision-intake.md`;
 - Mission Control display disposition must pass
   `mission-control-display-disposition-packet.md`;
+- Mission Control display external response intake must pass
+  `mission-control-display-external-response-intake.md`;
 - Mission Control integration readiness must pass
   `mission-control-integration-readiness-packet.md`;
 - static preflight lane remains local-preview fixture evidence only;

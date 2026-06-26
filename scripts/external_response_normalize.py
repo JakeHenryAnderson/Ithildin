@@ -28,6 +28,7 @@ AREA_NAMESPACES = {
     "production-identity-storage": "PROD-IAM-STORAGE",
     "siem-export-adapter": "SIEM-ADAPTER",
     "compliance-mapping": "COMPLIANCE-MAPPING",
+    "mission-control-display": "MC-DISPLAY",
 }
 FINDING_PATTERN = re.compile(
     r"^EXT-(([A-Z]+(?:-[A-Z]+)*)-(\d{3}|###)|(\d{3}|###))$"

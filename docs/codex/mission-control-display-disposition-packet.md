@@ -22,6 +22,7 @@ Validate this packet with:
 
 ```sh
 make mission-control-display-disposition-packet-check
+make mission-control-display-external-response-intake-check
 ```
 
 Generate the focused disposition handoff with:
@@ -57,6 +58,7 @@ The reviewer should inspect:
 | Display proposal | `mission-control-display-integration-proposal.md` |
 | Importer plan | `mission-control-display-importer-plan.md` |
 | Decision intake | `mission-control-display-decision-intake.md` |
+| Response intake template | `mission-control-display-external-response-intake.md` |
 | Mission Control-side handoff | `mission-control-side-handoff-plan.md` |
 | Mission Control implementation ticket | `mission-control-integration-implementation-ticket.md` |
 | Handoff schema contract | `mission-control-handoff-schema-contract.md` |
