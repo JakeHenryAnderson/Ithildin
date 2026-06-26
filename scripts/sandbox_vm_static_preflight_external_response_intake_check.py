@@ -30,6 +30,8 @@ REQUIRED_PHRASES = [
     "--area sandbox-vm-static-preflight",
     "mutates_findings: false",
     "closes_external_review: false",
+    "sandbox-vm-static-preflight-response-application-record.md",
+    "sandbox-vm-static-preflight-response-application-record-check",
     "closed_local_preview_static_preflight",
     "Only a later committed triage update may move `ERG-003`",
 ]

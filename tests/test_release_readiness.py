@@ -4602,6 +4602,7 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
     assert '"closes_external_review": false' in examples
     assert "make sandbox-vm-static-preflight-disposition-closure-check" in commands
     assert "make sandbox-vm-static-preflight-disposition-record-skeleton-check" in commands
+    assert "make sandbox-vm-static-preflight-response-application-record-check" in commands
     assert "make sandbox-vm-static-preflight-response-dry-run" in commands
     assert "make sandbox-vm-static-preflight-triage-update-check" in commands
     assert "make release-check" in commands
@@ -4609,6 +4610,7 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
     assert "ERG-003" in boundary
     assert "ERG-004" in boundary
     assert "sandbox-vm-static-preflight-disposition-record-skeleton.md" in boundary
+    assert "sandbox-vm-static-preflight-response-application-record.md" in boundary
     assert "live VM/container inspection" in boundary
     for flag in [
         '"response_kit_boundary"',
@@ -4618,6 +4620,7 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
         '"local_model_invocation_allowed": false',
         '"erg_004_unblocked": false',
         '"closes_erg_003": false',
+        '"response_application_record_check"',
         '"response_dry_run"',
         '"valid_response_accepts": true',
     ]:

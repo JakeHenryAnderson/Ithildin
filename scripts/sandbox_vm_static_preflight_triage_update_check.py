@@ -26,6 +26,8 @@ REQUIRED_PHRASES = [
     "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
     "sandbox-vm-static-preflight-disposition-closure-check",
     "sandbox-vm-static-preflight-response-dry-run",
+    "sandbox-vm-static-preflight-response-application-record.md",
+    "sandbox-vm-static-preflight-response-application-record-check",
     "closed_local_preview_static_preflight",
     "source-review-closure-matrix.md",
     "enterprise-readiness-gap-matrix.md",

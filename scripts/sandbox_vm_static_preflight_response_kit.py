@@ -19,6 +19,7 @@ from scripts import (
     enterprise_external_review_queue_check,
     sandbox_vm_static_preflight_disposition_closure_check,
     sandbox_vm_static_preflight_external_response_intake_check,
+    sandbox_vm_static_preflight_response_application_record_check,
     sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_triage_update_check,
 )
@@ -156,6 +157,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "make sandbox-vm-static-preflight-disposition-closure-check",
         "make sandbox-vm-static-preflight-disposition-record-skeleton-check",
+        "make sandbox-vm-static-preflight-response-application-record-check",
         "make sandbox-vm-static-preflight-response-dry-run",
         "make sandbox-vm-static-preflight-triage-update-check",
         "make review-run-manifest-refresh",
@@ -277,6 +279,7 @@ def build_kit(
                 "docs/codex/enterprise-external-review-queue.md",
                 "docs/codex/enterprise-readiness-gap-matrix.md",
                 "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md",
+                "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
                 "docs/codex/sandbox-vm-live-poc-preconditions-map.md",
                 "docs/codex/post-rc-decision-register.md",
             ],
@@ -346,6 +349,7 @@ Start from:
 
 - `sandbox-vm-static-preflight-external-response-intake.md`
 - `sandbox-vm-static-preflight-disposition-closure-gate.md`
+- `sandbox-vm-static-preflight-response-application-record.md`
 - `sandbox-vm-static-preflight-response-dry-run.md`
 - `sandbox-vm-static-preflight-triage-update.md`
 
@@ -410,6 +414,7 @@ Run these commands after placing real normalized response evidence under the ign
 ```sh
 make sandbox-vm-static-preflight-disposition-closure-check
 make sandbox-vm-static-preflight-disposition-record-skeleton-check
+make sandbox-vm-static-preflight-response-application-record-check
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-triage-update-check
 make enterprise-external-review-queue-check
@@ -457,6 +462,9 @@ def _build_command_reports(repo_root: Path, *, run_commands: bool) -> dict[str, 
         ),
         "disposition_closure_check": (
             sandbox_vm_static_preflight_disposition_closure_check.build_report(repo_root)
+        ),
+        "response_application_record_check": (
+            sandbox_vm_static_preflight_response_application_record_check.build_report(repo_root)
         ),
         "response_dry_run": sandbox_vm_static_preflight_response_dry_run.run_dry_run(
             repo_root
@@ -519,6 +527,7 @@ def _shell_commands() -> list[list[str]]:
     return [
         ["make", "sandbox-vm-static-preflight-external-response-intake-check"],
         ["make", "sandbox-vm-static-preflight-disposition-closure-check"],
+        ["make", "sandbox-vm-static-preflight-response-application-record-check"],
         ["make", "sandbox-vm-static-preflight-response-dry-run"],
         ["make", "sandbox-vm-static-preflight-triage-update-check"],
         ["make", "enterprise-external-review-queue-check"],
