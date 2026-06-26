@@ -42,6 +42,8 @@ REQUIRED_COMMANDS = [
     "make sandbox-vm-static-preflight-implementation-gate",
     "make sandbox-vm-static-preflight-source-review-packet",
     "make sandbox-vm-static-preflight-source-review-packet-check",
+    "make sandbox-vm-static-preflight-external-review-bundle",
+    "make sandbox-vm-static-preflight-reviewed-packet-hash",
     "make sandbox-vm-static-preflight-disposition-plan-check",
     "make sandbox-vm-static-preflight-external-response-intake-check",
     "make sandbox-vm-static-preflight-response-dry-run",
@@ -71,6 +73,7 @@ REQUIRED_BOUNDARIES = [
     "trusted-host promotion remains blocked",
     "network expansion remains blocked",
     "tool count remains `24`",
+    "the reviewed-packet hash helper prints the exact hash",
 ]
 
 FORBIDDEN_PHRASES = [

@@ -242,6 +242,7 @@ from scripts import (
     sandbox_vm_static_preflight_response_application_record_check,
     sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_response_kit,
+    sandbox_vm_static_preflight_reviewed_packet_hash,
     sandbox_vm_static_preflight_reviewer_reproduction_map_check,
     sandbox_vm_static_preflight_source_review_packet,
     sandbox_vm_static_preflight_triage_update_check,
@@ -4944,12 +4945,20 @@ def test_sandbox_vm_static_preflight_external_response_intake_is_wired() -> None
     assert report["sandbox_orchestration_allowed"] is False
     assert report["trusted_host_promotion_allowed"] is False
     assert report["new_power_classes_allowed"] is False
+    hash_report = sandbox_vm_static_preflight_reviewed_packet_hash.build_report(Path.cwd())
+    assert hash_report["valid"] is True
+    assert str(hash_report["reviewed_packet_hash"]).startswith("sha256:")
+    assert hash_report["runtime_changes_allowed"] is False
+    assert hash_report["new_power_classes_allowed"] is False
     for phrase in [
         "Status: response-intake template for `ERG-003`.",
         "Finding namespace: `EXT-SVP-###`.",
         "Reviewed area for normalization: `sandbox-vm-static-preflight`.",
+        "make sandbox-vm-static-preflight-reviewed-packet-hash",
         "Required Disposition Answers",
         "Finding Extraction Table",
+        'REVIEWED_PACKET_HASH="$(make -s sandbox-vm-static-preflight-reviewed-packet-hash)"',
+        '--reviewed-packet-hash "$REVIEWED_PACKET_HASH"',
         "--area sandbox-vm-static-preflight",
         "mutates_findings: false",
         "closes_external_review: false",
@@ -4964,6 +4973,8 @@ def test_sandbox_vm_static_preflight_external_response_intake_is_wired() -> None
         "API/MCP profile loading",
     ]:
         assert blocked in doc
+    assert "sandbox-vm-static-preflight-reviewed-packet-hash:" in makefile
+    assert "make sandbox-vm-static-preflight-reviewed-packet-hash" in readme
     assert "make sandbox-vm-static-preflight-external-response-intake-check" in readme
     assert "sandbox-vm-static-preflight-external-response-intake-check:" in makefile
     assert "sandbox-vm-static-preflight-external-response-intake-check" in release_check_body

@@ -33,6 +33,7 @@ triage update path. It packages:
 
 - response-intake guidance for `sandbox-vm-static-preflight`;
 - favorable and unfavorable normalized-response examples;
+- the reviewed-packet hash helper for the exact `--reviewed-packet-hash` value;
 - closure-gate, dry-run, triage-update, response-application, release-check, and review-candidate
   commands;
 - queue, precondition, and boundary status;
@@ -65,6 +66,8 @@ public/security-product positioning.
 Only a later committed triage update may move `ERG-003`, and only if real normalized response
 evidence passes `make sandbox-vm-static-preflight-disposition-closure-check` with
 `closure_ready: true`.
+Use `make sandbox-vm-static-preflight-reviewed-packet-hash` after generating the current external
+review bundle to copy the exact hash into `external_response_normalize.py`.
 That future committed update must use `sandbox-vm-static-preflight-disposition-record-skeleton.md`
 as the disposition-record shape, must follow
 `sandbox-vm-static-preflight-response-application-record.md`, and must keep `ERG-004` blocked.

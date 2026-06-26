@@ -38,6 +38,8 @@ make sandbox-vm-static-preflight-negative-transcripts
 make sandbox-vm-static-preflight-implementation-gate
 make sandbox-vm-static-preflight-source-review-packet
 make sandbox-vm-static-preflight-source-review-packet-check
+make sandbox-vm-static-preflight-external-review-bundle
+make sandbox-vm-static-preflight-reviewed-packet-hash
 make sandbox-vm-static-preflight-disposition-plan-check
 make sandbox-vm-static-preflight-external-response-intake-check
 make sandbox-vm-static-preflight-response-dry-run
@@ -94,6 +96,7 @@ The reproduction path should show:
 - negative static profile cases are rejected with safe reason labels;
 - the CLI-only preflight runner reports static metadata and safe labels only;
 - the source-review packet and disposition packet are generated with artifact hashes;
+- the reviewed-packet hash helper prints the exact hash to pass into response normalization;
 - response intake normalization remains non-mutating;
 - response dry-run evidence shows absent responses stay not-ready, source-level favorable responses
   can become closure-ready for later triage, and packet-only, bad-hash, critical/high-finding, and

@@ -595,6 +595,8 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-preflight-external-review-bundle` - generate the 10-file launch bundle
   for the recommended `ERG-003` static sandbox/VM preflight external/source review while keeping
   live sandbox/VM runtime work blocked.
+- `make sandbox-vm-static-preflight-reviewed-packet-hash` - print the exact `sha256:...` hash to
+  pass as `--reviewed-packet-hash` when normalizing real `ERG-003` external/source feedback.
 - `make sandbox-vm-profile-contract-check` - validate the design-only sandbox/VM profile contract
   for future operator-supplied sandbox metadata while confirming no runtime profile loader,
   sandbox orchestration, local model invocation, or trusted-host promotion is added.
@@ -1309,6 +1311,8 @@ The external response intake template is
 and is checked with `make sandbox-vm-static-preflight-external-response-intake-check`; it defines
 the `EXT-SVP-###` namespace and normalizer command for reviewer responses without mutating findings,
 closing `ERG-003`, or approving live sandbox/VM runtime work.
+Use `make sandbox-vm-static-preflight-reviewed-packet-hash` after generating the external-review
+bundle to get the exact `--reviewed-packet-hash` value for that normalization command.
 The static preflight response dry run is
 [docs/codex/sandbox-vm-static-preflight-response-dry-run.md](docs/codex/sandbox-vm-static-preflight-response-dry-run.md)
 and is checked with `make sandbox-vm-static-preflight-response-dry-run`; it temporarily exercises

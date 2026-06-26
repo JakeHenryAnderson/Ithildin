@@ -148,6 +148,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Finding namespace: `EXT-SVP-###`",
         "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
         "sandbox-vm-static-preflight-external-response-intake.md",
+        "make sandbox-vm-static-preflight-reviewed-packet-hash",
+        'REVIEWED_PACKET_HASH="$(make -s sandbox-vm-static-preflight-reviewed-packet-hash)"',
         "Only a later committed triage update may move `ERG-003`",
     ]:
         if phrase not in guide:
@@ -360,6 +362,14 @@ Start from:
 - `sandbox-vm-static-preflight-response-application-record.md`
 - `sandbox-vm-static-preflight-response-dry-run.md`
 - `sandbox-vm-static-preflight-triage-update.md`
+
+Use the current reviewed-packet hash helper when normalizing real response evidence:
+
+```sh
+make sandbox-vm-static-preflight-external-review-bundle
+make sandbox-vm-static-preflight-reviewed-packet-hash
+REVIEWED_PACKET_HASH="$(make -s sandbox-vm-static-preflight-reviewed-packet-hash)"
+```
 
 Only a later committed triage update may move `ERG-003`, and only after the closure gate reports
 `closure_ready: true`. A response may support static preflight local-preview closure only. It must

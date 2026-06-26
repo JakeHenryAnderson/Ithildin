@@ -27,6 +27,7 @@ Reviewed area for normalization: `sandbox-vm-static-preflight`.
 - Reviewed packet path:
 - Reviewed packet artifact hash: SHA-256 of
   `var/review-packets/v3/sandbox-vm-static-preflight-external-review/sandbox-vm-static-preflight-external-review-artifact-hashes.json`
+  as printed by `make sandbox-vm-static-preflight-reviewed-packet-hash`
 - Reviewed response transcript path:
 - Review date:
 
@@ -65,15 +66,24 @@ After saving the raw response transcript, run the generic normalizer with the sa
 area:
 
 ```sh
+REVIEWED_PACKET_HASH="$(make -s sandbox-vm-static-preflight-reviewed-packet-hash)"
 uv run python scripts/external_response_normalize.py \
   path/to/raw-response.md \
   --reviewer "reviewer label" \
   --reviewer-type "gpt-5.5-pro-or-human" \
   --source-access packet-and-source \
   --reviewed-commit "$(git rev-parse HEAD)" \
-  --reviewed-packet-hash "sha256:<artifact-hash-manifest-digest>" \
+  --reviewed-packet-hash "$REVIEWED_PACKET_HASH" \
   --area sandbox-vm-static-preflight \
   --output var/review-runs/sandbox-vm-static-preflight/normalized-response.json
+```
+
+If the helper reports that the artifact-hash manifest is missing, regenerate the current handoff
+first:
+
+```sh
+make sandbox-vm-static-preflight-external-review-bundle
+make sandbox-vm-static-preflight-reviewed-packet-hash
 ```
 
 The normalized response is intake evidence only. It sets `mutates_findings: false` and
