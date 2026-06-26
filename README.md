@@ -621,6 +621,10 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-preflight-triage-update-check` - validate the safe committed triage-update
   checklist for a future favorable `ERG-003` external/source response while keeping live sandbox/VM
   runtime work blocked.
+- `make sandbox-vm-static-preflight-response-application-record-check` - validate the process-only
+  response-application record for applying a real favorable `ERG-003` external/source response
+  while keeping `ERG-004`, live sandbox/VM runtime work, Mission Control runtime behavior, local
+  model invocation, and new powers blocked.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -1316,6 +1320,12 @@ and is checked with `make sandbox-vm-static-preflight-triage-update-check`; it d
 committed update path after real favorable `ERG-003` evidence while keeping `ERG-004`, live
 sandbox/VM runtime work, local model invocation, Mission Control runtime behavior, and trusted-host
 promotion blocked.
+The static preflight response-application record is
+[docs/codex/sandbox-vm-static-preflight-response-application-record.md](docs/codex/sandbox-vm-static-preflight-response-application-record.md)
+and is checked with `make sandbox-vm-static-preflight-response-application-record-check`; it gives a
+manager-owned checklist for applying a real reviewer response without closing `ERG-003` by itself or
+unblocking `ERG-004`, live sandbox/VM runtime work, Mission Control runtime behavior, local model
+invocation, trusted-host promotion, or new governed tool powers.
 The reviewer reproduction map is
 [docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md](docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 and is checked with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`; it gives

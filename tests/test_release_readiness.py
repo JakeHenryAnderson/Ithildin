@@ -239,6 +239,7 @@ from scripts import (
     sandbox_vm_static_preflight_external_review_bundle,
     sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_negative_transcripts,
+    sandbox_vm_static_preflight_response_application_record_check,
     sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_response_kit,
     sandbox_vm_static_preflight_reviewer_reproduction_map_check,
@@ -5064,6 +5065,107 @@ def test_sandbox_vm_static_preflight_triage_update_is_wired() -> None:
     assert "sandbox-vm-static-preflight-triage-update.md" in queue
     assert "sandbox-vm-static-preflight-triage-update.md" in decision_register
     assert "sandbox-vm-static-preflight-triage-update.md" in preconditions
+
+
+def test_sandbox_vm_static_preflight_response_application_record_is_wired() -> None:
+    report = sandbox_vm_static_preflight_response_application_record_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-static-preflight-response-application-record.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    response_kit = Path(
+        "docs/codex/sandbox-vm-static-preflight-response-kit.md"
+    ).read_text(encoding="utf-8")
+    triage_update = Path(
+        "docs/codex/sandbox-vm-static-preflight-triage-update.md"
+    ).read_text(encoding="utf-8")
+    skeleton = Path(
+        "docs/codex/sandbox-vm-static-preflight-disposition-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    closure_gate = Path(
+        "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["allowed_future_status"] == "closed_local_preview_static_preflight"
+    assert report["requires_real_normalized_response"] is True
+    assert report["closes_erg_003"] is False
+    assert report["erg_004_unblocked"] is False
+    for key in [
+        "runtime_changes_allowed",
+        "implementation_planning_allowed_now",
+        "runtime_implementation_allowed",
+        "live_vm_inspection_allowed",
+        "vm_container_lifecycle_allowed",
+        "sandbox_orchestration_allowed",
+        "mission_control_runtime_allowed",
+        "local_model_invocation_allowed",
+        "trusted_host_promotion_allowed",
+        "network_expansion_allowed",
+        "api_mcp_profile_loading_allowed",
+        "siem_adapter_allowed",
+        "new_power_classes_allowed",
+        "public_security_product_positioning_allowed",
+    ]:
+        assert report[key] is False
+
+    for phrase in [
+        "Status: process-only response-application record for `ERG-003`.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "does not close `ERG-003` by itself",
+        "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
+        "EXT-SVP-###",
+        "sandbox-vm-static-preflight-disposition-record-skeleton.md",
+        "ERG-003: external_review_required -> closed_local_preview_static_preflight",
+        "ERG-004 remains blocked",
+        "make release-check",
+        "make review-candidate",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "trusted-host promotion is approved",
+        "SIEM adapter behavior is approved",
+        "ERG-003 is closed",
+        "ERG-004 is unblocked",
+        "live POC planning is approved",
+        "public security product approved",
+    ]:
+        assert forbidden not in doc
+
+    assert "make sandbox-vm-static-preflight-response-application-record-check" in readme
+    assert "sandbox-vm-static-preflight-response-application-record-check:" in makefile
+    assert (
+        "sandbox-vm-static-preflight-response-application-record-check"
+        in release_check_body
+    )
+    assert "sandbox-vm-static-preflight-response-application-record-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-response-application-record.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-response-application-record.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Response Application Record" in review_index
+    for source in [response_kit, triage_update, skeleton, closure_gate]:
+        assert "sandbox-vm-static-preflight-response-application-record.md" in source
 
 
 def test_sandbox_vm_static_preflight_reviewer_reproduction_map_is_wired() -> None:

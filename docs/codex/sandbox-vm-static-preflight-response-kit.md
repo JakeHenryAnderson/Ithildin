@@ -33,7 +33,8 @@ triage update path. It packages:
 
 - response-intake guidance for `sandbox-vm-static-preflight`;
 - favorable and unfavorable normalized-response examples;
-- closure-gate, dry-run, triage-update, release-check, and review-candidate commands;
+- closure-gate, dry-run, triage-update, response-application, release-check, and review-candidate
+  commands;
 - queue, precondition, and boundary status;
 - command evidence and artifact hashes.
 
@@ -65,6 +66,7 @@ Only a later committed triage update may move `ERG-003`, and only if real normal
 evidence passes `make sandbox-vm-static-preflight-disposition-closure-check` with
 `closure_ready: true`.
 That future committed update must use `sandbox-vm-static-preflight-disposition-record-skeleton.md`
-as the disposition-record shape and must keep `ERG-004` blocked.
+as the disposition-record shape, must follow
+`sandbox-vm-static-preflight-response-application-record.md`, and must keep `ERG-004` blocked.
 The generated response kit includes that skeleton in its queue/boundary artifact and names
 `make sandbox-vm-static-preflight-disposition-record-skeleton-check` in the closure command list.

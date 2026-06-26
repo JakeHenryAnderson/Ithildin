@@ -114,9 +114,12 @@ Static preflight disposition remains limited to CLI-only fixture evidence.
 - Required packet hash: `reviewed_packet_hash` matches the static preflight disposition packet being
   dispositioned.
 - Required follow-up checklist: `sandbox-vm-static-preflight-triage-update.md`.
+- Required response-application record:
+  `sandbox-vm-static-preflight-response-application-record.md`.
 - Required tests: `make sandbox-vm-static-preflight-response-dry-run`,
   `make sandbox-vm-static-preflight-disposition-closure-check`,
-  `make sandbox-vm-static-preflight-disposition-record-skeleton-check`, and `make release-check`.
+  `make sandbox-vm-static-preflight-disposition-record-skeleton-check`,
+  `make sandbox-vm-static-preflight-response-application-record-check`, and `make release-check`.
 - Required packet artifacts: static preflight source-review packet, external-review bundle,
   response kit, disposition plan, disposition packet, external-response intake, closure gate, and
   reviewer reproduction map.

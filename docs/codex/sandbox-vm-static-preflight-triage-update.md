@@ -114,6 +114,8 @@ one prerequisite for a later live POC decision record, but it does not approve l
 implementation planning and does not authorize local model or VM/container runtime work.
 Use `sandbox-vm-static-preflight-disposition-record-skeleton.md` as the committed disposition-record
 shape if favorable source-level static preflight evidence is ever recorded.
+Use `sandbox-vm-static-preflight-response-application-record.md` as the manager-owned checklist for
+applying that real reviewer response without accidentally closing `ERG-003` or unblocking `ERG-004`.
 
 ## Negative Triage Outcomes
 
@@ -138,6 +140,7 @@ Run:
 
 ```sh
 make sandbox-vm-static-preflight-triage-update-check
+make sandbox-vm-static-preflight-response-application-record-check
 make sandbox-vm-static-preflight-disposition-closure-check
 make sandbox-vm-static-preflight-response-dry-run
 make enterprise-external-review-queue-check

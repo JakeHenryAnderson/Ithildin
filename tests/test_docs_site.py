@@ -221,6 +221,10 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/sandbox-vm-static-preflight-response-dry-run.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-static-preflight-triage-update.md" in DEFAULT_DOCS
     assert (
+        "docs/codex/sandbox-vm-static-preflight-response-application-record.md"
+        in DEFAULT_DOCS
+    )
+    assert (
         "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md"
         in DEFAULT_DOCS
     )
