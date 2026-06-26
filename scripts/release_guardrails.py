@@ -91,6 +91,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "production-identity-storage-architecture-check",
     "production-identity-storage-disposition-packet-check",
     "production-identity-storage-disposition-closure-check",
+    "production-identity-storage-response-dry-run",
     "production-identity-storage-external-response-intake-check",
     "siem-export-adapter-architecture-check",
     "siem-export-adapter-disposition-packet-check",

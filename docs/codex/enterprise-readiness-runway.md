@@ -236,6 +236,11 @@ The fail-closed disposition closure gate is
 and is validated with `make production-identity-storage-disposition-closure-check`; it keeps
 `ERG-006`/`ERG-007` planning-only unless normalized source-level response evidence supports
 continued architecture planning and contains no critical/high findings.
+The production identity/storage response dry run is in
+[production-identity-storage-response-dry-run.md](production-identity-storage-response-dry-run.md)
+and is validated with `make production-identity-storage-response-dry-run`; it exercises favorable
+and unfavorable temporary normalized-response fixtures while restoring the ignored response path and
+without closing `ERG-006`/`ERG-007` or approving implementation planning.
 
 Required design decisions:
 

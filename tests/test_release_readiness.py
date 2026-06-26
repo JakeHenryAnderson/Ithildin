@@ -125,6 +125,7 @@ from scripts import (
     production_identity_storage_disposition_closure_check,
     production_identity_storage_disposition_packet,
     production_identity_storage_external_response_intake_check,
+    production_identity_storage_response_dry_run,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -2096,6 +2097,140 @@ def test_production_identity_storage_disposition_closure_gate_is_wired() -> None
     assert "production-identity-storage-disposition-closure-gate.md" in gap_matrix
     assert "production-identity-storage-disposition-closure-gate.md" in review_queue
     assert "production-identity-storage-disposition-closure-gate.md" in decision_register
+
+
+def test_production_identity_storage_response_dry_run_is_wired() -> None:
+    report = production_identity_storage_response_dry_run.run_dry_run(Path.cwd())
+    doc = Path("docs/codex/production-identity-storage-response-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    normalized_doc = " ".join(doc.split())
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "production-identity-storage"
+    assert report["finding_namespace"] == "EXT-PROD-IAM-STORAGE-###"
+    assert report["normalized_response_path"] == (
+        "var/review-runs/production-identity-storage/normalized-response.json"
+    )
+    assert report["response_restored"] is True
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_006_closed"] is False
+    assert report["erg_007_closed"] is False
+    assert report["architecture_planning_recorded"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["enterprise_rbac_allowed"] is False
+    assert report["tenant_team_authorization_allowed"] is False
+    assert report["remote_admin_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["backup_restore_runtime_allowed"] is False
+    assert report["retention_enforcement_allowed"] is False
+    assert report["hosted_control_plane_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_mcp_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["shell_docker_kubernetes_browser_powers_allowed"] is False
+    assert report["arbitrary_http_allowed"] is False
+    assert report["broad_filesystem_writes_allowed"] is False
+    assert report["plugin_sdk_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["cases"] == {
+        "absent_response_valid": True,
+        "absent_response_not_ready": True,
+        "valid_response_accepts": True,
+        "packet_only_rejected": True,
+        "bad_hash_rejected": True,
+        "critical_high_finding_rejected": True,
+        "direct_external_closure_rejected": True,
+    }
+    for phrase in [
+        "Status: temporary-fixture validation for planning-only `ERG-006` and `ERG-007`",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "make production-identity-storage-response-dry-run",
+        "an absent normalized response keeps `closure_ready: false`",
+        "packet-only evidence is rejected for closure",
+        "critical/high findings are rejected",
+        "the ignored normalized-response path is restored after the dry run",
+        "It does not close `ERG-006` or `ERG-007`",
+        "production IAM",
+        "runtime Postgres",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning",
+        "runtime implementation",
+        "production IAM",
+        "enterprise RBAC",
+        "tenant/team authorization runtime behavior",
+        "remote admin use",
+        "runtime Postgres",
+        "database migrations",
+        "backup/restore runtime behavior",
+        "retention enforcement",
+        "hosted control plane",
+        "custody-grade audit claims",
+        "compliance automation",
+        "hosted telemetry",
+        "remote MCP",
+        "SIEM adapter behavior",
+        "sandbox orchestration",
+        "local model invocation",
+        "trusted-host promotion",
+        "shell/Docker/Kubernetes/browser governed powers",
+        "arbitrary HTTP",
+        "broad filesystem writes",
+        "plugin SDK behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in normalized_doc
+    assert "make production-identity-storage-response-dry-run" in readme
+    assert "production-identity-storage-response-dry-run:" in makefile
+    assert (
+        "production-identity-storage-response-dry-run" in release_check_body
+        or "release-check: production-identity-storage-response-dry-run" in makefile
+    )
+    assert "production-identity-storage-response-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/production-identity-storage-response-dry-run.md" in docs_site
+    assert (
+        "docs/codex/production-identity-storage-response-dry-run.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Production Identity And Storage Response Dry Run" in review_index
+    assert "production-identity-storage-response-dry-run.md" in runway
+    assert "production-identity-storage-response-dry-run.md" in gap_matrix
+    assert "production-identity-storage-response-dry-run.md" in review_queue
+    assert "production-identity-storage-response-dry-run.md" in decision_register
 
 
 def test_mission_control_display_integration_proposal_is_wired() -> None:

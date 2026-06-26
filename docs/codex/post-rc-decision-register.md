@@ -281,6 +281,10 @@ Current selected capability: `not selected`.
   `production-identity-storage-disposition-closure-gate.md` validates normalized source-level
   response evidence before any later triage update may move `ERG-006` or `ERG-007` toward an
   architecture decision record; absent or unfavorable evidence keeps both rows planning-only.
+- Current response dry-run evidence:
+  `production-identity-storage-response-dry-run.md` exercises temporary favorable and unfavorable
+  normalized-response fixtures while restoring the ignored response path and without closing
+  `ERG-006`/`ERG-007` or approving implementation planning.
 
 ## Validation
 
