@@ -263,6 +263,7 @@ externally closed.
 - [SIEM Export Adapter External Review Bundle](siem-export-adapter-external-review-bundle.md)
 - [SIEM Export Adapter Disposition Closure Gate](siem-export-adapter-disposition-closure-gate.md)
 - [SIEM Export Adapter Response Dry Run](siem-export-adapter-response-dry-run.md)
+- [SIEM Export Adapter Response Kit](siem-export-adapter-response-kit.md)
 - [SIEM Export Adapter External Response Intake](siem-export-adapter-external-response-intake.md)
 - [Compliance Mapping Architecture](compliance-mapping-architecture.md)
 - [Compliance Mapping Disposition Packet](compliance-mapping-disposition-packet.md)

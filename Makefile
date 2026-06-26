@@ -342,6 +342,12 @@ siem-export-adapter-disposition-closure-check:
 siem-export-adapter-response-dry-run:
 	uv run python scripts/siem_export_adapter_response_dry_run.py
 
+siem-export-adapter-response-kit:
+	uv run python scripts/siem_export_adapter_response_kit.py
+
+siem-export-adapter-response-kit-check:
+	uv run python scripts/siem_export_adapter_response_kit.py --check
+
 siem-export-adapter-external-response-intake-check:
 	uv run python scripts/siem_export_adapter_external_response_intake_check.py
 
@@ -1083,6 +1089,7 @@ review-candidate:
 	$(MAKE) production-identity-storage-response-kit
 	$(MAKE) siem-export-adapter-disposition-packet
 	$(MAKE) siem-export-adapter-external-review-bundle
+	$(MAKE) siem-export-adapter-response-kit
 	$(MAKE) compliance-mapping-disposition-packet
 	$(MAKE) compliance-mapping-external-review-bundle
 	$(MAKE) sandbox-vm-poc-review-packet
@@ -1178,6 +1185,7 @@ release-check: production-identity-storage-response-kit-check
 release-check: siem-export-adapter-disposition-closure-check
 release-check: siem-export-adapter-response-dry-run
 release-check: siem-export-adapter-external-review-bundle-check
+release-check: siem-export-adapter-response-kit-check
 
 release-check: compliance-mapping-disposition-closure-check
 release-check: compliance-mapping-response-dry-run

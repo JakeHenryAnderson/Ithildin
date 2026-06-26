@@ -251,6 +251,7 @@ from scripts import (
     siem_export_adapter_external_response_intake_check,
     siem_export_adapter_external_review_bundle,
     siem_export_adapter_response_dry_run,
+    siem_export_adapter_response_kit,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
     test_determinism_gate,
@@ -18044,6 +18045,101 @@ def test_siem_export_adapter_response_dry_run_is_wired() -> None:
     assert "siem-export-adapter-response-dry-run.md" in gap_matrix
     assert "siem-export-adapter-response-dry-run.md" in review_queue
     assert "siem-export-adapter-response-dry-run.md" in decision_register
+
+
+def test_siem_export_adapter_response_kit_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "siem-export-adapter-response-kit"
+    built = siem_export_adapter_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    report = siem_export_adapter_response_kit.build_check_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    expected_files = {
+        "00_SIEM_EXPORT_ADAPTER_RESPONSE_KIT_INDEX.md",
+        "01_SIEM_EXPORT_ADAPTER_RESPONSE_INTAKE_GUIDE.md",
+        "02_SIEM_EXPORT_ADAPTER_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_SIEM_EXPORT_ADAPTER_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_SIEM_EXPORT_ADAPTER_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_SIEM_EXPORT_ADAPTER_RESPONSE_KIT_EVIDENCE.md",
+        "siem-export-adapter-response-kit-artifact-hashes.json",
+    }
+    artifact_names = {path.name for path in built.iterdir()}
+    hashes = json.loads(
+        (output_dir / "siem-export-adapter-response-kit-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed = {entry["path"] for entry in hashes["artifacts"]}
+    index = (output_dir / "00_SIEM_EXPORT_ADAPTER_RESPONSE_KIT_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "05_SIEM_EXPORT_ADAPTER_RESPONSE_KIT_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_008_status"] == "planning_only"
+    assert report["architecture_planning_after_favorable_disposition_allowed"] is True
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_delivery_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["security_operations_control_plane_claims_allowed"] is False
+    assert report["erg_008_closed"] is False
+    assert expected_files <= artifact_names
+    assert "siem-export-adapter-response-kit-artifact-hashes.json" not in hashed
+    assert expected_files - {"siem-export-adapter-response-kit-artifact-hashes.json"} <= hashed
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-008`" in index
+    assert "does not approve SIEM adapter behavior" in index
+    assert '"response_kit_boundary"' in evidence
+    assert '"runtime_changes_allowed": false' in evidence
+    assert '"implementation_planning_allowed": false' in evidence
+    assert '"valid_response_accepts": true' in evidence
+    assert "make siem-export-adapter-response-kit" in readme
+    assert "siem-export-adapter-response-kit:" in makefile
+    assert "siem-export-adapter-response-kit-check:" in makefile
+    assert (
+        "siem-export-adapter-response-kit-check" in release_check_body
+        or "release-check: siem-export-adapter-response-kit-check" in makefile
+    )
+    assert "$(MAKE) siem-export-adapter-response-kit" in review_candidate_body
+    assert "siem-export-adapter-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) siem-export-adapter-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/siem-export-adapter-response-kit.md" in docs_site
+    assert "docs/codex/siem-export-adapter-response-kit.md" in review_docs.REVIEW_DOCS
+    assert "SIEM Export Adapter Response Kit" in review_index
+    assert "siem-export-adapter-response-kit.md" in runway
+    assert "siem-export-adapter-response-kit.md" in gap_matrix
+    assert "siem-export-adapter-response-kit.md" in queue
+    assert "siem-export-adapter-response-kit.md" in decision_register
 
 
 def test_compliance_mapping_architecture_is_wired() -> None:

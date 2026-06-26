@@ -264,6 +264,11 @@ Current selected capability: `not selected`.
   `siem-export-adapter-response-dry-run.md` exercises temporary favorable and unfavorable
   normalized-response fixtures while restoring the ignored response path and without closing
   `ERG-008` or approving implementation planning.
+- Current response-kit evidence:
+  `siem-export-adapter-response-kit.md` packages response-intake guidance, normalized-response
+  examples, closure commands, command evidence, and artifact hashes for real reviewer feedback
+  while keeping `ERG-008` planning-only and keeping implementation planning, runtime SIEM adapter
+  behavior, hosted telemetry, remote delivery, and custody-grade audit claims blocked.
 
 ### PRD-COMPLIANCE-MAPPING-001
 

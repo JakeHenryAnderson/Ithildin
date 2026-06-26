@@ -445,6 +445,9 @@ checked with `make control-mapping-readiness`.
 - `make siem-export-adapter-response-dry-run` - exercise temporary normalized-response fixtures
   for the SIEM adapter closure gate while restoring the ignored response path and keeping ERG-008
   planning-only.
+- `make siem-export-adapter-response-kit` - generate the response-intake kit for converting real
+  ERG-008 reviewer feedback into normalized evidence while keeping implementation planning, SIEM
+  adapter runtime behavior, hosted telemetry, remote delivery, and custody claims blocked.
 - `make siem-export-adapter-external-response-intake-check` - validate the response-intake
   template for SIEM adapter reviewer feedback while keeping adapter runtime behavior, hosted
   telemetry, remote delivery, and custody claims blocked.
@@ -987,6 +990,12 @@ The SIEM export adapter response dry run is in
 and is checked with `make siem-export-adapter-response-dry-run`; it temporarily exercises favorable
 and unfavorable normalized-response fixtures while restoring the ignored response path and without
 closing `ERG-008` or approving implementation planning.
+The SIEM export adapter response kit is in
+[docs/codex/siem-export-adapter-response-kit.md](docs/codex/siem-export-adapter-response-kit.md)
+and is generated with `make siem-export-adapter-response-kit`; it packages response-intake
+guidance, normalized-response examples, closure commands, command evidence, and artifact hashes for
+real reviewer feedback without closing `ERG-008`, approving implementation planning, or approving
+runtime SIEM adapter behavior.
 The compliance mapping architecture packet is
 [docs/codex/compliance-mapping-architecture.md](docs/codex/compliance-mapping-architecture.md)
 and is checked with `make compliance-mapping-architecture-check`; it defines future framework

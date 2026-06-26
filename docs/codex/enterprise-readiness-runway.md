@@ -334,6 +334,12 @@ The SIEM export adapter response dry run is in
 with `make siem-export-adapter-response-dry-run`; it exercises favorable and unfavorable temporary
 normalized-response fixtures while restoring the ignored response path and without closing
 `ERG-008` or approving implementation planning.
+The SIEM export adapter response kit is in
+[siem-export-adapter-response-kit.md](siem-export-adapter-response-kit.md) and is generated with
+`make siem-export-adapter-response-kit`. It packages response-intake guidance,
+normalized-response examples, closure commands, command evidence, and artifact hashes for real
+reviewer feedback without closing `ERG-008`, approving implementation planning, or approving
+runtime SIEM adapter behavior.
 
 Required before implementation:
 
