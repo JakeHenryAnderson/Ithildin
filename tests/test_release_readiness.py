@@ -94,6 +94,7 @@ from scripts import (
     mission_control_display_disposition_closure_check,
     mission_control_display_disposition_packet,
     mission_control_display_external_response_intake_check,
+    mission_control_display_external_review_bundle,
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
     mission_control_display_response_dry_run,
@@ -2741,6 +2742,161 @@ def test_mission_control_display_disposition_packet_is_wired(tmp_path: Path) -> 
         "03_MISSION_CONTROL_DISPLAY_REVIEW_POINTERS.md",
         "04_MISSION_CONTROL_DISPLAY_DISPOSITION_COMMAND_EVIDENCE.md",
     }
+
+
+def test_mission_control_display_external_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    report = mission_control_display_external_review_bundle.build_check_report(Path.cwd())
+    output_dir = tmp_path / "mission-control-display-external-review"
+    mission_control_display_external_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_INDEX.md",
+        "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+        "02_MISSION_CONTROL_DISPLAY_REVIEW_PACKET.md",
+        "03_MISSION_CONTROL_DISPLAY_DISPOSITION_PACKET.md",
+        "04_MISSION_CONTROL_INTEGRATION_READINESS_PACKET.md",
+        "05_MISSION_CONTROL_CONTRACTS_AND_HANDOFFS.md",
+        "06_MISSION_CONTROL_RESPONSE_CLOSURE_DRY_RUN.md",
+        "07_MISSION_CONTROL_REPRODUCTION_QUEUE_STATUS.md",
+        "08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md",
+        "mission-control-display-external-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        output_dir.joinpath(
+            "mission-control-display-external-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = output_dir.joinpath(
+        "00_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = output_dir.joinpath(
+        "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    review_packet = output_dir.joinpath(
+        "02_MISSION_CONTROL_DISPLAY_REVIEW_PACKET.md"
+    ).read_text(encoding="utf-8")
+    disposition_packet = output_dir.joinpath(
+        "03_MISSION_CONTROL_DISPLAY_DISPOSITION_PACKET.md"
+    ).read_text(encoding="utf-8")
+    readiness_packet = output_dir.joinpath(
+        "04_MISSION_CONTROL_INTEGRATION_READINESS_PACKET.md"
+    ).read_text(encoding="utf-8")
+    contracts = output_dir.joinpath(
+        "05_MISSION_CONTROL_CONTRACTS_AND_HANDOFFS.md"
+    ).read_text(encoding="utf-8")
+    response = output_dir.joinpath(
+        "06_MISSION_CONTROL_RESPONSE_CLOSURE_DRY_RUN.md"
+    ).read_text(encoding="utf-8")
+    reproduction = output_dir.joinpath(
+        "07_MISSION_CONTROL_REPRODUCTION_QUEUE_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = output_dir.joinpath(
+        "08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert report["recommended_next_review"] == "ERG-002"
+    assert report["mission_control_planning_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_002"] is False
+    assert report["artifact_count"] == 10
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "mission-control-display-external-review-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "does not close `ERG-002`" in index
+    assert "Finding namespace: `EXT-MC-DISPLAY-###`" in prompt
+    assert "Can `ERG-002` continue Mission Control-side display/import planning" in prompt
+    assert "Do not approve Mission Control runtime importer behavior" in prompt
+    assert "00_MISSION_CONTROL_DISPLAY_INDEX.md" in review_packet
+    assert "01_MISSION_CONTROL_DISPLAY_DISPOSITION_PROMPT.md" in disposition_packet
+    assert "01_MISSION_CONTROL_INTEGRATION_READINESS_PROMPT.md" in readiness_packet
+    assert "mission-control-display-importer-plan.md" in contracts
+    assert "mission-control-handoff-negative-fixtures.md" in contracts
+    assert "mission-control-display-external-response-intake.md" in response
+    assert "mission-control-display-disposition-closure-gate.md" in response
+    assert "mission-control-display-response-dry-run.md" in response
+    assert "enterprise-external-review-queue.md" in reproduction
+    assert "mission-control-side-handoff-plan.md" in reproduction
+    assert "mission-control-integration-implementation-ticket.md" in reproduction
+    for flag in [
+        '"runtime_changes_allowed": false',
+        '"mission_control_runtime_allowed": false',
+        '"mission_control_execution_authority_allowed": false',
+        '"mission_control_policy_authority_allowed": false',
+        '"mission_control_approval_authority_allowed": false',
+        '"mission_control_audit_authority_allowed": false',
+        '"local_model_invocation_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"trusted_host_promotion_allowed": false',
+        '"siem_adapter_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"closes_erg_002": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make mission-control-display-external-review-bundle" in readme
+    assert "mission-control-display-external-review-bundle:" in makefile
+    assert "mission-control-display-external-review-bundle-check:" in makefile
+    assert (
+        "mission-control-display-external-review-bundle-check" in release_check_body
+        or "release-check: mission-control-display-external-review-bundle-check" in makefile
+    )
+    assert "$(MAKE) mission-control-display-external-review-bundle" in (
+        review_candidate_body
+    )
+    assert "mission-control-display-external-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-display-external-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/mission-control-display-external-review-bundle.md" in docs_site
+    assert (
+        "docs/codex/mission-control-display-external-review-bundle.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display External Review Bundle" in review_index
+    assert "mission-control-display-external-review-bundle.md" in runway
+    assert "mission-control-display-external-review-bundle.md" in gap_matrix
+    assert "mission-control-display-external-review-bundle.md" in queue
 
 
 def test_mission_control_integration_readiness_packet_is_wired(tmp_path: Path) -> None:

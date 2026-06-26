@@ -284,6 +284,7 @@ REVIEW_DOCS = [
     "docs/codex/mission-control-display-importer-plan.md",
     "docs/codex/mission-control-display-decision-intake.md",
     "docs/codex/mission-control-display-disposition-packet.md",
+    "docs/codex/mission-control-display-external-review-bundle.md",
     "docs/codex/mission-control-display-external-response-intake.md",
     "docs/codex/mission-control-display-disposition-closure-gate.md",
     "docs/codex/mission-control-display-response-dry-run.md",

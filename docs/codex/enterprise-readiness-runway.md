@@ -73,6 +73,8 @@ Required before implementation:
   warning state;
 - Mission Control repository implementation ticket;
 - Mission Control integration readiness packet;
+- Mission Control display external-review launch bundle
+  (`mission-control-display-external-review-bundle.md`);
 - source-review handoff for both Mission Control and Ithildin changes.
 
 Blocked:

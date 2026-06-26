@@ -466,6 +466,10 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-disposition-packet` - generate the Mission Control display
   disposition packet asking whether ERG-002 may continue design-only planning while runtime importer
   behavior and authority transfer remain blocked.
+- `make mission-control-display-external-review-bundle` - generate the 10-file Mission Control
+  display/importer external-review launch bundle with display packet, disposition packet,
+  readiness packet, contracts, response/closure evidence, queue status, command evidence, and
+  artifact hashes while keeping runtime importer behavior blocked.
 - `make mission-control-display-external-response-intake-check` - validate the response-intake
   template for Mission Control display/importer disposition responses while keeping runtime importer
   behavior and authority transfer blocked.
@@ -1023,6 +1027,12 @@ coherent enough to continue design-only Mission Control-side planning, while kee
 importer behavior, execution authority, policy authority, approval authority, audit authority, local
 model invocation, sandbox orchestration, trusted-host promotion, SIEM adapter behavior, and new
 power classes blocked.
+Generate the Mission Control display external-review launch bundle with
+`make mission-control-display-external-review-bundle`; it consolidates the display review packet,
+disposition packet, integration readiness packet, schema/handoff contracts, negative fixtures,
+response intake, fail-closed closure gate, response dry run, enterprise queue status, and command
+evidence into one handoff while keeping `ERG-002` planning-only and runtime importer behavior
+blocked.
 The Mission Control display external response intake template is
 [docs/codex/mission-control-display-external-response-intake.md](docs/codex/mission-control-display-external-response-intake.md)
 and is checked with `make mission-control-display-external-response-intake-check`; it defines the
