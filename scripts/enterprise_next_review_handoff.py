@@ -85,10 +85,15 @@ def build_handoff(repo_root: Path, output_dir: Path) -> Path:
         raise EnterpriseNextReviewHandoffError(
             "ERG-003 packet is missing files: " + ", ".join(missing_packet_files)
         )
+    packet_hash_manifest = _packet_hash_manifest(packet_dir)
 
     commit = _git(repo_root, ["rev-parse", "HEAD"])
     dirty = bool(_git(repo_root, ["status", "--short"]))
-    payload = _handoff_payload(commit=commit, dirty=dirty)
+    payload = _handoff_payload(
+        commit=commit,
+        dirty=dirty,
+        packet_hash_manifest=packet_hash_manifest,
+    )
     markdown = _render_markdown(payload)
 
     markdown_path = output_dir / MARKDOWN_NAME
@@ -138,6 +143,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "make sandbox-vm-static-preflight-response-kit",
         "make sandbox-vm-static-preflight-response-application-record-check",
         "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
+        "artifact hash manifest",
     ]:
         if phrase not in handoff_text:
             failures.append(f"handoff doc is missing phrase: {phrase}")
@@ -149,6 +155,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "EXT-SVP-###",
         "Response-application record",
         "Response-application check",
+        "Attachment integrity check",
+        "expected hashed files: `9`",
     ]:
         if phrase not in markdown_text:
             failures.append(f"generated handoff is missing phrase: {phrase}")
@@ -158,6 +166,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"live_vm_inspection_allowed": false',
         '"closes_erg_003": false',
         '"response_application_record"',
+        '"packet_hash_manifest"',
+        '"expected_hashed_file_count": 9',
     ]:
         if phrase not in json_text:
             failures.append(f"generated handoff JSON is missing phrase: {phrase}")
@@ -255,7 +265,12 @@ def _validate_repo_root(repo_root: Path) -> None:
         )
 
 
-def _handoff_payload(*, commit: str, dirty: bool) -> dict[str, Any]:
+def _handoff_payload(
+    *,
+    commit: str,
+    dirty: bool,
+    packet_hash_manifest: dict[str, Any],
+) -> dict[str, Any]:
     return {
         "schema_version": "1",
         "handoff_type": "ithildin.enterprise_next_review",
@@ -267,6 +282,7 @@ def _handoff_payload(*, commit: str, dirty: bool) -> dict[str, Any]:
         "selected_capability": "not selected",
         "attach_directory": RECOMMENDED_PACKET_DIR.as_posix(),
         "attach_files": REQUIRED_PACKET_FILES,
+        "packet_hash_manifest": packet_hash_manifest,
         "finding_namespace": "EXT-SVP-###",
         "response_path": {
             "response_kit": "var/review-packets/v3/sandbox-vm-static-preflight-response-kit",
@@ -288,6 +304,7 @@ def _handoff_payload(*, commit: str, dirty: bool) -> dict[str, Any]:
 def _render_markdown(payload: dict[str, Any]) -> str:
     attach_files = "\n".join(f"- `{name}`" for name in payload["attach_files"])
     blocked = "\n".join(f"- `{name}`: `false`" for name in BLOCKED_BOUNDARIES)
+    packet_hash_manifest = payload["packet_hash_manifest"]
     return f"""# Enterprise Next Review Handoff
 
 Recommended next enterprise review: `{payload['recommended_gap']}` static sandbox/VM preflight
@@ -312,6 +329,13 @@ Send the files from:
 Attach these files:
 
 {attach_files}
+
+## Attachment integrity check
+
+Use `{packet_hash_manifest['path']}` to verify the nine review markdown files before review.
+
+- expected hashed files: `{packet_hash_manifest['expected_hashed_file_count']}`
+- hash manifest self-hashed: `{str(packet_hash_manifest['hash_manifest_self_hashed']).lower()}`
 
 ## Reviewer Prompt
 
@@ -350,6 +374,74 @@ make enterprise-next-review-handoff
 make enterprise-next-review-handoff-check
 ```
 """
+
+
+def _packet_hash_manifest(packet_dir: Path) -> dict[str, Any]:
+    hash_path = packet_dir / "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
+    if not hash_path.exists():
+        raise EnterpriseNextReviewHandoffError("ERG-003 packet hash manifest is missing")
+    try:
+        manifest = json.loads(hash_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise EnterpriseNextReviewHandoffError(
+            "ERG-003 packet hash manifest is not valid JSON"
+        ) from exc
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise EnterpriseNextReviewHandoffError(
+            "ERG-003 packet hash manifest must contain an artifacts list"
+        )
+    hashed_paths: set[str] = set()
+    for entry in artifacts:
+        if not isinstance(entry, dict):
+            raise EnterpriseNextReviewHandoffError(
+                "ERG-003 packet hash manifest contains a non-object artifact"
+            )
+        path = entry.get("path")
+        if not isinstance(path, str):
+            raise EnterpriseNextReviewHandoffError(
+                "ERG-003 packet hash manifest artifact is missing a path"
+            )
+        hashed_paths.add(path)
+    expected_hashed = set(REQUIRED_PACKET_FILES) - {
+        "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
+    }
+    if hashed_paths != expected_hashed:
+        missing = sorted(expected_hashed - hashed_paths)
+        extra = sorted(hashed_paths - expected_hashed)
+        detail = []
+        if missing:
+            detail.append("missing: " + ", ".join(missing))
+        if extra:
+            detail.append("extra: " + ", ".join(str(item) for item in extra))
+        raise EnterpriseNextReviewHandoffError(
+            "ERG-003 packet hash manifest mismatch; " + "; ".join(detail)
+        )
+    if "sandbox-vm-static-preflight-external-review-artifact-hashes.json" in hashed_paths:
+        raise EnterpriseNextReviewHandoffError(
+            "ERG-003 packet hash manifest must not hash itself"
+        )
+    for entry in artifacts:
+        path = entry.get("path")
+        sha256 = entry.get("sha256")
+        byte_count = entry.get("bytes")
+        if not isinstance(sha256, str) or not sha256.startswith("sha256:"):
+            raise EnterpriseNextReviewHandoffError(
+                f"ERG-003 packet hash manifest artifact has invalid sha256: {path}"
+            )
+        if not isinstance(byte_count, int) or byte_count <= 0:
+            raise EnterpriseNextReviewHandoffError(
+                f"ERG-003 packet hash manifest artifact has invalid byte count: {path}"
+            )
+    return {
+        "path": (RECOMMENDED_PACKET_DIR / hash_path.name).as_posix(),
+        "expected_hashed_file_count": len(expected_hashed),
+        "hash_manifest_self_hashed": (
+            "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
+            in hashed_paths
+        ),
+        "hashed_files": sorted(hashed_paths),
+    }
 
 
 def _artifact_hashes(output_dir: Path, names: list[str]) -> dict[str, Any]:

@@ -59,6 +59,19 @@ The finding namespace is:
 EXT-SVP-###
 ```
 
+## Attachment Integrity
+
+Before sending the packet, verify the nine review markdown attachments against the packet artifact
+hash manifest:
+
+```text
+sandbox-vm-static-preflight-external-review-artifact-hashes.json
+```
+
+The artifact hash manifest must cover the nine markdown attachments and must not hash itself. This
+is handoff integrity evidence only; it is not notarization, custody-grade proof, or a source-review
+disposition.
+
 ## Response Path
 
 After review, use:

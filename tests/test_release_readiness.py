@@ -1198,6 +1198,14 @@ def test_enterprise_external_review_queue_is_wired() -> None:
 def test_enterprise_next_review_handoff_is_wired() -> None:
     report = enterprise_next_review_handoff.build_check_report(Path.cwd())
     doc = Path("docs/codex/enterprise-next-review-handoff.md").read_text(encoding="utf-8")
+    generated_md = Path(
+        "var/review-packets/v3/enterprise-next-review-handoff/"
+        "NEXT_ENTERPRISE_REVIEW_HANDOFF.md"
+    ).read_text(encoding="utf-8")
+    generated_json = Path(
+        "var/review-packets/v3/enterprise-next-review-handoff/"
+        "next-enterprise-review-handoff.json"
+    ).read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
@@ -1224,6 +1232,7 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
         "make enterprise-next-review-handoff",
         "var/review-packets/v3/sandbox-vm-static-preflight-external-review/",
         "EXT-SVP-###",
+        "artifact hash manifest",
         "make sandbox-vm-static-preflight-response-application-record-check",
         "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
         "does not close `ERG-003`",
@@ -1231,6 +1240,11 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
         "does not approve local model invocation",
     ]:
         assert phrase in doc
+    assert "Attachment integrity check" in generated_md
+    assert "expected hashed files: `9`" in generated_md
+    assert "hash manifest self-hashed: `false`" in generated_md
+    assert '"packet_hash_manifest"' in generated_json
+    assert '"expected_hashed_file_count": 9' in generated_json
     assert "enterprise-next-review-handoff:" in makefile
     assert "enterprise-next-review-handoff-check:" in makefile
     assert "enterprise-next-review-handoff-check" in release_check_body
