@@ -290,6 +290,11 @@ The focused adapter disposition packet is
 generated with `make siem-export-adapter-disposition-packet`. It asks whether `ERG-008` may
 continue architecture planning while adapter runtime behavior, hosted telemetry, remote delivery,
 custody claims, external notarization, immutable storage, and compliance automation remain blocked.
+The consolidated SIEM export adapter external-review launch bundle is
+[siem-export-adapter-external-review-bundle.md](siem-export-adapter-external-review-bundle.md) and
+is generated with `make siem-export-adapter-external-review-bundle`. It packages the disposition
+packet, architecture evidence, response intake, closure gate, response dry run, queue status, and
+command evidence for reviewer handoff while keeping SIEM adapter runtime behavior blocked.
 The SIEM export adapter external response intake template is
 [siem-export-adapter-external-response-intake.md](siem-export-adapter-external-response-intake.md)
 and is validated with `make siem-export-adapter-external-response-intake-check`. It defines the

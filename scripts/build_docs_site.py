@@ -236,6 +236,7 @@ DEFAULT_DOCS = [
     "docs/codex/production-identity-storage-external-response-intake.md",
     "docs/codex/siem-export-adapter-architecture.md",
     "docs/codex/siem-export-adapter-disposition-packet.md",
+    "docs/codex/siem-export-adapter-external-review-bundle.md",
     "docs/codex/siem-export-adapter-disposition-closure-gate.md",
     "docs/codex/siem-export-adapter-response-dry-run.md",
     "docs/codex/siem-export-adapter-external-response-intake.md",

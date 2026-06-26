@@ -217,6 +217,10 @@ Current selected capability: `not selected`.
   `siem-export-adapter-disposition-packet.md` asks whether the current adapter architecture
   evidence is coherent enough for continued planning while SIEM adapter runtime behavior remains
   blocked.
+- Current launch-bundle evidence:
+  `siem-export-adapter-external-review-bundle.md` consolidates the disposition packet,
+  architecture evidence, response intake, closure gate, dry-run fixtures, queue status, and command
+  evidence for reviewer handoff while keeping runtime adapter behavior blocked.
 - Current external response intake evidence:
   `siem-export-adapter-external-response-intake.md` defines allowed reviewer-response outcomes and
   the `EXT-SIEM-ADAPTER-###` normalization path without mutating findings, closing `ERG-008`, or

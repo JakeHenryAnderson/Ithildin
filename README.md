@@ -426,6 +426,12 @@ checked with `make control-mapping-readiness`.
 - `make siem-export-adapter-disposition-packet` - generate the focused SIEM adapter disposition
   packet asking whether ERG-008 may continue architecture planning while adapter runtime behavior,
   hosted telemetry, remote delivery, custody claims, and compliance claims remain blocked.
+- `make siem-export-adapter-external-review-bundle` - generate the consolidated SIEM adapter
+  external-review launch bundle for ERG-008 while keeping adapter runtime behavior and hosted
+  delivery blocked.
+- `make siem-export-adapter-external-review-bundle-check` - validate the SIEM adapter
+  external-review launch bundle wiring, artifact hashes, command evidence, and non-approval
+  boundary flags.
 - `make siem-export-adapter-disposition-closure-check` - validate the fail-closed SIEM adapter
   closure gate that keeps ERG-008 planning-only unless normalized source-level response evidence
   supports architecture continuation.
@@ -922,6 +928,11 @@ Generate the SIEM export adapter disposition packet with
 evidence is coherent enough to continue planning while adapter runtime behavior, hosted telemetry,
 remote delivery, custody-grade audit claims, external notarization, immutable storage, compliance
 automation, and public/security-product positioning remain blocked.
+The SIEM export adapter external-review launch bundle is
+[docs/codex/siem-export-adapter-external-review-bundle.md](docs/codex/siem-export-adapter-external-review-bundle.md)
+and is generated with `make siem-export-adapter-external-review-bundle`; it consolidates the
+disposition packet, architecture evidence, intake/closure/dry-run docs, queue status, and command
+evidence for ERG-008 review while keeping SIEM adapter runtime behavior blocked.
 The SIEM export adapter external response intake template is in
 [docs/codex/siem-export-adapter-external-response-intake.md](docs/codex/siem-export-adapter-external-response-intake.md)
 and is checked with `make siem-export-adapter-external-response-intake-check`; it defines the

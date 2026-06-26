@@ -239,6 +239,7 @@ from scripts import (
     siem_export_adapter_disposition_closure_check,
     siem_export_adapter_disposition_packet,
     siem_export_adapter_external_response_intake_check,
+    siem_export_adapter_external_review_bundle,
     siem_export_adapter_response_dry_run,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
@@ -16641,6 +16642,154 @@ def test_siem_export_adapter_disposition_packet_is_wired(tmp_path: Path) -> None
         "03_SIEM_EXPORT_ADAPTER_REVIEW_POINTERS.md",
         "04_SIEM_EXPORT_ADAPTER_DISPOSITION_COMMAND_EVIDENCE.md",
     }
+
+
+def test_siem_export_adapter_external_review_bundle_is_wired(tmp_path: Path) -> None:
+    report = siem_export_adapter_external_review_bundle.build_check_report(Path.cwd())
+    output_dir = tmp_path / "siem-export-adapter-external-review"
+    siem_export_adapter_external_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_SIEM_EXPORT_ADAPTER_EXTERNAL_REVIEW_INDEX.md",
+        "01_SIEM_EXPORT_ADAPTER_EXTERNAL_REVIEW_PROMPT.md",
+        "02_SIEM_EXPORT_ADAPTER_DISPOSITION_PACKET.md",
+        "03_SIEM_EXPORT_ADAPTER_ARCHITECTURE_CONTRACTS.md",
+        "04_SIEM_EXPORT_ADAPTER_RESPONSE_CLOSURE_DRY_RUN.md",
+        "05_SIEM_EXPORT_ADAPTER_REPRODUCTION_QUEUE_STATUS.md",
+        "06_SIEM_EXPORT_ADAPTER_BOUNDARY_EVIDENCE.md",
+        "07_SIEM_EXPORT_ADAPTER_COMMAND_EVIDENCE.md",
+        "siem-export-adapter-external-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir / "siem-export-adapter-external-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (output_dir / "00_SIEM_EXPORT_ADAPTER_EXTERNAL_REVIEW_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    prompt = (
+        output_dir / "01_SIEM_EXPORT_ADAPTER_EXTERNAL_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    disposition = (output_dir / "02_SIEM_EXPORT_ADAPTER_DISPOSITION_PACKET.md").read_text(
+        encoding="utf-8"
+    )
+    contracts = (output_dir / "03_SIEM_EXPORT_ADAPTER_ARCHITECTURE_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    response = (
+        output_dir / "04_SIEM_EXPORT_ADAPTER_RESPONSE_CLOSURE_DRY_RUN.md"
+    ).read_text(encoding="utf-8")
+    reproduction = (
+        output_dir / "05_SIEM_EXPORT_ADAPTER_REPRODUCTION_QUEUE_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (output_dir / "07_SIEM_EXPORT_ADAPTER_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_008_status"] == "planning_only"
+    assert report["recommended_next_review"] == "ERG-008"
+    assert report["runtime_changes_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_delivery_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["security_operations_control_plane_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_008"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "siem-export-adapter-external-review-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "does not close `ERG-008`" in index
+    assert "does not approve SIEM adapter runtime behavior" in index
+    assert "Finding namespace: `EXT-SIEM-ADAPTER-###`" in prompt
+    assert "Can `ERG-008` continue architecture planning" in prompt
+    assert "Do not approve SIEM adapter runtime behavior" in prompt
+    assert "Do not approve hosted telemetry" in prompt
+    assert "SIEM_EXPORT_ADAPTER_DISPOSITION_PROMPT" in disposition
+    assert "siem-export-adapter-architecture.md" in contracts
+    assert "siem-shaped-evidence-design.md" in contracts
+    assert "siem-export-adapter-external-response-intake.md" in response
+    assert "siem-export-adapter-disposition-closure-gate.md" in response
+    assert "siem-export-adapter-response-dry-run.md" in response
+    assert "enterprise-external-review-queue.md" in reproduction
+    assert "siem-export-adapter-architecture.md" in reproduction
+    assert "siem-export-adapter-disposition-packet.md" in reproduction
+    for flag in [
+        '"runtime_changes_allowed": false',
+        '"siem_adapter_allowed": false',
+        '"hosted_telemetry_allowed": false',
+        '"remote_delivery_allowed": false',
+        '"custody_grade_audit_allowed": false',
+        '"external_notarization_allowed": false',
+        '"immutable_storage_allowed": false',
+        '"production_identity_allowed": false',
+        '"runtime_postgres_allowed": false',
+        '"compliance_claims_allowed": false',
+        '"security_operations_control_plane_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"closes_erg_008": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make siem-export-adapter-disposition-packet-check" in evidence
+    assert "make siem-export-adapter-external-review-bundle" in readme
+    assert "siem-export-adapter-external-review-bundle:" in makefile
+    assert "siem-export-adapter-external-review-bundle-check:" in makefile
+    assert (
+        "siem-export-adapter-external-review-bundle-check" in release_check_body
+        or "release-check: siem-export-adapter-external-review-bundle-check" in makefile
+    )
+    assert "$(MAKE) siem-export-adapter-external-review-bundle" in review_candidate_body
+    assert "siem-export-adapter-external-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) siem-export-adapter-external-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/siem-export-adapter-external-review-bundle.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/siem-export-adapter-external-review-bundle.md" in docs_site
+    assert "SIEM Export Adapter External Review Bundle" in review_index
+    assert "siem-export-adapter-external-review-bundle.md" in runway
+    assert "siem-export-adapter-external-review-bundle.md" in gap_matrix
+    assert "siem-export-adapter-external-review-bundle.md" in queue
+    assert "siem-export-adapter-external-review-bundle.md" in decision_register
 
 
 def test_siem_export_adapter_external_response_intake_is_wired() -> None:

@@ -31,7 +31,7 @@ QUEUE_ROWS = [
         "PRD-PROD-IAM-STORAGE-001",
         "production-identity-storage-external-review-bundle.md",
     ),
-    ("ERG-008", "PRD-SIEM-EXPORT-001", "siem-export-adapter-disposition-packet.md"),
+    ("ERG-008", "PRD-SIEM-EXPORT-001", "siem-export-adapter-external-review-bundle.md"),
     ("ERG-009", "PRD-COMPLIANCE-MAPPING-001", "compliance-mapping-disposition-packet.md"),
     ("ERG-004", "PRD-SANDBOX-LIVE-POC-001", "sandbox-vm-live-poc-decision-packet.md"),
     (
@@ -154,6 +154,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "docs/codex/production-identity-storage-external-review-bundle.md",
         "docs/codex/production-identity-storage-external-response-intake.md",
         "docs/codex/siem-export-adapter-disposition-packet.md",
+        "docs/codex/siem-export-adapter-external-review-bundle.md",
         "docs/codex/siem-export-adapter-external-response-intake.md",
         "docs/codex/compliance-mapping-disposition-packet.md",
         "docs/codex/compliance-mapping-external-response-intake.md",
