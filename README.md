@@ -1006,6 +1006,11 @@ The external disposition plan is
 and is checked with `make sandbox-vm-static-preflight-disposition-plan-check`; it defines the
 reviewer questions, allowed outcomes, closure evidence, and post-disposition boundary for `ERG-003`
 without closing the lane or approving live sandbox/VM runtime work.
+The fail-closed disposition closure gate is
+[docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md](docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md)
+and is checked with `make sandbox-vm-static-preflight-disposition-closure-check`; it reports
+`closure_ready: false` until normalized source-level response evidence exists, and it still does not
+approve live sandbox/VM runtime work.
 The external response intake template is
 [docs/codex/sandbox-vm-static-preflight-external-response-intake.md](docs/codex/sandbox-vm-static-preflight-external-response-intake.md)
 and is checked with `make sandbox-vm-static-preflight-external-response-intake-check`; it defines

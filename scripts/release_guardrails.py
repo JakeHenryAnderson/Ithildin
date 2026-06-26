@@ -119,6 +119,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-static-preflight-source-review-packet-check",
     "sandbox-vm-static-preflight-disposition-packet-check",
     "sandbox-vm-static-preflight-disposition-plan-check",
+    "sandbox-vm-static-preflight-disposition-closure-check",
     "sandbox-vm-static-preflight-external-response-intake-check",
     "sandbox-vm-static-preflight-reviewer-reproduction-map-check",
     "sandbox-vm-live-poc-decision-intake-check",

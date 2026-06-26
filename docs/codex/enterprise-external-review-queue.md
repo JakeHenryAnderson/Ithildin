@@ -45,6 +45,10 @@ make enterprise-external-review-queue-check
 | 7 | `ERG-004` / `PRD-SANDBOX-LIVE-POC-001` | `blocked` | `sandbox-vm-live-poc-decision-packet.md` | `sandbox-vm-live-poc-external-response-intake.md` | Keep live sandbox/VM worker POC blocked until `ERG-003` receives favorable disposition | `false` |
 | 8 | `ERG-010` / `PRD-PUBLIC-POSITIONING-001` | `blocked` | `public-security-product-positioning-decision-intake.md` | later claim-review response intake | Claim-review preparation and warning-packet review only | `false` |
 
+The `ERG-003` row also depends on
+`sandbox-vm-static-preflight-disposition-closure-gate.md`, which keeps the lane open until
+normalized source-level response evidence exists.
+
 ## Dependency Order
 
 1. `ERG-003` is first because live sandbox/VM worker proof-of-concept planning depends on static
@@ -76,6 +80,7 @@ Run:
 
 ```sh
 make sandbox-vm-static-preflight-disposition-packet
+make sandbox-vm-static-preflight-disposition-closure-check
 make sandbox-vm-static-preflight-external-response-intake-check
 make sandbox-vm-static-preflight-reviewer-reproduction-map-check
 make enterprise-external-review-queue-check

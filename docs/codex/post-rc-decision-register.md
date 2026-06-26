@@ -82,6 +82,9 @@ Current selected capability: `not selected`.
   `sandbox-vm-static-preflight-reviewer-reproduction-map.md` gives reviewers the exact static
   preflight command sequence and evidence pointers without closing `ERG-003` or approving live
   sandbox/VM runtime work.
+- Current closure-gate evidence:
+  `sandbox-vm-static-preflight-disposition-closure-gate.md` keeps `ERG-003` open until normalized
+  source-level response evidence exists and still does not approve live sandbox/VM runtime work.
 
 ### PRD-SANDBOX-LIVE-POC-001
 

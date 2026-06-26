@@ -87,6 +87,10 @@ Before `ERG-003` can move out of `external_review_required`, record:
 Use [sandbox-vm-static-preflight-external-response-intake.md](sandbox-vm-static-preflight-external-response-intake.md)
 to normalize the raw reviewer response into intake evidence before any committed triage update. The
 intake template does not mutate findings, close external review, or move `ERG-003` by itself.
+Use [sandbox-vm-static-preflight-disposition-closure-gate.md](sandbox-vm-static-preflight-disposition-closure-gate.md)
+to validate whether normalized response evidence is strong enough for a later committed triage
+update; the closure gate passes without response evidence but reports `closure_ready: false` and
+does not close `ERG-003`.
 
 ## Post-Disposition Boundary
 
@@ -116,6 +120,7 @@ Run:
 
 ```sh
 make sandbox-vm-static-preflight-disposition-plan-check
+make sandbox-vm-static-preflight-disposition-closure-check
 make sandbox-vm-static-preflight-external-response-intake-check
 make sandbox-vm-static-preflight-source-review-packet-check
 make enterprise-readiness-gap-matrix-check

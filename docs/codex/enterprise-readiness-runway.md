@@ -361,7 +361,9 @@ The enterprise external-review queue is tracked in
 [enterprise-external-review-queue.md](enterprise-external-review-queue.md), validated with
 `make enterprise-external-review-queue-check`; it names the current packet/intake path for each
 post-RC enterprise lane and recommends `ERG-003` static sandbox/VM preflight disposition as the next
-review before live sandbox/VM worker planning.
+review before live sandbox/VM worker planning. The `ERG-003` fail-closed closure gate in
+`sandbox-vm-static-preflight-disposition-closure-gate.md` keeps the lane open until normalized
+source-level response evidence is present.
 Public/security-product positioning is tracked as an explicit no-go lane in
 [public-security-product-positioning-decision-intake.md](public-security-product-positioning-decision-intake.md),
 validated with `make public-security-product-positioning-decision-intake-check`; it allows
@@ -463,6 +465,12 @@ and is validated with `make sandbox-vm-static-preflight-disposition-plan-check`.
 questions and allowed outcomes for recording an external/source-review response to `ERG-003` without
 turning static fixture evidence into live VM/container control, sandbox orchestration, local model
 invocation, Mission Control runtime behavior, or trusted-host promotion.
+
+The fail-closed disposition closure gate is
+[sandbox-vm-static-preflight-disposition-closure-gate.md](sandbox-vm-static-preflight-disposition-closure-gate.md)
+and is validated with `make sandbox-vm-static-preflight-disposition-closure-check`. It reports
+`closure_ready: false` until normalized source-level response evidence exists, and it still does not
+close `ERG-003` or approve live sandbox/VM runtime work.
 
 The external response intake template is
 [sandbox-vm-static-preflight-external-response-intake.md](sandbox-vm-static-preflight-external-response-intake.md)

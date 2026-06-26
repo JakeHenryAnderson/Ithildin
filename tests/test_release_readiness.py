@@ -207,6 +207,7 @@ from scripts import (
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
     sandbox_vm_static_preflight,
+    sandbox_vm_static_preflight_disposition_closure_check,
     sandbox_vm_static_preflight_disposition_packet,
     sandbox_vm_static_preflight_disposition_plan_check,
     sandbox_vm_static_preflight_external_response_intake_check,
@@ -2973,6 +2974,109 @@ def test_sandbox_vm_static_preflight_disposition_plan_is_wired() -> None:
     assert "Sandbox/VM Static Preflight External Disposition Plan" in review_index
     assert "sandbox-vm-static-preflight-disposition-plan.md" in enterprise
     assert "sandbox-vm-static-preflight-disposition-plan.md" in gap_matrix
+
+
+def test_sandbox_vm_static_preflight_disposition_closure_gate_is_wired() -> None:
+    report = sandbox_vm_static_preflight_disposition_closure_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    disposition_plan = Path(
+        "docs/codex/sandbox-vm-static-preflight-disposition-plan.md"
+    ).read_text(encoding="utf-8")
+    intake = Path(
+        "docs/codex/sandbox-vm-static-preflight-external-response-intake.md"
+    ).read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-static-preflight"
+    assert report["finding_namespace"] == "EXT-SVP-###"
+    assert report["normalized_response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["allowed_closure_state"] == "closed_local_preview_static_preflight"
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: fail-closed closure gate for `ERG-003`.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
+        "ithildin.external_review.normalized_response",
+        "reviewed area: `sandbox-vm-static-preflight`",
+        "finding namespace: `EXT-SVP-###`",
+        "can_close_source_rows: true",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "closure_ready: false",
+        "closed_local_preview_static_preflight",
+        "separate committed triage update",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "live VM/container inspection",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "API/MCP profile loading",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "live VM control is approved",
+        "sandbox orchestration is approved",
+        "ERG-003 is closed",
+        "implementation is approved",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-static-preflight-disposition-closure-check" in readme
+    assert "sandbox-vm-static-preflight-disposition-closure-check:" in makefile
+    assert "sandbox-vm-static-preflight-disposition-closure-check" in release_check_body
+    assert "sandbox-vm-static-preflight-disposition-closure-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-disposition-closure-gate.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Disposition Closure Gate" in review_index
+    assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in enterprise
+    assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in gap_matrix
+    assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in queue
+    assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in decision_register
+    assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in disposition_plan
+    assert "sandbox-vm-static-preflight-disposition-closure-gate.md" in intake
 
 
 def test_sandbox_vm_static_preflight_external_response_intake_is_wired() -> None:

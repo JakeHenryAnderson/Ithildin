@@ -78,6 +78,9 @@ uv run python scripts/external_response_normalize.py \
 The normalized response is intake evidence only. It sets `mutates_findings: false` and
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the
 closure matrix or enterprise gap matrix, and rerun release gates.
+The fail-closed closure gate in
+[sandbox-vm-static-preflight-disposition-closure-gate.md](sandbox-vm-static-preflight-disposition-closure-gate.md)
+validates whether that normalized response is strong enough for a later committed triage update.
 
 ## Allowed Intake Outcomes
 
@@ -115,6 +118,7 @@ Run:
 
 ```sh
 make sandbox-vm-static-preflight-external-response-intake-check
+make sandbox-vm-static-preflight-disposition-closure-check
 make external-findings-intake-dry-run
 make sandbox-vm-static-preflight-disposition-plan-check
 ```
