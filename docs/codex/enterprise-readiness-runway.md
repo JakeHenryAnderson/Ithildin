@@ -287,6 +287,11 @@ The fail-closed disposition closure gate is
 and is validated with `make siem-export-adapter-disposition-closure-check`; it keeps `ERG-008`
 planning-only unless normalized source-level response evidence supports continued architecture
 planning and contains no critical/high findings.
+The SIEM export adapter response dry run is in
+[siem-export-adapter-response-dry-run.md](siem-export-adapter-response-dry-run.md) and is validated
+with `make siem-export-adapter-response-dry-run`; it exercises favorable and unfavorable temporary
+normalized-response fixtures while restoring the ignored response path and without closing
+`ERG-008` or approving implementation planning.
 
 Required before implementation:
 

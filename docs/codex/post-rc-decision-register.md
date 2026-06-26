@@ -220,6 +220,10 @@ Current selected capability: `not selected`.
   `siem-export-adapter-disposition-closure-gate.md` validates normalized source-level response
   evidence before any later triage update may move `ERG-008` toward an architecture decision
   record; absent or unfavorable evidence keeps the row planning-only.
+- Current response dry-run evidence:
+  `siem-export-adapter-response-dry-run.md` exercises temporary favorable and unfavorable
+  normalized-response fixtures while restoring the ignored response path and without closing
+  `ERG-008` or approving implementation planning.
 
 ### PRD-COMPLIANCE-MAPPING-001
 

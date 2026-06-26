@@ -273,6 +273,7 @@ REVIEW_DOCS = [
     "docs/codex/siem-export-adapter-architecture.md",
     "docs/codex/siem-export-adapter-disposition-packet.md",
     "docs/codex/siem-export-adapter-disposition-closure-gate.md",
+    "docs/codex/siem-export-adapter-response-dry-run.md",
     "docs/codex/siem-export-adapter-external-response-intake.md",
     "docs/codex/compliance-mapping-architecture.md",
     "docs/codex/compliance-mapping-disposition-packet.md",

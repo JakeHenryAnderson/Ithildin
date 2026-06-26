@@ -233,6 +233,7 @@ from scripts import (
     siem_export_adapter_disposition_closure_check,
     siem_export_adapter_disposition_packet,
     siem_export_adapter_external_response_intake_check,
+    siem_export_adapter_response_dry_run,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
     test_determinism_gate,
@@ -16107,6 +16108,131 @@ def test_siem_export_adapter_disposition_closure_gate_is_wired() -> None:
     assert "siem-export-adapter-disposition-closure-gate.md" in gap_matrix
     assert "siem-export-adapter-disposition-closure-gate.md" in review_queue
     assert "siem-export-adapter-disposition-closure-gate.md" in decision_register
+
+
+def test_siem_export_adapter_response_dry_run_is_wired() -> None:
+    report = siem_export_adapter_response_dry_run.run_dry_run(Path.cwd())
+    doc = Path("docs/codex/siem-export-adapter-response-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    review_queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    normalized_doc = " ".join(doc.split())
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "siem-export-adapter"
+    assert report["finding_namespace"] == "EXT-SIEM-ADAPTER-###"
+    assert report["normalized_response_path"] == (
+        "var/review-runs/siem-export-adapter/normalized-response.json"
+    )
+    assert report["response_restored"] is True
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_008_closed"] is False
+    assert report["architecture_planning_recorded"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_delivery_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["security_operations_control_plane_claims_allowed"] is False
+    assert report["hosted_control_plane_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["shell_docker_kubernetes_browser_powers_allowed"] is False
+    assert report["arbitrary_http_allowed"] is False
+    assert report["broad_filesystem_writes_allowed"] is False
+    assert report["plugin_sdk_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["cases"] == {
+        "absent_response_valid": True,
+        "absent_response_not_ready": True,
+        "valid_response_accepts": True,
+        "packet_only_rejected": True,
+        "bad_hash_rejected": True,
+        "critical_high_finding_rejected": True,
+        "direct_external_closure_rejected": True,
+    }
+    for phrase in [
+        "Status: temporary-fixture validation for planning-only `ERG-008`",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "make siem-export-adapter-response-dry-run",
+        "an absent normalized response keeps `closure_ready: false`",
+        "packet-only evidence is rejected for closure",
+        "critical/high findings are rejected",
+        "the ignored normalized-response path is restored after the dry run",
+        "not close `ERG-008`",
+        "SIEM adapter behavior",
+        "hosted telemetry",
+        "remote delivery",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "implementation planning",
+        "runtime implementation",
+        "SIEM adapter behavior",
+        "hosted telemetry",
+        "remote delivery",
+        "custody-grade audit claims",
+        "external notarization",
+        "immutable storage",
+        "production identity",
+        "runtime Postgres",
+        "compliance automation",
+        "security-operations control-plane claims",
+        "hosted control plane behavior",
+        "sandbox orchestration",
+        "local model invocation",
+        "trusted-host promotion",
+        "shell/Docker/Kubernetes/browser governed powers",
+        "arbitrary HTTP",
+        "broad filesystem writes",
+        "plugin SDK behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in normalized_doc
+    assert "make siem-export-adapter-response-dry-run" in readme
+    assert "siem-export-adapter-response-dry-run:" in makefile
+    assert (
+        "siem-export-adapter-response-dry-run" in release_check_body
+        or "release-check: siem-export-adapter-response-dry-run" in makefile
+    )
+    assert "siem-export-adapter-response-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/siem-export-adapter-response-dry-run.md" in docs_site
+    assert "docs/codex/siem-export-adapter-response-dry-run.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "SIEM Export Adapter Response Dry Run" in review_index
+    assert "siem-export-adapter-response-dry-run.md" in runway
+    assert "siem-export-adapter-response-dry-run.md" in gap_matrix
+    assert "siem-export-adapter-response-dry-run.md" in review_queue
+    assert "siem-export-adapter-response-dry-run.md" in decision_register
 
 
 def test_compliance_mapping_architecture_is_wired() -> None:
