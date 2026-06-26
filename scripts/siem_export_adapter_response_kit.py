@@ -100,10 +100,15 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             failures.append(str(exc))
             artifact_names: set[str] = set()
             hashes: dict[str, Any] = {"artifacts": []}
+            artifact_hashes_match_files = False
             contents: dict[str, str] = {}
         else:
             artifact_names = {path.name for path in output_dir.iterdir()}
             hashes = json.loads((output_dir / HASH_MANIFEST).read_text(encoding="utf-8"))
+            artifact_hashes_match_files = _artifact_hashes_match_files(
+                output_dir=output_dir,
+                hashes=hashes,
+            )
             contents = {
                 name: (output_dir / name).read_text(encoding="utf-8") for name in ARTIFACTS
             }
@@ -117,6 +122,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         failures.append("hash manifest must not hash itself")
     if set(ARTIFACTS) - hashed:
         failures.append("artifact hashes do not cover generated markdown files")
+    if not artifact_hashes_match_files:
+        failures.append("artifact hashes do not match generated markdown files")
 
     index = contents.get("00_SIEM_EXPORT_ADAPTER_RESPONSE_KIT_INDEX.md", "")
     guide = contents.get("01_SIEM_EXPORT_ADAPTER_RESPONSE_INTAKE_GUIDE.md", "")
@@ -234,6 +241,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "output_dir": str(DEFAULT_OUTPUT_DIR),
         "artifact_count": len(expected),
+        "artifact_hashes_match_files": artifact_hashes_match_files,
         "tool_count": 24,
         "erg_008_status": "planning_only",
         "recommended_next_review": "ERG-008",
@@ -577,6 +585,33 @@ def _write_hashes(output_dir: Path) -> None:
     )
 
 
+def _artifact_hashes_match_files(*, output_dir: Path, hashes: dict[str, Any]) -> bool:
+    artifacts = hashes.get("artifacts")
+    if not isinstance(artifacts, list):
+        return False
+    for entry in artifacts:
+        if not isinstance(entry, dict):
+            return False
+        path = entry.get("path")
+        sha256 = entry.get("sha256")
+        byte_count = entry.get("bytes")
+        if not isinstance(path, str):
+            return False
+        if not isinstance(sha256, str) or not sha256.startswith("sha256:"):
+            return False
+        if not isinstance(byte_count, int) or byte_count <= 0:
+            return False
+        artifact_path = output_dir / path
+        if not artifact_path.exists() or not artifact_path.is_file():
+            return False
+        data = artifact_path.read_bytes()
+        if sha256 != "sha256:" + hashlib.sha256(data).hexdigest():
+            return False
+        if byte_count != len(data):
+            return False
+    return True
+
+
 def _require_project_root(repo_root: Path) -> None:
     missing = [str(marker) for marker in PROJECT_MARKERS if not (repo_root / marker).exists()]
     if missing:
@@ -599,6 +634,7 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"output_dir: {report['output_dir']}",
         f"artifact_count: {report['artifact_count']}",
+        f"artifact_hashes_match_files: {str(report['artifact_hashes_match_files']).lower()}",
         f"tool_count: {report['tool_count']}",
         f"erg_008_status: {report['erg_008_status']}",
         f"recommended_next_review: {report['recommended_next_review']}",

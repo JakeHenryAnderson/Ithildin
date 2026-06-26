@@ -4618,6 +4618,8 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
     assert "var/review-runs/sandbox-vm-static-preflight/normalized-response.json" in guide
     assert "Only a later committed triage update may move `ERG-003`" in guide
     assert '"response_type": "ithildin.external_review.normalized_response"' in examples
+
+
     assert '"area": "sandbox-vm-static-preflight"' in examples
     assert '"source_access": "source-level"' in examples
     assert '"source_access": "packet-only"' in examples
@@ -4668,6 +4670,58 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
     assert "sandbox-vm-static-preflight-response-kit.md" in queue
     assert "sandbox-vm-static-preflight-response-kit.md" in decision_register
     assert "sandbox-vm-static-preflight-response-kit.md" in preconditions
+
+
+def test_enterprise_response_kit_hashes_match_generated_files(tmp_path: Path) -> None:
+    modules = [
+        (
+            mission_control_display_response_kit,
+            "mission-control-display-response-kit-artifact-hashes.json",
+        ),
+        (
+            production_identity_storage_response_kit,
+            "production-identity-storage-response-kit-artifact-hashes.json",
+        ),
+        (
+            sandbox_vm_live_poc_response_kit,
+            "sandbox-vm-live-poc-response-kit-artifact-hashes.json",
+        ),
+        (
+            trusted_host_promotion_response_kit,
+            "trusted-host-promotion-response-kit-artifact-hashes.json",
+        ),
+        (
+            siem_export_adapter_response_kit,
+            "siem-export-adapter-response-kit-artifact-hashes.json",
+        ),
+        (
+            compliance_mapping_response_kit,
+            "compliance-mapping-response-kit-artifact-hashes.json",
+        ),
+        (
+            public_security_product_positioning_response_kit,
+            "public-security-product-positioning-response-kit-artifact-hashes.json",
+        ),
+    ]
+
+    for module, hash_name in modules:
+        output_dir = tmp_path / hash_name.removesuffix("-artifact-hashes.json")
+        module.build_kit(
+            repo_root=Path.cwd(),
+            output_dir=output_dir,
+            allow_dirty=True,
+            run_commands=False,
+        )
+        report = module.build_check_report(Path.cwd())
+        hashes = json.loads((output_dir / hash_name).read_text(encoding="utf-8"))
+
+        assert report["valid"] is True
+        assert report["artifact_hashes_match_files"] is True
+        assert hash_name not in {entry["path"] for entry in hashes["artifacts"]}
+        for entry in hashes["artifacts"]:
+            data = output_dir.joinpath(entry["path"]).read_bytes()
+            assert entry["sha256"] == "sha256:" + hashlib.sha256(data).hexdigest()
+            assert entry["bytes"] == len(data)
 
 
 def test_sandbox_vm_static_preflight_disposition_plan_is_wired() -> None:
