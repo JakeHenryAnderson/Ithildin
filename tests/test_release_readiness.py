@@ -95,6 +95,7 @@ from scripts import (
     mission_control_display_external_response_intake_check,
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
+    mission_control_display_response_dry_run,
     mission_control_display_review_packet,
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_schema_contract_check,
@@ -16573,6 +16574,104 @@ def test_mission_control_display_disposition_closure_gate_is_wired() -> None:
     assert "mission-control-display-disposition-closure-gate.md" in disposition_packet
     assert "mission-control-display-disposition-closure-gate.md" in decision_intake
     assert "mission-control-display-disposition-closure-gate.md" in readiness_packet
+
+
+def test_mission_control_display_response_dry_run_is_wired() -> None:
+    report = mission_control_display_response_dry_run.run_dry_run(Path.cwd())
+    doc = Path("docs/codex/mission-control-display-response-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "mission-control-display"
+    assert report["finding_namespace"] == "EXT-MC-DISPLAY-###"
+    assert report["response_restored"] is True
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_002_closed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_planning_allowed"] is True
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["runtime_importer_allowed"] is False
+    assert report["mission_control_execution_authority_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["api_callbacks_allowed"] is False
+    assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["cases"] == {
+        "absent_response_valid": True,
+        "absent_response_not_ready": True,
+        "valid_response_accepts": True,
+        "packet_only_rejected": True,
+        "bad_hash_rejected": True,
+        "critical_high_finding_rejected": True,
+        "direct_external_closure_rejected": True,
+    }
+    for phrase in [
+        "Status: temporary-fixture validation for planning-only `ERG-002` normalized "
+        "response handling.",
+        "make mission-control-display-response-dry-run",
+        "var/review-runs/mission-control-display/normalized-response.json",
+        "an absent normalized response keeps `closure_ready: false`",
+        "packet-only evidence is rejected for closure",
+        "critical/high findings are rejected",
+        "responses that try to close external review directly are rejected",
+        "It does not prove that an external reviewer has inspected",
+        "`ERG-002` remains `planning_only`",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "Mission Control runtime importer behavior",
+        "Mission Control execution authority",
+        "API callbacks",
+        "polling or mutating Ithildin APIs",
+        "local model invocation",
+        "sandbox orchestration",
+        "trusted-host promotion",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    assert "make mission-control-display-response-dry-run" in readme
+    assert "mission-control-display-response-dry-run:" in makefile
+    assert (
+        "mission-control-display-response-dry-run" in release_check_body
+        or "release-check: mission-control-display-response-dry-run" in makefile
+    )
+    assert "mission-control-display-response-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-display-response-dry-run.md" in docs_site
+    assert "docs/codex/mission-control-display-response-dry-run.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Response Dry Run" in review_index
+    assert "mission-control-display-response-dry-run.md" in runway
+    assert "mission-control-display-response-dry-run.md" in gap_matrix
+    assert "mission-control-display-response-dry-run.md" in queue
+    assert "mission-control-display-response-dry-run.md" in decision_register
 
 
 def test_data_classification_design_check_is_wired() -> None:

@@ -71,6 +71,9 @@ Current selected capability: `not selected`.
   `mission-control-display-disposition-closure-gate.md` keeps `ERG-002` planning-only unless
   normalized source-level response evidence supports design-only continuation and contains no
   critical/high findings.
+- Current response dry-run evidence:
+  `mission-control-display-response-dry-run.md` exercises favorable and unfavorable normalized
+  response fixtures while restoring ignored local evidence and without closing `ERG-002`.
 
 ### PRD-SANDBOX-PREFLIGHT-001
 

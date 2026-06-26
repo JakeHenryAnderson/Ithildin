@@ -37,7 +37,7 @@ make enterprise-external-review-queue-check
 | Order | Gap / PRD | Status before review | Primary packet or doc | Intake / response path | Allowed next action | Runtime allowed |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `ERG-003` / `PRD-SANDBOX-PREFLIGHT-001` | `external_review_required` | `sandbox-vm-static-preflight-disposition-packet.md` | `sandbox-vm-static-preflight-external-response-intake.md` | External/source review disposition of static preflight fixture evidence | `false` |
-| 2 | `ERG-002` / `PRD-MC-DISPLAY-001` | `planning_only` | `mission-control-integration-readiness-packet.md` | `mission-control-display-external-response-intake.md` plus `mission-control-display-disposition-closure-gate.md` | Mission Control-side display/importer planning review only | `false` |
+| 2 | `ERG-002` / `PRD-MC-DISPLAY-001` | `planning_only` | `mission-control-integration-readiness-packet.md` | `mission-control-display-external-response-intake.md` plus `mission-control-display-disposition-closure-gate.md` and `mission-control-display-response-dry-run.md` | Mission Control-side display/importer planning review only | `false` |
 | 3 | `ERG-005` / `PRD-TRUSTED-HOST-001` | `blocked` | `trusted-host-promotion-disposition-packet.md` | `trusted-host-promotion-external-response-intake.md` plus `trusted-host-promotion-disposition-closure-gate.md` | Review of design-only promotion evidence and negative fixtures | `false` |
 | 4 | `ERG-006` + `ERG-007` / `PRD-PROD-IAM-STORAGE-001` | `planning_only` | `production-identity-storage-disposition-packet.md` | `production-identity-storage-external-response-intake.md` plus `production-identity-storage-disposition-closure-gate.md` | Architecture review for identity, tenancy, storage, retention, and custody boundaries | `false` |
 | 5 | `ERG-008` / `PRD-SIEM-EXPORT-001` | `planning_only` | `siem-export-adapter-disposition-packet.md` | `siem-export-adapter-external-response-intake.md` plus `siem-export-adapter-disposition-closure-gate.md` | Design review for offline/export adapter shape and delivery questions | `false` |
@@ -57,7 +57,8 @@ normalized-response fixtures without recording external review.
    preflight disposition.
 2. `ERG-002` can proceed in parallel as display/import planning because it stays outside execution,
    policy, approval, audit, sandbox, and local-model authority. Its fail-closed closure gate is
-   `mission-control-display-disposition-closure-gate.md`.
+   `mission-control-display-disposition-closure-gate.md`, and its response dry run is
+   `mission-control-display-response-dry-run.md`.
 3. `ERG-005` remains blocked until sandbox artifact evidence, exact hash binding, approval
    binding, and negative fixtures receive review; its fail-closed closure gate is
    `trusted-host-promotion-disposition-closure-gate.md`.

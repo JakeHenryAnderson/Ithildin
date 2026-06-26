@@ -104,6 +104,9 @@ mission-control-display-external-response-intake-check:
 mission-control-display-disposition-closure-check:
 	uv run python scripts/mission_control_display_disposition_closure_check.py
 
+mission-control-display-response-dry-run:
+	uv run python scripts/mission_control_display_response_dry_run.py
+
 mission-control-integration-readiness-packet:
 	uv run python scripts/mission_control_integration_readiness_packet.py
 
@@ -1038,6 +1041,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 	npm run build --prefix apps/ui
 
 release-check: sandbox-vm-live-poc-decision-closure-check
+release-check: mission-control-display-response-dry-run
 
 release-check: trusted-host-promotion-disposition-closure-check
 

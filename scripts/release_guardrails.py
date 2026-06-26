@@ -107,6 +107,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "mission-control-display-disposition-packet-check",
     "mission-control-display-external-response-intake-check",
     "mission-control-display-disposition-closure-check",
+    "mission-control-display-response-dry-run",
     "mission-control-integration-readiness-packet-check",
     "mission-control-side-handoff-plan-check",
     "mission-control-integration-implementation-ticket-check",

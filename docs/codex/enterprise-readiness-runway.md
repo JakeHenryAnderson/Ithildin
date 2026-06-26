@@ -365,7 +365,10 @@ Mission Control integration readiness packet now also exists as a consolidated h
 the display-only Mission Control-side file/import task. The fail-closed disposition closure gate in
 [mission-control-display-disposition-closure-gate.md](mission-control-display-disposition-closure-gate.md)
 keeps `ERG-002` planning-only unless normalized source-level response evidence explicitly supports
-design-only continuation and contains no critical/high findings. The
+design-only continuation and contains no critical/high findings. The response dry run in
+[mission-control-display-response-dry-run.md](mission-control-display-response-dry-run.md)
+temporarily verifies favorable and unfavorable normalized-response fixtures while restoring the
+ignored response path and not closing `ERG-002`. The
 sandbox/VM worker boundary charter, profile contract, preflight contract, proof-of-concept review
 packet, static profile fixture contract, static preflight CLI fixture runner, source-review packet,
 and internal source-review pass also now exist.
