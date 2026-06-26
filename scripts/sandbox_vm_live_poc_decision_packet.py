@@ -19,6 +19,7 @@ from scripts import (
     enterprise_sandbox_control_plane_readiness_check,
     sandbox_vm_live_poc_decision_intake_check,
     sandbox_vm_live_poc_evidence_contract_check,
+    sandbox_vm_live_poc_prerequisite_disposition_dry_run,
     sandbox_vm_static_preflight_disposition_packet,
     sandbox_vm_static_preflight_disposition_plan_check,
     sandbox_vm_static_preflight_external_response_intake_check,
@@ -38,6 +39,7 @@ DECISION_DOCS = [
     Path("docs/codex/sandbox-vm-live-poc-decision-intake.md"),
     Path("docs/codex/sandbox-vm-live-poc-evidence-contract.md"),
     Path("docs/codex/sandbox-vm-live-poc-external-response-intake.md"),
+    Path("docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md"),
     Path("docs/codex/enterprise-sandbox-control-plane-readiness.md"),
 ]
 REVIEW_POINTER_DOCS = [
@@ -55,6 +57,7 @@ COMMANDS = [
     ["make", "sandbox-vm-live-poc-decision-intake-check"],
     ["make", "sandbox-vm-live-poc-evidence-contract-check"],
     ["make", "sandbox-vm-live-poc-external-response-intake-check"],
+    ["make", "sandbox-vm-live-poc-prerequisite-disposition-dry-run"],
     ["make", "sandbox-vm-static-preflight-disposition-packet-check"],
     ["make", "sandbox-vm-static-preflight-disposition-plan-check"],
     ["make", "sandbox-vm-static-preflight-external-response-intake-check"],
@@ -169,6 +172,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "approve_limited_operator_managed_poc_planning",
         "block_live_poc",
         "Does the reviewer agree `ERG-004` remains blocked",
+        "sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
     ]:
         if phrase not in prompt:
             failures.append(f"packet prompt is missing phrase: {phrase}")
@@ -188,6 +192,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"trusted_host_promotion_allowed": false',
         '"new_power_classes_allowed": false',
         '"closes_erg_004": false',
+        '"erg_004_unblocked": false',
+        '"erg_003_closed": false',
+        '"temporary_fixtures_only": true',
     ]:
         if phrase not in evidence:
             failures.append(f"command evidence is missing boundary flag: {phrase}")
@@ -266,6 +273,9 @@ def build_packet(
     static_intake = sandbox_vm_static_preflight_external_response_intake_check.build_report(
         repo_root
     )
+    prerequisite_disposition = (
+        sandbox_vm_live_poc_prerequisite_disposition_dry_run.build_report(repo_root)
+    )
     failures = [
         *(f"readiness: {failure}" for failure in readiness["failures"]),
         *(f"decision intake: {failure}" for failure in intake["failures"]),
@@ -273,6 +283,10 @@ def build_packet(
         *(f"static disposition: {failure}" for failure in static_disposition["failures"]),
         *(f"static plan: {failure}" for failure in static_plan["failures"]),
         *(f"static external intake: {failure}" for failure in static_intake["failures"]),
+        *(
+            f"prerequisite disposition: {failure}"
+            for failure in prerequisite_disposition["failures"]
+        ),
     ]
     if failures:
         raise SandboxVmLivePocDecisionPacketError("; ".join(failures))
@@ -291,6 +305,7 @@ def build_packet(
         "static_disposition": static_disposition,
         "static_plan": static_plan,
         "static_intake": static_intake,
+        "prerequisite_disposition": prerequisite_disposition,
     }
     files = {
         "00_SANDBOX_VM_LIVE_POC_DECISION_INDEX.md": _index(context),
@@ -311,6 +326,7 @@ def build_packet(
                 "static_preflight_disposition_packet": static_disposition,
                 "static_preflight_disposition_plan": static_plan,
                 "static_preflight_external_response_intake": static_intake,
+                "live_poc_prerequisite_disposition_dry_run": prerequisite_disposition,
             },
         ),
     }
@@ -374,7 +390,8 @@ Finding namespace: `EXT-LIVE-POC-###`
 Please answer every question:
 
 1. Did the reviewer inspect the live POC decision packet, evidence contract, readiness map, and
-   prerequisite `ERG-003` static-preflight disposition evidence?
+   prerequisite `ERG-003` static-preflight disposition evidence, including
+   `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md`?
 2. Does the reviewer agree `ERG-004` remains blocked unless `ERG-003` receives favorable
    external/source disposition with no unresolved critical/high findings?
 3. Are the operator-managed VM profile, network/mount/root contract, cleanup transcript, and failure

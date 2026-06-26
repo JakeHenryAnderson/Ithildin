@@ -19,6 +19,8 @@ compliance automation, public/security-product positioning, or any new governed 
 Before a reviewer can recommend moving `ERG-004` beyond blocked status, the packet must show:
 
 - favorable `ERG-003` external/source disposition for static preflight;
+- `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md` evidence showing fixture-only
+  static-preflight disposition validation does not unblock `ERG-004`;
 - no unresolved critical/high static-preflight findings;
 - a post-RC decision-record path for `PRD-SANDBOX-LIVE-POC-001` using
   [sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md);
@@ -89,3 +91,9 @@ The fail-closed decision closure gate is
 reports `closure_ready: false` until normalized source-level response evidence exists, favorable
 `ERG-003` disposition is recorded, and the reviewer outcome can support only a later committed
 decision record.
+
+The prerequisite disposition dry run is
+[sandbox-vm-live-poc-prerequisite-disposition-dry-run.md](sandbox-vm-live-poc-prerequisite-disposition-dry-run.md).
+It exercises temporary `ERG-003` disposition-record fixtures and proves that favorable static
+preflight evidence can satisfy only a prerequisite while keeping `ERG-004`, implementation planning,
+and runtime work blocked.

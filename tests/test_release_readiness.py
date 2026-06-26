@@ -5552,6 +5552,9 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
     index = (output_dir / "00_SANDBOX_VM_LIVE_POC_DECISION_INDEX.md").read_text(
         encoding="utf-8"
     )
+    decision_docs = (
+        output_dir / "02_SANDBOX_VM_LIVE_POC_DECISION_AND_READINESS.md"
+    ).read_text(encoding="utf-8")
     evidence = (
         output_dir / "04_SANDBOX_VM_LIVE_POC_DECISION_COMMAND_EVIDENCE.md"
     ).read_text(encoding="utf-8")
@@ -5590,6 +5593,7 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
         "approve_limited_operator_managed_poc_planning",
         "block_live_poc",
         "Does the reviewer agree `ERG-004` remains blocked",
+        "sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
     ]:
         assert phrase in prompt
     for phrase in [
@@ -5607,8 +5611,14 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
         '"trusted_host_promotion_allowed": false',
         '"new_power_classes_allowed": false',
         '"closes_erg_004": false',
+        '"erg_004_unblocked": false',
+        '"erg_003_closed": false',
+        '"temporary_fixtures_only": true',
     ]:
         assert phrase in evidence
+    assert "sandbox-vm-live-poc-prerequisite-disposition-dry-run.md" in decision_docs
+    assert "live_poc_prerequisite_disposition_dry_run" in evidence
+    assert "make sandbox-vm-live-poc-prerequisite-disposition-dry-run" in evidence
     assert "sandbox-vm-live-poc-decision-packet:" in makefile
     assert "sandbox-vm-live-poc-decision-packet-check:" in makefile
     assert "sandbox-vm-live-poc-decision-packet-check" in release_check_body
