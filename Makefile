@@ -372,6 +372,12 @@ compliance-mapping-disposition-closure-check:
 compliance-mapping-response-dry-run:
 	uv run python scripts/compliance_mapping_response_dry_run.py
 
+compliance-mapping-response-kit:
+	uv run python scripts/compliance_mapping_response_kit.py
+
+compliance-mapping-response-kit-check:
+	uv run python scripts/compliance_mapping_response_kit.py --check
+
 compliance-mapping-external-response-intake-check:
 	uv run python scripts/compliance_mapping_external_response_intake_check.py
 
@@ -1092,6 +1098,7 @@ review-candidate:
 	$(MAKE) siem-export-adapter-response-kit
 	$(MAKE) compliance-mapping-disposition-packet
 	$(MAKE) compliance-mapping-external-review-bundle
+	$(MAKE) compliance-mapping-response-kit
 	$(MAKE) sandbox-vm-poc-review-packet
 	$(MAKE) sandbox-vm-static-preflight-source-review-packet
 	$(MAKE) sandbox-vm-static-preflight-disposition-packet
@@ -1189,6 +1196,7 @@ release-check: siem-export-adapter-response-kit-check
 
 release-check: compliance-mapping-disposition-closure-check
 release-check: compliance-mapping-response-dry-run
+release-check: compliance-mapping-response-kit-check
 
 release-check: public-security-product-positioning-decision-closure-check
 release-check: public-positioning-external-review-bundle-check

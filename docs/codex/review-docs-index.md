@@ -270,6 +270,7 @@ externally closed.
 - [Compliance Mapping External Review Bundle](compliance-mapping-external-review-bundle.md)
 - [Compliance Mapping Disposition Closure Gate](compliance-mapping-disposition-closure-gate.md)
 - [Compliance Mapping Response Dry Run](compliance-mapping-response-dry-run.md)
+- [Compliance Mapping Response Kit](compliance-mapping-response-kit.md)
 - [Compliance Mapping External Response Intake](compliance-mapping-external-response-intake.md)
 - [Mission Control Display Integration Proposal](mission-control-display-integration-proposal.md)
 - [Mission Control Display Importer Implementation Plan](mission-control-display-importer-plan.md)

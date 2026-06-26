@@ -410,6 +410,12 @@ Current evidence:
   `make compliance-mapping-response-dry-run`; it exercises favorable and unfavorable temporary
   normalized-response fixtures, restores the ignored response path, and does not record external
   review, mutate findings, close `ERG-009`, or approve implementation/runtime compliance mapping.
+- `compliance-mapping-response-kit.md` is generated with
+  `make compliance-mapping-response-kit`; it packages response-intake guidance,
+  normalized-response examples, closure commands, command evidence, and artifact hashes for real
+  reviewer feedback while keeping `ERG-009` planning-only and keeping implementation planning,
+  runtime compliance mapping, compliance automation, legal advice, automated certification,
+  regulated-industry compliance claims, and custody-grade audit claims blocked.
 
 ## Stop Conditions
 

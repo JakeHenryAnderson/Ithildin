@@ -32,6 +32,7 @@ from scripts import (
     compliance_mapping_external_response_intake_check,
     compliance_mapping_external_review_bundle,
     compliance_mapping_response_dry_run,
+    compliance_mapping_response_kit,
     consolidate_review_packet,
     control_mapping_design_check,
     control_mapping_readiness,
@@ -18614,6 +18615,116 @@ def test_compliance_mapping_response_dry_run_is_wired() -> None:
     assert "compliance-mapping-response-dry-run.md" in gap_matrix
     assert "compliance-mapping-response-dry-run.md" in review_queue
     assert "compliance-mapping-response-dry-run.md" in decision_register
+
+
+def test_compliance_mapping_response_kit_is_wired(tmp_path: Path) -> None:
+    output_dir = tmp_path / "compliance-mapping-response-kit"
+    built = compliance_mapping_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    report = compliance_mapping_response_kit.build_check_report(Path.cwd())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    expected_files = {
+        "00_COMPLIANCE_MAPPING_RESPONSE_KIT_INDEX.md",
+        "01_COMPLIANCE_MAPPING_RESPONSE_INTAKE_GUIDE.md",
+        "02_COMPLIANCE_MAPPING_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_COMPLIANCE_MAPPING_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_COMPLIANCE_MAPPING_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_COMPLIANCE_MAPPING_RESPONSE_KIT_EVIDENCE.md",
+        "compliance-mapping-response-kit-artifact-hashes.json",
+    }
+    artifact_names = {path.name for path in built.iterdir()}
+    hashes = json.loads(
+        (output_dir / "compliance-mapping-response-kit-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed = {entry["path"] for entry in hashes["artifacts"]}
+    index = (output_dir / "00_COMPLIANCE_MAPPING_RESPONSE_KIT_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (output_dir / "05_COMPLIANCE_MAPPING_RESPONSE_KIT_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_009_status"] == "planning_only"
+    assert report["architecture_planning_after_favorable_disposition_allowed"] is True
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["compliance_mapping_runtime_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["legal_advice_allowed"] is False
+    assert report["automated_certification_allowed"] is False
+    assert report["regulated_industry_compliance_claims_allowed"] is False
+    assert report["custody_grade_audit_claims_allowed"] is False
+    assert report["external_notarization_allowed"] is False
+    assert report["immutable_storage_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["erg_009_closed"] is False
+    assert expected_files <= artifact_names
+    assert "compliance-mapping-response-kit-artifact-hashes.json" not in hashed
+    assert expected_files - {"compliance-mapping-response-kit-artifact-hashes.json"} <= hashed
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-009`" in index
+    assert "does not approve compliance mapping runtime behavior" in index
+    assert "does not approve implementation planning" in index
+    assert '"response_kit_boundary"' in evidence
+    assert '"runtime_changes_allowed": false' in evidence
+    assert '"implementation_planning_allowed": false' in evidence
+    assert '"compliance_mapping_runtime_allowed": false' in evidence
+    assert '"compliance_automation_allowed": false' in evidence
+    assert '"legal_advice_allowed": false' in evidence
+    assert '"automated_certification_allowed": false' in evidence
+    assert '"regulated_industry_compliance_claims_allowed": false' in evidence
+    assert '"custody_grade_audit_claims_allowed": false' in evidence
+    assert '"production_identity_allowed": false' in evidence
+    assert '"runtime_postgres_allowed": false' in evidence
+    assert '"erg_009_closed": false' in evidence
+    assert '"response_dry_run"' in evidence
+    assert '"valid_response_accepts": true' in evidence
+    assert "make compliance-mapping-response-kit" in readme
+    assert "compliance-mapping-response-kit:" in makefile
+    assert "compliance-mapping-response-kit-check:" in makefile
+    assert (
+        "compliance-mapping-response-kit-check" in release_check_body
+        or "release-check: compliance-mapping-response-kit-check" in makefile
+    )
+    assert "$(MAKE) compliance-mapping-response-kit" in review_candidate_body
+    assert "compliance-mapping-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) compliance-mapping-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/compliance-mapping-response-kit.md" in docs_site
+    assert "docs/codex/compliance-mapping-response-kit.md" in review_docs.REVIEW_DOCS
+    assert "Compliance Mapping Response Kit" in review_index
+    assert "compliance-mapping-response-kit.md" in runway
+    assert "compliance-mapping-response-kit.md" in gap_matrix
+    assert "compliance-mapping-response-kit.md" in queue
+    assert "compliance-mapping-response-kit.md" in decision_register
 
 
 def test_mission_control_display_external_response_intake_is_wired() -> None:

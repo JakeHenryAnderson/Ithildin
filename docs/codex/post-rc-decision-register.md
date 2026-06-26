@@ -308,6 +308,12 @@ Current selected capability: `not selected`.
   `compliance-mapping-response-dry-run.md` exercises temporary favorable and unfavorable normalized
   response fixtures, restores the ignored response path, and does not record external review, mutate
   findings, close `ERG-009`, or approve implementation/runtime compliance mapping.
+- Current response-kit evidence:
+  `compliance-mapping-response-kit.md` packages response-intake guidance, normalized-response
+  examples, closure commands, command evidence, and artifact hashes for real reviewer feedback
+  while keeping `ERG-009` planning-only and keeping implementation planning, runtime compliance
+  mapping, compliance automation, legal advice, automated certification, regulated-industry
+  compliance claims, and custody-grade audit claims blocked.
 
 ### PRD-PROD-IAM-STORAGE-001
 

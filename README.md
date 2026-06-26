@@ -464,6 +464,10 @@ checked with `make control-mapping-readiness`.
 - `make compliance-mapping-response-dry-run` - exercise temporary normalized-response fixtures for
   the compliance mapping closure gate while restoring the ignored response path and keeping
   ERG-009 planning-only.
+- `make compliance-mapping-response-kit` - generate the response-intake kit for converting real
+  ERG-009 reviewer feedback into normalized evidence while keeping implementation planning,
+  runtime compliance mapping, compliance automation, legal advice, automated certification,
+  regulated-industry compliance claims, and custody claims blocked.
 - `make compliance-mapping-external-response-intake-check` - validate the response-intake template
   for compliance mapping reviewer feedback while keeping runtime mapping, compliance automation,
   legal advice, automated certification, regulated-industry compliance claims, and public/security
@@ -1031,6 +1035,13 @@ and is checked with `make compliance-mapping-response-dry-run`; it temporarily e
 and unfavorable normalized-response fixtures, restores the ignored response path, and does not
 record external review, mutate findings, close `ERG-009`, or approve implementation/runtime
 compliance mapping.
+The compliance mapping response kit is in
+[docs/codex/compliance-mapping-response-kit.md](docs/codex/compliance-mapping-response-kit.md)
+and is generated with `make compliance-mapping-response-kit`; it packages response-intake
+guidance, normalized-response examples, closure commands, command evidence, and artifact hashes for
+real reviewer feedback without closing `ERG-009`, approving implementation planning, or approving
+runtime compliance mapping, compliance automation, legal advice, automated certification,
+regulated-industry compliance claims, or custody-grade audit claims; those claims remain blocked.
 Use the post-RC decision record template at
 [docs/codex/post-rc-decision-record-template.md](docs/codex/post-rc-decision-record-template.md),
 checked with `make post-rc-decision-record-template-check`, when drafting any such future decision.
