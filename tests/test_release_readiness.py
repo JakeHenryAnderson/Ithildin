@@ -6320,13 +6320,19 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
         '"sandbox_orchestration_allowed": false',
         '"trusted_host_promotion_allowed": false',
         '"new_power_classes_allowed": false',
+        '"preconditions_ready"',
+        '"ready_for_implementation_planning": false',
         '"closes_erg_004": false',
         '"erg_004_unblocked": false',
         '"erg_003_closed": false',
         '"temporary_fixtures_only": true',
     ]:
         assert phrase in evidence
+    assert "sandbox-vm-live-poc-preconditions-ready-check.md" in decision_docs
+    assert "ready_for_implementation_planning: false" in decision_docs
     assert "sandbox-vm-live-poc-prerequisite-disposition-dry-run.md" in decision_docs
+    assert "preconditions_ready" in evidence
+    assert "make sandbox-vm-live-poc-preconditions-ready-check" in evidence
     assert "live_poc_prerequisite_disposition_dry_run" in evidence
     assert "make sandbox-vm-live-poc-prerequisite-disposition-dry-run" in evidence
     assert "sandbox-vm-live-poc-decision-packet:" in makefile
@@ -6457,12 +6463,14 @@ def test_sandbox_vm_live_poc_response_kit_is_wired(tmp_path: Path) -> None:
     assert '"closes_external_review": false' in examples
     assert "make sandbox-vm-live-poc-decision-closure-check" in commands
     assert "make sandbox-vm-live-poc-decision-record-skeleton-check" in commands
+    assert "make sandbox-vm-live-poc-preconditions-ready-check" in commands
     assert "make sandbox-vm-live-poc-response-dry-run" in commands
     assert "make sandbox-vm-live-poc-prerequisite-disposition-dry-run" in commands
     assert "make release-check" in commands
     assert "make review-candidate" in commands
     assert "ERG-003" in boundary
     assert "ERG-004" in boundary
+    assert "sandbox-vm-live-poc-preconditions-ready-check.md" in boundary
     assert "sandbox-vm-live-poc-decision-record-skeleton.md" in boundary
     assert "live VM/container inspection" in boundary
     for flag in [
@@ -6472,6 +6480,7 @@ def test_sandbox_vm_live_poc_response_kit_is_wired(tmp_path: Path) -> None:
         '"live_vm_inspection_allowed": false',
         '"sandbox_orchestration_allowed": false',
         '"local_model_invocation_allowed": false',
+        '"preconditions_ready"',
         '"erg_004_closed": false',
         '"decision_record_recorded": false',
         '"prerequisite_disposition_dry_run"',
@@ -6500,6 +6509,11 @@ def test_sandbox_vm_live_poc_response_kit_is_wired(tmp_path: Path) -> None:
     assert "sandbox-vm-live-poc-response-kit.md" in queue
     assert "sandbox-vm-live-poc-response-kit.md" in decision_register
     assert "sandbox-vm-live-poc-response-kit.md" in preconditions
+    assert "sandbox-vm-live-poc-response-kit.md" in (
+        Path("docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md").read_text(
+            encoding="utf-8"
+        )
+    )
 
 
 def test_sandbox_vm_live_poc_external_review_bundle_is_wired(tmp_path: Path) -> None:
@@ -6600,6 +6614,8 @@ def test_sandbox_vm_live_poc_external_review_bundle_is_wired(tmp_path: Path) -> 
     assert "SANDBOX_VM_LIVE_POC_DECISION_PROMPT" in decision_packet
     assert "sandbox-vm-live-poc-evidence-contract.md" in contracts
     assert "sandbox-vm-live-poc-preconditions-map.md" in contracts
+    assert "sandbox-vm-live-poc-preconditions-ready-check.md" in contracts
+    assert "ready_for_implementation_planning: false" in contracts
     assert "sandbox-vm-live-poc-external-response-intake.md" in response
     assert "sandbox-vm-live-poc-decision-closure-gate.md" in response
     assert "sandbox-vm-live-poc-response-dry-run.md" in response
@@ -6615,6 +6631,8 @@ def test_sandbox_vm_live_poc_external_review_bundle_is_wired(tmp_path: Path) -> 
         '"sandbox_orchestration_allowed": false',
         '"trusted_host_promotion_allowed": false',
         '"new_power_classes_allowed": false',
+        '"sandbox-vm-live-poc-preconditions-ready-check"',
+        '"ready_for_implementation_planning": false',
         '"erg_003_closed": false',
         '"erg_004_unblocked": false',
         '"closes_erg_004": false',

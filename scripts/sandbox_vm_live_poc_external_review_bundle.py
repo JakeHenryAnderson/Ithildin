@@ -149,6 +149,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "sandbox-vm-live-poc-evidence-contract.md",
         "sandbox-vm-live-poc-preconditions-map.md",
+        "sandbox-vm-live-poc-preconditions-ready-check.md",
         "enterprise-sandbox-control-plane-readiness.md",
     ]:
         if phrase not in contracts:
@@ -180,6 +181,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"erg_004_unblocked": false',
         '"closes_erg_004": false',
         '"erg_003_closed": false',
+        '"sandbox-vm-live-poc-preconditions-ready-check"',
+        '"ready_for_implementation_planning": false',
         '"response_dry_run"',
         '"valid_response_accepts": true',
     ]:
@@ -285,6 +288,7 @@ def build_bundle(
                     "docs/codex/sandbox-vm-live-poc-decision-intake.md",
                     "docs/codex/sandbox-vm-live-poc-evidence-contract.md",
                     "docs/codex/sandbox-vm-live-poc-preconditions-map.md",
+                    "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md",
                     "docs/codex/enterprise-sandbox-control-plane-readiness.md",
                 ],
             ),
@@ -419,6 +423,7 @@ def _docs_bundle(title: str, repo_root: Path, docs: list[str]) -> str:
 def _build_command_reports(repo_root: Path, *, run_commands: bool) -> list[dict[str, Any]]:
     commands = [
         ["make", "sandbox-vm-live-poc-decision-packet-check"],
+        ["make", "sandbox-vm-live-poc-preconditions-ready-check"],
         ["make", "sandbox-vm-live-poc-decision-closure-check"],
         ["make", "sandbox-vm-live-poc-response-dry-run"],
         ["make", "sandbox-vm-live-poc-prerequisite-disposition-dry-run"],
@@ -468,6 +473,7 @@ def _command_evidence(commit: str, dirty: bool, reports: list[dict[str, Any]]) -
         "boundary": {
             "runtime_changes_allowed": False,
             "implementation_planning_allowed": False,
+            "ready_for_implementation_planning": False,
             "live_vm_inspection_allowed": False,
             "mission_control_runtime_allowed": False,
             "local_model_invocation_allowed": False,
@@ -479,6 +485,7 @@ def _command_evidence(commit: str, dirty: bool, reports: list[dict[str, Any]]) -
             "erg_004_unblocked": False,
             "closes_erg_004": False,
         },
+        "preconditions_ready_check": "sandbox-vm-live-poc-preconditions-ready-check",
         "response_dry_run": {
             "valid_response_accepts": True,
             "unfavorable_response_rejects_closure": True,

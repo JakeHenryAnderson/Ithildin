@@ -38,6 +38,7 @@ DECISION_DOCS = [
     Path("docs/codex/sandbox-vm-live-poc-decision-packet.md"),
     Path("docs/codex/sandbox-vm-live-poc-decision-intake.md"),
     Path("docs/codex/sandbox-vm-live-poc-evidence-contract.md"),
+    Path("docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md"),
     Path("docs/codex/sandbox-vm-live-poc-external-response-intake.md"),
     Path("docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md"),
     Path("docs/codex/enterprise-sandbox-control-plane-readiness.md"),
@@ -56,6 +57,7 @@ COMMANDS = [
     ["make", "enterprise-sandbox-control-plane-readiness-check"],
     ["make", "sandbox-vm-live-poc-decision-intake-check"],
     ["make", "sandbox-vm-live-poc-evidence-contract-check"],
+    ["make", "sandbox-vm-live-poc-preconditions-ready-check"],
     ["make", "sandbox-vm-live-poc-external-response-intake-check"],
     ["make", "sandbox-vm-live-poc-prerequisite-disposition-dry-run"],
     ["make", "sandbox-vm-static-preflight-disposition-packet-check"],
@@ -136,6 +138,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             hashes: dict[str, Any] = {"artifacts": []}
             prompt = ""
             index = ""
+            decision_docs = ""
             evidence = ""
         else:
             artifact_names = {path.name for path in output_dir.iterdir()}
@@ -148,6 +151,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             )
             evidence = (
                 output_dir / "04_SANDBOX_VM_LIVE_POC_DECISION_COMMAND_EVIDENCE.md"
+            ).read_text(encoding="utf-8")
+            decision_docs = (
+                output_dir / "02_SANDBOX_VM_LIVE_POC_DECISION_AND_READINESS.md"
             ).read_text(encoding="utf-8")
 
     expected = {
@@ -177,6 +183,12 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         if phrase not in prompt:
             failures.append(f"packet prompt is missing phrase: {phrase}")
     for phrase in [
+        "sandbox-vm-live-poc-preconditions-ready-check.md",
+        "ready_for_implementation_planning: false",
+    ]:
+        if phrase not in decision_docs:
+            failures.append(f"decision/readiness docs are missing phrase: {phrase}")
+    for phrase in [
         "What This Packet Does Not Prove",
         "does not approve live VM/container inspection",
         "does not close `ERG-004`",
@@ -191,6 +203,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"sandbox_orchestration_allowed": false',
         '"trusted_host_promotion_allowed": false',
         '"new_power_classes_allowed": false',
+        '"preconditions_ready"',
+        '"ready_for_implementation_planning": false',
         '"closes_erg_004": false',
         '"erg_004_unblocked": false',
         '"erg_003_closed": false',
@@ -266,6 +280,14 @@ def build_packet(
     readiness = enterprise_sandbox_control_plane_readiness_check.build_report(repo_root)
     intake = sandbox_vm_live_poc_decision_intake_check.build_report(repo_root)
     evidence_contract = sandbox_vm_live_poc_evidence_contract_check.build_report(repo_root)
+    preconditions_ready = {
+        "schema_version": "1",
+        "document": "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md",
+        "command": "make sandbox-vm-live-poc-preconditions-ready-check",
+        "ready_for_implementation_planning": False,
+        "runtime_changes_allowed": False,
+        "closes_erg_004": False,
+    }
     static_disposition = sandbox_vm_static_preflight_disposition_packet.build_check_report(
         repo_root
     )
@@ -302,6 +324,7 @@ def build_packet(
         "readiness": readiness,
         "intake": intake,
         "evidence_contract": evidence_contract,
+        "preconditions_ready": preconditions_ready,
         "static_disposition": static_disposition,
         "static_plan": static_plan,
         "static_intake": static_intake,
@@ -323,6 +346,7 @@ def build_packet(
                 "enterprise_sandbox_control_plane_readiness": readiness,
                 "decision_intake": intake,
                 "evidence_contract": evidence_contract,
+                "preconditions_ready": preconditions_ready,
                 "static_preflight_disposition_packet": static_disposition,
                 "static_preflight_disposition_plan": static_plan,
                 "static_preflight_external_response_intake": static_intake,

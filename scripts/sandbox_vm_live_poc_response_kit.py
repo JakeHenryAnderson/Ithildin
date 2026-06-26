@@ -87,6 +87,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     queue = _read(repo_root / "docs/codex/enterprise-external-review-queue.md")
     decision_register = _read(repo_root / "docs/codex/post-rc-decision-register.md")
     preconditions = _read(repo_root / "docs/codex/sandbox-vm-live-poc-preconditions-map.md")
+    preconditions_ready = _read(
+        repo_root / "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md"
+    )
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
@@ -166,6 +169,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "make sandbox-vm-live-poc-decision-closure-check",
         "make sandbox-vm-live-poc-decision-record-skeleton-check",
+        "make sandbox-vm-live-poc-preconditions-ready-check",
         "make sandbox-vm-live-poc-response-dry-run",
         "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
         "make review-run-manifest-refresh",
@@ -180,6 +184,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "live VM/container inspection",
         "Mission Control runtime behavior",
         "local model invocation",
+        "sandbox-vm-live-poc-preconditions-ready-check.md",
         "sandbox orchestration",
         "trusted-host promotion",
     ]:
@@ -192,6 +197,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"live_vm_inspection_allowed": false',
         '"sandbox_orchestration_allowed": false',
         '"local_model_invocation_allowed": false',
+        '"preconditions_ready"',
         '"erg_004_closed": false',
         '"decision_record_recorded": false',
         '"prerequisite_disposition_dry_run"',
@@ -229,6 +235,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         (queue, "enterprise external-review queue"),
         (decision_register, "post-RC decision register"),
         (preconditions, "live POC preconditions map"),
+        (preconditions_ready, "live POC preconditions ready check"),
     ]:
         if "sandbox-vm-live-poc-response-kit" not in text:
             failures.append(f"{source} is missing live POC response kit pointer")
@@ -291,6 +298,7 @@ def build_kit(
                 "docs/codex/enterprise-external-review-queue.md",
                 "docs/codex/enterprise-readiness-gap-matrix.md",
                 "docs/codex/sandbox-vm-live-poc-preconditions-map.md",
+                "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md",
                 "docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md",
                 "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
                 "docs/codex/post-rc-decision-register.md",
@@ -431,6 +439,7 @@ Run these commands after placing real normalized response evidence under the ign
 ```sh
 make sandbox-vm-live-poc-decision-closure-check
 make sandbox-vm-live-poc-decision-record-skeleton-check
+make sandbox-vm-live-poc-preconditions-ready-check
 make sandbox-vm-live-poc-response-dry-run
 make sandbox-vm-live-poc-prerequisite-disposition-dry-run
 make enterprise-external-review-queue-check
@@ -484,6 +493,12 @@ def _build_command_reports(repo_root: Path, *, run_commands: bool) -> dict[str, 
         "decision_record_skeleton_check": (
             sandbox_vm_live_poc_decision_record_skeleton_check.build_report(repo_root)
         ),
+        "preconditions_ready": {
+            "document": "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md",
+            "command": "make sandbox-vm-live-poc-preconditions-ready-check",
+            "ready_for_implementation_planning": False,
+            "closes_erg_004": False,
+        },
         "response_dry_run": sandbox_vm_live_poc_response_dry_run.run_dry_run(repo_root),
         "prerequisite_disposition_dry_run": (
             sandbox_vm_live_poc_prerequisite_disposition_dry_run.build_report(repo_root)
@@ -542,6 +557,7 @@ def _run_shell_commands(repo_root: Path) -> list[dict[str, Any]]:
 def _shell_commands() -> list[list[str]]:
     return [
         ["make", "sandbox-vm-live-poc-external-response-intake-check"],
+        ["make", "sandbox-vm-live-poc-preconditions-ready-check"],
         ["make", "sandbox-vm-live-poc-decision-closure-check"],
         ["make", "sandbox-vm-live-poc-decision-record-skeleton-check"],
         ["make", "sandbox-vm-live-poc-response-dry-run"],
