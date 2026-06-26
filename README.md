@@ -470,6 +470,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-preflight-response-dry-run` - exercise temporary normalized-response
   fixtures against the `ERG-003` closure gate while restoring the ignored response path and not
   recording external review or closing the lane.
+- `make sandbox-vm-static-preflight-response-kit` - generate the response-intake kit for
+  converting real `ERG-003` reviewer feedback into normalized evidence while keeping `ERG-003`
+  open until a later committed triage update and keeping `ERG-004` blocked.
 - `make mission-control-display-integration-proposal-check` - validate the design-only Mission
   Control display/import proposal while confirming Mission Control does not become the executor,
   policy authority, approval authority, audit authority, local-model runner, VM/container manager,
@@ -1151,6 +1154,12 @@ The static preflight external-review launch bundle is
 with `make sandbox-vm-static-preflight-external-review-bundle`; it consolidates the source-review
 packet, disposition packet, response/closure/triage path, reproduction map, queue status, and
 command evidence into one 10-file handoff without closing `ERG-003` or approving live sandbox/VM
+runtime work.
+The static preflight response kit is
+[docs/codex/sandbox-vm-static-preflight-response-kit.md](docs/codex/sandbox-vm-static-preflight-response-kit.md),
+with `make sandbox-vm-static-preflight-response-kit`; it packages response-intake guidance,
+normalized-response examples, closure/triage commands, queue status, and artifact hashes for real
+reviewer feedback without closing `ERG-003`, unblocking `ERG-004`, or approving live sandbox/VM
 runtime work.
 The external disposition plan is
 [docs/codex/sandbox-vm-static-preflight-disposition-plan.md](docs/codex/sandbox-vm-static-preflight-disposition-plan.md)

@@ -229,6 +229,7 @@ from scripts import (
     sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_negative_transcripts,
     sandbox_vm_static_preflight_response_dry_run,
+    sandbox_vm_static_preflight_response_kit,
     sandbox_vm_static_preflight_reviewer_reproduction_map_check,
     sandbox_vm_static_preflight_source_review_packet,
     sandbox_vm_static_preflight_triage_update_check,
@@ -4004,6 +4005,148 @@ def test_sandbox_vm_static_preflight_external_review_bundle_is_wired(
     assert "sandbox-vm-static-preflight-external-review-bundle.md" in enterprise
     assert "sandbox-vm-static-preflight-external-review-bundle.md" in gap_matrix
     assert "sandbox-vm-static-preflight-external-review-bundle.md" in queue
+
+
+def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> None:
+    report = sandbox_vm_static_preflight_response_kit.build_check_report(Path.cwd())
+    output_dir = tmp_path / "sandbox-vm-static-preflight-response-kit"
+    sandbox_vm_static_preflight_response_kit.build_kit(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_SANDBOX_VM_STATIC_PREFLIGHT_RESPONSE_KIT_INDEX.md",
+        "01_SANDBOX_VM_STATIC_PREFLIGHT_RESPONSE_INTAKE_GUIDE.md",
+        "02_SANDBOX_VM_STATIC_PREFLIGHT_NORMALIZED_RESPONSE_EXAMPLES.md",
+        "03_SANDBOX_VM_STATIC_PREFLIGHT_CLOSURE_TRIAGE_COMMANDS.md",
+        "04_SANDBOX_VM_STATIC_PREFLIGHT_QUEUE_AND_BOUNDARY_STATUS.md",
+        "05_SANDBOX_VM_STATIC_PREFLIGHT_RESPONSE_KIT_EVIDENCE.md",
+        "sandbox-vm-static-preflight-response-kit-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir
+            / "sandbox-vm-static-preflight-response-kit-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_SANDBOX_VM_STATIC_PREFLIGHT_RESPONSE_KIT_INDEX.md"
+    ).read_text(encoding="utf-8")
+    guide = (
+        output_dir / "01_SANDBOX_VM_STATIC_PREFLIGHT_RESPONSE_INTAKE_GUIDE.md"
+    ).read_text(encoding="utf-8")
+    examples = (
+        output_dir / "02_SANDBOX_VM_STATIC_PREFLIGHT_NORMALIZED_RESPONSE_EXAMPLES.md"
+    ).read_text(encoding="utf-8")
+    commands = (
+        output_dir / "03_SANDBOX_VM_STATIC_PREFLIGHT_CLOSURE_TRIAGE_COMMANDS.md"
+    ).read_text(encoding="utf-8")
+    boundary = (
+        output_dir / "04_SANDBOX_VM_STATIC_PREFLIGHT_QUEUE_AND_BOUNDARY_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (
+        output_dir / "05_SANDBOX_VM_STATIC_PREFLIGHT_RESPONSE_KIT_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    preconditions = Path("docs/codex/sandbox-vm-live-poc-preconditions-map.md").read_text(
+        encoding="utf-8"
+    )
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_004_status"] == "blocked"
+    assert report["recommended_next_review"] == "ERG-003"
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["erg_004_unblocked"] is False
+    assert report["closes_erg_003"] is False
+    assert report["artifact_count"] == len(expected)
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "sandbox-vm-static-preflight-response-kit-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Kit Does Not Prove" in index
+    assert "does not close `ERG-003`" in index
+    assert "does not unblock `ERG-004`" in index
+    assert "does not approve live VM/container inspection" in index
+    assert "Finding namespace: `EXT-SVP-###`" in guide
+    assert "var/review-runs/sandbox-vm-static-preflight/normalized-response.json" in guide
+    assert "Only a later committed triage update may move `ERG-003`" in guide
+    assert '"response_type": "ithildin.external_review.normalized_response"' in examples
+    assert '"area": "sandbox-vm-static-preflight"' in examples
+    assert '"source_access": "source-level"' in examples
+    assert '"source_access": "packet-only"' in examples
+    assert '"closes_external_review": false' in examples
+    assert "make sandbox-vm-static-preflight-disposition-closure-check" in commands
+    assert "make sandbox-vm-static-preflight-response-dry-run" in commands
+    assert "make sandbox-vm-static-preflight-triage-update-check" in commands
+    assert "make release-check" in commands
+    assert "make review-candidate" in commands
+    assert "ERG-003" in boundary
+    assert "ERG-004" in boundary
+    assert "live VM/container inspection" in boundary
+    for flag in [
+        '"response_kit_boundary"',
+        '"runtime_changes_allowed": false',
+        '"live_vm_inspection_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"local_model_invocation_allowed": false',
+        '"erg_004_unblocked": false',
+        '"closes_erg_003": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make sandbox-vm-static-preflight-response-kit" in readme
+    assert "sandbox-vm-static-preflight-response-kit:" in makefile
+    assert "sandbox-vm-static-preflight-response-kit-check:" in makefile
+    assert "sandbox-vm-static-preflight-response-kit-check" in release_check_body
+    assert "$(MAKE) sandbox-vm-static-preflight-response-kit" in review_candidate_body
+    assert "sandbox-vm-static-preflight-response-kit-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-static-preflight-response-kit" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/sandbox-vm-static-preflight-response-kit.md" in docs_site
+    assert "docs/codex/sandbox-vm-static-preflight-response-kit.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Response Kit" in review_index
+    assert "sandbox-vm-static-preflight-response-kit.md" in enterprise
+    assert "sandbox-vm-static-preflight-response-kit.md" in gap_matrix
+    assert "sandbox-vm-static-preflight-response-kit.md" in queue
+    assert "sandbox-vm-static-preflight-response-kit.md" in decision_register
+    assert "sandbox-vm-static-preflight-response-kit.md" in preconditions
 
 
 def test_sandbox_vm_static_preflight_disposition_plan_is_wired() -> None:

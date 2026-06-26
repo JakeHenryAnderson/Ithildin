@@ -548,6 +548,13 @@ source-review packet, disposition packet, response/closure/triage path, reproduc
 status, and command evidence into one 10-file handoff for the recommended `ERG-003` external/source
 review without closing `ERG-003` or approving live sandbox/VM runtime work.
 
+The static preflight response kit is
+[sandbox-vm-static-preflight-response-kit.md](sandbox-vm-static-preflight-response-kit.md) and is
+generated with `make sandbox-vm-static-preflight-response-kit`. It packages the response-intake
+guide, normalized-response examples, closure and triage commands, queue/precondition status,
+command evidence, and artifact hashes for converting real reviewer feedback into normalized
+evidence without closing `ERG-003`, unblocking `ERG-004`, or approving live sandbox/VM runtime work.
+
 The external disposition plan is
 [sandbox-vm-static-preflight-disposition-plan.md](sandbox-vm-static-preflight-disposition-plan.md)
 and is validated with `make sandbox-vm-static-preflight-disposition-plan-check`. It defines the
