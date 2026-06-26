@@ -960,6 +960,12 @@ Generate the compliance mapping disposition packet with
 evidence is coherent enough to continue planning while runtime compliance mapping, legal advice,
 automated certification, regulated-industry compliance claims, custody claims, and
 public/security-product positioning remain blocked.
+Generate the consolidated compliance mapping external-review bundle with
+`make compliance-mapping-external-review-bundle`; validate its wiring with
+`make compliance-mapping-external-review-bundle-check`. The bundle packages the ERG-009 disposition
+packet, architecture contracts, response-intake and closure gates, dry-run evidence, queue status,
+command evidence, and artifact hashes without closing ERG-009 or approving runtime compliance
+mapping.
 The compliance mapping external response intake template is in
 [docs/codex/compliance-mapping-external-response-intake.md](docs/codex/compliance-mapping-external-response-intake.md)
 and is checked with `make compliance-mapping-external-response-intake-check`; it defines the

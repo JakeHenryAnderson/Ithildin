@@ -242,6 +242,7 @@ DEFAULT_DOCS = [
     "docs/codex/siem-export-adapter-external-response-intake.md",
     "docs/codex/compliance-mapping-architecture.md",
     "docs/codex/compliance-mapping-disposition-packet.md",
+    "docs/codex/compliance-mapping-external-review-bundle.md",
     "docs/codex/compliance-mapping-disposition-closure-gate.md",
     "docs/codex/compliance-mapping-response-dry-run.md",
     "docs/codex/compliance-mapping-external-response-intake.md",

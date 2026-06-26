@@ -30,6 +30,7 @@ from scripts import (
     compliance_mapping_disposition_closure_check,
     compliance_mapping_disposition_packet,
     compliance_mapping_external_response_intake_check,
+    compliance_mapping_external_review_bundle,
     compliance_mapping_response_dry_run,
     consolidate_review_packet,
     control_mapping_design_check,
@@ -16790,6 +16791,157 @@ def test_siem_export_adapter_external_review_bundle_is_wired(tmp_path: Path) -> 
     assert "siem-export-adapter-external-review-bundle.md" in gap_matrix
     assert "siem-export-adapter-external-review-bundle.md" in queue
     assert "siem-export-adapter-external-review-bundle.md" in decision_register
+
+
+def test_compliance_mapping_external_review_bundle_is_wired(tmp_path: Path) -> None:
+    report = compliance_mapping_external_review_bundle.build_check_report(Path.cwd())
+    output_dir = tmp_path / "compliance-mapping-external-review"
+    compliance_mapping_external_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_COMPLIANCE_MAPPING_EXTERNAL_REVIEW_INDEX.md",
+        "01_COMPLIANCE_MAPPING_EXTERNAL_REVIEW_PROMPT.md",
+        "02_COMPLIANCE_MAPPING_DISPOSITION_PACKET.md",
+        "03_COMPLIANCE_MAPPING_ARCHITECTURE_CONTRACTS.md",
+        "04_COMPLIANCE_MAPPING_RESPONSE_CLOSURE_DRY_RUN.md",
+        "05_COMPLIANCE_MAPPING_REPRODUCTION_QUEUE_STATUS.md",
+        "06_COMPLIANCE_MAPPING_BOUNDARY_EVIDENCE.md",
+        "07_COMPLIANCE_MAPPING_COMMAND_EVIDENCE.md",
+        "compliance-mapping-external-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir / "compliance-mapping-external-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_COMPLIANCE_MAPPING_EXTERNAL_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = (
+        output_dir / "01_COMPLIANCE_MAPPING_EXTERNAL_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    disposition = (output_dir / "02_COMPLIANCE_MAPPING_DISPOSITION_PACKET.md").read_text(
+        encoding="utf-8"
+    )
+    contracts = (output_dir / "03_COMPLIANCE_MAPPING_ARCHITECTURE_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    response = (
+        output_dir / "04_COMPLIANCE_MAPPING_RESPONSE_CLOSURE_DRY_RUN.md"
+    ).read_text(encoding="utf-8")
+    reproduction = (
+        output_dir / "05_COMPLIANCE_MAPPING_REPRODUCTION_QUEUE_STATUS.md"
+    ).read_text(encoding="utf-8")
+    evidence = (output_dir / "07_COMPLIANCE_MAPPING_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_009_status"] == "planning_only"
+    assert report["recommended_next_review"] == "ERG-009"
+    assert report["runtime_changes_allowed"] is False
+    assert report["compliance_mapping_planning_allowed"] is True
+    assert report["compliance_mapping_runtime_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["legal_advice_allowed"] is False
+    assert report["automated_certification_allowed"] is False
+    assert report["regulated_industry_compliance_claims_allowed"] is False
+    assert report["custody_grade_audit_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["compliance_claims_allowed"] is False
+    assert report["legal_conclusions_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_009"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "compliance-mapping-external-review-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "does not close `ERG-009`" in index
+    assert "does not approve compliance mapping runtime behavior" in index
+    assert "Finding namespace: `EXT-COMPLIANCE-MAPPING-###`" in prompt
+    assert "Can `ERG-009` continue architecture planning" in prompt
+    assert "Do not approve compliance mapping runtime behavior" in prompt
+    assert "Do not approve legal advice" in prompt
+    assert "COMPLIANCE_MAPPING_DISPOSITION_PROMPT" in disposition
+    assert "compliance-mapping-architecture.md" in contracts
+    assert "control-mapping-design.md" in contracts
+    assert "data-classification-design.md" in contracts
+    assert "incident-reconstruction-guide.md" in contracts
+    assert "compliance-mapping-external-response-intake.md" in response
+    assert "compliance-mapping-disposition-closure-gate.md" in response
+    assert "compliance-mapping-response-dry-run.md" in response
+    assert "enterprise-external-review-queue.md" in reproduction
+    assert "compliance-mapping-architecture.md" in reproduction
+    assert "compliance-mapping-disposition-packet.md" in reproduction
+    for flag in [
+        '"runtime_changes_allowed": false',
+        '"compliance_mapping_planning_allowed": true',
+        '"compliance_mapping_runtime_allowed": false',
+        '"compliance_automation_allowed": false',
+        '"legal_advice_allowed": false',
+        '"automated_certification_allowed": false',
+        '"regulated_industry_compliance_claims_allowed": false',
+        '"custody_grade_audit_allowed": false',
+        '"production_identity_allowed": false',
+        '"runtime_postgres_allowed": false',
+        '"compliance_claims_allowed": false',
+        '"new_power_classes_allowed": false',
+        '"closes_erg_009": false',
+        '"response_dry_run"',
+        '"valid_response_accepts": true',
+    ]:
+        assert flag in evidence
+    assert "make compliance-mapping-disposition-packet-check" in evidence
+    assert "make compliance-mapping-external-review-bundle" in readme
+    assert "compliance-mapping-external-review-bundle:" in makefile
+    assert "compliance-mapping-external-review-bundle-check:" in makefile
+    assert (
+        "compliance-mapping-external-review-bundle-check" in release_check_body
+        or "release-check: compliance-mapping-external-review-bundle-check" in makefile
+    )
+    assert "$(MAKE) compliance-mapping-external-review-bundle" in review_candidate_body
+    assert "compliance-mapping-external-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) compliance-mapping-external-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/compliance-mapping-external-review-bundle.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/compliance-mapping-external-review-bundle.md" in docs_site
+    assert "Compliance Mapping External Review Bundle" in review_index
+    assert "compliance-mapping-external-review-bundle.md" in runway
+    assert "compliance-mapping-external-review-bundle.md" in gap_matrix
+    assert "compliance-mapping-external-review-bundle.md" in queue
+    assert "compliance-mapping-external-review-bundle.md" in decision_register
 
 
 def test_siem_export_adapter_external_response_intake_is_wired() -> None:

@@ -257,6 +257,11 @@ Current selected capability: `not selected`.
   incident-reconstruction, accepted-risk, and post-RC decision evidence for reviewer disposition
   while keeping runtime compliance mapping, legal advice, automated certification, regulated-industry
   compliance claims, and public/security-product positioning blocked.
+- Current external-review launch evidence:
+  `compliance-mapping-external-review-bundle.md` consolidates the disposition packet,
+  architecture contracts, response-intake and closure gates, dry-run evidence, queue status,
+  command evidence, and artifact hashes without closing `ERG-009` or approving runtime compliance
+  mapping.
 - Current external response intake evidence:
   `compliance-mapping-external-response-intake.md` defines allowed reviewer-response outcomes and
   the `EXT-COMPLIANCE-MAPPING-###` normalization path without mutating findings, closing `ERG-009`,

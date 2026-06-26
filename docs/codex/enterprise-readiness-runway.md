@@ -365,6 +365,10 @@ Current evidence:
   `ERG-009` may continue architecture planning while runtime compliance mapping, legal advice,
   automated certification, regulated-industry compliance claims, custody claims, and
   public/security-product positioning remain blocked.
+- `compliance-mapping-external-review-bundle.md` consolidates the disposition packet,
+  architecture contracts, response-intake and closure gates, dry-run evidence, queue status,
+  command evidence, and artifact hashes for the ERG-009 external-review launch handoff without
+  closing the lane or approving runtime compliance mapping.
 - `compliance-mapping-external-response-intake.md` defines the `EXT-COMPLIANCE-MAPPING-###`
   finding namespace and `compliance-mapping` normalizer command for recording reviewer responses
   without mutating findings, closing `ERG-009`, or approving runtime compliance mapping,

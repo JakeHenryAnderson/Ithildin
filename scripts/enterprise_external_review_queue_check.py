@@ -32,7 +32,7 @@ QUEUE_ROWS = [
         "production-identity-storage-external-review-bundle.md",
     ),
     ("ERG-008", "PRD-SIEM-EXPORT-001", "siem-export-adapter-external-review-bundle.md"),
-    ("ERG-009", "PRD-COMPLIANCE-MAPPING-001", "compliance-mapping-disposition-packet.md"),
+    ("ERG-009", "PRD-COMPLIANCE-MAPPING-001", "compliance-mapping-external-review-bundle.md"),
     ("ERG-004", "PRD-SANDBOX-LIVE-POC-001", "sandbox-vm-live-poc-decision-packet.md"),
     (
         "ERG-010",
