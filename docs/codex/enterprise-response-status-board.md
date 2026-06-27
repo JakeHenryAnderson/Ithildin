@@ -12,6 +12,10 @@ Run:
 make enterprise-response-status-board
 ```
 
+For the current parallel `ERG-003` / `ERG-002` handoff, use
+`make enterprise-dual-response-inbox` to create ignored raw-response placeholders before running
+lane-specific normalization and dry-run commands.
+
 ## Purpose
 
 This board summarizes normalized-response state across the enterprise external-review queue. It is

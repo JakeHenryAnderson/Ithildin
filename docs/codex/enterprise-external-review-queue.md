@@ -139,6 +139,15 @@ make enterprise-dual-review-outbox
 
 See [Enterprise Dual Review Outbox](enterprise-dual-review-outbox.md).
 
+After sending the two packets, prepare local response handling with:
+
+```sh
+make enterprise-dual-response-inbox
+```
+
+See [Enterprise Dual Response Inbox](enterprise-dual-response-inbox.md). The inbox does not
+normalize responses, mutate findings, close either lane, or approve runtime behavior.
+
 After packets are sent, track normalized-response status across all enterprise lanes with:
 
 ```sh

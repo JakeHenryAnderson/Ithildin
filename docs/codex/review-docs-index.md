@@ -250,6 +250,7 @@ externally closed.
 - [Enterprise Review Send Readiness](enterprise-review-send-readiness.md)
 - [Enterprise Dual Review Handoff](enterprise-dual-review-handoff.md)
 - [Enterprise Dual Review Outbox](enterprise-dual-review-outbox.md)
+- [Enterprise Dual Response Inbox](enterprise-dual-response-inbox.md)
 - [Enterprise Dual Response Readiness](enterprise-dual-response-readiness.md)
 - [Enterprise Response Status Board](enterprise-response-status-board.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)

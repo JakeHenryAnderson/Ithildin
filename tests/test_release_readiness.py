@@ -47,6 +47,7 @@ from scripts import (
     demo_reset_guide,
     demo_state_report,
     docs_claims_public_preview_disposition_closure_check,
+    enterprise_dual_response_inbox,
     enterprise_dual_response_readiness,
     enterprise_dual_review_handoff,
     enterprise_dual_review_outbox,
@@ -1694,6 +1695,128 @@ def test_enterprise_dual_response_readiness_is_wired() -> None:
     assert "docs/codex/enterprise-dual-response-readiness.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Dual Response Readiness" in review_index
     assert "enterprise-dual-response-readiness" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_dual_response_inbox_is_wired() -> None:
+    report = enterprise_dual_response_inbox.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-dual-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    dual_handoff = Path("docs/codex/enterprise-dual-review-handoff.md").read_text(
+        encoding="utf-8"
+    )
+    dual_readiness = Path("docs/codex/enterprise-dual-response-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    outbox_doc = Path("docs/codex/enterprise-dual-review-outbox.md").read_text(
+        encoding="utf-8"
+    )
+    queue_doc = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    status_board = Path("docs/codex/enterprise-response-status-board.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-runs/enterprise-dual-response-inbox")
+    generated = generated_dir / "ENTERPRISE_DUAL_RESPONSE_INBOX.md"
+    generated_json = generated_dir / "enterprise-dual-response-inbox.json"
+    generated_hashes = json.loads(
+        (generated_dir / "enterprise-dual-response-inbox-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["lane_count"] == 2
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["artifact_hashes_match_files"] is True
+    assert report["normalizes_responses"] is False
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: generated response inbox for the current dual enterprise review handoff.",
+        "make enterprise-dual-response-inbox",
+        "make enterprise-dual-response-inbox-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not normalize responses",
+        "does not mutate findings",
+        "does not close either lane",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Dual Response Inbox",
+        "RAW_RESPONSE_ERG-003.md",
+        "RAW_RESPONSE_ERG-002.md",
+        "EXT-SVP-###",
+        "EXT-MC-DISPLAY-###",
+        "scripts/external_response_normalize.py",
+        "make sandbox-vm-static-preflight-response-dry-run",
+        "make mission-control-display-response-dry-run",
+        "runtime_changes_allowed: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"inbox_type": "ithildin.enterprise_dual_response_inbox"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"normalizes_responses": false',
+        '"committed_findings_mutated": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_DUAL_RESPONSE_INBOX.md",
+        "enterprise-dual-response-inbox.json",
+        "RAW_RESPONSE_ERG-003.md",
+        "RAW_RESPONSE_ERG-002.md",
+    } <= hashed_paths
+    assert "enterprise-dual-response-inbox-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-dual-response-inbox:" in makefile
+    assert "enterprise-dual-response-inbox-check:" in makefile
+    assert "enterprise-dual-response-inbox-check" in release_check_body
+    assert "$(MAKE) enterprise-dual-response-inbox" in review_candidate_body
+    assert "make enterprise-dual-response-inbox" in readme
+    assert "make enterprise-dual-response-inbox" in dual_handoff
+    assert "make enterprise-dual-response-inbox" in dual_readiness
+    assert "make enterprise-dual-response-inbox" in outbox_doc
+    assert "make enterprise-dual-response-inbox" in queue_doc
+    assert "make enterprise-dual-response-inbox" in status_board
+    assert "docs/codex/enterprise-dual-response-inbox.md" in docs_site
+    assert "docs/codex/enterprise-dual-response-inbox.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Dual Response Inbox" in review_index
+    assert "enterprise-dual-response-inbox-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

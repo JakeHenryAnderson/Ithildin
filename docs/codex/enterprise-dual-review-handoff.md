@@ -39,6 +39,7 @@ make enterprise-review-send-readiness
 After sending either packet, check whether normalized responses are present with:
 
 ```sh
+make enterprise-dual-response-inbox
 make enterprise-dual-response-readiness
 ```
 
@@ -105,6 +106,10 @@ source-review disposition.
 The generated outbox in `var/review-packets/v3/enterprise-dual-review-outbox/` copies the same
 attachment sets under `ERG-003/` and `ERG-002/` and adds an outbox index plus artifact hashes.
 It is a send-preparation artifact only, not review intake or lane closure.
+
+The generated response inbox in `var/review-runs/enterprise-dual-response-inbox/` creates ignored
+raw-response placeholders and exact normalization, dry-run, and closure commands. It is response
+intake preparation only, not response normalization, findings mutation, or lane closure.
 
 ## Response Path
 

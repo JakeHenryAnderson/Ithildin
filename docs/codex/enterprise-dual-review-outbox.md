@@ -57,8 +57,9 @@ Postgres, hosted telemetry, or remote MCP.
 5. Send the `ERG-002/` directory as a separate review packet.
 6. Keep `ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md` and
    `enterprise-dual-review-outbox-artifact-hashes.json` with the handoff notes.
-7. After responses arrive, run `make enterprise-dual-response-readiness` and follow the lane-specific
-   response kit. Do not edit lane status by hand.
+7. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
+   matching ignored raw-response placeholder, then run `make enterprise-dual-response-readiness` and
+   follow the lane-specific response kit. Do not edit lane status by hand.
 
 The artifact hashes are handoff-integrity evidence only. They are not notarization,
 custody-grade evidence, source-review disposition, or implementation approval.

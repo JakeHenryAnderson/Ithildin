@@ -12,6 +12,15 @@ Run:
 make enterprise-dual-response-readiness
 ```
 
+Before normalizing a real response, generate the local landing pad:
+
+```sh
+make enterprise-dual-response-inbox
+```
+
+The inbox records the current reviewed-packet hashes and exact normalization/dry-run/closure
+commands for `ERG-003` and `ERG-002`. It does not normalize responses or close either lane.
+
 ## Purpose
 
 This check summarizes whether normalized external-review responses are present for the two current
