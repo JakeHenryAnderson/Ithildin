@@ -194,6 +194,8 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/mission-control-integration-implementation-ticket.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-handoff-schema-contract.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-handoff-negative-fixtures.md" in DEFAULT_DOCS
+    assert "docs/codex/mission-control-handoff-fixture-pack.md" in DEFAULT_DOCS
+    assert "docs/codex/mission-control-importer-acceptance-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-worker-boundary-charter.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-profile-contract.md" in DEFAULT_DOCS
     assert "docs/codex/sandbox-vm-preflight-contract.md" in DEFAULT_DOCS

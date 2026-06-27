@@ -321,6 +321,7 @@ REVIEW_DOCS = [
     "docs/codex/mission-control-handoff-schema-contract.md",
     "docs/codex/mission-control-handoff-negative-fixtures.md",
     "docs/codex/mission-control-handoff-fixture-pack.md",
+    "docs/codex/mission-control-importer-acceptance-matrix.md",
     "docs/codex/sandbox-vm-worker-boundary-charter.md",
     "docs/codex/sandbox-vm-profile-contract.md",
     "docs/codex/sandbox-vm-preflight-contract.md",

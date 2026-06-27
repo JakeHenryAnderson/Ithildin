@@ -36,6 +36,7 @@ Use these Ithildin artifacts as the implementation source of truth:
 - `docs/codex/mission-control-handoff-schema-contract.md`
 - `docs/codex/mission-control-handoff-negative-fixtures.md`
 - `docs/codex/mission-control-handoff-fixture-pack.md`
+- `docs/codex/mission-control-importer-acceptance-matrix.md`
 - `docs/codex/hello-world-mission-control-handoff.md`
 - `var/review-packets/v3/mission-control-display/`
 - `var/review-packets/v3/hello-world-mission-control-handoff/mission-control-handoff.json`
@@ -97,6 +98,7 @@ make mission-control-integration-implementation-ticket-check
 make mission-control-display-review-packet
 make hello-world-mission-control-handoff-check
 make mission-control-handoff-fixture-pack-check
+make mission-control-importer-acceptance-matrix-check
 ```
 
 Run from the Mission Control repository after future implementation, adjusted only for the current
@@ -115,6 +117,8 @@ handoff packet before requesting review.
 The future Mission Control implementation should include tests for:
 
 - valid metadata-only handoff import;
+- valid fixture accepted as metadata-only display evidence;
+- all `MC-HANDOFF-NEG-001` through `MC-HANDOFF-NEG-014` fixtures rejected with safe reason labels;
 - unsupported schema rejection;
 - non-`metadata_only` status rejection;
 - missing display allowlist rejection;

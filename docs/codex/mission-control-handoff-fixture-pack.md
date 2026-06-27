@@ -15,6 +15,7 @@ Generate the fixture pack with:
 ```sh
 make mission-control-handoff-fixture-pack
 make mission-control-handoff-fixture-pack-check
+make mission-control-importer-acceptance-matrix-check
 ```
 
 Generated output:
@@ -28,6 +29,11 @@ var/review-packets/v3/mission-control-handoff-fixtures/
 The fixture pack gives the future Mission Control display/import implementation a concrete test set
 without requiring Mission Control to call Ithildin, run an agent, start services, or mutate gateway
 state.
+
+The importer acceptance matrix in
+[mission-control-importer-acceptance-matrix.md](mission-control-importer-acceptance-matrix.md)
+maps each generated fixture to the expected display/import state, warning labels, safe rejection
+reasons, and forbidden fields for the future Mission Control-side tests.
 
 The pack contains:
 
@@ -61,4 +67,3 @@ names, package script values, or sandbox internals.
 This fixture pack does not approve runtime importer behavior. It is evidence for a later
 Mission Control-side implementation task and source-review handoff. It does not close `ERG-002`,
 does not approve Mission Control execution, and does not approve callbacks into Ithildin.
-

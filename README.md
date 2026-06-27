@@ -253,6 +253,9 @@ checked with `make control-mapping-readiness`.
   Mission Control display/import handoff JSON fixtures for future importer tests.
 - `make mission-control-handoff-fixture-pack-check` - validate the generated fixture pack, artifact
   hashes, safe reason labels, docs wiring, and no-runtime/no-authority-transfer boundary.
+- `make mission-control-importer-acceptance-matrix-check` - validate the future Mission Control
+  display-only importer acceptance matrix against the generated handoff fixtures without approving
+  runtime importer behavior.
 - `make sandbox-promotion-evidence-contract-check` - validate the future trusted-host promotion
   evidence contract while confirming host promotion remains unimplemented.
 - `make trusted-host-promotion-decision-intake-check` - validate the post-RC decision-intake
@@ -1256,6 +1259,11 @@ and is generated with `make mission-control-handoff-fixture-pack`; it writes con
 negative JSON fixtures under `var/review-packets/v3/mission-control-handoff-fixtures/` for future
 Mission Control importer tests without approving runtime importer behavior or callbacks into
 Ithildin.
+The Mission Control importer acceptance matrix is
+[docs/codex/mission-control-importer-acceptance-matrix.md](docs/codex/mission-control-importer-acceptance-matrix.md)
+and is checked with `make mission-control-importer-acceptance-matrix-check`; it maps the generated
+positive and negative handoff fixtures to expected display-only importer states, warning labels,
+safe rejection reasons, and forbidden fields while keeping runtime importer behavior blocked.
 Generate the focused Mission Control display review packet with
 `make mission-control-display-review-packet`; it bundles the display proposal, handoff schema,
 negative fixtures, Hello World seed evidence, command evidence, and artifact hashes for future
