@@ -183,7 +183,7 @@ checked with `make control-mapping-readiness`.
 - `make low-implementer-ticket-catalog-check` - validate the approved low-implementer ticket catalog and manager scorecard wiring.
 - `make internal-review-packet` - build v2 local prompts for internal AI/subagent source review.
 - `make source-review-transcript-packet` - generate a source-review transcript skeleton under ignored `var/`.
-- `make reviewer-artifact-manifest` - generate the v0.5 reviewer artifact inventory.
+- `make reviewer-artifact-manifest` - generate the reviewer artifact inventory for the v1.0 RC and enterprise handoff packets.
 - `make external-response-template-check` - validate the external review response intake template.
 - `make reviewer-findings-check` - validate structured reviewer finding records before matrix updates.
 - `make review-findings-summary` - summarize structured findings for v0.4 planning and release gates.

@@ -13678,19 +13678,50 @@ def test_reviewer_artifact_manifest_is_wired() -> None:
     assert report["valid"] is True
     assert report["failures"] == []
     assert report["runtime_boundary"] == "v0.1 local-preview"
+    assert report["review_candidate_label"] == (
+        "v1.0 local-preview RC plus enterprise review handoff inventory"
+    )
     assert report["committed_review_doc_count"] == len(review_docs.REVIEW_DOCS)
+    assert report["missing_generated_artifacts"] == []
     assert "make review-candidate" not in report["does_not_prove"]
     assert "external/source review closure" in report["does_not_prove"]
     assert "make reviewer-artifact-manifest" in readme
     assert "make v06-review-dispatch-packets" in report["required_commands"]
+    assert "make v1-rc-packet" in report["required_commands"]
+    assert "make enterprise-dual-review-handoff" in report["required_commands"]
+    assert "make enterprise-dual-response-readiness" in report["required_commands"]
+    assert "make enterprise-response-status-board" in report["required_commands"]
     assert (
         "var/review-packets/v0.6/dispatch/dispatch-packet-hashes.json"
         in report["generated_artifacts"]
     )
+    assert "var/review-packets/v1.0/rc/00_V1_RC_PACKET_INDEX.md" in report[
+        "generated_artifacts"
+    ]
+    assert "var/review-packets/v1.0/rc/07B_ENTERPRISE_DUAL_REVIEW_HANDOFF.md" in report[
+        "generated_artifacts"
+    ]
+    assert "var/review-packets/v1.0/rc/07C_ENTERPRISE_RESPONSE_STATUS_BOARD.md" in report[
+        "generated_artifacts"
+    ]
+    assert "var/review-packets/v1.0/rc/v1-rc-artifact-hashes.json" in report[
+        "generated_artifacts"
+    ]
+    assert (
+        "var/review-packets/v3/enterprise-dual-review-handoff/enterprise-dual-review-handoff-artifact-hashes.json"
+        in report["generated_artifacts"]
+    )
+    assert any(
+        artifact.endswith("/INDEX.md")
+        and "var/review-packets/v0.2/ithildin-v0.2-review-packet-" in artifact
+        for artifact in report["generated_artifacts"]
+    )
     assert "172 - Reviewer artifact manifest v2 | Done" in backlog
-    assert "Task 172 generates a v0.5 artifact inventory" in matrix
+    assert "Task 172 generates the current reviewer artifact inventory" in matrix
     assert "reviewer-artifact-manifest:" in makefile
     assert "does not close external/source review" in doc
+    assert "v1.0 local-preview RC packet" in doc
+    assert "missing generated artifacts" in doc
     assert "docs/codex/reviewer-artifact-manifest-v2.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/reviewer-artifact-manifest-v2.md" in docs_site
 
