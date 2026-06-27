@@ -6,6 +6,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: governed-artifact-transfer-lab governed-artifact-transfer-lab-check governed-artifact-transfer-stage2 governed-artifact-transfer-stage2-check hello-world-sandbox-demo-packet hello-world-sandbox-demo-packet-check hello-world-sandbox-demo-check hello-world-sandbox-observed-demo hello-world-sandbox-observed-demo-check hello-world-mission-control-handoff hello-world-mission-control-handoff-check sandbox-promotion-evidence-contract-check trusted-host-promotion-decision-intake-check trusted-host-promotion-state-machine-check trusted-host-promotion-negative-fixtures-check trusted-host-promotion-zone-contract-check trusted-host-promotion-implementation-plan-check trusted-host-promotion-source-review-packet trusted-host-promotion-source-review-packet-check trusted-host-promotion-disposition-packet trusted-host-promotion-disposition-packet-check trusted-host-promotion-external-review-bundle trusted-host-promotion-external-review-bundle-check trusted-host-promotion-disposition-closure-check trusted-host-promotion-external-response-intake-check trusted-host-promotion-internal-review-check mission-control-display-disposition-closure-check production-identity-storage-architecture-check production-identity-storage-disposition-closure-check production-identity-storage-response-dry-run production-identity-storage-external-response-intake-check production-identity-storage-external-review-bundle production-identity-storage-external-review-bundle-check siem-export-adapter-architecture-check siem-export-adapter-disposition-closure-check siem-export-adapter-response-dry-run siem-export-adapter-external-response-intake-check siem-export-adapter-external-review-bundle siem-export-adapter-external-review-bundle-check compliance-mapping-disposition-closure-check compliance-mapping-response-dry-run compliance-mapping-external-review-bundle compliance-mapping-external-review-bundle-check public-positioning-external-review-bundle public-positioning-external-review-bundle-check sandbox-vm-static-preflight-reviewed-packet-hash sandbox-vm-static-preflight-response-kit sandbox-vm-static-preflight-response-kit-check sandbox-artifact-observed-demo sandbox-artifact-observed-demo-check sandbox-artifact-write-text-preimplementation-check sandbox-artifact-write-text-implementation-gate sandbox-artifact-write-text-negative-transcripts sandbox-artifact-write-text-source-review-bundle
 .PHONY: mission-control-handoff-reference-validator
 .PHONY: mission-control-enterprise-status-import-check
+.PHONY: mission-control-enterprise-status-fixtures mission-control-enterprise-status-fixtures-check
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
 
 test:
@@ -311,6 +312,12 @@ enterprise-status-export-check:
 
 mission-control-enterprise-status-import-check:
 	uv run python scripts/mission_control_enterprise_status_import_check.py
+
+mission-control-enterprise-status-fixtures:
+	uv run python scripts/mission_control_enterprise_status_fixtures.py
+
+mission-control-enterprise-status-fixtures-check:
+	uv run python scripts/mission_control_enterprise_status_fixtures.py --check
 
 enterprise-dual-review-handoff:
 	uv run python scripts/enterprise_dual_review_handoff.py
@@ -1258,6 +1265,7 @@ review-candidate:
 	$(MAKE) enterprise-current-checkpoint
 	$(MAKE) enterprise-status-export
 	$(MAKE) mission-control-enterprise-status-import-check
+	$(MAKE) mission-control-enterprise-status-fixtures
 	$(MAKE) enterprise-dual-review-handoff
 	$(MAKE) enterprise-dual-review-outbox
 	$(MAKE) enterprise-review-send-manifest
@@ -1350,6 +1358,7 @@ release-check: mission-control-display-response-dry-run
 release-check: mission-control-importer-acceptance-matrix-check
 release-check: mission-control-handoff-reference-validator
 release-check: mission-control-enterprise-status-import-check
+release-check: mission-control-enterprise-status-fixtures-check
 release-check: mission-control-display-external-review-bundle-check
 release-check: mission-control-display-response-kit-check
 

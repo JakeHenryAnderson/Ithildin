@@ -74,6 +74,14 @@ SOURCE_DOCS = [
         ROOT / "docs/codex/mission-control-handoff-reference-validator.md",
     ),
     (
+        "10E_MISSION_CONTROL_ENTERPRISE_STATUS_IMPORT_CONTRACT.md",
+        ROOT / "docs/codex/mission-control-enterprise-status-import-contract.md",
+    ),
+    (
+        "10F_MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md",
+        ROOT / "docs/codex/mission-control-enterprise-status-fixtures.md",
+    ),
+    (
         "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
         ROOT / "docs/codex/v1.0-rc-external-review-prompt.md",
     ),

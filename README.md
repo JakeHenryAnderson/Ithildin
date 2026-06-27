@@ -432,6 +432,10 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-enterprise-status-import-check` - validate the future Mission Control
   display-only import contract for the enterprise status export without approving Mission Control
   runtime importer behavior.
+- `make mission-control-enterprise-status-fixtures` - generate one valid and ten negative
+  enterprise status display/import fixtures for future Mission Control importer tests.
+- `make mission-control-enterprise-status-fixtures-check` - validate the enterprise status fixture
+  pack, artifact hashes, and safe rejection expectations.
 - `make enterprise-dual-review-handoff` - generate the compact pointer for sending the current two
   recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
 - `make enterprise-dual-review-outbox` - copy the current `ERG-003` and `ERG-002` send-ready
@@ -1059,6 +1063,12 @@ The Mission Control enterprise status import contract is
 checked with `make mission-control-enterprise-status-import-check`; it defines how a future Mission
 Control importer may display the enterprise status export as non-authoritative status while keeping
 execution, policy, approval, audit, lane closure, and runtime authority with Ithildin.
+The Mission Control enterprise status fixtures are
+[docs/codex/mission-control-enterprise-status-fixtures.md](docs/codex/mission-control-enterprise-status-fixtures.md),
+generated with `make mission-control-enterprise-status-fixtures` and checked with
+`make mission-control-enterprise-status-fixtures-check`; they provide one valid and ten negative
+display/import payloads for future Mission Control tests without calling Mission Control or
+approving runtime importer behavior.
 The dual-review handoff is
 [docs/codex/enterprise-dual-review-handoff.md](docs/codex/enterprise-dual-review-handoff.md),
 generated with `make enterprise-dual-review-handoff`; it points to the current `ERG-003` and

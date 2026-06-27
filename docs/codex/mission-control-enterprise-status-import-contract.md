@@ -28,6 +28,10 @@ The source artifact must identify itself as:
 Mission Control may treat the artifact as local dashboard input only after validating the schema and
 all blocked-authority flags. Ithildin remains the execution, policy, approval, audit, and lane closure authority.
 
+`make mission-control-enterprise-status-fixtures` generates one valid payload and negative
+`MC-STATUS-NEG-###` payloads for future Mission Control importer tests. The fixture pack remains
+local display/import evidence and does not call Mission Control.
+
 ## Allowed Display Fields
 
 A future Mission Control importer may display only these status fields:
