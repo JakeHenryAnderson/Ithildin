@@ -44,8 +44,10 @@ behavior.
    `ERG-003` section of the generated prompt.
 5. For `ERG-002`, use a separate review request, attach every file from the generated `ERG-002/`
    outbox directory, and paste the `ERG-002` section of the generated prompt.
-6. After a response arrives, save it in the ignored lane-specific response inbox and run the
-   response kit, dry run, and closure gate before any committed status update.
+6. After a response arrives, run `make enterprise-dual-response-inbox`, open
+   `ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`, save each raw response in the matching ignored
+   placeholder, and run the lane-specific normalization, dry-run, and closure gate before any
+   committed status update.
 
 ## Boundary
 

@@ -133,6 +133,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Enterprise Review Submission Prompt",
         "Use separate review threads",
+        "Response intake after review",
+        "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
+        "make enterprise-dual-response-inbox",
         "ERG-003",
         "ERG-002",
         "Finding namespace",
@@ -149,6 +152,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"recommended_gaps": [',
         '"ERG-003"',
         '"ERG-002"',
+        '"response_inbox": {',
+        '"cheat_sheet"',
+        '"make enterprise-dual-response-inbox"',
         '"records_external_review": false',
         '"normalizes_responses": false',
         '"closes_erg_003": false',
@@ -269,6 +275,15 @@ def _prompt_payload(*, repo_root: Path, manifest_payload: dict[str, Any]) -> dic
             ),
             "outbox_hash_manifest": manifest_payload["outbox_hash_manifest"]["path"],
         },
+        "response_inbox": {
+            "command": "make enterprise-dual-response-inbox",
+            "check_command": "make enterprise-dual-response-inbox-check",
+            "path": "var/review-runs/enterprise-dual-response-inbox",
+            "cheat_sheet": (
+                "var/review-runs/enterprise-dual-response-inbox/"
+                "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md"
+            ),
+        },
         "blocked_boundaries": BOUNDARY_FLAGS,
     }
 
@@ -299,6 +314,25 @@ returns separate findings, namespaces, and dispositions for each lane.
 
 {sections}
 
+## Response intake after review
+
+After reviewer responses arrive, build the ignored local response inbox:
+
+```sh
+{payload['response_inbox']['command']}
+{payload['response_inbox']['check_command']}
+```
+
+Then open:
+
+```text
+{payload['response_inbox']['cheat_sheet']}
+```
+
+Paste each unmodified reviewer response into the matching raw-response placeholder named in that
+cheat sheet, then run the lane-specific normalization, dry-run, and closure-gate commands from the
+cheat sheet. The response inbox remains an ignored local review-run artifact.
+
 ## Boundary
 
 Do not approve runtime implementation, Mission Control runtime behavior, live VM/container
@@ -309,8 +343,7 @@ identity, runtime Postgres, hosted telemetry, or remote MCP.
 {blocked}
 
 This prompt does not record external review, does not normalize responses, and does not close
-either lane. After a response arrives, save the raw response in the ignored lane-specific response
-inbox and run the response kit/dry-run/closure commands named above.
+either lane. The response inbox and cheat sheet only make the post-response handling path explicit.
 """
 
 
