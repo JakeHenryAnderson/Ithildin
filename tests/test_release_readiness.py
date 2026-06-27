@@ -47,6 +47,7 @@ from scripts import (
     demo_reset_guide,
     demo_state_report,
     docs_claims_public_preview_disposition_closure_check,
+    enterprise_current_checkpoint,
     enterprise_dual_response_inbox,
     enterprise_dual_response_readiness,
     enterprise_dual_review_handoff,
@@ -1459,6 +1460,63 @@ def test_enterprise_review_send_readiness_is_wired() -> None:
     assert "docs/codex/enterprise-review-send-readiness.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Review Send Readiness" in review_index
     assert "enterprise-review-send-readiness" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_current_checkpoint_is_wired() -> None:
+    report = enterprise_current_checkpoint.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: checked operator checkpoint",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "make enterprise-current-checkpoint",
+        "v1.0 local-preview RC packet generation is ready through `make review-candidate`",
+        "`ERG-003`: static sandbox/VM preflight disposition",
+        "`ERG-002`: Mission Control display/import planning review",
+        "make enterprise-dual-review-outbox",
+        "make enterprise-review-send-manifest",
+        "make enterprise-review-submission-prompt",
+        "make enterprise-response-status-board",
+        "What This Checkpoint Does Not Approve",
+        "Mission Control runtime behavior",
+        "public/security-product positioning",
+        "new governed tool powers",
+    ]:
+        assert phrase in doc
+    assert "enterprise-current-checkpoint:" in makefile
+    assert "enterprise-current-checkpoint" in release_check_body
+    assert "make enterprise-current-checkpoint" in readme
+    assert "docs/codex/enterprise-current-checkpoint.md" in readme
+    assert "docs/codex/enterprise-current-checkpoint.md" in docs_site
+    assert "docs/codex/enterprise-current-checkpoint.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Current Checkpoint" in review_index
+    assert "enterprise-current-checkpoint" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

@@ -420,6 +420,8 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-readiness` - summarize which enterprise external-review packets are
   mechanically ready for operator handoff while keeping implementation approval, runtime behavior,
   and lane closure blocked.
+- `make enterprise-current-checkpoint` - validate the top-level enterprise checkpoint across v1.0
+  RC status, current send set, response status, and blocked runtime boundaries.
 - `make enterprise-dual-review-handoff` - generate the compact pointer for sending the current two
   recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
 - `make enterprise-dual-review-outbox` - copy the current `ERG-003` and `ERG-002` send-ready
@@ -1021,6 +1023,11 @@ The enterprise review send-readiness summary is
 checked with `make enterprise-review-send-readiness`; it summarizes packet handoff readiness across
 enterprise review lanes while keeping implementation approval, runtime behavior, and lane closure
 separate.
+The enterprise current checkpoint is
+[docs/codex/enterprise-current-checkpoint.md](docs/codex/enterprise-current-checkpoint.md),
+checked with `make enterprise-current-checkpoint`; it gives the compact current operator truth:
+v1.0 RC artifacts are ready to regenerate, `ERG-003`/`ERG-002` are the send set, no normalized
+responses are present, and runtime expansion remains blocked.
 The dual-review handoff is
 [docs/codex/enterprise-dual-review-handoff.md](docs/codex/enterprise-dual-review-handoff.md),
 generated with `make enterprise-dual-review-handoff`; it points to the current `ERG-003` and

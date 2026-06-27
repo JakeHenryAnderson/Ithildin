@@ -249,6 +249,7 @@ externally closed.
 - [Enterprise Next Review Handoff](enterprise-next-review-handoff.md)
 - [Enterprise Next Review Ready Check](enterprise-next-review-ready-check.md)
 - [Enterprise Review Send Readiness](enterprise-review-send-readiness.md)
+- [Enterprise Current Checkpoint](enterprise-current-checkpoint.md)
 - [Enterprise Dual Review Handoff](enterprise-dual-review-handoff.md)
 - [Enterprise Dual Review Outbox](enterprise-dual-review-outbox.md)
 - [Enterprise Review Send Manifest](enterprise-review-send-manifest.md)
