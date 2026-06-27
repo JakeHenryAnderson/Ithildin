@@ -24,6 +24,9 @@ Use this record only after a real reviewer response has been saved under an igno
 var/review-runs/sandbox-vm-static-preflight/normalized-response.json
 ```
 
+Use `sandbox-vm-static-preflight-response-application-playbook.md` as the companion command-order
+and allowed-file-scope playbook for this record.
+
 ## Application Preconditions
 
 - The reviewed packet is the current `ERG-003` static preflight packet.
@@ -50,6 +53,7 @@ var/review-runs/sandbox-vm-static-preflight/normalized-response.json
    make sandbox-vm-static-preflight-response-dry-run
    make sandbox-vm-static-preflight-triage-update-check
    make sandbox-vm-static-preflight-response-application-record-check
+   make sandbox-vm-static-preflight-response-application-playbook-check
    ```
 
 5. If the closure gate is favorable, create a committed disposition record using
@@ -139,6 +143,7 @@ Run:
 
 ```sh
 make sandbox-vm-static-preflight-response-application-record-check
+make sandbox-vm-static-preflight-response-application-playbook-check
 make sandbox-vm-static-preflight-disposition-closure-check
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-triage-update-check

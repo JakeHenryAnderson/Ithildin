@@ -127,6 +127,7 @@ externally closed.
 - [Sandbox/VM Live POC Response Dry Run](sandbox-vm-live-poc-response-dry-run.md)
 - [Sandbox/VM Live POC Prerequisite Disposition Dry Run](sandbox-vm-live-poc-prerequisite-disposition-dry-run.md)
 - [Sandbox/VM Live POC Response Kit](sandbox-vm-live-poc-response-kit.md)
+- [Sandbox/VM Static Preflight Response Application Playbook](sandbox-vm-static-preflight-response-application-playbook.md)
 - [v3 project.manifest.summary Implementation Decision](v3-project-manifest-summary-implementation.md)
 - [v3 project.manifest.summary Source Review Handoff](v3-project-manifest-summary-source-review.md)
 - [Capability Proposal: project.dependency.summary](capability-proposals/project-dependency-summary.md)

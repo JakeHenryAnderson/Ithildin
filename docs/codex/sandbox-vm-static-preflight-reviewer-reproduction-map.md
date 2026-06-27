@@ -44,6 +44,7 @@ make sandbox-vm-static-preflight-disposition-plan-check
 make sandbox-vm-static-preflight-external-response-intake-check
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-triage-update-check
+make sandbox-vm-static-preflight-response-application-playbook-check
 make sandbox-vm-static-preflight-disposition-packet
 make sandbox-vm-static-preflight-disposition-packet-check
 make external-findings-intake-dry-run
@@ -124,6 +125,8 @@ Only a later committed triage update may move `ERG-003` away from
 `external_review_required`. This reproduction map is not that triage update.
 Use `sandbox-vm-static-preflight-triage-update.md` as the safe committed update checklist after
 real favorable source-level evidence is recorded.
+Use `sandbox-vm-static-preflight-response-application-playbook.md` as the manager-owned command
+and file-scope playbook before committing that favorable response.
 Use `sandbox-vm-static-preflight-disposition-record-skeleton.md` as the companion disposition-record
 shape for that future favorable static preflight update.
 
@@ -142,4 +145,5 @@ Run:
 ```sh
 make sandbox-vm-static-preflight-reviewer-reproduction-map-check
 make sandbox-vm-static-preflight-triage-update-check
+make sandbox-vm-static-preflight-response-application-playbook-check
 ```

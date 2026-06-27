@@ -70,6 +70,7 @@ Use `make sandbox-vm-static-preflight-reviewed-packet-hash` after generating the
 review bundle to copy the exact hash into `external_response_normalize.py`.
 That future committed update must use `sandbox-vm-static-preflight-disposition-record-skeleton.md`
 as the disposition-record shape, must follow
+`sandbox-vm-static-preflight-response-application-playbook.md` and
 `sandbox-vm-static-preflight-response-application-record.md`, and must keep `ERG-004` blocked.
 The generated response kit includes that skeleton in its queue/boundary artifact and names
 `make sandbox-vm-static-preflight-disposition-record-skeleton-check` in the closure command list.
