@@ -43,3 +43,6 @@ which lane-specific dry-run or closure command should be used next.
 
 Use `make enterprise-response-inbox` to create ignored raw-response placeholders and exact
 normalization commands for all enterprise lanes after this coverage gate passes.
+
+Use `make enterprise-response-intake-drill` to exercise all supported response-intake paths with
+temporary fixtures while preserving ignored response state and without recording external review.

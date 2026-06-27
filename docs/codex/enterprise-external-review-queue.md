@@ -32,6 +32,12 @@ lanes with:
 make enterprise-response-inbox
 ```
 
+Exercise every response-intake path with temporary fixtures before a real response arrives with:
+
+```sh
+make enterprise-response-intake-drill
+```
+
 ## Queue Rules
 
 - Every row must point to an existing evidence packet or intake document.
@@ -160,6 +166,15 @@ make enterprise-dual-response-inbox
 
 See [Enterprise Dual Response Inbox](enterprise-dual-response-inbox.md). The inbox does not
 normalize responses, mutate findings, close either lane, or approve runtime behavior.
+
+To prove the all-lane response path still rejects unsafe fixture cases and restores ignored
+response state, run:
+
+```sh
+make enterprise-response-intake-drill
+```
+
+See [Enterprise Response Intake Drill](enterprise-response-intake-drill.md).
 
 After packets are sent, track normalized-response status across all enterprise lanes with:
 

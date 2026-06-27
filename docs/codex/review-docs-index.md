@@ -255,6 +255,7 @@ externally closed.
 - [Enterprise Response Status Board](enterprise-response-status-board.md)
 - [Enterprise Response Normalization Coverage](enterprise-response-normalization-coverage.md)
 - [Enterprise Response Inbox](enterprise-response-inbox.md)
+- [Enterprise Response Intake Drill](enterprise-response-intake-drill.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)

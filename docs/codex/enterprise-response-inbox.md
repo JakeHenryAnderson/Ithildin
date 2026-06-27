@@ -59,3 +59,11 @@ The generated inbox covers:
 The narrower [Enterprise Dual Response Inbox](enterprise-dual-response-inbox.md) remains the
 recommended landing pad for the current `ERG-003` and `ERG-002` parallel handoff. This all-lane inbox
 is the general fallback when any other enterprise reviewer response arrives first.
+
+To exercise the response-intake path with temporary fixtures before a real response arrives, run:
+
+```sh
+make enterprise-response-intake-drill
+```
+
+See [Enterprise Response Intake Drill](enterprise-response-intake-drill.md).

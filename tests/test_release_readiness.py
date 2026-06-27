@@ -57,6 +57,7 @@ from scripts import (
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     enterprise_response_inbox,
+    enterprise_response_intake_drill,
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
     enterprise_review_send_readiness,
@@ -2139,6 +2140,116 @@ def test_enterprise_response_inbox_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-response-inbox" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_response_intake_drill_is_wired() -> None:
+    report = enterprise_response_intake_drill.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-intake-drill.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    inbox = Path("docs/codex/enterprise-response-inbox.md").read_text(encoding="utf-8")
+    coverage = Path("docs/codex/enterprise-response-normalization-coverage.md").read_text(
+        encoding="utf-8"
+    )
+    source_matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["lane_count"] == 8
+    assert report["dry_run_count"] == 7
+    assert report["normalizer_area_count"] == 8
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["normalizes_fixture_responses"] is True
+    assert report["writes_fixture_normalized_response_temporarily"] is True
+    assert report["restores_fixture_response_state"] is True
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["closes_enterprise_lanes"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert {row["gap"] for row in report["dry_runs"]} == {
+        "ERG-003",
+        "ERG-002",
+        "ERG-005",
+        "ERG-006/ERG-007",
+        "ERG-008",
+        "ERG-009",
+        "ERG-004",
+    }
+    for row in report["dry_runs"]:
+        assert row["valid"] is True
+        assert row["response_restored"] is True
+        assert row["case_count"] >= 6
+        assert row["committed_findings_mutated"] is False
+        assert row["external_review_recorded"] is False
+        assert row["runtime_changes_allowed"] is False
+    assert report["public_positioning"]["valid"] is True
+    assert report["public_positioning"]["area"] == "public-security-product-positioning"
+    assert report["public_positioning"]["finding_namespace"] == (
+        "EXT-PUBLIC-POSITIONING-###"
+    )
+    assert report["public_positioning"]["response_restored"] is True
+    assert report["public_positioning"]["cases"] == {
+        "no_findings_normalizes": True,
+        "wrong_namespace_rejected": True,
+        "missing_findings_statement_rejected": True,
+        "secret_marker_rejected": True,
+        "favorable_fixture_reaches_closure_ready": True,
+        "critical_high_finding_blocks_closure": True,
+    }
+    for phrase in [
+        "Status: fixture drill for enterprise response-intake paths.",
+        "make enterprise-response-intake-drill",
+        "does not record external review",
+        "does not close any enterprise lane",
+        "does not approve runtime behavior",
+        "ERG-010 public/security-product positioning",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-intake-drill:" in makefile
+    assert (
+        "enterprise-response-intake-drill" in release_check_body
+        or "release-check: enterprise-response-intake-drill" in makefile
+    )
+    assert "$(MAKE) enterprise-response-intake-drill" in review_candidate_body
+    assert "make enterprise-response-intake-drill" in readme
+    assert "make enterprise-response-intake-drill" in queue
+    assert "make enterprise-response-intake-drill" in inbox
+    assert "make enterprise-response-intake-drill" in coverage
+    assert "docs/codex/enterprise-response-intake-drill.md" in docs_site
+    assert "docs/codex/enterprise-response-intake-drill.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Response Intake Drill" in review_index
+    assert "enterprise-response-intake-drill" in source_matrix
+    assert "328 - Enterprise response intake drill" in backlog
+    assert "enterprise-response-intake-drill" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-intake-drill" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 

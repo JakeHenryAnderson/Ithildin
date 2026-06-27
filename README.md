@@ -428,6 +428,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-inbox` - create ignored raw-response placeholders and exact
   normalization/dry-run/closure commands for all enterprise response lanes without normalizing
   responses or closing any lane.
+- `make enterprise-response-intake-drill` - run fixture-only response-intake drills across all
+  enterprise lanes, restoring ignored response state and proving no review is recorded or lane is
+  closed.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
