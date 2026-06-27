@@ -20,6 +20,7 @@ Generate the referenced fixture pack first with:
 
 ```sh
 make mission-control-handoff-fixture-pack
+make mission-control-handoff-reference-validator
 ```
 
 Generated fixture output:
@@ -35,6 +36,11 @@ decide whether each payload can be displayed as metadata-only evidence. Ithildin
 execution, policy, approval, and audit authority. Mission Control may display labels, hashes,
 warning chips, safe reason labels, and artifact pointers; it must not execute work, invoke models,
 call Ithildin APIs, close review lanes, or promote artifacts.
+
+The [Mission Control Handoff Reference Validator](mission-control-handoff-reference-validator.md)
+provides the current Ithildin-side oracle for these expected accept/reject results. It is useful for
+Mission Control tests, but it is not a runtime importer and does not approve callbacks into
+Ithildin.
 
 ## Importer Display Contract
 

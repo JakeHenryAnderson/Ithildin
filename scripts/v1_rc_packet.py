@@ -70,6 +70,10 @@ SOURCE_DOCS = [
         ROOT / "docs/codex/mission-control-importer-acceptance-matrix.md",
     ),
     (
+        "10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md",
+        ROOT / "docs/codex/mission-control-handoff-reference-validator.md",
+    ),
+    (
         "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
         ROOT / "docs/codex/v1.0-rc-external-review-prompt.md",
     ),
@@ -209,6 +213,17 @@ def build_packet(repo_root: Path, output_dir: Path) -> dict[str, Any]:
 
 
 def _index_markdown(commit: str, readiness: dict[str, Any]) -> str:
+    reading_order = [name for name, _source in SOURCE_DOCS]
+    reading_order.extend(
+        [
+            "14_V1_RC_ARTIFACTS.md",
+            "15_V1_RC_COMMANDS.md",
+            "v1-rc-artifact-hashes.json",
+        ]
+    )
+    reading_order_lines = [
+        f"{index}. `{name}`" for index, name in enumerate(reading_order, start=1)
+    ]
     return "\n".join(
         [
             "# Ithildin v1.0 RC Packet",
@@ -226,29 +241,7 @@ def _index_markdown(commit: str, readiness: dict[str, Any]) -> str:
             "",
             "## Reading Order",
             "",
-            "1. `01_V1_RC_STATUS.md`",
-            "2. `02_V1_OPERATOR_QUICKSTART.md`",
-            "3. `02A_V1_OPERATOR_TRIAL_CHECKLIST.md`",
-            "4. `02B_V1_OPERATOR_TRIAL_RECORD.md`",
-            "5. `03_V1_WORKBENCH_EVIDENCE_CLOSURE.md`",
-            "6. `04_V1_ASSURANCE_CLOSURE.md`",
-            "7. `05_V1_RC_FEATURE_FREEZE.md`",
-            "8. `06_V1_RC_READINESS_GATE.md`",
-            "9. `07_ENTERPRISE_READINESS_RUNWAY.md`",
-            "10. `07A_ENTERPRISE_REVIEW_SEND_READINESS.md`",
-            "11. `07B_ENTERPRISE_DUAL_REVIEW_HANDOFF.md`",
-            "12. `07C_ENTERPRISE_RESPONSE_STATUS_BOARD.md`",
-            "13. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`",
-            "14. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`",
-            "15. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`",
-            "16. `10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md`",
-            "17. `10C_MISSION_CONTROL_IMPORTER_ACCEPTANCE_MATRIX.md`",
-            "18. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`",
-            "19. `12_V1_RC_FINAL_HANDOFF.md`",
-            "20. `13_V1_RC_POST_REVIEW_TRIAGE.md`",
-            "21. `14_V1_RC_ARTIFACTS.md`",
-            "22. `15_V1_RC_COMMANDS.md`",
-            "23. `v1-rc-artifact-hashes.json`",
+            *reading_order_lines,
             "",
             "This packet is local handoff evidence only. It is not production approval, external",
             "source-review closure, custody-grade audit, sandbox approval, SIEM approval, or",

@@ -120,6 +120,7 @@ from scripts import (
     mission_control_display_review_packet,
     mission_control_handoff_fixture_pack,
     mission_control_handoff_negative_fixtures_check,
+    mission_control_handoff_reference_validator,
     mission_control_handoff_schema_contract_check,
     mission_control_importer_acceptance_matrix_check,
     mission_control_integration_implementation_ticket_check,
@@ -850,7 +851,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 24
+    assert packet["artifact_count"] == 25
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
     trial_checklist = output_dir.joinpath("02A_V1_OPERATOR_TRIAL_CHECKLIST.md").read_text(
         encoding="utf-8"
@@ -888,6 +889,9 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     acceptance_matrix = output_dir.joinpath(
         "10C_MISSION_CONTROL_IMPORTER_ACCEPTANCE_MATRIX.md"
     ).read_text(encoding="utf-8")
+    reference_validator = output_dir.joinpath(
+        "10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md"
+    ).read_text(encoding="utf-8")
     external_prompt = output_dir.joinpath("11_V1_RC_EXTERNAL_REVIEW_PROMPT.md").read_text(
         encoding="utf-8"
     )
@@ -917,12 +921,13 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "15. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
     assert "16. `10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md`" in index
     assert "17. `10C_MISSION_CONTROL_IMPORTER_ACCEPTANCE_MATRIX.md`" in index
-    assert "18. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
-    assert "19. `12_V1_RC_FINAL_HANDOFF.md`" in index
-    assert "20. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
-    assert "21. `14_V1_RC_ARTIFACTS.md`" in index
-    assert "22. `15_V1_RC_COMMANDS.md`" in index
-    assert "23. `v1-rc-artifact-hashes.json`" in index
+    assert "18. `10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md`" in index
+    assert "19. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
+    assert "20. `12_V1_RC_FINAL_HANDOFF.md`" in index
+    assert "21. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
+    assert "22. `14_V1_RC_ARTIFACTS.md`" in index
+    assert "23. `15_V1_RC_COMMANDS.md`" in index
+    assert "24. `v1-rc-artifact-hashes.json`" in index
     assert "Ithildin v1.0 Operator Trial Checklist" in trial_checklist
     assert "Trial Pass Criteria" in trial_checklist
     assert "make release-check" in trial_checklist
@@ -950,6 +955,8 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "make mission-control-handoff-fixture-pack" in fixture_pack
     assert "Mission Control Importer Acceptance Matrix" in acceptance_matrix
     assert "make mission-control-importer-acceptance-matrix-check" in acceptance_matrix
+    assert "Mission Control Handoff Reference Validator" in reference_validator
+    assert "make mission-control-handoff-reference-validator" in reference_validator
     assert "Ithildin v1.0 RC External Review Prompt" in external_prompt
     assert "Blockers before v1.0 local-preview RC labeling" in external_prompt
     assert "Ithildin v1.0 RC Final Handoff" in final_handoff
@@ -975,7 +982,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "make enterprise-dual-response-readiness" in commands
     assert "make enterprise-response-status-board" in commands
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 23
+    assert len(hashes["artifacts"]) == 24
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
@@ -992,10 +999,11 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
         "07C_ENTERPRISE_RESPONSE_STATUS_BOARD.md",
         "08_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
         "09_MISSION_CONTROL_HANDOFF_SCHEMA.md",
-            "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
-            "10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md",
-            "10C_MISSION_CONTROL_IMPORTER_ACCEPTANCE_MATRIX.md",
-            "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
+        "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
+        "10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md",
+        "10C_MISSION_CONTROL_IMPORTER_ACCEPTANCE_MATRIX.md",
+        "10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md",
+        "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
         "12_V1_RC_FINAL_HANDOFF.md",
         "13_V1_RC_POST_REVIEW_TRIAGE.md",
         "14_V1_RC_ARTIFACTS.md",
@@ -4840,6 +4848,84 @@ def test_mission_control_importer_acceptance_matrix_is_wired() -> None:
     )
     assert "mission-control-importer-acceptance-matrix" in fixture_doc
     assert "mission-control-importer-acceptance-matrix" in implementation_ticket
+
+
+def test_mission_control_handoff_reference_validator_is_wired(tmp_path: Path) -> None:
+    fixture_dir = tmp_path / "mission-control-handoff-fixtures"
+    mission_control_handoff_fixture_pack.build_fixture_pack(Path.cwd(), fixture_dir)
+    report = mission_control_handoff_reference_validator.build_report(
+        Path.cwd(), fixture_dir=fixture_dir
+    )
+    doc = Path("docs/codex/mission-control-handoff-reference-validator.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    v1_packet = Path("scripts/v1_rc_packet.py").read_text(encoding="utf-8")
+    fixture_doc = Path("docs/codex/mission-control-handoff-fixture-pack.md").read_text(
+        encoding="utf-8"
+    )
+    matrix_doc = Path("docs/codex/mission-control-importer-acceptance-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    implementation_ticket = Path(
+        "docs/codex/mission-control-integration-implementation-ticket.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["valid_fixture_id"] == "MC-HANDOFF-VALID-001"
+    assert report["valid_fixture_accepted"] is True
+    assert report["negative_case_count"] == 14
+    assert report["negative_cases_rejected"] == 14
+    assert report["safe_reason_labels_only"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: reference validator for Mission Control handoff display/import fixtures.",
+        "make mission-control-handoff-reference-validator",
+        "display-only validation oracle",
+        "does not approve Mission Control runtime importer behavior",
+        "does not call Mission Control",
+        "MC-HANDOFF-VALID-001",
+        "MC-HANDOFF-NEG-014",
+    ]:
+        assert phrase in doc
+    assert "mission-control-handoff-reference-validator:" in makefile
+    assert (
+        "mission-control-handoff-reference-validator" in release_check_body
+        or "release-check: mission-control-handoff-reference-validator" in makefile
+    )
+    assert "$(MAKE) mission-control-handoff-reference-validator" in review_candidate_body
+    assert "make mission-control-handoff-reference-validator" in readme
+    assert "docs/codex/mission-control-handoff-reference-validator.md" in docs_site
+    assert (
+        "docs/codex/mission-control-handoff-reference-validator.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/mission-control-handoff-reference-validator.md" in v1_packet
+    assert "Mission Control Handoff Reference Validator" in review_index
+    assert "mission-control-handoff-reference-validator" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-handoff-reference-validator" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "mission-control-handoff-reference-validator" in fixture_doc
+    assert "mission-control-handoff-reference-validator" in matrix_doc
+    assert "mission-control-handoff-reference-validator" in implementation_ticket
 
 
 def test_mission_control_display_review_packet_is_wired(tmp_path: Path) -> None:

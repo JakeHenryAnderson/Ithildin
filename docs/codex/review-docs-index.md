@@ -309,6 +309,7 @@ externally closed.
 - [Mission Control Handoff Negative Fixtures](mission-control-handoff-negative-fixtures.md)
 - [Mission Control Handoff Fixture Pack](mission-control-handoff-fixture-pack.md)
 - [Mission Control Importer Acceptance Matrix](mission-control-importer-acceptance-matrix.md)
+- [Mission Control Handoff Reference Validator](mission-control-handoff-reference-validator.md)
 - [Sandbox/VM Worker Boundary Charter](sandbox-vm-worker-boundary-charter.md)
 - [Sandbox/VM Profile Contract](sandbox-vm-profile-contract.md)
 - [Sandbox/VM Preflight Contract](sandbox-vm-preflight-contract.md)

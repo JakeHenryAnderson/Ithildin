@@ -16,6 +16,7 @@ Generate the fixture pack with:
 make mission-control-handoff-fixture-pack
 make mission-control-handoff-fixture-pack-check
 make mission-control-importer-acceptance-matrix-check
+make mission-control-handoff-reference-validator
 ```
 
 Generated output:
@@ -34,6 +35,11 @@ The importer acceptance matrix in
 [mission-control-importer-acceptance-matrix.md](mission-control-importer-acceptance-matrix.md)
 maps each generated fixture to the expected display/import state, warning labels, safe rejection
 reasons, and forbidden fields for the future Mission Control-side tests.
+
+The [Mission Control Handoff Reference Validator](mission-control-handoff-reference-validator.md)
+is the Ithildin-side oracle for the generated fixtures. It accepts the positive metadata-only
+fixture, rejects the negative fixtures with safe reason labels, and still does not approve runtime
+Mission Control importer behavior.
 
 The pack contains:
 

@@ -256,6 +256,9 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-importer-acceptance-matrix-check` - validate the future Mission Control
   display-only importer acceptance matrix against the generated handoff fixtures without approving
   runtime importer behavior.
+- `make mission-control-handoff-reference-validator` - run the Ithildin-side reference validator
+  for the generated Mission Control display/import fixtures without calling Mission Control or
+  approving runtime importer behavior.
 - `make sandbox-promotion-evidence-contract-check` - validate the future trusted-host promotion
   evidence contract while confirming host promotion remains unimplemented.
 - `make trusted-host-promotion-decision-intake-check` - validate the post-RC decision-intake
@@ -1277,6 +1280,11 @@ The Mission Control importer acceptance matrix is
 and is checked with `make mission-control-importer-acceptance-matrix-check`; it maps the generated
 positive and negative handoff fixtures to expected display-only importer states, warning labels,
 safe rejection reasons, and forbidden fields while keeping runtime importer behavior blocked.
+The Mission Control handoff reference validator is
+[docs/codex/mission-control-handoff-reference-validator.md](docs/codex/mission-control-handoff-reference-validator.md)
+and is checked with `make mission-control-handoff-reference-validator`; it validates the generated
+fixture pack as a display-only oracle for future Mission Control tests without calling Mission
+Control, calling Ithildin APIs, approving callbacks, or approving runtime importer behavior.
 Generate the focused Mission Control display review packet with
 `make mission-control-display-review-packet`; it bundles the display proposal, handoff schema,
 negative fixtures, Hello World seed evidence, command evidence, and artifact hashes for future

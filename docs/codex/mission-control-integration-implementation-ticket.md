@@ -37,6 +37,7 @@ Use these Ithildin artifacts as the implementation source of truth:
 - `docs/codex/mission-control-handoff-negative-fixtures.md`
 - `docs/codex/mission-control-handoff-fixture-pack.md`
 - `docs/codex/mission-control-importer-acceptance-matrix.md`
+- `docs/codex/mission-control-handoff-reference-validator.md`
 - `docs/codex/hello-world-mission-control-handoff.md`
 - `var/review-packets/v3/mission-control-display/`
 - `var/review-packets/v3/hello-world-mission-control-handoff/mission-control-handoff.json`
@@ -99,6 +100,7 @@ make mission-control-display-review-packet
 make hello-world-mission-control-handoff-check
 make mission-control-handoff-fixture-pack-check
 make mission-control-importer-acceptance-matrix-check
+make mission-control-handoff-reference-validator
 ```
 
 Run from the Mission Control repository after future implementation, adjusted only for the current
