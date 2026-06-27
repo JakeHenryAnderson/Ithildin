@@ -40,3 +40,6 @@ text into ignored local response files.
 
 Use `make enterprise-response-status-board` to see whether any normalized responses are present and
 which lane-specific dry-run or closure command should be used next.
+
+Use `make enterprise-response-inbox` to create ignored raw-response placeholders and exact
+normalization commands for all enterprise lanes after this coverage gate passes.

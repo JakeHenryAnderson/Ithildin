@@ -425,6 +425,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-normalization-coverage` - verify every enterprise response-board lane
   has a supported external-response normalization area and finding namespace without normalizing
   responses or closing lanes.
+- `make enterprise-response-inbox` - create ignored raw-response placeholders and exact
+  normalization/dry-run/closure commands for all enterprise response lanes without normalizing
+  responses or closing any lane.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record

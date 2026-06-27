@@ -25,6 +25,13 @@ Validate that every queued response lane is supported by the shared response nor
 make enterprise-response-normalization-coverage
 ```
 
+Create ignored raw-response placeholders and exact normalization commands for all queued response
+lanes with:
+
+```sh
+make enterprise-response-inbox
+```
+
 ## Queue Rules
 
 - Every row must point to an existing evidence packet or intake document.

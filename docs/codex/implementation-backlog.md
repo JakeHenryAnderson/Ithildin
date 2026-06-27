@@ -193,6 +193,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 324 - Enterprise dual-review outbox | Done | [enterprise-dual-review-outbox.md](enterprise-dual-review-outbox.md), `make enterprise-dual-review-outbox` |
 | 325 - Enterprise dual-response inbox | Done | [enterprise-dual-response-inbox.md](enterprise-dual-response-inbox.md), `make enterprise-dual-response-inbox` |
 | 326 - Enterprise response normalization coverage | Done | [enterprise-response-normalization-coverage.md](enterprise-response-normalization-coverage.md), `make enterprise-response-normalization-coverage` |
+| 327 - Enterprise all-lane response inbox | Done | [enterprise-response-inbox.md](enterprise-response-inbox.md), `make enterprise-response-inbox` |
 | 173 - External review response intake template v2 | Done | [external-review-response-intake-template-v2.md](external-review-response-intake-template-v2.md), `make external-response-template-check` |
 | 174 - Review packet source pointers | Done | [review-packet-source-pointers.md](review-packet-source-pointers.md), `make review-packet-source-pointers` |
 | 175 - v0.5 threat model delta | Done | [v0.5-threat-model-delta.md](v0.5-threat-model-delta.md), `make v05-threat-model-delta-check` |

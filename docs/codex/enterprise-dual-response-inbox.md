@@ -16,6 +16,7 @@ make enterprise-dual-response-inbox-check
 
 Before using lane-specific normalization commands, `make enterprise-response-normalization-coverage`
 verifies that every enterprise response lane has a supported normalizer area and finding namespace.
+For a general response landing pad covering all enterprise lanes, use `make enterprise-response-inbox`.
 
 The generated inbox lives under
 `var/review-runs/enterprise-dual-response-inbox/` and creates raw-response placeholders for
@@ -60,3 +61,6 @@ make mission-control-display-disposition-closure-check
 Only a later committed triage/update record may move `ERG-003` or `ERG-002` after the lane-specific
 checks prove the normalized response is favorable. This inbox is just the local landing pad that
 keeps the first response-handling step repeatable and secret-free.
+
+If a response arrives for a lane other than `ERG-003` or `ERG-002`, use
+[Enterprise Response Inbox](enterprise-response-inbox.md) instead of this dual-lane inbox.

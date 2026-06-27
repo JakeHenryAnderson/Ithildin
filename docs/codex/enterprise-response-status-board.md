@@ -18,6 +18,12 @@ Check that every board lane is supported by the shared response normalizer with:
 make enterprise-response-normalization-coverage
 ```
 
+Create ignored raw-response placeholders for every board lane with:
+
+```sh
+make enterprise-response-inbox
+```
+
 For the current parallel `ERG-003` / `ERG-002` handoff, use
 `make enterprise-dual-response-inbox` to create ignored raw-response placeholders before running
 lane-specific normalization and dry-run commands.
@@ -65,4 +71,5 @@ It is status aggregation over existing fail-closed closure gates only.
 
 The companion normalization coverage gate verifies that every lane on this board has a supported
 normalization area and finding namespace before raw reviewer text is pasted into ignored local
-response files.
+response files. The all-lane response inbox then creates the ignored placeholders and exact
+lane-specific commands for whichever enterprise response arrives first.

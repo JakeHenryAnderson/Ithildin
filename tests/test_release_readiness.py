@@ -56,6 +56,7 @@ from scripts import (
     enterprise_next_review_ready_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
+    enterprise_response_inbox,
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
     enterprise_review_send_readiness,
@@ -2000,6 +2001,144 @@ def test_enterprise_response_normalization_coverage_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-response-normalization-coverage" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_response_inbox_is_wired() -> None:
+    report = enterprise_response_inbox.build_check_report(Path.cwd())
+    output_dir = Path(report["output_dir"])
+    payload = json.loads((output_dir / "enterprise-response-inbox.json").read_text())
+    hashes = json.loads(
+        (output_dir / "enterprise-response-inbox-artifact-hashes.json").read_text()
+    )
+    hashed_paths = {artifact["path"] for artifact in hashes["artifacts"]}
+    index_text = (output_dir / "ENTERPRISE_RESPONSE_INBOX.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/enterprise-response-inbox.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    status_board = Path("docs/codex/enterprise-response-status-board.md").read_text(
+        encoding="utf-8"
+    )
+    coverage_doc = Path(
+        "docs/codex/enterprise-response-normalization-coverage.md"
+    ).read_text(encoding="utf-8")
+    dual_inbox = Path("docs/codex/enterprise-dual-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    source_matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["lane_count"] == 8
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["artifact_hashes_match_files"] is True
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["closes_enterprise_lanes"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert payload["inbox_type"] == "ithildin.enterprise_response_inbox"
+    assert [lane["gap"] for lane in payload["lanes"]] == [
+        "ERG-003",
+        "ERG-002",
+        "ERG-005",
+        "ERG-006-ERG-007",
+        "ERG-008",
+        "ERG-009",
+        "ERG-004",
+        "ERG-010",
+    ]
+    assert {lane["normalization_area"] for lane in payload["lanes"]} == {
+        "sandbox-vm-static-preflight",
+        "mission-control-display",
+        "trusted-host-promotion",
+        "production-identity-storage",
+        "siem-export-adapter",
+        "compliance-mapping",
+        "sandbox-vm-live-poc",
+        "public-security-product-positioning",
+    }
+    assert {lane["finding_namespace"] for lane in payload["lanes"]} >= {
+        "EXT-SVP-###",
+        "EXT-MC-DISPLAY-###",
+        "EXT-PUBLIC-POSITIONING-###",
+    }
+    for lane in payload["lanes"]:
+        assert lane["reviewed_packet_hash"].startswith("sha256:")
+        assert lane["raw_response_file"] in hashed_paths
+        assert lane["response_kit"].startswith("var/review-packets/v3/")
+        assert lane["closure_gate"].startswith("make ")
+    assert "RAW_RESPONSE_ERG-003.md" in hashed_paths
+    assert "RAW_RESPONSE_ERG-010.md" in hashed_paths
+    assert "enterprise-response-inbox-artifact-hashes.json" not in hashed_paths
+    for phrase in [
+        "Status: generated response inbox for all enterprise external-review lanes.",
+        "make enterprise-response-inbox",
+        "make enterprise-response-inbox-check",
+        "does not normalize responses",
+        "does not write normalized response files",
+        "does not record external review",
+        "does not mutate findings",
+        "does not close any enterprise lane",
+        "`ERG-010`: `public-security-product-positioning`",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Response Inbox",
+        "RAW_RESPONSE_ERG-003.md",
+        "RAW_RESPONSE_ERG-010.md",
+        "EXT-PUBLIC-POSITIONING-###",
+        "scripts/external_response_normalize.py",
+        "make public-security-product-positioning-decision-closure-check",
+        "runtime_changes_allowed: `false`",
+        "closes_enterprise_lanes: `false`",
+    ]:
+        assert phrase in index_text
+    assert "enterprise-response-inbox:" in makefile
+    assert "enterprise-response-inbox-check:" in makefile
+    assert (
+        "enterprise-response-inbox-check" in release_check_body
+        or "release-check: enterprise-response-inbox-check" in makefile
+    )
+    assert "$(MAKE) enterprise-response-inbox" in review_candidate_body
+    assert "make enterprise-response-inbox" in readme
+    assert "make enterprise-response-inbox" in queue
+    assert "make enterprise-response-inbox" in status_board
+    assert "make enterprise-response-inbox" in coverage_doc
+    assert "make enterprise-response-inbox" in dual_inbox
+    assert "docs/codex/enterprise-response-inbox.md" in docs_site
+    assert "docs/codex/enterprise-response-inbox.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Response Inbox" in review_index
+    assert "enterprise-response-inbox" in source_matrix
+    assert "327 - Enterprise all-lane response inbox" in backlog
+    assert "enterprise-response-inbox-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-inbox" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
