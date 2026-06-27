@@ -2212,6 +2212,20 @@ def test_enterprise_response_status_board_is_wired() -> None:
     review_candidate_body = makefile.partition("review-candidate:")[2].partition(
         "\n\n"
     )[0]
+    snapshot_dir = Path("var/review-runs/enterprise-response-status-board")
+    enterprise_response_status_board.write_snapshot(report, snapshot_dir)
+    snapshot_text = (
+        snapshot_dir / "ENTERPRISE_RESPONSE_STATUS_BOARD.md"
+    ).read_text(encoding="utf-8")
+    snapshot_json_text = (
+        snapshot_dir / "enterprise-response-status-board.json"
+    ).read_text(encoding="utf-8")
+    snapshot_hashes = json.loads(
+        (snapshot_dir / "enterprise-response-status-board-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    snapshot_hashed_paths = {artifact["path"] for artifact in snapshot_hashes["artifacts"]}
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
@@ -2252,6 +2266,7 @@ def test_enterprise_response_status_board_is_wired() -> None:
         "Status: read-only status board for enterprise normalized-response paths.",
         "Current governed tool count: `24`.",
         "make enterprise-response-status-board",
+        "make enterprise-response-status-board-snapshot",
         "`ERG-003`",
         "`ERG-002`",
         "`ERG-010`",
@@ -2264,10 +2279,40 @@ def test_enterprise_response_status_board_is_wired() -> None:
         "does not approve trusted-host promotion",
     ]:
         assert phrase in doc
+    for phrase in [
+        "Enterprise Response Status Board Snapshot",
+        "ignored generated snapshot",
+        "Response present count: `0`",
+        "Closure ready count: `0`",
+        "ERG-003",
+        "ERG-002",
+        "wait_for_external_response",
+        "does not normalize raw reviewer text",
+        "does not close any",
+        "runtime_changes_allowed: `false`",
+    ]:
+        assert phrase in snapshot_text
+    for phrase in [
+        '"schema_version": "1"',
+        '"response_present_count": 0',
+        '"closure_ready_count": 0',
+        '"runtime_changes_allowed": false',
+        '"new_power_classes_allowed": false',
+    ]:
+        assert phrase in snapshot_json_text
+    assert {
+        "ENTERPRISE_RESPONSE_STATUS_BOARD.md",
+        "enterprise-response-status-board.json",
+    } <= snapshot_hashed_paths
+    assert "enterprise-response-status-board-artifact-hashes.json" not in snapshot_hashed_paths
+    assert snapshot_hashes["hash_manifest_self_hashed"] is False
     assert "enterprise-response-status-board:" in makefile
+    assert "enterprise-response-status-board-snapshot:" in makefile
     assert "enterprise-response-status-board" in release_check_body
     assert "$(MAKE) enterprise-response-status-board" in review_candidate_body
+    assert "$(MAKE) enterprise-response-status-board-snapshot" in review_candidate_body
     assert "make enterprise-response-status-board" in readme
+    assert "make enterprise-response-status-board-snapshot" in readme
     assert "make enterprise-response-status-board" in queue
     assert "make enterprise-response-status-board" in dual_response
     assert "docs/codex/enterprise-response-status-board.md" in docs_site

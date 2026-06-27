@@ -336,6 +336,9 @@ enterprise-dual-response-readiness:
 enterprise-response-status-board:
 	uv run python scripts/enterprise_response_status_board.py
 
+enterprise-response-status-board-snapshot:
+	uv run python scripts/enterprise_response_status_board.py --write
+
 enterprise-response-normalization-coverage:
 	uv run python scripts/enterprise_response_normalization_coverage.py
 
@@ -1235,6 +1238,7 @@ review-candidate:
 	$(MAKE) enterprise-dual-response-inbox
 	$(MAKE) enterprise-dual-response-readiness
 	$(MAKE) enterprise-response-status-board
+	$(MAKE) enterprise-response-status-board-snapshot
 	$(MAKE) enterprise-response-normalization-coverage
 	$(MAKE) enterprise-response-inbox
 	$(MAKE) enterprise-response-intake-drill

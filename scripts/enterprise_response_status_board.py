@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import shutil
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -26,6 +28,10 @@ from scripts import (
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-response-status-board.md"
 DOC_TITLE = "Enterprise Response Status Board"
+DEFAULT_OUTPUT_DIR = Path("var/review-runs/enterprise-response-status-board")
+SNAPSHOT_NAME = "ENTERPRISE_RESPONSE_STATUS_BOARD.md"
+JSON_NAME = "enterprise-response-status-board.json"
+HASH_NAME = "enterprise-response-status-board-artifact-hashes.json"
 
 ClosureBuilder = Callable[[Path], dict[str, Any]]
 
@@ -33,14 +39,35 @@ ClosureBuilder = Callable[[Path], dict[str, Any]]
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--write", action="store_true")
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args()
 
     report = build_report(ROOT)
+    if args.write:
+        output_dir = write_snapshot(report, args.output_dir)
+        print(f"Built enterprise response status board snapshot at {output_dir}")
+        return 0 if report["valid"] else 1
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
         print(render_report(report))
     return 0 if report["valid"] else 1
+
+
+def write_snapshot(report: dict[str, Any], output_dir: Path) -> Path:
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / SNAPSHOT_NAME).write_text(render_snapshot(report), encoding="utf-8")
+    (output_dir / JSON_NAME).write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    hashes = _artifact_hashes(output_dir)
+    (output_dir / HASH_NAME).write_text(
+        json.dumps(hashes, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return output_dir
 
 
 def build_report(repo_root: Path) -> dict[str, Any]:
@@ -155,10 +182,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"response status board doc is missing phrase: {phrase}")
     if "enterprise-response-status-board:" not in makefile:
         failures.append("Make target is missing: enterprise-response-status-board")
+    if "enterprise-response-status-board-snapshot:" not in makefile:
+        failures.append("Make target is missing: enterprise-response-status-board-snapshot")
     if "enterprise-response-status-board" not in release_check_body:
         failures.append("enterprise-response-status-board is missing from release-check")
     if "$(MAKE) enterprise-response-status-board" not in review_candidate_body:
         failures.append("enterprise-response-status-board is missing from review-candidate")
+    if "$(MAKE) enterprise-response-status-board-snapshot" not in review_candidate_body:
+        failures.append(
+            "enterprise-response-status-board-snapshot is missing from review-candidate"
+        )
     if "make enterprise-response-status-board" not in readme:
         failures.append("README is missing enterprise response status board command")
     if DOC_REL not in docs_site:
@@ -273,6 +306,78 @@ def render_report(report: dict[str, Any]) -> str:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])
     return "\n".join(lines)
+
+
+def render_snapshot(report: dict[str, Any]) -> str:
+    lane_rows = "\n".join(
+        "| {gap} | `{present}` | `{ready}` | `{next_step}` | `{intake}` |".format(
+            gap=row["gap"],
+            present=str(row["response_present"]).lower(),
+            ready=str(row["closure_ready"]).lower(),
+            next_step=row["recommended_next"],
+            intake=row["intake_doc"],
+        )
+        for row in report["rows"]
+    )
+    public_positioning = str(
+        report["public_security_product_positioning_allowed"]
+    ).lower()
+    return f"""# Enterprise Response Status Board Snapshot
+
+Status: ignored generated snapshot of enterprise normalized-response state.
+
+This snapshot is read-only operator evidence. It does not normalize raw reviewer text, does not
+write response files, does not mutate findings, does not record external review, does not close any
+enterprise lane, and does not approve runtime behavior.
+
+Tool count: `{report['tool_count']}`
+
+Selected capability: `{report['selected_capability']}`
+
+Response present count: `{report['response_present_count']}`
+
+Closure ready count: `{report['closure_ready_count']}`
+
+## Lanes
+
+| Lane | response_present | closure_ready | recommended_next | intake_doc |
+| --- | --- | --- | --- | --- |
+{lane_rows}
+
+## Boundary Flags
+
+- runtime_changes_allowed: `{str(report['runtime_changes_allowed']).lower()}`
+- mission_control_runtime_allowed: `{str(report['mission_control_runtime_allowed']).lower()}`
+- live_vm_inspection_allowed: `{str(report['live_vm_inspection_allowed']).lower()}`
+- local_model_invocation_allowed: `{str(report['local_model_invocation_allowed']).lower()}`
+- sandbox_orchestration_allowed: `{str(report['sandbox_orchestration_allowed']).lower()}`
+- trusted_host_promotion_allowed: `{str(report['trusted_host_promotion_allowed']).lower()}`
+- siem_adapter_allowed: `{str(report['siem_adapter_allowed']).lower()}`
+- compliance_automation_allowed: `{str(report['compliance_automation_allowed']).lower()}`
+- public_security_product_positioning_allowed: `{public_positioning}`
+- new_power_classes_allowed: `{str(report['new_power_classes_allowed']).lower()}`
+"""
+
+
+def _artifact_hashes(output_dir: Path) -> dict[str, Any]:
+    artifacts = []
+    for path in sorted(output_dir.rglob("*")):
+        if not path.is_file() or path.name == HASH_NAME:
+            continue
+        data = path.read_bytes()
+        artifacts.append(
+            {
+                "path": path.relative_to(output_dir).as_posix(),
+                "bytes": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+        )
+    return {
+        "schema_version": "1",
+        "artifacts": artifacts,
+        "artifact_count": len(artifacts),
+        "hash_manifest_self_hashed": False,
+    }
 
 
 def _read(path: Path) -> str:

@@ -436,6 +436,9 @@ checked with `make control-mapping-readiness`.
   the current dual enterprise review handoff without recording review or closing either lane.
 - `make enterprise-response-status-board` - summarize normalized-response presence across all
   enterprise review lanes and fail closed until any present response is handled by lane intake.
+- `make enterprise-response-status-board-snapshot` - write an ignored, hashed, read-only snapshot of
+  the enterprise response status board for operator handoff without normalizing responses or closing
+  lanes.
 - `make enterprise-response-normalization-coverage` - verify every enterprise response-board lane
   has a supported external-response normalization area and finding namespace without normalizing
   responses or closing lanes.

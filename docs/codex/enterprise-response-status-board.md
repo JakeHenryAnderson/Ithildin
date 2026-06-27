@@ -12,6 +12,12 @@ Run:
 make enterprise-response-status-board
 ```
 
+Write an ignored, hashed operator snapshot with:
+
+```sh
+make enterprise-response-status-board-snapshot
+```
+
 Check that every board lane is supported by the shared response normalizer with:
 
 ```sh
@@ -78,3 +84,7 @@ The companion normalization coverage gate verifies that every lane on this board
 normalization area and finding namespace before raw reviewer text is pasted into ignored local
 response files. The all-lane response inbox then creates the ignored placeholders and exact
 lane-specific commands for whichever enterprise response arrives first.
+
+The optional snapshot is written under `var/review-runs/enterprise-response-status-board/` and is
+operator handoff evidence only. It does not normalize responses, write normalized response files,
+record external review, mutate findings, close lanes, or approve runtime behavior.
