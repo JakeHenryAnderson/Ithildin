@@ -54,6 +54,7 @@ from scripts import (
     enterprise_next_review_ready_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
+    enterprise_response_status_board,
     enterprise_review_send_readiness,
     enterprise_sandbox_control_plane_readiness_check,
     evidence_confusion_gate,
@@ -1574,6 +1575,91 @@ def test_enterprise_dual_response_readiness_is_wired() -> None:
     assert "docs/codex/enterprise-dual-response-readiness.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Dual Response Readiness" in review_index
     assert "enterprise-dual-response-readiness" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_response_status_board_is_wired() -> None:
+    report = enterprise_response_status_board.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-status-board.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    dual_response = Path("docs/codex/enterprise-dual-response-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["lane_count"] == 8
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert {row["gap"] for row in report["rows"]} == {
+        "ERG-003",
+        "ERG-002",
+        "ERG-005",
+        "ERG-006/ERG-007",
+        "ERG-008",
+        "ERG-009",
+        "ERG-004",
+        "ERG-010",
+    }
+    for row in report["rows"]:
+        assert row["response_present"] is False
+        assert row["closure_ready"] is False
+        assert row["closure_valid"] is True
+        assert row["recommended_next"] == "wait_for_external_response"
+        assert row["mutates_findings"] is False
+        assert row["closes_external_review"] is False
+    for phrase in [
+        "Status: read-only status board for enterprise normalized-response paths.",
+        "Current governed tool count: `24`.",
+        "make enterprise-response-status-board",
+        "`ERG-003`",
+        "`ERG-002`",
+        "`ERG-010`",
+        "does not normalize raw reviewer text",
+        "does not write response files",
+        "does not mutate findings",
+        "does not close any enterprise lane",
+        "does not approve Mission Control runtime behavior",
+        "does not approve live VM/container inspection",
+        "does not approve trusted-host promotion",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-status-board:" in makefile
+    assert "enterprise-response-status-board" in release_check_body
+    assert "$(MAKE) enterprise-response-status-board" in review_candidate_body
+    assert "make enterprise-response-status-board" in readme
+    assert "make enterprise-response-status-board" in queue
+    assert "make enterprise-response-status-board" in dual_response
+    assert "docs/codex/enterprise-response-status-board.md" in docs_site
+    assert "docs/codex/enterprise-response-status-board.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Response Status Board" in review_index
+    assert "enterprise-response-status-board" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

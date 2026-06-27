@@ -414,6 +414,8 @@ checked with `make control-mapping-readiness`.
   recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
 - `make enterprise-dual-response-readiness` - summarize whether normalized responses are present for
   the current dual enterprise review handoff without recording review or closing either lane.
+- `make enterprise-response-status-board` - summarize normalized-response presence across all
+  enterprise review lanes and fail closed until any present response is handled by lane intake.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -989,6 +991,10 @@ The dual-response readiness summary is
 [docs/codex/enterprise-dual-response-readiness.md](docs/codex/enterprise-dual-response-readiness.md),
 checked with `make enterprise-dual-response-readiness`; it reports whether normalized review
 responses are present and which lane-specific dry-run command should run next.
+The enterprise response status board is
+[docs/codex/enterprise-response-status-board.md](docs/codex/enterprise-response-status-board.md),
+checked with `make enterprise-response-status-board`; it aggregates normalized-response state for
+all enterprise review lanes without recording review, mutating findings, or closing lanes.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

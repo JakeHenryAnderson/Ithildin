@@ -250,6 +250,7 @@ externally closed.
 - [Enterprise Review Send Readiness](enterprise-review-send-readiness.md)
 - [Enterprise Dual Review Handoff](enterprise-dual-review-handoff.md)
 - [Enterprise Dual Response Readiness](enterprise-dual-response-readiness.md)
+- [Enterprise Response Status Board](enterprise-response-status-board.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)

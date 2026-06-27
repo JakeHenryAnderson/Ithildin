@@ -23,6 +23,9 @@ send-ready enterprise reviews:
 It also runs the existing lane-specific dry-run checks and reports the next safe operator command
 for each lane.
 
+For all enterprise review lanes, use `make enterprise-response-status-board`. That board aggregates
+normalized-response presence without recording review or closing any lane.
+
 This check does not record review, does not mutate findings, does not close either lane, does not approve Mission Control runtime behavior, does not approve live VM/container inspection, and does not approve local model invocation.
 
 ## Expected No-Response State

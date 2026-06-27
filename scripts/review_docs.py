@@ -265,6 +265,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-review-send-readiness.md",
     "docs/codex/enterprise-dual-review-handoff.md",
     "docs/codex/enterprise-dual-response-readiness.md",
+    "docs/codex/enterprise-response-status-board.md",
     "docs/codex/enterprise-sandbox-control-plane-readiness.md",
     "docs/codex/post-rc-decision-gate.md",
     "docs/codex/post-rc-decision-record-template.md",
