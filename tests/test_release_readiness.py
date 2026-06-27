@@ -49,6 +49,7 @@ from scripts import (
     docs_claims_public_preview_disposition_closure_check,
     enterprise_dual_response_readiness,
     enterprise_dual_review_handoff,
+    enterprise_dual_review_outbox,
     enterprise_external_review_queue_check,
     enterprise_next_review_handoff,
     enterprise_next_review_ready_check,
@@ -1519,6 +1520,107 @@ def test_enterprise_dual_review_handoff_is_wired() -> None:
     assert "docs/codex/enterprise-dual-review-handoff.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Dual Review Handoff" in review_index
     assert "enterprise-dual-review-handoff-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_dual_review_outbox_is_wired() -> None:
+    report = enterprise_dual_review_outbox.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-dual-review-outbox.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    handoff = Path("docs/codex/enterprise-dual-review-handoff.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-dual-review-outbox")
+    generated = generated_dir / "ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md"
+    generated_json = generated_dir / "enterprise-dual-review-outbox.json"
+    generated_hashes = json.loads(
+        (generated_dir / "enterprise-dual-review-outbox-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["copied_packet_count"] == 2
+    assert report["artifact_hashes_match_files"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    for phrase in [
+        "Status: generated send-ready outbox for the current two enterprise reviews.",
+        "make enterprise-dual-review-outbox",
+        "make enterprise-dual-review-outbox-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record external review",
+        "does not close either lane",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Dual Review Outbox",
+        "Send-ready copy root",
+        "ERG-003",
+        "ERG-002",
+        "runtime_changes_allowed: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"outbox_type": "ithildin.enterprise_dual_review_outbox"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"runtime_changes_allowed": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md",
+        "enterprise-dual-review-outbox.json",
+        "ERG-003/00_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_INDEX.md",
+        "ERG-003/01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
+        "ERG-003/sandbox-vm-static-preflight-external-review-artifact-hashes.json",
+        "ERG-002/00_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_INDEX.md",
+        "ERG-002/01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+        "ERG-002/mission-control-display-external-review-artifact-hashes.json",
+    } <= hashed_paths
+    assert "enterprise-dual-review-outbox-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-dual-review-outbox:" in makefile
+    assert "enterprise-dual-review-outbox-check:" in makefile
+    assert "enterprise-dual-review-outbox-check" in release_check_body
+    assert "$(MAKE) enterprise-dual-review-outbox" in review_candidate_body
+    assert "make enterprise-dual-review-outbox" in readme
+    assert "enterprise-dual-review-outbox.md" in queue
+    assert "enterprise-dual-review-outbox" in handoff
+    assert "docs/codex/enterprise-dual-review-outbox.md" in docs_site
+    assert "docs/codex/enterprise-dual-review-outbox.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Dual Review Outbox" in review_index
+    assert "enterprise-dual-review-outbox-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 
@@ -13689,6 +13791,7 @@ def test_reviewer_artifact_manifest_is_wired() -> None:
     assert "make v06-review-dispatch-packets" in report["required_commands"]
     assert "make v1-rc-packet" in report["required_commands"]
     assert "make enterprise-dual-review-handoff" in report["required_commands"]
+    assert "make enterprise-dual-review-outbox" in report["required_commands"]
     assert "make enterprise-dual-response-readiness" in report["required_commands"]
     assert "make enterprise-response-status-board" in report["required_commands"]
     assert (
@@ -13709,6 +13812,14 @@ def test_reviewer_artifact_manifest_is_wired() -> None:
     ]
     assert (
         "var/review-packets/v3/enterprise-dual-review-handoff/enterprise-dual-review-handoff-artifact-hashes.json"
+        in report["generated_artifacts"]
+    )
+    assert (
+        "var/review-packets/v3/enterprise-dual-review-outbox/"
+        "ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md"
+    ) in report["generated_artifacts"]
+    assert (
+        "var/review-packets/v3/enterprise-dual-review-outbox/enterprise-dual-review-outbox-artifact-hashes.json"
         in report["generated_artifacts"]
     )
     assert any(

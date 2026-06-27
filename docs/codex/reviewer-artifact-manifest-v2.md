@@ -1,8 +1,8 @@
 # Reviewer Artifact Manifest v2
 
 Task 172 added `make reviewer-artifact-manifest`. It now writes a machine-readable inventory for
-the current v1.0 local-preview RC packet, the current enterprise handoff packets, and historical
-review automation artifacts under ignored `var/review-packets/`.
+the current v1.0 local-preview RC packet, the current enterprise handoff/outbox packets, and
+historical review automation artifacts under ignored `var/review-packets/`.
 
 The manifest records:
 

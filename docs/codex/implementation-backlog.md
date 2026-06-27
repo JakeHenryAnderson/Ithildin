@@ -190,6 +190,7 @@ closure and decision-preparation tasks, not new governed tool powers.
 | 170 - No-new-powers release guardrail v2 | Done | [no-new-powers-guardrail.md](no-new-powers-guardrail.md), `make no-new-powers-guardrail` |
 | 171 - Source review transcript packet | Done | [source-review-transcript-packet.md](source-review-transcript-packet.md), `make source-review-transcript-packet` |
 | 172 - Reviewer artifact manifest v2 | Done | [reviewer-artifact-manifest-v2.md](reviewer-artifact-manifest-v2.md), `make reviewer-artifact-manifest` |
+| 324 - Enterprise dual-review outbox | Done | [enterprise-dual-review-outbox.md](enterprise-dual-review-outbox.md), `make enterprise-dual-review-outbox` |
 | 173 - External review response intake template v2 | Done | [external-review-response-intake-template-v2.md](external-review-response-intake-template-v2.md), `make external-response-template-check` |
 | 174 - Review packet source pointers | Done | [review-packet-source-pointers.md](review-packet-source-pointers.md), `make review-packet-source-pointers` |
 | 175 - v0.5 threat model delta | Done | [v0.5-threat-model-delta.md](v0.5-threat-model-delta.md), `make v05-threat-model-delta-check` |

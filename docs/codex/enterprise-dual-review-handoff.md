@@ -23,6 +23,13 @@ Validate it with:
 make enterprise-dual-review-handoff-check
 ```
 
+To copy the current send-ready files into one ignored operator outbox after this handoff is valid,
+run:
+
+```sh
+make enterprise-dual-review-outbox
+```
+
 Before sending either packet, run:
 
 ```sh
@@ -94,6 +101,10 @@ var/review-packets/v3/mission-control-display-external-review/mission-control-di
 The generated dual handoff recomputes byte counts and SHA-256 digests for both packet directories.
 This is handoff-integrity evidence only; it is not notarization, custody-grade proof, or a
 source-review disposition.
+
+The generated outbox in `var/review-packets/v3/enterprise-dual-review-outbox/` copies the same
+attachment sets under `ERG-003/` and `ERG-002/` and adds an outbox index plus artifact hashes.
+It is a send-preparation artifact only, not review intake or lane closure.
 
 ## Response Path
 

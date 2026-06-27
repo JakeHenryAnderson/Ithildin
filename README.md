@@ -412,6 +412,9 @@ checked with `make control-mapping-readiness`.
   and lane closure blocked.
 - `make enterprise-dual-review-handoff` - generate the compact pointer for sending the current two
   recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
+- `make enterprise-dual-review-outbox` - copy the current `ERG-003` and `ERG-002` send-ready
+  review files into one ignored outbox with an index and artifact hashes, without recording review
+  or closing either lane.
 - `make enterprise-dual-response-readiness` - summarize whether normalized responses are present for
   the current dual enterprise review handoff without recording review or closing either lane.
 - `make enterprise-response-status-board` - summarize normalized-response presence across all
@@ -987,6 +990,11 @@ The dual-review handoff is
 [docs/codex/enterprise-dual-review-handoff.md](docs/codex/enterprise-dual-review-handoff.md),
 generated with `make enterprise-dual-review-handoff`; it points to the current `ERG-003` and
 `ERG-002` packets and their response paths without closing either lane or approving runtime powers.
+The dual-review outbox is
+[docs/codex/enterprise-dual-review-outbox.md](docs/codex/enterprise-dual-review-outbox.md),
+generated with `make enterprise-dual-review-outbox`; it copies the current `ERG-003` and `ERG-002`
+send-ready files into one ignored outbox with artifact hashes while still not recording review or
+closing either lane.
 The dual-response readiness summary is
 [docs/codex/enterprise-dual-response-readiness.md](docs/codex/enterprise-dual-response-readiness.md),
 checked with `make enterprise-dual-response-readiness`; it reports whether normalized review

@@ -130,6 +130,15 @@ make enterprise-dual-review-handoff
 
 See [Enterprise Dual Review Handoff](enterprise-dual-review-handoff.md).
 
+To create one ignored send-ready outbox containing the current `ERG-003/` and `ERG-002/` attachment
+sets, run:
+
+```sh
+make enterprise-dual-review-outbox
+```
+
+See [Enterprise Dual Review Outbox](enterprise-dual-review-outbox.md).
+
 After packets are sent, track normalized-response status across all enterprise lanes with:
 
 ```sh
