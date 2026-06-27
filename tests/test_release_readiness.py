@@ -122,6 +122,7 @@ from scripts import (
     mission_control_display_response_dry_run,
     mission_control_display_response_kit,
     mission_control_display_review_packet,
+    mission_control_enterprise_status_import_check,
     mission_control_handoff_fixture_pack,
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_reference_validator,
@@ -1698,6 +1699,82 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     assert "enterprise-status-export-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
+
+
+def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
+    report = mission_control_enterprise_status_import_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/mission-control-enterprise-status-import-contract.md"
+    ).read_text(encoding="utf-8")
+    export_doc = Path("docs/codex/enterprise-status-export.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["source_artifact_type"] == "ithildin.enterprise_status_export"
+    assert report["source_status"] == "display_only"
+    assert report["tool_count"] == 24
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "review_lanes" in report["allowed_import_fields"]
+    assert "packet_paths" in report["allowed_import_fields"]
+    for phrase in [
+        "Status: display-only contract for future Mission Control enterprise status imports.",
+        "make mission-control-enterprise-status-import-check",
+        "make enterprise-status-export",
+        "artifact_type: ithildin.enterprise_status_export",
+        "status: display_only",
+        "Ithildin remains the execution, policy, approval, audit, and lane closure authority",
+        "does not approve Mission Control enterprise status importer implementation",
+        "Mission Control may display this artifact as non-authoritative status",
+    ]:
+        assert phrase in doc
+    assert "mission-control-enterprise-status-import-check:" in makefile
+    assert (
+        "mission-control-enterprise-status-import-check" in release_check_body
+        or "release-check: mission-control-enterprise-status-import-check" in makefile
+    )
+    assert "$(MAKE) mission-control-enterprise-status-import-check" in review_candidate_body
+    assert "make mission-control-enterprise-status-import-check" in readme
+    assert "docs/codex/mission-control-enterprise-status-import-contract.md" in readme
+    assert "docs/codex/mission-control-enterprise-status-import-contract.md" in docs_site
+    assert (
+        "docs/codex/mission-control-enterprise-status-import-contract.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Enterprise Status Import Contract" in review_index
+    assert "mission-control-enterprise-status-import-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-enterprise-status-import-check" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "mission-control-enterprise-status-import-check" in export_doc
 
 
 def test_enterprise_response_application_protocol_is_wired() -> None:

@@ -10,6 +10,10 @@ source, not audit custody, not a runtime authority, and not an enterprise lane c
 `make enterprise-status-export-check` validates the committed contract, wiring, and generated
 artifact shape without approving runtime behavior.
 
+`make mission-control-enterprise-status-import-check` validates the display-only Mission Control
+import contract for this export without calling Mission Control or approving runtime importer
+behavior.
+
 ## Source Inputs
 
 The export composes existing checked reports instead of creating a new source of truth:

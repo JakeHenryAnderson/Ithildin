@@ -429,6 +429,9 @@ checked with `make control-mapping-readiness`.
   behavior.
 - `make enterprise-status-export-check` - validate the status export contract, wiring, and
   generated artifact shape.
+- `make mission-control-enterprise-status-import-check` - validate the future Mission Control
+  display-only import contract for the enterprise status export without approving Mission Control
+  runtime importer behavior.
 - `make enterprise-dual-review-handoff` - generate the compact pointer for sending the current two
   recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
 - `make enterprise-dual-review-outbox` - copy the current `ERG-003` and `ERG-002` send-ready
@@ -1051,6 +1054,11 @@ display-only JSON/Markdown snapshot for operator dashboards and Mission Control 
 experiments while keeping Mission Control runtime behavior, live VM/container inspection, sandbox
 orchestration, SIEM adapter behavior, compliance automation, public/security-product positioning,
 and new governed tool powers blocked.
+The Mission Control enterprise status import contract is
+[docs/codex/mission-control-enterprise-status-import-contract.md](docs/codex/mission-control-enterprise-status-import-contract.md),
+checked with `make mission-control-enterprise-status-import-check`; it defines how a future Mission
+Control importer may display the enterprise status export as non-authoritative status while keeping
+execution, policy, approval, audit, lane closure, and runtime authority with Ithildin.
 The dual-review handoff is
 [docs/codex/enterprise-dual-review-handoff.md](docs/codex/enterprise-dual-review-handoff.md),
 generated with `make enterprise-dual-review-handoff`; it points to the current `ERG-003` and
