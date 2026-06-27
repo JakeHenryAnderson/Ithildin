@@ -55,3 +55,5 @@ The hash manifest covers the generated Markdown and JSON payloads and does not h
 Mission Control may later use this as a display/import fixture only after its importer validates the
 schema, treats all authority flags as advisory status fields, and refuses to convert them into
 runtime permissions.
+The expected future importer states and safe rejection labels are mapped in
+[mission-control-enterprise-status-acceptance-matrix.md](mission-control-enterprise-status-acceptance-matrix.md).

@@ -122,6 +122,7 @@ from scripts import (
     mission_control_display_response_dry_run,
     mission_control_display_response_kit,
     mission_control_display_review_packet,
+    mission_control_enterprise_status_acceptance_matrix_check,
     mission_control_enterprise_status_fixtures,
     mission_control_enterprise_status_import_check,
     mission_control_handoff_fixture_pack,
@@ -857,7 +858,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 27
+    assert packet["artifact_count"] == 28
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
     trial_checklist = output_dir.joinpath("02A_V1_OPERATOR_TRIAL_CHECKLIST.md").read_text(
         encoding="utf-8"
@@ -904,6 +905,9 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     enterprise_status_fixtures = output_dir.joinpath(
         "10F_MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md"
     ).read_text(encoding="utf-8")
+    enterprise_status_matrix = output_dir.joinpath(
+        "10G_MISSION_CONTROL_ENTERPRISE_STATUS_ACCEPTANCE_MATRIX.md"
+    ).read_text(encoding="utf-8")
     external_prompt = output_dir.joinpath("11_V1_RC_EXTERNAL_REVIEW_PROMPT.md").read_text(
         encoding="utf-8"
     )
@@ -936,12 +940,13 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "18. `10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md`" in index
     assert "19. `10E_MISSION_CONTROL_ENTERPRISE_STATUS_IMPORT_CONTRACT.md`" in index
     assert "20. `10F_MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md`" in index
-    assert "21. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
-    assert "22. `12_V1_RC_FINAL_HANDOFF.md`" in index
-    assert "23. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
-    assert "24. `14_V1_RC_ARTIFACTS.md`" in index
-    assert "25. `15_V1_RC_COMMANDS.md`" in index
-    assert "26. `v1-rc-artifact-hashes.json`" in index
+    assert "21. `10G_MISSION_CONTROL_ENTERPRISE_STATUS_ACCEPTANCE_MATRIX.md`" in index
+    assert "22. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
+    assert "23. `12_V1_RC_FINAL_HANDOFF.md`" in index
+    assert "24. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
+    assert "25. `14_V1_RC_ARTIFACTS.md`" in index
+    assert "26. `15_V1_RC_COMMANDS.md`" in index
+    assert "27. `v1-rc-artifact-hashes.json`" in index
     assert "Ithildin v1.0 Operator Trial Checklist" in trial_checklist
     assert "Trial Pass Criteria" in trial_checklist
     assert "make release-check" in trial_checklist
@@ -975,6 +980,11 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "make mission-control-enterprise-status-import-check" in enterprise_status_import
     assert "Mission Control Enterprise Status Fixtures" in enterprise_status_fixtures
     assert "make mission-control-enterprise-status-fixtures" in enterprise_status_fixtures
+    assert "Mission Control Enterprise Status Acceptance Matrix" in enterprise_status_matrix
+    assert (
+        "make mission-control-enterprise-status-acceptance-matrix-check"
+        in enterprise_status_matrix
+    )
     assert "Ithildin v1.0 RC External Review Prompt" in external_prompt
     assert "Blockers before v1.0 local-preview RC labeling" in external_prompt
     assert "Ithildin v1.0 RC Final Handoff" in final_handoff
@@ -1000,7 +1010,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "make enterprise-dual-response-readiness" in commands
     assert "make enterprise-response-status-board" in commands
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 26
+    assert len(hashes["artifacts"]) == 27
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
@@ -1023,6 +1033,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
         "10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md",
         "10E_MISSION_CONTROL_ENTERPRISE_STATUS_IMPORT_CONTRACT.md",
         "10F_MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md",
+        "10G_MISSION_CONTROL_ENTERPRISE_STATUS_ACCEPTANCE_MATRIX.md",
         "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
         "12_V1_RC_FINAL_HANDOFF.md",
         "13_V1_RC_POST_REVIEW_TRIAGE.md",
@@ -1916,6 +1927,92 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     )
     assert "mission-control-enterprise-status-fixtures" in contract
     assert "mission-control-enterprise-status-fixtures" in export_doc
+
+
+def test_mission_control_enterprise_status_acceptance_matrix_is_wired() -> None:
+    report = mission_control_enterprise_status_acceptance_matrix_check.build_report(Path.cwd())
+    doc = Path(
+        "docs/codex/mission-control-enterprise-status-acceptance-matrix.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    v1_packet = Path("scripts/v1_rc_packet.py").read_text(encoding="utf-8")
+    fixture_doc = Path("docs/codex/mission-control-enterprise-status-fixtures.md").read_text(
+        encoding="utf-8"
+    )
+    import_contract = Path(
+        "docs/codex/mission-control-enterprise-status-import-contract.md"
+    ).read_text(encoding="utf-8")
+    implementation_ticket = Path(
+        "docs/codex/mission-control-integration-implementation-ticket.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["valid_fixture_id"] == "MC-STATUS-VALID-001"
+    assert report["negative_case_count"] == 10
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Mission Control Enterprise Status Acceptance Matrix",
+        "make mission-control-enterprise-status-acceptance-matrix-check",
+        "MC-STATUS-VALID-001",
+        "MC-STATUS-NEG-001",
+        "MC-STATUS-NEG-010",
+        "accepted_display_only_status",
+        "rejected_safe_reason",
+        "does not approve Mission Control importer implementation",
+    ]:
+        assert phrase in doc
+    assert "mission-control-enterprise-status-acceptance-matrix-check:" in makefile
+    assert (
+        "mission-control-enterprise-status-acceptance-matrix-check" in release_check_body
+        or "release-check: mission-control-enterprise-status-acceptance-matrix-check" in makefile
+    )
+    assert (
+        "$(MAKE) mission-control-enterprise-status-acceptance-matrix-check"
+        in review_candidate_body
+    )
+    assert "make mission-control-enterprise-status-acceptance-matrix-check" in readme
+    assert "docs/codex/mission-control-enterprise-status-acceptance-matrix.md" in readme
+    assert (
+        "docs/codex/mission-control-enterprise-status-acceptance-matrix.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/mission-control-enterprise-status-acceptance-matrix.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/mission-control-enterprise-status-acceptance-matrix.md" in v1_packet
+    assert "Mission Control Enterprise Status Acceptance Matrix" in review_index
+    assert "mission-control-enterprise-status-acceptance-matrix-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-enterprise-status-acceptance-matrix-check" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "mission-control-enterprise-status-acceptance-matrix" in fixture_doc
+    assert "mission-control-enterprise-status-acceptance-matrix" in import_contract
+    assert "mission-control-enterprise-status-acceptance-matrix" in implementation_ticket
 
 
 def test_enterprise_response_application_protocol_is_wired() -> None:

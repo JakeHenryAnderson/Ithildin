@@ -31,6 +31,8 @@ all blocked-authority flags. Ithildin remains the execution, policy, approval, a
 `make mission-control-enterprise-status-fixtures` generates one valid payload and negative
 `MC-STATUS-NEG-###` payloads for future Mission Control importer tests. The fixture pack remains
 local display/import evidence and does not call Mission Control.
+`make mission-control-enterprise-status-acceptance-matrix-check` validates the matching
+fixture-to-importer acceptance matrix.
 
 ## Allowed Display Fields
 

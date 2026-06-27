@@ -39,9 +39,14 @@ Use these Ithildin artifacts as the implementation source of truth:
 - `docs/codex/mission-control-importer-acceptance-matrix.md`
 - `docs/codex/mission-control-handoff-reference-validator.md`
 - `docs/codex/hello-world-mission-control-handoff.md`
+- `docs/codex/enterprise-status-export.md`
+- `docs/codex/mission-control-enterprise-status-import-contract.md`
+- `docs/codex/mission-control-enterprise-status-fixtures.md`
+- `docs/codex/mission-control-enterprise-status-acceptance-matrix.md`
 - `var/review-packets/v3/mission-control-display/`
 - `var/review-packets/v3/hello-world-mission-control-handoff/mission-control-handoff.json`
 - `var/review-packets/v3/mission-control-handoff-fixtures/`
+- `var/review-packets/v3/mission-control-enterprise-status-fixtures/`
 
 Use these observed Mission Control-side artifacts when present:
 
@@ -101,6 +106,8 @@ make hello-world-mission-control-handoff-check
 make mission-control-handoff-fixture-pack-check
 make mission-control-importer-acceptance-matrix-check
 make mission-control-handoff-reference-validator
+make mission-control-enterprise-status-fixtures-check
+make mission-control-enterprise-status-acceptance-matrix-check
 ```
 
 Run from the Mission Control repository after future implementation, adjusted only for the current
@@ -153,6 +160,7 @@ The future Mission Control handoff should produce:
 - authority overclaim transcript;
 - content-leak rejection transcript;
 - fixture-pack import transcript for `mission-control-handoff-fixtures/`;
+- enterprise-status fixture import transcript for `mission-control-enterprise-status-fixtures/`;
 - UI screenshot or test evidence showing warning chips remain visible;
 - artifact hashes for generated review files;
 - no-new-authority evidence confirming Mission Control remains display/import only.

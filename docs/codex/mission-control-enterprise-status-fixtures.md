@@ -15,6 +15,7 @@ Generate the fixture pack with:
 make mission-control-enterprise-status-fixtures
 make mission-control-enterprise-status-fixtures-check
 make mission-control-enterprise-status-import-check
+make mission-control-enterprise-status-acceptance-matrix-check
 ```
 
 Generated output:
@@ -33,6 +34,10 @@ The [Mission Control Enterprise Status Import Contract](mission-control-enterpri
 defines the allowed display fields and boundary rules for these fixtures. The pack turns that
 contract into one valid JSON payload and negative payloads that must be rejected with safe reason
 labels.
+
+The [Mission Control Enterprise Status Acceptance Matrix](mission-control-enterprise-status-acceptance-matrix.md)
+maps the fixture pack to future display-only importer states, warning labels, safe rejection
+reasons, and forbidden displays.
 
 The pack contains:
 
