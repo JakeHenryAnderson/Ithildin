@@ -19,6 +19,12 @@ Validate this queue with:
 make enterprise-external-review-queue-check
 ```
 
+Validate that every queued response lane is supported by the shared response normalizer with:
+
+```sh
+make enterprise-response-normalization-coverage
+```
+
 ## Queue Rules
 
 - Every row must point to an existing evidence packet or intake document.

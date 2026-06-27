@@ -56,6 +56,7 @@ from scripts import (
     enterprise_next_review_ready_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
+    enterprise_response_normalization_coverage,
     enterprise_response_status_board,
     enterprise_review_send_readiness,
     enterprise_sandbox_control_plane_readiness_check,
@@ -1903,6 +1904,103 @@ def test_enterprise_response_status_board_is_wired() -> None:
     assert "Enterprise Response Status Board" in review_index
     assert "enterprise-response-status-board" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_response_normalization_coverage_is_wired() -> None:
+    report = enterprise_response_normalization_coverage.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-normalization-coverage.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    status_board = Path("docs/codex/enterprise-response-status-board.md").read_text(
+        encoding="utf-8"
+    )
+    dual_inbox = Path("docs/codex/enterprise-dual-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    source_matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    backlog = Path("docs/codex/implementation-backlog.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["lane_count"] == 8
+    assert report["covered_area_count"] == 8
+    assert report["missing_areas"] == []
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["closes_enterprise_lanes"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["area_namespaces"]["public-security-product-positioning"] == (
+        "EXT-PUBLIC-POSITIONING-###"
+    )
+    assert external_response_normalize.AREA_NAMESPACES[
+        "public-security-product-positioning"
+    ] == "PUBLIC-POSITIONING"
+    assert set(report["area_namespaces"]) == {
+        "sandbox-vm-static-preflight",
+        "mission-control-display",
+        "trusted-host-promotion",
+        "production-identity-storage",
+        "siem-export-adapter",
+        "compliance-mapping",
+        "sandbox-vm-live-poc",
+        "public-security-product-positioning",
+    }
+    for phrase in [
+        "Status: coverage gate for enterprise response normalization lanes.",
+        "Current governed tool count: `24`.",
+        "make enterprise-response-normalization-coverage",
+        "EXT-PUBLIC-POSITIONING-###",
+        "does not normalize responses",
+        "does not write response files",
+        "does not mutate findings",
+        "does not record external review",
+        "does not close enterprise lanes",
+        "does not approve runtime behavior",
+        "does not approve new power classes",
+        "does not approve public/security-product positioning",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-normalization-coverage:" in makefile
+    assert (
+        "enterprise-response-normalization-coverage" in release_check_body
+        or "release-check: enterprise-response-normalization-coverage" in makefile
+    )
+    assert "$(MAKE) enterprise-response-normalization-coverage" in review_candidate_body
+    assert "make enterprise-response-normalization-coverage" in readme
+    assert "make enterprise-response-normalization-coverage" in status_board
+    assert "make enterprise-response-normalization-coverage" in dual_inbox
+    assert "make enterprise-response-normalization-coverage" in queue
+    assert "docs/codex/enterprise-response-normalization-coverage.md" in docs_site
+    assert "docs/codex/enterprise-response-normalization-coverage.md" in (
+        review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Response Normalization Coverage" in review_index
+    assert "enterprise-response-normalization-coverage" in source_matrix
+    assert "326 - Enterprise response normalization coverage" in backlog
+    assert "enterprise-response-normalization-coverage" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-normalization-coverage" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
 

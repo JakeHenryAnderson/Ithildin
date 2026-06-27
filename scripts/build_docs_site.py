@@ -231,6 +231,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-dual-response-inbox.md",
     "docs/codex/enterprise-dual-response-readiness.md",
     "docs/codex/enterprise-response-status-board.md",
+    "docs/codex/enterprise-response-normalization-coverage.md",
     "docs/codex/enterprise-sandbox-control-plane-readiness.md",
     "docs/codex/post-rc-decision-gate.md",
     "docs/codex/post-rc-decision-record-template.md",

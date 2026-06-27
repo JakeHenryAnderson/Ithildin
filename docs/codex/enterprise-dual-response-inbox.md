@@ -14,6 +14,9 @@ Check:
 make enterprise-dual-response-inbox-check
 ```
 
+Before using lane-specific normalization commands, `make enterprise-response-normalization-coverage`
+verifies that every enterprise response lane has a supported normalizer area and finding namespace.
+
 The generated inbox lives under
 `var/review-runs/enterprise-dual-response-inbox/` and creates raw-response placeholders for
 `ERG-003` and `ERG-002`, exact `scripts/external_response_normalize.py` commands, reviewed-packet

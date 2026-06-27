@@ -422,6 +422,9 @@ checked with `make control-mapping-readiness`.
   the current dual enterprise review handoff without recording review or closing either lane.
 - `make enterprise-response-status-board` - summarize normalized-response presence across all
   enterprise review lanes and fail closed until any present response is handled by lane intake.
+- `make enterprise-response-normalization-coverage` - verify every enterprise response-board lane
+  has a supported external-response normalization area and finding namespace without normalizing
+  responses or closing lanes.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record

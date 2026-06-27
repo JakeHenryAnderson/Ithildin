@@ -12,6 +12,12 @@ Run:
 make enterprise-response-status-board
 ```
 
+Check that every board lane is supported by the shared response normalizer with:
+
+```sh
+make enterprise-response-normalization-coverage
+```
+
 For the current parallel `ERG-003` / `ERG-002` handoff, use
 `make enterprise-dual-response-inbox` to create ignored raw-response placeholders before running
 lane-specific normalization and dry-run commands.
@@ -56,3 +62,7 @@ This board intentionally fails closed in that state so a response cannot be over
 This board does not normalize raw reviewer text, does not write response files, does not mutate findings, does not close any enterprise lane, does not approve Mission Control runtime behavior, does not approve live VM/container inspection, does not approve trusted-host promotion, does not approve SIEM adapters, does not approve compliance automation, and does not approve public/security-product positioning.
 
 It is status aggregation over existing fail-closed closure gates only.
+
+The companion normalization coverage gate verifies that every lane on this board has a supported
+normalization area and finding namespace before raw reviewer text is pasted into ignored local
+response files.
