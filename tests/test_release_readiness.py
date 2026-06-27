@@ -116,6 +116,7 @@ from scripts import (
     mission_control_display_response_dry_run,
     mission_control_display_response_kit,
     mission_control_display_review_packet,
+    mission_control_handoff_fixture_pack,
     mission_control_handoff_negative_fixtures_check,
     mission_control_handoff_schema_contract_check,
     mission_control_integration_implementation_ticket_check,
@@ -845,7 +846,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 22
+    assert packet["artifact_count"] == 23
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
     trial_checklist = output_dir.joinpath("02A_V1_OPERATOR_TRIAL_CHECKLIST.md").read_text(
         encoding="utf-8"
@@ -877,6 +878,9 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     negative_fixtures = output_dir.joinpath(
         "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md"
     ).read_text(encoding="utf-8")
+    fixture_pack = output_dir.joinpath(
+        "10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md"
+    ).read_text(encoding="utf-8")
     external_prompt = output_dir.joinpath("11_V1_RC_EXTERNAL_REVIEW_PROMPT.md").read_text(
         encoding="utf-8"
     )
@@ -904,12 +908,13 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "13. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
     assert "14. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
     assert "15. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
-    assert "16. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
-    assert "17. `12_V1_RC_FINAL_HANDOFF.md`" in index
-    assert "18. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
-    assert "19. `14_V1_RC_ARTIFACTS.md`" in index
-    assert "20. `15_V1_RC_COMMANDS.md`" in index
-    assert "21. `v1-rc-artifact-hashes.json`" in index
+    assert "16. `10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md`" in index
+    assert "17. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
+    assert "18. `12_V1_RC_FINAL_HANDOFF.md`" in index
+    assert "19. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
+    assert "20. `14_V1_RC_ARTIFACTS.md`" in index
+    assert "21. `15_V1_RC_COMMANDS.md`" in index
+    assert "22. `v1-rc-artifact-hashes.json`" in index
     assert "Ithildin v1.0 Operator Trial Checklist" in trial_checklist
     assert "Trial Pass Criteria" in trial_checklist
     assert "make release-check" in trial_checklist
@@ -933,6 +938,8 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "Top-Level Required Fields" in schema_contract
     assert "Mission Control Handoff Negative Fixtures" in negative_fixtures
     assert "MC-HANDOFF-NEG-014" in negative_fixtures
+    assert "Mission Control Handoff Fixture Pack" in fixture_pack
+    assert "make mission-control-handoff-fixture-pack" in fixture_pack
     assert "Ithildin v1.0 RC External Review Prompt" in external_prompt
     assert "Blockers before v1.0 local-preview RC labeling" in external_prompt
     assert "Ithildin v1.0 RC Final Handoff" in final_handoff
@@ -947,6 +954,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "var/review-packets/v3/operator-workbench" in artifacts
     assert "var/review-packets/v3/hello-world-sandbox-observed-demo" in artifacts
     assert "var/review-packets/v3/hello-world-mission-control-handoff" in artifacts
+    assert "var/review-packets/v3/mission-control-handoff-fixtures" in artifacts
     assert "var/review-packets/v3/mission-control-display" in artifacts
     assert "proposal, schema, negative fixtures, seed handoff" in artifacts
     assert "docs/codex/sandbox-promotion-evidence-contract.md" in artifacts
@@ -957,7 +965,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "make enterprise-dual-response-readiness" in commands
     assert "make enterprise-response-status-board" in commands
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 21
+    assert len(hashes["artifacts"]) == 22
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
@@ -975,6 +983,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
         "08_MISSION_CONTROL_DISPLAY_PROPOSAL.md",
         "09_MISSION_CONTROL_HANDOFF_SCHEMA.md",
         "10_MISSION_CONTROL_NEGATIVE_FIXTURES.md",
+        "10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md",
         "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
         "12_V1_RC_FINAL_HANDOFF.md",
         "13_V1_RC_POST_REVIEW_TRIAGE.md",
@@ -4359,6 +4368,118 @@ def test_mission_control_handoff_negative_fixtures_are_wired() -> None:
     assert "docs/codex/mission-control-handoff-negative-fixtures.md" in docs_site
     assert "docs/codex/mission-control-handoff-negative-fixtures.md" in review_docs.REVIEW_DOCS
     assert "Mission Control Handoff Negative Fixtures" in review_index
+
+
+def test_mission_control_handoff_fixture_pack_is_wired(tmp_path: Path) -> None:
+    report = mission_control_handoff_fixture_pack.build_check_report(Path.cwd())
+    output_dir = tmp_path / "mission-control-handoff-fixtures"
+    mission_control_handoff_fixture_pack.build_fixture_pack(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+    )
+    doc = Path("docs/codex/mission-control-handoff-fixture-pack.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    v1_packet = Path("scripts/v1_rc_packet.py").read_text(encoding="utf-8")
+    schema_contract = Path("docs/codex/mission-control-handoff-schema-contract.md").read_text(
+        encoding="utf-8"
+    )
+    negative_doc = Path("docs/codex/mission-control-handoff-negative-fixtures.md").read_text(
+        encoding="utf-8"
+    )
+    implementation_ticket = Path(
+        "docs/codex/mission-control-integration-implementation-ticket.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    summary = json.loads(output_dir.joinpath("fixture-summary.json").read_text(encoding="utf-8"))
+    valid_payload = json.loads(
+        output_dir.joinpath("valid/mission-control-handoff-valid.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashes = json.loads(
+        output_dir.joinpath(
+            "mission-control-handoff-fixture-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = output_dir.joinpath("MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md").read_text(
+        encoding="utf-8"
+    )
+    hashed_paths = {artifact["path"] for artifact in hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["negative_case_count"] == 14
+    assert report["negative_fixture_files"] == 14
+    assert report["artifact_hashes_match_files"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["mission_control_policy_authority_allowed"] is False
+    assert report["mission_control_approval_authority_allowed"] is False
+    assert report["mission_control_audit_authority_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert summary["fixture_pack_type"] == "ithildin.mission_control_handoff.fixture_pack"
+    assert summary["tool_count"] == 24
+    assert summary["valid_payload"]["expected_accept"] is True
+    assert summary["negative_case_count"] == 14
+    assert len(summary["negative_cases"]) == 14
+    assert valid_payload["status"] == "metadata_only"
+    assert valid_payload["mission_control_runtime_behavior"] is False
+    assert valid_payload["mission_control_authority"] == "display_and_operator_review_only"
+    assert "valid/mission-control-handoff-valid.json" in hashed_paths
+    assert "fixture-summary.json" in hashed_paths
+    assert "MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md" in hashed_paths
+    assert len([path for path in hashed_paths if path.startswith("negatives/")]) == 14
+    assert "mission-control-handoff-fixture-artifact-hashes.json" not in hashed_paths
+    for phrase in [
+        "Status: generated fixture pack for Mission Control display/import tests.",
+        "make mission-control-handoff-fixture-pack",
+        "make mission-control-handoff-fixture-pack-check",
+        "display/import fixtures only",
+        "does not add Mission Control runtime behavior",
+        "does not approve callbacks into Ithildin",
+        "MC-HANDOFF-NEG-001",
+        "MC-HANDOFF-NEG-014",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Mission Control Handoff Fixture Pack",
+        "Valid Fixture",
+        "Negative Fixtures",
+        "MC-HANDOFF-NEG-001",
+        "MC-HANDOFF-NEG-014",
+        "runtime_changes_allowed: `false`",
+        "mission_control_runtime_allowed: `false`",
+    ]:
+        assert phrase in index
+    assert "mission-control-handoff-fixture-pack:" in makefile
+    assert "mission-control-handoff-fixture-pack-check:" in makefile
+    assert "mission-control-handoff-fixture-pack-check" in release_check_body
+    assert "$(MAKE) mission-control-handoff-fixture-pack" in review_candidate_body
+    assert "make mission-control-handoff-fixture-pack" in readme
+    assert "docs/codex/mission-control-handoff-fixture-pack.md" in docs_site
+    assert "docs/codex/mission-control-handoff-fixture-pack.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/mission-control-handoff-fixture-pack.md" in v1_packet
+    assert "var/review-packets/v3/mission-control-handoff-fixtures" in v1_packet
+    assert "Mission Control Handoff Fixture Pack" in review_index
+    assert "mission-control-handoff-fixture-pack-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) mission-control-handoff-fixture-pack" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "mission-control-handoff-fixture-pack" in schema_contract
+    assert "mission-control-handoff-fixture-pack" in negative_doc
+    assert "mission-control-handoff-fixture-pack" in implementation_ticket
 
 
 def test_mission_control_display_review_packet_is_wired(tmp_path: Path) -> None:

@@ -249,6 +249,10 @@ checked with `make control-mapping-readiness`.
   display/import handoff for the observed Hello World evidence.
 - `make hello-world-mission-control-handoff-check` - validate the Mission Control handoff packet,
   docs wiring, and no-runtime/no-local-model/no-VM/no-host-promotion boundary.
+- `make mission-control-handoff-fixture-pack` - generate one valid and fourteen negative
+  Mission Control display/import handoff JSON fixtures for future importer tests.
+- `make mission-control-handoff-fixture-pack-check` - validate the generated fixture pack, artifact
+  hashes, safe reason labels, docs wiring, and no-runtime/no-authority-transfer boundary.
 - `make sandbox-promotion-evidence-contract-check` - validate the future trusted-host promotion
   evidence contract while confirming host promotion remains unimplemented.
 - `make trusted-host-promotion-decision-intake-check` - validate the post-RC decision-intake
@@ -1238,6 +1242,12 @@ and is checked with `make mission-control-handoff-negative-fixtures-check`; it m
 handoff seed in memory and verifies that schema mismatches, live-integration claims, authority
 overclaims, unsafe paths, missing warning/denylist fields, raw contents, and raw prompts are
 rejected before any Mission Control importer is implemented.
+The Mission Control handoff fixture pack is
+[docs/codex/mission-control-handoff-fixture-pack.md](docs/codex/mission-control-handoff-fixture-pack.md)
+and is generated with `make mission-control-handoff-fixture-pack`; it writes concrete positive and
+negative JSON fixtures under `var/review-packets/v3/mission-control-handoff-fixtures/` for future
+Mission Control importer tests without approving runtime importer behavior or callbacks into
+Ithildin.
 Generate the focused Mission Control display review packet with
 `make mission-control-display-review-packet`; it bundles the display proposal, handoff schema,
 negative fixtures, Hello World seed evidence, command evidence, and artifact hashes for future

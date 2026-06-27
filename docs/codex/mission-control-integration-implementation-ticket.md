@@ -35,9 +35,11 @@ Use these Ithildin artifacts as the implementation source of truth:
 - `docs/codex/mission-control-side-handoff-plan.md`
 - `docs/codex/mission-control-handoff-schema-contract.md`
 - `docs/codex/mission-control-handoff-negative-fixtures.md`
+- `docs/codex/mission-control-handoff-fixture-pack.md`
 - `docs/codex/hello-world-mission-control-handoff.md`
 - `var/review-packets/v3/mission-control-display/`
 - `var/review-packets/v3/hello-world-mission-control-handoff/mission-control-handoff.json`
+- `var/review-packets/v3/mission-control-handoff-fixtures/`
 
 Use these observed Mission Control-side artifacts when present:
 
@@ -94,6 +96,7 @@ Run from the Ithildin repository before handing off:
 make mission-control-integration-implementation-ticket-check
 make mission-control-display-review-packet
 make hello-world-mission-control-handoff-check
+make mission-control-handoff-fixture-pack-check
 ```
 
 Run from the Mission Control repository after future implementation, adjusted only for the current
@@ -143,6 +146,7 @@ The future Mission Control handoff should produce:
 - unsafe attachment transcript;
 - authority overclaim transcript;
 - content-leak rejection transcript;
+- fixture-pack import transcript for `mission-control-handoff-fixtures/`;
 - UI screenshot or test evidence showing warning chips remain visible;
 - artifact hashes for generated review files;
 - no-new-authority evidence confirming Mission Control remains display/import only.
