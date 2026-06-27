@@ -27,6 +27,7 @@ DOC_REL = "docs/codex/enterprise-dual-response-inbox.md"
 DOC_NAME = "enterprise-dual-response-inbox.md"
 DEFAULT_OUTPUT_DIR = Path("var/review-runs/enterprise-dual-response-inbox")
 INDEX_NAME = "ENTERPRISE_DUAL_RESPONSE_INBOX.md"
+CHEATSHEET_NAME = "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md"
 JSON_NAME = "enterprise-dual-response-inbox.json"
 HASH_NAME = "enterprise-dual-response-inbox-artifact-hashes.json"
 ERG003_RAW = "RAW_RESPONSE_ERG-003.md"
@@ -81,6 +82,9 @@ def build_inbox(repo_root: Path, output_dir: Path) -> Path:
     lanes = _lanes(repo_root)
     payload = _payload(repo_root, output_dir, lanes)
     (output_dir / INDEX_NAME).write_text(_render_index(payload), encoding="utf-8")
+    (output_dir / CHEATSHEET_NAME).write_text(
+        _render_cheatsheet(payload), encoding="utf-8"
+    )
     (output_dir / JSON_NAME).write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -115,6 +119,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     queue_doc = _read(repo_root / "docs/codex/enterprise-external-review-queue.md")
     inbox_doc = _read(repo_root / DOC_REL)
     index_text = _read(output_dir / INDEX_NAME)
+    cheatsheet_text = _read(output_dir / CHEATSHEET_NAME)
     json_text = _read(output_dir / JSON_NAME)
     hash_text = _read(output_dir / HASH_NAME)
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
@@ -148,6 +153,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"dual response inbox doc is missing phrase: {phrase}")
     for phrase in [
         "Enterprise Dual Response Inbox",
+        CHEATSHEET_NAME,
         ERG003_RAW,
         ERG002_RAW,
         "EXT-SVP-###",
@@ -162,6 +168,20 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         if phrase not in index_text:
             failures.append(f"generated dual response inbox is missing phrase: {phrase}")
     for phrase in [
+        "Enterprise Dual Response Cheat Sheet",
+        "Response intake order",
+        ERG003_RAW,
+        ERG002_RAW,
+        "uv run python scripts/external_response_normalize.py",
+        "make sandbox-vm-static-preflight-response-dry-run",
+        "make mission-control-display-response-dry-run",
+        "does not normalize responses",
+        "does not close either lane",
+        "runtime_changes_allowed: `false`",
+    ]:
+        if phrase not in cheatsheet_text:
+            failures.append(f"generated dual response cheat sheet is missing phrase: {phrase}")
+    for phrase in [
         '"inbox_type": "ithildin.enterprise_dual_response_inbox"',
         '"ERG-003"',
         '"ERG-002"',
@@ -175,7 +195,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         if phrase not in json_text:
             failures.append(f"generated dual response inbox JSON is missing phrase: {phrase}")
 
-    expected_paths = {INDEX_NAME, JSON_NAME, ERG003_RAW, ERG002_RAW}
+    expected_paths = {INDEX_NAME, CHEATSHEET_NAME, JSON_NAME, ERG003_RAW, ERG002_RAW}
     missing_hashes = sorted(expected_paths - hashed_paths)
     if missing_hashes:
         failures.append(
@@ -240,6 +260,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "lane_count": len(payload.get("lanes", [])),
         "artifact_hashes_match_files": artifact_hashes_match_files,
         "raw_response_placeholders": [ERG003_RAW, ERG002_RAW],
+        "cheatsheet": CHEATSHEET_NAME,
         "normalizes_responses": False,
         "committed_findings_mutated": False,
         "external_review_recorded": False,
@@ -398,6 +419,8 @@ This inbox creates raw-response placeholders and exact normalization commands. I
 normalize responses, mutate committed findings, record external review, close either lane, or
 approve runtime behavior.
 
+For the shortest operator path, open `{CHEATSHEET_NAME}` in the generated directory.
+
 ## Use Order
 
 1. Paste reviewer text into the matching raw-response placeholder.
@@ -421,6 +444,81 @@ make enterprise-dual-response-inbox-check
 make enterprise-dual-response-readiness
 make enterprise-response-status-board
 ```
+"""
+
+
+def _render_cheatsheet(payload: dict[str, Any]) -> str:
+    lane_sections = "\n".join(_render_cheatsheet_lane(lane) for lane in payload["lanes"])
+    blocked = "\n".join(
+        f"- {name}: `{str(value).lower()}`"
+        for name, value in payload["blocked_boundaries"].items()
+    )
+    return f"""# Enterprise Dual Response Cheat Sheet
+
+Status: generated operator cheat sheet for the current dual enterprise review handoff.
+
+Reviewed commit for these commands: `{payload['commit']}`
+
+Dirty state when generated: `{str(payload['dirty']).lower()}`
+
+This cheat sheet is the shortest safe intake path after `ERG-003` and `ERG-002` reviewer responses
+arrive. It does not normalize responses, record external review, mutate committed findings, close
+either lane, approve runtime behavior, or unblock new power classes. It does not close either lane.
+
+## Response intake order
+
+1. Paste the unmodified reviewer response into the matching raw-response placeholder.
+2. Run the matching normalization command exactly once per received response.
+3. Run the lane-specific dry-run command.
+4. Run the lane-specific closure gate.
+5. Commit a later triage/update record only if the closure gate proves the response is favorable.
+
+{lane_sections}
+
+## Still Blocked
+
+{blocked}
+"""
+
+
+def _render_cheatsheet_lane(lane: dict[str, Any]) -> str:
+    return f"""## {lane['gap']}: {lane['name']}
+
+Raw response:
+
+```text
+{DEFAULT_OUTPUT_DIR.as_posix()}/{lane['raw_response_file']}
+```
+
+Normalize:
+
+```sh
+uv run python scripts/external_response_normalize.py \\
+  {DEFAULT_OUTPUT_DIR.as_posix()}/{lane['raw_response_file']} \\
+  --reviewer "REVIEWER NAME" \\
+  --reviewer-type "ai_external" \\
+  --source-access {lane['source_access']} \\
+  --reviewed-commit "{_shell_commit_placeholder()}" \\
+  --reviewed-packet-hash "{lane['reviewed_packet_hash']}" \\
+  --area {lane['normalization_area']} \\
+  --output {lane['normalized_response_path']}
+```
+
+Dry run:
+
+```sh
+{lane['dry_run']}
+```
+
+Closure gate:
+
+```sh
+{lane['closure_gate']}
+```
+
+Finding namespace: `{lane['finding_namespace']}`
+
+Reviewed packet hash: `{lane['reviewed_packet_hash']}`
 """
 
 

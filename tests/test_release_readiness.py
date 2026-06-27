@@ -2076,6 +2076,7 @@ def test_enterprise_dual_response_inbox_is_wired() -> None:
     )[0]
     generated_dir = Path("var/review-runs/enterprise-dual-response-inbox")
     generated = generated_dir / "ENTERPRISE_DUAL_RESPONSE_INBOX.md"
+    generated_cheatsheet = generated_dir / "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md"
     generated_json = generated_dir / "enterprise-dual-response-inbox.json"
     generated_hashes = json.loads(
         (generated_dir / "enterprise-dual-response-inbox-artifact-hashes.json").read_text(
@@ -2083,6 +2084,7 @@ def test_enterprise_dual_response_inbox_is_wired() -> None:
         )
     )
     generated_text = generated.read_text(encoding="utf-8")
+    generated_cheatsheet_text = generated_cheatsheet.read_text(encoding="utf-8")
     generated_json_text = generated_json.read_text(encoding="utf-8")
     hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
 
@@ -2121,6 +2123,7 @@ def test_enterprise_dual_response_inbox_is_wired() -> None:
         assert phrase in doc
     for phrase in [
         "Enterprise Dual Response Inbox",
+        "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
         "RAW_RESPONSE_ERG-003.md",
         "RAW_RESPONSE_ERG-002.md",
         "EXT-SVP-###",
@@ -2134,6 +2137,19 @@ def test_enterprise_dual_response_inbox_is_wired() -> None:
     ]:
         assert phrase in generated_text
     for phrase in [
+        "Enterprise Dual Response Cheat Sheet",
+        "Response intake order",
+        "RAW_RESPONSE_ERG-003.md",
+        "RAW_RESPONSE_ERG-002.md",
+        "uv run python scripts/external_response_normalize.py",
+        "make sandbox-vm-static-preflight-response-dry-run",
+        "make mission-control-display-response-dry-run",
+        "does not normalize responses",
+        "does not close either lane",
+        "runtime_changes_allowed: `false`",
+    ]:
+        assert phrase in generated_cheatsheet_text
+    for phrase in [
         '"inbox_type": "ithildin.enterprise_dual_response_inbox"',
         '"ERG-003"',
         '"ERG-002"',
@@ -2145,6 +2161,7 @@ def test_enterprise_dual_response_inbox_is_wired() -> None:
         assert phrase in generated_json_text
     assert {
         "ENTERPRISE_DUAL_RESPONSE_INBOX.md",
+        "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
         "enterprise-dual-response-inbox.json",
         "RAW_RESPONSE_ERG-003.md",
         "RAW_RESPONSE_ERG-002.md",

@@ -21,7 +21,8 @@ For a general response landing pad covering all enterprise lanes, use `make ente
 The generated inbox lives under
 `var/review-runs/enterprise-dual-response-inbox/` and creates raw-response placeholders for
 `ERG-003` and `ERG-002`, exact `scripts/external_response_normalize.py` commands, reviewed-packet
-hashes, lane dry-run commands, lane closure-gate commands, and artifact hashes.
+hashes, lane dry-run commands, lane closure-gate commands, a compact operator cheat sheet, and
+artifact hashes.
 
 This inbox does not normalize responses, does not record external review, does not mutate findings,
 does not close either lane, and does not approve Mission Control runtime behavior, live VM/container
@@ -31,6 +32,7 @@ compliance automation, public/security-product positioning, or new governed tool
 ## Generated Files
 
 - `ENTERPRISE_DUAL_RESPONSE_INBOX.md`
+- `ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`
 - `enterprise-dual-response-inbox.json`
 - `RAW_RESPONSE_ERG-003.md`
 - `RAW_RESPONSE_ERG-002.md`
