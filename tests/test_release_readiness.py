@@ -47,6 +47,7 @@ from scripts import (
     demo_reset_guide,
     demo_state_report,
     docs_claims_public_preview_disposition_closure_check,
+    enterprise_dual_response_readiness,
     enterprise_dual_review_handoff,
     enterprise_external_review_queue_check,
     enterprise_next_review_handoff,
@@ -1500,6 +1501,79 @@ def test_enterprise_dual_review_handoff_is_wired() -> None:
     assert "docs/codex/enterprise-dual-review-handoff.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Dual Review Handoff" in review_index
     assert "enterprise-dual-review-handoff-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_dual_response_readiness_is_wired() -> None:
+    report = enterprise_dual_response_readiness.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-dual-response-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    dual_handoff_doc = Path("docs/codex/enterprise-dual-review-handoff.md").read_text(
+        encoding="utf-8"
+    )
+    send_readiness = Path("docs/codex/enterprise-review-send-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for row in report["rows"]:
+        assert row["response_present"] is False
+        assert row["closure_ready"] is False
+        assert row["dry_run_valid"] is True
+        assert row["recommended_next"] == "wait_for_external_response"
+        assert row["mutates_findings"] is False
+        assert row["closes_external_review"] is False
+    for phrase in [
+        "Status: operator response-readiness summary for the dual enterprise review handoff.",
+        "Current governed tool count: `24`.",
+        "make enterprise-dual-response-readiness",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record review",
+        "does not mutate findings",
+        "does not close either lane",
+        "does not approve Mission Control runtime behavior",
+        "does not approve live VM/container inspection",
+    ]:
+        assert phrase in doc
+    assert "enterprise-dual-response-readiness:" in makefile
+    assert "enterprise-dual-response-readiness" in release_check_body
+    assert "$(MAKE) enterprise-dual-response-readiness" in review_candidate_body
+    assert "make enterprise-dual-response-readiness" in readme
+    assert "make enterprise-dual-response-readiness" in dual_handoff_doc
+    assert "make enterprise-dual-response-readiness" in send_readiness
+    assert "docs/codex/enterprise-dual-response-readiness.md" in docs_site
+    assert "docs/codex/enterprise-dual-response-readiness.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Dual Response Readiness" in review_index
+    assert "enterprise-dual-response-readiness" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

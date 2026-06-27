@@ -37,6 +37,9 @@ Use `make enterprise-dual-review-handoff` to generate the compact pointer for se
 recommendations, and see `enterprise-dual-review-handoff.md` for attachment and response-path
 details.
 
+After either packet is sent, use `make enterprise-dual-response-readiness` to summarize whether
+normalized response evidence is present and which lane-specific dry-run command should run next.
+
 Not recommended now:
 
 - `ERG-004` remains blocked on favorable `ERG-003` static preflight disposition.

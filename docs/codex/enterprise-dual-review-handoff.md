@@ -29,6 +29,12 @@ Before sending either packet, run:
 make enterprise-review-send-readiness
 ```
 
+After sending either packet, check whether normalized responses are present with:
+
+```sh
+make enterprise-dual-response-readiness
+```
+
 ## Purpose
 
 This document is the operator-facing pointer for the two enterprise review packets that are
