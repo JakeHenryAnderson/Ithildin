@@ -5100,6 +5100,7 @@ def test_mission_control_display_external_review_bundle_is_wired(
         "06_MISSION_CONTROL_RESPONSE_CLOSURE_DRY_RUN.md",
         "07_MISSION_CONTROL_REPRODUCTION_QUEUE_STATUS.md",
         "08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md",
+        "09_MISSION_CONTROL_REFERENCE_VALIDATOR.md",
         "mission-control-display-external-review-artifact-hashes.json",
     }
     generated = {path.name for path in output_dir.iterdir()}
@@ -5135,6 +5136,9 @@ def test_mission_control_display_external_review_bundle_is_wired(
     evidence = output_dir.joinpath(
         "08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md"
     ).read_text(encoding="utf-8")
+    validator = output_dir.joinpath("09_MISSION_CONTROL_REFERENCE_VALIDATOR.md").read_text(
+        encoding="utf-8"
+    )
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
@@ -5168,7 +5172,7 @@ def test_mission_control_display_external_review_bundle_is_wired(
     assert report["siem_adapter_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["closes_erg_002"] is False
-    assert report["artifact_count"] == 10
+    assert report["artifact_count"] == 11
     assert generated == expected
     assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
         "mission-control-display-external-review-artifact-hashes.json"
@@ -5190,6 +5194,11 @@ def test_mission_control_display_external_review_bundle_is_wired(
     assert "enterprise-external-review-queue.md" in reproduction
     assert "mission-control-side-handoff-plan.md" in reproduction
     assert "mission-control-integration-implementation-ticket.md" in reproduction
+    assert "Mission Control Handoff Reference Validator" in validator
+    assert "make mission-control-handoff-reference-validator" in validator
+    assert "MC-HANDOFF-VALID-001" in validator
+    assert "MC-HANDOFF-NEG-014" in validator
+    assert "does not approve Mission Control runtime importer behavior" in validator
     for flag in [
         '"runtime_changes_allowed": false',
         '"mission_control_runtime_allowed": false',
@@ -5204,6 +5213,9 @@ def test_mission_control_display_external_review_bundle_is_wired(
         '"new_power_classes_allowed": false',
         '"closes_erg_002": false',
         '"response_dry_run"',
+        '"reference_validator_check"',
+        '"valid_fixture_accepted": true',
+        '"negative_cases_rejected": 14',
         '"valid_response_accepts": true',
     ]:
         assert flag in evidence

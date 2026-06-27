@@ -22,6 +22,7 @@ from scripts import (
     mission_control_display_external_response_intake_check,
     mission_control_display_response_dry_run,
     mission_control_display_review_packet,
+    mission_control_handoff_reference_validator,
     mission_control_integration_readiness_packet,
 )
 
@@ -44,6 +45,7 @@ ARTIFACTS = [
     "06_MISSION_CONTROL_RESPONSE_CLOSURE_DRY_RUN.md",
     "07_MISSION_CONTROL_REPRODUCTION_QUEUE_STATUS.md",
     "08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md",
+    "09_MISSION_CONTROL_REFERENCE_VALIDATOR.md",
 ]
 
 
@@ -126,6 +128,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     prompt = contents.get("01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md", "")
     index = contents.get("00_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_INDEX.md", "")
     evidence = contents.get("08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md", "")
+    validator = contents.get("09_MISSION_CONTROL_REFERENCE_VALIDATOR.md", "")
     response = contents.get("06_MISSION_CONTROL_RESPONSE_CLOSURE_DRY_RUN.md", "")
     reproduction = contents.get("07_MISSION_CONTROL_REPRODUCTION_QUEUE_STATUS.md", "")
 
@@ -160,6 +163,15 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         if phrase not in reproduction:
             failures.append(f"reproduction/queue bundle is missing phrase: {phrase}")
     for phrase in [
+        "Mission Control Handoff Reference Validator",
+        "make mission-control-handoff-reference-validator",
+        "MC-HANDOFF-VALID-001",
+        "MC-HANDOFF-NEG-014",
+        "does not approve Mission Control runtime importer behavior",
+    ]:
+        if phrase not in validator:
+            failures.append(f"reference validator bundle is missing phrase: {phrase}")
+    for phrase in [
         '"runtime_changes_allowed": false',
         '"mission_control_runtime_allowed": false',
         '"mission_control_execution_authority_allowed": false',
@@ -173,6 +185,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"new_power_classes_allowed": false',
         '"closes_erg_002": false',
         '"response_dry_run"',
+        '"reference_validator_check"',
+        '"valid_fixture_accepted": true',
+        '"negative_cases_rejected": 14',
         '"valid_response_accepts": true',
     ]:
         if phrase not in evidence:
@@ -327,6 +342,13 @@ def build_bundle(
             "08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md": _command_evidence(
                 command_reports
             ),
+            "09_MISSION_CONTROL_REFERENCE_VALIDATOR.md": _docs_bundle(
+                "Reference Validator",
+                repo_root,
+                [
+                    "docs/codex/mission-control-handoff-reference-validator.md",
+                ],
+            ),
         }
 
     for name, content in files.items():
@@ -361,7 +383,8 @@ Recommended next review: `ERG-002` Mission Control display/importer planning dis
 6. `06_MISSION_CONTROL_RESPONSE_CLOSURE_DRY_RUN.md`
 7. `07_MISSION_CONTROL_REPRODUCTION_QUEUE_STATUS.md`
 8. `08_MISSION_CONTROL_DISPLAY_COMMAND_EVIDENCE.md`
-9. `mission-control-display-external-review-artifact-hashes.json`
+9. `09_MISSION_CONTROL_REFERENCE_VALIDATOR.md`
+10. `mission-control-display-external-review-artifact-hashes.json`
 
 ## What This Bundle Does Not Prove
 
@@ -456,6 +479,9 @@ def _build_command_reports(repo_root: Path, *, run_commands: bool) -> dict[str, 
             repo_root
         ),
         "response_dry_run": mission_control_display_response_dry_run.run_dry_run(repo_root),
+        "reference_validator_check": mission_control_handoff_reference_validator.build_report(
+            repo_root
+        ),
         "enterprise_external_review_queue_check": (
             enterprise_external_review_queue_check.build_report(repo_root)
         ),
@@ -481,6 +507,7 @@ def _run_shell_commands(repo_root: Path) -> list[dict[str, Any]]:
         ["make", "mission-control-display-external-response-intake-check"],
         ["make", "mission-control-display-disposition-closure-check"],
         ["make", "mission-control-display-response-dry-run"],
+        ["make", "mission-control-handoff-reference-validator"],
         ["make", "enterprise-external-review-queue-check"],
         ["make", "no-new-powers-guardrail"],
         ["make", "tool-surface-invariant-gate"],
