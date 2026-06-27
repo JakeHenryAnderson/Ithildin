@@ -55,6 +55,7 @@ from scripts import (
     enterprise_external_review_queue_check,
     enterprise_next_review_handoff,
     enterprise_next_review_ready_check,
+    enterprise_progress_model,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     enterprise_response_application_protocol,
@@ -1518,6 +1519,66 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert "docs/codex/enterprise-current-checkpoint.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Current Checkpoint" in review_index
     assert "enterprise-current-checkpoint" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_progress_model_is_wired() -> None:
+    report = enterprise_progress_model.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-progress-model.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["enterprise_gap_count"] == 10
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["progress_bands"]["v1_local_preview_rc"] == "80-88%"
+    assert (
+        report["progress_bands"]["enterprise_control_plane_architecture"]
+        == "35-50%"
+    )
+    for phrase in [
+        "Status: checked progress model",
+        "Governed tool count: `24`",
+        "Selected next capability: `not selected`",
+        "Recommended next enterprise review: `ERG-003`",
+        "Local governed tool gateway | `92-96%`",
+        "v1.0 local-preview RC | `80-88%`",
+        "Enterprise control-plane architecture | `35-50%`",
+        "Checkpoint C: Sandbox/VM Static Preflight Disposition",
+        "make enterprise-response-application-protocol",
+        "Do not manually promote a lane",
+        "public/security-product positioning",
+        "new governed tool powers",
+    ]:
+        assert phrase in doc
+    assert "enterprise-progress-model:" in makefile
+    assert "enterprise-progress-model" in release_check_body
+    assert "make enterprise-progress-model" in readme
+    assert "docs/codex/enterprise-progress-model.md" in readme
+    assert "docs/codex/enterprise-progress-model.md" in docs_site
+    assert "docs/codex/enterprise-progress-model.md" in review_docs.REVIEW_DOCS
+    assert "Ithildin Enterprise Progress Model" in review_index
+    assert "enterprise-progress-model" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 
