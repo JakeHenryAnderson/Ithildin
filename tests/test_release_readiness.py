@@ -57,6 +57,7 @@ from scripts import (
     enterprise_next_review_ready_check,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
+    enterprise_response_application_protocol,
     enterprise_response_inbox,
     enterprise_response_intake_drill,
     enterprise_response_normalization_coverage,
@@ -1518,6 +1519,78 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert "Enterprise Current Checkpoint" in review_index
     assert "enterprise-current-checkpoint" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_response_application_protocol_is_wired() -> None:
+    report = enterprise_response_application_protocol.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-application-protocol.md").read_text(
+        encoding="utf-8"
+    )
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    response_inbox = Path("docs/codex/enterprise-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: checked operator protocol for applying enterprise external-review responses.",
+        "make enterprise-response-application-protocol",
+        "Current recommended send set: `ERG-003` then `ERG-002`",
+        "`ERG-003` may move only to `closed_local_preview_static_preflight`.",
+        "`ERG-002` may move only to `ready_for_design_only_decision_record`.",
+        "docs/codex/sandbox-vm-static-preflight-response-application-playbook.md",
+        "docs/codex/mission-control-handoff-reference-validator.md",
+        "live VM/container inspection",
+        "Mission Control runtime behavior",
+        "public/security-product positioning",
+        "new governed tool powers",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-application-protocol:" in makefile
+    assert (
+        "enterprise-response-application-protocol" in release_check_body
+        or "release-check: enterprise-response-application-protocol" in makefile
+    )
+    assert "$(MAKE) enterprise-response-application-protocol" in review_candidate_body
+    assert "make enterprise-response-application-protocol" in readme
+    assert "docs/codex/enterprise-response-application-protocol.md" in readme
+    assert "docs/codex/enterprise-response-application-protocol.md" in docs_site
+    assert (
+        "docs/codex/enterprise-response-application-protocol.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Response Application Protocol" in review_index
+    assert "enterprise-response-application-protocol" in current_checkpoint
+    assert "enterprise-response-application-protocol" in response_inbox
+    assert "enterprise-response-application-protocol" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-application-protocol" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
 

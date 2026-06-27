@@ -48,6 +48,7 @@ After responses arrive, do not edit status docs directly. Save the raw responses
 make enterprise-response-inbox
 make enterprise-response-status-board
 make enterprise-response-intake-drill
+make enterprise-response-application-protocol
 ```
 
 Follow each lane-specific response kit and closure gate before any committed disposition update.

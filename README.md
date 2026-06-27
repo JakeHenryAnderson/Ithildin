@@ -453,6 +453,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-intake-drill` - run fixture-only response-intake drills across all
   enterprise lanes, restoring ignored response state and proving no review is recorded or lane is
   closed.
+- `make enterprise-response-application-protocol` - validate the checked operator protocol for
+  applying future enterprise reviewer responses through lane dry-runs, closure gates, and later
+  committed decision records without approving runtime expansion.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -1065,6 +1068,11 @@ The enterprise response status board is
 [docs/codex/enterprise-response-status-board.md](docs/codex/enterprise-response-status-board.md),
 checked with `make enterprise-response-status-board`; it aggregates normalized-response state for
 all enterprise review lanes without recording review, mutating findings, or closing lanes.
+The enterprise response application protocol is
+[docs/codex/enterprise-response-application-protocol.md](docs/codex/enterprise-response-application-protocol.md),
+checked with `make enterprise-response-application-protocol`; it gives the operator the
+fail-closed sequence for turning future reviewer responses into lane-specific dry-run, closure-gate,
+and committed decision-record work without approving runtime expansion.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

@@ -67,3 +67,10 @@ make enterprise-response-intake-drill
 ```
 
 See [Enterprise Response Intake Drill](enterprise-response-intake-drill.md).
+
+Before committing any later disposition from a real response, follow the checked
+[Enterprise Response Application Protocol](enterprise-response-application-protocol.md) and run:
+
+```sh
+make enterprise-response-application-protocol
+```

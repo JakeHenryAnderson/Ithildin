@@ -275,6 +275,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-response-normalization-coverage.md",
     "docs/codex/enterprise-response-inbox.md",
     "docs/codex/enterprise-response-intake-drill.md",
+    "docs/codex/enterprise-response-application-protocol.md",
     "docs/codex/enterprise-sandbox-control-plane-readiness.md",
     "docs/codex/post-rc-decision-gate.md",
     "docs/codex/post-rc-decision-record-template.md",
