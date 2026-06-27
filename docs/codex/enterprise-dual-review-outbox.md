@@ -59,7 +59,9 @@ Postgres, hosted telemetry, or remote MCP.
    `enterprise-dual-review-outbox-artifact-hashes.json` with the handoff notes.
 7. Run `make enterprise-review-send-manifest` to capture the send set, outbox hash manifest,
    lane-specific response paths, and blocked-boundary flags in one generated manifest.
-8. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
+8. Run `make enterprise-review-submission-prompt` to generate the final paste-ready operator prompt
+   for the separate `ERG-003` and `ERG-002` review requests.
+9. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
    matching ignored raw-response placeholder, then run `make enterprise-dual-response-readiness` and
    follow the lane-specific response kit. Do not edit lane status by hand.
 

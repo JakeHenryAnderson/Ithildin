@@ -63,6 +63,7 @@ from scripts import (
     enterprise_review_handoff_drill,
     enterprise_review_send_manifest,
     enterprise_review_send_readiness,
+    enterprise_review_submission_prompt,
     enterprise_sandbox_control_plane_readiness_check,
     evidence_confusion_gate,
     evidence_contracts_check,
@@ -1757,6 +1758,105 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-review-send-manifest" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_submission_prompt_is_wired() -> None:
+    report = enterprise_review_submission_prompt.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-submission-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    send_manifest_doc = Path("docs/codex/enterprise-review-send-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    outbox_doc = Path("docs/codex/enterprise-dual-review-outbox.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-review-submission-prompt")
+    generated = generated_dir / "ENTERPRISE_REVIEW_SUBMISSION_PROMPT.md"
+    generated_json = generated_dir / "enterprise-review-submission-prompt.json"
+    generated_hashes = json.loads(
+        (
+            generated_dir / "enterprise-review-submission-prompt-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["artifact_hashes_match_files"] is True
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: generated operator paste prompt for current enterprise external-review packets.",
+        "make enterprise-review-submission-prompt",
+        "make enterprise-review-submission-prompt-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record external review",
+        "does not close either lane",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Submission Prompt",
+        "Use separate review threads",
+        "ERG-003",
+        "ERG-002",
+        "Finding namespace",
+        "Attach every file",
+        "records_external_review: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+        "Do not approve runtime implementation",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"prompt_type": "ithildin.enterprise_review_submission_prompt"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"records_external_review": false',
+        '"normalizes_responses": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_REVIEW_SUBMISSION_PROMPT.md",
+        "enterprise-review-submission-prompt.json",
+    } <= hashed_paths
+    assert "enterprise-review-submission-prompt-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-submission-prompt:" in makefile
+    assert "enterprise-review-submission-prompt-check:" in makefile
+    assert "enterprise-review-submission-prompt-check" in release_check_body
+    assert "$(MAKE) enterprise-review-submission-prompt" in review_candidate_body
+    assert "make enterprise-review-submission-prompt" in readme
+    assert "enterprise-review-submission-prompt" in send_manifest_doc
+    assert "enterprise-review-submission-prompt" in outbox_doc
+    assert "docs/codex/enterprise-review-submission-prompt.md" in docs_site
+    assert "docs/codex/enterprise-review-submission-prompt.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Submission Prompt" in review_index
+    assert "enterprise-review-submission-prompt-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-submission-prompt" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 

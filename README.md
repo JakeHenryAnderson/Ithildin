@@ -424,6 +424,8 @@ checked with `make control-mapping-readiness`.
   or closing either lane.
 - `make enterprise-review-send-manifest` - generate a checked send manifest for the current
   `ERG-003` and `ERG-002` outbox, response paths, and still-blocked boundaries.
+- `make enterprise-review-submission-prompt` - generate a paste-ready operator prompt for sending
+  the current `ERG-003` and `ERG-002` review packets as separate review requests.
 - `make enterprise-review-handoff-drill` - generate a checked operator drill tying together the
   current send outbox, send manifest, response inbox, status board, and intake drill without
   recording review, normalizing real responses, or closing lanes.
@@ -1027,6 +1029,11 @@ The enterprise review send manifest is
 generated with `make enterprise-review-send-manifest`; it records the current send set, outbox
 hash-manifest pointer, lane-specific response path, and blocked boundaries while still not
 recording review, normalizing responses, or closing either lane.
+The enterprise review submission prompt is
+[docs/codex/enterprise-review-submission-prompt.md](docs/codex/enterprise-review-submission-prompt.md),
+generated with `make enterprise-review-submission-prompt`; it gives the operator paste-ready
+instructions for separate `ERG-003` and `ERG-002` review requests while still not recording review,
+normalizing responses, or closing either lane.
 The enterprise review handoff drill is
 [docs/codex/enterprise-review-handoff-drill.md](docs/codex/enterprise-review-handoff-drill.md),
 generated with `make enterprise-review-handoff-drill`; it ties together the outbox, send manifest,

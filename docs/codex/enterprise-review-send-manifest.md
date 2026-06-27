@@ -53,6 +53,12 @@ Then generate the send manifest:
 make enterprise-review-send-manifest
 ```
 
+Then generate the paste-ready operator prompt:
+
+```sh
+make enterprise-review-submission-prompt
+```
+
 ## After Sending
 
 While waiting for responses, use:
