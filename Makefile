@@ -309,6 +309,12 @@ enterprise-review-send-manifest:
 enterprise-review-send-manifest-check:
 	uv run python scripts/enterprise_review_send_manifest.py --check
 
+enterprise-review-handoff-drill:
+	uv run python scripts/enterprise_review_handoff_drill.py
+
+enterprise-review-handoff-drill-check:
+	uv run python scripts/enterprise_review_handoff_drill.py --check
+
 enterprise-dual-response-inbox:
 	uv run python scripts/enterprise_dual_response_inbox.py
 
@@ -333,7 +339,7 @@ enterprise-response-inbox-check:
 enterprise-response-intake-drill:
 	uv run python scripts/enterprise_response_intake_drill.py
 
-.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill
+.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill
 
 sandbox-vm-live-poc-decision-packet:
 	uv run python scripts/sandbox_vm_live_poc_decision_packet.py
@@ -1211,6 +1217,7 @@ review-candidate:
 	$(MAKE) enterprise-dual-review-handoff
 	$(MAKE) enterprise-dual-review-outbox
 	$(MAKE) enterprise-review-send-manifest
+	$(MAKE) enterprise-review-handoff-drill
 	$(MAKE) enterprise-dual-response-inbox
 	$(MAKE) enterprise-dual-response-readiness
 	$(MAKE) enterprise-response-status-board
@@ -1321,6 +1328,7 @@ release-check: public-security-product-positioning-response-kit-check
 release-check: enterprise-response-normalization-coverage
 release-check: enterprise-response-inbox-check
 release-check: enterprise-response-intake-drill
+release-check: enterprise-review-handoff-drill-check
 
 release-check: docs-claims-public-preview-disposition-closure-check
 

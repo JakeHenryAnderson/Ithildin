@@ -421,6 +421,9 @@ checked with `make control-mapping-readiness`.
   or closing either lane.
 - `make enterprise-review-send-manifest` - generate a checked send manifest for the current
   `ERG-003` and `ERG-002` outbox, response paths, and still-blocked boundaries.
+- `make enterprise-review-handoff-drill` - generate a checked operator drill tying together the
+  current send outbox, send manifest, response inbox, status board, and intake drill without
+  recording review, normalizing real responses, or closing lanes.
 - `make enterprise-dual-response-inbox` - create ignored raw-response placeholders and exact
   normalization/dry-run/closure commands for `ERG-003` and `ERG-002`, without normalizing responses
   or closing either lane.
@@ -1018,6 +1021,11 @@ The enterprise review send manifest is
 generated with `make enterprise-review-send-manifest`; it records the current send set, outbox
 hash-manifest pointer, lane-specific response path, and blocked boundaries while still not
 recording review, normalizing responses, or closing either lane.
+The enterprise review handoff drill is
+[docs/codex/enterprise-review-handoff-drill.md](docs/codex/enterprise-review-handoff-drill.md),
+generated with `make enterprise-review-handoff-drill`; it ties together the outbox, send manifest,
+response inbox, response status board, and fixture-only intake drill so the operator can practice
+the send/receive sequence without recording review, normalizing real responses, or closing lanes.
 The dual-response inbox is
 [docs/codex/enterprise-dual-response-inbox.md](docs/codex/enterprise-dual-response-inbox.md),
 generated with `make enterprise-dual-response-inbox`; it creates ignored raw-response placeholders

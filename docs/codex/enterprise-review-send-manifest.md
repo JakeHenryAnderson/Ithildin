@@ -68,6 +68,16 @@ response kit, intake doc, response dry run, and fail-closed closure gate for eac
 review feedback is not enough by itself: it must be normalized, checked, dispositioned, and applied
 through a later committed response-application path.
 
+For a single checked operator rehearsal that ties together the outbox, send manifest, response
+inbox, response status board, and fixture-only intake drill, run:
+
+```sh
+make enterprise-review-handoff-drill
+```
+
+See [Enterprise Review Handoff Drill](enterprise-review-handoff-drill.md). The drill does not
+record external review, normalize real responses, or close lanes.
+
 ## Boundary
 
 This manifest does not approve:

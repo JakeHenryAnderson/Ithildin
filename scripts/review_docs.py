@@ -266,6 +266,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-dual-review-handoff.md",
     "docs/codex/enterprise-dual-review-outbox.md",
     "docs/codex/enterprise-review-send-manifest.md",
+    "docs/codex/enterprise-review-handoff-drill.md",
     "docs/codex/enterprise-dual-response-inbox.md",
     "docs/codex/enterprise-dual-response-readiness.md",
     "docs/codex/enterprise-response-status-board.md",

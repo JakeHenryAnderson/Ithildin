@@ -60,6 +60,7 @@ from scripts import (
     enterprise_response_intake_drill,
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
+    enterprise_review_handoff_drill,
     enterprise_review_send_manifest,
     enterprise_review_send_readiness,
     enterprise_sandbox_control_plane_readiness_check,
@@ -1744,6 +1745,118 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-review-send-manifest" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_handoff_drill_is_wired() -> None:
+    report = enterprise_review_handoff_drill.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-handoff-drill.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    send_manifest_doc = Path("docs/codex/enterprise-review-send-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    response_board = Path("docs/codex/enterprise-response-status-board.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-review-handoff-drill")
+    generated = generated_dir / "ENTERPRISE_REVIEW_HANDOFF_DRILL.md"
+    generated_json = generated_dir / "enterprise-review-handoff-drill.json"
+    generated_hashes = json.loads(
+        (
+            generated_dir / "enterprise-review-handoff-drill-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["artifact_hashes_match_files"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["records_external_review"] is False
+    assert report["normalizes_real_responses"] is False
+    assert report["closes_enterprise_lanes"] is False
+    for phrase in [
+        "Status: generated operator drill for enterprise review send/receive readiness.",
+        "make enterprise-review-handoff-drill",
+        "make enterprise-review-handoff-drill-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record external review",
+        "does not normalize real responses",
+        "does not close any enterprise lane",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Handoff Drill",
+        "Current send set",
+        "ERG-003",
+        "ERG-002",
+        "Operator sequence",
+        "Response landing pads",
+        "records_external_review: `false`",
+        "normalizes_real_responses: `false`",
+        "closes_enterprise_lanes: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"drill_type": "ithildin.enterprise_review_handoff_drill"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"send_ready": true',
+        '"intake_drill_valid": true',
+        '"records_external_review": false',
+        '"normalizes_real_responses": false',
+        '"closes_enterprise_lanes": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_REVIEW_HANDOFF_DRILL.md",
+        "enterprise-review-handoff-drill.json",
+    } <= hashed_paths
+    assert "enterprise-review-handoff-drill-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-handoff-drill:" in makefile
+    assert "enterprise-review-handoff-drill-check:" in makefile
+    assert (
+        "enterprise-review-handoff-drill-check" in release_check_body
+        or "release-check: enterprise-review-handoff-drill-check" in makefile
+    )
+    assert "$(MAKE) enterprise-review-handoff-drill" in review_candidate_body
+    assert "make enterprise-review-handoff-drill" in readme
+    assert "docs/codex/enterprise-review-handoff-drill.md" in docs_site
+    assert "docs/codex/enterprise-review-handoff-drill.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Handoff Drill" in review_index
+    assert "enterprise-review-handoff-drill" in queue
+    assert "enterprise-review-handoff-drill" in send_manifest_doc
+    assert "enterprise-review-handoff-drill" in response_board
+    assert "enterprise-review-handoff-drill-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-handoff-drill" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 

@@ -167,6 +167,16 @@ make enterprise-review-send-manifest
 
 See [Enterprise Review Send Manifest](enterprise-review-send-manifest.md).
 
+To rehearse the current send/receive sequence with the outbox, send manifest, response inbox,
+status board, and fixture-only intake drill, run:
+
+```sh
+make enterprise-review-handoff-drill
+```
+
+See [Enterprise Review Handoff Drill](enterprise-review-handoff-drill.md). This does not record
+review, normalize real responses, close lanes, or approve runtime behavior.
+
 After sending the two packets, prepare local response handling with:
 
 ```sh

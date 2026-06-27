@@ -28,6 +28,11 @@ For the current parallel `ERG-003` / `ERG-002` handoff, use
 `make enterprise-dual-response-inbox` to create ignored raw-response placeholders before running
 lane-specific normalization and dry-run commands.
 
+Use [Enterprise Review Handoff Drill](enterprise-review-handoff-drill.md) with
+`make enterprise-review-handoff-drill` to rehearse the current send/receive sequence across the
+outbox, send manifest, response inbox, status board, and fixture-only intake drill. The drill does
+not record external review, normalize real responses, close lanes, or approve runtime behavior.
+
 ## Purpose
 
 This board summarizes normalized-response state across the enterprise external-review queue. It is
