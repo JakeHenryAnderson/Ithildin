@@ -415,6 +415,8 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-dual-review-outbox` - copy the current `ERG-003` and `ERG-002` send-ready
   review files into one ignored outbox with an index and artifact hashes, without recording review
   or closing either lane.
+- `make enterprise-review-send-manifest` - generate a checked send manifest for the current
+  `ERG-003` and `ERG-002` outbox, response paths, and still-blocked boundaries.
 - `make enterprise-dual-response-inbox` - create ignored raw-response placeholders and exact
   normalization/dry-run/closure commands for `ERG-003` and `ERG-002`, without normalizing responses
   or closing either lane.
@@ -1007,6 +1009,11 @@ The dual-review outbox is
 generated with `make enterprise-dual-review-outbox`; it copies the current `ERG-003` and `ERG-002`
 send-ready files into one ignored outbox with artifact hashes while still not recording review or
 closing either lane.
+The enterprise review send manifest is
+[docs/codex/enterprise-review-send-manifest.md](docs/codex/enterprise-review-send-manifest.md),
+generated with `make enterprise-review-send-manifest`; it records the current send set, outbox
+hash-manifest pointer, lane-specific response path, and blocked boundaries while still not
+recording review, normalizing responses, or closing either lane.
 The dual-response inbox is
 [docs/codex/enterprise-dual-response-inbox.md](docs/codex/enterprise-dual-response-inbox.md),
 generated with `make enterprise-dual-response-inbox`; it creates ignored raw-response placeholders

@@ -12,6 +12,16 @@ Run:
 make enterprise-review-send-readiness
 ```
 
+For a generated send manifest over the current recommended packet set, run:
+
+```sh
+make enterprise-review-send-manifest
+```
+
+See [Enterprise Review Send Manifest](enterprise-review-send-manifest.md). The manifest records the
+current send set and response path but does not record external review, normalize responses, close
+lanes, or approve runtime behavior.
+
 ## Purpose
 
 This check summarizes which enterprise review packets are mechanically ready for operator handoff.

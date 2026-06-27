@@ -158,6 +158,15 @@ make enterprise-dual-review-outbox
 
 See [Enterprise Dual Review Outbox](enterprise-dual-review-outbox.md).
 
+To generate a checked send manifest that ties the current `ERG-003/ERG-002` outbox to response
+paths and still-blocked boundaries, run:
+
+```sh
+make enterprise-review-send-manifest
+```
+
+See [Enterprise Review Send Manifest](enterprise-review-send-manifest.md).
+
 After sending the two packets, prepare local response handling with:
 
 ```sh

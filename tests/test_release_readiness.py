@@ -60,6 +60,7 @@ from scripts import (
     enterprise_response_intake_drill,
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
+    enterprise_review_send_manifest,
     enterprise_review_send_readiness,
     enterprise_sandbox_control_plane_readiness_check,
     evidence_confusion_gate,
@@ -1626,6 +1627,115 @@ def test_enterprise_dual_review_outbox_is_wired() -> None:
     assert "Enterprise Dual Review Outbox" in review_index
     assert "enterprise-dual-review-outbox-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_review_send_manifest_is_wired() -> None:
+    report = enterprise_review_send_manifest.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    queue = Path("docs/codex/enterprise-external-review-queue.md").read_text(
+        encoding="utf-8"
+    )
+    send_readiness = Path("docs/codex/enterprise-review-send-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    outbox_doc = Path("docs/codex/enterprise-dual-review-outbox.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-review-send-manifest")
+    generated = generated_dir / "ENTERPRISE_REVIEW_SEND_MANIFEST.md"
+    generated_json = generated_dir / "enterprise-review-send-manifest.json"
+    generated_hashes = json.loads(
+        (generated_dir / "enterprise-review-send-manifest-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["artifact_hashes_match_files"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    for phrase in [
+        "Status: generated send manifest for current enterprise external-review packets.",
+        "make enterprise-review-send-manifest",
+        "make enterprise-review-send-manifest-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record external review",
+        "does not normalize responses",
+        "does not close either lane",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Send Manifest",
+        "Recommended send set",
+        "ERG-003",
+        "ERG-002",
+        "Post-send response path",
+        "Blocked boundaries",
+        "records_external_review: `false`",
+        "normalizes_responses: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"manifest_type": "ithildin.enterprise_review_send_manifest"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"records_external_review": false',
+        '"normalizes_responses": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+        '"outbox_hash_manifest"',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_REVIEW_SEND_MANIFEST.md",
+        "enterprise-review-send-manifest.json",
+    } <= hashed_paths
+    assert "enterprise-review-send-manifest-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-send-manifest:" in makefile
+    assert "enterprise-review-send-manifest-check:" in makefile
+    assert "enterprise-review-send-manifest-check" in release_check_body
+    assert "$(MAKE) enterprise-review-send-manifest" in review_candidate_body
+    assert "make enterprise-review-send-manifest" in readme
+    assert "enterprise-review-send-manifest.md" in queue
+    assert "enterprise-review-send-manifest" in send_readiness
+    assert "enterprise-review-send-manifest" in outbox_doc
+    assert "docs/codex/enterprise-review-send-manifest.md" in docs_site
+    assert "docs/codex/enterprise-review-send-manifest.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Manifest" in review_index
+    assert "enterprise-review-send-manifest-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-manifest" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
 
