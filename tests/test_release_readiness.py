@@ -1302,6 +1302,8 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
         "artifact hash manifest",
         "recomputes the attachment byte counts and SHA-256 digests",
         "make sandbox-vm-static-preflight-response-application-record-check",
+        "make sandbox-vm-static-preflight-response-application-playbook-check",
+        "docs/codex/sandbox-vm-static-preflight-response-application-playbook.md",
         "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
         "does not close `ERG-003`",
         "does not approve live VM/container inspection",
@@ -1333,6 +1335,7 @@ def test_enterprise_next_review_handoff_is_wired() -> None:
     assert "docs/codex/enterprise-next-review-handoff.md" in readme
     assert "enterprise-next-review-handoff.md" in queue
     assert "sandbox-vm-static-preflight-response-application-record.md" in queue
+    assert "sandbox-vm-static-preflight-response-application-playbook.md" in queue
     assert "docs/codex/enterprise-next-review-handoff.md" in docs_site
     assert "docs/codex/enterprise-next-review-handoff.md" in review_docs.REVIEW_DOCS
     assert "Enterprise Next Review Handoff" in review_index

@@ -47,6 +47,7 @@ REQUIRED_PHRASES = [
     "Compliance mapping support",
     "Public/security-product positioning",
     "public-security-product-positioning-decision-intake.md",
+    "sandbox-vm-static-preflight-response-application-playbook.md",
     "Allowed current claims",
     "Blocked current claims",
     "post-RC decision record",

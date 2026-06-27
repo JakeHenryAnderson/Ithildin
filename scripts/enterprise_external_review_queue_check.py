@@ -144,6 +144,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "docs/codex/sandbox-vm-static-preflight-disposition-packet.md",
         "docs/codex/sandbox-vm-static-preflight-external-response-intake.md",
         "docs/codex/sandbox-vm-static-preflight-triage-update.md",
+        "docs/codex/sandbox-vm-static-preflight-response-application-playbook.md",
         "docs/codex/mission-control-display-external-review-bundle.md",
         "docs/codex/mission-control-integration-readiness-packet.md",
         "docs/codex/mission-control-display-external-response-intake.md",

@@ -90,12 +90,14 @@ After review, use:
 make sandbox-vm-static-preflight-response-kit
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-disposition-closure-check
+make sandbox-vm-static-preflight-response-application-playbook-check
 make sandbox-vm-static-preflight-response-application-record-check
 ```
 
 Then follow:
 
 ```text
+docs/codex/sandbox-vm-static-preflight-response-application-playbook.md
 docs/codex/sandbox-vm-static-preflight-triage-update.md
 docs/codex/sandbox-vm-static-preflight-response-application-record.md
 ```

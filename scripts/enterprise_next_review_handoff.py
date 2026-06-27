@@ -150,7 +150,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "does not approve local model invocation",
         "make sandbox-vm-static-preflight-external-review-bundle",
         "make sandbox-vm-static-preflight-response-kit",
+        "make sandbox-vm-static-preflight-response-application-playbook-check",
         "make sandbox-vm-static-preflight-response-application-record-check",
+        "docs/codex/sandbox-vm-static-preflight-response-application-playbook.md",
         "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
         "artifact hash manifest",
     ]:
