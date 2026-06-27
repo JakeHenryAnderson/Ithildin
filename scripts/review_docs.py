@@ -265,6 +265,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-next-review-ready-check.md",
     "docs/codex/enterprise-review-send-readiness.md",
     "docs/codex/enterprise-current-checkpoint.md",
+    "docs/codex/enterprise-status-export.md",
     "docs/codex/enterprise-dual-review-handoff.md",
     "docs/codex/enterprise-dual-review-outbox.md",
     "docs/codex/enterprise-review-send-manifest.md",

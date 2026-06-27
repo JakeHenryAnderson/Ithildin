@@ -68,6 +68,7 @@ from scripts import (
     enterprise_review_send_readiness,
     enterprise_review_submission_prompt,
     enterprise_sandbox_control_plane_readiness_check,
+    enterprise_status_export,
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
@@ -1579,6 +1580,122 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert "docs/codex/enterprise-progress-model.md" in review_docs.REVIEW_DOCS
     assert "Ithildin Enterprise Progress Model" in review_index
     assert "enterprise-progress-model" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
+    report = enterprise_status_export.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-status-export.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    export_dir = tmp_path / "enterprise-status-export"
+    enterprise_status_export.write_export(report, export_dir)
+    export_text = (export_dir / "ENTERPRISE_STATUS_EXPORT.md").read_text(
+        encoding="utf-8"
+    )
+    export_json_text = (export_dir / "enterprise-status-export.json").read_text(
+        encoding="utf-8"
+    )
+    export_hashes = json.loads(
+        (export_dir / "enterprise-status-export-artifact-hashes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    hashed_paths = {artifact["path"] for artifact in export_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["artifact_type"] == "ithildin.enterprise_status_export"
+    assert report["status"] == "display_only"
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["enterprise_gap_count"] == 10
+    assert report["lane_count"] == 8
+    assert report["packet_handoff_ready_count"] == 8
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert {row["gap"] for row in report["review_lanes"]} == {
+        "ERG-003",
+        "ERG-002",
+        "ERG-005",
+        "ERG-006/ERG-007",
+        "ERG-008",
+        "ERG-009",
+        "ERG-004",
+        "ERG-010",
+    }
+    for row in report["review_lanes"]:
+        assert row["packet_handoff_ready"] is True
+        assert row["implementation_allowed"] is False
+        assert row["runtime_changes_allowed"] is False
+        assert row["closure_ready"] is False
+        assert row["normalized_response_present"] is False
+    for phrase in [
+        "Status: display-only enterprise status export contract.",
+        "make enterprise-status-export",
+        "make enterprise-status-export-check",
+        "does not approve Mission Control runtime behavior",
+        "does not approve live VM/container inspection",
+        "does not approve sandbox orchestration",
+        "does not approve trusted-host promotion",
+        "does not approve SIEM adapter behavior",
+        "does not approve compliance automation",
+        "does not approve public/security-product positioning",
+        "does not approve new governed tool powers",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Status Export",
+        "display-only enterprise status export",
+        "recommended_send_set: `ERG-003, ERG-002`",
+        "runtime_changes_allowed: `false`",
+        "does not approve Mission Control runtime behavior",
+        "does not approve new governed tool powers",
+    ]:
+        assert phrase in export_text
+    for phrase in [
+        '"artifact_type": "ithildin.enterprise_status_export"',
+        '"status": "display_only"',
+        '"tool_count": 24',
+        '"runtime_changes_allowed": false',
+        '"new_power_classes_allowed": false',
+    ]:
+        assert phrase in export_json_text
+    assert {
+        "ENTERPRISE_STATUS_EXPORT.md",
+        "enterprise-status-export.json",
+    } <= hashed_paths
+    assert "enterprise-status-export-artifact-hashes.json" not in hashed_paths
+    assert export_hashes["hash_manifest_self_hashed"] is False
+    assert "enterprise-status-export:" in makefile
+    assert "enterprise-status-export-check:" in makefile
+    assert "enterprise-status-export-check" in release_check_body
+    assert "$(MAKE) enterprise-status-export" in review_candidate_body
+    assert "make enterprise-status-export" in readme
+    assert "docs/codex/enterprise-status-export.md" in readme
+    assert "docs/codex/enterprise-status-export.md" in docs_site
+    assert "docs/codex/enterprise-status-export.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Status Export" in review_index
+    assert "enterprise-status-export-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

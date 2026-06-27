@@ -424,6 +424,11 @@ checked with `make control-mapping-readiness`.
   and lane closure blocked.
 - `make enterprise-current-checkpoint` - validate the top-level enterprise checkpoint across v1.0
   RC status, current send set, response status, and blocked runtime boundaries.
+- `make enterprise-status-export` - write an ignored display-only JSON/Markdown status export for
+  operator dashboards and Mission Control display/import experiments without approving runtime
+  behavior.
+- `make enterprise-status-export-check` - validate the status export contract, wiring, and
+  generated artifact shape.
 - `make enterprise-dual-review-handoff` - generate the compact pointer for sending the current two
   recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
 - `make enterprise-dual-review-outbox` - copy the current `ERG-003` and `ERG-002` send-ready
@@ -1039,6 +1044,13 @@ The enterprise current checkpoint is
 checked with `make enterprise-current-checkpoint`; it gives the compact current operator truth:
 v1.0 RC artifacts are ready to regenerate, `ERG-003`/`ERG-002` are the send set, no normalized
 responses are present, and runtime expansion remains blocked.
+The enterprise status export is
+[docs/codex/enterprise-status-export.md](docs/codex/enterprise-status-export.md), generated with
+`make enterprise-status-export` and checked with `make enterprise-status-export-check`; it writes a
+display-only JSON/Markdown snapshot for operator dashboards and Mission Control display/import
+experiments while keeping Mission Control runtime behavior, live VM/container inspection, sandbox
+orchestration, SIEM adapter behavior, compliance automation, public/security-product positioning,
+and new governed tool powers blocked.
 The dual-review handoff is
 [docs/codex/enterprise-dual-review-handoff.md](docs/codex/enterprise-dual-review-handoff.md),
 generated with `make enterprise-dual-review-handoff`; it points to the current `ERG-003` and
