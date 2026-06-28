@@ -57,6 +57,7 @@ from scripts import (
     enterprise_next_review_handoff,
     enterprise_next_review_ready_check,
     enterprise_north_star_roadmap,
+    enterprise_operator_next_action,
     enterprise_progress_model,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
@@ -3412,6 +3413,83 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-north-star-roadmap" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_operator_next_action_is_wired() -> None:
+    report = enterprise_operator_next_action.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-operator-next-action.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["next_action"] == "send_erg_003_and_erg_002"
+    assert report["action_commands"] == [
+        "make release-check",
+        "make review-candidate",
+        "make enterprise-dual-review-outbox",
+        "make enterprise-review-send-manifest",
+        "make enterprise-review-submission-prompt",
+        "make enterprise-review-handoff-drill",
+    ]
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: checked read-only operator next-action summary",
+        "Current governed tool count: `24`",
+        "make enterprise-operator-next-action",
+        "With no real enterprise reviewer responses present",
+        "make enterprise-dual-review-outbox",
+        "make enterprise-review-send-manifest",
+        "make enterprise-review-submission-prompt",
+        "make enterprise-review-handoff-drill",
+        "`ERG-003`: static sandbox/VM preflight disposition",
+        "`ERG-002`: Mission Control display/import planning review",
+        "make enterprise-response-paste-preflight",
+        "make enterprise-response-intake-quickstart",
+        "What This Does Not Approve",
+        "Mission Control runtime behavior",
+        "public/security-product positioning",
+        "new governed tool powers",
+    ]:
+        assert phrase in doc
+    assert "enterprise-operator-next-action:" in makefile
+    assert (
+        "enterprise-operator-next-action" in release_check_body
+        or "release-check: enterprise-operator-next-action" in makefile
+    )
+    assert "$(MAKE) enterprise-operator-next-action" in review_candidate_body
+    assert "make enterprise-operator-next-action" in readme
+    assert "docs/codex/enterprise-operator-next-action.md" in readme
+    assert "docs/codex/enterprise-operator-next-action.md" in docs_site
+    assert "docs/codex/enterprise-operator-next-action.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Operator Next Action" in review_index
+    assert "enterprise-operator-next-action" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-operator-next-action" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
