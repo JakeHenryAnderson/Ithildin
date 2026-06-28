@@ -65,6 +65,7 @@ from scripts import (
     enterprise_response_intake_drill,
     enterprise_response_intake_quickstart,
     enterprise_response_normalization_coverage,
+    enterprise_response_paste_preflight,
     enterprise_response_status_board,
     enterprise_review_handoff_drill,
     enterprise_review_send_checklist,
@@ -3227,6 +3228,118 @@ def test_enterprise_response_intake_quickstart_is_wired() -> None:
     assert "$(MAKE) enterprise-response-intake-quickstart" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
+
+
+def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
+    report = enterprise_response_paste_preflight.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-paste-preflight.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    quickstart = Path("docs/codex/enterprise-response-intake-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["supported_lanes"] == ["ERG-002", "ERG-003"]
+    assert report["deterministic_docs_only"] is True
+    assert report["ready_for_normalization"] is False
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["external_review_recorded"] is False
+    assert report["closes_enterprise_lanes"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: deterministic preflight for pasted `ERG-003` and `ERG-002` reviewer responses.",
+        "Current governed tool count: `24`.",
+        "make enterprise-response-paste-preflight",
+        "--lane ERG-003",
+        "--lane ERG-002",
+        "Expected finding namespace",
+        "explicit no-findings statement",
+        "does not normalize responses",
+        "does not write response files",
+        "does not record external review",
+        "does not close either lane",
+        "does not approve runtime behavior",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-paste-preflight:" in makefile
+    assert (
+        "enterprise-response-paste-preflight" in release_check_body
+        or "release-check: enterprise-response-paste-preflight" in makefile
+    )
+    assert "$(MAKE) enterprise-response-paste-preflight" in review_candidate_body
+    assert "make enterprise-response-paste-preflight" in readme
+    assert "docs/codex/enterprise-response-paste-preflight.md" in readme
+    assert "make enterprise-response-paste-preflight" in quickstart
+    assert "make enterprise-response-paste-preflight" in current_checkpoint
+    assert "docs/codex/enterprise-response-paste-preflight.md" in docs_site
+    assert (
+        "docs/codex/enterprise-response-paste-preflight.md" in review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Response Paste Preflight" in review_index
+    assert "enterprise-response-paste-preflight" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-paste-preflight" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+    specs = enterprise_response_paste_preflight._lane_specs(  # noqa: SLF001
+        enterprise_response_command_matrix.build_report(Path.cwd())
+    )
+    raw_path = Path("var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md")
+    original = raw_path.read_bytes() if raw_path.exists() else None
+    try:
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_path.write_text(
+            "\n".join(
+                [
+                    "External source review for ERG-003.",
+                    "No actionable findings were found.",
+                    "The lane can close for the local-preview static preflight boundary.",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        valid_raw = enterprise_response_paste_preflight.preflight_raw_response(
+            Path.cwd(), specs["ERG-003"], raw_path
+        )
+        assert valid_raw["valid"] is True
+        assert valid_raw["normalizes_responses"] is False
+        assert valid_raw["external_review_recorded"] is False
+
+        raw_path.write_text(
+            "# Raw External Review Response Placeholder: ERG-003\n"
+            "Paste the unmodified reviewer response here.\n",
+            encoding="utf-8",
+        )
+        placeholder_raw = enterprise_response_paste_preflight.preflight_raw_response(
+            Path.cwd(), specs["ERG-003"], raw_path
+        )
+        assert placeholder_raw["valid"] is False
+        assert any("placeholder" in failure for failure in placeholder_raw["failures"])
+    finally:
+        if original is None:
+            raw_path.unlink(missing_ok=True)
+        else:
+            raw_path.write_bytes(original)
 
 
 def test_enterprise_dual_response_inbox_is_wired() -> None:

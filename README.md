@@ -490,6 +490,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-intake-quickstart` - validate the compact operator quickstart for
   pasting future `ERG-003` and `ERG-002` responses into ignored raw-response paths and running the
   lane dry-run/closure sequence without recording review or approving runtime expansion.
+- `make enterprise-response-paste-preflight` - validate pasted `ERG-003` and `ERG-002` raw reviewer
+  responses are UTF-8, size-bounded, lane-matched, and non-placeholder before the existing normalizer
+  path, without normalizing responses or recording review.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -1181,6 +1184,11 @@ checked with `make enterprise-response-intake-quickstart`; it gives the operator
 `ERG-003` and `ERG-002` raw-response paths, normalizer commands, lane dry-runs, closure gates, and
 stop conditions for after reviewer responses arrive without recording review or approving runtime
 expansion.
+The enterprise response paste preflight is
+[docs/codex/enterprise-response-paste-preflight.md](docs/codex/enterprise-response-paste-preflight.md),
+checked with `make enterprise-response-paste-preflight`; it checks pasted `ERG-003` and `ERG-002`
+raw responses before normalization without writing normalized responses, recording review, or
+closing enterprise lanes.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

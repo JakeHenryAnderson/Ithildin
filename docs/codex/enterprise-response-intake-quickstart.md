@@ -28,6 +28,7 @@ make enterprise-dual-response-readiness
 make enterprise-response-status-board
 make enterprise-response-command-matrix
 make enterprise-response-application-protocol
+make enterprise-response-paste-preflight
 ```
 
 Confirm the response belongs to the current packet and finding namespace:
@@ -52,6 +53,9 @@ var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
 Then run:
 
 ```sh
+uv run python scripts/enterprise_response_paste_preflight.py \
+  --lane ERG-003 \
+  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
 uv run python scripts/external_response_normalize.py \
   --area sandbox-vm-static-preflight \
   --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
@@ -81,6 +85,9 @@ var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md
 Then run:
 
 ```sh
+uv run python scripts/enterprise_response_paste_preflight.py \
+  --lane ERG-002 \
+  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md
 uv run python scripts/external_response_normalize.py \
   --area mission-control-display \
   --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md

@@ -414,7 +414,10 @@ enterprise-response-application-protocol:
 enterprise-response-intake-quickstart:
 	uv run python scripts/enterprise_response_intake_quickstart.py
 
-.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol enterprise-response-intake-quickstart
+enterprise-response-paste-preflight:
+	uv run python scripts/enterprise_response_paste_preflight.py
+
+.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol enterprise-response-intake-quickstart enterprise-response-paste-preflight
 
 sandbox-vm-live-poc-decision-packet:
 	uv run python scripts/sandbox_vm_live_poc_decision_packet.py
@@ -1321,6 +1324,7 @@ review-candidate:
 	$(MAKE) enterprise-response-command-matrix
 	$(MAKE) enterprise-response-application-protocol
 	$(MAKE) enterprise-response-intake-quickstart
+	$(MAKE) enterprise-response-paste-preflight
 	$(MAKE) sandbox-vm-live-poc-decision-packet
 	$(MAKE) sandbox-vm-live-poc-external-review-bundle
 	$(MAKE) sandbox-vm-live-poc-response-kit
@@ -1396,6 +1400,7 @@ release-check: sandbox-vm-live-poc-decision-record-skeleton-check
 release-check: sandbox-vm-live-poc-response-dry-run
 release-check: sandbox-vm-live-poc-response-kit-check
 release-check: sandbox-vm-live-poc-external-review-bundle-check
+release-check: enterprise-response-paste-preflight
 release-check: mission-control-display-response-dry-run
 release-check: mission-control-importer-acceptance-matrix-check
 release-check: mission-control-handoff-reference-validator

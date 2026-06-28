@@ -50,6 +50,7 @@ make enterprise-response-status-board
 make enterprise-response-intake-drill
 make enterprise-response-application-protocol
 make enterprise-response-intake-quickstart
+make enterprise-response-paste-preflight
 ```
 
 Follow each lane-specific response kit and closure gate before any committed disposition update.
