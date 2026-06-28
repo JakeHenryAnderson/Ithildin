@@ -38,6 +38,11 @@ and the later design-only decision-record path. It packages:
 It is meant to make the post-review path repeatable without pretending that review already
 happened.
 
+Use [mission-control-display-response-application-preflight.md](mission-control-display-response-application-preflight.md)
+before applying a real response. That preflight verifies the all-lane raw response path,
+lane-local normalized response path, command matrix, closure gate, dry-run, response kit,
+decision-record skeleton, and blocked Mission Control runtime boundaries remain aligned.
+
 ## Artifacts
 
 The kit generates:

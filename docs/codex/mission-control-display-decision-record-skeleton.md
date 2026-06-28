@@ -20,6 +20,11 @@ writes, compliance automation, new governed tool powers, or public/security-prod
 Use this skeleton only after:
 
 - `var/review-runs/mission-control-display/normalized-response.json` exists;
+- `make mission-control-display-response-application-preflight-check` passed before applying the
+  real response;
+- `mission-control-display-response-application-preflight.md` still verifies the all-lane raw
+  response path, lane-local normalized response path, command matrix, closure gate, dry-run,
+  response kit, decision-record skeleton, and blocked runtime boundaries;
 - `make mission-control-display-disposition-closure-check` reports `closure_ready: true`;
 - the normalized response records `disposition_outcome: continue_design_only`;
 - no critical/high `EXT-MC-DISPLAY-###` finding is open;

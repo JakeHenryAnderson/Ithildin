@@ -199,6 +199,10 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/mission-control-display-disposition-closure-gate.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-response-dry-run.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-display-response-kit.md" in DEFAULT_DOCS
+    assert (
+        "docs/codex/mission-control-display-response-application-preflight.md"
+        in DEFAULT_DOCS
+    )
     assert "docs/codex/mission-control-display-decision-record-skeleton.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-integration-readiness-packet.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-side-handoff-plan.md" in DEFAULT_DOCS

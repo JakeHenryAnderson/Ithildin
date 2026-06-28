@@ -22,6 +22,12 @@ Validation command:
 make mission-control-display-disposition-closure-check
 ```
 
+Run `make mission-control-display-response-application-preflight-check` before using a real
+reviewer response. The companion `mission-control-display-response-application-preflight.md` checks
+the all-lane raw response path, ERG-002 normalized response path, command matrix row, closure gate,
+dry-run, response kit, decision-record skeleton, and blocked runtime boundaries without normalizing
+responses or closing `ERG-002`.
+
 ## Required Normalized Response
 
 The gate looks for this ignored/local evidence file:

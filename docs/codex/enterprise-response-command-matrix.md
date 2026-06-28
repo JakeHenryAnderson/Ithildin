@@ -31,6 +31,13 @@ before applying a real reviewer response. It verifies the raw-response path, nor
 path, command matrix row, closure gate, dry-run, application record, application playbook, and
 blocked runtime boundaries without normalizing responses or closing the lane.
 
+For `ERG-002`, use
+[Mission Control Display Response Application Preflight](mission-control-display-response-application-preflight.md)
+before using a real reviewer response to support a design-only decision record. It verifies the
+raw-response path, normalized-response path, command matrix row, closure gate, dry-run, response kit,
+decision-record skeleton, and blocked Mission Control runtime boundaries without normalizing
+responses or closing the lane.
+
 ## Command Matrix
 
 | Lane | Raw response path | Normalizer command | Normalized response path | Dry run | Closure gate | Response kit | Maximum allowed transition | Still blocked |

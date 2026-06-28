@@ -51,8 +51,13 @@ findings, reviewed commit, reviewed packet hash, and decision-record status.
 Recommended focused sequence:
 
 ```sh
+make mission-control-display-response-application-preflight-check
 make mission-control-display-external-response-intake-check
 make mission-control-display-disposition-closure-check
 make mission-control-display-response-dry-run
 make mission-control-display-disposition-packet-check
 ```
+
+The companion `mission-control-display-response-application-preflight.md` verifies the all-lane raw
+response path, ERG-002 normalized response path, command matrix, closure gate, dry-run, response
+kit, decision-record skeleton, and blocked runtime boundaries before a real response is used.

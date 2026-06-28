@@ -97,6 +97,11 @@ enterprise gap matrix or post-RC decision register, and rerun release gates.
 Before a later committed triage update may use the response to support design-only continuation,
 run the fail-closed closure gate in
 [mission-control-display-disposition-closure-gate.md](mission-control-display-disposition-closure-gate.md).
+Before applying a real response, run
+[mission-control-display-response-application-preflight.md](mission-control-display-response-application-preflight.md)
+to verify the all-lane raw response path, lane-local normalized response path, command matrix,
+closure gate, dry-run, response kit, decision-record skeleton, and blocked runtime boundaries remain
+aligned.
 
 ## Allowed Intake Outcomes
 

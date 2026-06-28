@@ -87,3 +87,10 @@ For `ERG-003`, use
 before applying a real reviewer response. It checks that this all-lane raw-response path, the
 ERG-003 normalized-response path, the command matrix, the closure gate, the dry-run, the application
 record, the application playbook, and blocked runtime boundaries remain aligned.
+
+For `ERG-002`, use
+[Mission Control Display Response Application Preflight](mission-control-display-response-application-preflight.md)
+before using a real reviewer response to support a design-only Mission Control decision record. It
+checks this all-lane raw-response path, the ERG-002 normalized-response path, the command matrix,
+the closure gate, the dry-run, the response kit, the decision-record skeleton, and blocked Mission
+Control runtime boundaries remain aligned.

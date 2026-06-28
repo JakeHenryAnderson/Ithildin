@@ -122,6 +122,7 @@ from scripts import (
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
     mission_control_display_next_review_ready_check,
+    mission_control_display_response_application_preflight_check,
     mission_control_display_response_dry_run,
     mission_control_display_response_kit,
     mission_control_display_review_packet,
@@ -6347,6 +6348,134 @@ def test_mission_control_display_response_kit_is_wired(tmp_path: Path) -> None:
     assert "mission-control-display-response-kit.md" in gap_matrix
     assert "mission-control-display-response-kit.md" in queue
     assert "mission-control-display-response-kit.md" in decision_register
+
+
+def test_mission_control_display_response_application_preflight_is_wired() -> None:
+    report = mission_control_display_response_application_preflight_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/mission-control-display-response-application-preflight.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    response_inbox = Path("docs/codex/enterprise-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    command_matrix = Path("docs/codex/enterprise-response-command-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    external_intake = Path(
+        "docs/codex/mission-control-display-external-response-intake.md"
+    ).read_text(encoding="utf-8")
+    closure_gate = Path(
+        "docs/codex/mission-control-display-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    response_dry_run = Path(
+        "docs/codex/mission-control-display-response-dry-run.md"
+    ).read_text(encoding="utf-8")
+    response_kit = Path("docs/codex/mission-control-display-response-kit.md").read_text(
+        encoding="utf-8"
+    )
+    decision_skeleton = Path(
+        "docs/codex/mission-control-display-decision-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_002_status"] == "planning_only"
+    assert (
+        report["raw_response_path"]
+        == "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md"
+    )
+    assert (
+        report["normalized_response_path"]
+        == "var/review-runs/mission-control-display/normalized-response.json"
+    )
+    assert report["response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["allowed_future_status"] == "ready_for_design_only_decision_record"
+    assert report["decision_record_outcome"] == "approved_for_planning"
+    assert report["mission_control_planning_allowed"] is True
+    for key in [
+        "runtime_changes_allowed",
+        "normalizes_responses",
+        "writes_response_files",
+        "committed_findings_mutated",
+        "external_review_recorded",
+        "closes_erg_002",
+        "mission_control_runtime_allowed",
+        "runtime_importer_allowed",
+        "mission_control_execution_authority_allowed",
+        "mission_control_policy_authority_allowed",
+        "mission_control_approval_authority_allowed",
+        "mission_control_audit_authority_allowed",
+        "api_callbacks_allowed",
+        "polling_or_mutating_ithildin_apis_allowed",
+        "local_model_invocation_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+
+    for phrase in [
+        "Status: checked preflight for applying a real `ERG-002` external response.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "Current `ERG-002` status before real reviewer disposition: `planning_only`.",
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "var/review-runs/mission-control-display/normalized-response.json",
+        "make enterprise-response-command-matrix",
+        "make mission-control-display-disposition-closure-check",
+        "make mission-control-display-response-dry-run",
+        "make mission-control-display-response-kit-check",
+        "make mission-control-display-decision-record-skeleton-check",
+        "ERG-002: planning_only -> ready_for_design_only_decision_record",
+        "approved_for_planning",
+        "does not normalize responses",
+        "does not write normalized response files",
+        "does not close `ERG-002`",
+        "runtime importer behavior remains blocked",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "Mission Control runtime importer behavior is approved",
+        "Mission Control execution authority is approved",
+        "Mission Control policy authority is approved",
+        "Mission Control approval authority is approved",
+        "Mission Control audit authority is approved",
+        "ERG-002 is closed",
+        "Mission Control may execute",
+    ]:
+        assert forbidden not in doc
+
+    assert "make mission-control-display-response-application-preflight-check" in readme
+    assert "mission-control-display-response-application-preflight-check:" in makefile
+    assert "mission-control-display-response-application-preflight-check" in release_check_body
+    assert "mission-control-display-response-application-preflight-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/mission-control-display-response-application-preflight.md" in docs_site
+    assert (
+        "docs/codex/mission-control-display-response-application-preflight.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Mission Control Display Response Application Preflight" in review_index
+    for source in [
+        response_inbox,
+        command_matrix,
+        external_intake,
+        closure_gate,
+        response_dry_run,
+        response_kit,
+        decision_skeleton,
+    ]:
+        assert "mission-control-display-response-application-preflight.md" in source
 
 
 def test_mission_control_display_next_review_ready_check_is_wired() -> None:

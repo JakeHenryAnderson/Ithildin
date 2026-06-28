@@ -618,6 +618,9 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-response-kit` - generate the Mission Control display/importer
   response-intake kit with normalized-response examples, closure commands, boundary evidence, and
   artifact hashes while keeping runtime importer behavior blocked.
+- `make mission-control-display-response-application-preflight-check` - validate the checked bridge
+  between the all-lane enterprise response inbox and the ERG-002 lane-local normalized response path
+  before a real Mission Control display/importer reviewer response is used.
 - `make mission-control-display-next-review-ready-check` - verify the Mission Control
   display/importer external-review bundle, readiness packet, response kit, dry run, and fail-closed
   closure posture are ready for operator handoff without closing `ERG-002`.
@@ -1429,6 +1432,12 @@ and is generated with `make mission-control-display-response-kit`; it packages r
 guidance, normalized-response examples, closure commands, boundary status, command evidence, and
 artifact hashes without recording review, closing `ERG-002`, or approving runtime importer
 behavior.
+The Mission Control display response-application preflight is in
+[docs/codex/mission-control-display-response-application-preflight.md](docs/codex/mission-control-display-response-application-preflight.md)
+and is checked with `make mission-control-display-response-application-preflight-check`; it keeps
+the all-lane raw response inbox path and ERG-002 normalized response path aligned before a real
+reviewer response is used, without normalizing responses, closing `ERG-002`, or approving Mission
+Control runtime importer behavior.
 The Mission Control display next-review ready check is in
 [docs/codex/mission-control-display-next-review-ready-check.md](docs/codex/mission-control-display-next-review-ready-check.md)
 and is checked with `make mission-control-display-next-review-ready-check`; it verifies the ERG-002
