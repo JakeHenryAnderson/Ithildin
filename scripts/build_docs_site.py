@@ -225,6 +225,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-progress-model.md",
     "docs/codex/enterprise-dependency-ladder.md",
     "docs/codex/enterprise-transition-map.md",
+    "docs/codex/enterprise-north-star-roadmap.md",
     "docs/codex/enterprise-external-review-queue.md",
     "docs/codex/enterprise-next-review-handoff.md",
     "docs/codex/enterprise-next-review-ready-check.md",

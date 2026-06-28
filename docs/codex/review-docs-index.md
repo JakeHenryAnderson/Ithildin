@@ -248,6 +248,7 @@ externally closed.
 - [Ithildin Enterprise Progress Model](enterprise-progress-model.md)
 - [Ithildin Enterprise Dependency Ladder](enterprise-dependency-ladder.md)
 - [Enterprise Transition Map](enterprise-transition-map.md)
+- [Enterprise North-Star Roadmap](enterprise-north-star-roadmap.md)
 - [Enterprise External Review Queue](enterprise-external-review-queue.md)
 - [Enterprise Next Review Handoff](enterprise-next-review-handoff.md)
 - [Enterprise Next Review Ready Check](enterprise-next-review-ready-check.md)

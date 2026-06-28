@@ -56,6 +56,7 @@ from scripts import (
     enterprise_external_review_queue_check,
     enterprise_next_review_handoff,
     enterprise_next_review_ready_check,
+    enterprise_north_star_roadmap,
     enterprise_progress_model,
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
@@ -3340,6 +3341,79 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
             raw_path.unlink(missing_ok=True)
         else:
             raw_path.write_bytes(original)
+
+
+def test_enterprise_north_star_roadmap_is_wired() -> None:
+    report = enterprise_north_star_roadmap.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-north-star-roadmap.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["enterprise_gap_count"] == 10
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["phase_count"] == 6
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: checked north-star map",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "make enterprise-north-star-roadmap",
+        "docs/codex/v1.0-rc-status.md",
+        "docs/codex/enterprise-current-checkpoint.md",
+        "docs/codex/enterprise-response-paste-preflight.md",
+        "v1_local_preview_rc",
+        "erg_003_static_preflight",
+        "erg_002_mission_control_display",
+        "erg_004_live_sandbox_vm_poc",
+        "enterprise_architecture_lanes",
+        "A favorable `ERG-003` response can close static preflight only",
+        (
+            "A favorable `ERG-002` response can authorize a Mission Control-side "
+            "design-only decision record only"
+        ),
+        "No row in this roadmap approves new governed tool powers",
+        "When To Ask For External Roadmap Review",
+    ]:
+        assert phrase in doc
+    assert "enterprise-north-star-roadmap:" in makefile
+    assert (
+        "enterprise-north-star-roadmap" in release_check_body
+        or "release-check: enterprise-north-star-roadmap" in makefile
+    )
+    assert "$(MAKE) enterprise-north-star-roadmap" in review_candidate_body
+    assert "make enterprise-north-star-roadmap" in readme
+    assert "docs/codex/enterprise-north-star-roadmap.md" in readme
+    assert "docs/codex/enterprise-north-star-roadmap.md" in docs_site
+    assert "docs/codex/enterprise-north-star-roadmap.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise North-Star Roadmap" in review_index
+    assert "enterprise-north-star-roadmap" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-north-star-roadmap" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
 
 
 def test_enterprise_dual_response_inbox_is_wired() -> None:

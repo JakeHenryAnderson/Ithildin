@@ -415,6 +415,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-transition-map` - validate the allowed post-review transition states for
   `ERG-003`, `ERG-002`, `ERG-004`, and later enterprise lanes while keeping runtime authority,
   public/security-product positioning, and new power classes blocked.
+- `make enterprise-north-star-roadmap` - validate the operator-facing north-star map from v1.0
+  local-preview RC through `ERG-003`, `ERG-002`, Stage 2 sandbox/VM, Mission Control, and later
+  enterprise architecture lanes without approving runtime powers.
 - `make enterprise-external-review-queue-check` - validate the post-RC enterprise external-review
   queue that orders ERG-002 through ERG-010 review lanes, points to the current packets/intake
   docs, and keeps runtime behavior blocked.
@@ -1072,6 +1075,11 @@ The enterprise transition map is
 `make enterprise-transition-map`; it records the only allowed post-review next states for `ERG-003`,
 `ERG-002`, `ERG-004`, and later enterprise lanes while keeping runtime authority, public/security-
 product positioning, and new power classes blocked.
+The enterprise north-star roadmap is
+[docs/codex/enterprise-north-star-roadmap.md](docs/codex/enterprise-north-star-roadmap.md),
+checked with `make enterprise-north-star-roadmap`; it is the operator-facing read-first map from
+v1.0 local-preview RC through `ERG-003`, `ERG-002`, Stage 2 sandbox/VM, Mission Control display,
+and enterprise architecture lanes without approving runtime powers.
 The enterprise external-review queue is
 [docs/codex/enterprise-external-review-queue.md](docs/codex/enterprise-external-review-queue.md),
 checked with `make enterprise-external-review-queue-check`; it orders the post-RC review lanes,
