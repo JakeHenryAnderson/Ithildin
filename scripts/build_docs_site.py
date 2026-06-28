@@ -223,6 +223,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-readiness-runway.md",
     "docs/codex/enterprise-readiness-gap-matrix.md",
     "docs/codex/enterprise-progress-model.md",
+    "docs/codex/enterprise-dependency-ladder.md",
     "docs/codex/enterprise-external-review-queue.md",
     "docs/codex/enterprise-next-review-handoff.md",
     "docs/codex/enterprise-next-review-ready-check.md",

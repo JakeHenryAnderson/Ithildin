@@ -80,6 +80,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "enterprise-readiness-runway-check",
     "enterprise-readiness-gap-matrix-check",
     "enterprise-progress-model",
+    "enterprise-dependency-ladder",
     "enterprise-external-review-queue-check",
     "enterprise-next-review-handoff-check",
     "enterprise-next-review-ready-check",

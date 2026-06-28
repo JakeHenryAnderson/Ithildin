@@ -48,6 +48,7 @@ from scripts import (
     demo_state_report,
     docs_claims_public_preview_disposition_closure_check,
     enterprise_current_checkpoint,
+    enterprise_dependency_ladder,
     enterprise_dual_response_inbox,
     enterprise_dual_response_readiness,
     enterprise_dual_review_handoff,
@@ -1621,6 +1622,67 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert "docs/codex/enterprise-progress-model.md" in review_docs.REVIEW_DOCS
     assert "Ithildin Enterprise Progress Model" in review_index
     assert "enterprise-progress-model" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_dependency_ladder_is_wired() -> None:
+    report = enterprise_dependency_ladder.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-dependency-ladder.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_sequence"] == ["ERG-003", "ERG-002", "ERG-004"]
+    assert report["recommended_first_closure_lane"] == "ERG-003"
+    assert report["recommended_second_closure_lane"] == "ERG-002"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["enterprise_gap_count"] == 10
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_runtime_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_enterprise_lanes"] is False
+    for phrase in [
+        "Status: checked enterprise dependency ladder",
+        "Current governed tool count: `24`",
+        "Recommended first closure lane: `ERG-003`",
+        "Recommended second closure lane: `ERG-002`",
+        "`ERG-004` remains blocked until `ERG-003` is favorably dispositioned",
+        "Mission Control display/import planning remains design-only",
+        "No row in this ladder approves runtime behavior",
+        "Do not manually promote a lane",
+        "live VM/container inspection",
+        "public/security-product positioning",
+        "new governed tool powers",
+    ]:
+        assert phrase in doc
+    assert "enterprise-dependency-ladder:" in makefile
+    assert "enterprise-dependency-ladder" in release_check_body
+    assert "$(MAKE) enterprise-dependency-ladder" in review_candidate_body
+    assert "make enterprise-dependency-ladder" in readme
+    assert "docs/codex/enterprise-dependency-ladder.md" in readme
+    assert "docs/codex/enterprise-dependency-ladder.md" in docs_site
+    assert "docs/codex/enterprise-dependency-ladder.md" in review_docs.REVIEW_DOCS
+    assert "Ithildin Enterprise Dependency Ladder" in review_index
+    assert "enterprise-dependency-ladder" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 

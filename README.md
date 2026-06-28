@@ -409,6 +409,9 @@ checked with `make control-mapping-readiness`.
   production/security claims.
 - `make enterprise-progress-model` - validate the operator progress ladder that keeps v1.0
   local-preview progress separate from enterprise-control-plane readiness and blocked powers.
+- `make enterprise-dependency-ladder` - validate the post-RC dependency order from `ERG-003` and
+  `ERG-002` through later live sandbox/VM, Mission Control, and enterprise architecture lanes
+  without approving runtime powers.
 - `make enterprise-external-review-queue-check` - validate the post-RC enterprise external-review
   queue that orders ERG-002 through ERG-010 review lanes, points to the current packets/intake
   docs, and keeps runtime behavior blocked.
@@ -1031,6 +1034,11 @@ The enterprise progress model is
 conservative progress ladder while keeping runtime expansion, live VM/container work, Mission
 Control execution authority, trusted-host promotion, and public/security-product positioning
 blocked.
+The enterprise dependency ladder is
+[docs/codex/enterprise-dependency-ladder.md](docs/codex/enterprise-dependency-ladder.md), checked
+with `make enterprise-dependency-ladder`; it keeps `ERG-003`, `ERG-002`, later live sandbox/VM
+planning, Mission Control display/import planning, and enterprise architecture lanes in their
+allowed order without promoting any lane by hand.
 The enterprise external-review queue is
 [docs/codex/enterprise-external-review-queue.md](docs/codex/enterprise-external-review-queue.md),
 checked with `make enterprise-external-review-queue-check`; it orders the post-RC review lanes,
