@@ -411,7 +411,10 @@ enterprise-response-command-matrix:
 enterprise-response-application-protocol:
 	uv run python scripts/enterprise_response_application_protocol.py
 
-.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol
+enterprise-response-intake-quickstart:
+	uv run python scripts/enterprise_response_intake_quickstart.py
+
+.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol enterprise-response-intake-quickstart
 
 sandbox-vm-live-poc-decision-packet:
 	uv run python scripts/sandbox_vm_live_poc_decision_packet.py
@@ -1317,6 +1320,7 @@ review-candidate:
 	$(MAKE) enterprise-response-intake-drill
 	$(MAKE) enterprise-response-command-matrix
 	$(MAKE) enterprise-response-application-protocol
+	$(MAKE) enterprise-response-intake-quickstart
 	$(MAKE) sandbox-vm-live-poc-decision-packet
 	$(MAKE) sandbox-vm-live-poc-external-review-bundle
 	$(MAKE) sandbox-vm-live-poc-response-kit
@@ -1429,6 +1433,7 @@ release-check: enterprise-response-inbox-check
 release-check: enterprise-response-intake-drill
 release-check: enterprise-response-command-matrix
 release-check: enterprise-response-application-protocol
+release-check: enterprise-response-intake-quickstart
 release-check: enterprise-review-handoff-drill-check
 
 release-check: docs-claims-public-preview-disposition-closure-check

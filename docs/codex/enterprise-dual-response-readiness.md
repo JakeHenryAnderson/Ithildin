@@ -20,6 +20,8 @@ make enterprise-dual-response-inbox
 
 The inbox records the current reviewed-packet hashes and exact normalization/dry-run/closure
 commands for `ERG-003` and `ERG-002`. It does not normalize responses or close either lane.
+After a real response arrives, use `make enterprise-response-intake-quickstart` for the compact
+raw-response path, normalizer, dry-run, closure-gate, and stop-condition sequence.
 
 ## Purpose
 

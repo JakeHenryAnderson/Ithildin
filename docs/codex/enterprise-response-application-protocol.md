@@ -12,6 +12,9 @@ This protocol starts after a reviewer response has been saved to the ignored res
 does not record external review by itself, does not normalize real responses by itself, does not
 close enterprise lanes, does not approve runtime behavior, and does not approve public/security-
 product positioning.
+For the current `ERG-003` and `ERG-002` receive path, use
+`make enterprise-response-intake-quickstart` as the compact operator sequence that points to the
+raw-response paths, normalizer commands, dry-runs, closure gates, and stop conditions.
 
 ## Current Baseline
 

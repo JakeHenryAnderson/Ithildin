@@ -33,6 +33,8 @@ make enterprise-response-inbox
 For the current parallel `ERG-003` / `ERG-002` handoff, use
 `make enterprise-dual-response-inbox` to create ignored raw-response placeholders before running
 lane-specific normalization and dry-run commands.
+Then use `make enterprise-response-intake-quickstart` for the compact receive-and-apply sequence for
+those two currently send-ready lanes.
 
 Use [Enterprise Review Handoff Drill](enterprise-review-handoff-drill.md) with
 `make enterprise-review-handoff-drill` to rehearse the current send/receive sequence across the

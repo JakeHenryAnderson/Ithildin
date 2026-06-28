@@ -16,6 +16,8 @@ This matrix is the committed operator map for what to run after real reviewer te
 complements the generated [Enterprise Response Inbox](enterprise-response-inbox.md), the checked
 [Enterprise Response Application Protocol](enterprise-response-application-protocol.md), and the
 [Enterprise Transition Map](enterprise-transition-map.md).
+For the current `ERG-003` and `ERG-002` receive path, the compact operator quickstart is checked
+with `make enterprise-response-intake-quickstart`.
 
 This matrix does not normalize responses, does not write normalized response files, does not mutate findings, does not record external review, does not close any enterprise lane, and does not approve runtime behavior.
 

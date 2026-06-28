@@ -272,6 +272,7 @@ externally closed.
 - [Enterprise Response Intake Drill](enterprise-response-intake-drill.md)
 - [Enterprise Response Command Matrix](enterprise-response-command-matrix.md)
 - [Enterprise Response Application Protocol](enterprise-response-application-protocol.md)
+- [Enterprise Response Intake Quickstart](enterprise-response-intake-quickstart.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)

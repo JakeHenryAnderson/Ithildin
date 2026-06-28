@@ -63,6 +63,7 @@ from scripts import (
     enterprise_response_command_matrix,
     enterprise_response_inbox,
     enterprise_response_intake_drill,
+    enterprise_response_intake_quickstart,
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
     enterprise_review_handoff_drill,
@@ -3117,6 +3118,114 @@ def test_enterprise_dual_response_readiness_is_wired() -> None:
     assert "Enterprise Dual Response Readiness" in review_index
     assert "enterprise-dual-response-readiness" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_response_intake_quickstart_is_wired() -> None:
+    report = enterprise_response_intake_quickstart.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-intake-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    dual_handoff = Path("docs/codex/enterprise-dual-review-handoff.md").read_text(
+        encoding="utf-8"
+    )
+    dual_inbox = Path("docs/codex/enterprise-dual-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    dual_readiness = Path("docs/codex/enterprise-dual-response-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    status_board = Path("docs/codex/enterprise-response-status-board.md").read_text(
+        encoding="utf-8"
+    )
+    command_matrix = Path("docs/codex/enterprise-response-command-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    application_protocol = Path(
+        "docs/codex/enterprise-response-application-protocol.md"
+    ).read_text(encoding="utf-8")
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["send_checklist_valid"] is True
+    assert report["dual_response_readiness_valid"] is True
+    assert report["command_matrix_valid"] is True
+    assert report["application_protocol_valid"] is True
+    assert report["records_external_review"] is False
+    assert report["normalizes_real_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["mutates_findings"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer responses.",
+        "Current governed tool count: `24`.",
+        "make enterprise-response-intake-quickstart",
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "EXT-SVP-###",
+        "EXT-MC-DISPLAY-###",
+        "--area sandbox-vm-static-preflight",
+        "--area mission-control-display",
+        "make sandbox-vm-static-preflight-disposition-closure-check",
+        "make mission-control-display-disposition-closure-check",
+        "does not record external review",
+        "does not normalize real responses",
+        "does not approve runtime behavior",
+        "does not approve Mission Control runtime importer behavior",
+        "does not approve live VM/container inspection",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-intake-quickstart:" in makefile
+    assert (
+        "enterprise-response-intake-quickstart" in release_check_body
+        or "release-check: enterprise-response-intake-quickstart" in makefile
+    )
+    assert "$(MAKE) enterprise-response-intake-quickstart" in review_candidate_body
+    assert "make enterprise-response-intake-quickstart" in readme
+    assert "docs/codex/enterprise-response-intake-quickstart.md" in readme
+    assert "make enterprise-response-intake-quickstart" in dual_handoff
+    assert "make enterprise-response-intake-quickstart" in dual_inbox
+    assert "make enterprise-response-intake-quickstart" in dual_readiness
+    assert "make enterprise-response-intake-quickstart" in status_board
+    assert "make enterprise-response-intake-quickstart" in command_matrix
+    assert "make enterprise-response-intake-quickstart" in application_protocol
+    assert "make enterprise-response-intake-quickstart" in current_checkpoint
+    assert "docs/codex/enterprise-response-intake-quickstart.md" in docs_site
+    assert (
+        "docs/codex/enterprise-response-intake-quickstart.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Response Intake Quickstart" in review_index
+    assert "enterprise-response-intake-quickstart" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-intake-quickstart" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
 

@@ -41,6 +41,7 @@ After sending either packet, check whether normalized responses are present with
 ```sh
 make enterprise-dual-response-inbox
 make enterprise-dual-response-readiness
+make enterprise-response-intake-quickstart
 ```
 
 ## Purpose
@@ -110,6 +111,15 @@ It is a send-preparation artifact only, not review intake or lane closure.
 The generated response inbox in `var/review-runs/enterprise-dual-response-inbox/` creates ignored
 raw-response placeholders and exact normalization, dry-run, and closure commands. It is response
 intake preparation only, not response normalization, findings mutation, or lane closure.
+
+The compact response-intake quickstart is checked with:
+
+```sh
+make enterprise-response-intake-quickstart
+```
+
+It points to the current `ERG-003` and `ERG-002` raw-response paths, normalizer commands, dry-runs,
+closure gates, and stop conditions without recording review or approving runtime behavior.
 
 ## Response Path
 
