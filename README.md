@@ -438,6 +438,8 @@ checked with `make control-mapping-readiness`.
   pack, artifact hashes, and safe rejection expectations.
 - `make mission-control-enterprise-status-acceptance-matrix-check` - validate the future Mission
   Control enterprise status importer acceptance matrix against the generated fixture pack.
+- `make mission-control-enterprise-status-reference-validator` - run the Ithildin-side reference
+  validator for Mission Control enterprise status display/import fixtures.
 - `make enterprise-dual-review-handoff` - generate the compact pointer for sending the current two
   recommended enterprise reviews, `ERG-003` and `ERG-002`, without approving runtime behavior.
 - `make enterprise-dual-review-outbox` - copy the current `ERG-003` and `ERG-002` send-ready
@@ -1076,6 +1078,12 @@ The Mission Control enterprise status acceptance matrix is
 checked with `make mission-control-enterprise-status-acceptance-matrix-check`; it maps those
 enterprise status fixtures to expected display-only importer states, safe rejection labels, warning
 chips, and forbidden displays while keeping Mission Control runtime behavior blocked.
+The Mission Control enterprise status reference validator is
+[docs/codex/mission-control-enterprise-status-reference-validator.md](docs/codex/mission-control-enterprise-status-reference-validator.md),
+checked with `make mission-control-enterprise-status-reference-validator`; it validates the
+enterprise status fixture pack as a display-only oracle for future Mission Control tests without
+calling Mission Control, calling Ithildin APIs, approving callbacks, or approving runtime importer
+behavior.
 The dual-review handoff is
 [docs/codex/enterprise-dual-review-handoff.md](docs/codex/enterprise-dual-review-handoff.md),
 generated with `make enterprise-dual-review-handoff`; it points to the current `ERG-003` and
@@ -1350,6 +1358,11 @@ The Mission Control enterprise status acceptance matrix is
 and is checked with `make mission-control-enterprise-status-acceptance-matrix-check`; it maps the
 enterprise status export fixtures to expected display-only importer states and safe rejection labels
 without approving Mission Control runtime importer behavior.
+The Mission Control enterprise status reference validator is
+[docs/codex/mission-control-enterprise-status-reference-validator.md](docs/codex/mission-control-enterprise-status-reference-validator.md)
+and is checked with `make mission-control-enterprise-status-reference-validator`; it gives the
+future Mission Control importer a stable display-only oracle for accepting `MC-STATUS-VALID-001`
+and rejecting `MC-STATUS-NEG-001` through `MC-STATUS-NEG-010`.
 Generate the focused Mission Control display review packet with
 `make mission-control-display-review-packet`; it bundles the display proposal, handoff schema,
 negative fixtures, Hello World seed evidence, command evidence, and artifact hashes for future

@@ -89,6 +89,10 @@ Future Mission Control importer tests should cover:
 - never calling Ithildin, starting services, invoking a model, inspecting a live VM, writing host
   files, or closing review lanes as part of fixture import.
 
+Use `make mission-control-enterprise-status-reference-validator` to validate that the generated
+fixture pack and expected safe reason labels form a stable display-only oracle for future Mission
+Control importer tests.
+
 ## Boundary
 
 This matrix does not approve Mission Control importer implementation. It makes a future

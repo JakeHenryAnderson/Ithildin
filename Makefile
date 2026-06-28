@@ -8,6 +8,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-import-check
 .PHONY: mission-control-enterprise-status-fixtures mission-control-enterprise-status-fixtures-check
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
+.PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
 
 test:
@@ -322,6 +323,9 @@ mission-control-enterprise-status-fixtures-check:
 
 mission-control-enterprise-status-acceptance-matrix-check:
 	uv run python scripts/mission_control_enterprise_status_acceptance_matrix_check.py
+
+mission-control-enterprise-status-reference-validator:
+	uv run python scripts/mission_control_enterprise_status_reference_validator.py
 
 enterprise-dual-review-handoff:
 	uv run python scripts/enterprise_dual_review_handoff.py
@@ -1271,6 +1275,7 @@ review-candidate:
 	$(MAKE) mission-control-enterprise-status-import-check
 	$(MAKE) mission-control-enterprise-status-fixtures
 	$(MAKE) mission-control-enterprise-status-acceptance-matrix-check
+	$(MAKE) mission-control-enterprise-status-reference-validator
 	$(MAKE) enterprise-dual-review-handoff
 	$(MAKE) enterprise-dual-review-outbox
 	$(MAKE) enterprise-review-send-manifest
@@ -1365,6 +1370,7 @@ release-check: mission-control-handoff-reference-validator
 release-check: mission-control-enterprise-status-import-check
 release-check: mission-control-enterprise-status-fixtures-check
 release-check: mission-control-enterprise-status-acceptance-matrix-check
+release-check: mission-control-enterprise-status-reference-validator
 release-check: mission-control-display-external-review-bundle-check
 release-check: mission-control-display-response-kit-check
 

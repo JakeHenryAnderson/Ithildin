@@ -86,6 +86,10 @@ SOURCE_DOCS = [
         ROOT / "docs/codex/mission-control-enterprise-status-acceptance-matrix.md",
     ),
     (
+        "10H_MISSION_CONTROL_ENTERPRISE_STATUS_REFERENCE_VALIDATOR.md",
+        ROOT / "docs/codex/mission-control-enterprise-status-reference-validator.md",
+    ),
+    (
         "11_V1_RC_EXTERNAL_REVIEW_PROMPT.md",
         ROOT / "docs/codex/v1.0-rc-external-review-prompt.md",
     ),

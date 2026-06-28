@@ -16,6 +16,7 @@ make mission-control-enterprise-status-fixtures
 make mission-control-enterprise-status-fixtures-check
 make mission-control-enterprise-status-import-check
 make mission-control-enterprise-status-acceptance-matrix-check
+make mission-control-enterprise-status-reference-validator
 ```
 
 Generated output:
@@ -38,6 +39,10 @@ labels.
 The [Mission Control Enterprise Status Acceptance Matrix](mission-control-enterprise-status-acceptance-matrix.md)
 maps the fixture pack to future display-only importer states, warning labels, safe rejection
 reasons, and forbidden displays.
+
+The [Mission Control Enterprise Status Reference Validator](mission-control-enterprise-status-reference-validator.md)
+validates the generated fixture pack as an Ithildin-side display-only oracle for future Mission
+Control importer tests.
 
 The pack contains:
 

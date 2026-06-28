@@ -33,6 +33,8 @@ all blocked-authority flags. Ithildin remains the execution, policy, approval, a
 local display/import evidence and does not call Mission Control.
 `make mission-control-enterprise-status-acceptance-matrix-check` validates the matching
 fixture-to-importer acceptance matrix.
+`make mission-control-enterprise-status-reference-validator` validates the same fixture pack as an
+Ithildin-side display-only oracle for future Mission Control importer tests.
 
 ## Allowed Display Fields
 

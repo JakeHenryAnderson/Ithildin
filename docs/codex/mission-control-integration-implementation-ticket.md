@@ -108,6 +108,7 @@ make mission-control-importer-acceptance-matrix-check
 make mission-control-handoff-reference-validator
 make mission-control-enterprise-status-fixtures-check
 make mission-control-enterprise-status-acceptance-matrix-check
+make mission-control-enterprise-status-reference-validator
 ```
 
 Run from the Mission Control repository after future implementation, adjusted only for the current
