@@ -3588,17 +3588,13 @@ def test_enterprise_operator_next_action_is_wired() -> None:
 def test_enterprise_operator_next_action_routes_response_present_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def forbidden_send_mode_report(_repo_root: Path) -> dict[str, Any]:
-        raise AssertionError("send-mode reports must not be required in response mode")
-
-    def response_present_report(_repo_root: Path) -> dict[str, Any]:
+    def response_present_state(_repo_root: Path) -> dict[str, Any]:
         return {
-            "valid": False,
-            "failures": ["ERG-003 normalized response is present; run lane intake"],
-            "tool_count": 24,
             "response_present_count": 1,
             "closure_ready_count": 0,
-            "rows": [{"gap": "ERG-003", "response_present": True, "closure_ready": False}],
+            "normalized_response_paths": [
+                "var/review-runs/sandbox-vm-static-preflight/normalized-response.json"
+            ],
             "runtime_changes_allowed": False,
             "mission_control_runtime_allowed": False,
             "live_vm_inspection_allowed": False,
@@ -3611,24 +3607,9 @@ def test_enterprise_operator_next_action_routes_response_present_mode(
         }
 
     monkeypatch.setattr(
-        enterprise_current_checkpoint,
-        "build_report",
-        forbidden_send_mode_report,
-    )
-    monkeypatch.setattr(
-        enterprise_review_send_readiness,
-        "build_report",
-        forbidden_send_mode_report,
-    )
-    monkeypatch.setattr(
-        enterprise_north_star_roadmap,
-        "build_report",
-        forbidden_send_mode_report,
-    )
-    monkeypatch.setattr(
-        enterprise_response_status_board,
-        "build_report",
-        response_present_report,
+        enterprise_operator_next_action,
+        "_response_state",
+        response_present_state,
     )
 
     report = enterprise_operator_next_action.build_report(Path.cwd())

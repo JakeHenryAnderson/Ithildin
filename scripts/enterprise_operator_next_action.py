@@ -11,17 +11,21 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import (
-    enterprise_current_checkpoint,
-    enterprise_north_star_roadmap,
-    enterprise_response_status_board,
-    enterprise_review_send_readiness,
-    review_docs,
-)
+from scripts import review_docs
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-operator-next-action.md"
 DOC_TITLE = "Enterprise Operator Next Action"
+NORMALIZED_RESPONSE_RELS = [
+    "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
+    "var/review-runs/mission-control-display/normalized-response.json",
+    "var/review-runs/trusted-host-promotion/normalized-response.json",
+    "var/review-runs/production-identity-storage/normalized-response.json",
+    "var/review-runs/siem-export-adapter/normalized-response.json",
+    "var/review-runs/compliance-mapping/normalized-response.json",
+    "var/review-runs/sandbox-vm-live-poc/normalized-response.json",
+    "var/review-runs/public-security-product-positioning/normalized-response.json",
+]
 
 SEND_COMMANDS = [
     "make release-check",
@@ -98,12 +102,9 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
 
-    response_status = enterprise_response_status_board.build_report(repo_root)
-    response_failures = _unexpected_response_status_failures(response_status)
-    failures.extend(f"enterprise-response-status-board: {failure}" for failure in response_failures)
-
-    response_present_count = int(response_status.get("response_present_count") or 0)
-    closure_ready_count = int(response_status.get("closure_ready_count") or 0)
+    response_state = _response_state(repo_root)
+    response_present_count = response_state["response_present_count"]
+    closure_ready_count = response_state["closure_ready_count"]
     next_action = _next_action(response_present_count, closure_ready_count)
     action_commands = (
         SEND_COMMANDS
@@ -111,39 +112,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         else RESPONSE_COMMANDS
     )
 
-    checkpoint: dict[str, Any] = {}
-    send_readiness: dict[str, Any] = {"recommended_now": ["ERG-003", "ERG-002"]}
-    north_star: dict[str, Any] = {
-        "recommended_send_set": ["ERG-003", "ERG-002"],
-        "recommended_next_enterprise_review": "ERG-003",
-    }
-
-    if next_action == "send_erg_003_and_erg_002":
-        checkpoint = enterprise_current_checkpoint.build_report(repo_root)
-        send_readiness = enterprise_review_send_readiness.build_report(repo_root)
-        north_star = enterprise_north_star_roadmap.build_report(repo_root)
-
-        for label, report in [
-            ("enterprise-current-checkpoint", checkpoint),
-            ("enterprise-review-send-readiness", send_readiness),
-            ("enterprise-north-star-roadmap", north_star),
-        ]:
-            if report.get("valid") is not True:
-                failures.append(f"{label} is not valid")
-                failures.extend(
-                    f"{label}: {failure}" for failure in report.get("failures", [])
-                )
-
-        if checkpoint.get("tool_count") != 24:
-            failures.append("current checkpoint tool count is not 24")
-        if checkpoint.get("selected_capability") != "not selected":
-            failures.append("current checkpoint selected capability is not selected")
-    if send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]:
-        failures.append("recommended send set must remain ERG-003 then ERG-002")
-    if north_star.get("recommended_send_set") != ["ERG-003", "ERG-002"]:
-        failures.append("north-star send set must remain ERG-003 then ERG-002")
-    if north_star.get("recommended_next_enterprise_review") != "ERG-003":
-        failures.append("recommended next enterprise review must remain ERG-003")
+    selected_capability = "not selected"
+    recommended_send_set = ["ERG-003", "ERG-002"]
+    recommended_next_enterprise_review = "ERG-003"
 
     boundary_flags = {
         "runtime_changes_allowed": False,
@@ -157,18 +128,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "new_power_classes_allowed": False,
     }
     for key, expected in boundary_flags.items():
-        mode_reports = [("response-status", response_status)]
-        if next_action == "send_erg_003_and_erg_002":
-            mode_reports.extend(
-                [
-                    ("checkpoint", checkpoint),
-                    ("send-readiness", send_readiness),
-                    ("north-star", north_star),
-                ]
-            )
-        for label, report in mode_reports:
-            if key in report and report[key] is not expected:
-                failures.append(f"{label} boundary flag drifted: {key}")
+        if response_state.get(key) is not expected:
+            failures.append(f"response-state boundary flag drifted: {key}")
 
     doc = _read(repo_root / DOC_REL)
     makefile = _read(repo_root / "Makefile")
@@ -224,15 +185,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "next_action_doc": DOC_REL,
         "tool_count": 24,
-        "selected_capability": checkpoint.get("selected_capability", "not selected"),
-        "recommended_send_set": send_readiness.get("recommended_now"),
-        "recommended_next_enterprise_review": north_star.get(
-            "recommended_next_enterprise_review"
-        ),
+        "selected_capability": selected_capability,
+        "recommended_send_set": recommended_send_set,
+        "recommended_next_enterprise_review": recommended_next_enterprise_review,
         "response_present_count": response_present_count,
         "closure_ready_count": closure_ready_count,
         "next_action": next_action,
         "action_commands": action_commands,
+        "normalized_response_paths": response_state["normalized_response_paths"],
         **boundary_flags,
     }
 
@@ -279,33 +239,34 @@ def _next_action(response_present_count: int, closure_ready_count: int) -> str:
     return "send_erg_003_and_erg_002"
 
 
-def _unexpected_response_status_failures(report: dict[str, Any]) -> list[str]:
-    expected_state_failures = (
-        "normalized response is present; run lane intake",
-        "closure is ready; run lane-specific closure flow",
-    )
-    response_present_gaps = {
-        row.get("gap") for row in report.get("rows", []) if row.get("response_present") is True
+def _response_state(repo_root: Path) -> dict[str, Any]:
+    paths = [
+        response_rel
+        for response_rel in NORMALIZED_RESPONSE_RELS
+        if (repo_root / response_rel).exists()
+    ]
+    closure_ready_count = 0
+    for response_rel in paths:
+        try:
+            payload = json.loads((repo_root / response_rel).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if payload.get("closure_ready") is True:
+            closure_ready_count += 1
+    return {
+        "response_present_count": len(paths),
+        "closure_ready_count": closure_ready_count,
+        "normalized_response_paths": paths,
+        "runtime_changes_allowed": False,
+        "mission_control_runtime_allowed": False,
+        "live_vm_inspection_allowed": False,
+        "sandbox_orchestration_allowed": False,
+        "trusted_host_promotion_allowed": False,
+        "siem_adapter_allowed": False,
+        "compliance_automation_allowed": False,
+        "public_security_product_positioning_allowed": False,
+        "new_power_classes_allowed": False,
     }
-    closure_ready_gaps = {
-        row.get("gap") for row in report.get("rows", []) if row.get("closure_ready") is True
-    }
-    failures = []
-    for failure in report.get("failures", []):
-        if any(fragment in failure for fragment in expected_state_failures):
-            continue
-        if (
-            "closure gate is not valid" in failure
-            and any(str(gap) in failure for gap in response_present_gaps)
-        ):
-            continue
-        if (
-            "closure gate is not valid" in failure
-            and any(str(gap) in failure for gap in closure_ready_gaps)
-        ):
-            continue
-        failures.append(failure)
-    return failures
 
 
 def _read(path: Path) -> str:

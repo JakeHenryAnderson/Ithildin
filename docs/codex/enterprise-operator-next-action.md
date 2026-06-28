@@ -17,6 +17,10 @@ send-readiness reports that intentionally fail once response evidence exists. It
 packets, paste responses, normalize responses, write response files, mutate findings, close
 enterprise lanes, approve runtime behavior, or approve public/security-product positioning.
 
+The command is intentionally lightweight: it does not regenerate review packets or recursively run
+send-readiness bundles just to print the next operator action. Run the listed action commands for
+the heavier validation artifacts.
+
 ## Current Expected Action
 
 With no real enterprise reviewer responses present, the next allowed operator action is:
