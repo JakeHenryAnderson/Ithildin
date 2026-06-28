@@ -412,6 +412,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-dependency-ladder` - validate the post-RC dependency order from `ERG-003` and
   `ERG-002` through later live sandbox/VM, Mission Control, and enterprise architecture lanes
   without approving runtime powers.
+- `make enterprise-transition-map` - validate the allowed post-review transition states for
+  `ERG-003`, `ERG-002`, `ERG-004`, and later enterprise lanes while keeping runtime authority,
+  public/security-product positioning, and new power classes blocked.
 - `make enterprise-external-review-queue-check` - validate the post-RC enterprise external-review
   queue that orders ERG-002 through ERG-010 review lanes, points to the current packets/intake
   docs, and keeps runtime behavior blocked.
@@ -1039,6 +1042,11 @@ The enterprise dependency ladder is
 with `make enterprise-dependency-ladder`; it keeps `ERG-003`, `ERG-002`, later live sandbox/VM
 planning, Mission Control display/import planning, and enterprise architecture lanes in their
 allowed order without promoting any lane by hand.
+The enterprise transition map is
+[docs/codex/enterprise-transition-map.md](docs/codex/enterprise-transition-map.md), checked with
+`make enterprise-transition-map`; it records the only allowed post-review next states for `ERG-003`,
+`ERG-002`, `ERG-004`, and later enterprise lanes while keeping runtime authority, public/security-
+product positioning, and new power classes blocked.
 The enterprise external-review queue is
 [docs/codex/enterprise-external-review-queue.md](docs/codex/enterprise-external-review-queue.md),
 checked with `make enterprise-external-review-queue-check`; it orders the post-RC review lanes,

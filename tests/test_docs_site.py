@@ -131,6 +131,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/enterprise-readiness-gap-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-progress-model.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-dependency-ladder.md" in DEFAULT_DOCS
+    assert "docs/codex/enterprise-transition-map.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-external-review-queue.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-current-checkpoint.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-status-export.md" in DEFAULT_DOCS

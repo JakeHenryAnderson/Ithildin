@@ -70,6 +70,7 @@ from scripts import (
     enterprise_review_submission_prompt,
     enterprise_sandbox_control_plane_readiness_check,
     enterprise_status_export,
+    enterprise_transition_map,
     evidence_confusion_gate,
     evidence_contracts_check,
     external_findings_intake_dry_run,
@@ -1684,6 +1685,84 @@ def test_enterprise_dependency_ladder_is_wired() -> None:
     assert "Ithildin Enterprise Dependency Ladder" in review_index
     assert "enterprise-dependency-ladder" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_enterprise_transition_map_is_wired() -> None:
+    report = enterprise_transition_map.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-transition-map.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_sequence"] == ["ERG-003", "ERG-002", "ERG-004"]
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["enterprise_gap_count"] == 10
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["siem_adapter_runtime_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["hosted_telemetry_allowed"] is False
+    assert report["remote_mcp_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_enterprise_lanes"] is False
+    assert {
+        row["allowed_next_state"] for row in report["transition_rows"]
+    } >= {
+        "closed_local_preview_static_preflight",
+        "ready_for_design_only_decision_record",
+        "ready_for_decision_record",
+        "architecture_continuation_only",
+    }
+    for phrase in [
+        "Status: checked post-review transition map",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "`ERG-003` may move only to `closed_local_preview_static_preflight`.",
+        "`ERG-002` may move only to `ready_for_design_only_decision_record`.",
+        "`ERG-004` remains blocked until `ERG-003` is favorably dispositioned",
+        "Architecture continuation states are not runtime approval states.",
+        "No transition in this map approves new governed tool powers.",
+        "Do not manually promote a lane",
+        "live VM/container inspection",
+        "Mission Control runtime behavior",
+        "direct host writes",
+        "public/security-product positioning",
+        "new governed tool powers",
+    ]:
+        assert phrase in doc
+    assert "enterprise-transition-map:" in makefile
+    assert "enterprise-transition-map" in release_check_body
+    assert "$(MAKE) enterprise-transition-map" in review_candidate_body
+    assert "make enterprise-transition-map" in readme
+    assert "docs/codex/enterprise-transition-map.md" in readme
+    assert "docs/codex/enterprise-transition-map.md" in docs_site
+    assert "docs/codex/enterprise-transition-map.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Transition Map" in review_index
+    assert "enterprise-transition-map" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-transition-map" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
 
