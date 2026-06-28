@@ -14,6 +14,14 @@ Validate:
 make enterprise-review-send-manifest-check
 ```
 
+For the human operator send checklist, run:
+
+```sh
+make enterprise-review-send-checklist
+```
+
+See [Enterprise Review Send Checklist](enterprise-review-send-checklist.md).
+
 The generated manifest is written under:
 
 ```text
@@ -51,6 +59,12 @@ Then generate the send manifest:
 
 ```sh
 make enterprise-review-send-manifest
+```
+
+Then validate the operator checklist:
+
+```sh
+make enterprise-review-send-checklist
 ```
 
 Then generate the paste-ready operator prompt:

@@ -18,6 +18,14 @@ Validate it with:
 make enterprise-review-submission-prompt-check
 ```
 
+Before sending, run:
+
+```sh
+make enterprise-review-send-checklist
+```
+
+See [Enterprise Review Send Checklist](enterprise-review-send-checklist.md).
+
 The generated prompt is written under:
 
 ```text
@@ -39,12 +47,13 @@ behavior.
 
 1. Run `make enterprise-dual-review-outbox`.
 2. Run `make enterprise-review-send-manifest`.
-3. Run `make enterprise-review-submission-prompt`.
-4. For `ERG-003`, attach every file from the generated `ERG-003/` outbox directory and paste the
+3. Run `make enterprise-review-send-checklist`.
+4. Run `make enterprise-review-submission-prompt`.
+5. For `ERG-003`, attach every file from the generated `ERG-003/` outbox directory and paste the
    `ERG-003` section of the generated prompt.
-5. For `ERG-002`, use a separate review request, attach every file from the generated `ERG-002/`
+6. For `ERG-002`, use a separate review request, attach every file from the generated `ERG-002/`
    outbox directory, and paste the `ERG-002` section of the generated prompt.
-6. After a response arrives, run `make enterprise-dual-response-inbox`, open
+7. After a response arrives, run `make enterprise-dual-response-inbox`, open
    `ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`, save each raw response in the matching ignored
    placeholder, and run the lane-specific normalization, dry-run, and closure gate before any
    committed status update.

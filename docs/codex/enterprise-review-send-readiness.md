@@ -22,6 +22,16 @@ See [Enterprise Review Send Manifest](enterprise-review-send-manifest.md). The m
 current send set and response path but does not record external review, normalize responses, close
 lanes, or approve runtime behavior.
 
+For the operator-facing attachment checklist, run:
+
+```sh
+make enterprise-review-send-checklist
+```
+
+See [Enterprise Review Send Checklist](enterprise-review-send-checklist.md). The checklist names the
+current attachments, prompt files, response inbox paths, and post-response commands without
+recording review, normalizing responses, or closing lanes.
+
 ## Purpose
 
 This check summarizes which enterprise review packets are mechanically ready for operator handoff.

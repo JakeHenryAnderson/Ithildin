@@ -18,6 +18,14 @@ Validate it with:
 make enterprise-dual-review-outbox-check
 ```
 
+For the human operator send checklist over this outbox, run:
+
+```sh
+make enterprise-review-send-checklist
+```
+
+See [Enterprise Review Send Checklist](enterprise-review-send-checklist.md).
+
 ## Purpose
 
 The dual-review handoff tells an operator which `ERG-003` and `ERG-002` files are ready to send.
@@ -59,9 +67,11 @@ Postgres, hosted telemetry, or remote MCP.
    `enterprise-dual-review-outbox-artifact-hashes.json` with the handoff notes.
 7. Run `make enterprise-review-send-manifest` to capture the send set, outbox hash manifest,
    lane-specific response paths, and blocked-boundary flags in one generated manifest.
-8. Run `make enterprise-review-submission-prompt` to generate the final paste-ready operator prompt
+8. Run `make enterprise-review-send-checklist` to validate the current attachment, prompt, and
+   response-path instructions.
+9. Run `make enterprise-review-submission-prompt` to generate the final paste-ready operator prompt
    for the separate `ERG-003` and `ERG-002` review requests.
-9. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
+10. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
    matching ignored raw-response placeholder, then run `make enterprise-dual-response-readiness` and
    follow the lane-specific response kit. Do not edit lane status by hand.
 

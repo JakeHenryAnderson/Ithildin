@@ -66,6 +66,7 @@ from scripts import (
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
     enterprise_review_handoff_drill,
+    enterprise_review_send_checklist,
     enterprise_review_send_manifest,
     enterprise_review_send_readiness,
     enterprise_review_submission_prompt,
@@ -2736,6 +2737,93 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-review-send-manifest" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_send_checklist_is_wired() -> None:
+    report = enterprise_review_send_checklist.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    send_readiness = Path("docs/codex/enterprise-review-send-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    send_manifest = Path("docs/codex/enterprise-review-send-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    outbox_doc = Path("docs/codex/enterprise-dual-review-outbox.md").read_text(
+        encoding="utf-8"
+    )
+    submission_prompt = Path(
+        "docs/codex/enterprise-review-submission-prompt.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["outbox_valid"] is True
+    assert report["send_manifest_valid"] is True
+    for key in [
+        "records_external_review",
+        "normalizes_responses",
+        "writes_response_files",
+        "closes_erg_003",
+        "closes_erg_002",
+        "runtime_changes_allowed",
+        "mission_control_runtime_allowed",
+        "live_vm_inspection_allowed",
+        "local_model_invocation_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "siem_adapter_allowed",
+        "compliance_automation_allowed",
+        "public_security_product_positioning_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+    for phrase in [
+        "Status: operator checklist for sending the current enterprise review packets.",
+        "make enterprise-review-send-checklist",
+        "var/review-packets/v3/enterprise-dual-review-outbox/ERG-003/",
+        "var/review-packets/v3/enterprise-dual-review-outbox/ERG-002/",
+        "01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
+        "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+        "RAW_RESPONSE_ERG-003.md",
+        "RAW_RESPONSE_ERG-002.md",
+        "make enterprise-dual-response-readiness",
+        "make enterprise-response-intake-drill",
+        "make packet-redaction-scan",
+        "does not record external review",
+        "does not normalize responses",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    assert "enterprise-review-send-checklist:" in makefile
+    assert "enterprise-review-send-checklist" in release_check_body
+    assert "$(MAKE) enterprise-review-send-checklist" in review_candidate_body
+    assert "make enterprise-review-send-checklist" in readme
+    assert "make enterprise-review-send-checklist" in send_readiness
+    assert "make enterprise-review-send-checklist" in send_manifest
+    assert "make enterprise-review-send-checklist" in outbox_doc
+    assert "make enterprise-review-send-checklist" in submission_prompt
+    assert "docs/codex/enterprise-review-send-checklist.md" in docs_site
+    assert "docs/codex/enterprise-review-send-checklist.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Checklist" in review_index
+    assert "enterprise-review-send-checklist" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-checklist" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
