@@ -141,6 +141,7 @@ Run:
 make enterprise-response-application-protocol
 make enterprise-response-inbox
 make enterprise-response-status-board
+make enterprise-response-command-matrix
 make enterprise-response-intake-drill
 make enterprise-current-checkpoint
 ```

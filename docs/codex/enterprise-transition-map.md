@@ -71,6 +71,7 @@ Run:
 make enterprise-transition-map
 make enterprise-dependency-ladder
 make enterprise-current-checkpoint
+make enterprise-response-command-matrix
 make enterprise-response-application-protocol
 ```
 

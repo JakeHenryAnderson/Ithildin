@@ -477,6 +477,10 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-intake-drill` - run fixture-only response-intake drills across all
   enterprise lanes, restoring ignored response state and proving no review is recorded or lane is
   closed.
+- `make enterprise-response-command-matrix` - validate the committed operator command matrix for
+  applying future enterprise reviewer responses through generated raw-response paths, normalizers,
+  dry-runs, closure gates, response kits, and allowed transition states without recording review or
+  closing lanes.
 - `make enterprise-response-application-protocol` - validate the checked operator protocol for
   applying future enterprise reviewer responses through lane dry-runs, closure gates, and later
   committed decision records without approving runtime expansion.
@@ -1137,6 +1141,12 @@ The enterprise response status board is
 [docs/codex/enterprise-response-status-board.md](docs/codex/enterprise-response-status-board.md),
 checked with `make enterprise-response-status-board`; it aggregates normalized-response state for
 all enterprise review lanes without recording review, mutating findings, or closing lanes.
+The enterprise response command matrix is
+[docs/codex/enterprise-response-command-matrix.md](docs/codex/enterprise-response-command-matrix.md),
+checked with `make enterprise-response-command-matrix`; it records the operator command sequence for
+each enterprise response lane, including generated raw-response path, normalizer, dry-run, closure
+gate, response kit, and maximum allowed transition, while still not recording review or closing any
+lane.
 The enterprise response application protocol is
 [docs/codex/enterprise-response-application-protocol.md](docs/codex/enterprise-response-application-protocol.md),
 checked with `make enterprise-response-application-protocol`; it gives the operator the

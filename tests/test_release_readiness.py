@@ -60,6 +60,7 @@ from scripts import (
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     enterprise_response_application_protocol,
+    enterprise_response_command_matrix,
     enterprise_response_inbox,
     enterprise_response_intake_drill,
     enterprise_response_normalization_coverage,
@@ -2336,6 +2337,94 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-response-application-protocol" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_response_command_matrix_is_wired() -> None:
+    report = enterprise_response_command_matrix.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-command-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    response_inbox = Path("docs/codex/enterprise-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    response_protocol = Path(
+        "docs/codex/enterprise-response-application-protocol.md"
+    ).read_text(encoding="utf-8")
+    transition_map = Path("docs/codex/enterprise-transition-map.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["lane_count"] == 8
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["closes_enterprise_lanes"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_runtime_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert [row["gap"] for row in report["command_rows"][:2]] == [
+        "ERG-003",
+        "ERG-002",
+    ]
+    for phrase in [
+        "Status: checked command matrix for applying enterprise external-review responses.",
+        "Current governed tool count: `24`.",
+        "make enterprise-response-command-matrix",
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "uv run python scripts/external_response_normalize.py",
+        "--area sandbox-vm-static-preflight",
+        "--reviewed-packet-hash \"sha256:<from generated inbox>\"",
+        "make sandbox-vm-static-preflight-response-dry-run",
+        "make sandbox-vm-static-preflight-disposition-closure-check",
+        "closed_local_preview_static_preflight",
+        "ready_for_design_only_decision_record",
+        "architecture_continuation_only",
+        "positioning_decision_record_only",
+        "runtime_changes_allowed: `false`",
+        "new_power_classes_allowed: `false`",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-command-matrix:" in makefile
+    assert (
+        "enterprise-response-command-matrix" in release_check_body
+        or "release-check: enterprise-response-command-matrix" in makefile
+    )
+    assert "$(MAKE) enterprise-response-command-matrix" in review_candidate_body
+    assert "make enterprise-response-command-matrix" in readme
+    assert "docs/codex/enterprise-response-command-matrix.md" in readme
+    assert "docs/codex/enterprise-response-command-matrix.md" in docs_site
+    assert "docs/codex/enterprise-response-command-matrix.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Response Command Matrix" in review_index
+    assert "enterprise-response-command-matrix" in response_inbox
+    assert "enterprise-response-command-matrix" in response_protocol
+    assert "enterprise-response-command-matrix" in transition_map
+    assert "enterprise-response-command-matrix" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-command-matrix" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 

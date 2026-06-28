@@ -139,6 +139,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/mission-control-enterprise-status-fixtures.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-enterprise-status-acceptance-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-enterprise-status-reference-validator.md" in DEFAULT_DOCS
+    assert "docs/codex/enterprise-response-command-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-response-application-protocol.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-sandbox-control-plane-readiness.md" in DEFAULT_DOCS
     assert "docs/codex/post-rc-decision-gate.md" in DEFAULT_DOCS

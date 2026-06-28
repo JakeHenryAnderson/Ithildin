@@ -390,10 +390,13 @@ enterprise-response-inbox-check:
 enterprise-response-intake-drill:
 	uv run python scripts/enterprise_response_intake_drill.py
 
+enterprise-response-command-matrix:
+	uv run python scripts/enterprise_response_command_matrix.py
+
 enterprise-response-application-protocol:
 	uv run python scripts/enterprise_response_application_protocol.py
 
-.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-application-protocol
+.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol
 
 sandbox-vm-live-poc-decision-packet:
 	uv run python scripts/sandbox_vm_live_poc_decision_packet.py
@@ -1296,6 +1299,7 @@ review-candidate:
 	$(MAKE) enterprise-response-normalization-coverage
 	$(MAKE) enterprise-response-inbox
 	$(MAKE) enterprise-response-intake-drill
+	$(MAKE) enterprise-response-command-matrix
 	$(MAKE) enterprise-response-application-protocol
 	$(MAKE) sandbox-vm-live-poc-decision-packet
 	$(MAKE) sandbox-vm-live-poc-external-review-bundle
@@ -1407,6 +1411,7 @@ release-check: public-security-product-positioning-response-kit-check
 release-check: enterprise-response-normalization-coverage
 release-check: enterprise-response-inbox-check
 release-check: enterprise-response-intake-drill
+release-check: enterprise-response-command-matrix
 release-check: enterprise-response-application-protocol
 release-check: enterprise-review-handoff-drill-check
 

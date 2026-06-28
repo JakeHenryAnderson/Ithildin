@@ -74,3 +74,10 @@ Before committing any later disposition from a real response, follow the checked
 ```sh
 make enterprise-response-application-protocol
 ```
+
+For a committed lane-by-lane command map that does not depend on opening the generated inbox first,
+see [Enterprise Response Command Matrix](enterprise-response-command-matrix.md) and run:
+
+```sh
+make enterprise-response-command-matrix
+```
