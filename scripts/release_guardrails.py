@@ -144,6 +144,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "mission-control-display-response-dry-run",
     "mission-control-display-response-kit-check",
     "mission-control-display-response-application-preflight-check",
+    "mission-control-display-response-application-record-check",
+    "mission-control-display-response-application-playbook-check",
     "mission-control-display-next-review-ready-check",
     "mission-control-integration-readiness-packet-check",
     "mission-control-side-handoff-plan-check",

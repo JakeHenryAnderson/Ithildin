@@ -289,6 +289,8 @@ DEFAULT_DOCS = [
     "docs/codex/mission-control-display-response-dry-run.md",
     "docs/codex/mission-control-display-response-kit.md",
     "docs/codex/mission-control-display-response-application-preflight.md",
+    "docs/codex/mission-control-display-response-application-record.md",
+    "docs/codex/mission-control-display-response-application-playbook.md",
     "docs/codex/mission-control-display-next-review-ready-check.md",
     "docs/codex/mission-control-display-decision-record-skeleton.md",
     "docs/codex/mission-control-integration-readiness-packet.md",

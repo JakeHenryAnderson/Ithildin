@@ -27,6 +27,10 @@ reviewer response. The companion `mission-control-display-response-application-p
 the all-lane raw response path, ERG-002 normalized response path, command matrix row, closure gate,
 dry-run, response kit, decision-record skeleton, and blocked runtime boundaries without normalizing
 responses or closing `ERG-002`.
+After a real response is present, use `mission-control-display-response-application-record.md` and
+`mission-control-display-response-application-playbook.md` for the manager-owned checklist, command
+order, allowed committed files, and stop conditions before preparing any design-only decision
+record.
 
 ## Required Normalized Response
 

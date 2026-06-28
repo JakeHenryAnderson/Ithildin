@@ -42,6 +42,10 @@ Use [mission-control-display-response-application-preflight.md](mission-control-
 before applying a real response. That preflight verifies the all-lane raw response path,
 lane-local normalized response path, command matrix, closure gate, dry-run, response kit,
 decision-record skeleton, and blocked Mission Control runtime boundaries remain aligned.
+Use [mission-control-display-response-application-record.md](mission-control-display-response-application-record.md)
+and [mission-control-display-response-application-playbook.md](mission-control-display-response-application-playbook.md)
+as the manager-owned checklist and command-order guide after a real response is present and before
+any design-only decision record is created.
 
 ## Artifacts
 

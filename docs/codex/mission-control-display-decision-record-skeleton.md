@@ -25,6 +25,9 @@ Use this skeleton only after:
 - `mission-control-display-response-application-preflight.md` still verifies the all-lane raw
   response path, lane-local normalized response path, command matrix, closure gate, dry-run,
   response kit, decision-record skeleton, and blocked runtime boundaries;
+- `mission-control-display-response-application-record.md` and
+  `mission-control-display-response-application-playbook.md` were followed for command order,
+  allowed committed files, and stop conditions;
 - `make mission-control-display-disposition-closure-check` reports `closure_ready: true`;
 - the normalized response records `disposition_outcome: continue_design_only`;
 - no critical/high `EXT-MC-DISPLAY-###` finding is open;
@@ -167,6 +170,8 @@ Run:
 make mission-control-display-decision-record-skeleton-check
 make mission-control-display-disposition-closure-check
 make mission-control-display-response-dry-run
+make mission-control-display-response-application-record-check
+make mission-control-display-response-application-playbook-check
 ```
 
 These checks must remain green before `make release-check` can pass.

@@ -621,6 +621,12 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-display-response-application-preflight-check` - validate the checked bridge
   between the all-lane enterprise response inbox and the ERG-002 lane-local normalized response path
   before a real Mission Control display/importer reviewer response is used.
+- `make mission-control-display-response-application-record-check` - validate the manager-owned
+  ERG-002 response-application record without recording review, closing ERG-002, or approving
+  Mission Control runtime/importer authority.
+- `make mission-control-display-response-application-playbook-check` - validate the ERG-002
+  response-application command order and allowed committed file scope before any real response is
+  applied.
 - `make mission-control-display-next-review-ready-check` - verify the Mission Control
   display/importer external-review bundle, readiness packet, response kit, dry run, and fail-closed
   closure posture are ready for operator handoff without closing `ERG-002`.
@@ -1438,6 +1444,15 @@ and is checked with `make mission-control-display-response-application-preflight
 the all-lane raw response inbox path and ERG-002 normalized response path aligned before a real
 reviewer response is used, without normalizing responses, closing `ERG-002`, or approving Mission
 Control runtime importer behavior.
+The Mission Control display response-application record is in
+[docs/codex/mission-control-display-response-application-record.md](docs/codex/mission-control-display-response-application-record.md)
+and is checked with `make mission-control-display-response-application-record-check`; it records the
+manager-owned checklist for applying a real favorable ERG-002 reviewer response without closing
+`ERG-002` by itself or approving runtime importer behavior. The companion playbook is in
+[docs/codex/mission-control-display-response-application-playbook.md](docs/codex/mission-control-display-response-application-playbook.md)
+and is checked with `make mission-control-display-response-application-playbook-check`; it defines
+the command order, allowed committed files, and stop conditions for using a real response to support
+a later design-only decision record.
 The Mission Control display next-review ready check is in
 [docs/codex/mission-control-display-next-review-ready-check.md](docs/codex/mission-control-display-next-review-ready-check.md)
 and is checked with `make mission-control-display-next-review-ready-check`; it verifies the ERG-002

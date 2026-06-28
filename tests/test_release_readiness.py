@@ -122,7 +122,9 @@ from scripts import (
     mission_control_display_importer_plan_check,
     mission_control_display_integration_proposal_check,
     mission_control_display_next_review_ready_check,
+    mission_control_display_response_application_playbook_check,
     mission_control_display_response_application_preflight_check,
+    mission_control_display_response_application_record_check,
     mission_control_display_response_dry_run,
     mission_control_display_response_kit,
     mission_control_display_review_packet,
@@ -6476,6 +6478,127 @@ def test_mission_control_display_response_application_preflight_is_wired() -> No
         decision_skeleton,
     ]:
         assert "mission-control-display-response-application-preflight.md" in source
+
+
+def test_mission_control_display_response_application_record_and_playbook_are_wired() -> None:
+    record_report = mission_control_display_response_application_record_check.build_report(
+        Path.cwd()
+    )
+    playbook_report = mission_control_display_response_application_playbook_check.build_report(
+        Path.cwd()
+    )
+    record_doc = Path(
+        "docs/codex/mission-control-display-response-application-record.md"
+    ).read_text(encoding="utf-8")
+    playbook_doc = Path(
+        "docs/codex/mission-control-display-response-application-playbook.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    response_kit = Path("docs/codex/mission-control-display-response-kit.md").read_text(
+        encoding="utf-8"
+    )
+    preflight = Path(
+        "docs/codex/mission-control-display-response-application-preflight.md"
+    ).read_text(encoding="utf-8")
+    closure_gate = Path(
+        "docs/codex/mission-control-display-disposition-closure-gate.md"
+    ).read_text(encoding="utf-8")
+    decision_skeleton = Path(
+        "docs/codex/mission-control-display-decision-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    for report in [record_report, playbook_report]:
+        assert report["valid"] is True
+        assert report["tool_count"] == 24
+        assert report["erg_002_status"] == "planning_only"
+        assert report["allowed_future_status"] == "ready_for_design_only_decision_record"
+        assert report["decision_record_outcome"] == "approved_for_planning"
+        assert report["runtime_changes_allowed"] is False
+        assert report["mission_control_planning_allowed"] is True
+        assert report["requires_real_normalized_response"] is True
+        assert report["mission_control_runtime_allowed"] is False
+        assert report["runtime_importer_allowed"] is False
+        assert report["mission_control_execution_authority_allowed"] is False
+        assert report["mission_control_policy_authority_allowed"] is False
+        assert report["mission_control_approval_authority_allowed"] is False
+        assert report["mission_control_audit_authority_allowed"] is False
+        assert report["api_callbacks_allowed"] is False
+        assert report["polling_or_mutating_ithildin_apis_allowed"] is False
+        assert report["local_model_invocation_allowed"] is False
+        assert report["sandbox_orchestration_allowed"] is False
+        assert report["trusted_host_promotion_allowed"] is False
+        assert report["siem_adapter_allowed"] is False
+        assert report["new_power_classes_allowed"] is False
+        assert report["public_security_product_positioning_allowed"] is False
+        assert report["closes_erg_002"] is False
+
+    for phrase in [
+        "Status: process-only response-application record for `ERG-002`.",
+        "Current governed tool count: `24`.",
+        "Current `ERG-002` status before real reviewer disposition: `planning_only`.",
+        "does not close `ERG-002` by itself",
+        "var/review-runs/mission-control-display/normalized-response.json",
+        "EXT-MC-DISPLAY-###",
+        "ERG-002: planning_only -> ready_for_design_only_decision_record",
+        "runtime importer behavior remains blocked",
+        "make mission-control-display-response-application-record-check",
+    ]:
+        assert phrase in record_doc
+    for phrase in [
+        "Status: manager-owned playbook for applying a real `ERG-002` external response.",
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "var/review-runs/mission-control-display/normalized-response.json",
+        "ithildin.external_review.normalized_response",
+        "can_close_source_rows: true",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "make mission-control-display-response-application-playbook-check",
+    ]:
+        assert phrase in playbook_doc
+    for forbidden in [
+        "runtime importer is approved",
+        "runtime importer behavior is approved",
+        "Mission Control may execute",
+        "Mission Control may approve",
+        "Mission Control is policy authority",
+        "Mission Control is audit authority",
+        "API callbacks are approved",
+        "polling Ithildin APIs is approved",
+        "ERG-002 is closed",
+        "public security product approved",
+    ]:
+        assert forbidden not in record_doc
+        assert forbidden not in playbook_doc
+
+    for target, title, doc_path in [
+        (
+            "mission-control-display-response-application-record-check",
+            "Mission Control Display Response Application Record",
+            "docs/codex/mission-control-display-response-application-record.md",
+        ),
+        (
+            "mission-control-display-response-application-playbook-check",
+            "Mission Control Display Response Application Playbook",
+            "docs/codex/mission-control-display-response-application-playbook.md",
+        ),
+    ]:
+        assert f"make {target}" in readme
+        assert f"{target}:" in makefile
+        assert target in release_check_body
+        assert target in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+        assert doc_path in docs_site
+        assert doc_path in review_docs.REVIEW_DOCS
+        assert title in review_index
+
+    for source in [response_kit, preflight, closure_gate]:
+        assert "mission-control-display-response-application-record.md" in source
+        assert "mission-control-display-response-application-playbook.md" in source
+    assert "mission-control-display-response-application-record.md" in decision_skeleton
+    assert "mission-control-display-response-application-playbook.md" in decision_skeleton
 
 
 def test_mission_control_display_next_review_ready_check_is_wired() -> None:

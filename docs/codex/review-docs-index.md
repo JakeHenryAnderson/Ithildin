@@ -312,6 +312,8 @@ externally closed.
 - [Mission Control Display Response Dry Run](mission-control-display-response-dry-run.md)
 - [Mission Control Display Response Kit](mission-control-display-response-kit.md)
 - [Mission Control Display Response Application Preflight](mission-control-display-response-application-preflight.md)
+- [Mission Control Display Response Application Record](mission-control-display-response-application-record.md)
+- [Mission Control Display Response Application Playbook](mission-control-display-response-application-playbook.md)
 - [Mission Control Display Next Review Ready Check](mission-control-display-next-review-ready-check.md)
 - [Mission Control Display Decision Record Skeleton](mission-control-display-decision-record-skeleton.md)
 - [Mission Control Integration Readiness Packet](mission-control-integration-readiness-packet.md)

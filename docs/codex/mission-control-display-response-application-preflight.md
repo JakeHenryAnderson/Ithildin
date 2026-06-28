@@ -20,6 +20,11 @@ not write normalized response files, does not mutate findings, does not record e
 does not close `ERG-002`, and does not approve runtime behavior. Mission Control runtime importer
 behavior remains blocked.
 
+Use `mission-control-display-response-application-record.md` and
+`mission-control-display-response-application-playbook.md` as the checked manager-owned record and
+playbook after a real normalized response exists and before any design-only decision record is
+prepared.
+
 Required invariant: does not write normalized response files.
 
 ## Path Contract
@@ -59,6 +64,10 @@ Before applying a real response:
 - `make mission-control-display-response-kit-check` must keep the response-intake kit bounded;
 - `make mission-control-display-external-response-intake-check` must keep the intake template
   bounded;
+- `make mission-control-display-response-application-record-check` must keep the response
+  application checklist process-only;
+- `make mission-control-display-response-application-playbook-check` must keep the response
+  application command order and allowed committed file scope bounded;
 - `make mission-control-display-decision-record-skeleton-check` must keep the only allowed future
   decision outcome bounded to `approved_for_planning`.
 
@@ -80,6 +89,8 @@ Before applying a real response:
    make mission-control-display-disposition-closure-check
    make mission-control-display-response-dry-run
    make mission-control-display-response-kit-check
+   make mission-control-display-response-application-record-check
+   make mission-control-display-response-application-playbook-check
    make mission-control-display-decision-record-skeleton-check
    ```
 
@@ -128,9 +139,12 @@ make enterprise-response-command-matrix
 make mission-control-display-disposition-closure-check
 make mission-control-display-response-dry-run
 make mission-control-display-response-kit-check
+make mission-control-display-response-application-record-check
+make mission-control-display-response-application-playbook-check
 make mission-control-display-decision-record-skeleton-check
 ```
 
 `make release-check` includes this preflight so the ERG-002 raw-response path, normalized-response
-path, command matrix, closure gate, dry-run, response kit, decision-record skeleton, current
+path, command matrix, closure gate, dry-run, response kit, response-application record,
+response-application playbook, decision-record skeleton, current
 planning-only state, and blocked runtime boundaries cannot quietly drift.

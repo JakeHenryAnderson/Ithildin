@@ -203,6 +203,14 @@ def test_default_docs_include_v02_review_packet() -> None:
         "docs/codex/mission-control-display-response-application-preflight.md"
         in DEFAULT_DOCS
     )
+    assert (
+        "docs/codex/mission-control-display-response-application-record.md"
+        in DEFAULT_DOCS
+    )
+    assert (
+        "docs/codex/mission-control-display-response-application-playbook.md"
+        in DEFAULT_DOCS
+    )
     assert "docs/codex/mission-control-display-decision-record-skeleton.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-integration-readiness-packet.md" in DEFAULT_DOCS
     assert "docs/codex/mission-control-side-handoff-plan.md" in DEFAULT_DOCS
