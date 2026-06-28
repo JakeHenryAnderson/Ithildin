@@ -423,6 +423,35 @@ def test_release_packet_review_docs_exist() -> None:
     assert missing == []
 
 
+def test_validation_performance_tiers_are_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
+    conftest = Path("tests/conftest.py").read_text(encoding="utf-8")
+    guide = Path("docs/codex/validation-performance-and-gate-tiers.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+
+    assert "quick-check:" in makefile
+    assert "readiness-check:" in makefile
+    assert "test_release_packet_review_docs_exist" in makefile
+    assert "test_validation_performance_tiers_are_wired" in makefile
+    assert "make quick-check" in readme
+    assert "make readiness-check" in readme
+    assert "slow_packet:" in pyproject
+    assert "pytest_collection_modifyitems" in conftest
+    assert "SLOW_PACKET_NAME_MARKERS" in conftest
+    assert "mission_control" in conftest
+    assert "sandbox_vm" in conftest
+    assert "Do not use fast gates to claim release readiness" in guide
+    assert "make review-candidate" in guide
+    assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
+    assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
+    assert "Validation Performance And Gate Tiers" in review_index
+
+
 def test_agent_workflow_instruction_layer_is_wired() -> None:
     report = agent_workflow_check.build_report(Path.cwd())
     readme = Path("README.md").read_text(encoding="utf-8")

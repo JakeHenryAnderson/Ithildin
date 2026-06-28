@@ -148,6 +148,10 @@ checked with `make control-mapping-readiness`.
 ## Development Commands
 
 - `make test` - run Python tests.
+- `make quick-check` - run the fast local development gate: core boundary checks, lint, and
+  typecheck without generated review-packet rebuilds.
+- `make readiness-check` - run the medium development gate: `quick-check`, docs generation, and
+  release/docs tests while skipping `slow_packet` generated-artifact tests.
 - `make lint` - run Python lint checks.
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.
@@ -160,7 +164,8 @@ checked with `make control-mapping-readiness`.
 - `make determinism-check` - check pytest collection stability and obvious nondeterministic patterns.
 - `make evidence-contracts-check` - validate the machine-readable local-preview evidence contract index.
 - `make policy-test` - run committed offline fixtures against `policies/default.yaml`.
-- `make release-check` - run manifest lock verification, policy fixtures, tests, lint, typecheck, docs, and UI build.
+- `make release-check` - run the full local release gate, including generated-artifact and packet
+  checks that may be slow.
 - `make release-evidence` - print a secret-free local release evidence snapshot.
 - `make release-evidence-gate` - generate and validate a temporary release evidence snapshot.
 - `make release-evidence-validate FILE=...` - validate a saved release evidence JSON snapshot.

@@ -243,6 +243,7 @@ externally closed.
 - [Ithildin v1.0 Workbench And Evidence Closure](v1.0-workbench-evidence-closure.md)
 - [Ithildin v1.0 Assurance Closure](v1.0-assurance-closure.md)
 - [Ithildin v1.0 RC Readiness Gate](v1.0-rc-readiness-gate.md)
+- [Validation Performance And Gate Tiers](validation-performance-and-gate-tiers.md)
 - [Ithildin Enterprise Readiness Runway](enterprise-readiness-runway.md)
 - [Ithildin Enterprise Readiness Gap Matrix](enterprise-readiness-gap-matrix.md)
 - [Ithildin Enterprise Progress Model](enterprise-progress-model.md)

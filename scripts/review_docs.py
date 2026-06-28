@@ -257,6 +257,7 @@ REVIEW_DOCS = [
     "docs/codex/v1.0-workbench-evidence-closure.md",
     "docs/codex/v1.0-assurance-closure.md",
     "docs/codex/v1.0-rc-readiness-gate.md",
+    "docs/codex/validation-performance-and-gate-tiers.md",
     "docs/codex/enterprise-readiness-runway.md",
     "docs/codex/enterprise-readiness-gap-matrix.md",
     "docs/codex/enterprise-progress-model.md",

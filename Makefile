@@ -10,9 +10,28 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
+.PHONY: quick-check readiness-check
 
 test:
 	uv run pytest
+
+quick-check:
+	$(MAKE) release-context
+	$(MAKE) manifest-lock-check
+	$(MAKE) release-guardrails
+	$(MAKE) tool-surface-invariant-gate
+	$(MAKE) no-new-powers-guardrail
+	$(MAKE) lint
+	$(MAKE) typecheck
+
+readiness-check:
+	$(MAKE) quick-check
+	uv run pytest \
+		tests/test_release_readiness.py::test_release_packet_review_docs_exist \
+		tests/test_release_readiness.py::test_validation_performance_tiers_are_wired \
+		tests/test_docs_site.py \
+		-q
+	$(MAKE) docs-site
 
 determinism-check:
 	uv run python scripts/test_determinism_gate.py
