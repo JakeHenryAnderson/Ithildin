@@ -15,6 +15,10 @@ product positioning.
 For the current `ERG-003` and `ERG-002` receive path, use
 `make enterprise-response-intake-quickstart` as the compact operator sequence that points to the
 raw-response paths, normalizer commands, dry-runs, closure gates, and stop conditions.
+Use `make enterprise-response-application-rehearsal` before real responses arrive to prove the
+current `ERG-003`/`ERG-002` response-application preflights, protocol, command matrix, and quickstart
+remain wired without normalizing responses, writing response files, recording review, or closing
+lanes.
 
 ## Current Baseline
 
@@ -145,6 +149,7 @@ make enterprise-response-application-protocol
 make enterprise-response-inbox
 make enterprise-response-status-board
 make enterprise-response-command-matrix
+make enterprise-response-application-rehearsal
 make enterprise-response-intake-drill
 make enterprise-current-checkpoint
 ```

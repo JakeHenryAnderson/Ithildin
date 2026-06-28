@@ -493,6 +493,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-application-protocol` - validate the checked operator protocol for
   applying future enterprise reviewer responses through lane dry-runs, closure gates, and later
   committed decision records without approving runtime expansion.
+- `make enterprise-response-application-rehearsal` - validate the active `ERG-003`/`ERG-002`
+  response-application path end-to-end before real reviewer responses arrive, without normalizing
+  responses, writing response files, recording review, or closing lanes.
 - `make enterprise-response-intake-quickstart` - validate the compact operator quickstart for
   pasting future `ERG-003` and `ERG-002` responses into ignored raw-response paths and running the
   lane dry-run/closure sequence without recording review or approving runtime expansion.
@@ -1194,6 +1197,11 @@ The enterprise response application protocol is
 checked with `make enterprise-response-application-protocol`; it gives the operator the
 fail-closed sequence for turning future reviewer responses into lane-specific dry-run, closure-gate,
 and committed decision-record work without approving runtime expansion.
+The enterprise response application rehearsal is
+[docs/codex/enterprise-response-application-rehearsal.md](docs/codex/enterprise-response-application-rehearsal.md),
+checked with `make enterprise-response-application-rehearsal`; it proves the current `ERG-003` and
+`ERG-002` response-application preflight path is wired before real reviewer responses arrive,
+without normalizing responses, writing response files, recording review, or closing lanes.
 The enterprise response intake quickstart is
 [docs/codex/enterprise-response-intake-quickstart.md](docs/codex/enterprise-response-intake-quickstart.md),
 checked with `make enterprise-response-intake-quickstart`; it gives the operator the compact

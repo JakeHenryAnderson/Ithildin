@@ -251,6 +251,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-response-intake-drill.md",
     "docs/codex/enterprise-response-command-matrix.md",
     "docs/codex/enterprise-response-application-protocol.md",
+    "docs/codex/enterprise-response-application-rehearsal.md",
     "docs/codex/enterprise-response-intake-quickstart.md",
     "docs/codex/enterprise-response-paste-preflight.md",
     "docs/codex/enterprise-sandbox-control-plane-readiness.md",

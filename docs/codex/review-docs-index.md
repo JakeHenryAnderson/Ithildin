@@ -274,6 +274,7 @@ externally closed.
 - [Enterprise Response Intake Drill](enterprise-response-intake-drill.md)
 - [Enterprise Response Command Matrix](enterprise-response-command-matrix.md)
 - [Enterprise Response Application Protocol](enterprise-response-application-protocol.md)
+- [Enterprise Response Application Rehearsal](enterprise-response-application-rehearsal.md)
 - [Enterprise Response Intake Quickstart](enterprise-response-intake-quickstart.md)
 - [Enterprise Response Paste Preflight](enterprise-response-paste-preflight.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)

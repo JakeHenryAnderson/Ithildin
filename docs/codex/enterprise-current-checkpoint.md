@@ -49,6 +49,7 @@ make enterprise-response-inbox
 make enterprise-response-status-board
 make enterprise-response-intake-drill
 make enterprise-response-application-protocol
+make enterprise-response-application-rehearsal
 make enterprise-response-intake-quickstart
 make enterprise-response-paste-preflight
 ```

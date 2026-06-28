@@ -28,6 +28,7 @@ make enterprise-dual-response-readiness
 make enterprise-response-status-board
 make enterprise-response-command-matrix
 make enterprise-response-application-protocol
+make enterprise-response-application-rehearsal
 make enterprise-response-paste-preflight
 ```
 

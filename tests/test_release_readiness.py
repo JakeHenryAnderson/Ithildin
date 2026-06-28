@@ -63,6 +63,7 @@ from scripts import (
     enterprise_readiness_gap_matrix_check,
     enterprise_readiness_runway_check,
     enterprise_response_application_protocol,
+    enterprise_response_application_rehearsal,
     enterprise_response_command_matrix,
     enterprise_response_inbox,
     enterprise_response_intake_drill,
@@ -2347,6 +2348,95 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-response-application-protocol" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_response_application_rehearsal_is_wired() -> None:
+    report = enterprise_response_application_rehearsal.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-application-rehearsal.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    protocol = Path("docs/codex/enterprise-response-application-protocol.md").read_text(
+        encoding="utf-8"
+    )
+    quickstart = Path("docs/codex/enterprise-response-intake-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_002_status"] == "planning_only"
+    for flag in [
+        "normalizes_real_responses",
+        "writes_response_files",
+        "mutates_findings",
+        "records_external_review",
+        "closes_erg_003",
+        "closes_erg_002",
+        "runtime_changes_allowed",
+        "mission_control_runtime_allowed",
+        "live_vm_inspection_allowed",
+        "local_model_invocation_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "siem_adapter_allowed",
+        "compliance_automation_allowed",
+        "public_security_product_positioning_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[flag] is False
+    for phrase in [
+        "Status: checked fixture-free rehearsal for the current `ERG-003` and "
+        "`ERG-002` response application path.",
+        "make enterprise-response-application-rehearsal",
+        "does not normalize real responses",
+        "does not write response files",
+        "does not record external review",
+        "does not close `ERG-003`",
+        "does not close `ERG-002`",
+        "does not approve runtime behavior",
+        "does not approve Mission Control runtime behavior",
+        "does not approve live VM/container inspection",
+        "does not approve public/security-product positioning",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-application-rehearsal:" in makefile
+    assert (
+        "enterprise-response-application-rehearsal" in release_check_body
+        or "release-check: enterprise-response-application-rehearsal" in makefile
+    )
+    assert "$(MAKE) enterprise-response-application-rehearsal" in review_candidate_body
+    assert "make enterprise-response-application-rehearsal" in readme
+    assert "docs/codex/enterprise-response-application-rehearsal.md" in readme
+    assert "docs/codex/enterprise-response-application-rehearsal.md" in docs_site
+    assert (
+        "docs/codex/enterprise-response-application-rehearsal.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Response Application Rehearsal" in review_index
+    assert "make enterprise-response-application-rehearsal" in protocol
+    assert "make enterprise-response-application-rehearsal" in quickstart
+    assert "make enterprise-response-application-rehearsal" in current_checkpoint
+    assert "enterprise-response-application-rehearsal" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-application-rehearsal" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
