@@ -21,6 +21,7 @@ site/
 !.env.example
 var/db/*
 var/keys/*
+var/locks/*
 var/logs/*
 var/agent-delegation/*
 var/review-packets/*
