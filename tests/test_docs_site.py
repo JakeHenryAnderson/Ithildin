@@ -246,6 +246,10 @@ def test_default_docs_include_v02_review_packet() -> None:
         in DEFAULT_DOCS
     )
     assert (
+        "docs/codex/sandbox-vm-static-preflight-response-application-preflight.md"
+        in DEFAULT_DOCS
+    )
+    assert (
         "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md"
         in DEFAULT_DOCS
     )

@@ -269,6 +269,7 @@ from scripts import (
     sandbox_vm_static_preflight_implementation_gate,
     sandbox_vm_static_preflight_negative_transcripts,
     sandbox_vm_static_preflight_response_application_playbook_check,
+    sandbox_vm_static_preflight_response_application_preflight_check,
     sandbox_vm_static_preflight_response_application_record_check,
     sandbox_vm_static_preflight_response_dry_run,
     sandbox_vm_static_preflight_response_kit,
@@ -8080,6 +8081,128 @@ def test_sandbox_vm_static_preflight_response_application_playbook_is_wired() ->
     assert "Sandbox/VM Static Preflight Response Application Playbook" in review_index
     for source in [response_kit, triage_update, application_record, reproduction_map]:
         assert "sandbox-vm-static-preflight-response-application-playbook.md" in source
+
+
+def test_sandbox_vm_static_preflight_response_application_preflight_is_wired() -> None:
+    report = sandbox_vm_static_preflight_response_application_preflight_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-static-preflight-response-application-preflight.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    response_inbox = Path("docs/codex/enterprise-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    command_matrix = Path("docs/codex/enterprise-response-command-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    application_record = Path(
+        "docs/codex/sandbox-vm-static-preflight-response-application-record.md"
+    ).read_text(encoding="utf-8")
+    application_playbook = Path(
+        "docs/codex/sandbox-vm-static-preflight-response-application-playbook.md"
+    ).read_text(encoding="utf-8")
+    triage_update = Path(
+        "docs/codex/sandbox-vm-static-preflight-triage-update.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert (
+        report["raw_response_path"]
+        == "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md"
+    )
+    assert (
+        report["normalized_response_path"]
+        == "var/review-runs/sandbox-vm-static-preflight/normalized-response.json"
+    )
+    assert report["response_present"] is False
+    assert report["closure_ready"] is False
+    assert report["allowed_future_status"] == "closed_local_preview_static_preflight"
+    for key in [
+        "runtime_changes_allowed",
+        "normalizes_responses",
+        "writes_response_files",
+        "committed_findings_mutated",
+        "external_review_recorded",
+        "closes_erg_003",
+        "erg_004_unblocked",
+        "live_vm_inspection_allowed",
+        "sandbox_orchestration_allowed",
+        "mission_control_runtime_allowed",
+        "local_model_invocation_allowed",
+        "trusted_host_promotion_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+
+    for phrase in [
+        "Status: checked preflight for applying a real `ERG-003` external response.",
+        "Current governed tool count: `24`.",
+        "Current selected capability: `not selected`.",
+        "Current `ERG-003` status before real reviewer disposition: `external_review_required`.",
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/sandbox-vm-static-preflight/normalized-response.json",
+        "make enterprise-response-command-matrix",
+        "make sandbox-vm-static-preflight-disposition-closure-check",
+        "make sandbox-vm-static-preflight-response-dry-run",
+        "make sandbox-vm-static-preflight-triage-update-check",
+        "make sandbox-vm-static-preflight-response-application-record-check",
+        "make sandbox-vm-static-preflight-response-application-playbook-check",
+        "ERG-003: external_review_required -> closed_local_preview_static_preflight",
+        "ERG-004 remains blocked",
+        "does not normalize responses",
+        "does not write normalized response files",
+        "does not close `ERG-003`",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "ERG-003 is closed",
+        "ERG-004 is unblocked",
+    ]:
+        assert forbidden not in doc
+
+    assert (
+        "make sandbox-vm-static-preflight-response-application-preflight-check"
+        in readme
+    )
+    assert (
+        "sandbox-vm-static-preflight-response-application-preflight-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-static-preflight-response-application-preflight-check"
+        in release_check_body
+    )
+    assert "sandbox-vm-static-preflight-response-application-preflight-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-response-application-preflight.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-static-preflight-response-application-preflight.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Static Preflight Response Application Preflight" in review_index
+    for source in [
+        response_inbox,
+        command_matrix,
+        application_record,
+        application_playbook,
+        triage_update,
+    ]:
+        assert "sandbox-vm-static-preflight-response-application-preflight.md" in source
 
 
 def test_sandbox_vm_static_preflight_reviewer_reproduction_map_is_wired() -> None:

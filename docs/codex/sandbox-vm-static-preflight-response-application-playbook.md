@@ -27,6 +27,12 @@ Validation command:
 make sandbox-vm-static-preflight-response-application-playbook-check
 ```
 
+Run `make sandbox-vm-static-preflight-response-application-preflight-check` before applying a real
+reviewer response. The companion `sandbox-vm-static-preflight-response-application-preflight.md`
+checks the all-lane raw response inbox path, ERG-003 normalized response path, command matrix row,
+closure gate, dry-run, application record, playbook, and blocked runtime boundaries without
+normalizing responses or closing `ERG-003`.
+
 ## Inputs
 
 Use this playbook only after a real reviewer response exists. The expected ignored input paths are:

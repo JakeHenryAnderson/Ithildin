@@ -340,6 +340,8 @@ externally closed.
 - [Sandbox/VM Static Preflight Response Dry Run](sandbox-vm-static-preflight-response-dry-run.md)
 - [Sandbox/VM Static Preflight Triage Update](sandbox-vm-static-preflight-triage-update.md)
 - [Sandbox/VM Static Preflight Response Application Record](sandbox-vm-static-preflight-response-application-record.md)
+- [Sandbox/VM Static Preflight Response Application Preflight](sandbox-vm-static-preflight-response-application-preflight.md)
+- [Sandbox/VM Static Preflight Response Application Playbook](sandbox-vm-static-preflight-response-application-playbook.md)
 - [Sandbox/VM Static Preflight Reviewer Reproduction Map](sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 - [Sandbox/VM Live POC Decision Intake](sandbox-vm-live-poc-decision-intake.md)
 - [Sandbox/VM Live POC Evidence Contract](sandbox-vm-live-poc-evidence-contract.md)

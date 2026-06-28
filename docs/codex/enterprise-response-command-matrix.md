@@ -25,6 +25,12 @@ Use the generated inbox for exact reviewed-packet hashes before applying a real 
 make enterprise-response-inbox
 ```
 
+For `ERG-003`, use
+[Sandbox/VM Static Preflight Response Application Preflight](sandbox-vm-static-preflight-response-application-preflight.md)
+before applying a real reviewer response. It verifies the raw-response path, normalized-response
+path, command matrix row, closure gate, dry-run, application record, application playbook, and
+blocked runtime boundaries without normalizing responses or closing the lane.
+
 ## Command Matrix
 
 | Lane | Raw response path | Normalizer command | Normalized response path | Dry run | Closure gate | Response kit | Maximum allowed transition | Still blocked |

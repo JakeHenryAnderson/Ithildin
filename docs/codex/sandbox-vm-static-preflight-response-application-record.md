@@ -27,6 +27,11 @@ var/review-runs/sandbox-vm-static-preflight/normalized-response.json
 Use `sandbox-vm-static-preflight-response-application-playbook.md` as the companion command-order
 and allowed-file-scope playbook for this record.
 
+Use `sandbox-vm-static-preflight-response-application-preflight.md` before applying a real response
+to verify the all-lane enterprise response inbox path, lane-local normalized response path, command
+matrix row, closure gate, dry-run, application record, playbook, and blocked runtime boundaries are
+still aligned.
+
 ## Application Preconditions
 
 - The reviewed packet is the current `ERG-003` static preflight packet.

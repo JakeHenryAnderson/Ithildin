@@ -118,6 +118,9 @@ Use `sandbox-vm-static-preflight-response-application-playbook.md` as the manage
 file-scope playbook before committing that favorable response.
 Use `sandbox-vm-static-preflight-response-application-record.md` as the manager-owned checklist for
 applying that real reviewer response without accidentally closing `ERG-003` or unblocking `ERG-004`.
+Use `sandbox-vm-static-preflight-response-application-preflight.md` before applying a real response
+to verify the all-lane raw response path, ERG-003 normalized response path, command matrix, closure
+gate, dry-run, application record, playbook, and blocked runtime boundaries remain aligned.
 
 ## Negative Triage Outcomes
 

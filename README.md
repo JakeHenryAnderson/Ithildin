@@ -717,6 +717,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-static-preflight-response-application-playbook-check` - validate the
   manager-owned playbook for applying a real `ERG-003` reviewer response with explicit inputs,
   command order, allowed committed files, stop conditions, and blocked runtime boundaries.
+- `make sandbox-vm-static-preflight-response-application-preflight-check` - validate the checked
+  bridge between the all-lane enterprise response inbox and the ERG-003 lane-local normalized
+  response path before applying a real `ERG-003` reviewer disposition.
 - `make project-dependency-summary-proposal-check` - validate the historical design-only
   `project.dependency.summary` proposal artifact.
 - `make project-dependency-summary-implementation-plan-check` - validate the historical
@@ -1565,6 +1568,12 @@ spells out the exact manager-owned input paths, command sequence, allowed commit
 stop conditions, and final gates for applying a real `ERG-003` response without unblocking live
 sandbox/VM runtime work, Mission Control runtime behavior, local model invocation, trusted-host
 promotion, or broader Ithildin authority.
+The static preflight response-application preflight is
+[docs/codex/sandbox-vm-static-preflight-response-application-preflight.md](docs/codex/sandbox-vm-static-preflight-response-application-preflight.md)
+and is checked with `make sandbox-vm-static-preflight-response-application-preflight-check`; it
+keeps the all-lane raw response inbox path and ERG-003 normalized response path aligned before a
+real reviewer response is applied, without normalizing responses, closing `ERG-003`, unblocking
+`ERG-004`, or approving live sandbox/VM runtime behavior.
 The reviewer reproduction map is
 [docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md](docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md)
 and is checked with `make sandbox-vm-static-preflight-reviewer-reproduction-map-check`; it gives

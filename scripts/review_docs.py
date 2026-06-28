@@ -358,6 +358,7 @@ REVIEW_DOCS = [
     "docs/codex/sandbox-vm-static-preflight-triage-update.md",
     "docs/codex/sandbox-vm-static-preflight-response-application-record.md",
     "docs/codex/sandbox-vm-static-preflight-response-application-playbook.md",
+    "docs/codex/sandbox-vm-static-preflight-response-application-preflight.md",
     "docs/codex/sandbox-vm-static-preflight-reviewer-reproduction-map.md",
     "docs/codex/sandbox-vm-live-poc-decision-intake.md",
     "docs/codex/sandbox-vm-live-poc-evidence-contract.md",

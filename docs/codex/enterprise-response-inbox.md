@@ -81,3 +81,9 @@ see [Enterprise Response Command Matrix](enterprise-response-command-matrix.md) 
 ```sh
 make enterprise-response-command-matrix
 ```
+
+For `ERG-003`, use
+[Sandbox/VM Static Preflight Response Application Preflight](sandbox-vm-static-preflight-response-application-preflight.md)
+before applying a real reviewer response. It checks that this all-lane raw-response path, the
+ERG-003 normalized-response path, the command matrix, the closure gate, the dry-run, the application
+record, the application playbook, and blocked runtime boundaries remain aligned.
