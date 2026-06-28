@@ -3494,6 +3494,79 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     )
 
 
+def test_enterprise_operator_next_action_routes_response_present_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_send_mode_report(_repo_root: Path) -> dict[str, Any]:
+        raise AssertionError("send-mode reports must not be required in response mode")
+
+    def response_present_report(_repo_root: Path) -> dict[str, Any]:
+        return {
+            "valid": False,
+            "failures": ["ERG-003 normalized response is present; run lane intake"],
+            "tool_count": 24,
+            "response_present_count": 1,
+            "closure_ready_count": 0,
+            "rows": [{"gap": "ERG-003", "response_present": True, "closure_ready": False}],
+            "runtime_changes_allowed": False,
+            "mission_control_runtime_allowed": False,
+            "live_vm_inspection_allowed": False,
+            "sandbox_orchestration_allowed": False,
+            "trusted_host_promotion_allowed": False,
+            "siem_adapter_allowed": False,
+            "compliance_automation_allowed": False,
+            "public_security_product_positioning_allowed": False,
+            "new_power_classes_allowed": False,
+        }
+
+    monkeypatch.setattr(
+        enterprise_current_checkpoint,
+        "build_report",
+        forbidden_send_mode_report,
+    )
+    monkeypatch.setattr(
+        enterprise_review_send_readiness,
+        "build_report",
+        forbidden_send_mode_report,
+    )
+    monkeypatch.setattr(
+        enterprise_north_star_roadmap,
+        "build_report",
+        forbidden_send_mode_report,
+    )
+    monkeypatch.setattr(
+        enterprise_response_status_board,
+        "build_report",
+        response_present_report,
+    )
+
+    report = enterprise_operator_next_action.build_report(Path.cwd())
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["response_present_count"] == 1
+    assert report["closure_ready_count"] == 0
+    assert report["next_action"] == "run_response_intake_preflight"
+    assert report["action_commands"] == [
+        "make enterprise-response-paste-preflight",
+        "make enterprise-response-inbox",
+        "make enterprise-response-status-board",
+        "make enterprise-response-intake-quickstart",
+    ]
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["compliance_automation_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+
+
 def test_enterprise_dual_response_inbox_is_wired() -> None:
     report = enterprise_dual_response_inbox.build_check_report(Path.cwd())
     doc = Path("docs/codex/enterprise-dual-response-inbox.md").read_text(

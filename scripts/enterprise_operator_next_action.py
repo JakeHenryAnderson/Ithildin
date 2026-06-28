@@ -98,20 +98,7 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
 
-    checkpoint = enterprise_current_checkpoint.build_report(repo_root)
-    send_readiness = enterprise_review_send_readiness.build_report(repo_root)
     response_status = enterprise_response_status_board.build_report(repo_root)
-    north_star = enterprise_north_star_roadmap.build_report(repo_root)
-
-    for label, report in [
-        ("enterprise-current-checkpoint", checkpoint),
-        ("enterprise-review-send-readiness", send_readiness),
-        ("enterprise-north-star-roadmap", north_star),
-    ]:
-        if report.get("valid") is not True:
-            failures.append(f"{label} is not valid")
-            failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
-
     response_failures = _unexpected_response_status_failures(response_status)
     failures.extend(f"enterprise-response-status-board: {failure}" for failure in response_failures)
 
@@ -124,10 +111,33 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         else RESPONSE_COMMANDS
     )
 
-    if checkpoint.get("tool_count") != 24:
-        failures.append("current checkpoint tool count is not 24")
-    if checkpoint.get("selected_capability") != "not selected":
-        failures.append("current checkpoint selected capability is not selected")
+    checkpoint: dict[str, Any] = {}
+    send_readiness: dict[str, Any] = {"recommended_now": ["ERG-003", "ERG-002"]}
+    north_star: dict[str, Any] = {
+        "recommended_send_set": ["ERG-003", "ERG-002"],
+        "recommended_next_enterprise_review": "ERG-003",
+    }
+
+    if next_action == "send_erg_003_and_erg_002":
+        checkpoint = enterprise_current_checkpoint.build_report(repo_root)
+        send_readiness = enterprise_review_send_readiness.build_report(repo_root)
+        north_star = enterprise_north_star_roadmap.build_report(repo_root)
+
+        for label, report in [
+            ("enterprise-current-checkpoint", checkpoint),
+            ("enterprise-review-send-readiness", send_readiness),
+            ("enterprise-north-star-roadmap", north_star),
+        ]:
+            if report.get("valid") is not True:
+                failures.append(f"{label} is not valid")
+                failures.extend(
+                    f"{label}: {failure}" for failure in report.get("failures", [])
+                )
+
+        if checkpoint.get("tool_count") != 24:
+            failures.append("current checkpoint tool count is not 24")
+        if checkpoint.get("selected_capability") != "not selected":
+            failures.append("current checkpoint selected capability is not selected")
     if send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]:
         failures.append("recommended send set must remain ERG-003 then ERG-002")
     if north_star.get("recommended_send_set") != ["ERG-003", "ERG-002"]:
@@ -147,12 +157,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "new_power_classes_allowed": False,
     }
     for key, expected in boundary_flags.items():
-        for label, report in [
-            ("checkpoint", checkpoint),
-            ("send-readiness", send_readiness),
-            ("response-status", response_status),
-            ("north-star", north_star),
-        ]:
+        mode_reports = [("response-status", response_status)]
+        if next_action == "send_erg_003_and_erg_002":
+            mode_reports.extend(
+                [
+                    ("checkpoint", checkpoint),
+                    ("send-readiness", send_readiness),
+                    ("north-star", north_star),
+                ]
+            )
+        for label, report in mode_reports:
             if key in report and report[key] is not expected:
                 failures.append(f"{label} boundary flag drifted: {key}")
 
@@ -210,7 +224,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "next_action_doc": DOC_REL,
         "tool_count": 24,
-        "selected_capability": checkpoint.get("selected_capability"),
+        "selected_capability": checkpoint.get("selected_capability", "not selected"),
         "recommended_send_set": send_readiness.get("recommended_now"),
         "recommended_next_enterprise_review": north_star.get(
             "recommended_next_enterprise_review"
@@ -270,9 +284,25 @@ def _unexpected_response_status_failures(report: dict[str, Any]) -> list[str]:
         "normalized response is present; run lane intake",
         "closure is ready; run lane-specific closure flow",
     )
+    response_present_gaps = {
+        row.get("gap") for row in report.get("rows", []) if row.get("response_present") is True
+    }
+    closure_ready_gaps = {
+        row.get("gap") for row in report.get("rows", []) if row.get("closure_ready") is True
+    }
     failures = []
     for failure in report.get("failures", []):
         if any(fragment in failure for fragment in expected_state_failures):
+            continue
+        if (
+            "closure gate is not valid" in failure
+            and any(str(gap) in failure for gap in response_present_gaps)
+        ):
+            continue
+        if (
+            "closure gate is not valid" in failure
+            and any(str(gap) in failure for gap in closure_ready_gaps)
+        ):
             continue
         failures.append(failure)
     return failures

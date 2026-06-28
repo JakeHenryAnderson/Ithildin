@@ -11,9 +11,11 @@ make enterprise-operator-next-action
 ```
 
 This command answers one narrow question: given the current checked enterprise state, what should
-the operator do next? It is a state reader. It does not generate packets, paste responses, normalize
-responses, write response files, mutate findings, close enterprise lanes, approve runtime behavior,
-or approve public/security-product positioning.
+the operator do next? It is a mode-aware state reader. In send mode it validates the current send
+artifacts; in response-present mode it routes to the response-intake commands without requiring
+send-readiness reports that intentionally fail once response evidence exists. It does not generate
+packets, paste responses, normalize responses, write response files, mutate findings, close
+enterprise lanes, approve runtime behavior, or approve public/security-product positioning.
 
 ## Current Expected Action
 
@@ -59,6 +61,10 @@ playbook. The current primary lanes are:
 
 - `ERG-003`: use the sandbox/VM static preflight response kit and closure gate.
 - `ERG-002`: use the Mission Control display response kit and closure gate.
+
+In this mode, `make enterprise-operator-next-action` is expected to remain valid and report
+`run_response_intake_preflight` or `run_lane_specific_closure_playbook` even though lower-level
+send-readiness summaries may fail closed because response evidence is present.
 
 ## What This Does Not Approve
 
