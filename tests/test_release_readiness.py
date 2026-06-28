@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, cast
 
@@ -8555,6 +8556,26 @@ def test_sandbox_vm_static_preflight_response_dry_run_is_wired() -> None:
     assert "sandbox-vm-static-preflight-response-dry-run.md" in enterprise
     assert "sandbox-vm-static-preflight-response-dry-run.md" in gap_matrix
     assert "sandbox-vm-static-preflight-response-dry-run.md" in queue
+
+
+def test_sandbox_vm_static_preflight_response_dry_run_serializes_fixture_writes() -> None:
+    repo_root = Path.cwd()
+    response_path = repo_root / (
+        sandbox_vm_static_preflight_disposition_closure_check.NORMALIZED_RESPONSE_REL
+    )
+    response_path.unlink(missing_ok=True)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        reports = list(
+            executor.map(
+                sandbox_vm_static_preflight_response_dry_run.run_dry_run,
+                [repo_root, repo_root],
+            )
+        )
+
+    assert [report["valid"] for report in reports] == [True, True]
+    assert [report["response_restored"] for report in reports] == [True, True]
+    assert not response_path.exists()
 
 
 def test_sandbox_vm_static_preflight_triage_update_is_wired() -> None:

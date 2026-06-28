@@ -14,11 +14,9 @@ review lanes and adds explicit checks for `ERG-010 public/security-product posit
 a normalizer area and fail-closed closure gate but no separate dry-run target.
 
 The drill may temporarily write fixture normalized responses under ignored `var/review-runs/`
-paths, then restores the original state. It does not record external review, does not mutate
-committed findings, does not close any enterprise lane, does not approve runtime behavior, and does
-not approve Mission Control runtime behavior, live VM/container inspection, local model invocation,
-sandbox orchestration, trusted-host promotion, SIEM adapters, compliance automation,
-public/security-product positioning, or new governed tool powers.
+paths, then restores the original state. These fixture writes use a local advisory lock so parallel
+operator/readiness commands do not observe each other's temporary normalized-response files as real
+review evidence. It does not record external review, does not mutate committed findings, does not close any enterprise lane, does not approve runtime behavior, and does not approve Mission Control runtime behavior, live VM/container inspection, local model invocation, sandbox orchestration, trusted-host promotion, SIEM adapters, compliance automation, public/security-product positioning, or new governed tool powers.
 
 ## Covered Lanes
 

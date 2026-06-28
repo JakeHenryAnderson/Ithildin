@@ -34,6 +34,7 @@ from scripts import (
     trusted_host_promotion_external_review_bundle,
     trusted_host_promotion_response_kit,
 )
+from scripts.response_dry_run_lock import response_dry_run_lock
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-review-send-readiness.md"
@@ -56,6 +57,11 @@ def main() -> int:
 
 
 def build_report(repo_root: Path) -> dict[str, Any]:
+    with response_dry_run_lock(repo_root, "__enterprise_response_fixture_state__"):
+        return _build_report_locked(repo_root)
+
+
+def _build_report_locked(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     doc = _read(repo_root / DOC_REL)
     makefile = _read(repo_root / "Makefile")
@@ -204,9 +210,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "selected_capability": "not selected",
         "lane_count": len(rows),
-        "packet_handoff_ready_count": sum(
-            1 for row in rows if row["packet_handoff_ready"]
-        ),
+        "packet_handoff_ready_count": sum(1 for row in rows if row["packet_handoff_ready"]),
         "recommended_now": recommended,
         "runtime_changes_allowed": False,
         "mission_control_runtime_allowed": False,
@@ -298,11 +302,9 @@ def render_report(report: dict[str, Any]) -> str:
         "mission_control_runtime_allowed: "
         f"{str(report['mission_control_runtime_allowed']).lower()}",
         f"live_vm_inspection_allowed: {str(report['live_vm_inspection_allowed']).lower()}",
-        "trusted_host_promotion_allowed: "
-        f"{str(report['trusted_host_promotion_allowed']).lower()}",
+        f"trusted_host_promotion_allowed: {str(report['trusted_host_promotion_allowed']).lower()}",
         f"siem_adapter_allowed: {str(report['siem_adapter_allowed']).lower()}",
-        "compliance_automation_allowed: "
-        f"{str(report['compliance_automation_allowed']).lower()}",
+        f"compliance_automation_allowed: {str(report['compliance_automation_allowed']).lower()}",
         "public_security_product_positioning_allowed: "
         f"{str(report['public_security_product_positioning_allowed']).lower()}",
         f"new_power_classes_allowed: {str(report['new_power_classes_allowed']).lower()}",

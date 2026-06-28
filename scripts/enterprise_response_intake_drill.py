@@ -28,6 +28,7 @@ from scripts import (
 from scripts import (
     public_security_product_positioning_decision_closure_check as public_closure,
 )
+from scripts.response_dry_run_lock import response_dry_run_lock
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-response-intake-drill.md"
@@ -196,27 +197,87 @@ def _dry_run_row(gap: str, area: str, report: dict[str, Any]) -> dict[str, Any]:
 
 def _run_public_positioning_drill(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
-    response_path = repo_root / public_closure.NORMALIZED_RESPONSE_REL
-    original = response_path.read_bytes() if response_path.exists() else None
-    original_present = original is not None
-    cases: dict[str, bool] = {}
-    try:
-        no_findings = external_response_normalize.normalize_response(
-            "# Public positioning review\n\nNo findings.",
-            reviewer="dry-run reviewer",
-            reviewer_type="fixture",
-            source_access="source-level",
-            reviewed_commit=FIXTURE_COMMIT,
-            reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
-            area=public_closure.EXPECTED_AREA,
-        )
-        cases["no_findings_normalizes"] = no_findings["finding_count"] == 0
-
+    with response_dry_run_lock(repo_root, public_closure.NORMALIZED_RESPONSE_REL):
+        response_path = repo_root / public_closure.NORMALIZED_RESPONSE_REL
+        original = response_path.read_bytes() if response_path.exists() else None
+        original_present = original is not None
+        cases: dict[str, bool] = {}
         try:
-            external_response_normalize.normalize_response(
+            no_findings = external_response_normalize.normalize_response(
+                "# Public positioning review\n\nNo findings.",
+                reviewer="dry-run reviewer",
+                reviewer_type="fixture",
+                source_access="source-level",
+                reviewed_commit=FIXTURE_COMMIT,
+                reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
+                area=public_closure.EXPECTED_AREA,
+            )
+            cases["no_findings_normalizes"] = no_findings["finding_count"] == 0
+
+            try:
+                external_response_normalize.normalize_response(
+                    _finding_table(
+                        finding_id="EXT-SVP-001",
+                        severity="medium",
+                        area=public_closure.EXPECTED_AREA,
+                    ),
+                    reviewer="dry-run reviewer",
+                    reviewer_type="fixture",
+                    source_access="source-level",
+                    reviewed_commit=FIXTURE_COMMIT,
+                    reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
+                    area=public_closure.EXPECTED_AREA,
+                )
+            except external_response_normalize.ExternalResponseNormalizationError:
+                cases["wrong_namespace_rejected"] = True
+            else:
+                cases["wrong_namespace_rejected"] = False
+
+            try:
+                external_response_normalize.normalize_response(
+                    "# Public positioning review\n\nLooks good.",
+                    reviewer="dry-run reviewer",
+                    reviewer_type="fixture",
+                    source_access="source-level",
+                    reviewed_commit=FIXTURE_COMMIT,
+                    reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
+                    area=public_closure.EXPECTED_AREA,
+                )
+            except external_response_normalize.ExternalResponseNormalizationError:
+                cases["missing_findings_statement_rejected"] = True
+            else:
+                cases["missing_findings_statement_rejected"] = False
+
+            try:
+                external_response_normalize.normalize_response(
+                    "# Public positioning review\n\nNo findings.\n\nsecret=example",
+                    reviewer="dry-run reviewer",
+                    reviewer_type="fixture",
+                    source_access="source-level",
+                    reviewed_commit=FIXTURE_COMMIT,
+                    reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
+                    area=public_closure.EXPECTED_AREA,
+                )
+            except external_response_normalize.ExternalResponseNormalizationError:
+                cases["secret_marker_rejected"] = True
+            else:
+                cases["secret_marker_rejected"] = False
+
+            response_path.parent.mkdir(parents=True, exist_ok=True)
+            favorable_payload = {
+                **no_findings,
+                "disposition_outcome": public_closure.EXPECTED_OUTCOME,
+            }
+            _write_response(response_path, favorable_payload)
+            favorable_report = public_closure.build_report(repo_root)
+            cases["favorable_fixture_reaches_closure_ready"] = (
+                favorable_report["valid"] is True and favorable_report["closure_ready"] is True
+            )
+
+            high_payload = external_response_normalize.normalize_response(
                 _finding_table(
-                    finding_id="EXT-SVP-001",
-                    severity="medium",
+                    finding_id="EXT-PUBLIC-POSITIONING-001",
+                    severity="high",
                     area=public_closure.EXPECTED_AREA,
                 ),
                 reviewer="dry-run reviewer",
@@ -226,109 +287,50 @@ def _run_public_positioning_drill(repo_root: Path) -> dict[str, Any]:
                 reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
                 area=public_closure.EXPECTED_AREA,
             )
-        except external_response_normalize.ExternalResponseNormalizationError:
-            cases["wrong_namespace_rejected"] = True
-        else:
-            cases["wrong_namespace_rejected"] = False
-
-        try:
-            external_response_normalize.normalize_response(
-                "# Public positioning review\n\nLooks good.",
-                reviewer="dry-run reviewer",
-                reviewer_type="fixture",
-                source_access="source-level",
-                reviewed_commit=FIXTURE_COMMIT,
-                reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
-                area=public_closure.EXPECTED_AREA,
+            _write_response(
+                response_path,
+                {**high_payload, "disposition_outcome": public_closure.EXPECTED_OUTCOME},
             )
-        except external_response_normalize.ExternalResponseNormalizationError:
-            cases["missing_findings_statement_rejected"] = True
-        else:
-            cases["missing_findings_statement_rejected"] = False
-
-        try:
-            external_response_normalize.normalize_response(
-                "# Public positioning review\n\nNo findings.\n\nsecret=example",
-                reviewer="dry-run reviewer",
-                reviewer_type="fixture",
-                source_access="source-level",
-                reviewed_commit=FIXTURE_COMMIT,
-                reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
-                area=public_closure.EXPECTED_AREA,
+            high_report = public_closure.build_report(repo_root)
+            cases["critical_high_finding_blocks_closure"] = (
+                high_report["valid"] is False and high_report["closure_ready"] is False
             )
-        except external_response_normalize.ExternalResponseNormalizationError:
-            cases["secret_marker_rejected"] = True
-        else:
-            cases["secret_marker_rejected"] = False
+        finally:
+            if original is None:
+                response_path.unlink(missing_ok=True)
+            else:
+                response_path.parent.mkdir(parents=True, exist_ok=True)
+                response_path.write_bytes(original)
 
-        response_path.parent.mkdir(parents=True, exist_ok=True)
-        favorable_payload = {
-            **no_findings,
-            "disposition_outcome": public_closure.EXPECTED_OUTCOME,
+        restored_present = response_path.exists()
+        restored_original = True
+        if original is not None and restored_present:
+            restored_original = response_path.read_bytes() == original
+        if original_present != restored_present:
+            failures.append("public positioning response path was not restored")
+        if not restored_original:
+            failures.append("public positioning response content was not restored")
+        for case, passed in cases.items():
+            if not passed:
+                failures.append(f"public positioning drill case failed: {case}")
+
+        return {
+            "area": public_closure.EXPECTED_AREA,
+            "finding_namespace": public_closure.EXPECTED_NAMESPACE,
+            "normalized_response_path": public_closure.NORMALIZED_RESPONSE_REL,
+            "valid": not failures,
+            "failures": failures,
+            "case_count": len(cases),
+            "cases": cases,
+            "original_response_present": original_present,
+            "response_restored": not any("restored" in failure for failure in failures),
+            "committed_findings_mutated": False,
+            "external_review_recorded": False,
+            "erg_010_closed": False,
+            "runtime_changes_allowed": False,
+            "public_security_product_positioning_allowed": False,
+            "new_power_classes_allowed": False,
         }
-        _write_response(response_path, favorable_payload)
-        favorable_report = public_closure.build_report(repo_root)
-        cases["favorable_fixture_reaches_closure_ready"] = (
-            favorable_report["valid"] is True and favorable_report["closure_ready"] is True
-        )
-
-        high_payload = external_response_normalize.normalize_response(
-            _finding_table(
-                finding_id="EXT-PUBLIC-POSITIONING-001",
-                severity="high",
-                area=public_closure.EXPECTED_AREA,
-            ),
-            reviewer="dry-run reviewer",
-            reviewer_type="fixture",
-            source_access="source-level",
-            reviewed_commit=FIXTURE_COMMIT,
-            reviewed_packet_hash=PUBLIC_REVIEWED_PACKET_HASH,
-            area=public_closure.EXPECTED_AREA,
-        )
-        _write_response(
-            response_path,
-            {**high_payload, "disposition_outcome": public_closure.EXPECTED_OUTCOME},
-        )
-        high_report = public_closure.build_report(repo_root)
-        cases["critical_high_finding_blocks_closure"] = (
-            high_report["valid"] is False and high_report["closure_ready"] is False
-        )
-    finally:
-        if original is None:
-            response_path.unlink(missing_ok=True)
-        else:
-            response_path.parent.mkdir(parents=True, exist_ok=True)
-            response_path.write_bytes(original)
-
-    restored_present = response_path.exists()
-    restored_original = True
-    if original is not None and restored_present:
-        restored_original = response_path.read_bytes() == original
-    if original_present != restored_present:
-        failures.append("public positioning response path was not restored")
-    if not restored_original:
-        failures.append("public positioning response content was not restored")
-    for case, passed in cases.items():
-        if not passed:
-            failures.append(f"public positioning drill case failed: {case}")
-
-    return {
-        "area": public_closure.EXPECTED_AREA,
-        "finding_namespace": public_closure.EXPECTED_NAMESPACE,
-        "normalized_response_path": public_closure.NORMALIZED_RESPONSE_REL,
-        "valid": not failures,
-        "failures": failures,
-        "case_count": len(cases),
-        "cases": cases,
-        "original_response_present": original_present,
-        "response_restored": not any("restored" in failure for failure in failures),
-        "committed_findings_mutated": False,
-        "external_review_recorded": False,
-        "erg_010_closed": False,
-        "runtime_changes_allowed": False,
-        "public_security_product_positioning_allowed": False,
-        "new_power_classes_allowed": False,
-    }
 
 
 def _finding_table(*, finding_id: str, severity: str, area: str) -> str:

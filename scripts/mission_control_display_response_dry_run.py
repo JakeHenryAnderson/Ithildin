@@ -12,6 +12,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import mission_control_display_disposition_closure_check as closure
+from scripts.response_dry_run_lock import response_dry_run_lock
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/mission-control-display-response-dry-run.md"
@@ -33,104 +34,107 @@ def main() -> int:
 
 def run_dry_run(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
-    response_path = repo_root / closure.NORMALIZED_RESPONSE_REL
-    original = response_path.read_bytes() if response_path.exists() else None
-    original_present = original is not None
-    cases: dict[str, bool] = {}
+    with response_dry_run_lock(repo_root, closure.NORMALIZED_RESPONSE_REL):
+        response_path = repo_root / closure.NORMALIZED_RESPONSE_REL
+        original = response_path.read_bytes() if response_path.exists() else None
+        original_present = original is not None
+        cases: dict[str, bool] = {}
 
-    try:
-        if response_path.exists():
-            response_path.unlink()
-        absent_report = closure.build_report(repo_root)
-        cases["absent_response_valid"] = absent_report["valid"] is True
-        cases["absent_response_not_ready"] = absent_report["closure_ready"] is False
+        try:
+            if response_path.exists():
+                response_path.unlink()
+            absent_report = closure.build_report(repo_root)
+            cases["absent_response_valid"] = absent_report["valid"] is True
+            cases["absent_response_not_ready"] = absent_report["closure_ready"] is False
 
-        response_path.parent.mkdir(parents=True, exist_ok=True)
-
-        _write_response(response_path, _valid_response())
-        valid_report = closure.build_report(repo_root)
-        cases["valid_response_accepts"] = (
-            valid_report["valid"] is True
-            and valid_report["closure_ready"] is True
-            and valid_report["erg_002_status"] == "ready_for_design_only_decision_record"
-        )
-
-        _write_response(response_path, _valid_response(source_access="packet-only"))
-        cases["packet_only_rejected"] = _is_rejected(closure.build_report(repo_root))
-
-        _write_response(response_path, _valid_response(reviewed_packet_hash="sha256:not-a-hash"))
-        cases["bad_hash_rejected"] = _is_rejected(closure.build_report(repo_root))
-
-        high_finding = {
-            "finding_id": "EXT-MC-DISPLAY-001",
-            "severity": "high",
-            "area": closure.EXPECTED_AREA,
-            "affected_files_functions": "docs/codex/mission-control-display-importer-plan.md",
-            "blocking_status": "should-fix",
-            "disposition": "open",
-            "recommended_fix": "dry-run negative fixture",
-        }
-        _write_response(response_path, _valid_response(findings=[high_finding]))
-        cases["critical_high_finding_rejected"] = _is_rejected(
-            closure.build_report(repo_root)
-        )
-
-        _write_response(response_path, _valid_response(closes_external_review=True))
-        cases["direct_external_closure_rejected"] = _is_rejected(
-            closure.build_report(repo_root)
-        )
-    finally:
-        if original is None:
-            response_path.unlink(missing_ok=True)
-        else:
             response_path.parent.mkdir(parents=True, exist_ok=True)
-            response_path.write_bytes(original)
 
-    restored_present = response_path.exists()
-    restored_original = True
-    if original is not None and restored_present:
-        restored_original = response_path.read_bytes() == original
-    if original_present != restored_present:
-        failures.append("normalized response path was not restored to its original presence state")
-    if not restored_original:
-        failures.append("normalized response path content was not restored")
-    for case, passed in cases.items():
-        if not passed:
-            failures.append(f"dry-run case failed: {case}")
+            _write_response(response_path, _valid_response())
+            valid_report = closure.build_report(repo_root)
+            cases["valid_response_accepts"] = (
+                valid_report["valid"] is True
+                and valid_report["closure_ready"] is True
+                and valid_report["erg_002_status"] == "ready_for_design_only_decision_record"
+            )
 
-    return {
-        "schema_version": "1",
-        "valid": not failures,
-        "failures": failures,
-        "dry_run_doc": DOC_REL,
-        "normalized_response_path": closure.NORMALIZED_RESPONSE_REL,
-        "area": closure.EXPECTED_AREA,
-        "finding_namespace": closure.EXPECTED_NAMESPACE,
-        "tool_count": 24,
-        "original_response_present": original_present,
-        "response_restored": not failures
-        or not any("restored" in failure for failure in failures),
-        "cases": cases,
-        "committed_findings_mutated": False,
-        "external_review_recorded": False,
-        "erg_002_closed": False,
-        "runtime_changes_allowed": False,
-        "mission_control_planning_allowed": True,
-        "mission_control_runtime_allowed": False,
-        "runtime_importer_allowed": False,
-        "mission_control_execution_authority_allowed": False,
-        "mission_control_policy_authority_allowed": False,
-        "mission_control_approval_authority_allowed": False,
-        "mission_control_audit_authority_allowed": False,
-        "api_callbacks_allowed": False,
-        "polling_or_mutating_ithildin_apis_allowed": False,
-        "local_model_invocation_allowed": False,
-        "sandbox_orchestration_allowed": False,
-        "trusted_host_promotion_allowed": False,
-        "siem_adapter_allowed": False,
-        "new_power_classes_allowed": False,
-        "public_security_product_positioning_allowed": False,
-    }
+            _write_response(response_path, _valid_response(source_access="packet-only"))
+            cases["packet_only_rejected"] = _is_rejected(closure.build_report(repo_root))
+
+            _write_response(
+                response_path, _valid_response(reviewed_packet_hash="sha256:not-a-hash")
+            )
+            cases["bad_hash_rejected"] = _is_rejected(closure.build_report(repo_root))
+
+            high_finding = {
+                "finding_id": "EXT-MC-DISPLAY-001",
+                "severity": "high",
+                "area": closure.EXPECTED_AREA,
+                "affected_files_functions": "docs/codex/mission-control-display-importer-plan.md",
+                "blocking_status": "should-fix",
+                "disposition": "open",
+                "recommended_fix": "dry-run negative fixture",
+            }
+            _write_response(response_path, _valid_response(findings=[high_finding]))
+            cases["critical_high_finding_rejected"] = _is_rejected(closure.build_report(repo_root))
+
+            _write_response(response_path, _valid_response(closes_external_review=True))
+            cases["direct_external_closure_rejected"] = _is_rejected(
+                closure.build_report(repo_root)
+            )
+        finally:
+            if original is None:
+                response_path.unlink(missing_ok=True)
+            else:
+                response_path.parent.mkdir(parents=True, exist_ok=True)
+                response_path.write_bytes(original)
+
+        restored_present = response_path.exists()
+        restored_original = True
+        if original is not None and restored_present:
+            restored_original = response_path.read_bytes() == original
+        if original_present != restored_present:
+            failures.append(
+                "normalized response path was not restored to its original presence state"
+            )
+        if not restored_original:
+            failures.append("normalized response path content was not restored")
+        for case, passed in cases.items():
+            if not passed:
+                failures.append(f"dry-run case failed: {case}")
+
+        return {
+            "schema_version": "1",
+            "valid": not failures,
+            "failures": failures,
+            "dry_run_doc": DOC_REL,
+            "normalized_response_path": closure.NORMALIZED_RESPONSE_REL,
+            "area": closure.EXPECTED_AREA,
+            "finding_namespace": closure.EXPECTED_NAMESPACE,
+            "tool_count": 24,
+            "original_response_present": original_present,
+            "response_restored": not failures
+            or not any("restored" in failure for failure in failures),
+            "cases": cases,
+            "committed_findings_mutated": False,
+            "external_review_recorded": False,
+            "erg_002_closed": False,
+            "runtime_changes_allowed": False,
+            "mission_control_planning_allowed": True,
+            "mission_control_runtime_allowed": False,
+            "runtime_importer_allowed": False,
+            "mission_control_execution_authority_allowed": False,
+            "mission_control_policy_authority_allowed": False,
+            "mission_control_approval_authority_allowed": False,
+            "mission_control_audit_authority_allowed": False,
+            "api_callbacks_allowed": False,
+            "polling_or_mutating_ithildin_apis_allowed": False,
+            "local_model_invocation_allowed": False,
+            "sandbox_orchestration_allowed": False,
+            "trusted_host_promotion_allowed": False,
+            "siem_adapter_allowed": False,
+            "new_power_classes_allowed": False,
+            "public_security_product_positioning_allowed": False,
+        }
 
 
 def _valid_response(
