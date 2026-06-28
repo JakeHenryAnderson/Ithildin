@@ -75,6 +75,7 @@ from scripts import (
     enterprise_review_send_checklist,
     enterprise_review_send_manifest,
     enterprise_review_send_readiness,
+    enterprise_review_send_receipt_template,
     enterprise_review_submission_prompt,
     enterprise_sandbox_control_plane_readiness_check,
     enterprise_status_export,
@@ -3138,6 +3139,115 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-review-handoff-drill" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_send_receipt_template_is_wired() -> None:
+    report = enterprise_review_send_receipt_template.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-receipt-template.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    send_manifest_doc = Path("docs/codex/enterprise-review-send-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    submission_doc = Path("docs/codex/enterprise-review-submission-prompt.md").read_text(
+        encoding="utf-8"
+    )
+    handoff_drill_doc = Path("docs/codex/enterprise-review-handoff-drill.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-review-send-receipt-template")
+    generated = generated_dir / "ENTERPRISE_REVIEW_SEND_RECEIPT_TEMPLATE.md"
+    generated_json = generated_dir / "enterprise-review-send-receipt-template.json"
+    generated_hashes = json.loads(
+        (
+            generated_dir
+            / "enterprise-review-send-receipt-template-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["artifact_hashes_match_files"] is True
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: generated operator template for recording external-review send receipts",
+        "make enterprise-review-send-receipt-template",
+        "make enterprise-review-send-receipt-template-check",
+        "does not record external review by itself",
+        "does not normalize responses",
+        "does not write raw response files",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Send Receipt Template",
+        "Receipt status",
+        "sent: `false`",
+        "Operator fill-in fields",
+        "Packet hash evidence",
+        "records_external_review: `false`",
+        "writes_response_files: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"template_type": "ithildin.enterprise_review_send_receipt_template"',
+        '"sent": false',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"records_external_review": false',
+        '"normalizes_responses": false',
+        '"writes_response_files": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_REVIEW_SEND_RECEIPT_TEMPLATE.md",
+        "enterprise-review-send-receipt-template.json",
+    } <= hashed_paths
+    assert "enterprise-review-send-receipt-template-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-send-receipt-template:" in makefile
+    assert "enterprise-review-send-receipt-template-check:" in makefile
+    assert (
+        "enterprise-review-send-receipt-template-check" in release_check_body
+        or "release-check: enterprise-review-send-receipt-template-check" in makefile
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-template" in review_candidate_body
+    assert "make enterprise-review-send-receipt-template" in readme
+    assert "enterprise-review-send-receipt-template" in send_manifest_doc
+    assert "enterprise-review-send-receipt-template" in submission_doc
+    assert "enterprise-review-send-receipt-template" in handoff_drill_doc
+    assert "docs/codex/enterprise-review-send-receipt-template.md" in docs_site
+    assert "docs/codex/enterprise-review-send-receipt-template.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Receipt Template" in review_index
+    assert "enterprise-review-send-receipt-template-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-template" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 

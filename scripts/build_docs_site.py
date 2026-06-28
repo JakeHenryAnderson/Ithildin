@@ -242,6 +242,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-review-send-manifest.md",
     "docs/codex/enterprise-review-send-checklist.md",
     "docs/codex/enterprise-review-submission-prompt.md",
+    "docs/codex/enterprise-review-send-receipt-template.md",
     "docs/codex/enterprise-review-handoff-drill.md",
     "docs/codex/enterprise-dual-response-inbox.md",
     "docs/codex/enterprise-dual-response-readiness.md",

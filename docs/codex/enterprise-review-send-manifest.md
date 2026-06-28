@@ -73,6 +73,16 @@ Then generate the paste-ready operator prompt:
 make enterprise-review-submission-prompt
 ```
 
+Then generate the ignored operator send receipt template:
+
+```sh
+make enterprise-review-send-receipt-template
+```
+
+See [Enterprise Review Send Receipt Template](enterprise-review-send-receipt-template.md). The
+template does not record external review, normalize responses, write raw response files, or close
+either lane.
+
 ## After Sending
 
 While waiting for responses, use:

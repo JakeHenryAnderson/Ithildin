@@ -464,6 +464,9 @@ checked with `make control-mapping-readiness`.
   inbox.
 - `make enterprise-review-submission-prompt` - generate a paste-ready operator prompt for sending
   the current `ERG-003` and `ERG-002` review packets as separate review requests.
+- `make enterprise-review-send-receipt-template` - generate an ignored operator receipt template
+  for recording send timestamps, reviewer/thread placeholders, packet hashes, and raw-response paths
+  after the human send step, without recording review or closing lanes.
 - `make enterprise-review-handoff-drill` - generate a checked operator drill tying together the
   current send outbox, send manifest, response inbox, status board, and intake drill without
   recording review, normalizing real responses, or closing lanes.
@@ -1168,6 +1171,12 @@ The enterprise review submission prompt is
 generated with `make enterprise-review-submission-prompt`; it gives the operator paste-ready
 instructions for separate `ERG-003` and `ERG-002` review requests while still not recording review,
 normalizing responses, or closing either lane.
+The enterprise review send receipt template is
+[docs/codex/enterprise-review-send-receipt-template.md](docs/codex/enterprise-review-send-receipt-template.md),
+generated with `make enterprise-review-send-receipt-template`; it gives the operator a local ignored
+template for tying sent-thread metadata and raw-response paths back to the generated packet hashes
+after the human send step while still not recording review, normalizing responses, writing raw
+responses, or closing either lane.
 The enterprise review handoff drill is
 [docs/codex/enterprise-review-handoff-drill.md](docs/codex/enterprise-review-handoff-drill.md),
 generated with `make enterprise-review-handoff-drill`; it ties together the outbox, send manifest,
