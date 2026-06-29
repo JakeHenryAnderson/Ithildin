@@ -13,7 +13,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 PROFILES: dict[str, list[str]] = {
-    "fast": ["make quick-check", "make readiness-check"],
+    "fast": ["make smart-check"],
     "quick": ["make quick-check"],
     "readiness": ["make readiness-check"],
 }

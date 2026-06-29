@@ -457,6 +457,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-check" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
+    assert "make smart-check" in validation_timing.PROFILES["fast"]
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
@@ -488,18 +489,15 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
 
 def test_validation_timing_dry_run_reports_command_profile() -> None:
     report = validation_timing.build_report(
-        ["make quick-check", "make readiness-check"],
+        ["make smart-check"],
         dry_run=True,
     )
 
     assert report["valid"] is True
     assert report["dry_run"] is True
-    assert report["command_count"] == 2
+    assert report["command_count"] == 1
     assert report["total_elapsed_seconds"] == 0.0
-    assert [result["command"] for result in report["results"]] == [
-        "make quick-check",
-        "make readiness-check",
-    ]
+    assert [result["command"] for result in report["results"]] == ["make smart-check"]
     assert all(result["returncode"] == 0 for result in report["results"])
 
 
