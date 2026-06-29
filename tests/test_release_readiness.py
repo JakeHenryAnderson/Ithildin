@@ -473,8 +473,8 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     manifest_report = validation_plan.build_report(["tool-manifests/example.yaml"])
 
     assert docs_report["categories"] == ["docs", "scripts"]
-    assert "make quick-check" in docs_report["recommended_commands"]
     assert "make readiness-check" in docs_report["recommended_commands"]
+    assert "make quick-check" not in docs_report["recommended_commands"]
     assert "make release-check" not in docs_report["recommended_commands"]
     assert docs_report["full_release_gate_required"] is False
     assert runtime_report["categories"] == ["runtime"]

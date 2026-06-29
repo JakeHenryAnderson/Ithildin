@@ -34,7 +34,10 @@ make smart-check
 
 `smart-check` prints the same file/category plan, runs the recommended commands, and records
 per-command elapsed time plus a short failure tail when a command fails. It is the default
-development-loop command when you are not preparing a release or review handoff.
+development-loop command when you are not preparing a release or review handoff. It avoids
+recommending duplicate sub-gates: for example, docs/process changes run `readiness-check`, not
+`quick-check` followed by `readiness-check`, because `readiness-check` already includes the quick
+gate.
 
 ### Validation Timing
 

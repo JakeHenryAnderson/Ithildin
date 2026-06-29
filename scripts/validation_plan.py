@@ -183,9 +183,10 @@ def _commands_for_categories(categories: list[str]) -> list[str]:
     if not categories:
         return ["make quick-check"]
 
-    commands = ["make quick-check"]
-    if any(category in categories for category in ["docs", "scripts", "tests", "config"]):
-        commands.append("make readiness-check")
+    needs_readiness = any(
+        category in categories for category in ["docs", "scripts", "tests", "config"]
+    )
+    commands = ["make readiness-check" if needs_readiness else "make quick-check"]
     if "manifest" in categories:
         commands.extend(["make manifest-lock-check", "make tool-surface-invariant-gate"])
     if "policy_registry" in categories:
