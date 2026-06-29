@@ -49,6 +49,11 @@ SEND_ARTIFACTS = [
         "description": "checked manifest with prompt and attachment pointers",
     },
     {
+        "label": "send_quickstart",
+        "path": "var/review-packets/v3/enterprise-review-send-quickstart",
+        "description": "one-page operator index for current send artifacts",
+    },
+    {
         "label": "submission_prompt",
         "path": "var/review-packets/v3/enterprise-review-submission-prompt",
         "description": "paste-ready external-review submission prompt",

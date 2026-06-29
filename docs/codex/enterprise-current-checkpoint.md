@@ -37,6 +37,7 @@ Generate or refresh the send-ready operator artifacts with:
 ```sh
 make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
+make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox
@@ -68,6 +69,7 @@ Follow each lane-specific response kit and closure gate before any committed dis
 - `ERG-002` packet: `var/review-packets/v3/mission-control-display-external-review/`
 - dual-review outbox: `var/review-packets/v3/enterprise-dual-review-outbox/`
 - send manifest: `var/review-packets/v3/enterprise-review-send-manifest/`
+- send quickstart: `var/review-packets/v3/enterprise-review-send-quickstart/`
 - send receipt template: `var/review-packets/v3/enterprise-review-send-receipt-template/`
 - dual-response inbox: `var/review-runs/enterprise-dual-response-inbox/`
 - response inbox: `var/review-runs/enterprise-response-inbox/`

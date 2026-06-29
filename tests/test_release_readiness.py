@@ -1885,16 +1885,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
         "send_manifest",
-        "submission_prompt",
-        "send_receipt_template",
-    ]
-    assert all(
-        artifact["path"].startswith("var/review-packets/v3/")
-        for artifact in report["handoff_artifacts"]
-    )
-    assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "dual_review_outbox",
-        "send_manifest",
+        "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
     ]
@@ -1965,6 +1956,7 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
         "send_manifest",
+        "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
     ]
@@ -2241,6 +2233,7 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "`make enterprise-review-send-refresh`",
         "handoff_artifacts:",
         "`send_manifest`: `var/review-packets/v3/enterprise-review-send-manifest`",
+        "`send_quickstart`: `var/review-packets/v3/enterprise-review-send-quickstart`",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -2253,6 +2246,7 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"next_action": "send_erg_003_and_erg_002"',
         '"handoff_artifacts": [',
         '"label": "send_manifest"',
+        '"label": "send_quickstart"',
         '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
@@ -4500,6 +4494,17 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make review-candidate",
         "make enterprise-review-send-refresh",
     ]
+    assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "dual_review_outbox",
+        "send_manifest",
+        "send_quickstart",
+        "submission_prompt",
+        "send_receipt_template",
+    ]
+    assert any(
+        artifact["path"] == "var/review-packets/v3/enterprise-review-send-quickstart"
+        for artifact in report["handoff_artifacts"]
+    )
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
