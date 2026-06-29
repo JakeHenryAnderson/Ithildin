@@ -497,6 +497,19 @@ enterprise-response-intake-quickstart:
 enterprise-response-paste-preflight:
 	uv run python scripts/enterprise_response_paste_preflight.py
 
+enterprise-response-intake-refresh:
+	$(MAKE) enterprise-dual-response-inbox
+	$(MAKE) enterprise-dual-response-readiness
+	$(MAKE) enterprise-response-status-board
+	$(MAKE) enterprise-response-normalization-coverage
+	$(MAKE) enterprise-response-inbox
+	$(MAKE) enterprise-response-intake-drill
+	$(MAKE) enterprise-response-command-matrix
+	$(MAKE) enterprise-response-application-protocol
+	$(MAKE) enterprise-response-application-rehearsal
+	$(MAKE) enterprise-response-intake-quickstart
+	$(MAKE) enterprise-response-paste-preflight
+
 enterprise-handoff-consistency-check:
 	uv run python scripts/enterprise_handoff_consistency_check.py
 
@@ -517,7 +530,7 @@ enterprise-review-send-refresh:
 	$(MAKE) enterprise-handoff-consistency-check
 	$(MAKE) enterprise-review-send-preflight
 
-.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-send-receipt-template enterprise-review-send-receipt-template-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol enterprise-response-application-rehearsal enterprise-response-intake-quickstart enterprise-response-paste-preflight enterprise-handoff-consistency-check enterprise-review-send-preflight enterprise-review-send-preflight-lightweight-check enterprise-review-send-refresh enterprise-north-star-roadmap enterprise-operator-next-action
+.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-send-receipt-template enterprise-review-send-receipt-template-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol enterprise-response-application-rehearsal enterprise-response-intake-quickstart enterprise-response-paste-preflight enterprise-response-intake-refresh enterprise-handoff-consistency-check enterprise-review-send-preflight enterprise-review-send-preflight-lightweight-check enterprise-review-send-refresh enterprise-north-star-roadmap enterprise-operator-next-action
 
 sandbox-vm-live-poc-decision-packet:
 	uv run python scripts/sandbox_vm_live_poc_decision_packet.py

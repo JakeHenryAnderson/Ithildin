@@ -3717,6 +3717,7 @@ def test_enterprise_response_intake_quickstart_is_wired() -> None:
         "Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer responses.",
         "Current governed tool count: `24`.",
         "make enterprise-response-intake-quickstart",
+        "make enterprise-response-intake-refresh",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
         "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
@@ -3735,12 +3736,31 @@ def test_enterprise_response_intake_quickstart_is_wired() -> None:
     ]:
         assert phrase in doc
     assert "enterprise-response-intake-quickstart:" in makefile
+    assert "enterprise-response-intake-refresh:" in makefile
     assert (
         "enterprise-response-intake-quickstart" in release_check_body
         or "release-check: enterprise-response-intake-quickstart" in makefile
     )
+    refresh_body = makefile.partition("enterprise-response-intake-refresh:")[
+        2
+    ].partition("\n\n")[0]
+    for command in [
+        "$(MAKE) enterprise-dual-response-inbox",
+        "$(MAKE) enterprise-dual-response-readiness",
+        "$(MAKE) enterprise-response-status-board",
+        "$(MAKE) enterprise-response-normalization-coverage",
+        "$(MAKE) enterprise-response-inbox",
+        "$(MAKE) enterprise-response-intake-drill",
+        "$(MAKE) enterprise-response-command-matrix",
+        "$(MAKE) enterprise-response-application-protocol",
+        "$(MAKE) enterprise-response-application-rehearsal",
+        "$(MAKE) enterprise-response-intake-quickstart",
+        "$(MAKE) enterprise-response-paste-preflight",
+    ]:
+        assert command in refresh_body
     assert "$(MAKE) enterprise-response-intake-quickstart" in review_candidate_body
     assert "make enterprise-response-intake-quickstart" in readme
+    assert "make enterprise-response-intake-refresh" in readme
     assert "docs/codex/enterprise-response-intake-quickstart.md" in readme
     assert "make enterprise-response-intake-quickstart" in dual_handoff
     assert "make enterprise-response-intake-quickstart" in dual_inbox

@@ -12,6 +12,14 @@ Run:
 make enterprise-response-intake-quickstart
 ```
 
+To regenerate the current ignored response inboxes and rerun the receive-side
+status, rehearsal, quickstart, and paste-preflight checks in one operator
+command, use:
+
+```sh
+make enterprise-response-intake-refresh
+```
+
 This quickstart begins after the current `ERG-003` and `ERG-002` packets have been sent and a real
 reviewer response is available. It does not send packets, does not record external review, does not
 normalize real responses, does not write response files, does not mutate findings, does not close
@@ -30,6 +38,12 @@ make enterprise-response-command-matrix
 make enterprise-response-application-protocol
 make enterprise-response-application-rehearsal
 make enterprise-response-paste-preflight
+```
+
+The equivalent one-command refresh path is:
+
+```sh
+make enterprise-response-intake-refresh
 ```
 
 Use the generated cheat sheet for the exact normalization command, including reviewer metadata,

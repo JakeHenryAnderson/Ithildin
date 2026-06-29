@@ -533,6 +533,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-paste-preflight` - validate pasted `ERG-003` and `ERG-002` raw reviewer
   responses are UTF-8, size-bounded, lane-matched, and non-placeholder before the existing normalizer
   path, without normalizing responses or recording review.
+- `make enterprise-response-intake-refresh` - regenerate the current ignored response inboxes and
+  rerun receive-side status, rehearsal, quickstart, and paste-preflight checks without normalizing
+  responses, recording review, or closing lanes.
 - `make enterprise-handoff-consistency-check` - validate the current `ERG-003`/`ERG-002`
   enterprise handoff docs all point to the dual-response inbox, receipt template, and paste
   preflight flow without recording review or closing lanes.
@@ -1252,7 +1255,8 @@ The enterprise response intake quickstart is
 checked with `make enterprise-response-intake-quickstart`; it gives the operator the compact
 `ERG-003` and `ERG-002` raw-response paths, normalizer commands, lane dry-runs, closure gates, and
 stop conditions for after reviewer responses arrive without recording review or approving runtime
-expansion.
+expansion. Use `make enterprise-response-intake-refresh` to regenerate the ignored receive-side
+artifacts and rerun the receive-side checks in one command.
 The enterprise response paste preflight is
 [docs/codex/enterprise-response-paste-preflight.md](docs/codex/enterprise-response-paste-preflight.md),
 checked with `make enterprise-response-paste-preflight`; it checks pasted `ERG-003` and `ERG-002`
