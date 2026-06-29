@@ -150,6 +150,8 @@ checked with `make control-mapping-readiness`.
 - `make test` - run Python tests.
 - `make test-fast` - run Python tests excluding generated-packet `slow_packet` tests for the
   development loop.
+- `make runtime-check` - run the focused core API/governed-tool/security/policy runtime suite for
+  backend iteration before broader release gates.
 - `make quick-check` - run the fast local development gate: core boundary checks, lint, and
   typecheck without generated review-packet rebuilds.
 - `make readiness-check` - run the medium development gate: `quick-check`, docs generation, and

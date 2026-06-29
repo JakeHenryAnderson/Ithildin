@@ -216,7 +216,7 @@ def _commands_for_categories(categories: list[str]) -> list[str]:
             ]
         )
     if "runtime" in categories:
-        commands.append("make test-fast")
+        commands.append("make runtime-check")
     return _dedupe(commands)
 
 

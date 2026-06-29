@@ -438,6 +438,7 @@ def test_validation_performance_tiers_are_wired() -> None:
 
     assert "quick-check:" in makefile
     assert "test-fast:" in makefile
+    assert "runtime-check:" in makefile
     assert "readiness-check:" in makefile
     assert "smart-check:" in makefile
     assert "smart-handoff-check:" in makefile
@@ -447,6 +448,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
     assert "make test-fast" in readme
+    assert "make runtime-check" in readme
     assert "make readiness-check" in readme
     assert "make smart-check" in readme
     assert "make smart-handoff-check" in readme
@@ -464,6 +466,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-check" in guide
     assert "make smart-handoff-check" in guide
     assert "make test-fast" in guide
+    assert "make runtime-check" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
     assert "make smart-check" in validation_timing.PROFILES["fast"]
@@ -488,7 +491,8 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     assert "make release-check" not in docs_report["recommended_commands"]
     assert docs_report["full_release_gate_required"] is False
     assert runtime_report["categories"] == ["runtime"]
-    assert "make test-fast" in runtime_report["recommended_commands"]
+    assert "make runtime-check" in runtime_report["recommended_commands"]
+    assert "make test-fast" not in runtime_report["recommended_commands"]
     assert "make test" not in runtime_report["recommended_commands"]
     assert "make release-check" not in runtime_report["recommended_commands"]
     assert "make release-check" in runtime_report["deferred_handoff_commands"]

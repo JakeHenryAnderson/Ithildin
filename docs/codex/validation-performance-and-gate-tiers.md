@@ -96,6 +96,18 @@ the Python suite with `slow_packet` tests excluded, so executor/API regressions 
 coverage without walking every review-packet generator. `make test` remains the full Python test
 suite and is still part of release proof.
 
+### Runtime Check
+
+Run:
+
+```sh
+make runtime-check
+```
+
+Use this for backend/runtime iteration before broader Python or release gates. It runs the focused
+core API, governed-tool, read-tool, security-regression, tool-registry, and policy-parity tests that
+catch the highest-risk runtime regressions without traversing review-packet machinery.
+
 ### Readiness Check
 
 Run:
@@ -151,8 +163,9 @@ uv run pytest tests/test_release_readiness.py -m "not slow_packet" -q
 ## Rule Of Thumb
 
 - Runtime, executor, manifest, policy, approval/audit, or API/MCP changes: run focused subsystem
-  tests with `make smart-check` or `make test-fast`, then `make smart-handoff-check` or `make release-check` before
-  handoff, review, or a meaningful checkpoint commit.
+  tests with `make smart-check`, `make runtime-check`, or `make test-fast`, then
+  `make smart-handoff-check` or `make release-check` before handoff, review, or a meaningful
+  checkpoint commit.
 - UI runtime changes: run UI tests/build plus relevant API/readiness tests.
 - Docs/process/review wiring changes: run `make readiness-check`, plus the focused test for the
   specific script/doc you touched.
