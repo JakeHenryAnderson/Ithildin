@@ -69,18 +69,21 @@ The current recommended enterprise handoff set remains:
    make enterprise-dual-review-outbox
    make enterprise-review-send-manifest
    make enterprise-review-submission-prompt
+   make enterprise-review-send-receipt-template
+   make enterprise-dual-response-inbox
    make enterprise-review-handoff-drill
    ```
 
 3. Send the `ERG-003` and `ERG-002` packets, then wait for real responses.
 
-4. After responses arrive, paste them into the ignored response inbox paths and run:
+4. After responses arrive, paste them into the ignored dual-response inbox at
+   `var/review-runs/enterprise-dual-response-inbox/` and run:
 
    ```sh
+   make enterprise-response-paste-preflight
    make enterprise-response-inbox
    make enterprise-response-status-board
    make enterprise-response-intake-quickstart
-   make enterprise-response-paste-preflight
    ```
 
 5. Use the lane-specific normalizer, dry-run, closure gate, and response application record before
