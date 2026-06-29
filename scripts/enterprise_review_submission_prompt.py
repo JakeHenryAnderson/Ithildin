@@ -136,6 +136,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Response intake after review",
         "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
         "make enterprise-dual-response-inbox",
+        "make enterprise-response-paste-preflight",
         "ERG-003",
         "ERG-002",
         "Finding namespace",
@@ -155,6 +156,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"response_inbox": {',
         '"cheat_sheet"',
         '"make enterprise-dual-response-inbox"',
+        '"make enterprise-response-paste-preflight"',
         '"records_external_review": false',
         '"normalizes_responses": false',
         '"closes_erg_003": false',
@@ -278,6 +280,7 @@ def _prompt_payload(*, repo_root: Path, manifest_payload: dict[str, Any]) -> dic
         "response_inbox": {
             "command": "make enterprise-dual-response-inbox",
             "check_command": "make enterprise-dual-response-inbox-check",
+            "paste_preflight_command": "make enterprise-response-paste-preflight",
             "path": "var/review-runs/enterprise-dual-response-inbox",
             "cheat_sheet": (
                 "var/review-runs/enterprise-dual-response-inbox/"
@@ -330,8 +333,14 @@ Then open:
 ```
 
 Paste each unmodified reviewer response into the matching raw-response placeholder named in that
-cheat sheet, then run the lane-specific normalization, dry-run, and closure-gate commands from the
-cheat sheet. The response inbox remains an ignored local review-run artifact.
+cheat sheet, then run:
+
+```sh
+{payload['response_inbox']['paste_preflight_command']}
+```
+
+After the paste preflight passes, run the lane-specific normalization, dry-run, and closure-gate
+commands from the cheat sheet. The response inbox remains an ignored local review-run artifact.
 
 ## Boundary
 

@@ -58,8 +58,8 @@ behavior.
    outbox directory, and paste the `ERG-002` section of the generated prompt.
 8. After a response arrives, run `make enterprise-dual-response-inbox`, open
    `ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`, save each raw response in the matching ignored
-   placeholder, and run the lane-specific normalization, dry-run, and closure gate before any
-   committed status update.
+   placeholder, run `make enterprise-response-paste-preflight`, and then run the lane-specific
+   normalization, dry-run, and closure gate before any committed status update.
 
 ## Boundary
 
