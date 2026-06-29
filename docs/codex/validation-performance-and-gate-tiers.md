@@ -26,6 +26,16 @@ and recommends the smallest honest command set. You can also pass files directly
 uv run python scripts/validation_plan.py docs/codex/example.md scripts/example.py
 ```
 
+To run the recommended command set directly:
+
+```sh
+make smart-check
+```
+
+`smart-check` prints the same file/category plan, runs the recommended commands, and records
+per-command elapsed time plus a short failure tail when a command fails. It is the default
+development-loop command when you are not preparing a release or review handoff.
+
 ### Validation Timing
 
 Run:

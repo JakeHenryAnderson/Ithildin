@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -38,14 +40,33 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("files", nargs="*", help="changed files to classify")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    parser.add_argument(
+        "--run",
+        action="store_true",
+        help="run the recommended commands after building the plan",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=900.0,
+        help="per-command timeout in seconds when --run is used",
+    )
     args = parser.parse_args()
 
     files = args.files or changed_files(ROOT)
     report = build_report(files)
+    if args.run:
+        report["execution"] = run_commands(
+            report["recommended_commands"],
+            timeout_seconds=args.timeout,
+        )
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
         print(render_report(report))
+    execution = report.get("execution")
+    if execution and not execution["valid"]:
+        return 1
     return 0
 
 
@@ -98,7 +119,42 @@ def render_report(report: dict[str, Any]) -> str:
     if report["files"]:
         lines.append("files:")
         lines.extend(f"- {path}" for path in report["files"])
+    if "execution" in report:
+        execution = report["execution"]
+        lines.extend(
+            [
+                "execution:",
+                f"- valid: {str(execution['valid']).lower()}",
+                f"- total_elapsed_seconds: {execution['total_elapsed_seconds']}",
+            ]
+        )
+        for result in execution["results"]:
+            lines.append(
+                "- "
+                f"{result['command']} "
+                f"returncode={result['returncode']} "
+                f"elapsed_seconds={result['elapsed_seconds']}"
+            )
+            if result["returncode"] != 0 and result["output_tail"]:
+                lines.append("  output_tail:")
+                lines.extend(f"  {line}" for line in result["output_tail"].splitlines())
     return "\n".join(lines)
+
+
+def run_commands(commands: list[str], *, timeout_seconds: float) -> dict[str, Any]:
+    results = [
+        _run_command(command, timeout_seconds=timeout_seconds)
+        for command in commands
+    ]
+    return {
+        "valid": all(result["returncode"] == 0 for result in results),
+        "command_count": len(results),
+        "total_elapsed_seconds": round(
+            sum(result["elapsed_seconds"] for result in results),
+            3,
+        ),
+        "results": results,
+    }
 
 
 def _classify(path: str) -> str:
@@ -189,6 +245,42 @@ def _dedupe(commands: list[str]) -> list[str]:
 
 def _normalize_path(path: str) -> str:
     return path.strip().removeprefix("./")
+
+
+def _run_command(command: str, *, timeout_seconds: float) -> dict[str, Any]:
+    started = time.monotonic()
+    try:
+        completed = subprocess.run(
+            shlex.split(command),
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout_seconds,
+            check=False,
+        )
+        elapsed = time.monotonic() - started
+        return {
+            "command": command,
+            "returncode": completed.returncode,
+            "elapsed_seconds": round(elapsed, 3),
+            "timed_out": False,
+            "output_tail": _tail(completed.stdout),
+        }
+    except subprocess.TimeoutExpired as exc:
+        elapsed = time.monotonic() - started
+        output = exc.stdout if isinstance(exc.stdout, str) else ""
+        return {
+            "command": command,
+            "returncode": 124,
+            "elapsed_seconds": round(elapsed, 3),
+            "timed_out": True,
+            "output_tail": _tail(output),
+        }
+
+
+def _tail(output: str, *, max_lines: int = 20) -> str:
+    return "\n".join(output.splitlines()[-max_lines:])
 
 
 if __name__ == "__main__":

@@ -154,6 +154,8 @@ checked with `make control-mapping-readiness`.
   a curated release/docs smoke test set without generated review-packet rebuilds.
 - `make validation-plan` - inspect the current dirty file set and recommend the smallest honest
   validation gate set for those changes.
+- `make smart-check` - run the current validation plan automatically and print per-command timing
+  evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make validation-timing` - time the fast validation profile so slowdowns are visible before they
   become normal.
 - `make lint` - run Python lint checks.

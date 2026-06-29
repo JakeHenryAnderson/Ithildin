@@ -438,12 +438,14 @@ def test_validation_performance_tiers_are_wired() -> None:
 
     assert "quick-check:" in makefile
     assert "readiness-check:" in makefile
+    assert "smart-check:" in makefile
     assert "validation-plan:" in makefile
     assert "validation-timing:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
     assert "make readiness-check" in readme
+    assert "make smart-check" in readme
     assert "make validation-plan" in readme
     assert "make validation-timing" in readme
     assert "slow_packet:" in pyproject
@@ -452,6 +454,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "mission_control" in conftest
     assert "sandbox_vm" in conftest
     assert "Do not use fast gates to claim release readiness" in guide
+    assert "make smart-check" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
     assert "make review-candidate" in guide
@@ -498,6 +501,30 @@ def test_validation_timing_dry_run_reports_command_profile() -> None:
         "make readiness-check",
     ]
     assert all(result["returncode"] == 0 for result in report["results"])
+
+
+def test_validation_plan_run_commands_reports_execution(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Completed:
+        returncode = 0
+        stdout = "ok\n"
+
+    def fake_run(*args: object, **kwargs: object) -> Completed:
+        return Completed()
+
+    monkeypatch.setattr("scripts.validation_plan.subprocess.run", fake_run)
+
+    execution = validation_plan.run_commands(
+        ["make quick-check", "make readiness-check"],
+        timeout_seconds=1.0,
+    )
+
+    assert execution["valid"] is True
+    assert execution["command_count"] == 2
+    assert [result["command"] for result in execution["results"]] == [
+        "make quick-check",
+        "make readiness-check",
+    ]
+    assert all(result["returncode"] == 0 for result in execution["results"])
 
 
 def test_agent_workflow_instruction_layer_is_wired() -> None:
