@@ -200,6 +200,9 @@ def _commands_for_categories(categories: list[str]) -> list[str]:
     if not categories:
         return ["make quick-check"]
 
+    if categories == ["docs"]:
+        return ["make docs-check"]
+
     needs_readiness = any(
         category in categories for category in ["docs", "scripts", "tests", "config"]
     )
@@ -249,6 +252,11 @@ def _notes_for_categories(categories: list[str]) -> list[str]:
     if "review_packet" in categories:
         notes.append(
             "Generated packet changes should be verified with review-candidate before handoff."
+        )
+    if categories == ["docs"]:
+        notes.append(
+            "Pure docs changes can use docs-check; mixed docs/script/config changes still need "
+            "readiness-check."
         )
     if _requires_full_release(categories):
         notes.append(

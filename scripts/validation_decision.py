@@ -21,6 +21,11 @@ GATE_GUIDANCE = {
         "use_for": "small docs/process/script wiring changes",
         "release_proof": False,
     },
+    "make docs-check": {
+        "tier": "docs_fast",
+        "use_for": "pure docs/README/AGENTS edits with no code, scripts, config, or tests changed",
+        "release_proof": False,
+    },
     "make readiness-check": {
         "tier": "medium",
         "use_for": "docs-site, review-doc, Make target, and release-readiness wiring changes",

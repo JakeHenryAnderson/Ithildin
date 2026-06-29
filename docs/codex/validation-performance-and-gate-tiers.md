@@ -48,9 +48,9 @@ make smart-check
 `smart-check` prints the same file/category plan, runs the recommended commands, and records
 per-command elapsed time plus a short failure tail when a command fails. It is the default
 development-loop command when you are not preparing a release or review handoff. It avoids
-recommending duplicate sub-gates: for example, docs/process changes run `readiness-check`, not
+recommending duplicate sub-gates: for example, mixed docs/process changes run `readiness-check`, not
 `quick-check` followed by `readiness-check`, because `readiness-check` already includes the quick
-gate.
+gate. Pure docs/README/AGENTS edits run the narrower `docs-check` gate.
 
 By default, `smart-check` reports slow release/review gates as deferred handoff commands instead of
 running them. That keeps routine development from paying the full generated-packet and release-gate
@@ -85,6 +85,7 @@ Examples:
 
 ```sh
 uv run python scripts/validation_timing.py --dry-run
+uv run python scripts/validation_timing.py --profile docs
 uv run python scripts/validation_timing.py --profile readiness --budget-seconds 300
 uv run python scripts/validation_timing.py --command "make enterprise-response-paste-preflight" --budget-seconds 10 --fail-on-budget
 ```
@@ -129,6 +130,21 @@ make release-check-slice ARGS="--category enterprise --run"
 
 Slice runs are focused development evidence, not full release proof. Use them to debug a slow or
 failing lane before returning to `make release-check` for a release, handoff, or major checkpoint.
+
+### Docs Check
+
+Run:
+
+```sh
+make docs-check
+```
+
+Use this for pure docs, README, or AGENTS edits where no scripts, tests, config, runtime source,
+manifests, policy, UI, review-packet outputs, or generated artifacts changed.
+
+This runs release wording guardrails, the curated review-doc/docs-site smoke tests, and docs-site
+generation. It intentionally skips lint and typecheck because there is no code surface in a pure
+docs edit. Mixed docs plus scripts/config/tests still route to `readiness-check`.
 
 ### Quick Check
 
@@ -229,7 +245,9 @@ uv run pytest tests/test_release_readiness.py -m "not slow_packet" -q
 - UI runtime changes: run UI tests/build plus relevant API/readiness tests.
 - Docs/process/review wiring changes: run `make readiness-check`, plus the focused test for the
   specific script/doc you touched.
-- Tiny mechanical docs edits: run `make quick-check` plus any touched focused test.
+- Pure docs edits: run `make docs-check`.
+- Tiny mechanical docs plus code-adjacent edits: run `make quick-check` or `make readiness-check`
+  according to `make validation-decision`.
 - External-review handoff: run `make review-candidate`.
 
 Do not use fast gates to claim release readiness. Fast gates are a development accelerator, not a

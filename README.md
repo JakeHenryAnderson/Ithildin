@@ -152,6 +152,8 @@ checked with `make control-mapping-readiness`.
   development loop.
 - `make runtime-check` - run the focused core API/governed-tool/security/policy runtime suite for
   backend iteration before broader release gates.
+- `make docs-check` - run the docs-only fast gate for pure docs/README/AGENTS edits without lint,
+  typecheck, or generated review-packet rebuilds.
 - `make quick-check` - run the fast local development gate: core boundary checks, lint, and
   typecheck without generated review-packet rebuilds.
 - `make readiness-check` - run the medium development gate: `quick-check`, docs generation, and

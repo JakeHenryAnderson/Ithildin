@@ -10,7 +10,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
-.PHONY: quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact
+.PHONY: docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact
 
 test:
 	uv run pytest
@@ -36,6 +36,15 @@ quick-check:
 	$(MAKE) no-new-powers-guardrail
 	$(MAKE) lint
 	$(MAKE) typecheck
+
+docs-check:
+	$(MAKE) release-guardrails
+	uv run pytest \
+		tests/test_release_readiness.py::test_release_packet_review_docs_exist \
+		tests/test_release_readiness.py::test_validation_performance_tiers_are_wired \
+		tests/test_docs_site.py \
+		-q
+	$(MAKE) docs-site
 
 readiness-check:
 	$(MAKE) quick-check

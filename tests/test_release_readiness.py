@@ -441,6 +441,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
 
     assert "quick-check:" in makefile
+    assert "docs-check:" in makefile
     assert "test-fast:" in makefile
     assert "runtime-check:" in makefile
     assert "readiness-check:" in makefile
@@ -455,6 +456,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
+    assert "make docs-check" in readme
     assert "make test-fast" in readme
     assert "make runtime-check" in readme
     assert "make readiness-check" in readme
@@ -475,6 +477,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "trusted_host" in conftest
     assert "quickstart" in conftest
     assert "Do not use fast gates to claim release readiness" in guide
+    assert "make docs-check" in guide
     assert "make smart-check" in guide
     assert "make smart-handoff-check" in guide
     assert "make test-fast" in guide
@@ -487,6 +490,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-slice" in guide
     assert "--fail-on-budget" in guide
     assert "budget status" in guide
+    assert "make docs-check" in validation_timing.PROFILES["docs"]
     assert "make smart-check" in validation_timing.PROFILES["fast"]
     assert validation_timing.PROFILE_BUDGET_SECONDS["fast"] > 0
     profile_report = release_check_profile.build_report(Path.cwd())
@@ -556,6 +560,8 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
     assert runtime_report["gate_guidance"]["make release-check"]["release_proof"] is True
 
     assert docs_report["recommended_mode"] == "development_gate_only"
+    assert docs_report["next_development_commands"] == ["make docs-check"]
+    assert docs_report["gate_guidance"]["make docs-check"]["release_proof"] is False
     assert docs_report["deferred_handoff_commands"] == []
     assert docs_report["release_slice_commands"] == []
 
@@ -567,7 +573,8 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
 
 
 def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
-    docs_report = validation_plan.build_report(
+    pure_docs_report = validation_plan.build_report(["docs/codex/example.md"])
+    mixed_docs_report = validation_plan.build_report(
         ["docs/codex/example.md", "scripts/example_check.py"]
     )
     runtime_report = validation_plan.build_report(
@@ -575,11 +582,15 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     )
     manifest_report = validation_plan.build_report(["tool-manifests/example.yaml"])
 
-    assert docs_report["categories"] == ["docs", "scripts"]
-    assert "make readiness-check" in docs_report["recommended_commands"]
-    assert "make quick-check" not in docs_report["recommended_commands"]
-    assert "make release-check" not in docs_report["recommended_commands"]
-    assert docs_report["full_release_gate_required"] is False
+    assert pure_docs_report["categories"] == ["docs"]
+    assert pure_docs_report["recommended_commands"] == ["make docs-check"]
+    assert "make quick-check" not in pure_docs_report["recommended_commands"]
+    assert pure_docs_report["full_release_gate_required"] is False
+    assert mixed_docs_report["categories"] == ["docs", "scripts"]
+    assert "make readiness-check" in mixed_docs_report["recommended_commands"]
+    assert "make quick-check" not in mixed_docs_report["recommended_commands"]
+    assert "make release-check" not in mixed_docs_report["recommended_commands"]
+    assert mixed_docs_report["full_release_gate_required"] is False
     assert runtime_report["categories"] == ["runtime"]
     assert "make runtime-check" in runtime_report["recommended_commands"]
     assert "make test-fast" not in runtime_report["recommended_commands"]
