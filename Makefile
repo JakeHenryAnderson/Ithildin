@@ -1670,7 +1670,7 @@ compose-smoke:
 	echo "Compose smoke passed."
 
 demo-flow: demo-seed
-	uv run python scripts/demo_flow.py --env-file $(COMPOSE_ENV_FILE)
+	$(COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) exec -T ithildin-api python /app/scripts/demo_flow.py --api-base-url http://127.0.0.1:8000 --result-output /app/var/review-packets/v3/operator-workbench/DEMO_FLOW_RESULT.md
 
 ollama-smoke:
 	uv run python scripts/ollama_demo.py smoke

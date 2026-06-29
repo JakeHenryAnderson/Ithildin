@@ -52,7 +52,7 @@ def main() -> None:
 
     env = _load_env_file(Path(args.env_file))
     _apply_env_defaults(env)
-    token = env.get("ITHILDIN_ADMIN_TOKEN", DEFAULT_TOKEN)
+    token = env.get("ITHILDIN_ADMIN_TOKEN") or os.environ.get("ITHILDIN_ADMIN_TOKEN", DEFAULT_TOKEN)
     api = ApiClient(args.api_base_url, token)
 
     print("Checking API health...")

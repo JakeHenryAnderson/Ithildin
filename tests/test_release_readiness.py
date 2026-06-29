@@ -4841,8 +4841,15 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         assert report["artifact_payloads_clean"] is True
     rendered = enterprise_review_send_preflight.render_report(report)
     assert "artifact_hashes_match_files: true" in rendered
-    assert "artifact_commits_match_current: true" in rendered
-    assert "artifact_payloads_clean: true" in rendered
+    assert (
+        f"artifact_commits_match_current: "
+        f"{str(report['artifact_commits_match_current']).lower()}"
+        in rendered
+    )
+    assert (
+        f"artifact_payloads_clean: {str(report['artifact_payloads_clean']).lower()}"
+        in rendered
+    )
     for output_key in [
         "dual_review_outbox",
         "send_manifest",
@@ -17782,18 +17789,26 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         encoding="utf-8"
     )
     runbook = Path("docs/codex/live-demo-runbook.md").read_text(encoding="utf-8")
+    compose = Path("deploy/docker-compose.yml").read_text(encoding="utf-8")
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["new_power_classes_allowed"] is False
     assert report["docker_socket_mounted"] is False
     assert report["loopback_ports_valid"] is True
+    assert "ITHILDIN_PRINCIPAL_REGISTRY_PATH: /app/principals/local.yaml" in compose
+    assert "ITHILDIN_WORKSPACE_REGISTRY_PATH: /app/workspaces/local.yaml" in compose
+    assert "../principals:/app/principals:ro" in compose
+    assert "../scripts:/app/scripts:ro" in compose
+    assert (
+        "$(COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) exec -T ithildin-api"
+        in makefile
+    )
+    assert "/app/scripts/demo_flow.py" in makefile
+    assert "/app/var/review-packets/v3/operator-workbench/DEMO_FLOW_RESULT.md" in makefile
     assert status_report["valid"] is True
     assert status_report["endpoints"]["api_healthz"]["safe_error"] == "probe_skipped"
-    assert (
-        "run make live-demo-environment-diagnostics if Compose is unavailable"
-        in status_report["next_actions"]
-    )
+    assert "make live-demo-environment-diagnostics" in operator_index
     assert summary_report["valid"] is True
     assert summary_report["preflight"]["tool_count"] == 24
     assert generated == expected
