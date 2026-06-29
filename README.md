@@ -412,6 +412,9 @@ checked with `make control-mapping-readiness`.
 - `make v1-progress-assessment` - validate the conservative v1.0/local-preview and enterprise
   progress bands against the canonical RC status, enterprise gap matrix, and capability-readiness
   gates.
+- `make technical-mvp-ticket-map` - validate the current technical MVP ticket map across the
+  closed local-preview foundations, ready operator trial surface, blocked sandbox/VM promotion
+  lanes, and enterprise architecture backlog.
 - `make v1-rc-feature-freeze` - validate the v1.0 RC feature-freeze decision: tool count `24`,
   no selected next capability, blocked capability expansion, and no public/security-product
   positioning.
@@ -1073,6 +1076,12 @@ The conservative v1.0 progress assessment is
 [docs/codex/v1.0-progress-assessment.md](docs/codex/v1.0-progress-assessment.md) and is checked
 with `make v1-progress-assessment`; it records rough local-preview and enterprise-readiness
 completion bands without approving new runtime powers or public/security-product positioning.
+The technical MVP ticket map is
+[docs/codex/technical-mvp-ticket-map.md](docs/codex/technical-mvp-ticket-map.md) and is checked
+with `make technical-mvp-ticket-map`; it turns the current roadmap into explicit MVP tickets for
+the governed gateway foundation, read-only/Git intelligence tools, evidence/packet machinery,
+operator workbench trial, Mission Control handoff, sandbox/VM readiness, trusted-host promotion,
+and enterprise architecture lanes.
 The v1.0 RC feature-freeze decision is
 [docs/codex/v1.0-rc-feature-freeze.md](docs/codex/v1.0-rc-feature-freeze.md) and is checked with
 `make v1-rc-feature-freeze`; it blocks new manifests, executors, policy powers, MCP/API behavior,

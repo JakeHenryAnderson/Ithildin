@@ -10,7 +10,7 @@ compliance claim, or permission to add runtime powers.
 ## Current Checked Inputs
 
 - Governed tool count: `24`.
-- Selected next capability: `not selected`.
+- Current selected capability: `not selected`.
 - Recommended next enterprise review: `ERG-003`.
 - Recommended send set: `ERG-003` then `ERG-002`.
 - Enterprise response evidence present: `0`.

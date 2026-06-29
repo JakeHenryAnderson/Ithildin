@@ -314,6 +314,7 @@ from scripts import (
     siem_export_adapter_response_kit,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
+    technical_mvp_ticket_map,
     test_determinism_gate,
     tool_surface_invariant_gate,
     trusted_host_promotion_decision_intake_check,
@@ -2062,7 +2063,7 @@ def test_enterprise_progress_model_is_wired() -> None:
     for phrase in [
         "Status: checked progress model",
         "Governed tool count: `24`",
-        "Selected next capability: `not selected`",
+        "Current selected capability: `not selected`",
         "Recommended next enterprise review: `ERG-003`",
         "Local governed tool gateway | `92-96%`",
         "v1.0 local-preview RC | `80-88%`",
@@ -28518,6 +28519,53 @@ def test_control_mapping_readiness_gate_is_wired() -> None:
         "no new powerful tool classes",
     ]:
         assert phrase in gate
+
+
+def test_technical_mvp_ticket_map_is_wired() -> None:
+    report = technical_mvp_ticket_map.build_report(Path.cwd())
+    doc = Path("docs/codex/technical-mvp-ticket-map.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
+    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["next_action"] == "send_erg_003_and_erg_002"
+    assert report["response_present_count"] == 0
+    assert report["capability_expansion_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["technical_mvp_ticket_count"] == 10
+    assert "make technical-mvp-ticket-map" in readme
+    assert "technical-mvp-ticket-map:" in makefile
+    assert "technical-mvp-ticket-map" in release_check_body
+    assert "technical-mvp-ticket-map" in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert "docs/codex/technical-mvp-ticket-map.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/technical-mvp-ticket-map.md" in docs_site
+    assert "Ithildin Technical MVP Ticket Map" in review_index
+    for ticket_id in [f"MVP-{index:03d}" for index in range(1, 11)]:
+        assert ticket_id in doc
+    for phrase in [
+        "Status: checked technical-MVP ticket map",
+        "Current governed tool count: `24`",
+        "Current selected capability: `not selected`",
+        "Latest implemented tool: `sandbox.artifact.write_text`",
+        "Technical MVP Boundary",
+        "What Remains Beyond Technical MVP",
+        "`ERG-003`",
+        "`ERG-002`",
+        "make release-check",
+        "make review-candidate",
+        "make enterprise-review-send-refresh",
+        "public/security-product positioning remains blocked",
+        "capability expansion remains blocked",
+        "Live sandbox/VM worker proof of concept",
+    ]:
+        assert phrase in doc
 
 
 def test_operator_sandbox_demo_readiness_gate_is_wired() -> None:
