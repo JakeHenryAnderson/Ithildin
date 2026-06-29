@@ -15,6 +15,17 @@ product positioning.
 For the current `ERG-003` and `ERG-002` receive path, use
 `make enterprise-response-intake-quickstart` as the compact operator sequence that points to the
 raw-response paths, normalizer commands, dry-runs, closure gates, and stop conditions.
+That current-send path uses the generated dual-response inbox cheat sheet for exact reviewed-packet
+hashes and normalization commands:
+
+```sh
+make enterprise-dual-response-inbox
+```
+
+```text
+var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md
+```
+
 Use `make enterprise-response-application-rehearsal` before real responses arrive to prove the
 current `ERG-003`/`ERG-002` response-application preflights, protocol, command matrix, and quickstart
 remain wired without normalizing responses, writing response files, recording review, or closing

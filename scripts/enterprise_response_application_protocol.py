@@ -34,6 +34,8 @@ REQUIRED_PHRASES = [
     "`ERG-003` may move only to `closed_local_preview_static_preflight`.",
     "`ERG-002` may move only to `ready_for_design_only_decision_record`.",
     "make enterprise-response-inbox",
+    "make enterprise-dual-response-inbox",
+    "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
     "make enterprise-response-status-board",
     "make enterprise-response-intake-drill",
     "make enterprise-current-checkpoint",

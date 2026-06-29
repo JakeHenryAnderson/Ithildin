@@ -77,6 +77,8 @@ REQUIRED_DOC_PHRASES = [
     "does not record external review",
     "does not close any enterprise lane",
     "Use the generated inbox for exact reviewed-packet hashes",
+    "For the current `ERG-003`/`ERG-002` receive path, prefer the generated dual-response inbox",
+    "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
     "`ERG-003`",
     "`ERG-010`",
     "runtime_changes_allowed: `false`",

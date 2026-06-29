@@ -21,11 +21,25 @@ with `make enterprise-response-intake-quickstart`.
 
 This matrix does not normalize responses, does not write normalized response files, does not mutate findings, does not record external review, does not close any enterprise lane, and does not approve runtime behavior.
 
+For the current `ERG-003`/`ERG-002` receive path, prefer the generated dual-response inbox and use
+its cheat sheet for exact reviewed-packet hashes and normalization commands:
+
+```sh
+make enterprise-dual-response-inbox
+```
+
+```text
+var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md
+```
+
 Use the generated inbox for exact reviewed-packet hashes before applying a real response:
 
 ```sh
 make enterprise-response-inbox
 ```
+
+The all-lane inbox is the fallback for `ERG-005+`, `ERG-004`, `ERG-010`, and any enterprise lane
+outside the current dual send set.
 
 For `ERG-003`, use
 [Sandbox/VM Static Preflight Response Application Preflight](sandbox-vm-static-preflight-response-application-preflight.md)

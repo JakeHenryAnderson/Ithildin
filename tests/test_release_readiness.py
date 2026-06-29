@@ -2421,6 +2421,8 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
         "Status: checked operator protocol for applying enterprise external-review responses.",
         "make enterprise-response-application-protocol",
         "Current recommended send set: `ERG-003` then `ERG-002`",
+        "make enterprise-dual-response-inbox",
+        "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
         "`ERG-003` may move only to `closed_local_preview_static_preflight`.",
         "`ERG-002` may move only to `ready_for_design_only_decision_record`.",
         "docs/codex/sandbox-vm-static-preflight-response-application-playbook.md",
@@ -2596,6 +2598,9 @@ def test_enterprise_response_command_matrix_is_wired() -> None:
         "Status: checked command matrix for applying enterprise external-review responses.",
         "Current governed tool count: `24`.",
         "make enterprise-response-command-matrix",
+        "For the current `ERG-003`/`ERG-002` receive path, prefer the generated "
+        "dual-response inbox",
+        "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
         "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md",
         "uv run python scripts/external_response_normalize.py",
         "--area sandbox-vm-static-preflight",
