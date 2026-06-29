@@ -310,6 +310,7 @@ def _manifest_payload(
         "send_set": packets,
         "post_send_commands": [
             "make enterprise-dual-response-inbox",
+            "make enterprise-response-waiting-room",
             "make enterprise-response-status-board",
             "make enterprise-response-intake-drill",
             "make sandbox-vm-static-preflight-response-dry-run",

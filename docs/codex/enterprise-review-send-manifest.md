@@ -90,6 +90,7 @@ While waiting for responses, use:
 
 ```sh
 make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
 make enterprise-response-status-board
 make enterprise-response-intake-drill
 ```

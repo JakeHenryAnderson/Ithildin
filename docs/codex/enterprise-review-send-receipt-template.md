@@ -49,7 +49,8 @@ Expected raw responses are later pasted under the ignored response inbox at
 6. Copy the ignored generated receipt template if you want a local operator note, then fill in the
    send timestamp, channel, reviewer label, thread URL or message ID, and raw-response path after a
    response arrives.
-7. Route responses through `make enterprise-dual-response-inbox` and the lane-specific response kit.
+7. Route responses through `make enterprise-dual-response-inbox`,
+   `make enterprise-response-waiting-room`, and the lane-specific response kit.
 
 ## Boundary
 

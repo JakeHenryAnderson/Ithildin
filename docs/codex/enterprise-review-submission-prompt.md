@@ -60,8 +60,8 @@ behavior.
 9. After a response arrives, run `make enterprise-dual-response-inbox`, open
    `var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`, save
    each raw response in the matching ignored placeholder under
-   `var/review-runs/enterprise-dual-response-inbox`, run
-   `make enterprise-response-paste-preflight`, and then run the lane-specific normalization,
+   `var/review-runs/enterprise-dual-response-inbox`, run `make enterprise-response-waiting-room`,
+   run `make enterprise-response-paste-preflight`, and then run the lane-specific normalization,
    dry-run, and closure gate before any committed status update.
 
 ## Boundary

@@ -3258,6 +3258,7 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         "ERG-003",
         "ERG-002",
         "Post-send response path",
+        "make enterprise-response-waiting-room",
         "Blocked boundaries",
         "records_external_review: `false`",
         "normalizes_responses: `false`",
@@ -3274,6 +3275,7 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         '"outbox_hash_manifest"',
         '"submission_prompt_dir"',
         '"receipt_template_dir"',
+        '"make enterprise-response-waiting-room"',
     ]:
         assert phrase in generated_json_text
     assert {
