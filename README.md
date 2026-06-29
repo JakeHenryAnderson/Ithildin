@@ -474,7 +474,7 @@ checked with `make control-mapping-readiness`.
 - `make mission-control-enterprise-status-import-check` - validate the future Mission Control
   display-only import contract for the enterprise status export without approving Mission Control
   runtime importer behavior.
-- `make mission-control-enterprise-status-fixtures` - generate one valid and ten negative
+- `make mission-control-enterprise-status-fixtures` - generate one valid and twelve negative
   enterprise status display/import fixtures for future Mission Control importer tests.
 - `make mission-control-enterprise-status-fixtures-check` - validate the enterprise status fixture
   pack, artifact hashes, and safe rejection expectations.
@@ -1175,7 +1175,7 @@ execution, policy, approval, audit, lane closure, and runtime authority with Ith
 The Mission Control enterprise status fixtures are
 [docs/codex/mission-control-enterprise-status-fixtures.md](docs/codex/mission-control-enterprise-status-fixtures.md),
 generated with `make mission-control-enterprise-status-fixtures` and checked with
-`make mission-control-enterprise-status-fixtures-check`; they provide one valid and ten negative
+`make mission-control-enterprise-status-fixtures-check`; they provide one valid and twelve negative
 display/import payloads for future Mission Control tests without calling Mission Control or
 approving runtime importer behavior.
 The Mission Control enterprise status acceptance matrix is

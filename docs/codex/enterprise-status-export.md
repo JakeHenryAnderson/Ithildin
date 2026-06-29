@@ -14,7 +14,7 @@ artifact shape without approving runtime behavior.
 import contract for this export without calling Mission Control or approving runtime importer
 behavior.
 
-`make mission-control-enterprise-status-fixtures` writes one valid and ten negative display/import
+`make mission-control-enterprise-status-fixtures` writes one valid and twelve negative display/import
 fixtures for this export. `make mission-control-enterprise-status-fixtures-check` validates those
 fixtures, artifact hashes, and safe rejection expectations.
 

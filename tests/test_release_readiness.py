@@ -2441,6 +2441,8 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     )
     assert "$(MAKE) mission-control-enterprise-status-fixtures" in review_candidate_body
     assert "make mission-control-enterprise-status-fixtures" in readme
+    assert "one valid and twelve negative" in readme
+    assert "one valid and ten negative" not in readme
     assert "docs/codex/mission-control-enterprise-status-fixtures.md" in readme
     assert "docs/codex/mission-control-enterprise-status-fixtures.md" in docs_site
     assert (
@@ -2457,6 +2459,8 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     )
     assert "mission-control-enterprise-status-fixtures" in contract
     assert "mission-control-enterprise-status-fixtures" in export_doc
+    assert "one valid and twelve negative" in export_doc
+    assert "one valid and ten negative" not in export_doc
 
 
 def test_mission_control_enterprise_status_acceptance_matrix_is_wired() -> None:
