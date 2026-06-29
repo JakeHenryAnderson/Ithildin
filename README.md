@@ -169,6 +169,8 @@ checked with `make control-mapping-readiness`.
   `make validation-timing ARGS=--dry-run`.
 - `make release-check-profile` - statically summarize the full `release-check` prerequisite graph
   and largest target groups without running the slow release gate.
+- `make release-check-impact` - inspect the dirty file set and suggest relevant `release-check`
+  slice categories without running the slow release gate.
 - `make release-check-slice ARGS="--category enterprise"` - plan a focused subset of `release-check`
   targets by profile category; add `--run` only when you intentionally want to execute that slice.
 - `make lint` - run Python lint checks.

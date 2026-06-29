@@ -235,6 +235,7 @@ from scripts import (
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
+    release_check_impact,
     release_check_profile,
     release_check_slice,
     release_evidence,
@@ -448,6 +449,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "validation-decision:" in makefile
     assert "validation-plan:" in makefile
     assert "validation-timing:" in makefile
+    assert "release-check-impact:" in makefile
     assert "release-check-profile:" in makefile
     assert "release-check-slice:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
@@ -461,6 +463,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-decision" in readme
     assert "make validation-plan" in readme
     assert "make validation-timing" in readme
+    assert "make release-check-impact" in readme
     assert "make release-check-profile" in readme
     assert "make release-check-slice" in readme
     assert "slow_packet:" in pyproject
@@ -479,6 +482,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-decision" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
+    assert "make release-check-impact" in guide
     assert "make release-check-profile" in guide
     assert "make release-check-slice" in guide
     assert "--fail-on-budget" in guide
@@ -506,6 +510,18 @@ def test_validation_performance_tiers_are_wired() -> None:
         target.startswith("enterprise-")
         for target in slice_report["selected_targets"]
     )
+    impact_report = release_check_impact.build_report(
+        Path.cwd(),
+        files=[
+            "docs/codex/enterprise-response-status-board.md",
+            "scripts/enterprise_response_status_board.py",
+        ],
+    )
+    assert impact_report["valid"] is True
+    assert impact_report["slice_categories"] == ["enterprise"]
+    assert impact_report["slice_commands"] == [
+        'make release-check-slice ARGS="--category enterprise"'
+    ]
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS

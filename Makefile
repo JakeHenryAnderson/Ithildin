@@ -10,7 +10,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
-.PHONY: quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice
+.PHONY: quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact
 
 test:
 	uv run pytest
@@ -66,6 +66,9 @@ release-check-profile:
 
 release-check-slice:
 	uv run python scripts/release_check_slice.py $(ARGS)
+
+release-check-impact:
+	uv run python scripts/release_check_impact.py $(ARGS)
 
 determinism-check:
 	uv run python scripts/test_determinism_gate.py

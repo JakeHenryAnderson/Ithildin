@@ -108,6 +108,18 @@ To inspect one category from that graph, run:
 make release-check-slice ARGS="--category enterprise"
 ```
 
+To infer relevant slices from the current dirty file set, run:
+
+```sh
+make release-check-impact
+```
+
+You can also pass explicit paths:
+
+```sh
+make release-check-impact ARGS="docs/codex/enterprise-response-status-board.md scripts/enterprise_response_status_board.py"
+```
+
 This is plan-only by default. To intentionally execute only that category, run:
 
 ```sh
