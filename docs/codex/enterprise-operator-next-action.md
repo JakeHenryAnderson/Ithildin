@@ -35,12 +35,7 @@ With no real enterprise reviewer responses present, the next allowed operator ac
 2. Prepare the current send set:
 
    ```sh
-   make enterprise-dual-review-outbox
-   make enterprise-review-send-manifest
-   make enterprise-review-submission-prompt
-   make enterprise-review-send-receipt-template
-   make enterprise-dual-response-inbox
-   make enterprise-review-handoff-drill
+   make enterprise-review-send-refresh
    ```
 
 3. Send only the current recommended enterprise packets:
@@ -56,10 +51,7 @@ When real reviewer responses are available, paste them into the ignored raw-resp
 run:
 
 ```sh
-make enterprise-response-paste-preflight
-make enterprise-response-inbox
-make enterprise-response-status-board
-make enterprise-response-intake-quickstart
+make enterprise-response-intake-refresh
 ```
 
 Then follow the lane-specific response kit, dry-run, closure gate, response-application record, and

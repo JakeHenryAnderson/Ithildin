@@ -447,8 +447,8 @@ checked with `make control-mapping-readiness`.
   local-preview RC through `ERG-003`, `ERG-002`, Stage 2 sandbox/VM, Mission Control, and later
   enterprise architecture lanes without approving runtime powers.
 - `make enterprise-operator-next-action` - validate the read-only operator next-action summary so
-  the current send/intake step is explicit without recording review, normalizing responses, closing
-  lanes, or approving runtime powers.
+  the current send/intake step points to the send or response refresh helper without recording
+  review, normalizing responses, closing lanes, or approving runtime powers.
 - `make enterprise-external-review-queue-check` - validate the post-RC enterprise external-review
   queue that orders ERG-002 through ERG-010 review lanes, points to the current packets/intake
   docs, and keeps runtime behavior blocked.
@@ -1131,8 +1131,9 @@ and enterprise architecture lanes without approving runtime powers.
 The enterprise operator next-action summary is
 [docs/codex/enterprise-operator-next-action.md](docs/codex/enterprise-operator-next-action.md),
 checked with `make enterprise-operator-next-action`; it reports the current allowed operator step
-from the checked enterprise state without recording review, normalizing responses, closing lanes,
-or approving runtime powers.
+from the checked enterprise state, pointing to `make enterprise-review-send-refresh` or
+`make enterprise-response-intake-refresh` as appropriate, without recording review, normalizing
+responses, closing lanes, or approving runtime powers.
 The enterprise external-review queue is
 [docs/codex/enterprise-external-review-queue.md](docs/codex/enterprise-external-review-queue.md),
 checked with `make enterprise-external-review-queue-check`; it orders the post-RC review lanes,

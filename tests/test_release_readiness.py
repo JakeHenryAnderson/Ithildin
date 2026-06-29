@@ -4258,12 +4258,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["action_commands"] == [
         "make release-check",
         "make review-candidate",
-        "make enterprise-dual-review-outbox",
-        "make enterprise-review-send-manifest",
-        "make enterprise-review-submission-prompt",
-        "make enterprise-review-send-receipt-template",
-        "make enterprise-dual-response-inbox",
-        "make enterprise-review-handoff-drill",
+        "make enterprise-review-send-refresh",
     ]
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -4279,16 +4274,10 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "Current governed tool count: `24`",
         "make enterprise-operator-next-action",
         "With no real enterprise reviewer responses present",
-        "make enterprise-dual-review-outbox",
-        "make enterprise-review-send-manifest",
-        "make enterprise-review-submission-prompt",
-        "make enterprise-review-send-receipt-template",
-        "make enterprise-dual-response-inbox",
-        "make enterprise-review-handoff-drill",
+        "make enterprise-review-send-refresh",
         "`ERG-003`: static sandbox/VM preflight disposition",
         "`ERG-002`: Mission Control display/import planning review",
-        "make enterprise-response-paste-preflight",
-        "make enterprise-response-intake-quickstart",
+        "make enterprise-response-intake-refresh",
         "What This Does Not Approve",
         "Mission Control runtime behavior",
         "public/security-product positioning",
@@ -4351,12 +4340,7 @@ def test_enterprise_operator_next_action_routes_response_present_mode(
     assert report["response_present_count"] == 1
     assert report["closure_ready_count"] == 0
     assert report["next_action"] == "run_response_intake_preflight"
-    assert report["action_commands"] == [
-        "make enterprise-response-paste-preflight",
-        "make enterprise-response-inbox",
-        "make enterprise-response-status-board",
-        "make enterprise-response-intake-quickstart",
-    ]
+    assert report["action_commands"] == ["make enterprise-response-intake-refresh"]
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
