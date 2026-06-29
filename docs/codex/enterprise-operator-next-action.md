@@ -38,6 +38,8 @@ With no real enterprise reviewer responses present, the next allowed operator ac
    make enterprise-dual-review-outbox
    make enterprise-review-send-manifest
    make enterprise-review-submission-prompt
+   make enterprise-review-send-receipt-template
+   make enterprise-dual-response-inbox
    make enterprise-review-handoff-drill
    ```
 

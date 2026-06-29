@@ -3748,6 +3748,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-dual-review-outbox",
         "make enterprise-review-send-manifest",
         "make enterprise-review-submission-prompt",
+        "make enterprise-review-send-receipt-template",
+        "make enterprise-dual-response-inbox",
         "make enterprise-review-handoff-drill",
     ]
     assert report["runtime_changes_allowed"] is False
@@ -3767,6 +3769,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-dual-review-outbox",
         "make enterprise-review-send-manifest",
         "make enterprise-review-submission-prompt",
+        "make enterprise-review-send-receipt-template",
+        "make enterprise-dual-response-inbox",
         "make enterprise-review-handoff-drill",
         "`ERG-003`: static sandbox/VM preflight disposition",
         "`ERG-002`: Mission Control display/import planning review",
