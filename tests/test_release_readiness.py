@@ -345,6 +345,7 @@ from scripts import (
     v1_rc_status_check,
     v1_workbench_evidence_check,
     v3_next_capability_candidate_check,
+    validation_decision,
     validation_plan,
     validation_timing,
     workbench_demo_smoke,
@@ -442,6 +443,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "readiness-check:" in makefile
     assert "smart-check:" in makefile
     assert "smart-handoff-check:" in makefile
+    assert "validation-decision:" in makefile
     assert "validation-plan:" in makefile
     assert "validation-timing:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
@@ -452,6 +454,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make readiness-check" in readme
     assert "make smart-check" in readme
     assert "make smart-handoff-check" in readme
+    assert "make validation-decision" in readme
     assert "make validation-plan" in readme
     assert "make validation-timing" in readme
     assert "slow_packet:" in pyproject
@@ -467,6 +470,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-handoff-check" in guide
     assert "make test-fast" in guide
     assert "make runtime-check" in guide
+    assert "make validation-decision" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
     assert "make smart-check" in validation_timing.PROFILES["fast"]
@@ -474,6 +478,27 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
     assert "Validation Performance And Gate Tiers" in review_index
+
+
+def test_validation_decision_reports_development_and_handoff_modes() -> None:
+    runtime_report = validation_decision.build_report(
+        ["apps/api/src/ithildin_api/tools/example.py"]
+    )
+    docs_report = validation_decision.build_report(["docs/codex/example.md"])
+
+    assert runtime_report["valid"] is True
+    assert runtime_report["recommended_mode"] == "develop_then_handoff_gate"
+    assert runtime_report["next_development_commands"] == [
+        "make quick-check",
+        "make runtime-check",
+    ]
+    assert runtime_report["deferred_handoff_commands"] == ["make release-check"]
+    assert runtime_report["release_or_handoff_required"] is True
+    assert runtime_report["gate_guidance"]["make runtime-check"]["release_proof"] is False
+    assert runtime_report["gate_guidance"]["make release-check"]["release_proof"] is True
+
+    assert docs_report["recommended_mode"] == "development_gate_only"
+    assert docs_report["deferred_handoff_commands"] == []
 
 
 def test_validation_plan_recommends_gates_by_changed_file_category() -> None:

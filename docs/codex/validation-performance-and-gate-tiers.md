@@ -26,6 +26,18 @@ and recommends the smallest honest command set. You can also pass files directly
 uv run python scripts/validation_plan.py docs/codex/example.md scripts/example.py
 ```
 
+For an operator-friendly decision summary with the current mode and deferred handoff commands, run:
+
+```sh
+make validation-decision
+```
+
+or pass a hypothetical file set through Make:
+
+```sh
+make validation-decision ARGS=apps/api/src/ithildin_api/tools/example.py
+```
+
 To run the recommended command set directly:
 
 ```sh
