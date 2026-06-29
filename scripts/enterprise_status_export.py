@@ -209,6 +209,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "enterprise_status_export": DEFAULT_OUTPUT_DIR.as_posix(),
             "v1_rc_packet": "var/review-packets/v1.0/rc",
             "enterprise_dual_review_outbox": "var/review-packets/v3/enterprise-dual-review-outbox",
+            "enterprise_review_send_quickstart": (
+                "var/review-packets/v3/enterprise-review-send-quickstart"
+            ),
             "enterprise_response_status_board": "var/review-runs/enterprise-response-status-board",
         },
         **boundary_flags,

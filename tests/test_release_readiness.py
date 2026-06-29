@@ -2247,11 +2247,16 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"handoff_artifacts": [',
         '"label": "send_manifest"',
         '"label": "send_quickstart"',
+        '"enterprise_review_send_quickstart": '
+        '"var/review-packets/v3/enterprise-review-send-quickstart"',
         '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
         assert phrase in export_json_text
+    assert report["packet_paths"]["enterprise_review_send_quickstart"] == (
+        "var/review-packets/v3/enterprise-review-send-quickstart"
+    )
     assert {
         "ENTERPRISE_STATUS_EXPORT.md",
         "enterprise-status-export.json",
