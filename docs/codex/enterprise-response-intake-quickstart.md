@@ -32,12 +32,19 @@ make enterprise-response-application-rehearsal
 make enterprise-response-paste-preflight
 ```
 
+Use the generated cheat sheet for the exact normalization command, including reviewer metadata,
+reviewed commit, reviewed packet hash, area, and output path:
+
+```text
+var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md
+```
+
 Confirm the response belongs to the current packet and finding namespace:
 
 | Lane | Expected packet | Raw response path | Finding namespace |
 | --- | --- | --- | --- |
-| `ERG-003` | `var/review-packets/v3/enterprise-dual-review-outbox/ERG-003/` | `var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md` | `EXT-SVP-###` |
-| `ERG-002` | `var/review-packets/v3/enterprise-dual-review-outbox/ERG-002/` | `var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md` | `EXT-MC-DISPLAY-###` |
+| `ERG-003` | `var/review-packets/v3/enterprise-dual-review-outbox/ERG-003/` | `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md` | `EXT-SVP-###` |
+| `ERG-002` | `var/review-packets/v3/enterprise-dual-review-outbox/ERG-002/` | `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md` | `EXT-MC-DISPLAY-###` |
 
 Do not paste reviewer content into committed docs. Raw reviewer responses belong only in ignored
 `var/review-runs/` response paths until a lane-specific normalizer and closure gate prove that a
@@ -48,7 +55,7 @@ committed disposition is safe.
 Save the raw response to:
 
 ```text
-var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
+var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md
 ```
 
 Then run:
@@ -56,10 +63,10 @@ Then run:
 ```sh
 uv run python scripts/enterprise_response_paste_preflight.py \
   --lane ERG-003 \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
-uv run python scripts/external_response_normalize.py \
-  --area sandbox-vm-static-preflight \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
+  --raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md
+# Then run the exact `external_response_normalize.py` command from
+# var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md
+# for --area sandbox-vm-static-preflight.
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-disposition-closure-check
 ```
@@ -80,7 +87,7 @@ powers.
 Save the raw response to:
 
 ```text
-var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md
+var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md
 ```
 
 Then run:
@@ -88,10 +95,10 @@ Then run:
 ```sh
 uv run python scripts/enterprise_response_paste_preflight.py \
   --lane ERG-002 \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md
-uv run python scripts/external_response_normalize.py \
-  --area mission-control-display \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md
+  --raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md
+# Then run the exact `external_response_normalize.py` command from
+# var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md
+# for --area mission-control-display.
 make mission-control-display-response-dry-run
 make mission-control-display-disposition-closure-check
 ```

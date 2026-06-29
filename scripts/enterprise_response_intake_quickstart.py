@@ -108,10 +108,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "make enterprise-response-application-protocol",
         "var/review-packets/v3/enterprise-dual-review-outbox/ERG-003/",
         "var/review-packets/v3/enterprise-dual-review-outbox/ERG-002/",
-        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md",
-        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
         "EXT-SVP-###",
         "EXT-MC-DISPLAY-###",
+        "Use the generated cheat sheet for the exact normalization command",
         "--area sandbox-vm-static-preflight",
         "--area mission-control-display",
         "make sandbox-vm-static-preflight-response-dry-run",
@@ -214,4 +216,3 @@ def _read(path: Path) -> str:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
