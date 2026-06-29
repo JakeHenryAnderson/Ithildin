@@ -44,10 +44,15 @@ Use these Ithildin artifacts as the implementation source of truth:
 - `docs/codex/mission-control-enterprise-status-fixtures.md`
 - `docs/codex/mission-control-enterprise-status-acceptance-matrix.md`
 - `docs/codex/mission-control-enterprise-status-reference-validator.md`
+- `docs/codex/enterprise-review-send-package.md`
+- `docs/codex/enterprise-review-send-session-record.md`
 - `var/review-packets/v3/mission-control-display/`
 - `var/review-packets/v3/hello-world-mission-control-handoff/mission-control-handoff.json`
 - `var/review-packets/v3/mission-control-handoff-fixtures/`
 - `var/review-packets/v3/mission-control-enterprise-status-fixtures/`
+- `var/review-packets/v3/enterprise-status-export/enterprise-status-export.json`
+- `var/review-packets/v3/enterprise-review-send-package/`
+- `var/review-runs/enterprise-review-send-session-record/`
 
 Use these observed Mission Control-side artifacts when present:
 
@@ -77,6 +82,10 @@ Complete the future Mission Control work in this order:
    For enterprise status exports, render `next_action` and `action_commands` as copyable
    display-only text. Do not render them as executable buttons, task runners, callbacks, polling
    controls, or shell commands.
+   Render `packet_paths.enterprise_review_send_package` and
+   `packet_paths.enterprise_review_send_session_record` as display-only operator guidance. Do not
+   treat the send package as review evidence or the send-session record as proof that a review
+   occurred.
 5. **Mission-local linkage**: store only Mission Control-local display metadata and optional
    mission/evidence references.
 6. **Negative fixtures**: add tests for stale packets, hash mismatch, unsafe paths, authority
@@ -172,6 +181,9 @@ The future Mission Control handoff should produce:
 - enterprise-status fixture import transcript for `mission-control-enterprise-status-fixtures/`;
 - enterprise-status `action_commands` rendering transcript showing copyable text only, no execute
   buttons or command runners;
+- enterprise-status `packet_paths.enterprise_review_send_package` and
+  `packet_paths.enterprise_review_send_session_record` rendering transcript showing display-only
+  operator guidance only, no review-evidence or review-completion claims;
 - UI screenshot or test evidence showing warning chips remain visible;
 - artifact hashes for generated review files;
 - no-new-authority evidence confirming Mission Control remains display/import only.
