@@ -54,8 +54,17 @@ With no real enterprise reviewer responses present, the next allowed operator ac
 
 ## If Responses Arrive
 
-When real reviewer responses are available, paste them into the ignored raw-response inbox paths and
-run:
+When real reviewer responses are available, preserve the local send receipt, refresh the ignored
+dual-response inbox paths, paste responses only into those ignored raw-response files, and run the
+paste preflight before any normalization:
+
+```sh
+make enterprise-review-send-receipt-template
+make enterprise-dual-response-inbox
+make enterprise-response-paste-preflight
+```
+
+After the paste preflight is clean, run:
 
 ```sh
 make enterprise-response-intake-refresh
