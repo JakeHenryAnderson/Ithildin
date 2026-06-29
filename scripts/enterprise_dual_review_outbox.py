@@ -121,6 +121,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "`ERG-002`",
         "does not record external review",
         "does not close either lane",
+        "operator reference",
     ]:
         if phrase not in outbox_doc:
             failures.append(f"outbox doc is missing phrase: {phrase}")
@@ -130,6 +131,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "ERG-003",
         "ERG-002",
         "Attachment manifest",
+        "Manifest-listed attachments",
+        "Outbox files including operator references",
         "runtime_changes_allowed: `false`",
         "closes_erg_003: `false`",
         "closes_erg_002: `false`",
@@ -279,6 +282,7 @@ def _copy_packet(repo_root: Path, output_dir: Path, packet: dict[str, Any]) -> d
         finding_namespace=packet["finding_namespace"],
         copied_files=copied_files,
     )
+    listed_attachment_count = len(copied_files)
     copied_files.append(attachment_manifest)
     return {
         "gap": gap,
@@ -288,6 +292,7 @@ def _copy_packet(repo_root: Path, output_dir: Path, packet: dict[str, Any]) -> d
         "finding_namespace": packet["finding_namespace"],
         "prompt": packet["prompt"],
         "attachment_manifest": attachment_manifest,
+        "listed_attachment_count": listed_attachment_count,
         "copied_files": copied_files,
         "copied_file_count": len(copied_files),
         "response_kit": packet["response_kit"],
@@ -380,9 +385,11 @@ Finding namespace: `{packet['finding_namespace']}`
 
 Prompt: `{packet['outbox_dir']}/{packet['prompt']}`
 
-Attachment manifest: `{packet['outbox_dir']}/{packet['attachment_manifest']}`
+Attachment manifest/operator reference: `{packet['outbox_dir']}/{packet['attachment_manifest']}`
 
-Copied files: `{packet['copied_file_count']}`
+Manifest-listed attachments: `{packet['listed_attachment_count']}`
+
+Outbox files including operator references: `{packet['copied_file_count']}`
 
 {files}
 
@@ -410,9 +417,11 @@ Tool count remains `{payload['tool_count']}`.
 
 Current selected capability: `{payload['selected_capability']}`.
 
-Attach each lane directory as its own review packet. The outbox copies the already generated
-source packet files and their artifact hash manifests; it does not record reviewer feedback,
-normalize responses, close lanes, or approve runtime behavior.
+Use each lane directory as the source for its own review packet. Attach the files listed in that
+lane's `ATTACHMENT_MANIFEST.md`; keep `ATTACHMENT_MANIFEST.md` itself as an operator reference
+unless the review surface has room for it. The outbox copies the already generated source packet
+files and their artifact hash manifests; it does not record reviewer feedback, normalize responses,
+close lanes, or approve runtime behavior.
 
 {packet_markdown}
 

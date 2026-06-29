@@ -133,6 +133,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "var/review-packets/v3/enterprise-dual-review-outbox/ERG-002/",
             "01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
             "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+            "files listed inside it",
+            "operator reference",
             "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
             "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
             "make enterprise-review-send-receipt-template",

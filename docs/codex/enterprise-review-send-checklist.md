@@ -28,7 +28,9 @@ Attach the lane-local artifact hash manifest for each request:
 - `ERG-003/sandbox-vm-static-preflight-external-review-artifact-hashes.json`
 - `ERG-002/mission-control-display-external-review-artifact-hashes.json`
 
-Attach the lane-local generated attachment manifest for each request:
+Use the lane-local generated attachment manifest as the operator reference for each request. Attach
+the files listed inside it; keep the manifest itself with your handoff notes unless the review
+surface has room for it:
 
 - `ERG-003/ATTACHMENT_MANIFEST.md`
 - `ERG-002/ATTACHMENT_MANIFEST.md`

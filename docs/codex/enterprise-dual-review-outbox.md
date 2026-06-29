@@ -63,10 +63,12 @@ Postgres, hosted telemetry, or remote MCP.
 1. Run `make enterprise-review-send-readiness`.
 2. Run `make enterprise-dual-review-handoff`.
 3. Run `make enterprise-dual-review-outbox`.
-4. Send the `ERG-003/` directory as one review packet, including its
-   `ATTACHMENT_MANIFEST.md`.
-5. Send the `ERG-002/` directory as a separate review packet, including its
-   `ATTACHMENT_MANIFEST.md`.
+4. Send `ERG-003/` as one review packet by attaching the files listed in
+   `ERG-003/ATTACHMENT_MANIFEST.md`; keep the manifest itself as an operator reference unless the
+   review surface has room for it.
+5. Send `ERG-002/` as a separate review packet by attaching the files listed in
+   `ERG-002/ATTACHMENT_MANIFEST.md`; use the generated batching guidance if the review surface has
+   a 10-attachment limit.
 6. Keep `ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md` and
    `enterprise-dual-review-outbox-artifact-hashes.json` with the handoff notes.
 7. Run `make enterprise-review-send-manifest` to capture the send set, outbox hash manifest,
