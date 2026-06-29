@@ -22,6 +22,7 @@ DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/enterprise-review-send-receipt-
 MARKDOWN_NAME = "ENTERPRISE_REVIEW_SEND_RECEIPT_TEMPLATE.md"
 JSON_NAME = "enterprise-review-send-receipt-template.json"
 HASH_NAME = "enterprise-review-send-receipt-template-artifact-hashes.json"
+RAW_RESPONSE_INBOX_DIR = "var/review-runs/enterprise-dual-response-inbox"
 RECOMMENDED_GAPS = ["ERG-003", "ERG-002"]
 BOUNDARY_FLAGS = {
     "records_external_review": False,
@@ -149,6 +150,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "sent: `false`",
         "Operator fill-in fields",
         "Packet hash evidence",
+        f"{RAW_RESPONSE_INBOX_DIR}/RAW_RESPONSE_ERG-003.md",
+        f"{RAW_RESPONSE_INBOX_DIR}/RAW_RESPONSE_ERG-002.md",
         "records_external_review: `false`",
         "writes_response_files: `false`",
         "closes_erg_003: `false`",
@@ -161,6 +164,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"sent": false',
         '"ERG-003"',
         '"ERG-002"',
+        f'"raw_response_path": "{RAW_RESPONSE_INBOX_DIR}/RAW_RESPONSE_ERG-003.md"',
+        f'"raw_response_path": "{RAW_RESPONSE_INBOX_DIR}/RAW_RESPONSE_ERG-002.md"',
         '"records_external_review": false',
         '"normalizes_responses": false',
         '"writes_response_files": false',
@@ -295,8 +300,7 @@ def _template_payload(
                 "outbox_dir": packet["outbox_dir"],
                 "response_kit": packet["response_kit"],
                 "raw_response_path": (
-                    f"var/review-packets/v3/enterprise-dual-response-inbox/"
-                    f"RAW_RESPONSE_{packet['gap']}.md"
+                    f"{RAW_RESPONSE_INBOX_DIR}/RAW_RESPONSE_{packet['gap']}.md"
                 ),
                 "sent": False,
                 "sent_at": "",

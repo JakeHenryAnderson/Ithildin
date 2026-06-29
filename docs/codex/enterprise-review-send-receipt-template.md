@@ -35,6 +35,10 @@ close `ERG-003` or `ERG-002`, and does not approve runtime behavior. In short, i
 
 Required check phrase: does not close `ERG-003` or `ERG-002`.
 
+Expected raw responses are later pasted under the ignored response inbox at
+`var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md` and
+`var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md`.
+
 ## Operator Flow
 
 1. Run `make enterprise-dual-review-outbox`.

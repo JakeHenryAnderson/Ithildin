@@ -3508,6 +3508,8 @@ def test_enterprise_review_send_receipt_template_is_wired() -> None:
         "sent: `false`",
         "Operator fill-in fields",
         "Packet hash evidence",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
         "records_external_review: `false`",
         "writes_response_files: `false`",
         "closes_erg_003: `false`",
@@ -3519,6 +3521,14 @@ def test_enterprise_review_send_receipt_template_is_wired() -> None:
         '"sent": false',
         '"ERG-003"',
         '"ERG-002"',
+        (
+            '"raw_response_path": '
+            '"var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"'
+        ),
+        (
+            '"raw_response_path": '
+            '"var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md"'
+        ),
         '"records_external_review": false',
         '"normalizes_responses": false',
         '"writes_response_files": false',
@@ -3551,6 +3561,8 @@ def test_enterprise_review_send_receipt_template_is_wired() -> None:
     assert "$(MAKE) enterprise-review-send-receipt-template" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
+    assert "var/review-packets/v3/enterprise-dual-response-inbox" not in generated_text
+    assert "var/review-packets/v3/enterprise-dual-response-inbox" not in generated_json_text
 
 
 def test_enterprise_dual_response_readiness_is_wired() -> None:
