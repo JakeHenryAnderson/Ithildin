@@ -1824,6 +1824,15 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
     assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["next_action"] == "send_erg_003_and_erg_002"
+    assert report["action_commands"] == [
+        "make release-check",
+        "make review-candidate",
+        "make enterprise-review-send-refresh",
+    ]
+    assert report["operator_next_action_doc"] == (
+        "docs/codex/enterprise-operator-next-action.md"
+    )
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["runtime_changes_allowed"] is False
@@ -2133,6 +2142,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "Status: display-only enterprise status export contract.",
         "make enterprise-status-export",
         "make enterprise-status-export-check",
+        "make enterprise-operator-next-action",
+        "safe action commands",
         "does not approve Mission Control runtime behavior",
         "does not approve live VM/container inspection",
         "does not approve sandbox orchestration",
@@ -2147,6 +2158,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "Enterprise Status Export",
         "display-only enterprise status export",
         "recommended_send_set: `ERG-003, ERG-002`",
+        "next_action: `send_erg_003_and_erg_002`",
+        "`make enterprise-review-send-refresh`",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -2156,6 +2169,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
+        '"next_action": "send_erg_003_and_erg_002"',
+        '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
@@ -2203,6 +2218,9 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
     assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert "next_action" in report["allowed_import_fields"]
+    assert "action_commands" in report["allowed_import_fields"]
+    assert "operator_next_action_doc" in report["allowed_import_fields"]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["runtime_changes_allowed"] is False
@@ -2231,6 +2249,7 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
         "Ithildin remains the execution, policy, approval, audit, and lane closure authority",
         "does not approve Mission Control enterprise status importer implementation",
         "Mission Control may display this artifact as non-authoritative status",
+        "safe action commands",
     ]:
         assert phrase in doc
     assert "mission-control-enterprise-status-import-check:" in makefile

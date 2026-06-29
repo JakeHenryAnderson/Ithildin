@@ -23,13 +23,14 @@ fixtures, artifact hashes, and safe rejection expectations.
 The export composes existing checked reports instead of creating a new source of truth:
 
 - `make enterprise-current-checkpoint`
+- `make enterprise-operator-next-action`
 - `make enterprise-progress-model`
 - `make enterprise-review-send-readiness`
 - `make enterprise-response-status-board`
 
 The export includes current commit/dirty state, tool count, selected capability state, recommended
-enterprise send set, response/closure counts, progress bands, review-lane status, generated packet
-paths, and blocked authority flags.
+enterprise send set, current next action, safe action commands, response/closure counts, progress
+bands, review-lane status, generated packet paths, and blocked authority flags.
 
 ## Output Artifacts
 

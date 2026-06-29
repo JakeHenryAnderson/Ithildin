@@ -42,7 +42,8 @@ A future Mission Control importer may display only these status fields:
 
 - schema version, artifact type, display-only status, commit, and dirty state;
 - tool count, selected capability, response count, closure count, and enterprise gap count;
-- recommended enterprise review IDs and the recommended next enterprise review;
+- recommended enterprise review IDs, the recommended next enterprise review, the current next action,
+  and safe action commands;
 - progress bands, review lane labels/statuses, packet path labels, and packet handoff readiness;
 - blocked-authority flags and safe warning chips.
 

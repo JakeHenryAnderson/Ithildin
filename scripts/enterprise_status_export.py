@@ -16,6 +16,7 @@ if __package__ in {None, ""}:
 
 from scripts import (
     enterprise_current_checkpoint,
+    enterprise_operator_next_action,
     enterprise_progress_model,
     enterprise_response_status_board,
     enterprise_review_send_readiness,
@@ -34,6 +35,7 @@ REQUIRED_DOC_PHRASES = [
     "Status: display-only enterprise status export contract.",
     "make enterprise-status-export",
     "make enterprise-status-export-check",
+    "safe action commands",
     "does not approve Mission Control runtime behavior",
     "does not approve live VM/container inspection",
     "does not approve sandbox orchestration",
@@ -77,6 +79,7 @@ def main() -> int:
 
 def build_report(repo_root: Path) -> dict[str, Any]:
     current = enterprise_current_checkpoint.build_report(repo_root)
+    next_action = enterprise_operator_next_action.build_report(repo_root)
     progress = enterprise_progress_model.build_report(repo_root)
     send = enterprise_review_send_readiness.build_report(repo_root)
     responses = enterprise_response_status_board.build_report(repo_root)
@@ -84,6 +87,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     failures: list[str] = []
     failures.extend(f"enterprise-current-checkpoint: {failure}" for failure in current["failures"])
+    failures.extend(
+        f"enterprise-operator-next-action: {failure}"
+        for failure in next_action["failures"]
+    )
     failures.extend(f"enterprise-progress-model: {failure}" for failure in progress["failures"])
     failures.extend(f"enterprise-review-send-readiness: {failure}" for failure in send["failures"])
     failures.extend(
@@ -124,6 +131,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     }
     for source_name, source in [
         ("current checkpoint", current),
+        ("operator next action", next_action),
         ("progress model", progress),
         ("send readiness", send),
         ("response status", responses),
@@ -186,6 +194,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_next_enterprise_review": current.get(
             "recommended_next_enterprise_review"
         ),
+        "next_action": next_action.get("next_action"),
+        "action_commands": next_action.get("action_commands"),
+        "operator_next_action_doc": next_action.get("next_action_doc"),
         "response_present_count": responses.get("response_present_count"),
         "closure_ready_count": responses.get("closure_ready_count"),
         "enterprise_gap_count": progress.get("enterprise_gap_count"),
@@ -230,6 +241,9 @@ def render_report(report: dict[str, Any]) -> str:
         "recommended_send_set: " + ", ".join(report["recommended_send_set"]),
         "recommended_next_enterprise_review: "
         f"{report['recommended_next_enterprise_review']}",
+        f"next_action: {report['next_action']}",
+        "action_commands:",
+        *[f"- {command}" for command in report.get("action_commands") or []],
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         f"enterprise_gap_count: {report['enterprise_gap_count']}",
@@ -301,6 +315,9 @@ runtime behavior, and not an enterprise lane closure record.
 - selected_capability: `{report['selected_capability']}`
 - recommended_send_set: `{', '.join(report['recommended_send_set'])}`
 - recommended_next_enterprise_review: `{report['recommended_next_enterprise_review']}`
+- next_action: `{report['next_action']}`
+- action_commands:
+{chr(10).join(f"  - `{command}`" for command in report.get('action_commands') or [])}
 - response_present_count: `{report['response_present_count']}`
 - closure_ready_count: `{report['closure_ready_count']}`
 - enterprise_gap_count: `{report['enterprise_gap_count']}`
@@ -355,6 +372,8 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     for phrase in [
         "display-only enterprise status export",
         "recommended_send_set: `ERG-003, ERG-002`",
+        "next_action: `send_erg_003_and_erg_002`",
+        "`make enterprise-review-send-refresh`",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -365,6 +384,8 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
+        '"next_action": "send_erg_003_and_erg_002"',
+        '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
