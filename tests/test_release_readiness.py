@@ -236,6 +236,7 @@ from scripts import (
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
     release_check_profile,
+    release_check_slice,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -448,6 +449,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "validation-plan:" in makefile
     assert "validation-timing:" in makefile
     assert "release-check-profile:" in makefile
+    assert "release-check-slice:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
@@ -460,6 +462,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-plan" in readme
     assert "make validation-timing" in readme
     assert "make release-check-profile" in readme
+    assert "make release-check-slice" in readme
     assert "slow_packet:" in pyproject
     assert "pytest_collection_modifyitems" in conftest
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
@@ -477,6 +480,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
     assert "make release-check-profile" in guide
+    assert "make release-check-slice" in guide
     assert "--fail-on-budget" in guide
     assert "budget status" in guide
     assert "make smart-check" in validation_timing.PROFILES["fast"]
@@ -489,6 +493,16 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert profile_report["contains_docs_site"] is True
     assert any(
         row["category"] == "enterprise" for row in profile_report["categories"]
+    )
+    slice_report = release_check_slice.build_report(Path.cwd(), category="enterprise")
+    assert slice_report["valid"] is True
+    assert slice_report["run_requested"] is False
+    assert slice_report["selected_category"] == "enterprise"
+    assert slice_report["selected_target_count"] > 0
+    assert slice_report["execution"] is None
+    assert all(
+        target.startswith("enterprise-")
+        for target in slice_report["selected_targets"]
     )
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site

@@ -102,6 +102,21 @@ targets, and whether the full Python test, UI build, and docs-site targets are p
 run the release gate and is not release proof; it is a fast explanation tool for planning which
 focused command or packet lane deserves attention next.
 
+To inspect one category from that graph, run:
+
+```sh
+make release-check-slice ARGS="--category enterprise"
+```
+
+This is plan-only by default. To intentionally execute only that category, run:
+
+```sh
+make release-check-slice ARGS="--category enterprise --run"
+```
+
+Slice runs are focused development evidence, not full release proof. Use them to debug a slow or
+failing lane before returning to `make release-check` for a release, handoff, or major checkpoint.
+
 ### Quick Check
 
 Run:

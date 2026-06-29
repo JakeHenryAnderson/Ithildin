@@ -50,8 +50,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         target for target, count in Counter(targets).items() if count > 1
     )
     category_counts = Counter(_category(target) for target in unique_targets)
+    grouped_targets = targets_by_category(unique_targets)
     categories = [
-        {"category": category, "target_count": count}
+        {
+            "category": category,
+            "target_count": count,
+            "targets": grouped_targets[category],
+        }
         for category, count in sorted(category_counts.items())
     ]
     heaviest_categories = sorted(
@@ -161,6 +166,13 @@ def _category(target: str) -> str:
     if "demo" in target or "workbench" in target or "operator" in target:
         return "demo_operator"
     return "other"
+
+
+def targets_by_category(targets: list[str]) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+    for target in targets:
+        grouped.setdefault(_category(target), []).append(target)
+    return dict(sorted(grouped.items()))
 
 
 def _target_count(row: dict[str, object]) -> int:
