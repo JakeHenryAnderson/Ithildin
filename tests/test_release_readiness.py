@@ -8076,8 +8076,17 @@ def test_mission_control_integration_readiness_packet_is_wired(tmp_path: Path) -
     assert "continue_display_importer_planning" in prompt
     assert "block_mission_control_runtime_work" in prompt
     assert "Mission Control Integration Implementation Ticket" in docs
+    assert "Enterprise Status Export" in docs
+    assert "Mission Control Enterprise Status Import Contract" in docs
+    assert "Mission Control Enterprise Status Fixtures" in docs
+    assert "Mission Control Enterprise Status Acceptance Matrix" in docs
+    assert "Mission Control Enterprise Status Reference Validator" in docs
+    assert "enterprise-status `action_commands`" in docs
+    assert "display-only copyable text" in docs
+    assert "MC-STATUS-NEG-011" in docs
     assert "Mission Control Handoff Schema Contract" in docs
     assert "Hello World Mission Control Handoff" in docs
+    assert "unsupported_action_command" in evidence
     assert '"mission_control_runtime_allowed": false' in evidence
     assert '"mission_control_execution_authority_allowed": false' in evidence
     assert '"closes_erg_002": false' in evidence

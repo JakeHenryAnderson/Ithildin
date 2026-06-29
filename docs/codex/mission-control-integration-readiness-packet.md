@@ -27,6 +27,8 @@ touching that repository:
 - the importer implementation plan;
 - the decision-intake and disposition packet;
 - the side handoff plan and concrete implementation ticket;
+- the enterprise-status export/import contract, static fixtures, acceptance matrix, and reference
+  validator;
 - the metadata-only handoff schema contract;
 - the negative fixture expectations;
 - the response kit for external-review response intake and closure commands;
@@ -73,6 +75,12 @@ The generated evidence must continue to report:
 - `new_power_classes_allowed: false`;
 - `closes_erg_002: false`.
 
+The packet also carries the current enterprise-status display/import rule: `next_action` and
+enterprise-status `action_commands` are display-only copyable text for a human operator. Mission
+Control must not render imported action commands as executable buttons, task runners, callbacks,
+polling controls, or shell commands. The `MC-STATUS-NEG-011` fixture and reference validator cover
+unsafe action-command rejection.
+
 ## Review Question
 
 The readiness packet asks whether the Mission Control-side display/importer work order is complete
@@ -88,6 +96,9 @@ This readiness artifact is complete when:
 
 - the generated packet includes the Mission Control display, handoff, schema, fixture, and ticket
   docs;
+- the generated packet includes enterprise-status export/import docs, fixtures, acceptance-matrix
+  evidence, the reference validator, `MC-STATUS-NEG-011`, and the display-only copyable
+  `action_commands` rule;
 - command evidence is available or explicitly marked skipped in check mode;
 - artifact hashes cover generated markdown files;
 - release/readiness gates include the packet check;

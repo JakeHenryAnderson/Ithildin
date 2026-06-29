@@ -46,6 +46,11 @@ READINESS_DOCS = [
     Path("docs/codex/mission-control-display-disposition-packet.md"),
     Path("docs/codex/mission-control-side-handoff-plan.md"),
     Path("docs/codex/mission-control-integration-implementation-ticket.md"),
+    Path("docs/codex/enterprise-status-export.md"),
+    Path("docs/codex/mission-control-enterprise-status-import-contract.md"),
+    Path("docs/codex/mission-control-enterprise-status-fixtures.md"),
+    Path("docs/codex/mission-control-enterprise-status-acceptance-matrix.md"),
+    Path("docs/codex/mission-control-enterprise-status-reference-validator.md"),
     Path("docs/codex/mission-control-handoff-schema-contract.md"),
     Path("docs/codex/mission-control-handoff-negative-fixtures.md"),
     Path("docs/codex/hello-world-mission-control-handoff.md"),
@@ -135,6 +140,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Current selected capability: `not selected`",
         "make mission-control-integration-readiness-packet",
         "Mission Control execution authority",
+        "enterprise-status `action_commands`",
+        "`MC-STATUS-NEG-011`",
+        "display-only copyable text",
         "closes_erg_002: false",
     ]:
         if phrase not in doc_text:
@@ -190,6 +198,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "continue_display_importer_planning",
         "revise_handoff_before_implementation",
         "block_mission_control_runtime_work",
+        "action_commands",
+        "MC-STATUS-NEG-011",
     ]:
         if phrase not in prompt:
             failures.append(f"packet prompt is missing phrase: {phrase}")
@@ -213,6 +223,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"siem_adapter_allowed": false',
         '"new_power_classes_allowed": false',
         '"closes_erg_002": false',
+        "`unsupported_action_command`",
     ]:
         if phrase not in evidence:
             failures.append(f"command evidence is missing boundary flag: {phrase}")
@@ -414,14 +425,17 @@ Please answer every question:
 2. Do the schema contract, negative fixtures, display importer plan, and handoff seed give a Mission
    Control implementer enough information to build a local file/import display surface without
    inventing authority?
-3. Does every artifact preserve Ithildin as the governed tool gateway and keep Mission Control out
+3. Do the enterprise status export/import fixtures preserve `next_action` and `action_commands` as
+   display-only copyable text, including rejection of unsafe action commands through
+   `MC-STATUS-NEG-011`?
+4. Does every artifact preserve Ithildin as the governed tool gateway and keep Mission Control out
    of execution, policy, approval, audit, local-model, sandbox, promotion, SIEM, identity, and
    compliance authority?
-4. Are there missing negative cases that would let Mission Control render raw prompts, file
+5. Are there missing negative cases that would let Mission Control render raw prompts, file
    contents, diffs, response bodies, dependency names, package scripts, raw host paths, tokens,
    private keys, environment values, sandbox internals, unsafe attachment paths, or authority
    overclaims?
-5. Are there any critical/high findings that should stop Mission Control-side implementation
+6. Are there any critical/high findings that should stop Mission Control-side implementation
    planning?
 
 Choose one disposition:
@@ -488,6 +502,27 @@ def _command_evidence(
         "",
         "```json",
         json.dumps(reports, indent=2, sort_keys=True),
+        "```",
+        "",
+        "## Referenced Enterprise Status Display/Import Guards",
+        "",
+        "- `docs/codex/enterprise-status-export.md` defines display-only enterprise status output.",
+        "- `docs/codex/mission-control-enterprise-status-import-contract.md` defines import rules.",
+        "- `docs/codex/mission-control-enterprise-status-fixtures.md` defines fixture cases.",
+        "- `docs/codex/mission-control-enterprise-status-acceptance-matrix.md` maps coverage.",
+        "- `docs/codex/mission-control-enterprise-status-reference-validator.md` is the oracle.",
+        "- `MC-STATUS-NEG-011` rejects unsafe commands: `unsupported_action_command`.",
+        "- `action_commands` are display-only copyable text, not executable UI controls.",
+        "",
+        "Dedicated validation commands remain part of `release-check`; run them outside this",
+        "packet's nested check graph to avoid recursive enterprise-status export rebuilds:",
+        "",
+        "```text",
+        "make enterprise-status-export-check",
+        "make mission-control-enterprise-status-import-check",
+        "make mission-control-enterprise-status-fixtures-check",
+        "make mission-control-enterprise-status-acceptance-matrix-check",
+        "make mission-control-enterprise-status-reference-validator",
         "```",
     ]
     if run_commands:
