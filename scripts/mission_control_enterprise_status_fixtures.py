@@ -205,7 +205,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Negative Fixtures",
         "MC-STATUS-NEG-001",
         "MC-STATUS-NEG-011",
+        "MC-STATUS-NEG-012",
         "unsupported_action_command",
+        "unsafe_handoff_artifact",
         "runtime_changes_allowed: `false`",
         "mission_control_runtime_allowed: `false`",
     ]:
@@ -220,8 +222,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         failures.append("enterprise status fixture summary has the wrong type")
     if summary.get("tool_count") != 24:
         failures.append("enterprise status fixture summary tool_count must remain 24")
-    if summary.get("negative_case_count") != 11:
-        failures.append("enterprise status fixture summary must include 11 negative cases")
+    if summary.get("negative_case_count") != 12:
+        failures.append("enterprise status fixture summary must include 12 negative cases")
     if summary.get("safe_error_reason_labels_only") is not True:
         failures.append("enterprise status fixture summary must require safe reason labels")
     boundaries = summary.get("forbidden_runtime_authority")
@@ -236,8 +238,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     if not {INDEX_NAME, SUMMARY_NAME, VALID_NAME}.issubset(hashed_paths):
         failures.append("enterprise status fixture hash manifest is missing required artifacts")
     negative_hashes = [path for path in hashed_paths if str(path).startswith("negatives/")]
-    if len(negative_hashes) != 11:
-        failures.append("enterprise status fixture hash manifest must include 11 negative files")
+    if len(negative_hashes) != 12:
+        failures.append("enterprise status fixture hash manifest must include 12 negative files")
     if HASH_NAME in hashed_paths:
         failures.append("enterprise status fixture hash manifest must not hash itself")
     if not _artifact_hashes_match_files(output_dir, hash_manifest):
@@ -345,6 +347,20 @@ def _case_definitions() -> list[tuple[str, str, Mutator]]:
             "unsafe_action_command",
             _set("action_commands", ["make enterprise-review-send-refresh", "rm -rf /"]),
         ),
+        (
+            "MC-STATUS-NEG-012",
+            "unsafe_handoff_artifact",
+            _set(
+                "handoff_artifacts",
+                [
+                    {
+                        "label": "unsafe",
+                        "path": "/tmp/unsafe-host-path",
+                        "description": "absolute host path must not be display-imported",
+                    }
+                ],
+            ),
+        ),
     ]
 
 
@@ -430,7 +446,7 @@ def _render_index(summary: dict[str, Any]) -> str:
 
 Status: generated display/import fixtures for Mission Control enterprise status tests.
 
-This packet contains one valid display-only enterprise status export payload and eleven negative
+This packet contains one valid display-only enterprise status export payload and twelve negative
 payloads derived from the same seed. It is for importer tests only; it does not call Mission
 Control, call Ithildin APIs, create approvals, start a VM/container, invoke a local model, close
 enterprise lanes, or grant runtime authority.

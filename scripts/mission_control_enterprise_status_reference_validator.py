@@ -18,7 +18,7 @@ from scripts import mission_control_enterprise_status_fixtures, review_docs
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/mission-control-enterprise-status-reference-validator.md"
 VALID_ID = "MC-STATUS-VALID-001"
-NEGATIVE_COUNT = 11
+NEGATIVE_COUNT = 12
 SAFE_REASON_RE = re.compile(r"^[a-z0-9_:-]+$")
 STATUS_PHRASE = (
     "Status: reference validator for Mission Control enterprise status display/import fixtures."
@@ -101,6 +101,7 @@ def build_report(repo_root: Path, fixture_dir: Path | None = None) -> dict[str, 
         "does not call Mission Control",
         VALID_ID,
         "MC-STATUS-NEG-011",
+        "MC-STATUS-NEG-012",
     ]:
         if phrase not in doc:
             failures.append(

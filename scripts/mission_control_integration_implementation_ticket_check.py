@@ -56,8 +56,9 @@ REQUIRED_INPUTS = [
 REQUIRED_TESTS = [
     "valid metadata-only handoff import",
     "valid enterprise status fixture accepted as display-only status evidence",
-    "all `MC-STATUS-NEG-001` through `MC-STATUS-NEG-011` fixtures rejected with safe reason labels",
+    "all `MC-STATUS-NEG-001` through `MC-STATUS-NEG-012` fixtures rejected with safe reason labels",
     "`MC-STATUS-NEG-011` unsafe action command rejection with `unsupported_action_command`",
+    "`MC-STATUS-NEG-012` unsafe handoff artifact rejection with `unsafe_handoff_artifact`",
     "unsupported schema rejection",
     "non-`metadata_only` status rejection",
     "missing display allowlist rejection",

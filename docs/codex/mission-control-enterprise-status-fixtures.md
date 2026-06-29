@@ -47,7 +47,7 @@ Control importer tests.
 The pack contains:
 
 - one valid display-only enterprise status export payload;
-- eleven negative enterprise status payloads matching the `MC-STATUS-NEG-###` cases;
+- twelve negative enterprise status payloads matching the `MC-STATUS-NEG-###` cases;
 - stable expected safe reason labels for each negative case;
 - a machine-readable fixture summary;
 - artifact hashes for handoff integrity.
@@ -58,14 +58,19 @@ The positive fixture must be accepted only as non-authoritative display status.
 
 The negative fixtures must be rejected or quarantined:
 
-- `MC-STATUS-NEG-001` through `MC-STATUS-NEG-011`;
+- `MC-STATUS-NEG-001` through `MC-STATUS-NEG-012`;
 - unsupported schema or artifact type;
 - non-display status claims;
 - Mission Control runtime or authority overclaims;
 - runtime/new-power/public-positioning flags set to true;
 - lane closure claims without normalized external responses;
 - raw prompt or file-content leakage.
-- unsafe action commands outside the checked Ithildin operator refresh helpers.
+- unsafe action commands outside the checked Ithildin operator refresh helpers;
+- unsafe handoff artifact paths outside ignored review artifact roots.
+
+The final two fixtures are explicit handoff-safety cases: `MC-STATUS-NEG-011` rejects unsafe
+action commands with `unsupported_action_command`, and `MC-STATUS-NEG-012` rejects unsafe handoff
+artifact paths with `unsafe_handoff_artifact`.
 
 ## Safe Error Requirements
 

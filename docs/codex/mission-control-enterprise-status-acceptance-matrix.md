@@ -74,13 +74,14 @@ compliance conclusions.
 | `MC-STATUS-NEG-009` | `negatives/MC-STATUS-NEG-009-raw_prompt.json` | `rejected_safe_reason` | `forbidden_payload_field` | raw prompts |
 | `MC-STATUS-NEG-010` | `negatives/MC-STATUS-NEG-010-raw_file_contents.json` | `rejected_safe_reason` | `forbidden_payload_field` | file contents |
 | `MC-STATUS-NEG-011` | `negatives/MC-STATUS-NEG-011-unsafe_action_command.json` | `rejected_safe_reason` | `unsupported_action_command` | arbitrary commands or shell-like instructions |
+| `MC-STATUS-NEG-012` | `negatives/MC-STATUS-NEG-012-unsafe_handoff_artifact.json` | `rejected_safe_reason` | `unsafe_handoff_artifact` | absolute paths, traversal paths, or artifact paths outside ignored review roots |
 
 ## Mission Control Test Expectations
 
 Future Mission Control importer tests should cover:
 
 - accepting `MC-STATUS-VALID-001` as display-only status evidence;
-- rejecting all `MC-STATUS-NEG-001` through `MC-STATUS-NEG-011` fixtures with safe reason labels;
+- rejecting all `MC-STATUS-NEG-001` through `MC-STATUS-NEG-012` fixtures with safe reason labels;
 - showing warning chips for local-preview, display-only, Mission Control runtime blocked, no local
   model invocation, no live VM/container inspection, no sandbox orchestration, no trusted-host
   promotion, no SIEM adapter, no compliance automation, and no public/security-product

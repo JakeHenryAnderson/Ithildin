@@ -11,7 +11,9 @@ make mission-control-enterprise-status-reference-validator
 The validator is a display-only validation oracle for the future Mission Control enterprise status
 importer. It generates or reads the Mission Control enterprise status fixture pack, accepts the
 single display-only fixture `MC-STATUS-VALID-001`, rejects `MC-STATUS-NEG-001` through
-`MC-STATUS-NEG-011`, and checks that the observed safe reason labels match the fixture summary.
+`MC-STATUS-NEG-012`, and checks that the observed safe reason labels match the fixture summary.
+The terminal cases include `MC-STATUS-NEG-011` for unsafe action commands and
+`MC-STATUS-NEG-012` for unsafe handoff artifact paths.
 
 It does not call Mission Control, call Ithildin APIs, start services, invoke a model, create
 approvals, write audit events, start a VM/container, inspect live VM state, orchestrate a sandbox,
