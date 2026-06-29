@@ -149,6 +149,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             "does not record external review",
             "does not normalize responses",
             "does not close `ERG-003` or `ERG-002`",
+            "artifact_commits_match_current: true",
+            "artifact_payloads_clean: true",
         ],
     )
     _require_phrases(
@@ -167,6 +169,10 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             "After responses arrive",
             "RAW_RESPONSE_ERG-003.md",
             "RAW_RESPONSE_ERG-002.md",
+            "Final freshness check",
+            "`make enterprise-review-send-preflight`",
+            "artifact_commits_match_current: `true`",
+            "artifact_payloads_clean: `true`",
             "records_external_review: `false`",
             "normalizes_responses: `false`",
             "closes_erg_003: `false`",
@@ -345,6 +351,15 @@ def _render_markdown(payload: dict[str, Any]) -> str:
         lines.append(f"- `{label}`: `{path}`")
     lines.extend(
         [
+            "",
+            "## Final freshness check",
+            "",
+            "Before sending, run `make enterprise-review-send-preflight` and confirm it reports:",
+            "",
+            "- valid: `true`",
+            "- current_dirty: `false`",
+            "- artifact_commits_match_current: `true`",
+            "- artifact_payloads_clean: `true`",
             "",
             "## After responses arrive",
             "",

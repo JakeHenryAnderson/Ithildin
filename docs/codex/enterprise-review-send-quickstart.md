@@ -40,13 +40,15 @@ does not mutate findings, and does not close `ERG-003` or `ERG-002`.
 3. Run `make enterprise-review-send-refresh`.
 4. Open the generated quickstart in
    `var/review-packets/v3/enterprise-review-send-quickstart/`.
-5. Optionally open the generated package index in
+5. Confirm the final preflight reports `valid: true`, `current_dirty: false`,
+   `artifact_commits_match_current: true`, and `artifact_payloads_clean: true`.
+6. Optionally open the generated package index in
    `var/review-packets/v3/enterprise-review-send-package/`.
-6. Send `ERG-003` and `ERG-002` as separate review requests using the lane-local prompt and
+7. Send `ERG-003` and `ERG-002` as separate review requests using the lane-local prompt and
    attachments named by the generated quickstart.
-7. Preserve the generated send receipt template as local operator evidence after the human send
+8. Preserve the generated send receipt template as local operator evidence after the human send
    step.
-8. Wait for real reviewer responses before running response intake.
+9. Wait for real reviewer responses before running response intake.
 
 ## Response Intake
 
