@@ -48,6 +48,7 @@ The pack contains:
 
 - one valid display-only enterprise status export payload;
 - twelve negative enterprise status payloads matching the `MC-STATUS-NEG-###` cases;
+- display-only send package and send-session record pointers in the valid payload;
 - stable expected safe reason labels for each negative case;
 - a machine-readable fixture summary;
 - artifact hashes for handoff integrity.

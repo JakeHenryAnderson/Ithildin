@@ -50,7 +50,8 @@ Accepted fixtures may display only:
 - tool count, recommended review lane labels, response counts, and closure readiness labels;
 - safe warning chips showing blocked runtime authority;
 - artifact hash and byte-count metadata;
-- packet-relative artifact pointers from the generated fixture pack;
+- packet-relative artifact pointers from the generated fixture pack, including the send package and
+  send-session record display-only pointers;
 - boundary flags showing runtime authority remains blocked.
 
 Rejected fixtures should display stable reason labels only. They must not echo raw prompts, file

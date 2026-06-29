@@ -2545,6 +2545,12 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     assert valid_payload["status"] == "display_only"
     assert valid_payload["mission_control_runtime_allowed"] is False
     assert valid_payload["new_power_classes_allowed"] is False
+    assert valid_payload["packet_paths"]["enterprise_review_send_package"] == (
+        "var/review-packets/v3/enterprise-review-send-package"
+    )
+    assert valid_payload["packet_paths"]["enterprise_review_send_session_record"] == (
+        "var/review-runs/enterprise-review-send-session-record"
+    )
     assert "valid/enterprise-status-valid.json" in hashed_paths
     assert "fixture-summary.json" in hashed_paths
     assert "MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md" in hashed_paths
@@ -2559,6 +2565,7 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
         "display/import fixtures only",
         "does not add Mission Control runtime behavior",
         "does not approve callbacks into Ithildin",
+        "display-only send package and send-session record pointers",
         "MC-STATUS-NEG-001",
         "MC-STATUS-NEG-011",
         "MC-STATUS-NEG-012",
@@ -2662,6 +2669,8 @@ def test_mission_control_enterprise_status_acceptance_matrix_is_wired() -> None:
         "unsafe_handoff_artifact",
         "accepted_display_only_status",
         "rejected_safe_reason",
+        "send package and",
+        "send-session record display-only pointers",
         "does not approve Mission Control importer implementation",
     ]:
         assert phrase in doc
