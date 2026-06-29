@@ -82,6 +82,7 @@ from scripts import (
     enterprise_review_send_quickstart,
     enterprise_review_send_readiness,
     enterprise_review_send_receipt_template,
+    enterprise_review_send_session_record,
     enterprise_review_submission_prompt,
     enterprise_sandbox_control_plane_readiness_check,
     enterprise_status_export,
@@ -1959,11 +1960,18 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
+        "send_package",
+        "send_session_record",
     ]
-    assert all(
-        artifact["path"].startswith("var/review-packets/v3/")
-        for artifact in report["handoff_artifacts"]
-    )
+    assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
+        "var/review-packets/v3/enterprise-dual-review-outbox",
+        "var/review-packets/v3/enterprise-review-send-manifest",
+        "var/review-packets/v3/enterprise-review-send-quickstart",
+        "var/review-packets/v3/enterprise-review-submission-prompt",
+        "var/review-packets/v3/enterprise-review-send-receipt-template",
+        "var/review-packets/v3/enterprise-review-send-package",
+        "var/review-runs/enterprise-review-send-session-record",
+    }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
     )
@@ -2030,6 +2038,8 @@ def test_enterprise_progress_model_is_wired() -> None:
         "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
+        "send_package",
+        "send_session_record",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -3783,6 +3793,114 @@ def test_enterprise_review_send_package_is_wired() -> None:
     )
 
 
+def test_enterprise_review_send_session_record_is_wired() -> None:
+    report = enterprise_review_send_session_record.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-session-record.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    package_doc = Path("docs/codex/enterprise-review-send-package.md").read_text(
+        encoding="utf-8"
+    )
+    preflight_doc = Path("docs/codex/enterprise-review-send-preflight.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    refresh_body = makefile.partition("enterprise-review-send-refresh:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-runs/enterprise-review-send-session-record")
+    generated = generated_dir / "ENTERPRISE_REVIEW_SEND_SESSION_RECORD.md"
+    generated_json = generated_dir / "enterprise-review-send-session-record.json"
+    generated_hashes = json.loads(
+        (
+            generated_dir / "enterprise-review-send-session-record-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    for key in [
+        "records_external_review",
+        "normalizes_responses",
+        "writes_response_files",
+        "closes_erg_003",
+        "closes_erg_002",
+    ]:
+        assert report[key] is False
+    for phrase in [
+        "Status: generated non-authoritative send-session record scaffold.",
+        "make enterprise-review-send-session-record",
+        "make enterprise-review-send-session-record-check",
+        "sent: `false`",
+        "does not record external review",
+        "does not normalize responses",
+        "does not write response files",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Send Session Record",
+        "sent: `false`",
+        "Operator fill-in fields",
+        "Package hash evidence",
+        "Lane response landing pads",
+        "ERG-003",
+        "ERG-002",
+        "records_external_review: `false`",
+        "normalizes_responses: `false`",
+        "writes_response_files: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"record_type": "ithildin.enterprise_review_send_session_record"',
+        '"sent": false',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"records_external_review": false',
+        '"normalizes_responses": false',
+        '"writes_response_files": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_REVIEW_SEND_SESSION_RECORD.md",
+        "enterprise-review-send-session-record.json",
+    } <= hashed_paths
+    assert "enterprise-review-send-session-record-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-send-session-record:" in makefile
+    assert "enterprise-review-send-session-record-check:" in makefile
+    assert "enterprise-review-send-session-record-check" in release_check_body
+    assert "$(MAKE) enterprise-review-send-session-record" in review_candidate_body
+    assert "$(MAKE) enterprise-review-send-session-record" in refresh_body
+    assert "make enterprise-review-send-session-record" in readme
+    assert "enterprise-review-send-session-record" in package_doc
+    assert "enterprise-review-send-session-record" in preflight_doc
+    assert "docs/codex/enterprise-review-send-session-record.md" in docs_site
+    assert "docs/codex/enterprise-review-send-session-record.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Session Record" in review_index
+    assert "enterprise-review-send-session-record-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-session-record" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
 def test_enterprise_review_handoff_drill_is_wired() -> None:
     report = enterprise_review_handoff_drill.build_check_report(Path.cwd())
     doc = Path("docs/codex/enterprise-review-handoff-drill.md").read_text(
@@ -4618,6 +4736,8 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "send_quickstart": True,
         "submission_prompt": True,
         "send_receipt_template": True,
+        "send_package": True,
+        "send_session_record": True,
         "dual_response_inbox": True,
         "dual_response_readiness": True,
         "response_status_board": True,
@@ -4634,6 +4754,8 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
+        "send_package",
+        "send_session_record",
         "dual_response_inbox",
         "handoff_drill",
     ]:
@@ -4663,6 +4785,8 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "make enterprise-review-send-quickstart",
         "make enterprise-review-submission-prompt",
         "make enterprise-review-send-receipt-template",
+        "make enterprise-review-send-package",
+        "make enterprise-review-send-session-record",
         "make enterprise-dual-response-inbox",
         "make enterprise-handoff-consistency-check",
         "For speed, the preflight does not recursively rebuild every component.",
@@ -4690,6 +4814,8 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert "$(MAKE) enterprise-review-send-quickstart" in refresh_body
     assert "$(MAKE) enterprise-review-submission-prompt" in refresh_body
     assert "$(MAKE) enterprise-review-send-receipt-template" in refresh_body
+    assert "$(MAKE) enterprise-review-send-package" in refresh_body
+    assert "$(MAKE) enterprise-review-send-session-record" in refresh_body
     assert "$(MAKE) enterprise-dual-response-inbox" in refresh_body
     assert "$(MAKE) enterprise-review-handoff-drill" in refresh_body
     assert "$(MAKE) enterprise-handoff-consistency-check" in refresh_body
@@ -4840,6 +4966,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
+        "send_package",
+        "send_session_record",
     ]
     assert any(
         artifact["path"] == "var/review-packets/v3/enterprise-review-send-quickstart"

@@ -32,6 +32,8 @@ The preflight is designed to run after these artifacts have been generated:
 - `make enterprise-review-send-quickstart`
 - `make enterprise-review-submission-prompt`
 - `make enterprise-review-send-receipt-template`
+- `make enterprise-review-send-package`
+- `make enterprise-review-send-session-record`
 - `make enterprise-dual-response-inbox`
 - `make enterprise-dual-response-readiness`
 - `make enterprise-response-status-board`
@@ -72,6 +74,8 @@ make enterprise-review-send-checklist
 make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
+make enterprise-review-send-package
+make enterprise-review-send-session-record
 make enterprise-dual-response-inbox
 make enterprise-review-handoff-drill
 make enterprise-handoff-consistency-check

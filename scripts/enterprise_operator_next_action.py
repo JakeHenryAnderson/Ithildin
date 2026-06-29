@@ -63,6 +63,16 @@ SEND_ARTIFACTS = [
         "path": "var/review-packets/v3/enterprise-review-send-receipt-template",
         "description": "operator receipt template to fill after sending",
     },
+    {
+        "label": "send_package",
+        "path": "var/review-packets/v3/enterprise-review-send-package",
+        "description": "compact package index for current send artifacts",
+    },
+    {
+        "label": "send_session_record",
+        "path": "var/review-runs/enterprise-review-send-session-record",
+        "description": "local non-authoritative scaffold for operator send details",
+    },
 ]
 
 RESPONSE_ARTIFACTS = [

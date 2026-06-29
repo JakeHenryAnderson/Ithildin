@@ -41,6 +41,15 @@ or directly with:
 make enterprise-review-send-package
 ```
 
+For a local operator record scaffold after package generation, run:
+
+```sh
+make enterprise-review-send-session-record
+```
+
+That record ties the current package hashes, lane prompts, raw-response paths, and operator fill-in
+fields together without recording review or closing lanes.
+
 ## Current Send Set
 
 - `ERG-003`: static sandbox/VM preflight disposition.

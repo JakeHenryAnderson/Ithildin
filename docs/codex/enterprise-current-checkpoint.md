@@ -40,6 +40,8 @@ make enterprise-review-send-manifest
 make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
+make enterprise-review-send-package
+make enterprise-review-send-session-record
 make enterprise-dual-response-inbox
 make enterprise-response-waiting-room
 make enterprise-review-handoff-drill
@@ -73,6 +75,8 @@ Follow each lane-specific response kit and closure gate before any committed dis
 - send manifest: `var/review-packets/v3/enterprise-review-send-manifest/`
 - send quickstart: `var/review-packets/v3/enterprise-review-send-quickstart/`
 - send receipt template: `var/review-packets/v3/enterprise-review-send-receipt-template/`
+- send package: `var/review-packets/v3/enterprise-review-send-package/`
+- send session record: `var/review-runs/enterprise-review-send-session-record/`
 - dual-response inbox: `var/review-runs/enterprise-dual-response-inbox/`
 - response inbox: `var/review-runs/enterprise-response-inbox/`
 - response status snapshot: `var/review-runs/enterprise-response-status-board/`

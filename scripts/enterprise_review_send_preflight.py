@@ -97,6 +97,24 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
             "enterprise-review-send-receipt-template.json",
         ],
     },
+    "send_package": {
+        "output_dir": "var/review-packets/v3/enterprise-review-send-package",
+        "hash_file": "enterprise-review-send-package-artifact-hashes.json",
+        "payload_file": "enterprise-review-send-package.json",
+        "required_files": [
+            "ENTERPRISE_REVIEW_SEND_PACKAGE.md",
+            "enterprise-review-send-package.json",
+        ],
+    },
+    "send_session_record": {
+        "output_dir": "var/review-runs/enterprise-review-send-session-record",
+        "hash_file": "enterprise-review-send-session-record-artifact-hashes.json",
+        "payload_file": "enterprise-review-send-session-record.json",
+        "required_files": [
+            "ENTERPRISE_REVIEW_SEND_SESSION_RECORD.md",
+            "enterprise-review-send-session-record.json",
+        ],
+    },
     "dual_response_inbox": {
         "output_dir": "var/review-runs/enterprise-dual-response-inbox",
         "hash_file": "enterprise-dual-response-inbox-artifact-hashes.json",
@@ -207,6 +225,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "make enterprise-review-send-quickstart",
         "make enterprise-review-submission-prompt",
         "make enterprise-review-send-receipt-template",
+        "make enterprise-review-send-package",
+        "make enterprise-review-send-session-record",
         "make enterprise-dual-response-inbox",
         "make enterprise-handoff-consistency-check",
         "does not record external review",
