@@ -46,6 +46,12 @@ REQUIRED_PHRASES = [
     "Checkpoint D: Live Sandbox/VM Proof Of Concept",
     "Checkpoint E: Trusted-Host Promotion",
     "Checkpoint F: Enterprise Architecture Lanes",
+    "make enterprise-dual-response-inbox",
+    "make enterprise-response-waiting-room",
+    "make enterprise-response-paste-preflight",
+    "make enterprise-response-inbox",
+    "make enterprise-response-status-board",
+    "make enterprise-response-intake-drill",
     "make enterprise-response-application-protocol",
     "Do not manually promote a lane",
 ]

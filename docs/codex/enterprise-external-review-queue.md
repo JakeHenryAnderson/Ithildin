@@ -182,6 +182,7 @@ After sending the two packets, prepare local response handling with:
 
 ```sh
 make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
 ```
 
 See [Enterprise Dual Response Inbox](enterprise-dual-response-inbox.md). The inbox does not

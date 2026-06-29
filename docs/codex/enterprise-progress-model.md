@@ -95,9 +95,12 @@ make enterprise-review-handoff-drill
 ```
 
 Then send `ERG-003` and `ERG-002` for review. After responses arrive, save raw responses only under
-ignored `var/review-runs/` paths and run:
+the ignored dual-response inbox, check the waiting-room state, and run:
 
 ```sh
+make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
+make enterprise-response-paste-preflight
 make enterprise-response-inbox
 make enterprise-response-status-board
 make enterprise-response-intake-drill
