@@ -158,7 +158,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Companion operator artifacts",
         "ERG-003",
         "ERG-002",
-        "Attachment manifest",
+        "Manifest/operator reference",
+        "Manifest-listed attachments",
+        "Outbox files including references",
         "Post-send response path",
         "Blocked boundaries",
         "records_external_review: `false`",
@@ -285,6 +287,11 @@ def _manifest_payload(
                     f"{packet['outbox_dir']}/{packet['attachment_manifest']}"
                 ),
                 "copied_file_count": packet["copied_file_count"],
+                "listed_attachment_count": packet.get(
+                    "listed_attachment_count",
+                    max(int(packet["copied_file_count"]) - 1, 0),
+                ),
+                "outbox_file_count": packet["copied_file_count"],
                 "response_kit": packet["response_kit"],
                 "intake_doc": packet["intake_doc"],
                 "dry_run": packet["dry_run"],
@@ -329,8 +336,8 @@ def _render_markdown(payload: dict[str, Any]) -> str:
     send_rows = "\n".join(
         (
             f"| `{packet['gap']}` | {packet['name']} | `{packet['prompt']}` | "
-            f"`{packet['attachment_manifest']}` | `{packet['copied_file_count']}` | "
-            f"`{packet['finding_namespace']}` |"
+            f"`{packet['attachment_manifest']}` | `{packet['listed_attachment_count']}` | "
+            f"`{packet['outbox_file_count']}` | `{packet['finding_namespace']}` |"
         )
         for packet in payload["send_set"]
     )
@@ -360,8 +367,14 @@ Current selected capability: `{payload['selected_capability']}`.
 
 ## Recommended send set
 
-| Gap | Review lane | Prompt | Attachment manifest | Attachment count | Finding namespace |
-| --- | --- | --- | --- | ---: | --- |
+Attach the manifest-listed files for each lane. Keep `ATTACHMENT_MANIFEST.md` as an operator
+reference unless the review surface has room for it.
+Manifest/operator reference: `ATTACHMENT_MANIFEST.md`.
+Manifest-listed attachments are the files to send to the reviewer.
+Outbox files including references count local operator-reference files too.
+
+| Gap | Lane | Prompt | Manifest/ref | Listed | Outbox | Namespace |
+| --- | --- | --- | --- | ---: | ---: | --- |
 {send_rows}
 
 Outbox root: `{payload['outbox_dir']}`
