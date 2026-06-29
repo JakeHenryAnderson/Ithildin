@@ -4066,6 +4066,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     for phrase in [
         "Status: checked final operator preflight for the current enterprise review send.",
         "make enterprise-review-send-preflight",
+        "make enterprise-review-send-refresh",
         "make enterprise-review-send-checklist",
         "make enterprise-review-submission-prompt",
         "make enterprise-review-send-receipt-template",
@@ -4086,8 +4087,22 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "enterprise-review-send-preflight" in release_check_body
         or "release-check: enterprise-review-send-preflight" in makefile
     )
+    assert "enterprise-review-send-refresh:" in makefile
+    refresh_body = makefile.partition("enterprise-review-send-refresh:")[2].partition(
+        "\n\n"
+    )[0]
+    assert "$(MAKE) enterprise-dual-review-outbox" in refresh_body
+    assert "$(MAKE) enterprise-review-send-manifest" in refresh_body
+    assert "$(MAKE) enterprise-review-send-checklist" in refresh_body
+    assert "$(MAKE) enterprise-review-submission-prompt" in refresh_body
+    assert "$(MAKE) enterprise-review-send-receipt-template" in refresh_body
+    assert "$(MAKE) enterprise-dual-response-inbox" in refresh_body
+    assert "$(MAKE) enterprise-review-handoff-drill" in refresh_body
+    assert "$(MAKE) enterprise-handoff-consistency-check" in refresh_body
+    assert "$(MAKE) enterprise-review-send-preflight" in refresh_body
     assert "$(MAKE) enterprise-review-send-preflight" in review_candidate_body
     assert "make enterprise-review-send-preflight" in readme
+    assert "make enterprise-review-send-refresh" in readme
     assert "docs/codex/enterprise-review-send-preflight.md" in readme
     assert "docs/codex/enterprise-review-send-preflight.md" in docs_site
     assert "docs/codex/enterprise-review-send-preflight.md" in review_docs.REVIEW_DOCS

@@ -539,6 +539,8 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-preflight` - run the final operator pre-send check across the
   current `ERG-003`/`ERG-002` send artifacts, response landing pad, handoff drill, response state,
   and consistency gate without recording review or closing lanes.
+- `make enterprise-review-send-refresh` - regenerate the current ignored `ERG-003`/`ERG-002`
+  send artifacts and response landing pad, then run the final pre-send preflight.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -1265,7 +1267,9 @@ The enterprise review send preflight is
 [docs/codex/enterprise-review-send-preflight.md](docs/codex/enterprise-review-send-preflight.md),
 checked with `make enterprise-review-send-preflight`; it gives the operator one final pre-send
 status across the current send artifacts, response landing pad, handoff drill, response state, and
-handoff consistency gate without sending packets, recording review, or closing either lane.
+handoff consistency gate without sending packets, recording review, or closing either lane. Use
+`make enterprise-review-send-refresh` to regenerate the ignored send artifacts and run that
+preflight in one command.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

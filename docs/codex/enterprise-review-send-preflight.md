@@ -8,6 +8,13 @@ Run:
 make enterprise-review-send-preflight
 ```
 
+To regenerate the current ignored send artifacts and then run this preflight in
+one operator command, use:
+
+```sh
+make enterprise-review-send-refresh
+```
+
 This preflight gives the operator one final checked answer before sending the
 current `ERG-003` and `ERG-002` enterprise review packets. It inspects the
 already-generated send artifacts, response landing pad, handoff drill,
@@ -55,7 +62,7 @@ It expects:
 ## Operator Use
 
 Run this after refreshing the send artifacts and before manually sending the
-review packets:
+review packets. The explicit sequence is:
 
 ```sh
 make enterprise-dual-review-outbox
@@ -67,6 +74,12 @@ make enterprise-dual-response-inbox
 make enterprise-review-handoff-drill
 make enterprise-handoff-consistency-check
 make enterprise-review-send-preflight
+```
+
+The equivalent one-command refresh path is:
+
+```sh
+make enterprise-review-send-refresh
 ```
 
 If the preflight fails because response evidence is present, stop the send flow
