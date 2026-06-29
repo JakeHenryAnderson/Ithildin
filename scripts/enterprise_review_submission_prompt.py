@@ -140,7 +140,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "ERG-003",
         "ERG-002",
         "Finding namespace",
-        "Attach every file",
+        "Attach the files listed in",
+        "Manifest-listed attachment count",
+        "10-attachment limit",
         "records_external_review: `false`",
         "closes_erg_003: `false`",
         "closes_erg_002: `false`",
@@ -256,6 +258,19 @@ def _prompt_payload(*, repo_root: Path, manifest_payload: dict[str, Any]) -> dic
                 "attachment_dir": f"{manifest_payload['outbox_dir']}/{packet['outbox_dir']}",
                 "prompt_file": f"{manifest_payload['outbox_dir']}/{packet['prompt']}",
                 "copied_file_count": packet["copied_file_count"],
+                "listed_attachment_count": _manifest_attachment_count(
+                    repo_root
+                    / manifest_payload["outbox_dir"]
+                    / packet["outbox_dir"]
+                    / "ATTACHMENT_MANIFEST.md"
+                ),
+                "attachment_manifest": (
+                    f"{manifest_payload['outbox_dir']}/{packet['outbox_dir']}/"
+                    "ATTACHMENT_MANIFEST.md"
+                ),
+                "ten_attachment_limit_guidance": _ten_attachment_limit_guidance(
+                    packet["gap"]
+                ),
                 "response_kit": packet["response_kit"],
                 "dry_run": packet["dry_run"],
                 "closure_gate": packet["closure_gate"],
@@ -311,9 +326,10 @@ Current selected capability: `{payload['selected_capability']}`.
 
 ## Use separate review threads
 
-Send each lane as a separate review request. Attach every file in that lane's attachment directory.
-Do not merge `ERG-003` and `ERG-002` into one reviewer answer unless the reviewer explicitly
-returns separate findings, namespaces, and dispositions for each lane.
+Send each lane as a separate review request. Attach the files listed in each lane's
+`ATTACHMENT_MANIFEST.md`; keep `ATTACHMENT_MANIFEST.md` itself as an operator reference unless your
+review surface has room for it. Do not merge `ERG-003` and `ERG-002` into one reviewer answer unless
+the reviewer explicitly returns separate findings, namespaces, and dispositions for each lane.
 
 {sections}
 
@@ -365,7 +381,15 @@ Attachment directory:
 {packet['attachment_dir']}
 ```
 
-Attach every file in that directory. Expected file count: `{packet['copied_file_count']}`.
+Attach the files listed in:
+
+```text
+{packet['attachment_manifest']}
+```
+
+Manifest-listed attachment count: `{packet['listed_attachment_count']}`.
+Outbox file count including operator references: `{packet['copied_file_count']}`.
+10-attachment limit: {packet['ten_attachment_limit_guidance']}.
 
 Paste the reviewer prompt from:
 
@@ -384,6 +408,26 @@ After response:
 
 Response kit: `{packet['response_kit']}`
 """
+
+
+def _manifest_attachment_count(manifest_path: Path) -> int:
+    text = _read(manifest_path)
+    return sum(1 for line in text.splitlines() if line.startswith("| `"))
+
+
+def _ten_attachment_limit_guidance(gap: str) -> str:
+    if gap == "ERG-003":
+        return (
+            "fits a 10-attachment limit when attaching only the files listed in "
+            "ATTACHMENT_MANIFEST.md"
+        )
+    if gap == "ERG-002":
+        return (
+            "exceeds a 10-attachment limit by one file; send Batch 1 with files 00-05, "
+            "then Batch 2 with files 06-09 plus the hash manifest, or use a reviewer "
+            "surface that accepts 11 attachments"
+        )
+    return "check the lane manifest and split into batches if the review surface limits attachments"
 
 
 def _validate_repo_root(repo_root: Path) -> None:

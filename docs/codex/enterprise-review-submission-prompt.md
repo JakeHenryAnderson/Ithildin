@@ -36,8 +36,10 @@ var/review-packets/v3/enterprise-review-submission-prompt/
 
 The dual-review outbox and send manifest define the current `ERG-003` and `ERG-002` packet set.
 This prompt is the final operator-facing paste layer: it tells the operator to use separate review
-threads, attach every file from the lane directory, preserve the required finding namespace, and
-follow the lane-specific response kit after reviewer feedback arrives.
+threads, attach the files listed in each lane's `ATTACHMENT_MANIFEST.md`, preserve the required
+finding namespace, and follow the lane-specific response kit after reviewer feedback arrives. The
+generated prompt distinguishes manifest-listed attachments from operator-reference files and gives
+batch guidance for 10-attachment review surfaces.
 
 It exists to reduce copy/paste mistakes. It does not record external review, does not normalize
 responses, does not mutate findings, does not close either lane, and does not approve runtime
@@ -53,10 +55,12 @@ behavior.
 6. Run `make enterprise-review-send-receipt-template` if you want a local operator template for
    recording the send thread, reviewer label, packet hashes, and response path after the human send
    step.
-7. For `ERG-003`, attach every file from the generated `ERG-003/` outbox directory and paste the
-   `ERG-003` section of the generated prompt.
-8. For `ERG-002`, use a separate review request, attach every file from the generated `ERG-002/`
-   outbox directory, and paste the `ERG-002` section of the generated prompt.
+7. For `ERG-003`, attach the files listed in the generated `ERG-003/ATTACHMENT_MANIFEST.md` and
+   paste the `ERG-003` section of the generated prompt.
+8. For `ERG-002`, use a separate review request, attach the files listed in the generated
+   `ERG-002/ATTACHMENT_MANIFEST.md`, and paste the `ERG-002` section of the generated prompt. If
+   the review surface accepts only 10 attachments, use the generated batch guidance instead of
+   dropping files silently.
 9. After a response arrives, run `make enterprise-dual-response-inbox`, open
    `var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`, save
    each raw response in the matching ignored placeholder under
