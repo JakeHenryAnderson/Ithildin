@@ -73,6 +73,9 @@ REQUIRED_DOC_PHRASES = [
     "Mission Control display/import planning remains design-only",
     "No row in this ladder approves runtime behavior",
     "Do not manually promote a lane",
+    "make enterprise-review-send-receipt-template",
+    "make enterprise-dual-response-inbox",
+    "var/review-runs/enterprise-dual-response-inbox/",
     "make enterprise-dependency-ladder",
 ]
 

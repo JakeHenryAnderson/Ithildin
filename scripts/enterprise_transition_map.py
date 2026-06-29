@@ -91,6 +91,8 @@ REQUIRED_DOC_PHRASES = [
     "Architecture continuation states are not runtime approval states.",
     "No transition in this map approves new governed tool powers.",
     "Do not manually promote a lane",
+    "make enterprise-response-paste-preflight",
+    "var/review-runs/enterprise-dual-response-inbox/",
     "make enterprise-transition-map",
 ]
 

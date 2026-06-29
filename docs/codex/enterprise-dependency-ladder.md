@@ -72,12 +72,19 @@ This ladder does not approve:
 
 ## Recommended Operator Sequence
 
-1. Send `ERG-003` with the static sandbox/VM preflight external-review packet.
-2. Send `ERG-002` with the Mission Control display/import planning packet.
-3. Keep `ERG-004` blocked until the `ERG-003` response path is favorable and recorded.
-4. Keep Mission Control runtime behavior blocked until the `ERG-002` response path is favorable and
+1. Refresh the send set with `make enterprise-dual-review-outbox`,
+   `make enterprise-review-send-manifest`, `make enterprise-review-submission-prompt`,
+   `make enterprise-review-send-receipt-template`, `make enterprise-dual-response-inbox`, and
+   `make enterprise-review-handoff-drill`.
+2. Send `ERG-003` with the static sandbox/VM preflight external-review packet.
+3. Send `ERG-002` with the Mission Control display/import planning packet.
+4. After responses arrive, paste them under
+   `var/review-runs/enterprise-dual-response-inbox/` and run the response paste preflight before
+   any lane-specific normalizer, dry-run, closure gate, or decision record.
+5. Keep `ERG-004` blocked until the `ERG-003` response path is favorable and recorded.
+6. Keep Mission Control runtime behavior blocked until the `ERG-002` response path is favorable and
    a separate Mission Control-side design-only decision exists.
-5. Keep trusted-host promotion, SIEM adapters, compliance automation, production identity/storage,
+7. Keep trusted-host promotion, SIEM adapters, compliance automation, production identity/storage,
    and public positioning on their own disposition tracks.
 
 ## Validation
