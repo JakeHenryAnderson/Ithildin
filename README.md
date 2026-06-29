@@ -536,6 +536,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-handoff-consistency-check` - validate the current `ERG-003`/`ERG-002`
   enterprise handoff docs all point to the dual-response inbox, receipt template, and paste
   preflight flow without recording review or closing lanes.
+- `make enterprise-review-send-preflight` - run the final operator pre-send check across the
+  current `ERG-003`/`ERG-002` send artifacts, response landing pad, handoff drill, response state,
+  and consistency gate without recording review or closing lanes.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -1258,6 +1261,11 @@ The enterprise handoff consistency gate is
 checked with `make enterprise-handoff-consistency-check`; it keeps the current `ERG-003` and
 `ERG-002` send/receive docs aligned to the dual-response inbox, receipt template, and paste
 preflight flow without recording review, normalizing responses, or closing either lane.
+The enterprise review send preflight is
+[docs/codex/enterprise-review-send-preflight.md](docs/codex/enterprise-review-send-preflight.md),
+checked with `make enterprise-review-send-preflight`; it gives the operator one final pre-send
+status across the current send artifacts, response landing pad, handoff drill, response state, and
+handoff consistency gate without sending packets, recording review, or closing either lane.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

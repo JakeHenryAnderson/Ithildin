@@ -294,6 +294,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-response-intake-quickstart.md",
     "docs/codex/enterprise-response-paste-preflight.md",
     "docs/codex/enterprise-handoff-consistency.md",
+    "docs/codex/enterprise-review-send-preflight.md",
     "docs/codex/enterprise-sandbox-control-plane-readiness.md",
     "docs/codex/post-rc-decision-gate.md",
     "docs/codex/post-rc-decision-record-template.md",

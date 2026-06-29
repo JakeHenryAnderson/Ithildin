@@ -280,6 +280,7 @@ externally closed.
 - [Enterprise Response Intake Quickstart](enterprise-response-intake-quickstart.md)
 - [Enterprise Response Paste Preflight](enterprise-response-paste-preflight.md)
 - [Enterprise Handoff Consistency](enterprise-handoff-consistency.md)
+- [Enterprise Review Send Preflight](enterprise-review-send-preflight.md)
 - [Enterprise Sandbox Control-Plane Readiness](enterprise-sandbox-control-plane-readiness.md)
 - [Post-RC Decision Gate](post-rc-decision-gate.md)
 - [Post-RC Decision Record Template](post-rc-decision-record-template.md)

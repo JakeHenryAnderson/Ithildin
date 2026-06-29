@@ -75,6 +75,7 @@ from scripts import (
     enterprise_review_handoff_drill,
     enterprise_review_send_checklist,
     enterprise_review_send_manifest,
+    enterprise_review_send_preflight,
     enterprise_review_send_readiness,
     enterprise_review_send_receipt_template,
     enterprise_review_submission_prompt,
@@ -3992,6 +3993,101 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-handoff-consistency-check" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_send_preflight_is_wired() -> None:
+    report = enterprise_review_send_preflight.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-preflight.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["current_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["expected_action"] == "send_erg_003_and_erg_002"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["component_validity"] == {
+        "operator_next_action": True,
+        "dual_review_outbox": True,
+        "send_manifest": True,
+        "submission_prompt": True,
+        "send_receipt_template": True,
+        "dual_response_inbox": True,
+        "dual_response_readiness": True,
+        "response_status_board": True,
+        "handoff_drill": True,
+        "handoff_consistency": True,
+    }
+    assert report["artifact_hashes_match_files"] is True
+    for output_key in [
+        "dual_review_outbox",
+        "send_manifest",
+        "submission_prompt",
+        "send_receipt_template",
+        "dual_response_inbox",
+        "handoff_drill",
+    ]:
+        assert report["component_outputs"][output_key]
+    for key in [
+        "records_external_review",
+        "normalizes_responses",
+        "writes_response_files",
+        "closes_erg_003",
+        "closes_erg_002",
+        "runtime_changes_allowed",
+        "mission_control_runtime_allowed",
+        "live_vm_inspection_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "siem_adapter_allowed",
+        "compliance_automation_allowed",
+        "public_security_product_positioning_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+    for phrase in [
+        "Status: checked final operator preflight for the current enterprise review send.",
+        "make enterprise-review-send-preflight",
+        "make enterprise-review-send-checklist",
+        "make enterprise-review-submission-prompt",
+        "make enterprise-review-send-receipt-template",
+        "make enterprise-dual-response-inbox",
+        "make enterprise-handoff-consistency-check",
+        "For speed, the preflight does not recursively rebuild every component.",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "does not record external review",
+        "does not normalize responses",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    assert "enterprise-review-send-preflight:" in makefile
+    assert (
+        "enterprise-review-send-preflight" in release_check_body
+        or "release-check: enterprise-review-send-preflight" in makefile
+    )
+    assert "$(MAKE) enterprise-review-send-preflight" in review_candidate_body
+    assert "make enterprise-review-send-preflight" in readme
+    assert "docs/codex/enterprise-review-send-preflight.md" in readme
+    assert "docs/codex/enterprise-review-send-preflight.md" in docs_site
+    assert "docs/codex/enterprise-review-send-preflight.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Preflight" in review_index
+    assert "enterprise-review-send-preflight" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-preflight" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
