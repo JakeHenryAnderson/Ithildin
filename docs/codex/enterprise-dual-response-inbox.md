@@ -19,6 +19,8 @@ verifies that every enterprise response lane has a supported normalizer area and
 For a general response landing pad covering all enterprise lanes, use `make enterprise-response-inbox`.
 For the compact `ERG-003` and `ERG-002` receive-and-apply sequence after a real response arrives,
 use `make enterprise-response-intake-quickstart`.
+Use `make enterprise-response-waiting-room` to check whether the generated raw-response files are
+still placeholders or appear ready for paste preflight.
 
 The generated inbox lives under
 `var/review-runs/enterprise-dual-response-inbox/` and creates raw-response placeholders for

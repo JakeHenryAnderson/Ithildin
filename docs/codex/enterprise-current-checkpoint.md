@@ -41,6 +41,7 @@ make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
 make enterprise-review-handoff-drill
 ```
 
@@ -49,6 +50,7 @@ send set, paste the raw responses under the ignored dual-response inbox at
 `var/review-runs/enterprise-dual-response-inbox/`, then run:
 
 ```sh
+make enterprise-response-waiting-room
 make enterprise-response-paste-preflight
 make enterprise-response-inbox
 make enterprise-response-status-board

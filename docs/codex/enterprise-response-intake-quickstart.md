@@ -33,6 +33,7 @@ Regenerate the current response inbox and status evidence:
 ```sh
 make enterprise-dual-response-inbox
 make enterprise-dual-response-readiness
+make enterprise-response-waiting-room
 make enterprise-response-status-board
 make enterprise-response-command-matrix
 make enterprise-response-application-protocol

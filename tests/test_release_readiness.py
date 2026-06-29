@@ -72,6 +72,7 @@ from scripts import (
     enterprise_response_normalization_coverage,
     enterprise_response_paste_preflight,
     enterprise_response_status_board,
+    enterprise_response_waiting_room,
     enterprise_review_handoff_drill,
     enterprise_review_send_checklist,
     enterprise_review_send_manifest,
@@ -3936,6 +3937,122 @@ def test_enterprise_dual_response_readiness_is_wired() -> None:
     assert "enterprise-dual-response-readiness" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
+
+
+def test_enterprise_response_waiting_room_is_wired() -> None:
+    report = enterprise_response_waiting_room.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-waiting-room.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    dual_inbox = Path("docs/codex/enterprise-dual-response-inbox.md").read_text(
+        encoding="utf-8"
+    )
+    paste_preflight = Path("docs/codex/enterprise-response-paste-preflight.md").read_text(
+        encoding="utf-8"
+    )
+    quickstart = Path("docs/codex/enterprise-response-intake-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["placeholder_count"] == 2
+    assert report["candidate_response_count"] == 0
+    assert report["invalid_count"] == 0
+    assert report["next_action"] == "wait_for_external_response"
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["records_external_review"] is False
+    assert report["mutates_findings"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for row in report["rows"]:
+        assert row["content_excerpt_included"] is False
+        assert row["normalizes_response"] is False
+        assert row["writes_response_files"] is False
+        assert row["records_external_review"] is False
+        assert row["closes_external_review"] is False
+    for phrase in [
+        "Status: read-only raw-response waiting-room summary for `ERG-003` and `ERG-002`.",
+        "Current governed tool count: `24`.",
+        "make enterprise-response-waiting-room",
+        "placeholder",
+        "candidate_response",
+        "make enterprise-response-paste-preflight",
+        "does not normalize responses",
+        "does not write response files",
+        "does not record external review",
+        "does not close either lane",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-waiting-room:" in makefile
+    assert "enterprise-response-waiting-room" in release_check_body
+    assert "$(MAKE) enterprise-response-waiting-room" in review_candidate_body
+    assert "make enterprise-response-waiting-room" in readme
+    assert "docs/codex/enterprise-response-waiting-room.md" in readme
+    assert "make enterprise-response-waiting-room" in dual_inbox
+    assert "make enterprise-response-waiting-room" in paste_preflight
+    assert "make enterprise-response-waiting-room" in quickstart
+    assert "make enterprise-response-waiting-room" in current_checkpoint
+    assert "docs/codex/enterprise-response-waiting-room.md" in docs_site
+    assert "docs/codex/enterprise-response-waiting-room.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Response Waiting Room" in review_index
+    assert "enterprise-response-waiting-room" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-waiting-room" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+    raw_path = Path(
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
+    )
+    original = raw_path.read_bytes() if raw_path.exists() else None
+    try:
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_path.write_text(
+            "\n".join(
+                [
+                    "External source review for ERG-003.",
+                    "No implementation findings were found.",
+                    "The lane can close for the local-preview static preflight boundary.",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        populated = enterprise_response_waiting_room.build_report(Path.cwd())
+        assert populated["valid"] is True
+        assert populated["candidate_response_count"] == 1
+        assert populated["placeholder_count"] == 1
+        assert populated["next_action"] == "run_enterprise_response_paste_preflight"
+        erg003 = next(row for row in populated["rows"] if row["gap"] == "ERG-003")
+        assert erg003["state"] == "candidate_response"
+        assert "enterprise_response_paste_preflight.py" in erg003["recommended_next"]
+        assert "No implementation findings" not in enterprise_response_waiting_room.render_report(
+            populated
+        )
+    finally:
+        if original is None:
+            raw_path.unlink(missing_ok=True)
+        else:
+            raw_path.write_bytes(original)
 
 
 def test_enterprise_response_intake_quickstart_is_wired() -> None:

@@ -10,6 +10,9 @@ Run the deterministic docs/wiring check:
 make enterprise-response-paste-preflight
 ```
 
+Before running a lane-specific paste preflight, `make enterprise-response-waiting-room` can confirm
+whether the ignored raw-response files are still placeholders or appear populated.
+
 This preflight does not normalize responses, does not write response files, does not mutate
 findings, does not record external review, does not close either lane, and does not approve runtime behavior.
 It is a small guard between "paste raw reviewer text into the ignored inbox" and "run the existing

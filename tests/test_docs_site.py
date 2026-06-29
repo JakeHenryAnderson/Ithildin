@@ -143,6 +143,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/enterprise-response-command-matrix.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-response-application-protocol.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-response-intake-quickstart.md" in DEFAULT_DOCS
+    assert "docs/codex/enterprise-response-waiting-room.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-response-paste-preflight.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-north-star-roadmap.md" in DEFAULT_DOCS
     assert "docs/codex/enterprise-operator-next-action.md" in DEFAULT_DOCS

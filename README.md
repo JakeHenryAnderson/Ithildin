@@ -514,6 +514,9 @@ checked with `make control-mapping-readiness`.
   or closing either lane.
 - `make enterprise-dual-response-readiness` - summarize whether normalized responses are present for
   the current dual enterprise review handoff without recording review or closing either lane.
+- `make enterprise-response-waiting-room` - summarize whether ignored `ERG-003`/`ERG-002`
+  raw-response files are still placeholders or look ready for paste preflight, without reading
+  response contents into output.
 - `make enterprise-response-status-board` - summarize normalized-response presence across all
   enterprise review lanes and fail closed until any present response is handled by lane intake.
 - `make enterprise-response-status-board-snapshot` - write an ignored, hashed, read-only snapshot of
@@ -1248,6 +1251,11 @@ The dual-response readiness summary is
 [docs/codex/enterprise-dual-response-readiness.md](docs/codex/enterprise-dual-response-readiness.md),
 checked with `make enterprise-dual-response-readiness`; it reports whether normalized review
 responses are present and which lane-specific dry-run command should run next.
+The enterprise response waiting room is
+[docs/codex/enterprise-response-waiting-room.md](docs/codex/enterprise-response-waiting-room.md),
+checked with `make enterprise-response-waiting-room`; it reports whether ignored `ERG-003` and
+`ERG-002` raw-response files are still placeholders or appear ready for paste preflight without
+normalizing responses, recording review, or closing either lane.
 The enterprise response status board is
 [docs/codex/enterprise-response-status-board.md](docs/codex/enterprise-response-status-board.md),
 checked with `make enterprise-response-status-board`; it aggregates normalized-response state for
