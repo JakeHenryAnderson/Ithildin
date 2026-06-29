@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, TypedDict
@@ -44,6 +45,7 @@ BOUNDARY_FLAGS = {
 class ArtifactSpec(TypedDict):
     output_dir: str
     hash_file: str
+    payload_file: str
     required_files: list[str]
 
 
@@ -51,6 +53,7 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
     "dual_review_outbox": {
         "output_dir": "var/review-packets/v3/enterprise-dual-review-outbox",
         "hash_file": "enterprise-dual-review-outbox-artifact-hashes.json",
+        "payload_file": "enterprise-dual-review-outbox.json",
         "required_files": [
             "ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md",
             "enterprise-dual-review-outbox.json",
@@ -61,6 +64,7 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
     "send_manifest": {
         "output_dir": "var/review-packets/v3/enterprise-review-send-manifest",
         "hash_file": "enterprise-review-send-manifest-artifact-hashes.json",
+        "payload_file": "enterprise-review-send-manifest.json",
         "required_files": [
             "ENTERPRISE_REVIEW_SEND_MANIFEST.md",
             "enterprise-review-send-manifest.json",
@@ -69,6 +73,7 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
     "submission_prompt": {
         "output_dir": "var/review-packets/v3/enterprise-review-submission-prompt",
         "hash_file": "enterprise-review-submission-prompt-artifact-hashes.json",
+        "payload_file": "enterprise-review-submission-prompt.json",
         "required_files": [
             "ENTERPRISE_REVIEW_SUBMISSION_PROMPT.md",
             "enterprise-review-submission-prompt.json",
@@ -77,6 +82,7 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
     "send_receipt_template": {
         "output_dir": "var/review-packets/v3/enterprise-review-send-receipt-template",
         "hash_file": "enterprise-review-send-receipt-template-artifact-hashes.json",
+        "payload_file": "enterprise-review-send-receipt-template.json",
         "required_files": [
             "ENTERPRISE_REVIEW_SEND_RECEIPT_TEMPLATE.md",
             "enterprise-review-send-receipt-template.json",
@@ -85,6 +91,7 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
     "dual_response_inbox": {
         "output_dir": "var/review-runs/enterprise-dual-response-inbox",
         "hash_file": "enterprise-dual-response-inbox-artifact-hashes.json",
+        "payload_file": "enterprise-dual-response-inbox.json",
         "required_files": [
             "ENTERPRISE_DUAL_RESPONSE_INBOX.md",
             "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
@@ -96,6 +103,7 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
     "handoff_drill": {
         "output_dir": "var/review-packets/v3/enterprise-review-handoff-drill",
         "hash_file": "enterprise-review-handoff-drill-artifact-hashes.json",
+        "payload_file": "enterprise-review-handoff-drill.json",
         "required_files": [
             "ENTERPRISE_REVIEW_HANDOFF_DRILL.md",
             "enterprise-review-handoff-drill.json",
@@ -119,6 +127,8 @@ def main() -> int:
 
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
+    current_commit = _git(repo_root, ["rev-parse", "HEAD"])
+    current_dirty = bool(_git(repo_root, ["status", "--short"]))
 
     operator_next = enterprise_operator_next_action.build_report(repo_root)
     response_status = enterprise_response_status_board.build_report(repo_root)
@@ -151,7 +161,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if dual_response.get("closure_ready_count") != 0:
         failures.append("dual-response readiness reports closure-ready evidence")
 
-    artifact_reports = _artifact_reports(repo_root)
+    artifact_reports = _artifact_reports(
+        repo_root,
+        current_commit=current_commit,
+        current_dirty=current_dirty,
+    )
     for name, artifact_report in artifact_reports.items():
         if not artifact_report["valid"]:
             failures.append(f"{name} generated artifacts are not ready")
@@ -216,6 +230,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "selected_capability": "not selected",
         "current_send_set": CURRENT_SEND_SET,
         "expected_action": EXPECTED_ACTION,
+        "current_commit": current_commit,
+        "current_dirty": current_dirty,
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
         "component_validity": {
@@ -225,6 +241,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "component_outputs": component_outputs,
         "artifact_hashes_match_files": all(
             report["artifact_hashes_match_files"] for report in artifact_reports.values()
+        ),
+        "artifact_commits_match_current": all(
+            report["commit_matches_current"] for report in artifact_reports.values()
+        ),
+        "artifact_payloads_clean": all(
+            report["payload_dirty"] is False for report in artifact_reports.values()
         ),
         **BOUNDARY_FLAGS,
     }
@@ -239,6 +261,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"selected_capability: {report['selected_capability']}",
         "current_send_set: " + ", ".join(report["current_send_set"]),
         f"expected_action: {report['expected_action']}",
+        f"current_commit: {report['current_commit']}",
+        f"current_dirty: {str(report['current_dirty']).lower()}",
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         "components:",
@@ -262,17 +286,36 @@ def _read(path: Path) -> str:
         return ""
 
 
-def _artifact_reports(repo_root: Path) -> dict[str, dict[str, Any]]:
+def _artifact_reports(
+    repo_root: Path,
+    *,
+    current_commit: str,
+    current_dirty: bool,
+) -> dict[str, dict[str, Any]]:
     return {
-        name: _artifact_report(repo_root, name, spec)
+        name: _artifact_report(
+            repo_root,
+            name,
+            spec,
+            current_commit=current_commit,
+            current_dirty=current_dirty,
+        )
         for name, spec in EXPECTED_ARTIFACTS.items()
     }
 
 
-def _artifact_report(repo_root: Path, name: str, spec: ArtifactSpec) -> dict[str, Any]:
+def _artifact_report(
+    repo_root: Path,
+    name: str,
+    spec: ArtifactSpec,
+    *,
+    current_commit: str,
+    current_dirty: bool,
+) -> dict[str, Any]:
     failures: list[str] = []
     output_dir = Path(spec["output_dir"])
     hash_file = spec["hash_file"]
+    payload_file = spec["payload_file"]
     required_files = spec["required_files"]
     absolute_output_dir = repo_root / output_dir
 
@@ -310,14 +353,43 @@ def _artifact_report(repo_root: Path, name: str, spec: ArtifactSpec) -> dict[str
     if not artifact_hashes_match_files:
         failures.append("artifact hashes do not match generated files")
 
+    payload: dict[str, Any] = {}
+    payload_path = absolute_output_dir / payload_file
+    if not payload_path.exists():
+        failures.append(f"missing payload file: {output_dir / payload_file}")
+    else:
+        try:
+            payload = json.loads(payload_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            failures.append(f"payload file is invalid JSON: {output_dir / payload_file}")
+    payload_commit = payload.get("commit")
+    payload_dirty = payload.get("dirty")
+    commit_matches_current = payload_commit == current_commit
+    freshness_enforced = not current_dirty
+    if freshness_enforced:
+        if not commit_matches_current:
+            failures.append(
+                f"payload commit is stale for {output_dir / payload_file}: "
+                f"{payload_commit!r} != {current_commit!r}"
+            )
+        if payload_dirty is not False:
+            failures.append(
+                f"payload was generated from a dirty tree for {output_dir / payload_file}"
+            )
+
     return {
         "name": name,
         "valid": not failures,
         "failures": failures,
         "output_dir": output_dir.as_posix(),
         "hash_file": (output_dir / hash_file).as_posix(),
+        "payload_file": (output_dir / payload_file).as_posix(),
         "required_files": required_files,
         "artifact_hashes_match_files": artifact_hashes_match_files,
+        "payload_commit": payload_commit,
+        "payload_dirty": payload_dirty,
+        "commit_matches_current": commit_matches_current,
+        "freshness_enforced": freshness_enforced,
     }
 
 
@@ -348,6 +420,10 @@ def _sha256(data: bytes) -> str:
     import hashlib
 
     return hashlib.sha256(data).hexdigest()
+
+
+def _git(repo_root: Path, args: list[str]) -> str:
+    return subprocess.check_output(["git", *args], cwd=repo_root, text=True).strip()
 
 
 if __name__ == "__main__":

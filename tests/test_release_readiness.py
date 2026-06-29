@@ -4017,6 +4017,8 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["current_send_set"] == ["ERG-003", "ERG-002"]
     assert report["expected_action"] == "send_erg_003_and_erg_002"
+    assert report["current_commit"]
+    assert isinstance(report["current_dirty"], bool)
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["component_validity"] == {
@@ -4032,6 +4034,9 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "handoff_consistency": True,
     }
     assert report["artifact_hashes_match_files"] is True
+    if report["current_dirty"] is False:
+        assert report["artifact_commits_match_current"] is True
+        assert report["artifact_payloads_clean"] is True
     for output_key in [
         "dual_review_outbox",
         "send_manifest",
@@ -4067,6 +4072,8 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "make enterprise-dual-response-inbox",
         "make enterprise-handoff-consistency-check",
         "For speed, the preflight does not recursively rebuild every component.",
+        "When the worktree is clean, the preflight also enforces",
+        "When the worktree is dirty during development, that freshness check",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
         "does not record external review",

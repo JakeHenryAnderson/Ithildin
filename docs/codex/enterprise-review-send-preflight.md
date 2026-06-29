@@ -35,6 +35,11 @@ checks the current operator state, response state, handoff consistency, required
 generated files, and artifact hashes. If generated artifacts are missing or
 stale, rerun the component command sequence below.
 
+When the worktree is clean, the preflight also enforces that generated artifact
+payloads were produced for the current commit and were not generated from a
+dirty tree. When the worktree is dirty during development, that freshness check
+is deferred until the next clean run.
+
 It expects:
 
 - current send set: `ERG-003`, then `ERG-002`;
