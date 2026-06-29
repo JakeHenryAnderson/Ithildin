@@ -33,6 +33,11 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
         *RAW_RESPONSE_PATHS,
         *CURRENT_FLOW_COMMANDS,
     ],
+    "docs/codex/enterprise-review-send-quickstart.md": [
+        DUAL_INBOX_ROOT,
+        *RAW_RESPONSE_PATHS,
+        *CURRENT_FLOW_COMMANDS,
+    ],
     "docs/codex/enterprise-review-submission-prompt.md": [
         DUAL_INBOX_ROOT,
         "ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",

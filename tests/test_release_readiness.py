@@ -4197,6 +4197,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
     ]
     for expected_doc in [
         "docs/codex/enterprise-review-send-checklist.md",
+        "docs/codex/enterprise-review-send-quickstart.md",
         "docs/codex/enterprise-review-submission-prompt.md",
         "docs/codex/enterprise-review-send-receipt-template.md",
         "docs/codex/enterprise-review-handoff-drill.md",

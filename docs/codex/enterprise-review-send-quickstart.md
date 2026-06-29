@@ -48,8 +48,20 @@ does not mutate findings, and does not close `ERG-003` or `ERG-002`.
 
 ## Response Intake
 
-When responses arrive, use the raw-response placeholders named by the generated quickstart, then
-run:
+When responses arrive, use the ignored dual-response inbox:
+
+```text
+var/review-runs/enterprise-dual-response-inbox
+```
+
+Paste the responses into the lane-local raw-response placeholders:
+
+```text
+var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md
+var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md
+```
+
+Then run:
 
 ```sh
 make enterprise-review-send-receipt-template
@@ -72,4 +84,3 @@ This quickstart does not approve:
 - compliance automation;
 - public/security-product positioning;
 - new governed tool powers.
-

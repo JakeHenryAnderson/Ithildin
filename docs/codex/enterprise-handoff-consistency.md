@@ -24,6 +24,7 @@ The required current-flow commands are:
 The check covers the operator-facing current handoff docs:
 
 - `docs/codex/enterprise-review-send-checklist.md`
+- `docs/codex/enterprise-review-send-quickstart.md`
 - `docs/codex/enterprise-review-submission-prompt.md`
 - `docs/codex/enterprise-review-send-receipt-template.md`
 - `docs/codex/enterprise-review-handoff-drill.md`
