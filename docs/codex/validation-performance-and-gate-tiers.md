@@ -67,6 +67,12 @@ or:
 uv run python scripts/validation_plan.py --include-release --run
 ```
 
+When Python test files under `tests/` are dirty, `smart-check` also runs those changed test files
+directly with `slow_packet` tests excluded as focused evidence. That keeps test-writing loops
+honest without jumping straight to the full Python suite or generated-packet tests. Use
+`make test-fast`, `make test`, or `make release-check` when a change needs broader confidence or
+checkpoint evidence.
+
 ### Validation Timing
 
 Run:

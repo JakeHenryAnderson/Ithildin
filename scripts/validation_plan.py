@@ -81,7 +81,7 @@ def main() -> int:
 def build_report(files: list[str], *, include_release: bool = False) -> dict[str, Any]:
     normalized = sorted({_normalize_path(path) for path in files if path.strip()})
     categories = sorted({_classify(path) for path in normalized})
-    commands = _commands_for_categories(categories)
+    commands = _commands_for_categories(categories, normalized)
     slow_commands = _slow_commands_for_categories(categories)
     recommended_commands = commands + slow_commands if include_release else commands
     return {
@@ -196,7 +196,7 @@ def _classify(path: str) -> str:
     return "other"
 
 
-def _commands_for_categories(categories: list[str]) -> list[str]:
+def _commands_for_categories(categories: list[str], files: list[str]) -> list[str]:
     if not categories:
         return ["make quick-check"]
 
@@ -220,6 +220,7 @@ def _commands_for_categories(categories: list[str]) -> list[str]:
         )
     if "runtime" in categories:
         commands.append("make runtime-check")
+    commands.extend(_changed_test_commands(files))
     return _dedupe(commands)
 
 
@@ -253,6 +254,11 @@ def _notes_for_categories(categories: list[str]) -> list[str]:
         notes.append(
             "Generated packet changes should be verified with review-candidate before handoff."
         )
+    if "tests" in categories:
+        notes.append(
+            "Changed Python test files are run directly as focused evidence; broaden to "
+            "test-fast or release-check before checkpoint claims when risk warrants it."
+        )
     if categories == ["docs"]:
         notes.append(
             "Pure docs changes can use docs-check; mixed docs/script/config changes still need "
@@ -277,6 +283,20 @@ def _dedupe(commands: list[str]) -> list[str]:
         seen.add(command)
         deduped.append(command)
     return deduped
+
+
+def _changed_test_commands(files: list[str]) -> list[str]:
+    test_files = [
+        path
+        for path in files
+        if path.startswith("tests/")
+        and path.endswith(".py")
+        and "::" not in path
+    ]
+    if not test_files:
+        return []
+    quoted_paths = " ".join(shlex.quote(path) for path in test_files)
+    return [f'uv run pytest {quoted_paths} -m "not slow_packet" -q']
 
 
 def _normalize_path(path: str) -> str:

@@ -490,6 +490,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-slice" in guide
     assert "--fail-on-budget" in guide
     assert "budget status" in guide
+    assert "changed test files" in guide
     assert "make docs-check" in validation_timing.PROFILES["docs"]
     assert "make smart-check" in validation_timing.PROFILES["fast"]
     assert validation_timing.PROFILE_BUDGET_SECONDS["fast"] > 0
@@ -580,6 +581,7 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     runtime_report = validation_plan.build_report(
         ["apps/api/src/ithildin_api/tools/example.py"]
     )
+    tests_report = validation_plan.build_report(["tests/test_example.py"])
     manifest_report = validation_plan.build_report(["tool-manifests/example.yaml"])
 
     assert pure_docs_report["categories"] == ["docs"]
@@ -598,6 +600,13 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     assert "make release-check" not in runtime_report["recommended_commands"]
     assert "make release-check" in runtime_report["deferred_handoff_commands"]
     assert runtime_report["full_release_gate_required"] is True
+    assert tests_report["categories"] == ["tests"]
+    assert "make readiness-check" in tests_report["recommended_commands"]
+    assert 'uv run pytest tests/test_example.py -m "not slow_packet" -q' in tests_report[
+        "recommended_commands"
+    ]
+    assert "make release-check" not in tests_report["recommended_commands"]
+    assert "make release-check" not in tests_report["deferred_handoff_commands"]
     assert manifest_report["categories"] == ["manifest"]
     assert "make manifest-lock-check" in manifest_report["recommended_commands"]
     assert "make release-check" not in manifest_report["recommended_commands"]
