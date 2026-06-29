@@ -750,6 +750,22 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert operator_trial_record_report["runtime_changes_allowed"] is False
     assert operator_trial_record_report["new_power_classes_allowed"] is False
     assert operator_trial_record_report["sandbox_orchestration_allowed"] is False
+    assert (
+        operator_trial_record_report["checks"]["validation_decision"]["valid"]
+        is True
+    )
+    assert operator_trial_record_report["validation_decision"][
+        "recommended_mode"
+    ] in {
+        "clean_tree_quick_gate",
+        "development_gate_only",
+    }
+    assert operator_trial_record_report["validation_decision"][
+        "next_development_commands"
+    ]
+    assert operator_trial_record_report["validation_decision"][
+        "deferred_handoff_commands"
+    ] == []
     for phrase in [
         "Ithildin v1.0 RC is a local-first governed MCP workbench",
         "Phase 1: Finish The Read-Only Metadata Surface",
@@ -1123,6 +1139,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "Ithildin v1.0 Operator Trial Record" in trial_record
     assert "make v1-operator-trial-record" in trial_record
     assert "What The Record Does Not Do" in trial_record
+    assert "validation decision summary" in trial_record
     assert "Ithildin v1.0 RC Feature Freeze" in feature_freeze
     assert "capability expansion remains blocked" in feature_freeze
     assert "Ithildin Enterprise Readiness Runway" in runway

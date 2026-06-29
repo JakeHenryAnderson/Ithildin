@@ -24,6 +24,7 @@ from scripts import (
     v1_progress_assessment,
     v1_rc_readiness_check,
     v1_rc_status_check,
+    validation_decision,
     workbench_readiness,
 )
 
@@ -50,6 +51,7 @@ REQUIRED_DOC_PHRASES = [
     "var/review-packets/v1.0/operator-trial/",
     "What The Record Does Not Do",
     "packet redaction scan reports `findings: 0`",
+    "validation decision summary",
     "local-preview handoff evidence only",
 ]
 BLOCKED_PHRASES = [
@@ -96,6 +98,7 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
     readiness = v1_rc_readiness_check.build_report(repo_root)
     workbench = workbench_readiness.build_report(repo_root)
     demo_evidence = demo_evidence_readiness.build_report(repo_root)
+    validation = validation_decision.build_report([])
     artifact_reports = [_artifact_report(repo_root, artifact) for artifact in REQUIRED_ARTIFACTS]
     packet_scan = _packet_scan(repo_root)
     commit = _git(repo_root, ["rev-parse", "HEAD"])
@@ -107,6 +110,7 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         *_prefixed_failures("v1-rc-readiness", readiness),
         *_prefixed_failures("workbench-readiness", workbench),
         *_prefixed_failures("demo-evidence-readiness", demo_evidence),
+        *_prefixed_failures("validation-decision", validation),
     ]
     if packet_scan["findings_count"] != 0:
         failures.append("packet redaction scan has findings")
@@ -128,7 +132,14 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
             "v1_rc_readiness": _summary(readiness),
             "workbench_readiness": _summary(workbench),
             "demo_evidence_readiness": _summary(demo_evidence),
+            "validation_decision": _summary(validation),
             "packet_redaction_scan": packet_scan,
+        },
+        "validation_decision": {
+            "recommended_mode": validation["recommended_mode"],
+            "next_development_commands": validation["next_development_commands"],
+            "deferred_handoff_commands": validation["deferred_handoff_commands"],
+            "release_or_handoff_required": validation["release_or_handoff_required"],
         },
         "artifacts": artifact_reports,
         "recommended_next_commands": RECOMMENDED_COMMANDS,
@@ -206,6 +217,24 @@ def render_record_markdown(report: dict[str, Any]) -> str:
     for artifact in report["artifacts"]:
         lines.append(
             "| `{path}` | `{exists}` | `{bytes}` | `{sha256}` |".format(**artifact)
+        )
+    validation = report["validation_decision"]
+    lines.extend(
+        [
+            "",
+            "## Validation Decision",
+            "",
+            f"- recommended_mode: `{validation['recommended_mode']}`",
+            "- release_or_handoff_required: "
+            f"`{str(validation['release_or_handoff_required']).lower()}`",
+            "- next_development_commands:",
+        ]
+    )
+    lines.extend(f"  - `{command}`" for command in validation["next_development_commands"])
+    if validation["deferred_handoff_commands"]:
+        lines.append("- deferred_handoff_commands:")
+        lines.extend(
+            f"  - `{command}`" for command in validation["deferred_handoff_commands"]
         )
     lines.extend(["", "## Recommended Next Commands", ""])
     lines.extend(f"{idx}. `{command}`" for idx, command in enumerate(RECOMMENDED_COMMANDS, 1))
