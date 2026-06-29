@@ -258,6 +258,7 @@ REVIEW_DOCS = [
     "docs/codex/v1.0-operator-quickstart.md",
     "docs/codex/v1.0-operator-trial-checklist.md",
     "docs/codex/v1.0-operator-trial-record.md",
+    "docs/codex/v1.0-operator-trial-observed.md",
     "docs/codex/v1.0-workbench-evidence-closure.md",
     "docs/codex/v1.0-assurance-closure.md",
     "docs/codex/v1.0-rc-readiness-gate.md",

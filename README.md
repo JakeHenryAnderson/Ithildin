@@ -441,6 +441,10 @@ checked with `make control-mapping-readiness`.
   evidence record under `var/review-packets/v1.0/operator-trial/`.
 - `make v1-operator-trial-record-check` - validate the generated-record workflow, packet wiring,
   docs inclusion, no-new-powers posture, and blocked claims.
+- `make v1-operator-trial-observed` - generate optional observed operator-trial evidence from an
+  existing `DEMO_FLOW_RESULT.md`.
+- `make v1-operator-trial-observed-check` - validate optional observed demo-flow evidence without
+  starting services or calling governed tools.
 - `make v1-workbench-evidence-check` - validate the v1.0 workbench/evidence closure map across
   Agent Run, approval, audit, signed evidence, demo, and packet readiness.
 - `make v1-assurance-closure-check` - validate the v1.0 local-preview assurance ledger across

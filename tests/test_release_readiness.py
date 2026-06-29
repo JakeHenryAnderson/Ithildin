@@ -351,6 +351,7 @@ from scripts import (
     v09_design_review_packet,
     v1_assurance_closure_check,
     v1_operator_quickstart_check,
+    v1_operator_trial_observed,
     v1_operator_trial_record,
     v1_progress_assessment,
     v1_rc_external_review_prompt_check,
@@ -848,6 +849,13 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     operator_trial_record_report["valid"] = v1_operator_trial_record._record_valid(
         operator_trial_record_report
     )
+    observed_trial_report = v1_operator_trial_observed.build_observed_record(
+        Path.cwd(), tmp_path / "operator-trial-observed"
+    )
+    observed_trial_report["failures"].extend(
+        v1_operator_trial_observed._wiring_failures(Path.cwd())
+    )
+    observed_trial_report["valid"] = not observed_trial_report["failures"]
     roadmap = Path("docs/codex/v1.0-rc-roadmap.md").read_text(encoding="utf-8")
     status = Path("docs/codex/v1.0-rc-status.md").read_text(encoding="utf-8")
     feature_freeze = Path("docs/codex/v1.0-rc-feature-freeze.md").read_text(
@@ -978,6 +986,14 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert operator_trial_record_report["checks"]["enterprise_next_action"]["valid"] is True
     assert operator_trial_record_report["checks"]["enterprise_waiting_room"]["valid"] is True
     assert operator_trial_record_report["checks"]["live_demo_environment"]["valid"] is True
+    assert observed_trial_report["valid"] is True
+    assert observed_trial_report["status"] in {"observed", "not_run"}
+    assert observed_trial_report["runtime_changes_allowed"] is False
+    assert observed_trial_report["new_power_classes_allowed"] is False
+    assert observed_trial_report["sandbox_orchestration_allowed"] is False
+    if observed_trial_report["result_present"]:
+        assert observed_trial_report["observed"]["patch_apply_status"] == "completed"
+        assert observed_trial_report["observed"]["audit_verification_valid"] == "true"
     assert isinstance(
         operator_trial_record_report["live_demo_environment"]["compose_demo_ready"],
         bool,
@@ -1212,6 +1228,8 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "v1-operator-trial-checklist-check:" in makefile
     assert "v1-operator-trial-record:" in makefile
     assert "v1-operator-trial-record-check:" in makefile
+    assert "v1-operator-trial-observed:" in makefile
+    assert "v1-operator-trial-observed-check:" in makefile
     assert "v1-workbench-evidence-check:" in makefile
     assert "v1-assurance-closure-check:" in makefile
     assert "v1-rc-readiness:" in makefile
@@ -1226,11 +1244,13 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "v1-operator-quickstart-check" in release_check_body
     assert "v1-operator-trial-checklist-check" in release_check_body
     assert "v1-operator-trial-record-check" in release_check_body
+    assert "v1-operator-trial-observed-check" in release_check_body
     assert "v1-workbench-evidence-check" in release_check_body
     assert "v1-assurance-closure-check" in release_check_body
     assert "v1-rc-readiness" in release_check_body
     review_candidate_body = makefile.partition("review-candidate:")[2]
     assert "$(MAKE) v1-operator-trial-record" in review_candidate_body
+    assert "$(MAKE) v1-operator-trial-observed" in review_candidate_body
     assert "$(MAKE) v1-rc-packet" in review_candidate_body
     assert "make v1-rc-roadmap-check" in readme
     assert "make v1-rc-status-check" in readme
@@ -1243,6 +1263,8 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "make v1-operator-trial-checklist-check" in readme
     assert "make v1-operator-trial-record" in readme
     assert "make v1-operator-trial-record-check" in readme
+    assert "make v1-operator-trial-observed" in readme
+    assert "make v1-operator-trial-observed-check" in readme
     assert "enterprise next-action state" in readme
     assert "waiting-room" in readme
     assert "make v1-workbench-evidence-check" in readme
@@ -1259,6 +1281,7 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "docs/codex/v1.0-operator-quickstart.md" in docs_site
     assert "docs/codex/v1.0-operator-trial-checklist.md" in docs_site
     assert "docs/codex/v1.0-operator-trial-record.md" in docs_site
+    assert "docs/codex/v1.0-operator-trial-observed.md" in docs_site
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in docs_site
     assert "docs/codex/v1.0-assurance-closure.md" in docs_site
     assert "docs/codex/v1.0-rc-readiness-gate.md" in docs_site
@@ -1272,6 +1295,7 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "docs/codex/v1.0-operator-quickstart.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-operator-trial-checklist.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-operator-trial-record.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/v1.0-operator-trial-observed.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-workbench-evidence-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-assurance-closure.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/v1.0-rc-readiness-gate.md" in review_docs.REVIEW_DOCS
@@ -1285,6 +1309,7 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "Ithildin v1.0 Operator Quickstart" in review_index
     assert "Ithildin v1.0 Operator Trial Checklist" in review_index
     assert "Ithildin v1.0 Operator Trial Record" in review_index
+    assert "Ithildin v1.0 Observed Operator Trial Evidence" in review_index
     assert "Ithildin v1.0 Workbench And Evidence Closure" in review_index
     assert "Ithildin v1.0 Assurance Closure" in review_index
     assert "Ithildin v1.0 RC Readiness Gate" in review_index
@@ -1297,12 +1322,15 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
 
     packet = v1_rc_packet.build_packet(Path.cwd(), output_dir)
 
-    assert packet["artifact_count"] == 29
+    assert packet["artifact_count"] == 30
     index = output_dir.joinpath("00_V1_RC_PACKET_INDEX.md").read_text(encoding="utf-8")
     trial_checklist = output_dir.joinpath("02A_V1_OPERATOR_TRIAL_CHECKLIST.md").read_text(
         encoding="utf-8"
     )
     trial_record = output_dir.joinpath("02B_V1_OPERATOR_TRIAL_RECORD.md").read_text(
+        encoding="utf-8"
+    )
+    observed_trial = output_dir.joinpath("02C_V1_OPERATOR_TRIAL_OBSERVED.md").read_text(
         encoding="utf-8"
     )
     feature_freeze = output_dir.joinpath("05_V1_RC_FEATURE_FREEZE.md").read_text(
@@ -1368,28 +1396,29 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert not output_dir.joinpath("13_V1_RC_COMMANDS.md").exists()
     assert "3. `02A_V1_OPERATOR_TRIAL_CHECKLIST.md`" in index
     assert "4. `02B_V1_OPERATOR_TRIAL_RECORD.md`" in index
-    assert "7. `05_V1_RC_FEATURE_FREEZE.md`" in index
-    assert "8. `06_V1_RC_READINESS_GATE.md`" in index
-    assert "9. `07_ENTERPRISE_READINESS_RUNWAY.md`" in index
-    assert "10. `07A_ENTERPRISE_REVIEW_SEND_READINESS.md`" in index
-    assert "11. `07B_ENTERPRISE_DUAL_REVIEW_HANDOFF.md`" in index
-    assert "12. `07C_ENTERPRISE_RESPONSE_STATUS_BOARD.md`" in index
-    assert "13. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
-    assert "14. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
-    assert "15. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
-    assert "16. `10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md`" in index
-    assert "17. `10C_MISSION_CONTROL_IMPORTER_ACCEPTANCE_MATRIX.md`" in index
-    assert "18. `10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md`" in index
-    assert "19. `10E_MISSION_CONTROL_ENTERPRISE_STATUS_IMPORT_CONTRACT.md`" in index
-    assert "20. `10F_MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md`" in index
-    assert "21. `10G_MISSION_CONTROL_ENTERPRISE_STATUS_ACCEPTANCE_MATRIX.md`" in index
-    assert "22. `10H_MISSION_CONTROL_ENTERPRISE_STATUS_REFERENCE_VALIDATOR.md`" in index
-    assert "23. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
-    assert "24. `12_V1_RC_FINAL_HANDOFF.md`" in index
-    assert "25. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
-    assert "26. `14_V1_RC_ARTIFACTS.md`" in index
-    assert "27. `15_V1_RC_COMMANDS.md`" in index
-    assert "28. `v1-rc-artifact-hashes.json`" in index
+    assert "5. `02C_V1_OPERATOR_TRIAL_OBSERVED.md`" in index
+    assert "8. `05_V1_RC_FEATURE_FREEZE.md`" in index
+    assert "9. `06_V1_RC_READINESS_GATE.md`" in index
+    assert "10. `07_ENTERPRISE_READINESS_RUNWAY.md`" in index
+    assert "11. `07A_ENTERPRISE_REVIEW_SEND_READINESS.md`" in index
+    assert "12. `07B_ENTERPRISE_DUAL_REVIEW_HANDOFF.md`" in index
+    assert "13. `07C_ENTERPRISE_RESPONSE_STATUS_BOARD.md`" in index
+    assert "14. `08_MISSION_CONTROL_DISPLAY_PROPOSAL.md`" in index
+    assert "15. `09_MISSION_CONTROL_HANDOFF_SCHEMA.md`" in index
+    assert "16. `10_MISSION_CONTROL_NEGATIVE_FIXTURES.md`" in index
+    assert "17. `10B_MISSION_CONTROL_HANDOFF_FIXTURE_PACK.md`" in index
+    assert "18. `10C_MISSION_CONTROL_IMPORTER_ACCEPTANCE_MATRIX.md`" in index
+    assert "19. `10D_MISSION_CONTROL_HANDOFF_REFERENCE_VALIDATOR.md`" in index
+    assert "20. `10E_MISSION_CONTROL_ENTERPRISE_STATUS_IMPORT_CONTRACT.md`" in index
+    assert "21. `10F_MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md`" in index
+    assert "22. `10G_MISSION_CONTROL_ENTERPRISE_STATUS_ACCEPTANCE_MATRIX.md`" in index
+    assert "23. `10H_MISSION_CONTROL_ENTERPRISE_STATUS_REFERENCE_VALIDATOR.md`" in index
+    assert "24. `11_V1_RC_EXTERNAL_REVIEW_PROMPT.md`" in index
+    assert "25. `12_V1_RC_FINAL_HANDOFF.md`" in index
+    assert "26. `13_V1_RC_POST_REVIEW_TRIAGE.md`" in index
+    assert "27. `14_V1_RC_ARTIFACTS.md`" in index
+    assert "28. `15_V1_RC_COMMANDS.md`" in index
+    assert "29. `v1-rc-artifact-hashes.json`" in index
     assert "Ithildin v1.0 Operator Trial Checklist" in trial_checklist
     assert "Trial Pass Criteria" in trial_checklist
     assert "make release-check" in trial_checklist
@@ -1405,6 +1434,9 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
     assert "`dual_review_outbox`" in trial_record
     assert "`send_manifest`" in trial_record
+    assert "Ithildin v1.0 Observed Operator Trial Evidence" in observed_trial
+    assert "patch_apply_status" in observed_trial
+    assert "audit_verification_valid" in observed_trial
     assert "Ithildin v1.0 RC Feature Freeze" in feature_freeze
     assert "capability expansion remains blocked" in feature_freeze
     assert "Ithildin Enterprise Readiness Runway" in runway
@@ -1455,6 +1487,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "Feature freeze remains active" in post_review_triage
     assert "v1.0 RC Artifact Map" in artifacts
     assert "var/review-packets/v1.0/operator-trial" in artifacts
+    assert "var/review-packets/v1.0/operator-trial-observed" in artifacts
     assert "var/review-packets/v3/live-demo" in artifacts
     assert "var/review-packets/v3/operator-workbench" in artifacts
     assert "var/review-packets/v3/hello-world-sandbox-observed-demo" in artifacts
@@ -1470,13 +1503,14 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "make enterprise-dual-response-readiness" in commands
     assert "make enterprise-response-status-board" in commands
     assert "make review-candidate" in commands
-    assert len(hashes["artifacts"]) == 28
+    assert len(hashes["artifacts"]) == 29
     assert {artifact["path"] for artifact in hashes["artifacts"]} == {
         "00_V1_RC_PACKET_INDEX.md",
         "01_V1_RC_STATUS.md",
         "02_V1_OPERATOR_QUICKSTART.md",
         "02A_V1_OPERATOR_TRIAL_CHECKLIST.md",
         "02B_V1_OPERATOR_TRIAL_RECORD.md",
+        "02C_V1_OPERATOR_TRIAL_OBSERVED.md",
         "03_V1_WORKBENCH_EVIDENCE_CLOSURE.md",
         "04_V1_ASSURANCE_CLOSURE.md",
         "05_V1_RC_FEATURE_FREEZE.md",

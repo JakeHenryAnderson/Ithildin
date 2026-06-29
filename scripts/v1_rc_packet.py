@@ -15,7 +15,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import v1_operator_trial_record, v1_rc_readiness_check
+from scripts import v1_operator_trial_observed, v1_operator_trial_record, v1_rc_readiness_check
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "var/review-packets/v1.0/rc"
@@ -29,6 +29,10 @@ SOURCE_DOCS = [
     (
         "02B_V1_OPERATOR_TRIAL_RECORD.md",
         ROOT / "docs/codex/v1.0-operator-trial-record.md",
+    ),
+    (
+        "02C_V1_OPERATOR_TRIAL_OBSERVED.md",
+        ROOT / "docs/codex/v1.0-operator-trial-observed.md",
     ),
     (
         "03_V1_WORKBENCH_EVIDENCE_CLOSURE.md",
@@ -106,6 +110,12 @@ ARTIFACT_REFERENCES = [
         "purpose": "generated v1.0 operator trial record and JSON snapshot",
         "proves": "checklist-style local-preview trial evidence was summarized for handoff",
         "does_not_prove": "services are currently running or manual operator steps were completed",
+    },
+    {
+        "path": "var/review-packets/v1.0/operator-trial-observed",
+        "purpose": "optional observed operator trial evidence from DEMO_FLOW_RESULT.md",
+        "proves": "an intentional mediated demo flow result was checked when present",
+        "does_not_prove": "services are currently running or activity outside Ithildin mediation",
     },
     {
         "path": "var/review-packets/v3/live-demo",
@@ -212,6 +222,15 @@ def build_packet(repo_root: Path, output_dir: Path) -> dict[str, Any]:
                 )
             destination.write_text(
                 v1_operator_trial_record.render_record_markdown(record),
+                encoding="utf-8",
+            )
+        elif output_name == "02C_V1_OPERATOR_TRIAL_OBSERVED.md":
+            with tempfile.TemporaryDirectory() as temp_dir:
+                observed = v1_operator_trial_observed.build_observed_record(
+                    repo_root, Path(temp_dir) / "operator-trial-observed"
+                )
+            destination.write_text(
+                v1_operator_trial_observed.render_observed_markdown(observed),
                 encoding="utf-8",
             )
         else:

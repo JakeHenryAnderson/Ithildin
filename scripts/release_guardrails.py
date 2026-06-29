@@ -77,6 +77,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v1-rc-final-handoff-check",
     "v1-rc-post-review-triage-check",
     "v1-operator-quickstart-check",
+    "v1-operator-trial-observed-check",
     "v1-workbench-evidence-check",
     "v1-assurance-closure-check",
     "v1-rc-readiness",
