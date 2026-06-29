@@ -977,6 +977,23 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert operator_trial_record_report["sandbox_orchestration_allowed"] is False
     assert operator_trial_record_report["checks"]["enterprise_next_action"]["valid"] is True
     assert operator_trial_record_report["checks"]["enterprise_waiting_room"]["valid"] is True
+    assert operator_trial_record_report["checks"]["live_demo_environment"]["valid"] is True
+    assert isinstance(
+        operator_trial_record_report["live_demo_environment"]["compose_demo_ready"],
+        bool,
+    )
+    assert operator_trial_record_report["live_demo_environment"]["docker_compose_status"] in {
+        "ok",
+        "missing",
+        "timeout",
+        "error",
+    }
+    rendered_trial_record = v1_operator_trial_record.render_record_markdown(
+        operator_trial_record_report
+    )
+    assert "## Live Demo Environment" in rendered_trial_record
+    assert "compose_demo_ready" in rendered_trial_record
+    assert "docker_daemon_status" in rendered_trial_record
     assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
         "send_erg_003_and_erg_002"
     )

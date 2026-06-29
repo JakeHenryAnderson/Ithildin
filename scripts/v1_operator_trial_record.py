@@ -20,6 +20,7 @@ from scripts import (
     demo_evidence_readiness,
     enterprise_operator_next_action,
     enterprise_response_waiting_room,
+    live_demo_environment_diagnostics,
     packet_redaction_scan,
     review_docs,
     v1_operator_trial_checklist_check,
@@ -56,6 +57,7 @@ REQUIRED_DOC_PHRASES = [
     "validation decision summary",
     "enterprise operator next-action result",
     "enterprise response waiting-room result",
+    "live demo environment diagnostics result",
     "current enterprise send set, waiting-room counts, and handoff artifact pointers",
     "local-preview handoff evidence only",
 ]
@@ -105,6 +107,7 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
     demo_evidence = demo_evidence_readiness.build_report(repo_root)
     enterprise_next_action = enterprise_operator_next_action.build_report(repo_root)
     enterprise_waiting_room = enterprise_response_waiting_room.build_report(repo_root)
+    live_environment = live_demo_environment_diagnostics.build_report(repo_root)
     validation = validation_decision.build_report([])
     artifact_reports = [_artifact_report(repo_root, artifact) for artifact in REQUIRED_ARTIFACTS]
     packet_scan = _packet_scan(repo_root)
@@ -119,6 +122,7 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         *_prefixed_failures("demo-evidence-readiness", demo_evidence),
         *_prefixed_failures("enterprise-operator-next-action", enterprise_next_action),
         *_prefixed_failures("enterprise-response-waiting-room", enterprise_waiting_room),
+        *_prefixed_failures("live-demo-environment-diagnostics", live_environment),
         *_prefixed_failures("validation-decision", validation),
     ]
     if packet_scan["findings_count"] != 0:
@@ -149,8 +153,21 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
             "demo_evidence_readiness": _summary(demo_evidence),
             "enterprise_next_action": _summary(enterprise_next_action),
             "enterprise_waiting_room": _summary(enterprise_waiting_room),
+            "live_demo_environment": _summary(live_environment),
             "validation_decision": _summary(validation),
             "packet_redaction_scan": packet_scan,
+        },
+        "live_demo_environment": {
+            "compose_demo_ready": live_environment.get("compose_demo_ready"),
+            "docker_cli_available": live_environment.get("docker", {}).get("cli_available"),
+            "docker_compose_status": live_environment.get("docker", {})
+            .get("compose_version", {})
+            .get("status"),
+            "docker_daemon_status": live_environment.get("docker", {})
+            .get("daemon_info", {})
+            .get("status"),
+            "rosetta_check_status": live_environment.get("rosetta", {}).get("status"),
+            "safe_next_actions": live_environment.get("safe_next_actions", []),
         },
         "enterprise_review_state": {
             "next_action": enterprise_next_action.get("next_action"),
@@ -293,6 +310,26 @@ def render_record_markdown(report: dict[str, Any]) -> str:
     )
     for artifact in enterprise["handoff_artifacts"]:
         lines.append(f"| `{artifact['label']}` | `{artifact['path']}` |")
+    live_environment = report["live_demo_environment"]
+    lines.extend(
+        [
+            "",
+            "## Live Demo Environment",
+            "",
+            "This section records the live demo environment diagnostics result for the optional",
+            "local API/UI Compose path. It is operator-environment evidence only and is not a",
+            "release requirement.",
+            "",
+            f"- compose_demo_ready: `{str(live_environment['compose_demo_ready']).lower()}`",
+            "- docker_cli_available: "
+            f"`{str(live_environment['docker_cli_available']).lower()}`",
+            f"- docker_compose_status: `{live_environment['docker_compose_status']}`",
+            f"- docker_daemon_status: `{live_environment['docker_daemon_status']}`",
+            f"- rosetta_check_status: `{live_environment['rosetta_check_status']}`",
+            "- safe_next_actions:",
+        ]
+    )
+    lines.extend(f"  - `{action}`" for action in live_environment["safe_next_actions"])
     lines.extend(["", "## Recommended Next Commands", ""])
     lines.extend(f"{idx}. `{command}`" for idx, command in enumerate(RECOMMENDED_COMMANDS, 1))
     lines.extend(
