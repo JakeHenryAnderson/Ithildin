@@ -2886,6 +2886,7 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         "Status: generated send manifest for current enterprise external-review packets.",
         "make enterprise-review-send-manifest",
         "make enterprise-review-send-manifest-check",
+        "generated submission prompt and send receipt template roots",
         "`ERG-003`",
         "`ERG-002`",
         "does not record external review",
@@ -2896,6 +2897,9 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
     for phrase in [
         "Enterprise Review Send Manifest",
         "Recommended send set",
+        "Companion operator artifacts",
+        "Submission prompt root",
+        "Send receipt template root",
         "ERG-003",
         "ERG-002",
         "Post-send response path",
@@ -2913,6 +2917,8 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         '"closes_erg_003": false',
         '"closes_erg_002": false',
         '"outbox_hash_manifest"',
+        '"submission_prompt_dir"',
+        '"receipt_template_dir"',
     ]:
         assert phrase in generated_json_text
     assert {

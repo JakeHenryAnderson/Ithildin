@@ -37,6 +37,7 @@ ready to send. It sits above the dual-review outbox and records:
 - the prompt and attachment count for each lane;
 - the finding namespace each reviewer must use;
 - the outbox artifact hash manifest;
+- the generated submission prompt and send receipt template roots;
 - the post-send response kit, intake doc, dry run, and closure gate for each lane;
 - blocked-boundary flags that must remain false.
 

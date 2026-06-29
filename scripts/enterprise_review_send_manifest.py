@@ -27,6 +27,8 @@ DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/enterprise-review-send-manifest
 MARKDOWN_NAME = "ENTERPRISE_REVIEW_SEND_MANIFEST.md"
 JSON_NAME = "enterprise-review-send-manifest.json"
 HASH_NAME = "enterprise-review-send-manifest-artifact-hashes.json"
+SUBMISSION_PROMPT_DIR = Path("var/review-packets/v3/enterprise-review-submission-prompt")
+RECEIPT_TEMPLATE_DIR = Path("var/review-packets/v3/enterprise-review-send-receipt-template")
 RECOMMENDED_GAPS = ["ERG-003", "ERG-002"]
 BOUNDARY_FLAGS = {
     "runtime_changes_allowed": False,
@@ -153,6 +155,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Enterprise Review Send Manifest",
         "Recommended send set",
+        "Companion operator artifacts",
         "ERG-003",
         "ERG-002",
         "Post-send response path",
@@ -172,6 +175,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"closes_erg_003": false',
         '"closes_erg_002": false',
         '"outbox_hash_manifest"',
+        '"submission_prompt_dir"',
+        '"receipt_template_dir"',
     ]:
         if phrase not in json_text:
             failures.append(f"generated send manifest JSON is missing phrase: {phrase}")
@@ -293,6 +298,8 @@ def _manifest_payload(
         "response_present_count": status.get("response_present_count"),
         "closure_ready_count": status.get("closure_ready_count"),
         "outbox_dir": _repo_rel(repo_root, outbox_dir),
+        "submission_prompt_dir": SUBMISSION_PROMPT_DIR.as_posix(),
+        "receipt_template_dir": RECEIPT_TEMPLATE_DIR.as_posix(),
         "outbox_hash_manifest": {
             "path": _repo_rel(repo_root, outbox_dir / enterprise_dual_review_outbox.HASH_NAME),
             "artifact_count": outbox_hashes.get("artifact_count"),
@@ -355,6 +362,12 @@ Outbox root: `{payload['outbox_dir']}`
 Outbox hash manifest: `{payload['outbox_hash_manifest']['path']}`
 
 Outbox hash manifest artifact count: `{payload['outbox_hash_manifest']['artifact_count']}`
+
+## Companion operator artifacts
+
+Submission prompt root: `{payload['submission_prompt_dir']}`
+
+Send receipt template root: `{payload['receipt_template_dir']}`
 
 ## Post-send response path
 
