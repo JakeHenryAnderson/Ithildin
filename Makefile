@@ -10,7 +10,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
-.PHONY: docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact
+.PHONY: docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact packet-check-recursion-guard
 
 test:
 	uv run pytest
@@ -32,6 +32,7 @@ quick-check:
 	$(MAKE) release-context
 	$(MAKE) manifest-lock-check
 	$(MAKE) release-guardrails
+	$(MAKE) packet-check-recursion-guard
 	$(MAKE) tool-surface-invariant-gate
 	$(MAKE) no-new-powers-guardrail
 	$(MAKE) lint
@@ -78,6 +79,9 @@ release-check-slice:
 
 release-check-impact:
 	uv run python scripts/release_check_impact.py $(ARGS)
+
+packet-check-recursion-guard:
+	uv run python scripts/packet_check_recursion_guard.py
 
 determinism-check:
 	uv run python scripts/test_determinism_gate.py
@@ -1512,6 +1516,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 	npm run build --prefix apps/ui
 
 release-check: compliance-mapping-external-review-bundle-check
+release-check: packet-check-recursion-guard
 
 release-check: sandbox-vm-live-poc-response-dry-run
 release-check: sandbox-vm-live-poc-response-kit-check

@@ -175,6 +175,8 @@ checked with `make control-mapping-readiness`.
   slice categories without running the slow release gate.
 - `make release-check-slice ARGS="--category enterprise"` - plan a focused subset of `release-check`
   targets by profile category; add `--run` only when you intentionally want to execute that slice.
+- `make packet-check-recursion-guard` - fail fast if a generated packet check imports known
+  high-level status/export builders that can recursively rebuild the packet graph.
 - `make lint` - run Python lint checks.
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.

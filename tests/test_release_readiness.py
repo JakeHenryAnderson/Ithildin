@@ -163,6 +163,7 @@ from scripts import (
     operator_sandbox_demo_packet,
     operator_sandbox_demo_readiness,
     operator_sandbox_demo_smoke,
+    packet_check_recursion_guard,
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
@@ -456,6 +457,11 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "release-check-impact:" in makefile
     assert "release-check-profile:" in makefile
     assert "release-check-slice:" in makefile
+    assert "packet-check-recursion-guard:" in makefile
+    assert "$(MAKE) packet-check-recursion-guard" in makefile.partition("quick-check:")[
+        2
+    ].partition("\n\n")[0]
+    assert "release-check: packet-check-recursion-guard" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
@@ -471,6 +477,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-impact" in readme
     assert "make release-check-profile" in readme
     assert "make release-check-slice" in readme
+    assert "make packet-check-recursion-guard" in readme
     assert "slow_packet:" in pyproject
     assert "pytest_collection_modifyitems" in conftest
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
@@ -491,6 +498,8 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-impact" in guide
     assert "make release-check-profile" in guide
     assert "make release-check-slice" in guide
+    assert "make packet-check-recursion-guard" in guide
+    assert "Do not nest high-level packet/status/export report builders" in guide
     assert "--fail-on-budget" in guide
     assert "budget status" in guide
     assert "changed test files" in guide
@@ -534,6 +543,12 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
     assert "Validation Performance And Gate Tiers" in review_index
+    recursion_report = packet_check_recursion_guard.build_report(Path.cwd())
+    assert recursion_report["valid"] is True
+    assert recursion_report["rule_count"] >= 1
+    assert all(
+        rule["forbidden_import_count"] == 0 for rule in recursion_report["rules"]
+    )
 
 
 def test_validation_decision_reports_development_and_handoff_modes() -> None:

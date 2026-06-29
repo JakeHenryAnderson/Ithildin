@@ -137,6 +137,24 @@ make release-check-slice ARGS="--category enterprise --run"
 Slice runs are focused development evidence, not full release proof. Use them to debug a slow or
 failing lane before returning to `make release-check` for a release, handoff, or major checkpoint.
 
+### Packet Recursion Guard
+
+Run:
+
+```sh
+make packet-check-recursion-guard
+```
+
+Use this when editing generated packet checks, status exports, review bundles, or response kits.
+Do not nest high-level packet/status/export report builders inside another high-level packet check
+when the referenced builder can reach back into the caller through current-checkpoint, send
+readiness, or external-review bundle paths. Packet checks may bundle related docs and list the
+dedicated validation commands as external evidence, but recursive report imports should fail fast in
+this guard instead of becoming a long-running check.
+
+`quick-check` and `release-check` both run this guard so known packet-check recursion hazards are
+caught before broad validation spends time rebuilding packet graphs.
+
 ### Docs Check
 
 Run:
