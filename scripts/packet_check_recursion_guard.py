@@ -12,8 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 RULES = [
     {
-        "id": "mission_control_integration_readiness_no_enterprise_status_reports",
-        "path": Path("scripts/mission_control_integration_readiness_packet.py"),
+        "id": "packet_bundle_readiness_no_enterprise_status_reports",
+        "path_patterns": [
+            "scripts/*packet*.py",
+            "scripts/*bundle*.py",
+            "scripts/*readiness*.py",
+        ],
+        "exclude_paths": [
+            "scripts/packet_check_recursion_guard.py",
+        ],
         "forbidden_script_imports": [
             "enterprise_status_export",
             "mission_control_enterprise_status_import_check",
@@ -22,9 +29,10 @@ RULES = [
             "mission_control_enterprise_status_reference_validator",
         ],
         "reason": (
-            "The Mission Control integration readiness packet may bundle enterprise-status docs "
+            "Generated packets, bundles, and readiness checks may bundle enterprise-status docs "
             "and command names, but must not import those report builders. They depend on "
-            "enterprise status export/current-checkpoint paths that can loop back into this packet."
+            "enterprise status export/current-checkpoint paths that can loop back into packet "
+            "generation."
         ),
     },
 ]
@@ -95,23 +103,32 @@ def render_report(report: dict[str, Any]) -> str:
 
 
 def _check_rule(repo_root: Path, rule: dict[str, Any]) -> dict[str, Any]:
-    path = repo_root / rule["path"]
     failures: list[str] = []
-    if not path.exists():
-        failures.append(f"missing guarded packet script: {rule['path']}")
-        imported: set[str] = set()
-    else:
-        imported = _script_imports(path)
-    forbidden = sorted(set(rule["forbidden_script_imports"]) & imported)
-    for module in forbidden:
-        failures.append(f"{rule['path']} must not import scripts.{module}: {rule['reason']}")
+    paths = _rule_paths(repo_root, rule)
+    forbidden_by_path: dict[str, list[str]] = {}
+    for path in paths:
+        imported = _script_imports(repo_root / path)
+        forbidden = sorted(set(rule["forbidden_script_imports"]) & imported)
+        if forbidden:
+            forbidden_by_path[str(path)] = forbidden
+            for module in forbidden:
+                failures.append(f"{path} must not import scripts.{module}: {rule['reason']}")
     return {
         "id": rule["id"],
-        "path": str(rule["path"]),
-        "forbidden_import_count": len(forbidden),
-        "forbidden_imports": forbidden,
+        "path_count": len(paths),
+        "paths": [str(path) for path in paths],
+        "forbidden_import_count": sum(len(values) for values in forbidden_by_path.values()),
+        "forbidden_imports": forbidden_by_path,
         "failures": failures,
     }
+
+
+def _rule_paths(repo_root: Path, rule: dict[str, Any]) -> list[Path]:
+    paths: set[Path] = set()
+    for pattern in rule["path_patterns"]:
+        paths.update(path.relative_to(repo_root) for path in repo_root.glob(pattern))
+    excluded = {Path(path) for path in rule.get("exclude_paths", [])}
+    return sorted(path for path in paths if path not in excluded)
 
 
 def _script_imports(path: Path) -> set[str]:

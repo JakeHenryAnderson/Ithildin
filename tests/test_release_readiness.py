@@ -546,6 +546,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     recursion_report = packet_check_recursion_guard.build_report(Path.cwd())
     assert recursion_report["valid"] is True
     assert recursion_report["rule_count"] >= 1
+    assert recursion_report["rules"][0]["path_count"] > 10
     assert all(
         rule["forbidden_import_count"] == 0 for rule in recursion_report["rules"]
     )
