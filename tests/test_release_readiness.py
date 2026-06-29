@@ -4285,6 +4285,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "operator_next_action": True,
         "dual_review_outbox": True,
         "send_manifest": True,
+        "send_quickstart": True,
         "submission_prompt": True,
         "send_receipt_template": True,
         "dual_response_inbox": True,
@@ -4300,6 +4301,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     for output_key in [
         "dual_review_outbox",
         "send_manifest",
+        "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
         "dual_response_inbox",
@@ -4328,6 +4330,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "make enterprise-review-send-preflight",
         "make enterprise-review-send-refresh",
         "make enterprise-review-send-checklist",
+        "make enterprise-review-send-quickstart",
         "make enterprise-review-submission-prompt",
         "make enterprise-review-send-receipt-template",
         "make enterprise-dual-response-inbox",
@@ -4354,6 +4357,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert "$(MAKE) enterprise-dual-review-outbox" in refresh_body
     assert "$(MAKE) enterprise-review-send-manifest" in refresh_body
     assert "$(MAKE) enterprise-review-send-checklist" in refresh_body
+    assert "$(MAKE) enterprise-review-send-quickstart" in refresh_body
     assert "$(MAKE) enterprise-review-submission-prompt" in refresh_body
     assert "$(MAKE) enterprise-review-send-receipt-template" in refresh_body
     assert "$(MAKE) enterprise-dual-response-inbox" in refresh_body

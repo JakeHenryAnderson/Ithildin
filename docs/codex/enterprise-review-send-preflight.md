@@ -29,6 +29,7 @@ The preflight is designed to run after these artifacts have been generated:
 - `make enterprise-dual-review-outbox`
 - `make enterprise-review-send-manifest`
 - `make enterprise-review-send-checklist`
+- `make enterprise-review-send-quickstart`
 - `make enterprise-review-submission-prompt`
 - `make enterprise-review-send-receipt-template`
 - `make enterprise-dual-response-inbox`
@@ -68,6 +69,7 @@ review packets. The explicit sequence is:
 make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
 make enterprise-review-send-checklist
+make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox

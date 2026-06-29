@@ -70,6 +70,15 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
             "enterprise-review-send-manifest.json",
         ],
     },
+    "send_quickstart": {
+        "output_dir": "var/review-packets/v3/enterprise-review-send-quickstart",
+        "hash_file": "enterprise-review-send-quickstart-artifact-hashes.json",
+        "payload_file": "enterprise-review-send-quickstart.json",
+        "required_files": [
+            "ENTERPRISE_REVIEW_SEND_QUICKSTART.md",
+            "enterprise-review-send-quickstart.json",
+        ],
+    },
     "submission_prompt": {
         "output_dir": "var/review-packets/v3/enterprise-review-submission-prompt",
         "hash_file": "enterprise-review-submission-prompt-artifact-hashes.json",
@@ -195,6 +204,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "ERG-003",
         "ERG-002",
         "make enterprise-review-send-checklist",
+        "make enterprise-review-send-quickstart",
         "make enterprise-review-submission-prompt",
         "make enterprise-review-send-receipt-template",
         "make enterprise-dual-response-inbox",
@@ -409,11 +419,15 @@ def _artifact_hashes_match_files(output_dir: Path, hash_manifest: dict[str, Any]
         if not path.exists():
             return False
         data = path.read_bytes()
-        if expected_sha != _sha256(data):
+        if _normalize_sha256(expected_sha) != _sha256(data):
             return False
         if isinstance(expected_bytes, int) and expected_bytes != len(data):
             return False
     return True
+
+
+def _normalize_sha256(value: str) -> str:
+    return value.removeprefix("sha256:")
 
 
 def _sha256(data: bytes) -> str:
