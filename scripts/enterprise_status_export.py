@@ -196,6 +196,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "next_action": next_action.get("next_action"),
         "action_commands": next_action.get("action_commands"),
+        "handoff_artifacts": next_action.get("handoff_artifacts"),
         "operator_next_action_doc": next_action.get("next_action_doc"),
         "response_present_count": responses.get("response_present_count"),
         "closure_ready_count": responses.get("closure_ready_count"),
@@ -244,6 +245,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"next_action: {report['next_action']}",
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands") or []],
+        "handoff_artifacts:",
+        *[
+            f"- {artifact['label']}: {artifact['path']}"
+            for artifact in report.get("handoff_artifacts") or []
+        ],
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         f"enterprise_gap_count: {report['enterprise_gap_count']}",
@@ -296,6 +302,13 @@ def render_markdown(report: dict[str, Any]) -> str:
     public_positioning = str(
         report["public_security_product_positioning_allowed"]
     ).lower()
+    action_command_lines = "\n".join(
+        f"  - `{command}`" for command in report.get("action_commands") or []
+    )
+    handoff_artifact_lines = "\n".join(
+        f"  - `{artifact['label']}`: `{artifact['path']}`"
+        for artifact in report.get("handoff_artifacts") or []
+    )
     return f"""# Enterprise Status Export
 
 Status: generated display-only enterprise status export.
@@ -317,7 +330,9 @@ runtime behavior, and not an enterprise lane closure record.
 - recommended_next_enterprise_review: `{report['recommended_next_enterprise_review']}`
 - next_action: `{report['next_action']}`
 - action_commands:
-{chr(10).join(f"  - `{command}`" for command in report.get('action_commands') or [])}
+{action_command_lines}
+- handoff_artifacts:
+{handoff_artifact_lines}
 - response_present_count: `{report['response_present_count']}`
 - closure_ready_count: `{report['closure_ready_count']}`
 - enterprise_gap_count: `{report['enterprise_gap_count']}`
@@ -374,6 +389,8 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         "recommended_send_set: `ERG-003, ERG-002`",
         "next_action: `send_erg_003_and_erg_002`",
         "`make enterprise-review-send-refresh`",
+        "handoff_artifacts:",
+        "enterprise-review-send-manifest",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -385,6 +402,8 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"status": "display_only"',
         '"tool_count": 24',
         '"next_action": "send_erg_003_and_erg_002"',
+        '"handoff_artifacts": [',
+        "enterprise-review-send-manifest",
         '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',

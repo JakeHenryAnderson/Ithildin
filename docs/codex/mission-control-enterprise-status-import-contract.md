@@ -44,12 +44,17 @@ A future Mission Control importer may display only these status fields:
 - tool count, selected capability, response count, closure count, and enterprise gap count;
 - recommended enterprise review IDs, the recommended next enterprise review, the current next action,
   and safe action commands;
+- display-only handoff artifact labels and relative artifact paths;
 - progress bands, review lane labels/statuses, packet path labels, and packet handoff readiness;
 - blocked-authority flags and safe warning chips.
 
 The importer must not display prompts, file contents, diffs, response bodies, raw host secrets,
 tokens, private keys, environment values, raw stack traces, arbitrary JSON subtrees, or unreviewed
 runtime payloads.
+
+The `handoff_artifacts` field is display-only. Mission Control may render labels and relative
+paths as copyable text, but must not execute commands, open host paths with elevated authority,
+poll Ithildin, or infer that an artifact path grants runtime permission.
 
 ## Required Refusals
 

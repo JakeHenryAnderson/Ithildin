@@ -64,6 +64,11 @@ ALLOWED_ACTION_COMMANDS = {
     "make enterprise-response-intake-refresh",
 }
 
+SAFE_HANDOFF_ARTIFACT_PATH_PREFIXES = (
+    "var/review-packets/v3/",
+    "var/review-runs/",
+)
+
 Mutator = Callable[[dict[str, Any]], None]
 
 
@@ -377,9 +382,34 @@ def _validate_for_display_import(payload: Mapping[str, Any]) -> list[str]:
         reasons.append("action_commands_must_be_safe_list")
     elif any(command not in ALLOWED_ACTION_COMMANDS for command in action_commands):
         reasons.append("unsupported_action_command")
+    handoff_artifacts = payload.get("handoff_artifacts")
+    if not isinstance(handoff_artifacts, list) or not handoff_artifacts:
+        reasons.append("handoff_artifacts_must_be_safe_list")
+    else:
+        for artifact in handoff_artifacts:
+            if not _safe_handoff_artifact(artifact):
+                reasons.append("unsafe_handoff_artifact")
+                break
     if _contains_forbidden_key(payload):
         reasons.append("forbidden_payload_field")
     return sorted(set(reasons))
+
+
+def _safe_handoff_artifact(artifact: Any) -> bool:
+    if not isinstance(artifact, Mapping):
+        return False
+    label = artifact.get("label")
+    path = artifact.get("path")
+    description = artifact.get("description")
+    if not isinstance(label, str) or not label:
+        return False
+    if not isinstance(path, str) or not path:
+        return False
+    if not isinstance(description, str) or not description:
+        return False
+    if path.startswith("/") or ".." in Path(path).parts:
+        return False
+    return path.startswith(SAFE_HANDOFF_ARTIFACT_PATH_PREFIXES)
 
 
 def _render_index(summary: dict[str, Any]) -> str:

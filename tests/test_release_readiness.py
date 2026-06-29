@@ -1846,6 +1846,26 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make review-candidate",
         "make enterprise-review-send-refresh",
     ]
+    assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "dual_review_outbox",
+        "send_manifest",
+        "submission_prompt",
+        "send_receipt_template",
+    ]
+    assert all(
+        artifact["path"].startswith("var/review-packets/v3/")
+        for artifact in report["handoff_artifacts"]
+    )
+    assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "dual_review_outbox",
+        "send_manifest",
+        "submission_prompt",
+        "send_receipt_template",
+    ]
+    assert all(
+        artifact["path"].startswith("var/review-packets/v3/")
+        for artifact in report["handoff_artifacts"]
+    )
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
     )
@@ -1906,6 +1926,12 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
     assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "dual_review_outbox",
+        "send_manifest",
+        "submission_prompt",
+        "send_receipt_template",
+    ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["enterprise_gap_count"] == 10
@@ -2160,6 +2186,7 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "make enterprise-status-export-check",
         "make enterprise-operator-next-action",
         "safe action commands",
+        "display-only handoff artifact",
         "does not approve Mission Control runtime behavior",
         "does not approve live VM/container inspection",
         "does not approve sandbox orchestration",
@@ -2176,6 +2203,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "recommended_send_set: `ERG-003, ERG-002`",
         "next_action: `send_erg_003_and_erg_002`",
         "`make enterprise-review-send-refresh`",
+        "handoff_artifacts:",
+        "`send_manifest`: `var/review-packets/v3/enterprise-review-send-manifest`",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -2186,6 +2215,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"status": "display_only"',
         '"tool_count": 24',
         '"next_action": "send_erg_003_and_erg_002"',
+        '"handoff_artifacts": [',
+        '"label": "send_manifest"',
         '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
@@ -2236,6 +2267,7 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
     assert report["recommended_next_enterprise_review"] == "ERG-003"
     assert "next_action" in report["allowed_import_fields"]
     assert "action_commands" in report["allowed_import_fields"]
+    assert "handoff_artifacts" in report["allowed_import_fields"]
     assert "operator_next_action_doc" in report["allowed_import_fields"]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -4316,6 +4348,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-operator-next-action",
         "With no real enterprise reviewer responses present",
         "make enterprise-review-send-refresh",
+        "handoff_artifacts",
+        "var/review-packets/v3/enterprise-review-send-manifest",
         "`ERG-003`: static sandbox/VM preflight disposition",
         "`ERG-002`: Mission Control display/import planning review",
         "make enterprise-response-intake-refresh",
@@ -4382,6 +4416,14 @@ def test_enterprise_operator_next_action_routes_response_present_mode(
     assert report["closure_ready_count"] == 0
     assert report["next_action"] == "run_response_intake_preflight"
     assert report["action_commands"] == ["make enterprise-response-intake-refresh"]
+    assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "response_inbox",
+        "response_status_board",
+    ]
+    assert all(
+        artifact["path"].startswith("var/review-runs/")
+        for artifact in report["handoff_artifacts"]
+    )
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False

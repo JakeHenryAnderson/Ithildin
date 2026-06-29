@@ -43,7 +43,14 @@ With no real enterprise reviewer responses present, the next allowed operator ac
    - `ERG-003`: static sandbox/VM preflight disposition.
    - `ERG-002`: Mission Control display/import planning review.
 
-4. Wait for real reviewer responses before running any response-normalization or closure flow.
+4. Inspect the display-only `handoff_artifacts` paths from `make enterprise-operator-next-action`:
+
+   - `var/review-packets/v3/enterprise-dual-review-outbox`
+   - `var/review-packets/v3/enterprise-review-send-manifest`
+   - `var/review-packets/v3/enterprise-review-submission-prompt`
+   - `var/review-packets/v3/enterprise-review-send-receipt-template`
+
+5. Wait for real reviewer responses before running any response-normalization or closure flow.
 
 ## If Responses Arrive
 

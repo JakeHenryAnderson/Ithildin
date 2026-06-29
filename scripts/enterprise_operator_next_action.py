@@ -37,12 +37,49 @@ RESPONSE_COMMANDS = [
     "make enterprise-response-intake-refresh",
 ]
 
+SEND_ARTIFACTS = [
+    {
+        "label": "dual_review_outbox",
+        "path": "var/review-packets/v3/enterprise-dual-review-outbox",
+        "description": "copied ERG-003/ERG-002 attachment set",
+    },
+    {
+        "label": "send_manifest",
+        "path": "var/review-packets/v3/enterprise-review-send-manifest",
+        "description": "checked manifest with prompt and attachment pointers",
+    },
+    {
+        "label": "submission_prompt",
+        "path": "var/review-packets/v3/enterprise-review-submission-prompt",
+        "description": "paste-ready external-review submission prompt",
+    },
+    {
+        "label": "send_receipt_template",
+        "path": "var/review-packets/v3/enterprise-review-send-receipt-template",
+        "description": "operator receipt template to fill after sending",
+    },
+]
+
+RESPONSE_ARTIFACTS = [
+    {
+        "label": "response_inbox",
+        "path": "var/review-runs/enterprise-response-inbox",
+        "description": "ignored raw-response inbox for pasted reviewer responses",
+    },
+    {
+        "label": "response_status_board",
+        "path": "var/review-runs/enterprise-response-status-board",
+        "description": "display-only response status board output",
+    },
+]
+
 REQUIRED_DOC_PHRASES = [
     "Status: checked read-only operator next-action summary",
     "Current governed tool count: `24`",
     "make enterprise-operator-next-action",
     "With no real enterprise reviewer responses present",
     "make enterprise-review-send-refresh",
+    "handoff_artifacts",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
     "make enterprise-response-intake-refresh",
@@ -100,6 +137,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         SEND_COMMANDS
         if next_action == "send_erg_003_and_erg_002"
         else RESPONSE_COMMANDS
+    )
+    handoff_artifacts = (
+        SEND_ARTIFACTS
+        if next_action == "send_erg_003_and_erg_002"
+        else RESPONSE_ARTIFACTS
     )
 
     selected_capability = "not selected"
@@ -182,6 +224,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "closure_ready_count": closure_ready_count,
         "next_action": next_action,
         "action_commands": action_commands,
+        "handoff_artifacts": handoff_artifacts,
         "normalized_response_paths": response_state["normalized_response_paths"],
         **boundary_flags,
     }
@@ -203,6 +246,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"next_action: {report.get('next_action', 'unknown')}",
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands", [])],
+        "handoff_artifacts:",
+        *[
+            f"- {artifact['label']}: {artifact['path']}"
+            for artifact in report.get("handoff_artifacts", [])
+        ],
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "mission_control_runtime_allowed: "
         f"{str(report['mission_control_runtime_allowed']).lower()}",
