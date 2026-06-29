@@ -1093,8 +1093,9 @@ pass/fail local trial record without approving runtime powers or product-positio
 The v1.0 operator trial record is
 [docs/codex/v1.0-operator-trial-record.md](docs/codex/v1.0-operator-trial-record.md), generated
 with `make v1-operator-trial-record`, and checked with `make v1-operator-trial-record-check`; it
-captures the current checklist-style handoff state as ignored local evidence without starting
-services, calling governed tools, or approving public/security-product positioning.
+captures the current checklist-style handoff state, enterprise next-action state, and waiting-room
+counts as ignored local evidence without starting services, calling governed tools, normalizing
+responses, closing lanes, or approving public/security-product positioning.
 The v1.0 workbench/evidence closure map is
 [docs/codex/v1.0-workbench-evidence-closure.md](docs/codex/v1.0-workbench-evidence-closure.md)
 and is checked with `make v1-workbench-evidence-check`; it ties the local review console, Agent Run

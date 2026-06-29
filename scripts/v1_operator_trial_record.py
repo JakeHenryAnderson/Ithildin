@@ -18,6 +18,8 @@ if __package__ in {None, ""}:
 
 from scripts import (
     demo_evidence_readiness,
+    enterprise_operator_next_action,
+    enterprise_response_waiting_room,
     packet_redaction_scan,
     review_docs,
     v1_operator_trial_checklist_check,
@@ -52,6 +54,9 @@ REQUIRED_DOC_PHRASES = [
     "What The Record Does Not Do",
     "packet redaction scan reports `findings: 0`",
     "validation decision summary",
+    "enterprise operator next-action result",
+    "enterprise response waiting-room result",
+    "current enterprise send set, waiting-room counts, and handoff artifact pointers",
     "local-preview handoff evidence only",
 ]
 BLOCKED_PHRASES = [
@@ -98,6 +103,8 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
     readiness = v1_rc_readiness_check.build_report(repo_root)
     workbench = workbench_readiness.build_report(repo_root)
     demo_evidence = demo_evidence_readiness.build_report(repo_root)
+    enterprise_next_action = enterprise_operator_next_action.build_report(repo_root)
+    enterprise_waiting_room = enterprise_response_waiting_room.build_report(repo_root)
     validation = validation_decision.build_report([])
     artifact_reports = [_artifact_report(repo_root, artifact) for artifact in REQUIRED_ARTIFACTS]
     packet_scan = _packet_scan(repo_root)
@@ -110,10 +117,18 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         *_prefixed_failures("v1-rc-readiness", readiness),
         *_prefixed_failures("workbench-readiness", workbench),
         *_prefixed_failures("demo-evidence-readiness", demo_evidence),
+        *_prefixed_failures("enterprise-operator-next-action", enterprise_next_action),
+        *_prefixed_failures("enterprise-response-waiting-room", enterprise_waiting_room),
         *_prefixed_failures("validation-decision", validation),
     ]
     if packet_scan["findings_count"] != 0:
         failures.append("packet redaction scan has findings")
+    if enterprise_next_action.get("next_action") != "send_erg_003_and_erg_002":
+        failures.append("enterprise next action is not the current send flow")
+    if enterprise_waiting_room.get("candidate_response_count") != 0:
+        failures.append("enterprise waiting room has candidate responses")
+    if enterprise_waiting_room.get("placeholder_count") != 2:
+        failures.append("enterprise waiting room does not have two placeholders")
 
     report: dict[str, Any] = {
         "schema_version": "1",
@@ -132,8 +147,25 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
             "v1_rc_readiness": _summary(readiness),
             "workbench_readiness": _summary(workbench),
             "demo_evidence_readiness": _summary(demo_evidence),
+            "enterprise_next_action": _summary(enterprise_next_action),
+            "enterprise_waiting_room": _summary(enterprise_waiting_room),
             "validation_decision": _summary(validation),
             "packet_redaction_scan": packet_scan,
+        },
+        "enterprise_review_state": {
+            "next_action": enterprise_next_action.get("next_action"),
+            "recommended_send_set": enterprise_next_action.get("recommended_send_set"),
+            "recommended_next_enterprise_review": enterprise_next_action.get(
+                "recommended_next_enterprise_review"
+            ),
+            "handoff_artifacts": enterprise_next_action.get("handoff_artifacts", []),
+            "candidate_response_count": enterprise_waiting_room.get(
+                "candidate_response_count"
+            ),
+            "placeholder_count": enterprise_waiting_room.get("placeholder_count"),
+            "missing_count": enterprise_waiting_room.get("missing_count"),
+            "invalid_count": enterprise_waiting_room.get("invalid_count"),
+            "waiting_room_next_action": enterprise_waiting_room.get("next_action"),
         },
         "validation_decision": {
             "recommended_mode": validation["recommended_mode"],
@@ -224,6 +256,8 @@ def render_record_markdown(report: dict[str, Any]) -> str:
             "",
             "## Validation Decision",
             "",
+            "This section records the validation decision summary for the current handoff state.",
+            "",
             f"- recommended_mode: `{validation['recommended_mode']}`",
             "- release_or_handoff_required: "
             f"`{str(validation['release_or_handoff_required']).lower()}`",
@@ -236,6 +270,29 @@ def render_record_markdown(report: dict[str, Any]) -> str:
         lines.extend(
             f"  - `{command}`" for command in validation["deferred_handoff_commands"]
         )
+    enterprise = report["enterprise_review_state"]
+    lines.extend(
+        [
+            "",
+            "## Enterprise Review State",
+            "",
+            f"- next_action: `{enterprise['next_action']}`",
+            "- recommended_send_set: "
+            + ", ".join(f"`{gap}`" for gap in enterprise["recommended_send_set"] or []),
+            "- recommended_next_enterprise_review: "
+            f"`{enterprise['recommended_next_enterprise_review']}`",
+            f"- candidate_response_count: `{enterprise['candidate_response_count']}`",
+            f"- placeholder_count: `{enterprise['placeholder_count']}`",
+            f"- missing_count: `{enterprise['missing_count']}`",
+            f"- invalid_count: `{enterprise['invalid_count']}`",
+            f"- waiting_room_next_action: `{enterprise['waiting_room_next_action']}`",
+            "",
+            "| Handoff artifact | Path |",
+            "| --- | --- |",
+        ]
+    )
+    for artifact in enterprise["handoff_artifacts"]:
+        lines.append(f"| `{artifact['label']}` | `{artifact['path']}` |")
     lines.extend(["", "## Recommended Next Commands", ""])
     lines.extend(f"{idx}. `{command}`" for idx, command in enumerate(RECOMMENDED_COMMANDS, 1))
     lines.extend(
@@ -248,6 +305,13 @@ def render_record_markdown(report: dict[str, Any]) -> str:
             "SIEM-grade custody, external notarization, compliance automation, Mission Control",
             "execution authority, trusted-host promotion, or activity outside Ithildin-mediated",
             "actions.",
+            "",
+            "## What The Record Does Not Do",
+            "",
+            "This record does not start services, call governed tools, approve actions, mutate",
+            "workspaces, manage sandbox lifecycle, invoke local models, create SIEM custody,",
+            "normalize enterprise review responses, close lanes, or approve",
+            "public/security-product positioning.",
             "",
         ]
     )

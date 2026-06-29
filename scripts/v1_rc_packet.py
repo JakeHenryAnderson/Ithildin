@@ -8,13 +8,14 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import v1_rc_readiness_check
+from scripts import v1_operator_trial_record, v1_rc_readiness_check
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "var/review-packets/v1.0/rc"
@@ -204,7 +205,17 @@ def build_packet(repo_root: Path, output_dir: Path) -> dict[str, Any]:
 
     for output_name, source in SOURCE_DOCS:
         destination = output_dir / output_name
-        destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+        if output_name == "02B_V1_OPERATOR_TRIAL_RECORD.md":
+            with tempfile.TemporaryDirectory() as temp_dir:
+                record = v1_operator_trial_record.build_record(
+                    repo_root, Path(temp_dir) / "operator-trial"
+                )
+            destination.write_text(
+                v1_operator_trial_record.render_record_markdown(record),
+                encoding="utf-8",
+            )
+        else:
+            destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
         files.append(destination)
 
     artifacts_path = output_dir / "14_V1_RC_ARTIFACTS.md"

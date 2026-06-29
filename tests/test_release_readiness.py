@@ -967,6 +967,19 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert operator_trial_record_report["runtime_changes_allowed"] is False
     assert operator_trial_record_report["new_power_classes_allowed"] is False
     assert operator_trial_record_report["sandbox_orchestration_allowed"] is False
+    assert operator_trial_record_report["checks"]["enterprise_next_action"]["valid"] is True
+    assert operator_trial_record_report["checks"]["enterprise_waiting_room"]["valid"] is True
+    assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
+        "send_erg_003_and_erg_002"
+    )
+    assert operator_trial_record_report["enterprise_review_state"][
+        "recommended_send_set"
+    ] == ["ERG-003", "ERG-002"]
+    assert (
+        operator_trial_record_report["enterprise_review_state"]["candidate_response_count"]
+        == 0
+    )
+    assert operator_trial_record_report["enterprise_review_state"]["placeholder_count"] == 2
     assert (
         operator_trial_record_report["checks"]["validation_decision"]["valid"]
         is True
@@ -1205,6 +1218,8 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "make v1-operator-trial-checklist-check" in readme
     assert "make v1-operator-trial-record" in readme
     assert "make v1-operator-trial-record-check" in readme
+    assert "enterprise next-action state" in readme
+    assert "waiting-room" in readme
     assert "make v1-workbench-evidence-check" in readme
     assert "make v1-assurance-closure-check" in readme
     assert "make v1-rc-readiness" in readme
@@ -1357,6 +1372,14 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "make v1-operator-trial-record" in trial_record
     assert "What The Record Does Not Do" in trial_record
     assert "validation decision summary" in trial_record
+    assert "Enterprise Review State" in trial_record
+    assert "- next_action: `send_erg_003_and_erg_002`" in trial_record
+    assert "- recommended_send_set: `ERG-003`, `ERG-002`" in trial_record
+    assert "- candidate_response_count: `0`" in trial_record
+    assert "- placeholder_count: `2`" in trial_record
+    assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
+    assert "`dual_review_outbox`" in trial_record
+    assert "`send_manifest`" in trial_record
     assert "Ithildin v1.0 RC Feature Freeze" in feature_freeze
     assert "capability expansion remains blocked" in feature_freeze
     assert "Ithildin Enterprise Readiness Runway" in runway
