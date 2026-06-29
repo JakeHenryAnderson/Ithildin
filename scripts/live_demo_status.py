@@ -117,7 +117,12 @@ def build_status(*, repo_root: Path, output: Path, probe_endpoints: bool = True)
             "ui_root": ui_health,
         },
         "artifacts": artifacts,
-        "next_actions": _next_actions(preflight=preflight, api=api_health, ui=ui_health),
+        "next_actions": _next_actions(
+            preflight=preflight,
+            compose=compose,
+            api=api_health,
+            ui=ui_health,
+        ),
         "cleanup_reminder": "run make compose-down after a Compose demo",
         "does_not_do": [
             "start services",
@@ -176,8 +181,9 @@ def render_index(report: dict[str, Any]) -> str:
             "## If Something Fails",
             "",
             "- preflight failure: fix the listed failure before starting services.",
-            "- Compose unavailable: run the non-Compose evidence commands and skip local UI/API",
-            "  demo.",
+            "- Compose unavailable: run `make live-demo-environment-diagnostics`, use the",
+            "  non-Compose evidence commands, and skip local UI/API demo until the local",
+            "  Docker/Compose environment is healthy.",
             "- API unreachable: run `make compose-up`, then `make compose-smoke`.",
             "- UI unreachable: confirm the UI service is published on `127.0.0.1:5173`.",
             "- demo-flow failure: keep generated diagnostics and rerun `make live-demo-status`.",
@@ -273,12 +279,15 @@ def _artifact_status(repo_root: Path) -> dict[str, dict[str, Any]]:
 def _next_actions(
     *,
     preflight: dict[str, Any],
+    compose: dict[str, Any],
     api: dict[str, Any],
     ui: dict[str, Any],
 ) -> list[str]:
     if not preflight["valid"]:
         return ["fix preflight failures before running the live demo"]
     actions = ["run make demo-seed before any demo-flow execution"]
+    if not compose["available"] or not compose["running_hint"]:
+        actions.append("run make live-demo-environment-diagnostics if Compose is unavailable")
     if not api["reachable"] or not ui["reachable"]:
         actions.append("run make compose-up and make compose-smoke for local API/UI demo")
     actions.extend(

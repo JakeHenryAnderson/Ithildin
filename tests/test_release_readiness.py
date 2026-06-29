@@ -17760,6 +17760,10 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert report["loopback_ports_valid"] is True
     assert status_report["valid"] is True
     assert status_report["endpoints"]["api_healthz"]["safe_error"] == "probe_skipped"
+    assert (
+        "run make live-demo-environment-diagnostics if Compose is unavailable"
+        in status_report["next_actions"]
+    )
     assert summary_report["valid"] is True
     assert summary_report["preflight"]["tool_count"] == 24
     assert generated == expected
@@ -17787,6 +17791,8 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "Live Demo Operator Index" in operator_index
     assert "Happy Path" in operator_index
     assert "If Something Fails" in operator_index
+    assert "make live-demo-environment-diagnostics" in operator_index
+    assert "Docker/Compose environment is healthy" in operator_index
     assert "sandbox_artifact_observed_demo" in operator_index
     assert "cleanup needed" in operator_index
     assert "Live Demo Operator Index" in operator_index_bundle
