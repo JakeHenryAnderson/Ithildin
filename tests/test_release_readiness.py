@@ -346,6 +346,7 @@ from scripts import (
     v1_workbench_evidence_check,
     v3_next_capability_candidate_check,
     validation_plan,
+    validation_timing,
     workbench_demo_smoke,
     workbench_evidence_packet,
     workbench_readiness,
@@ -438,11 +439,13 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "quick-check:" in makefile
     assert "readiness-check:" in makefile
     assert "validation-plan:" in makefile
+    assert "validation-timing:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
     assert "make readiness-check" in readme
     assert "make validation-plan" in readme
+    assert "make validation-timing" in readme
     assert "slow_packet:" in pyproject
     assert "pytest_collection_modifyitems" in conftest
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
@@ -450,6 +453,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "sandbox_vm" in conftest
     assert "Do not use fast gates to claim release readiness" in guide
     assert "make validation-plan" in guide
+    assert "make validation-timing" in guide
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
@@ -477,6 +481,23 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     assert manifest_report["categories"] == ["manifest"]
     assert "make manifest-lock-check" in manifest_report["recommended_commands"]
     assert "make release-check" in manifest_report["recommended_commands"]
+
+
+def test_validation_timing_dry_run_reports_command_profile() -> None:
+    report = validation_timing.build_report(
+        ["make quick-check", "make readiness-check"],
+        dry_run=True,
+    )
+
+    assert report["valid"] is True
+    assert report["dry_run"] is True
+    assert report["command_count"] == 2
+    assert report["total_elapsed_seconds"] == 0.0
+    assert [result["command"] for result in report["results"]] == [
+        "make quick-check",
+        "make readiness-check",
+    ]
+    assert all(result["returncode"] == 0 for result in report["results"])
 
 
 def test_agent_workflow_instruction_layer_is_wired() -> None:

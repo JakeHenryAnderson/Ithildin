@@ -154,6 +154,8 @@ checked with `make control-mapping-readiness`.
   a curated release/docs smoke test set without generated review-packet rebuilds.
 - `make validation-plan` - inspect the current dirty file set and recommend the smallest honest
   validation gate set for those changes.
+- `make validation-timing` - time the fast validation profile so slowdowns are visible before they
+  become normal.
 - `make lint` - run Python lint checks.
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.

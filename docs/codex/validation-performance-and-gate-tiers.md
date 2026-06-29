@@ -26,6 +26,21 @@ and recommends the smallest honest command set. You can also pass files directly
 uv run python scripts/validation_plan.py docs/codex/example.md scripts/example.py
 ```
 
+### Validation Timing
+
+Run:
+
+```sh
+make validation-timing
+```
+
+Use this when the fast development loop starts to feel slow. It times the fast profile and prints
+per-command elapsed seconds. For a no-execute preview, run:
+
+```sh
+uv run python scripts/validation_timing.py --dry-run
+```
+
 ### Quick Check
 
 Run:
