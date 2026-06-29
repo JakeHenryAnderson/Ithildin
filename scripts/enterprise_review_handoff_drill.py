@@ -21,6 +21,8 @@ from scripts import (
     enterprise_response_status_board,
     enterprise_review_send_manifest,
     enterprise_review_send_readiness,
+    enterprise_review_send_receipt_template,
+    enterprise_review_submission_prompt,
     review_docs,
 )
 
@@ -91,6 +93,12 @@ def build_drill(repo_root: Path, output_dir: Path) -> Path:
     manifest_dir = enterprise_review_send_manifest.build_manifest(
         repo_root, enterprise_review_send_manifest.DEFAULT_OUTPUT_DIR
     )
+    submission_prompt_dir = enterprise_review_submission_prompt.build_prompt(
+        repo_root, enterprise_review_submission_prompt.DEFAULT_OUTPUT_DIR
+    )
+    receipt_template_dir = enterprise_review_send_receipt_template.build_template(
+        repo_root, enterprise_review_send_receipt_template.DEFAULT_OUTPUT_DIR
+    )
     inbox_dir = enterprise_response_inbox.build_inbox(
         repo_root, enterprise_response_inbox.DEFAULT_OUTPUT_DIR
     )
@@ -109,6 +117,8 @@ def build_drill(repo_root: Path, output_dir: Path) -> Path:
         intake_drill=intake_drill,
         outbox_dir=outbox_dir,
         manifest_dir=manifest_dir,
+        submission_prompt_dir=submission_prompt_dir,
+        receipt_template_dir=receipt_template_dir,
         inbox_dir=inbox_dir,
         outbox_payload=outbox_payload,
         manifest_payload=manifest_payload,
@@ -172,6 +182,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "ERG-003",
         "ERG-002",
         "Operator sequence",
+        "make enterprise-review-submission-prompt",
+        "make enterprise-review-send-receipt-template",
         "Response landing pads",
         "records_external_review: `false`",
         "normalizes_real_responses: `false`",
@@ -185,6 +197,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"ERG-002"',
         '"send_ready": true',
         '"intake_drill_valid": true',
+        '"submission_prompt_dir":',
+        '"receipt_template_dir":',
         '"records_external_review": false',
         '"normalizes_real_responses": false',
         '"closes_enterprise_lanes": false',
@@ -271,6 +285,8 @@ def _drill_payload(
     intake_drill: dict[str, Any],
     outbox_dir: Path,
     manifest_dir: Path,
+    submission_prompt_dir: Path,
+    receipt_template_dir: Path,
     inbox_dir: Path,
     outbox_payload: dict[str, Any],
     manifest_payload: dict[str, Any],
@@ -317,6 +333,8 @@ def _drill_payload(
             repo_root, outbox_dir / enterprise_dual_review_outbox.HASH_NAME
         ),
         "send_manifest_dir": _repo_rel(repo_root, manifest_dir),
+        "submission_prompt_dir": _repo_rel(repo_root, submission_prompt_dir),
+        "receipt_template_dir": _repo_rel(repo_root, receipt_template_dir),
         "response_inbox_dir": _repo_rel(repo_root, inbox_dir),
         "response_inbox_hash_manifest": _repo_rel(
             repo_root, inbox_dir / enterprise_response_inbox.HASH_NAME
@@ -325,6 +343,8 @@ def _drill_payload(
         "operator_sequence": [
             "make enterprise-dual-review-outbox",
             "make enterprise-review-send-manifest",
+            "make enterprise-review-submission-prompt",
+            "make enterprise-review-send-receipt-template",
             "send ERG-003 and ERG-002 attachment sets to reviewers",
             "make enterprise-dual-response-inbox",
             "paste raw responses into the lane raw-response files",
@@ -373,9 +393,9 @@ Tool count remains `24`.
 
 Current selected capability: `not selected`.
 
-This drill ties together the current send-ready outbox, send manifest, response inbox, response
-status board, and fixture-only intake drill. It does not record external review, does not normalize
-real responses, and does not close any enterprise lane.
+This drill ties together the current send-ready outbox, send manifest, submission prompt, send
+receipt template, response inbox, response status board, and fixture-only intake drill. It does not
+record external review, does not normalize real responses, and does not close any enterprise lane.
 
 ## Current send set
 
@@ -388,6 +408,10 @@ Outbox root: `{payload['outbox_dir']}`
 Outbox hash manifest: `{payload['outbox_hash_manifest']}`
 
 Send manifest root: `{payload['send_manifest_dir']}`
+
+Submission prompt root: `{payload['submission_prompt_dir']}`
+
+Send receipt template root: `{payload['receipt_template_dir']}`
 
 ## Operator sequence
 

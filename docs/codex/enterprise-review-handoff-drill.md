@@ -27,6 +27,8 @@ ties together:
 
 - the current `ERG-003` and `ERG-002` send-ready outbox;
 - the send manifest and artifact hashes;
+- the submission prompt;
+- the send receipt template;
 - the all-lane response inbox;
 - the response status board;
 - the fixture-only response-intake drill;
@@ -46,6 +48,7 @@ Generate the prerequisite artifacts first with:
 ```sh
 make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
+make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox
 make enterprise-response-status-board
@@ -61,7 +64,7 @@ make enterprise-review-handoff-drill-check
 
 ## Operator Flow
 
-1. Generate the current outbox, send manifest, and send receipt template.
+1. Generate the current outbox, send manifest, submission prompt, and send receipt template.
 2. Send only the `ERG-003` and `ERG-002` attachment sets named in the manifest.
 3. Generate the response inbox.
 4. Paste raw reviewer responses into the lane-specific ignored raw-response files.
