@@ -48,12 +48,13 @@ review both lanes independently.
 
 When responses come back, store raw reviewer text in the ignored response inbox:
 
-- `ERG-003`: `var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md`
-- `ERG-002`: `var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md`
+- `ERG-003`: `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md`
+- `ERG-002`: `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md`
 
 Then run:
 
 ```sh
+make enterprise-response-paste-preflight
 make enterprise-dual-response-readiness
 make enterprise-response-intake-drill
 ```
@@ -74,6 +75,8 @@ make enterprise-review-send-readiness
 make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
 make enterprise-review-submission-prompt
+make enterprise-review-send-receipt-template
+make enterprise-dual-response-inbox
 make enterprise-review-send-checklist
 make packet-redaction-scan
 ```
