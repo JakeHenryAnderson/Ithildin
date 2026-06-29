@@ -38,13 +38,17 @@ Generate or refresh the send-ready operator artifacts with:
 make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
 make enterprise-review-submission-prompt
+make enterprise-review-send-receipt-template
+make enterprise-dual-response-inbox
 make enterprise-review-handoff-drill
 ```
 
-After responses arrive, do not edit status docs directly. Save the raw responses under the ignored
-`var/review-runs/` response paths, then run:
+After responses arrive, do not edit status docs directly. For the current `ERG-003` and `ERG-002`
+send set, paste the raw responses under the ignored dual-response inbox at
+`var/review-runs/enterprise-dual-response-inbox/`, then run:
 
 ```sh
+make enterprise-response-paste-preflight
 make enterprise-response-inbox
 make enterprise-response-status-board
 make enterprise-response-intake-drill
@@ -64,6 +68,8 @@ Follow each lane-specific response kit and closure gate before any committed dis
 - `ERG-002` packet: `var/review-packets/v3/mission-control-display-external-review/`
 - dual-review outbox: `var/review-packets/v3/enterprise-dual-review-outbox/`
 - send manifest: `var/review-packets/v3/enterprise-review-send-manifest/`
+- send receipt template: `var/review-packets/v3/enterprise-review-send-receipt-template/`
+- dual-response inbox: `var/review-runs/enterprise-dual-response-inbox/`
 - response inbox: `var/review-runs/enterprise-response-inbox/`
 - response status snapshot: `var/review-runs/enterprise-response-status-board/`
 
