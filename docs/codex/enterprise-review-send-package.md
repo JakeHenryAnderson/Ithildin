@@ -25,9 +25,10 @@ var/review-packets/v3/enterprise-review-send-package/
 ## Purpose
 
 This package is a compact operator index over the current `ERG-003` and `ERG-002` send artifacts.
-It points to the lane prompt, lane-local `ATTACHMENT_MANIFEST.md`, lane hash manifest, raw-response
-placeholder, submission prompt, send receipt template, and response inbox. It does not copy or
-replace the underlying review packets; those remain under the dual-review outbox.
+It points to the lane prompt, lane-local `ATTACHMENT_MANIFEST.md`, manifest-listed attachment
+counts, lane hash manifest, raw-response placeholder, submission prompt, send receipt template, and
+response inbox. It does not copy or replace the underlying review packets; those remain under the
+dual-review outbox.
 
 The package exists to reduce operator send mistakes. It should be generated after:
 
@@ -55,8 +56,9 @@ fields together without recording review or closing lanes.
 - `ERG-003`: static sandbox/VM preflight disposition.
 - `ERG-002`: Mission Control display/import planning review.
 
-Each lane must be sent as a separate review request. Keep the lane-local attachment manifest and
-hash manifest with the sent packet.
+Each lane must be sent as a separate review request. Attach the files listed in the lane-local
+attachment manifest. Keep that manifest and the hash manifest with your operator handoff notes unless
+the review surface has room for operator-reference files.
 
 ## Boundary
 

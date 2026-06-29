@@ -166,6 +166,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             "make enterprise-review-send-package-check",
             "`ERG-003`",
             "`ERG-002`",
+            "manifest-listed attachment",
             "does not record external review",
             "does not normalize responses",
             "does not close `ERG-003` or `ERG-002`",
@@ -177,7 +178,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         markdown_text,
         [
             "Enterprise Review Send Package",
-            "Lane attachment manifest",
+            "Lane manifest/operator reference",
+            "Manifest-listed attachments",
+            "Outbox files including references",
             "ERG-003",
             "ERG-002",
             "ATTACHMENT_MANIFEST.md",
@@ -300,7 +303,8 @@ def _render_markdown(payload: dict[str, Any]) -> str:
     send_rows = "\n".join(
         (
             f"| `{packet['gap']}` | {packet['name']} | `{packet['prompt']}` | "
-            f"`{packet['attachment_manifest']}` | `{packet['hash_manifest']}` | "
+            f"`{packet['attachment_manifest']}` | `{packet['listed_attachment_count']}` | "
+            f"`{packet['outbox_file_count']}` | `{packet['hash_manifest']}` | "
             f"`{packet['raw_response_path']}` |"
         )
         for packet in payload["send_set"]
@@ -327,8 +331,15 @@ Recommended send set: `ERG-003`, `ERG-002`
 
 ## Lane requests
 
-| Gap | Review lane | Prompt | Lane attachment manifest | Lane hash manifest | Raw response path |
-| --- | --- | --- | --- | --- | --- |
+Attach the manifest-listed files for each lane. Keep `ATTACHMENT_MANIFEST.md` as an operator
+reference unless the review surface has room for it.
+
+Lane manifest/operator reference: `ATTACHMENT_MANIFEST.md`.
+Manifest-listed attachments are the files to send to the reviewer.
+Outbox files including references count local operator-reference files too.
+
+| Gap | Lane | Prompt | Manifest/ref | Listed | Outbox | Hashes | Response |
+| --- | --- | --- | --- | ---: | ---: | --- | --- |
 {send_rows}
 
 ## Operator artifacts
@@ -350,6 +361,8 @@ current send artifacts so the operator can send the two review requests consiste
 def _send_lane(outbox_root: str, packet: dict[str, Any]) -> dict[str, str]:
     gap = str(packet["gap"])
     lane_outbox = f"{outbox_root}/{packet['outbox_dir']}"
+    outbox_file_count = int(packet.get("copied_file_count", 0))
+    listed_attachment_count = max(outbox_file_count - 1, 0)
     return {
         "gap": gap,
         "name": str(packet["name"]),
@@ -357,6 +370,8 @@ def _send_lane(outbox_root: str, packet: dict[str, Any]) -> dict[str, str]:
         "outbox_dir": lane_outbox,
         "prompt": f"{outbox_root}/{packet['prompt']}",
         "attachment_manifest": f"{outbox_root}/{packet['attachment_manifest']}",
+        "listed_attachment_count": str(listed_attachment_count),
+        "outbox_file_count": str(outbox_file_count),
         "hash_manifest": _lane_hash_manifest(lane_outbox, gap),
         "raw_response_path": (
             "var/review-runs/enterprise-dual-response-inbox/"

@@ -3825,7 +3825,9 @@ def test_enterprise_review_send_package_is_wired() -> None:
         assert phrase in doc
     for phrase in [
         "Enterprise Review Send Package",
-        "Lane attachment manifest",
+        "Lane manifest/operator reference",
+        "Manifest-listed attachments",
+        "Outbox files including references",
         "ERG-003",
         "ERG-002",
         "ATTACHMENT_MANIFEST.md",
