@@ -43,6 +43,7 @@ Use these Ithildin artifacts as the implementation source of truth:
 - `docs/codex/mission-control-enterprise-status-import-contract.md`
 - `docs/codex/mission-control-enterprise-status-fixtures.md`
 - `docs/codex/mission-control-enterprise-status-acceptance-matrix.md`
+- `docs/codex/mission-control-enterprise-status-reference-validator.md`
 - `var/review-packets/v3/mission-control-display/`
 - `var/review-packets/v3/hello-world-mission-control-handoff/mission-control-handoff.json`
 - `var/review-packets/v3/mission-control-handoff-fixtures/`
@@ -73,6 +74,9 @@ Complete the future Mission Control work in this order:
    hashes, and freshness fields.
 4. **Display surface**: render safe labels, warning chips, short hashes, import status, and relative
    evidence links without raw contents.
+   For enterprise status exports, render `next_action` and `action_commands` as copyable
+   display-only text. Do not render them as executable buttons, task runners, callbacks, polling
+   controls, or shell commands.
 5. **Mission-local linkage**: store only Mission Control-local display metadata and optional
    mission/evidence references.
 6. **Negative fixtures**: add tests for stale packets, hash mismatch, unsafe paths, authority
@@ -128,7 +132,10 @@ The future Mission Control implementation should include tests for:
 
 - valid metadata-only handoff import;
 - valid fixture accepted as metadata-only display evidence;
+- valid enterprise status fixture accepted as display-only status evidence;
 - all `MC-HANDOFF-NEG-001` through `MC-HANDOFF-NEG-014` fixtures rejected with safe reason labels;
+- all `MC-STATUS-NEG-001` through `MC-STATUS-NEG-011` fixtures rejected with safe reason labels;
+- `MC-STATUS-NEG-011` unsafe action command rejection with `unsupported_action_command`;
 - unsupported schema rejection;
 - non-`metadata_only` status rejection;
 - missing display allowlist rejection;
@@ -162,6 +169,8 @@ The future Mission Control handoff should produce:
 - content-leak rejection transcript;
 - fixture-pack import transcript for `mission-control-handoff-fixtures/`;
 - enterprise-status fixture import transcript for `mission-control-enterprise-status-fixtures/`;
+- enterprise-status `action_commands` rendering transcript showing copyable text only, no execute
+  buttons or command runners;
 - UI screenshot or test evidence showing warning chips remain visible;
 - artifact hashes for generated review files;
 - no-new-authority evidence confirming Mission Control remains display/import only.
@@ -178,6 +187,7 @@ This ticket does not approve:
 - Mission Control polling or mutating Ithildin APIs;
 - Mission Control-created approvals;
 - Mission Control replay, repair, or promotion actions;
+- Mission Control execution of imported `action_commands`;
 - local model invocation;
 - VM/container lifecycle control;
 - sandbox orchestration;

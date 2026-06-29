@@ -6902,6 +6902,14 @@ def test_mission_control_integration_implementation_ticket_is_wired() -> None:
         "node scripts/check-ithildin-integration-docs.mjs",
         "apps/desktop/src/App.tsx",
         "apps/desktop/src/App.test.ts",
+        "docs/codex/mission-control-enterprise-status-reference-validator.md",
+        "valid enterprise status fixture accepted as display-only status evidence",
+        "all `MC-STATUS-NEG-001` through `MC-STATUS-NEG-011` fixtures rejected",
+        "`MC-STATUS-NEG-011` unsafe action command rejection",
+        "render `next_action` and `action_commands` as copyable",
+        "Do not render them as executable buttons",
+        "enterprise-status `action_commands` rendering transcript",
+        "Mission Control execution of imported `action_commands`",
     ]:
         assert phrase in doc
     for forbidden in [

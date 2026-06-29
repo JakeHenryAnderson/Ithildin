@@ -40,6 +40,10 @@ REQUIRED_INPUTS = [
     "mission-control-side-handoff-plan.md",
     "mission-control-handoff-schema-contract.md",
     "mission-control-handoff-negative-fixtures.md",
+    "mission-control-enterprise-status-import-contract.md",
+    "mission-control-enterprise-status-fixtures.md",
+    "mission-control-enterprise-status-acceptance-matrix.md",
+    "mission-control-enterprise-status-reference-validator.md",
     "hello-world-mission-control-handoff.md",
     "var/review-packets/v3/mission-control-display/",
     "mission-control-handoff.json",
@@ -51,6 +55,9 @@ REQUIRED_INPUTS = [
 
 REQUIRED_TESTS = [
     "valid metadata-only handoff import",
+    "valid enterprise status fixture accepted as display-only status evidence",
+    "all `MC-STATUS-NEG-001` through `MC-STATUS-NEG-011` fixtures rejected with safe reason labels",
+    "`MC-STATUS-NEG-011` unsafe action command rejection with `unsupported_action_command`",
     "unsupported schema rejection",
     "non-`metadata_only` status rejection",
     "missing display allowlist rejection",
@@ -74,6 +81,7 @@ REQUIRED_NON_GOALS = [
     "Mission Control callbacks into Ithildin",
     "Mission Control polling or mutating Ithildin APIs",
     "Mission Control-created approvals",
+    "Mission Control execution of imported `action_commands`",
     "local model invocation",
     "VM/container lifecycle control",
     "sandbox orchestration",
