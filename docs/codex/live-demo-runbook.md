@@ -18,6 +18,17 @@ ports, no Docker socket mount, read-only Compose posture, SQLite storage, teleme
 workspace inputs, no-new-powers, and tool-surface invariants. Warnings may appear for optional
 runtime signing keys or missing Docker Compose.
 
+If Docker, Compose, or Rosetta appear unhealthy on the operator machine, run the optional bounded
+environment diagnostic:
+
+```sh
+make live-demo-environment-diagnostics
+```
+
+This diagnostic reports local host/Docker/Rosetta status with short timeouts. It does not start
+Docker Desktop, start containers, stop containers, pull images, build images, call governed tools,
+read secrets, or change host settings.
+
 For an operator-oriented snapshot at any point, run:
 
 ```sh
@@ -180,7 +191,8 @@ JSONL files, generated review packets, or seeded workspaces.
 ## Failure Paths
 
 - Preflight failure: fix listed failures before starting services.
-- Compose unavailable: run non-Compose evidence commands and skip the local API/UI demo.
+- Compose unavailable: run `make live-demo-environment-diagnostics`, use non-Compose evidence
+  commands, and skip the local API/UI demo until the local Docker environment is healthy.
 - API unreachable: run `make compose-up`, then `make compose-smoke`.
 - UI unreachable: confirm the UI service is published on `127.0.0.1:5173`.
 - Demo flow failure: keep generated diagnostics, run `make live-demo-status`, and avoid rerunning

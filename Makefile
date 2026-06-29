@@ -9,7 +9,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-fixtures mission-control-enterprise-status-fixtures-check
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
-.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-operator-trial-readiness development-efficiency-status
+.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact packet-check-recursion-guard
 
 test:
@@ -1010,6 +1010,9 @@ operator-sandbox-demo-packet:
 
 live-demo-preflight:
 	uv run python scripts/live_demo_preflight.py
+
+live-demo-environment-diagnostics:
+	uv run python scripts/live_demo_environment_diagnostics.py
 
 live-demo-status:
 	uv run python scripts/live_demo_status.py

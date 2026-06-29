@@ -366,6 +366,8 @@ checked with `make control-mapping-readiness`.
 - `make operator-sandbox-dashboard-checklist` - generate a static review-console demo checklist from committed UI source/tests.
 - `make operator-sandbox-demo-packet` - generate an ignored operator-managed sandbox/workbench demo review packet.
 - `make live-demo-preflight` - run a secret-free read-only preflight for the local workbench demo.
+- `make live-demo-environment-diagnostics` - run bounded optional Docker/Compose/Rosetta diagnostics
+  for the local UI/API demo path without starting services.
 - `make live-demo-status` - print local demo status and write the ignored `LIVE_DEMO_INDEX.md` operator index.
 - `make live-demo-smoke` - generate a secret-free live-demo smoke transcript without starting services.
 - `make live-demo-evidence-summary` - generate a secret-free digest of live-demo status, smoke, signed fixture evidence, negative transcripts, correlation packets, and consolidated handoff artifacts.

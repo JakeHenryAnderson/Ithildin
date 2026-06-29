@@ -123,6 +123,7 @@ from scripts import (
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
+    live_demo_environment_diagnostics,
     live_demo_evidence_summary,
     live_demo_packet,
     live_demo_preflight,
@@ -17867,6 +17868,78 @@ def test_live_demo_smoke_command_times_out_safely(
     assert output["stderr"] == (
         "command timed out before completing; local service probe may be unavailable"
     )
+
+
+def test_live_demo_environment_diagnostics_is_wired(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    runbook = Path("docs/codex/live-demo-runbook.md").read_text(encoding="utf-8")
+    doc = Path("docs/codex/live-demo-environment-diagnostics.md").read_text(
+        encoding="utf-8"
+    )
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+
+    def fake_run(command: list[str | None]) -> dict[str, object]:
+        filtered = [part for part in command if part]
+        if filtered == ["/usr/local/bin/docker", "compose", "version"]:
+            return {"status": "ok", "returncode": 0, "safe_error": None}
+        if filtered == ["/usr/local/bin/docker", "info", "--format", "json"]:
+            return {"status": "timeout", "returncode": 124, "safe_error": "command timed out"}
+        if filtered == [
+            "/usr/sbin/pkgutil",
+            "--pkg-info",
+            "com.apple.pkg.RosettaUpdateAuto",
+        ]:
+            return {"status": "error", "returncode": 1, "safe_error": "not found"}
+        return {"status": "error", "returncode": 1, "safe_error": "unexpected command"}
+
+    monkeypatch.setattr(
+        "scripts.live_demo_environment_diagnostics.shutil.which",
+        lambda name: "/usr/local/bin/docker" if name == "docker" else None,
+    )
+    monkeypatch.setattr(
+        "scripts.live_demo_environment_diagnostics._run",
+        fake_run,
+    )
+    monkeypatch.setattr(
+        "scripts.live_demo_environment_diagnostics.platform.system",
+        lambda: "Darwin",
+    )
+    monkeypatch.setattr(
+        "scripts.live_demo_environment_diagnostics.platform.machine",
+        lambda: "arm64",
+    )
+
+    report = live_demo_environment_diagnostics.build_report(Path.cwd())
+    rendered = live_demo_environment_diagnostics.render_report(report)
+
+    assert report["valid"] is True
+    assert report["docker"]["cli_available"] is True
+    assert report["docker"]["compose_version"]["status"] == "ok"
+    assert report["docker"]["daemon_info"]["status"] == "timeout"
+    assert report["rosetta"]["status"] == "not_confirmed"
+    assert report["compose_demo_ready"] is False
+    assert "restart/update Docker Desktop; docker info timed out" in report["safe_next_actions"]
+    assert "update macOS/Rosetta if Docker Desktop requests it" in report["safe_next_actions"]
+    assert "compose_demo_ready: false" in rendered
+    assert "docker_daemon_status: timeout" in rendered
+    assert "live-demo-environment-diagnostics:" in makefile
+    assert "make live-demo-environment-diagnostics" in readme
+    assert "make live-demo-environment-diagnostics" in runbook
+    assert "does not start Docker Desktop" in doc
+    assert "does not start containers" in doc
+    assert "docs/codex/live-demo-environment-diagnostics.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/live-demo-environment-diagnostics.md" in docs_site
+    for forbidden in [
+        "ITHILDIN_ADMIN_TOKEN=",
+        "dev-admin-token-change-me",
+        "PRIVATE KEY",
+        "BEGIN OPENSSH",
+    ]:
+        assert forbidden not in rendered
+        assert forbidden not in doc
 
 
 def test_review_docs_index_is_documented_and_wired() -> None:
