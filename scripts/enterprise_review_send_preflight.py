@@ -293,6 +293,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"expected_action: {report['expected_action']}",
         f"current_commit: {report['current_commit']}",
         f"current_dirty: {str(report['current_dirty']).lower()}",
+        "artifact_hashes_match_files: "
+        f"{str(report['artifact_hashes_match_files']).lower()}",
+        "artifact_commits_match_current: "
+        f"{str(report['artifact_commits_match_current']).lower()}",
+        f"artifact_payloads_clean: {str(report['artifact_payloads_clean']).lower()}",
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         "components:",

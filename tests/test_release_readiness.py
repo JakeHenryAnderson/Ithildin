@@ -4791,6 +4791,10 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     if report["current_dirty"] is False:
         assert report["artifact_commits_match_current"] is True
         assert report["artifact_payloads_clean"] is True
+    rendered = enterprise_review_send_preflight.render_report(report)
+    assert "artifact_hashes_match_files: true" in rendered
+    assert "artifact_commits_match_current: true" in rendered
+    assert "artifact_payloads_clean: true" in rendered
     for output_key in [
         "dual_review_outbox",
         "send_manifest",
