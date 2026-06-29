@@ -268,6 +268,7 @@ externally closed.
 - [Enterprise Review Send Quickstart](enterprise-review-send-quickstart.md)
 - [Enterprise Review Submission Prompt](enterprise-review-submission-prompt.md)
 - [Enterprise Review Send Receipt Template](enterprise-review-send-receipt-template.md)
+- [Enterprise Review Send Package](enterprise-review-send-package.md)
 - [Enterprise Review Handoff Drill](enterprise-review-handoff-drill.md)
 - [Enterprise Dual Response Inbox](enterprise-dual-response-inbox.md)
 - [Enterprise Dual Response Readiness](enterprise-dual-response-readiness.md)

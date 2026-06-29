@@ -76,6 +76,7 @@ from scripts import (
     enterprise_review_handoff_drill,
     enterprise_review_send_checklist,
     enterprise_review_send_manifest,
+    enterprise_review_send_package,
     enterprise_review_send_preflight,
     enterprise_review_send_preflight_lightweight_check,
     enterprise_review_send_quickstart,
@@ -3657,6 +3658,127 @@ def test_enterprise_review_submission_prompt_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-review-submission-prompt" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_send_package_is_wired() -> None:
+    report = enterprise_review_send_package.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-package.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    quickstart_doc = Path("docs/codex/enterprise-review-send-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    manifest_doc = Path("docs/codex/enterprise-review-send-manifest.md").read_text(
+        encoding="utf-8"
+    )
+    receipt_doc = Path("docs/codex/enterprise-review-send-receipt-template.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    refresh_body = makefile.partition("enterprise-review-send-refresh:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-review-send-package")
+    generated = generated_dir / "ENTERPRISE_REVIEW_SEND_PACKAGE.md"
+    generated_json = generated_dir / "enterprise-review-send-package.json"
+    generated_hashes = json.loads(
+        (
+            generated_dir / "enterprise-review-send-package-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["artifact_hashes_match_files"] is True
+    for key in [
+        "records_external_review",
+        "normalizes_responses",
+        "writes_response_files",
+        "closes_erg_003",
+        "closes_erg_002",
+        "runtime_changes_allowed",
+        "mission_control_runtime_allowed",
+        "live_vm_inspection_allowed",
+        "local_model_invocation_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "siem_adapter_allowed",
+        "compliance_automation_allowed",
+        "public_security_product_positioning_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+    for phrase in [
+        "Status: generated operator package index for the current enterprise send set.",
+        "make enterprise-review-send-package",
+        "make enterprise-review-send-package-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record external review",
+        "does not normalize responses",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Send Package",
+        "Lane attachment manifest",
+        "ERG-003",
+        "ERG-002",
+        "ATTACHMENT_MANIFEST.md",
+        "Submission prompt",
+        "Send receipt template",
+        "Dual response inbox",
+        "records_external_review: `false`",
+        "normalizes_responses: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"package_type": "ithildin.enterprise_review_send_package"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"attachment_manifest"',
+        '"records_external_review": false',
+        '"normalizes_responses": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_REVIEW_SEND_PACKAGE.md",
+        "enterprise-review-send-package.json",
+    } <= hashed_paths
+    assert "enterprise-review-send-package-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-send-package:" in makefile
+    assert "enterprise-review-send-package-check:" in makefile
+    assert "enterprise-review-send-package-check" in release_check_body
+    assert "$(MAKE) enterprise-review-send-package" in review_candidate_body
+    assert "$(MAKE) enterprise-review-send-package" in refresh_body
+    assert "make enterprise-review-send-package" in readme
+    assert "enterprise-review-send-package" in quickstart_doc
+    assert "enterprise-review-send-package" in manifest_doc
+    assert "enterprise-review-send-package" in receipt_doc
+    assert "docs/codex/enterprise-review-send-package.md" in docs_site
+    assert "docs/codex/enterprise-review-send-package.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Package" in review_index
+    assert "enterprise-review-send-package-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-package" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 

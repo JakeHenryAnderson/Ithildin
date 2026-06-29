@@ -506,6 +506,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-receipt-template` - generate an ignored operator receipt template
   for recording send timestamps, reviewer/thread placeholders, packet hashes, and raw-response paths
   after the human send step, without recording review or closing lanes.
+- `make enterprise-review-send-package` - generate a compact operator package index over the
+  current `ERG-003` and `ERG-002` prompts, lane attachment manifests, hash manifests, receipt
+  template, and response inbox paths without recording review or closing lanes.
 - `make enterprise-review-handoff-drill` - generate a checked operator drill tying together the
   current send outbox, send manifest, response inbox, status board, and intake drill without
   recording review, normalizing real responses, or closing lanes.
@@ -1238,6 +1241,12 @@ generated with `make enterprise-review-send-receipt-template`; it gives the oper
 template for tying sent-thread metadata and raw-response paths back to the generated packet hashes
 after the human send step while still not recording review, normalizing responses, writing raw
 responses, or closing either lane.
+The enterprise review send package is
+[docs/codex/enterprise-review-send-package.md](docs/codex/enterprise-review-send-package.md),
+generated with `make enterprise-review-send-package`; it gives the operator a compact generated
+index over the current `ERG-003` and `ERG-002` prompts, lane attachment manifests, hash manifests,
+submission prompt, send receipt template, and response inbox paths while still not recording review,
+normalizing responses, writing raw responses, or closing either lane.
 The enterprise review handoff drill is
 [docs/codex/enterprise-review-handoff-drill.md](docs/codex/enterprise-review-handoff-drill.md),
 generated with `make enterprise-review-handoff-drill`; it ties together the outbox, send manifest,

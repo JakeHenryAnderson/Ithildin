@@ -75,7 +75,9 @@ Postgres, hosted telemetry, or remote MCP.
    response-path instructions.
 9. Run `make enterprise-review-submission-prompt` to generate the final paste-ready operator prompt
    for the separate `ERG-003` and `ERG-002` review requests.
-10. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
+10. Run `make enterprise-review-send-package` to generate the compact send package index over the
+   current prompts, lane attachment manifests, hash manifests, receipt template, and response paths.
+11. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
    matching ignored raw-response placeholder, then run `make enterprise-response-waiting-room`,
    `make enterprise-response-paste-preflight`, and follow the lane-specific response kit. Do not
    edit lane status by hand.

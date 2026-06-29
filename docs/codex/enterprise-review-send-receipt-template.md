@@ -45,11 +45,12 @@ Expected raw responses are later pasted under the ignored response inbox at
 2. Run `make enterprise-review-send-manifest`.
 3. Run `make enterprise-review-submission-prompt`.
 4. Run `make enterprise-review-send-receipt-template`.
-5. Send `ERG-003` and `ERG-002` in separate review threads.
-6. Copy the ignored generated receipt template if you want a local operator note, then fill in the
+5. Run `make enterprise-review-send-package`.
+6. Send `ERG-003` and `ERG-002` in separate review threads.
+7. Copy the ignored generated receipt template if you want a local operator note, then fill in the
    send timestamp, channel, reviewer label, thread URL or message ID, and raw-response path after a
    response arrives.
-7. Route responses through `make enterprise-dual-response-inbox`,
+8. Route responses through `make enterprise-dual-response-inbox`,
    `make enterprise-response-waiting-room`, and the lane-specific response kit.
 
 ## Boundary

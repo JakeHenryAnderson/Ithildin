@@ -84,6 +84,16 @@ See [Enterprise Review Send Receipt Template](enterprise-review-send-receipt-tem
 template does not record external review, normalize responses, write raw response files, or close
 either lane.
 
+Then generate the compact package index:
+
+```sh
+make enterprise-review-send-package
+```
+
+See [Enterprise Review Send Package](enterprise-review-send-package.md). The package points to the
+current prompts, lane attachment manifests, hash manifests, receipt template, and response inbox
+paths without recording review or closing either lane.
+
 ## After Sending
 
 While waiting for responses, use:
