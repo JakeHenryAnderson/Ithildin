@@ -75,6 +75,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("release-check profile expected UI test target")
     if "docs-site" not in unique_targets:
         failures.append("release-check profile expected docs-site target")
+    if duplicates:
+        failures.append(
+            "release-check has duplicate prerequisites: " + ", ".join(duplicates)
+        )
 
     return {
         "schema_version": "1",

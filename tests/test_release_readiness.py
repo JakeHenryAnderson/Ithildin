@@ -488,6 +488,8 @@ def test_validation_performance_tiers_are_wired() -> None:
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100
+    assert profile_report["duplicate_target_count"] == 0
+    assert profile_report["duplicate_targets"] == []
     assert profile_report["contains_full_test"] is True
     assert profile_report["contains_ui_build"] is True
     assert profile_report["contains_docs_site"] is True
