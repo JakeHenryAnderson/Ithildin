@@ -148,6 +148,8 @@ checked with `make control-mapping-readiness`.
 ## Development Commands
 
 - `make test` - run Python tests.
+- `make test-fast` - run Python tests excluding generated-packet `slow_packet` tests for the
+  development loop.
 - `make quick-check` - run the fast local development gate: core boundary checks, lint, and
   typecheck without generated review-packet rebuilds.
 - `make readiness-check` - run the medium development gate: `quick-check`, docs generation, and
@@ -156,8 +158,11 @@ checked with `make control-mapping-readiness`.
   validation gate set for those changes.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
+- `make smart-handoff-check` - run the current validation plan including deferred release/review
+  gates; use this before handoff when the dirty-file plan says full release evidence is required.
 - `make validation-timing` - time the fast validation profile so slowdowns are visible before they
-  become normal.
+  become normal; pass helper arguments with `ARGS=...`, such as
+  `make validation-timing ARGS=--dry-run`.
 - `make lint` - run Python lint checks.
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.

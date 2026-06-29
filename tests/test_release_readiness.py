@@ -437,15 +437,19 @@ def test_validation_performance_tiers_are_wired() -> None:
     review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
 
     assert "quick-check:" in makefile
+    assert "test-fast:" in makefile
     assert "readiness-check:" in makefile
     assert "smart-check:" in makefile
+    assert "smart-handoff-check:" in makefile
     assert "validation-plan:" in makefile
     assert "validation-timing:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
+    assert "make test-fast" in readme
     assert "make readiness-check" in readme
     assert "make smart-check" in readme
+    assert "make smart-handoff-check" in readme
     assert "make validation-plan" in readme
     assert "make validation-timing" in readme
     assert "slow_packet:" in pyproject
@@ -453,8 +457,13 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
     assert "mission_control" in conftest
     assert "sandbox_vm" in conftest
+    assert "enterprise" in conftest
+    assert "trusted_host" in conftest
+    assert "quickstart" in conftest
     assert "Do not use fast gates to claim release readiness" in guide
     assert "make smart-check" in guide
+    assert "make smart-handoff-check" in guide
+    assert "make test-fast" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
     assert "make smart-check" in validation_timing.PROFILES["fast"]
@@ -479,12 +488,22 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     assert "make release-check" not in docs_report["recommended_commands"]
     assert docs_report["full_release_gate_required"] is False
     assert runtime_report["categories"] == ["runtime"]
-    assert "make test" in runtime_report["recommended_commands"]
-    assert "make release-check" in runtime_report["recommended_commands"]
+    assert "make test-fast" in runtime_report["recommended_commands"]
+    assert "make test" not in runtime_report["recommended_commands"]
+    assert "make release-check" not in runtime_report["recommended_commands"]
+    assert "make release-check" in runtime_report["deferred_handoff_commands"]
     assert runtime_report["full_release_gate_required"] is True
     assert manifest_report["categories"] == ["manifest"]
     assert "make manifest-lock-check" in manifest_report["recommended_commands"]
-    assert "make release-check" in manifest_report["recommended_commands"]
+    assert "make release-check" not in manifest_report["recommended_commands"]
+    assert "make release-check" in manifest_report["deferred_handoff_commands"]
+
+    release_report = validation_plan.build_report(
+        ["apps/api/src/ithildin_api/tools/example.py"],
+        include_release=True,
+    )
+    assert "make release-check" in release_report["recommended_commands"]
+    assert release_report["deferred_handoff_commands"] == []
 
 
 def test_validation_timing_dry_run_reports_command_profile() -> None:

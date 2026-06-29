@@ -39,6 +39,21 @@ recommending duplicate sub-gates: for example, docs/process changes run `readine
 `quick-check` followed by `readiness-check`, because `readiness-check` already includes the quick
 gate.
 
+By default, `smart-check` reports slow release/review gates as deferred handoff commands instead of
+running them. That keeps routine development from paying the full generated-packet and release-gate
+cost after every small change. When you want the same dirty-file-aware plan plus slow handoff gates,
+run:
+
+```sh
+make smart-handoff-check
+```
+
+or:
+
+```sh
+uv run python scripts/validation_plan.py --include-release --run
+```
+
 ### Validation Timing
 
 Run:
@@ -67,6 +82,19 @@ Use this for small docs, bookkeeping, script wiring, and manager-owned cleanup w
 manifest, policy, API/MCP, approval/audit, or UI behavior changed.
 
 This runs core boundary checks, lint, and typecheck. It does not generate review packets.
+
+### Fast Python Tests
+
+Run:
+
+```sh
+make test-fast
+```
+
+Use this for runtime iteration when generated packet tests are not the thing under review. It runs
+the Python suite with `slow_packet` tests excluded, so executor/API regressions still get broad
+coverage without walking every review-packet generator. `make test` remains the full Python test
+suite and is still part of release proof.
 
 ### Readiness Check
 
@@ -123,7 +151,8 @@ uv run pytest tests/test_release_readiness.py -m "not slow_packet" -q
 ## Rule Of Thumb
 
 - Runtime, executor, manifest, policy, approval/audit, or API/MCP changes: run focused subsystem
-  tests, then `make release-check`.
+  tests with `make smart-check` or `make test-fast`, then `make smart-handoff-check` or `make release-check` before
+  handoff, review, or a meaningful checkpoint commit.
 - UI runtime changes: run UI tests/build plus relevant API/readiness tests.
 - Docs/process/review wiring changes: run `make readiness-check`, plus the focused test for the
   specific script/doc you touched.

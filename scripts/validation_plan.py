@@ -46,6 +46,14 @@ def main() -> int:
         help="run the recommended commands after building the plan",
     )
     parser.add_argument(
+        "--include-release",
+        action="store_true",
+        help=(
+            "include slow release/review gates in the executable command plan; "
+            "by default they are reported as deferred handoff commands"
+        ),
+    )
+    parser.add_argument(
         "--timeout",
         type=float,
         default=900.0,
@@ -54,7 +62,7 @@ def main() -> int:
     args = parser.parse_args()
 
     files = args.files or changed_files(ROOT)
-    report = build_report(files)
+    report = build_report(files, include_release=args.include_release)
     if args.run:
         report["execution"] = run_commands(
             report["recommended_commands"],
@@ -70,16 +78,21 @@ def main() -> int:
     return 0
 
 
-def build_report(files: list[str]) -> dict[str, Any]:
+def build_report(files: list[str], *, include_release: bool = False) -> dict[str, Any]:
     normalized = sorted({_normalize_path(path) for path in files if path.strip()})
     categories = sorted({_classify(path) for path in normalized})
     commands = _commands_for_categories(categories)
+    slow_commands = _slow_commands_for_categories(categories)
+    recommended_commands = commands + slow_commands if include_release else commands
     return {
         "schema_version": "1",
         "files": normalized,
         "file_count": len(normalized),
         "categories": categories,
-        "recommended_commands": commands,
+        "recommended_commands": recommended_commands,
+        "development_commands": commands,
+        "deferred_handoff_commands": [] if include_release else slow_commands,
+        "include_release": include_release,
         "full_release_gate_required": _requires_full_release(categories),
         "review_candidate_required": "review_packet" in categories,
         "notes": _notes_for_categories(categories),
@@ -108,11 +121,15 @@ def render_report(report: dict[str, Any]) -> str:
         "Ithildin validation plan",
         f"file_count: {report['file_count']}",
         "categories: " + (", ".join(report["categories"]) or "none"),
+        f"include_release: {str(report['include_release']).lower()}",
         f"full_release_gate_required: {str(report['full_release_gate_required']).lower()}",
         f"review_candidate_required: {str(report['review_candidate_required']).lower()}",
         "recommended_commands:",
     ]
     lines.extend(f"- {command}" for command in report["recommended_commands"])
+    if report["deferred_handoff_commands"]:
+        lines.append("deferred_handoff_commands:")
+        lines.extend(f"- {command}" for command in report["deferred_handoff_commands"])
     if report["notes"]:
         lines.append("notes:")
         lines.extend(f"- {note}" for note in report["notes"])
@@ -199,12 +216,17 @@ def _commands_for_categories(categories: list[str]) -> list[str]:
             ]
         )
     if "runtime" in categories:
-        commands.extend(["make test", "make release-check"])
-    elif _requires_full_release(categories):
+        commands.append("make test-fast")
+    return _dedupe(commands)
+
+
+def _slow_commands_for_categories(categories: list[str]) -> list[str]:
+    commands: list[str] = []
+    if _requires_full_release(categories):
         commands.append("make release-check")
     if "review_packet" in categories:
         commands.append("make review-candidate")
-    return _dedupe(commands)
+    return commands
 
 
 def _requires_full_release(categories: list[str]) -> bool:
@@ -227,6 +249,11 @@ def _notes_for_categories(categories: list[str]) -> list[str]:
     if "review_packet" in categories:
         notes.append(
             "Generated packet changes should be verified with review-candidate before handoff."
+        )
+    if _requires_full_release(categories):
+        notes.append(
+            "Full release/review gates are deferred by default; use --include-release for a "
+            "handoff-ready run."
         )
     if categories and not _requires_full_release(categories):
         notes.append("Fast gates are development evidence, not release-readiness proof.")
