@@ -473,7 +473,10 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-decision" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
+    assert "--fail-on-budget" in guide
+    assert "budget status" in guide
     assert "make smart-check" in validation_timing.PROFILES["fast"]
+    assert validation_timing.PROFILE_BUDGET_SECONDS["fast"] > 0
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
@@ -538,15 +541,45 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
 def test_validation_timing_dry_run_reports_command_profile() -> None:
     report = validation_timing.build_report(
         ["make smart-check"],
+        budget_seconds=60.0,
         dry_run=True,
     )
 
     assert report["valid"] is True
+    assert report["commands_valid"] is True
     assert report["dry_run"] is True
     assert report["command_count"] == 1
     assert report["total_elapsed_seconds"] == 0.0
+    assert report["budget_seconds"] == 60.0
+    assert report["budget_exceeded"] is False
+    assert report["performance_status"] == "within_budget"
     assert [result["command"] for result in report["results"]] == ["make smart-check"]
     assert all(result["returncode"] == 0 for result in report["results"])
+
+
+def test_validation_timing_can_fail_on_budget(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Completed:
+        returncode = 0
+        stdout = "ok\n"
+
+    def fake_run(*args: object, **kwargs: object) -> Completed:
+        return Completed()
+
+    times = iter([10.0, 15.0])
+
+    monkeypatch.setattr("scripts.validation_timing.subprocess.run", fake_run)
+    monkeypatch.setattr("scripts.validation_timing.time.monotonic", lambda: next(times))
+
+    report = validation_timing.build_report(
+        ["make quick-check"],
+        budget_seconds=1.0,
+        fail_on_budget=True,
+    )
+
+    assert report["commands_valid"] is True
+    assert report["valid"] is False
+    assert report["budget_exceeded"] is True
+    assert report["performance_status"] == "over_budget"
 
 
 def test_validation_plan_run_commands_reports_execution(monkeypatch: pytest.MonkeyPatch) -> None:

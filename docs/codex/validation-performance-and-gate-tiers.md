@@ -75,11 +75,17 @@ make validation-timing
 ```
 
 Use this when the fast development loop starts to feel slow. It times the fast profile and prints
-per-command elapsed seconds. The default fast profile measures `make smart-check`, because that is
-the normal dirty-file-aware development gate. For a no-execute preview, run:
+per-command elapsed seconds plus a profile budget status. The default fast profile measures
+`make smart-check`, because that is the normal dirty-file-aware development gate. Budget overruns
+are informational by default so performance drift is visible without breaking ordinary development.
+To turn a timing budget into a failing gate for a local investigation, use `--fail-on-budget`.
+
+Examples:
 
 ```sh
 uv run python scripts/validation_timing.py --dry-run
+uv run python scripts/validation_timing.py --profile readiness --budget-seconds 300
+uv run python scripts/validation_timing.py --command "make enterprise-response-paste-preflight" --budget-seconds 10 --fail-on-budget
 ```
 
 ### Quick Check
