@@ -212,6 +212,7 @@ DEFAULT_DOCS = [
     "docs/codex/v1.0-progress-assessment.md",
     "docs/codex/technical-mvp-ticket-map.md",
     "docs/codex/technical-mvp-operator-trial-readiness.md",
+    "docs/codex/development-efficiency-status.md",
     "docs/codex/v1.0-rc-feature-freeze.md",
     "docs/codex/v1.0-rc-external-review-prompt.md",
     "docs/codex/v1.0-rc-final-handoff.md",

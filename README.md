@@ -169,6 +169,9 @@ checked with `make control-mapping-readiness`.
   validation gate set for those changes.
 - `make validation-decision` - print the current validation mode, deferred handoff gates, release
   slice suggestions, and command guidance for the dirty file set.
+- `make development-efficiency-status` - print the compact current-state view that combines
+  validation choice, release-check shape, technical MVP operator-trial readiness, and enterprise
+  handoff action.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make smart-handoff-check` - run the current validation plan including deferred release/review
@@ -417,6 +420,8 @@ checked with `make control-mapping-readiness`.
   lanes, and enterprise architecture backlog.
 - `make technical-mvp-operator-trial-readiness` - validate the checked local-preview operator-trial
   readiness view for the technical MVP and the exact remaining hands-on trial commands.
+- `make development-efficiency-status` - validate the compact gate-selection and handoff-status
+  view that decides whether the next step is a focused development gate or full handoff evidence.
 - `make v1-rc-feature-freeze` - validate the v1.0 RC feature-freeze decision: tool count `24`,
   no selected next capability, blocked capability expansion, and no public/security-product
   positioning.
@@ -1089,6 +1094,11 @@ The technical MVP operator-trial readiness view is
 and is checked with `make technical-mvp-operator-trial-readiness`; it consolidates the checked
 state into the remaining hands-on local-preview operator trial commands without starting services,
 calling governed tools, or approving sandbox/VM lifecycle control.
+The development efficiency status is
+[docs/codex/development-efficiency-status.md](docs/codex/development-efficiency-status.md)
+and is checked with `make development-efficiency-status`; it combines validation-decision,
+release-check profile, technical MVP readiness, and enterprise-current-checkpoint evidence into one
+small decision view without replacing `make release-check` or `make review-candidate`.
 The v1.0 RC feature-freeze decision is
 [docs/codex/v1.0-rc-feature-freeze.md](docs/codex/v1.0-rc-feature-freeze.md) and is checked with
 `make v1-rc-feature-freeze`; it blocks new manifests, executors, policy powers, MCP/API behavior,

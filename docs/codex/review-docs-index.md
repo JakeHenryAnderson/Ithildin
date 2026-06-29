@@ -235,6 +235,7 @@ externally closed.
 - [Ithildin v1.0 Progress Assessment](v1.0-progress-assessment.md)
 - [Ithildin Technical MVP Ticket Map](technical-mvp-ticket-map.md)
 - [Ithildin Technical MVP Operator Trial Readiness](technical-mvp-operator-trial-readiness.md)
+- [Development Efficiency Status](development-efficiency-status.md)
 - [Ithildin v1.0 RC Feature Freeze](v1.0-rc-feature-freeze.md)
 - [Ithildin v1.0 RC External Review Prompt](v1.0-rc-external-review-prompt.md)
 - [Ithildin v1.0 RC Final Handoff](v1.0-rc-final-handoff.md)

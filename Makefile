@@ -9,7 +9,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-fixtures mission-control-enterprise-status-fixtures-check
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
-.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-operator-trial-readiness
+.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-operator-trial-readiness development-efficiency-status
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact packet-check-recursion-guard
 
 test:
@@ -85,6 +85,9 @@ validation-plan:
 
 validation-decision:
 	uv run python scripts/validation_decision.py $(ARGS)
+
+development-efficiency-status:
+	uv run python scripts/development_efficiency_status.py $(ARGS)
 
 smart-check:
 	uv run python scripts/validation_plan.py --run $(ARGS)
@@ -1580,6 +1583,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 release-check: compliance-mapping-external-review-bundle-check
 release-check: packet-check-recursion-guard
 release-check: technical-mvp-operator-trial-readiness
+release-check: development-efficiency-status
 
 release-check: sandbox-vm-live-poc-response-dry-run
 release-check: sandbox-vm-live-poc-response-kit-check

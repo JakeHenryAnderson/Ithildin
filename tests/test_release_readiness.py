@@ -47,6 +47,7 @@ from scripts import (
     demo_readiness_summary,
     demo_reset_guide,
     demo_state_report,
+    development_efficiency_status,
     docs_claims_public_preview_disposition_closure_check,
     enterprise_current_checkpoint,
     enterprise_dependency_ladder,
@@ -28626,6 +28627,65 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
         "does not start services",
         "does not call governed tools",
         "does not approve sandbox/VM lifecycle control",
+    ]:
+        assert phrase in doc
+
+
+def test_development_efficiency_status_is_wired() -> None:
+    report = development_efficiency_status.build_report(Path.cwd())
+    doc = Path("docs/codex/development-efficiency-status.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
+    assert report["selected_capability"] == "not selected"
+    assert report["technical_mvp_state"] == "ready_for_operator_trial"
+    assert report["operator_trial_ready"] is True
+    assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["runtime_changes_allowed"] is False
+    assert report["capability_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert "make release-check" in report["recommended_handoff_commands"]
+    assert "make review-candidate" in report["recommended_handoff_commands"]
+    assert "make development-efficiency-status" in readme
+    assert "development-efficiency-status:" in makefile
+    assert (
+        "development-efficiency-status" in release_check_body
+        or "release-check: development-efficiency-status" in makefile
+    )
+    assert (
+        "development-efficiency-status"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/development-efficiency-status.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/development-efficiency-status.md" in docs_site
+    assert "Development Efficiency Status" in review_index
+    for phrase in [
+        "Status: checked development-efficiency view.",
+        "make validation-decision",
+        "make release-check-profile",
+        "make technical-mvp-operator-trial-readiness",
+        "make enterprise-current-checkpoint",
+        "make dev-check",
+        "make release-check",
+        "make review-candidate",
+        "make enterprise-review-send-refresh",
+        "does not start services",
+        "does not call governed tools",
+        "does not approve runtime changes",
+        "does not replace release-check",
     ]:
         assert phrase in doc
 

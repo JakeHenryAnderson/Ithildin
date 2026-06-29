@@ -119,6 +119,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/v1.0-progress-assessment.md" in DEFAULT_DOCS
     assert "docs/codex/technical-mvp-ticket-map.md" in DEFAULT_DOCS
     assert "docs/codex/technical-mvp-operator-trial-readiness.md" in DEFAULT_DOCS
+    assert "docs/codex/development-efficiency-status.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-feature-freeze.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-external-review-prompt.md" in DEFAULT_DOCS
     assert "docs/codex/v1.0-rc-final-handoff.md" in DEFAULT_DOCS
