@@ -12,11 +12,10 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
-    enterprise_current_checkpoint,
     enterprise_progress_model,
     enterprise_readiness_gap_matrix_check,
     enterprise_response_status_board,
-    enterprise_review_send_readiness,
+    next_capability_readiness,
     review_docs,
 )
 
@@ -114,31 +113,25 @@ def main() -> int:
 
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
-    current = enterprise_current_checkpoint.build_report(repo_root)
+    capability = next_capability_readiness.build_report(repo_root)
     progress = enterprise_progress_model.build_report(repo_root)
     gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
-    send_readiness = enterprise_review_send_readiness.build_report(repo_root)
     response_status = enterprise_response_status_board.build_report(repo_root)
 
     for label, report in [
-        ("enterprise-current-checkpoint", current),
+        ("next-capability-readiness", capability),
         ("enterprise-progress-model", progress),
         ("enterprise-readiness-gap-matrix", gap_matrix),
-        ("enterprise-review-send-readiness", send_readiness),
         ("enterprise-response-status-board", response_status),
     ]:
         if report.get("valid") is not True:
             failures.append(f"{label} is not valid")
             failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
 
-    if current.get("tool_count") != 24:
-        failures.append("current checkpoint tool count is not 24")
-    if current.get("selected_capability") != "not selected":
+    if capability.get("tool_count") != 24:
+        failures.append("next capability readiness tool count is not 24")
+    if capability.get("next_candidate") != "not selected":
         failures.append("selected capability must remain not selected")
-    if current.get("recommended_send_set") != ["ERG-003", "ERG-002"]:
-        failures.append("recommended send set must remain ERG-003 then ERG-002")
-    if send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]:
-        failures.append("send-readiness recommended order must remain ERG-003 then ERG-002")
     if response_status.get("response_present_count") != 0:
         failures.append("enterprise responses are present; use response application flow")
     if response_status.get("closure_ready_count") != 0:
@@ -206,7 +199,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "dependency_ladder_doc": DOC_REL,
         "tool_count": 24,
-        "selected_capability": current.get("selected_capability"),
+        "selected_capability": capability.get("next_candidate"),
         "recommended_sequence": ["ERG-003", "ERG-002", "ERG-004"],
         "recommended_first_closure_lane": "ERG-003",
         "recommended_second_closure_lane": "ERG-002",

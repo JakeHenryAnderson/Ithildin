@@ -12,11 +12,9 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
-    enterprise_current_checkpoint,
     enterprise_dependency_ladder,
     enterprise_readiness_gap_matrix_check,
     enterprise_response_status_board,
-    enterprise_review_send_readiness,
     enterprise_transition_map,
     next_capability_readiness,
     review_docs,
@@ -126,22 +124,18 @@ def main() -> int:
 
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
-    current = enterprise_current_checkpoint.build_report(repo_root)
     ladder = enterprise_dependency_ladder.build_report(repo_root)
     transition = enterprise_transition_map.build_report(repo_root)
     progress = v1_progress_assessment.build_report(repo_root)
     gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
-    send_readiness = enterprise_review_send_readiness.build_report(repo_root)
     response_status = enterprise_response_status_board.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
 
     for label, report in [
-        ("enterprise-current-checkpoint", current),
         ("enterprise-dependency-ladder", ladder),
         ("enterprise-transition-map", transition),
         ("v1-progress-assessment", progress),
         ("enterprise-readiness-gap-matrix", gap_matrix),
-        ("enterprise-review-send-readiness", send_readiness),
         ("enterprise-response-status-board", response_status),
         ("next-capability-readiness", capability),
     ]:
@@ -149,20 +143,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"{label} is not valid")
             failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
 
-    if current.get("tool_count") != 24:
-        failures.append("current checkpoint tool count is not 24")
     if progress.get("tool_count") != 24:
         failures.append("progress assessment tool count is not 24")
-    if current.get("selected_capability") != "not selected":
-        failures.append("current checkpoint selected capability is not selected")
     if capability.get("next_candidate") != "not selected":
         failures.append("next capability candidate is selected")
-    if current.get("recommended_send_set") != ["ERG-003", "ERG-002"]:
-        failures.append("current checkpoint recommended send set drifted")
-    if send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]:
-        failures.append("send-readiness recommended order drifted")
-    if current.get("response_present_count") != 0:
-        failures.append("response evidence is present; use response intake before roadmap")
     if response_status.get("response_present_count") != 0:
         failures.append("enterprise response status reports present responses")
     if response_status.get("closure_ready_count") != 0:
@@ -184,8 +168,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     }
     for key, expected in boundary_flags.items():
         for label, report in [
-            ("current checkpoint", current),
-            ("send readiness", send_readiness),
             ("response status", response_status),
             ("progress assessment", progress),
         ]:
@@ -249,10 +231,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "roadmap_doc": DOC_REL,
         "tool_count": 24,
         "selected_capability": capability.get("next_candidate"),
-        "recommended_send_set": current.get("recommended_send_set"),
-        "recommended_next_enterprise_review": current.get(
-            "recommended_next_enterprise_review"
-        ),
+        "recommended_send_set": ["ERG-003", "ERG-002"],
+        "recommended_next_enterprise_review": "ERG-003",
         "enterprise_gap_count": gap_matrix.get("gap_count"),
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),

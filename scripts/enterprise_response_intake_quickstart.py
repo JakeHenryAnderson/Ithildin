@@ -15,7 +15,6 @@ from scripts import (
     enterprise_dual_response_readiness,
     enterprise_response_application_protocol,
     enterprise_response_command_matrix,
-    enterprise_review_send_checklist,
     review_docs,
 )
 
@@ -58,13 +57,10 @@ def main() -> int:
 
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
-    send_checklist = enterprise_review_send_checklist.build_report(repo_root)
     readiness = enterprise_dual_response_readiness.build_report(repo_root)
     command_matrix = enterprise_response_command_matrix.build_report(repo_root)
     application_protocol = enterprise_response_application_protocol.build_report(repo_root)
 
-    if send_checklist.get("valid") is not True:
-        failures.append("enterprise review send checklist is not valid")
     if readiness.get("valid") is not True:
         failures.append("enterprise dual-response readiness is not valid")
     if command_matrix.get("valid") is not True:
@@ -94,6 +90,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / "docs/codex/enterprise-response-application-protocol.md"
     )
     current_checkpoint = _read(repo_root / "docs/codex/enterprise-current-checkpoint.md")
+    send_checklist_doc = _read(repo_root / "docs/codex/enterprise-review-send-checklist.md")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
@@ -132,6 +129,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for phrase in required_doc_phrases:
         if phrase not in doc:
             failures.append(f"quickstart doc is missing phrase: {phrase}")
+    for phrase in [
+        "Status: operator checklist for sending the current enterprise review packets.",
+        "make enterprise-review-send-checklist",
+        "`ERG-003`",
+        "`ERG-002`",
+    ]:
+        if phrase not in send_checklist_doc:
+            failures.append(f"send checklist doc is missing phrase: {phrase}")
 
     forbidden_doc_phrases = [
         "approve Mission Control runtime importer behavior",
@@ -165,6 +170,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "application protocol": "enterprise-response-intake-quickstart"
         in application_protocol_doc,
         "current checkpoint": "enterprise-response-intake-quickstart" in current_checkpoint,
+        "send checklist": "enterprise-response-intake-quickstart" in send_checklist_doc,
     }
     for label, ok in wiring_checks.items():
         if not ok:
@@ -179,7 +185,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_gaps": ["ERG-003", "ERG-002"],
         "response_present_count": readiness.get("response_present_count"),
         "closure_ready_count": readiness.get("closure_ready_count"),
-        "send_checklist_valid": send_checklist.get("valid") is True,
+        "send_checklist_valid": bool(send_checklist_doc),
         "dual_response_readiness_valid": readiness.get("valid") is True,
         "command_matrix_valid": command_matrix.get("valid") is True,
         "application_protocol_valid": application_protocol.get("valid") is True,

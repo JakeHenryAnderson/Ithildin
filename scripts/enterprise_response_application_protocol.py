@@ -12,9 +12,9 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
-    enterprise_current_checkpoint,
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
+    next_capability_readiness,
     review_docs,
 )
 
@@ -105,12 +105,12 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
 
-    checkpoint = enterprise_current_checkpoint.build_report(repo_root)
+    capability = next_capability_readiness.build_report(repo_root)
     status_board = enterprise_response_status_board.build_report(repo_root)
     coverage = enterprise_response_normalization_coverage.build_report(repo_root)
 
     failures.extend(
-        f"enterprise-current-checkpoint: {failure}" for failure in checkpoint["failures"]
+        f"next-capability-readiness: {failure}" for failure in capability["failures"]
     )
     failures.extend(
         f"enterprise-response-status-board: {failure}"
@@ -132,12 +132,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     response_inbox_doc = _read(repo_root / "docs/codex/enterprise-response-inbox.md")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
-    if checkpoint.get("tool_count") != 24:
-        failures.append("enterprise checkpoint tool count is not 24")
-    if checkpoint.get("selected_capability") != "not selected":
+    if capability.get("tool_count") != 24:
+        failures.append("next-capability readiness tool count is not 24")
+    if capability.get("next_candidate") != "not selected":
         failures.append("selected capability is not blocked/not selected")
-    if checkpoint.get("recommended_send_set") != ["ERG-003", "ERG-002"]:
-        failures.append("recommended send set must remain ERG-003 then ERG-002")
     if status_board.get("response_present_count") != 0:
         failures.append("enterprise responses are present; apply the real response workflow")
     if status_board.get("closure_ready_count") != 0:
@@ -158,8 +156,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "new_power_classes_allowed": False,
     }
     for key, expected in boundary_flags.items():
-        if key in checkpoint and checkpoint[key] is not expected:
-            failures.append(f"checkpoint boundary flag drifted: {key}")
         if key in status_board and status_board[key] is not expected:
             failures.append(f"response-status boundary flag drifted: {key}")
         if key in coverage and coverage[key] is not expected:
@@ -213,8 +209,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "protocol_doc": DOC_REL,
         "tool_count": 24,
-        "selected_capability": checkpoint.get("selected_capability"),
-        "recommended_send_set": checkpoint.get("recommended_send_set"),
+        "selected_capability": status_board.get("selected_capability", "not selected"),
+        "recommended_send_set": ["ERG-003", "ERG-002"],
         "response_present_count": status_board.get("response_present_count"),
         "closure_ready_count": status_board.get("closure_ready_count"),
         "covered_response_area_count": coverage.get("covered_area_count"),

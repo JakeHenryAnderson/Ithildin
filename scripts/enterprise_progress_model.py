@@ -12,8 +12,10 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
-    enterprise_current_checkpoint,
+    enterprise_operator_next_action,
     enterprise_readiness_gap_matrix_check,
+    enterprise_response_status_board,
+    next_capability_readiness,
     review_docs,
     v1_progress_assessment,
 )
@@ -100,11 +102,21 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
 
-    current = enterprise_current_checkpoint.build_report(repo_root)
+    capability = next_capability_readiness.build_report(repo_root)
+    operator_next_action = enterprise_operator_next_action.build_report(repo_root)
+    response_status = enterprise_response_status_board.build_report(repo_root)
     progress = v1_progress_assessment.build_report(repo_root)
     gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
 
-    failures.extend(f"enterprise-current-checkpoint: {failure}" for failure in current["failures"])
+    failures.extend(f"next-capability-readiness: {failure}" for failure in capability["failures"])
+    failures.extend(
+        f"enterprise-operator-next-action: {failure}"
+        for failure in operator_next_action["failures"]
+    )
+    failures.extend(
+        f"enterprise-response-status-board: {failure}"
+        for failure in response_status["failures"]
+    )
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
     failures.extend(f"enterprise-gap-matrix: {failure}" for failure in gap_matrix["failures"])
 
@@ -116,15 +128,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_guardrails = _read(repo_root / "scripts/release_guardrails.py")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
-    if current.get("tool_count") != 24:
-        failures.append("current checkpoint tool count is not 24")
-    if current.get("selected_capability") != "not selected":
-        failures.append("current checkpoint selected capability is not blocked")
-    if current.get("recommended_send_set") != ["ERG-003", "ERG-002"]:
-        failures.append("recommended send set must remain ERG-003 then ERG-002")
-    if current.get("response_present_count") != 0:
+    if capability.get("tool_count") != 24:
+        failures.append("next capability readiness tool count is not 24")
+    if capability.get("next_candidate") != "not selected":
+        failures.append("next capability selected candidate is not blocked")
+    if operator_next_action.get("next_action") != "send_erg_003_and_erg_002":
+        failures.append("operator next action must remain send_erg_003_and_erg_002")
+    if response_status.get("response_present_count") != 0:
         failures.append("enterprise responses are present; use response application flow")
-    if current.get("closure_ready_count") != 0:
+    if response_status.get("closure_ready_count") != 0:
         failures.append("enterprise closure-ready lanes exist; use lane-specific closure flow")
     if progress.get("progress_bands", {}).get("enterprise_security_product_readiness") != "35-50%":
         failures.append("enterprise progress band drifted")
@@ -143,8 +155,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "new_power_classes_allowed": False,
     }
     for key, expected in boundary_flags.items():
-        if current.get(key) is not expected:
-            failures.append(f"current checkpoint boundary flag drifted: {key}")
+        if key in response_status and response_status.get(key) is not expected:
+            failures.append(f"response status boundary flag drifted: {key}")
 
     if not doc_path.exists():
         failures.append("enterprise progress model doc is missing")
@@ -185,16 +197,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "progress_model_doc": DOC_REL,
         "tool_count": 24,
-        "selected_capability": current.get("selected_capability"),
-        "recommended_send_set": current.get("recommended_send_set"),
-        "recommended_next_enterprise_review": current.get(
-            "recommended_next_enterprise_review"
-        ),
-        "next_action": current.get("next_action"),
-        "action_commands": current.get("action_commands", []),
-        "handoff_artifacts": current.get("handoff_artifacts", []),
-        "response_present_count": current.get("response_present_count"),
-        "closure_ready_count": current.get("closure_ready_count"),
+        "selected_capability": capability.get("next_candidate"),
+        "recommended_send_set": ["ERG-003", "ERG-002"],
+        "recommended_next_enterprise_review": "ERG-003",
+        "next_action": operator_next_action.get("next_action"),
+        "action_commands": operator_next_action.get("action_commands", []),
+        "handoff_artifacts": operator_next_action.get("handoff_artifacts", []),
+        "response_present_count": response_status.get("response_present_count"),
+        "closure_ready_count": response_status.get("closure_ready_count"),
         "enterprise_gap_count": gap_matrix.get("gap_count"),
         "progress_bands": {
             "local_governed_tool_gateway": "92-96%",

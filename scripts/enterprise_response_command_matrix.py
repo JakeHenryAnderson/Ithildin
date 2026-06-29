@@ -12,10 +12,9 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
-    enterprise_current_checkpoint,
     enterprise_response_inbox,
     enterprise_response_status_board,
-    enterprise_transition_map,
+    next_capability_readiness,
     review_docs,
 )
 
@@ -104,8 +103,7 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
 
-    checkpoint = enterprise_current_checkpoint.build_report(repo_root)
-    transition = enterprise_transition_map.build_report(repo_root)
+    capability = next_capability_readiness.build_report(repo_root)
     status_board = enterprise_response_status_board.build_report(repo_root)
     try:
         lanes = enterprise_response_inbox._lanes(repo_root)  # noqa: SLF001
@@ -114,8 +112,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append(f"enterprise response inbox lane inventory failed: {exc}")
 
     for label, report in [
-        ("enterprise-current-checkpoint", checkpoint),
-        ("enterprise-transition-map", transition),
+        ("next-capability-readiness", capability),
         ("enterprise-response-status-board", status_board),
     ]:
         if report.get("valid") is not True:
@@ -124,9 +121,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     rows = [_row(lane) for lane in lanes]
 
-    if checkpoint.get("tool_count") != 24:
-        failures.append("enterprise checkpoint tool count is not 24")
-    if checkpoint.get("selected_capability") != "not selected":
+    if capability.get("tool_count") != 24:
+        failures.append("next-capability readiness tool count is not 24")
+    if capability.get("next_candidate") != "not selected":
         failures.append("selected capability must remain not selected")
     if status_board.get("response_present_count") != 0:
         failures.append("enterprise responses are present; use lane-specific response handling")
@@ -240,7 +237,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "matrix_doc": DOC_REL,
         "tool_count": 24,
-        "selected_capability": checkpoint.get("selected_capability"),
+        "selected_capability": capability.get("next_candidate"),
         "lane_count": len(rows),
         "response_present_count": status_board.get("response_present_count"),
         "closure_ready_count": status_board.get("closure_ready_count"),

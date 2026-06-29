@@ -69,7 +69,12 @@ make enterprise-response-waiting-room
 make enterprise-response-paste-preflight
 make enterprise-dual-response-readiness
 make enterprise-response-intake-drill
+make enterprise-response-intake-quickstart
 ```
+
+The `enterprise-response-intake-quickstart` check points to the next safe operator steps after
+real `ERG-003` and `ERG-002` responses are present. It does not send packets, normalize responses,
+or close either lane.
 
 For lane-specific closure checks:
 
