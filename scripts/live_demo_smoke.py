@@ -48,6 +48,7 @@ OPERATOR_SEQUENCE = [
     "make review-candidate",
     "make compose-down",
 ]
+OBSERVED_COMMAND_TIMEOUT_SECONDS = 30
 
 
 class LiveDemoSmokeError(RuntimeError):
@@ -210,13 +211,36 @@ def _command_output(
             "stdout": "command execution skipped for fixture/test transcript generation",
             "stderr": "",
         }
-    result = subprocess.run(command, cwd=repo_root, capture_output=True, text=True, check=False)
+    try:
+        result = subprocess.run(
+            command,
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=OBSERVED_COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "command": command,
+            "returncode": 124,
+            "stdout": _timeout_output(exc.stdout),
+            "stderr": "command timed out before completing; local service probe may be unavailable",
+        }
     return {
         "command": command,
         "returncode": result.returncode,
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+
+
+def _timeout_output(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
 
 
 def _git(repo_root: Path, args: list[str]) -> str:

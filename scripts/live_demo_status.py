@@ -61,6 +61,7 @@ ARTIFACTS = [
         Path("var/review-packets/v0.2/GPT-5.5-Pro-consolidated"),
     ),
 ]
+COMPOSE_STATUS_TIMEOUT_SECONDS = 10
 
 
 class LiveDemoStatusError(RuntimeError):
@@ -228,7 +229,21 @@ def _compose_status(repo_root: Path) -> dict[str, Any]:
         "--format",
         "json",
     ]
-    result = subprocess.run(command, cwd=repo_root, capture_output=True, text=True, check=False)
+    try:
+        result = subprocess.run(
+            command,
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=COMPOSE_STATUS_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "available": False,
+            "running_hint": False,
+            "safe_error": "compose status timed out",
+        }
     if result.returncode != 0:
         return {
             "available": False,

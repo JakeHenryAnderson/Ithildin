@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -17820,6 +17821,48 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     for forbidden in ["diff --git", "response body:"]:
         assert forbidden not in summary
         assert forbidden not in summary_bundle
+
+
+def test_live_demo_status_compose_probe_times_out_safely(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(cmd=["docker", "compose", "ps"], timeout=10)
+
+    monkeypatch.setattr("scripts.live_demo_status.subprocess.run", fake_run)
+
+    report = live_demo_status._compose_status(Path.cwd())
+
+    assert report == {
+        "available": False,
+        "running_hint": False,
+        "safe_error": "compose status timed out",
+    }
+
+
+def test_live_demo_smoke_command_times_out_safely(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(
+            cmd=["make", "live-demo-status"],
+            timeout=30,
+            output="partial status",
+        )
+
+    monkeypatch.setattr("scripts.live_demo_smoke.subprocess.run", fake_run)
+
+    output = live_demo_smoke._command_output(
+        Path.cwd(),
+        ["make", "live-demo-status"],
+        run_commands=True,
+    )
+
+    assert output["returncode"] == 124
+    assert output["stdout"] == "partial status"
+    assert output["stderr"] == (
+        "command timed out before completing; local service probe may be unavailable"
+    )
 
 
 def test_review_docs_index_is_documented_and_wired() -> None:
