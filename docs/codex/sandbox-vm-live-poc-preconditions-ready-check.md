@@ -29,6 +29,7 @@ implementation planning.
 - [sandbox-vm-live-poc-decision-packet.md](sandbox-vm-live-poc-decision-packet.md)
 - [sandbox-vm-live-poc-decision-closure-gate.md](sandbox-vm-live-poc-decision-closure-gate.md)
 - [sandbox-vm-live-poc-response-kit.md](sandbox-vm-live-poc-response-kit.md)
+- [sandbox-vm-live-poc-post-erg003-handoff.md](sandbox-vm-live-poc-post-erg003-handoff.md)
 
 The check validates those artifacts and reports whether the only expected blocker remains the
 missing favorable `ERG-003` disposition and normalized `ERG-004` response.

@@ -669,6 +669,14 @@ blocked-lane `ERG-004` checks, confirms the decision/intake/packet/response-kit/
 valid, and still reports `ready_for_implementation_planning: false` until favorable `ERG-003`
 disposition and normalized `ERG-004` response evidence exist.
 
+The live sandbox/VM POC post-`ERG-003` handoff is
+[sandbox-vm-live-poc-post-erg003-handoff.md](sandbox-vm-live-poc-post-erg003-handoff.md) and is
+validated with `make sandbox-vm-live-poc-post-erg003-handoff-check`. It explains the still-blocked
+sequence to run after a favorable static-preflight disposition is recorded, while keeping `ERG-004`,
+live VM/container inspection, local model invocation, Mission Control runtime behavior, sandbox
+orchestration, trusted-host promotion, network expansion, and runtime implementation blocked until a
+separate committed decision record exists.
+
 The live sandbox/VM POC external response intake template is
 [sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md)
 and is validated with `make sandbox-vm-live-poc-external-response-intake-check`. It defines the

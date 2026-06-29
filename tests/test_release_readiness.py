@@ -273,6 +273,7 @@ from scripts import (
     sandbox_vm_live_poc_evidence_contract_check,
     sandbox_vm_live_poc_external_response_intake_check,
     sandbox_vm_live_poc_external_review_bundle,
+    sandbox_vm_live_poc_post_erg003_handoff_check,
     sandbox_vm_live_poc_preconditions_map_check,
     sandbox_vm_live_poc_preconditions_ready_check,
     sandbox_vm_live_poc_prerequisite_disposition_dry_run,
@@ -10856,6 +10857,7 @@ def test_sandbox_vm_live_poc_preconditions_map_is_wired() -> None:
         "make sandbox-vm-live-poc-decision-intake-check",
         "make sandbox-vm-live-poc-evidence-contract-check",
         "make sandbox-vm-live-poc-preconditions-map-check",
+        "make sandbox-vm-live-poc-post-erg003-handoff-check",
         "make sandbox-vm-live-poc-decision-packet-check",
     ]:
         assert phrase in doc
@@ -10883,6 +10885,7 @@ def test_sandbox_vm_live_poc_preconditions_map_is_wired() -> None:
     assert "sandbox-vm-live-poc-preconditions-map.md" in enterprise
     assert "sandbox-vm-live-poc-preconditions-map.md" in gap_matrix
     assert "sandbox-vm-live-poc-preconditions-map.md" in decision_register
+    assert "sandbox-vm-live-poc-post-erg003-handoff.md" in doc
 
 
 def test_sandbox_vm_live_poc_preconditions_ready_check_is_wired() -> None:
@@ -10949,6 +10952,7 @@ def test_sandbox_vm_live_poc_preconditions_ready_check_is_wired() -> None:
         "sandbox-vm-live-poc-decision-packet.md",
         "sandbox-vm-live-poc-decision-closure-gate.md",
         "sandbox-vm-live-poc-response-kit.md",
+        "sandbox-vm-live-poc-post-erg003-handoff.md",
     ]:
         assert link in doc
     for forbidden in [
@@ -10975,6 +10979,108 @@ def test_sandbox_vm_live_poc_preconditions_ready_check_is_wired() -> None:
     assert "sandbox-vm-live-poc-preconditions-ready-check.md" in gap_matrix
     assert "sandbox-vm-live-poc-preconditions-ready-check.md" in decision_register
     assert "sandbox-vm-live-poc-preconditions-ready-check.md" in readiness
+
+
+def test_sandbox_vm_live_poc_post_erg003_handoff_is_wired() -> None:
+    report = sandbox_vm_live_poc_post_erg003_handoff_check.build_report(Path.cwd())
+    doc = Path("docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    preconditions_map = Path(
+        "docs/codex/sandbox-vm-live-poc-preconditions-map.md"
+    ).read_text(encoding="utf-8")
+    preconditions_ready = Path(
+        "docs/codex/sandbox-vm-live-poc-preconditions-ready-check.md"
+    ).read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_004_status"] == "blocked"
+    assert report["requires_favorable_erg003_disposition"] is True
+    assert report["requires_later_decision_record"] is True
+    assert report["ready_for_implementation_planning"] is False
+    assert report["implementation_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        "Status: post-`ERG-003` handoff map for still-blocked `ERG-004`.",
+        "Use this handoff only after all of these are true:",
+        "make sandbox-vm-static-preflight-disposition-closure-check",
+        "sandbox-vm-static-preflight-disposition-record-skeleton.md",
+        "make sandbox-vm-live-poc-preconditions-ready-check",
+        "make sandbox-vm-live-poc-decision-packet",
+        "make sandbox-vm-live-poc-external-review-bundle",
+        "make sandbox-vm-live-poc-response-kit",
+        "ready_for_implementation_planning: false",
+        "Only a later committed `PRD-SANDBOX-LIVE-POC-001` decision record",
+        "Runtime implementation remains separate.",
+        "make sandbox-vm-live-poc-post-erg003-handoff-check",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "`ERG-004` remains `blocked`",
+        "live VM/container inspection remains blocked",
+        "local model invocation remains blocked",
+        "Mission Control runtime behavior remains blocked",
+        "sandbox orchestration remains blocked",
+        "trusted-host promotion remains blocked",
+        "network expansion remains blocked",
+        "tool count remains `24`",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "ERG-004 is unblocked",
+        "ERG-004 is closed",
+        "ready_for_implementation_planning: true",
+        "implementation planning is approved",
+        "live VM/container inspection is approved",
+        "local model invocation is approved",
+        "Mission Control runtime behavior is approved",
+        "runtime implementation is approved",
+        "production-ready",
+        "secure sandbox",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-live-poc-post-erg003-handoff-check" in readme
+    assert "sandbox-vm-live-poc-post-erg003-handoff-check:" in makefile
+    assert "sandbox-vm-live-poc-post-erg003-handoff-check" in release_check_body
+    assert "sandbox-vm-live-poc-post-erg003-handoff-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Post-ERG-003 Handoff" in review_index
+    assert "sandbox-vm-live-poc-post-erg003-handoff.md" in enterprise
+    assert "sandbox-vm-live-poc-post-erg003-handoff.md" in gap_matrix
+    assert "sandbox-vm-live-poc-post-erg003-handoff.md" in decision_register
+    assert "sandbox-vm-live-poc-post-erg003-handoff.md" in preconditions_map
+    assert "sandbox-vm-live-poc-post-erg003-handoff.md" in preconditions_ready
 
 
 def test_sandbox_vm_live_poc_external_response_intake_is_wired() -> None:

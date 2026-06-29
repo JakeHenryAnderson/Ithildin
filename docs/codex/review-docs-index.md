@@ -364,6 +364,7 @@ externally closed.
 - [Sandbox/VM Live POC Evidence Contract](sandbox-vm-live-poc-evidence-contract.md)
 - [Sandbox/VM Live POC Preconditions Map](sandbox-vm-live-poc-preconditions-map.md)
 - [Sandbox/VM Live POC Preconditions Ready Check](sandbox-vm-live-poc-preconditions-ready-check.md)
+- [Sandbox/VM Live POC Post-ERG-003 Handoff](sandbox-vm-live-poc-post-erg003-handoff.md)
 - [Sandbox/VM Live POC Decision Packet](sandbox-vm-live-poc-decision-packet.md)
 - [Sandbox/VM Live POC External Review Bundle](sandbox-vm-live-poc-external-review-bundle.md)
 - [Sandbox/VM Live POC Decision Record Skeleton](sandbox-vm-live-poc-decision-record-skeleton.md)
