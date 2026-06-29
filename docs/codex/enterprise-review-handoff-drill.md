@@ -29,7 +29,7 @@ ties together:
 - the send manifest and artifact hashes;
 - the submission prompt;
 - the send receipt template;
-- the all-lane response inbox;
+- the dual-response inbox for the current `ERG-003` and `ERG-002` send set;
 - the response status board;
 - the fixture-only response-intake drill;
 - the lane-specific dry-run and closure-gate commands.
@@ -51,6 +51,7 @@ make enterprise-review-send-manifest
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox
+make enterprise-response-paste-preflight
 make enterprise-response-status-board
 make enterprise-response-intake-drill
 ```
@@ -66,11 +67,13 @@ make enterprise-review-handoff-drill-check
 
 1. Generate the current outbox, send manifest, submission prompt, and send receipt template.
 2. Send only the `ERG-003` and `ERG-002` attachment sets named in the manifest.
-3. Generate the response inbox.
-4. Paste raw reviewer responses into the lane-specific ignored raw-response files.
-5. Run the lane-specific response dry run.
-6. Run the lane-specific closure gate.
-7. Apply any favorable response through the committed lane-specific response-application path.
+3. Generate the dual-response inbox.
+4. Paste raw reviewer responses into the lane-specific ignored raw-response files under
+   `var/review-runs/enterprise-dual-response-inbox/`.
+5. Run `make enterprise-response-paste-preflight`.
+6. Run the lane-specific response dry run.
+7. Run the lane-specific closure gate.
+8. Apply any favorable response through the committed lane-specific response-application path.
 
 ## Boundary
 

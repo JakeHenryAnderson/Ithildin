@@ -15,8 +15,8 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    enterprise_dual_response_inbox,
     enterprise_dual_review_outbox,
-    enterprise_response_inbox,
     enterprise_response_intake_drill,
     enterprise_response_status_board,
     enterprise_review_send_manifest,
@@ -99,12 +99,12 @@ def build_drill(repo_root: Path, output_dir: Path) -> Path:
     receipt_template_dir = enterprise_review_send_receipt_template.build_template(
         repo_root, enterprise_review_send_receipt_template.DEFAULT_OUTPUT_DIR
     )
-    inbox_dir = enterprise_response_inbox.build_inbox(
-        repo_root, enterprise_response_inbox.DEFAULT_OUTPUT_DIR
+    inbox_dir = enterprise_dual_response_inbox.build_inbox(
+        repo_root, enterprise_dual_response_inbox.DEFAULT_OUTPUT_DIR
     )
     outbox_payload = _read_json(outbox_dir / enterprise_dual_review_outbox.JSON_NAME)
     manifest_payload = _read_json(manifest_dir / enterprise_review_send_manifest.JSON_NAME)
-    inbox_payload = _read_json(inbox_dir / enterprise_response_inbox.JSON_NAME)
+    inbox_payload = _read_json(inbox_dir / enterprise_dual_response_inbox.JSON_NAME)
 
     if output_dir.exists():
         shutil.rmtree(output_dir)
@@ -185,6 +185,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "make enterprise-review-submission-prompt",
         "make enterprise-review-send-receipt-template",
         "Response landing pads",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "make enterprise-response-paste-preflight",
         "records_external_review: `false`",
         "normalizes_real_responses: `false`",
         "closes_enterprise_lanes: `false`",
@@ -199,6 +202,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"intake_drill_valid": true',
         '"submission_prompt_dir":',
         '"receipt_template_dir":',
+        '"response_inbox_dir": "var/review-runs/enterprise-dual-response-inbox"',
+        '"make enterprise-response-paste-preflight"',
         '"records_external_review": false',
         '"normalizes_real_responses": false',
         '"closes_enterprise_lanes": false',
@@ -337,7 +342,7 @@ def _drill_payload(
         "receipt_template_dir": _repo_rel(repo_root, receipt_template_dir),
         "response_inbox_dir": _repo_rel(repo_root, inbox_dir),
         "response_inbox_hash_manifest": _repo_rel(
-            repo_root, inbox_dir / enterprise_response_inbox.HASH_NAME
+            repo_root, inbox_dir / enterprise_dual_response_inbox.HASH_NAME
         ),
         "send_set": send_set,
         "operator_sequence": [
@@ -348,6 +353,7 @@ def _drill_payload(
             "send ERG-003 and ERG-002 attachment sets to reviewers",
             "make enterprise-dual-response-inbox",
             "paste raw responses into the lane raw-response files",
+            "make enterprise-response-paste-preflight",
             "run the lane-specific response dry run",
             "run the lane-specific closure gate",
             "commit any later response-application record only after the closure gate is favorable",
