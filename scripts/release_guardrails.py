@@ -110,6 +110,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "enterprise-response-paste-preflight",
     "enterprise-handoff-consistency-check",
     "enterprise-review-send-preflight",
+    "enterprise-review-send-preflight-lightweight-check",
     "enterprise-sandbox-control-plane-readiness-check",
     "post-rc-decision-gate",
     "post-rc-decision-record-template-check",

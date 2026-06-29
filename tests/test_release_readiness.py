@@ -76,6 +76,7 @@ from scripts import (
     enterprise_review_send_checklist,
     enterprise_review_send_manifest,
     enterprise_review_send_preflight,
+    enterprise_review_send_preflight_lightweight_check,
     enterprise_review_send_readiness,
     enterprise_review_send_receipt_template,
     enterprise_review_submission_prompt,
@@ -4089,6 +4090,31 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     )
     assert "$(MAKE) enterprise-review-send-preflight" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_send_preflight_lightweight_contract_is_wired() -> None:
+    report = enterprise_review_send_preflight_lightweight_check.build_report(Path.cwd())
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    assert report["closes_enterprise_lanes"] is False
+    assert "enterprise_review_send_readiness" in report["forbidden_heavy_builders"]
+    assert "enterprise_review_handoff_drill" in report["forbidden_heavy_builders"]
+    assert "EXPECTED_ARTIFACTS" in report["required_lightweight_fragments"]
+    assert "_artifact_hashes_match_files" in report["required_lightweight_fragments"]
+    assert "enterprise-review-send-preflight-lightweight-check:" in makefile
+    assert (
+        "enterprise-review-send-preflight-lightweight-check" in release_check_body
+        or "release-check: enterprise-review-send-preflight-lightweight-check" in makefile
+    )
+    assert "enterprise-review-send-preflight-lightweight-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
 
 
