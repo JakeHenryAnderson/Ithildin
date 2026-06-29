@@ -11,6 +11,21 @@ test, or wiring change. Use the tiers below so validation cost matches change ri
 
 ## Gate Tiers
 
+### Validation Plan
+
+Run:
+
+```sh
+make validation-plan
+```
+
+Use this before picking a gate when the dirty tree spans several areas. It classifies changed files
+and recommends the smallest honest command set. You can also pass files directly:
+
+```sh
+uv run python scripts/validation_plan.py docs/codex/example.md scripts/example.py
+```
+
 ### Quick Check
 
 Run:

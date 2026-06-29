@@ -10,7 +10,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
-.PHONY: quick-check readiness-check
+.PHONY: quick-check readiness-check validation-plan
 
 test:
 	uv run pytest
@@ -32,6 +32,9 @@ readiness-check:
 		tests/test_docs_site.py \
 		-q
 	$(MAKE) docs-site
+
+validation-plan:
+	uv run python scripts/validation_plan.py
 
 determinism-check:
 	uv run python scripts/test_determinism_gate.py

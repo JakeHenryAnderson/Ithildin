@@ -151,7 +151,9 @@ checked with `make control-mapping-readiness`.
 - `make quick-check` - run the fast local development gate: core boundary checks, lint, and
   typecheck without generated review-packet rebuilds.
 - `make readiness-check` - run the medium development gate: `quick-check`, docs generation, and
-  release/docs tests while skipping `slow_packet` generated-artifact tests.
+  a curated release/docs smoke test set without generated review-packet rebuilds.
+- `make validation-plan` - inspect the current dirty file set and recommend the smallest honest
+  validation gate set for those changes.
 - `make lint` - run Python lint checks.
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.

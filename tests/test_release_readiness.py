@@ -345,6 +345,7 @@ from scripts import (
     v1_rc_status_check,
     v1_workbench_evidence_check,
     v3_next_capability_candidate_check,
+    validation_plan,
     workbench_demo_smoke,
     workbench_evidence_packet,
     workbench_readiness,
@@ -436,20 +437,46 @@ def test_validation_performance_tiers_are_wired() -> None:
 
     assert "quick-check:" in makefile
     assert "readiness-check:" in makefile
+    assert "validation-plan:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
     assert "make readiness-check" in readme
+    assert "make validation-plan" in readme
     assert "slow_packet:" in pyproject
     assert "pytest_collection_modifyitems" in conftest
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
     assert "mission_control" in conftest
     assert "sandbox_vm" in conftest
     assert "Do not use fast gates to claim release readiness" in guide
+    assert "make validation-plan" in guide
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
     assert "Validation Performance And Gate Tiers" in review_index
+
+
+def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
+    docs_report = validation_plan.build_report(
+        ["docs/codex/example.md", "scripts/example_check.py"]
+    )
+    runtime_report = validation_plan.build_report(
+        ["apps/api/src/ithildin_api/tools/example.py"]
+    )
+    manifest_report = validation_plan.build_report(["tool-manifests/example.yaml"])
+
+    assert docs_report["categories"] == ["docs", "scripts"]
+    assert "make quick-check" in docs_report["recommended_commands"]
+    assert "make readiness-check" in docs_report["recommended_commands"]
+    assert "make release-check" not in docs_report["recommended_commands"]
+    assert docs_report["full_release_gate_required"] is False
+    assert runtime_report["categories"] == ["runtime"]
+    assert "make test" in runtime_report["recommended_commands"]
+    assert "make release-check" in runtime_report["recommended_commands"]
+    assert runtime_report["full_release_gate_required"] is True
+    assert manifest_report["categories"] == ["manifest"]
+    assert "make manifest-lock-check" in manifest_report["recommended_commands"]
+    assert "make release-check" in manifest_report["recommended_commands"]
 
 
 def test_agent_workflow_instruction_layer_is_wired() -> None:
