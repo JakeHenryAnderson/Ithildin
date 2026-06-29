@@ -162,7 +162,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             "Send these two review requests",
             "ERG-003",
             "ERG-002",
-            "Attach every file from",
+            "Attach the files listed in the lane manifest from",
+            "10-attachment limit",
             "Prompt file",
             "Attachment manifest",
             "Hash manifest",
@@ -275,6 +276,13 @@ def _quickstart_payload(
                 "hash_manifest": (
                     "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
                 ),
+                "listed_attachment_count": _manifest_attachment_count(
+                    outbox_dir / "ERG-003" / "ATTACHMENT_MANIFEST.md"
+                ),
+                "ten_attachment_limit_guidance": (
+                    "Fits a 10-attachment limit when attaching only the files listed "
+                    "in ATTACHMENT_MANIFEST.md."
+                ),
                 "raw_response_path": (
                     "var/review-runs/enterprise-dual-response-inbox/"
                     "RAW_RESPONSE_ERG-003.md"
@@ -287,6 +295,14 @@ def _quickstart_payload(
                 "prompt_file": "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
                 "attachment_manifest": "ATTACHMENT_MANIFEST.md",
                 "hash_manifest": "mission-control-display-external-review-artifact-hashes.json",
+                "listed_attachment_count": _manifest_attachment_count(
+                    outbox_dir / "ERG-002" / "ATTACHMENT_MANIFEST.md"
+                ),
+                "ten_attachment_limit_guidance": (
+                    "Exceeds a 10-attachment limit by one file. Send Batch 1 with "
+                    "files 00-05, then Batch 2 with files 06-09 plus the hash "
+                    "manifest, or use a reviewer surface that accepts 11 attachments."
+                ),
                 "raw_response_path": (
                     "var/review-runs/enterprise-dual-response-inbox/"
                     "RAW_RESPONSE_ERG-002.md"
@@ -333,9 +349,12 @@ def _render_markdown(payload: dict[str, Any]) -> str:
             [
                 f"### {request['lane']}: {request['title']}",
                 "",
-                f"- Attach every file from: `{request['attach_directory']}`",
+                "- Attach the files listed in the lane manifest from: "
+                f"`{request['attach_directory']}`",
+                f"- Listed attachment count: `{request['listed_attachment_count']}`",
+                f"- 10-attachment limit: {request['ten_attachment_limit_guidance']}",
                 f"- Prompt file: `{request['prompt_file']}`",
-                f"- Attachment manifest: `{request['attachment_manifest']}`",
+                f"- Attachment manifest/operator reference: `{request['attachment_manifest']}`",
                 f"- Hash manifest: `{request['hash_manifest']}`",
                 f"- Raw response placeholder: `{request['raw_response_path']}`",
                 "",
@@ -384,6 +403,11 @@ def _render_markdown(payload: dict[str, Any]) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+def _manifest_attachment_count(manifest_path: Path) -> int:
+    text = _read(manifest_path)
+    return sum(1 for line in text.splitlines() if line.startswith("| `"))
 
 
 def _artifact_hashes(output_dir: Path) -> dict[str, Any]:

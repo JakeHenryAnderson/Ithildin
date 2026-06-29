@@ -27,8 +27,10 @@ var/review-packets/v3/enterprise-review-send-quickstart/
 The send checklist, send manifest, submission prompt, receipt template, and dual-review outbox are
 separate artifacts because each one has a different validation role. This quickstart is the
 operator-facing one-page index over those artifacts. It names the exact `ERG-003` and `ERG-002`
-directories to attach, the prompt file to paste, the lane-local `ATTACHMENT_MANIFEST.md`, the hash
-manifest to keep with each request, and the raw-response placeholder to use when responses arrive.
+directories, the manifest-listed files to attach, the prompt file to paste, the lane-local
+`ATTACHMENT_MANIFEST.md`, the hash manifest to keep with each request, and the raw-response
+placeholder to use when responses arrive. The generated quickstart also shows whether a lane fits a
+10-attachment review surface or should be split into batches.
 
 It does not record external review, does not normalize responses, does not write response files,
 does not mutate findings, and does not close `ERG-003` or `ERG-002`.
@@ -45,7 +47,8 @@ does not mutate findings, and does not close `ERG-003` or `ERG-002`.
 6. Optionally open the generated package index in
    `var/review-packets/v3/enterprise-review-send-package/`.
 7. Send `ERG-003` and `ERG-002` as separate review requests using the lane-local prompt and
-   attachments named by the generated quickstart.
+   attachments named by the generated quickstart. If a lane exceeds a 10-attachment review surface,
+   use the generated batch guidance instead of dropping files silently.
 8. Preserve the generated send receipt template as local operator evidence after the human send
    step.
 9. Wait for real reviewer responses before running response intake.
