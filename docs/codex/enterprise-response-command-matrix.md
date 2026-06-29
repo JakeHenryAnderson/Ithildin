@@ -26,6 +26,8 @@ its cheat sheet for exact reviewed-packet hashes and normalization commands:
 
 ```sh
 make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
+make enterprise-response-paste-preflight
 ```
 
 ```text

@@ -72,8 +72,9 @@ Postgres, hosted telemetry, or remote MCP.
 9. Run `make enterprise-review-submission-prompt` to generate the final paste-ready operator prompt
    for the separate `ERG-003` and `ERG-002` review requests.
 10. After responses arrive, run `make enterprise-dual-response-inbox`, paste reviewer text into the
-   matching ignored raw-response placeholder, then run `make enterprise-dual-response-readiness` and
-   follow the lane-specific response kit. Do not edit lane status by hand.
+   matching ignored raw-response placeholder, then run `make enterprise-response-waiting-room`,
+   `make enterprise-response-paste-preflight`, and follow the lane-specific response kit. Do not
+   edit lane status by hand.
 
 The artifact hashes are handoff-integrity evidence only. They are not notarization,
 custody-grade evidence, source-review disposition, or implementation approval.

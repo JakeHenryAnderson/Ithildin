@@ -75,6 +75,8 @@ REQUIRED_DOC_PHRASES = [
     "Do not manually promote a lane",
     "make enterprise-review-send-receipt-template",
     "make enterprise-dual-response-inbox",
+    "make enterprise-response-waiting-room",
+    "make enterprise-response-paste-preflight",
     "var/review-runs/enterprise-dual-response-inbox/",
     "make enterprise-dependency-ladder",
 ]

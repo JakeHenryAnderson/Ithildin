@@ -78,6 +78,8 @@ REQUIRED_DOC_PHRASES = [
     "does not close any enterprise lane",
     "Use the generated inbox for exact reviewed-packet hashes",
     "For the current `ERG-003`/`ERG-002` receive path, prefer the generated dual-response inbox",
+    "make enterprise-response-waiting-room",
+    "make enterprise-response-paste-preflight",
     "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
     "`ERG-003`",
     "`ERG-010`",

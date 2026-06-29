@@ -40,6 +40,7 @@ After sending either packet, check whether normalized responses are present with
 
 ```sh
 make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
 make enterprise-dual-response-readiness
 make enterprise-response-intake-quickstart
 ```

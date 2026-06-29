@@ -80,8 +80,9 @@ This ladder does not approve:
 2. Send `ERG-003` with the static sandbox/VM preflight external-review packet.
 3. Send `ERG-002` with the Mission Control display/import planning packet.
 4. After responses arrive, paste them under
-   `var/review-runs/enterprise-dual-response-inbox/` and run the response paste preflight before
-   any lane-specific normalizer, dry-run, closure gate, or decision record.
+   `var/review-runs/enterprise-dual-response-inbox/`, run `make enterprise-response-waiting-room`,
+   and run the response paste preflight before any lane-specific normalizer, dry-run, closure gate,
+   or decision record.
 5. Keep `ERG-004` blocked until the `ERG-003` response path is favorable and recorded.
 6. Keep Mission Control runtime behavior blocked until the `ERG-002` response path is favorable and
    a separate Mission Control-side design-only decision exists.

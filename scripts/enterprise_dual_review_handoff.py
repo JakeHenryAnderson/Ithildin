@@ -153,6 +153,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Status: operator handoff pointer for the two currently send-ready enterprise reviews.",
         "make enterprise-dual-review-handoff",
         "make enterprise-dual-review-handoff-check",
+        "make enterprise-response-waiting-room",
         "`ERG-003`",
         "`ERG-002`",
         "does not close either lane",
@@ -166,6 +167,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Attach `ERG-003` packet",
         "Attach `ERG-002` packet",
         "Response paths after review",
+        "make enterprise-response-waiting-room",
         "What remains blocked",
         "EXT-SVP-###",
         "EXT-MC-DISPLAY-###",
@@ -178,6 +180,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"recommended_gaps": [',
         '"ERG-003"',
         '"ERG-002"',
+        '"make enterprise-response-waiting-room"',
         '"runtime_changes_allowed": false',
         '"mission_control_runtime_allowed": false',
         '"live_vm_inspection_allowed": false',
@@ -312,6 +315,11 @@ def _handoff_payload(
         "tool_count": 24,
         "selected_capability": "not selected",
         "packets": packet_summaries,
+        "response_setup_commands": [
+            "make enterprise-dual-response-inbox",
+            "make enterprise-response-waiting-room",
+            "make enterprise-response-paste-preflight",
+        ],
         "blocked_boundaries": {name: False for name in BLOCKED_BOUNDARIES},
     }
 
@@ -360,6 +368,7 @@ Attachment integrity:
     blocked = "\n".join(f"- `{name}`: `false`" for name in BLOCKED_BOUNDARIES)
     packet_markdown = "\n".join(packet_sections)
     response_markdown = "\n".join(response_sections)
+    response_setup_commands = "\n".join(payload["response_setup_commands"])
     return f"""# Enterprise Dual Review Handoff
 
 Recommended enterprise reviews: `ERG-003`, `ERG-002`.
@@ -377,6 +386,13 @@ Current selected capability: `{payload['selected_capability']}`.
 {packet_markdown}
 
 ## Response paths after review
+
+Before using a lane-specific response kit, save raw responses into the ignored dual-response inbox
+and run:
+
+```sh
+{response_setup_commands}
+```
 
 {response_markdown}
 
