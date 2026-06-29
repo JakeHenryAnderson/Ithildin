@@ -45,7 +45,8 @@ A future Mission Control importer may display only these status fields:
 - recommended enterprise review IDs, the recommended next enterprise review, the current next action,
   and safe action commands;
 - display-only handoff artifact labels and relative artifact paths;
-- progress bands, review lane labels/statuses, packet path labels, and packet handoff readiness;
+- progress bands, review lane labels/statuses, packet path labels, send package/send-session record
+  pointers, and packet handoff readiness;
 - blocked-authority flags and safe warning chips.
 
 The importer must not display prompts, file contents, diffs, response bodies, raw host secrets,
@@ -55,6 +56,11 @@ runtime payloads.
 The `handoff_artifacts` field is display-only. Mission Control may render labels and relative
 paths as copyable text, but must not execute commands, open host paths with elevated authority,
 poll Ithildin, or infer that an artifact path grants runtime permission.
+
+The `packet_paths.enterprise_review_send_package` and
+`packet_paths.enterprise_review_send_session_record` fields are display-only pointers. Mission
+Control may show them as operator guidance, but must not treat the package as review evidence or the
+session record as proof that a review occurred.
 
 ## Required Refusals
 

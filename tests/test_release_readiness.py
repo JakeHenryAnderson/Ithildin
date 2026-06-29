@@ -2301,6 +2301,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "make enterprise-status-export-check",
         "make enterprise-operator-next-action",
         "safe action commands",
+        "send package",
+        "send-session record",
         "display-only handoff artifact",
         "does not approve Mission Control runtime behavior",
         "does not approve live VM/container inspection",
@@ -2321,6 +2323,12 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "handoff_artifacts:",
         "`send_manifest`: `var/review-packets/v3/enterprise-review-send-manifest`",
         "`send_quickstart`: `var/review-packets/v3/enterprise-review-send-quickstart`",
+        "`send_package`: `var/review-packets/v3/enterprise-review-send-package`",
+        "`send_session_record`: `var/review-runs/enterprise-review-send-session-record`",
+        "## Packet Paths",
+        "`enterprise_review_send_package`: `var/review-packets/v3/enterprise-review-send-package`",
+        "`enterprise_review_send_session_record`: "
+        "`var/review-runs/enterprise-review-send-session-record`",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -2334,8 +2342,14 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"handoff_artifacts": [',
         '"label": "send_manifest"',
         '"label": "send_quickstart"',
+        '"label": "send_package"',
+        '"label": "send_session_record"',
         '"enterprise_review_send_quickstart": '
         '"var/review-packets/v3/enterprise-review-send-quickstart"',
+        '"enterprise_review_send_package": '
+        '"var/review-packets/v3/enterprise-review-send-package"',
+        '"enterprise_review_send_session_record": '
+        '"var/review-runs/enterprise-review-send-session-record"',
         '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
@@ -2343,6 +2357,12 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         assert phrase in export_json_text
     assert report["packet_paths"]["enterprise_review_send_quickstart"] == (
         "var/review-packets/v3/enterprise-review-send-quickstart"
+    )
+    assert report["packet_paths"]["enterprise_review_send_package"] == (
+        "var/review-packets/v3/enterprise-review-send-package"
+    )
+    assert report["packet_paths"]["enterprise_review_send_session_record"] == (
+        "var/review-runs/enterprise-review-send-session-record"
     )
     assert {
         "ENTERPRISE_STATUS_EXPORT.md",
@@ -2420,6 +2440,9 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
         "does not approve Mission Control enterprise status importer implementation",
         "Mission Control may display this artifact as non-authoritative status",
         "safe action commands",
+        "send package/send-session record",
+        "must not treat the package as review evidence",
+        "session record as proof that a review occurred",
     ]:
         assert phrase in doc
     assert "mission-control-enterprise-status-import-check:" in makefile

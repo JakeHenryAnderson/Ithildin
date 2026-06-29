@@ -36,6 +36,8 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-status-export",
     "make enterprise-status-export-check",
     "safe action commands",
+    "send package",
+    "send-session record",
     "does not approve Mission Control runtime behavior",
     "does not approve live VM/container inspection",
     "does not approve sandbox orchestration",
@@ -212,6 +214,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "enterprise_review_send_quickstart": (
                 "var/review-packets/v3/enterprise-review-send-quickstart"
             ),
+            "enterprise_review_send_package": (
+                "var/review-packets/v3/enterprise-review-send-package"
+            ),
+            "enterprise_review_send_session_record": (
+                "var/review-runs/enterprise-review-send-session-record"
+            ),
             "enterprise_response_status_board": "var/review-runs/enterprise-response-status-board",
         },
         **boundary_flags,
@@ -312,6 +320,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"  - `{artifact['label']}`: `{artifact['path']}`"
         for artifact in report.get("handoff_artifacts") or []
     )
+    packet_path_lines = "\n".join(
+        f"- `{label}`: `{path}`" for label, path in report["packet_paths"].items()
+    )
     return f"""# Enterprise Status Export
 
 Status: generated display-only enterprise status export.
@@ -351,6 +362,10 @@ runtime behavior, and not an enterprise lane closure record.
 | Gap | Status | packet_handoff_ready | recommended_now | closure_ready | response_present |
 | --- | --- | --- | --- | --- | --- |
 {lane_rows}
+
+## Packet Paths
+
+{packet_path_lines}
 
 ## Blocked Authority
 
@@ -394,6 +409,8 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         "`make enterprise-review-send-refresh`",
         "handoff_artifacts:",
         "enterprise-review-send-manifest",
+        "enterprise-review-send-package",
+        "enterprise-review-send-session-record",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -407,6 +424,8 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"next_action": "send_erg_003_and_erg_002"',
         '"handoff_artifacts": [',
         "enterprise-review-send-manifest",
+        "enterprise-review-send-package",
+        "enterprise-review-send-session-record",
         '"make enterprise-review-send-refresh"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
