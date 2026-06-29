@@ -314,6 +314,7 @@ from scripts import (
     siem_export_adapter_response_kit,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
+    technical_mvp_operator_trial_readiness,
     technical_mvp_ticket_map,
     test_determinism_gate,
     tool_surface_invariant_gate,
@@ -28564,6 +28565,67 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
         "public/security-product positioning remains blocked",
         "capability expansion remains blocked",
         "Live sandbox/VM worker proof of concept",
+    ]:
+        assert phrase in doc
+
+
+def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
+    report = technical_mvp_operator_trial_readiness.build_report(Path.cwd())
+    doc = Path("docs/codex/technical-mvp-operator-trial-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
+    assert report["selected_capability"] == "not selected"
+    assert report["technical_mvp_state"] == "ready_for_operator_trial"
+    assert report["operator_trial_ready"] is True
+    assert report["hands_on_trial_required"] is True
+    assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["response_present_count"] == 0
+    assert report["runtime_changes_allowed"] is False
+    assert report["capability_expansion_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_execution_allowed"] is False
+    assert "make technical-mvp-operator-trial-readiness" in readme
+    assert "technical-mvp-operator-trial-readiness:" in makefile
+    assert (
+        "technical-mvp-operator-trial-readiness" in release_check_body
+        or "release-check: technical-mvp-operator-trial-readiness" in makefile
+    )
+    assert (
+        "technical-mvp-operator-trial-readiness"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/technical-mvp-operator-trial-readiness.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/technical-mvp-operator-trial-readiness.md" in docs_site
+    assert "Ithildin Technical MVP Operator Trial Readiness" in review_index
+    for phrase in [
+        "Status: checked operator-trial readiness view for the technical MVP.",
+        "What Is Ready",
+        "What Remains Before A Hands-On Technical MVP Trial",
+        "What Remains Beyond Technical MVP",
+        "make release-check",
+        "make review-candidate",
+        "make v1-operator-trial-record",
+        "make demo-seed",
+        "make compose-up",
+        "make compose-smoke",
+        "make compose-down",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not start services",
+        "does not call governed tools",
+        "does not approve sandbox/VM lifecycle control",
     ]:
         assert phrase in doc
 

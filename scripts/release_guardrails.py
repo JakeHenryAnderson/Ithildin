@@ -71,6 +71,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "v1-rc-status-check",
     "v1-rc-feature-freeze",
     "technical-mvp-ticket-map",
+    "technical-mvp-operator-trial-readiness",
     "v1-rc-external-review-prompt-check",
     "v1-rc-final-handoff-check",
     "v1-rc-post-review-triage-check",

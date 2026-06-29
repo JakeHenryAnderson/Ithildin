@@ -415,6 +415,8 @@ checked with `make control-mapping-readiness`.
 - `make technical-mvp-ticket-map` - validate the current technical MVP ticket map across the
   closed local-preview foundations, ready operator trial surface, blocked sandbox/VM promotion
   lanes, and enterprise architecture backlog.
+- `make technical-mvp-operator-trial-readiness` - validate the checked local-preview operator-trial
+  readiness view for the technical MVP and the exact remaining hands-on trial commands.
 - `make v1-rc-feature-freeze` - validate the v1.0 RC feature-freeze decision: tool count `24`,
   no selected next capability, blocked capability expansion, and no public/security-product
   positioning.
@@ -1082,6 +1084,11 @@ with `make technical-mvp-ticket-map`; it turns the current roadmap into explicit
 the governed gateway foundation, read-only/Git intelligence tools, evidence/packet machinery,
 operator workbench trial, Mission Control handoff, sandbox/VM readiness, trusted-host promotion,
 and enterprise architecture lanes.
+The technical MVP operator-trial readiness view is
+[docs/codex/technical-mvp-operator-trial-readiness.md](docs/codex/technical-mvp-operator-trial-readiness.md)
+and is checked with `make technical-mvp-operator-trial-readiness`; it consolidates the checked
+state into the remaining hands-on local-preview operator trial commands without starting services,
+calling governed tools, or approving sandbox/VM lifecycle control.
 The v1.0 RC feature-freeze decision is
 [docs/codex/v1.0-rc-feature-freeze.md](docs/codex/v1.0-rc-feature-freeze.md) and is checked with
 `make v1-rc-feature-freeze`; it blocks new manifests, executors, policy powers, MCP/API behavior,

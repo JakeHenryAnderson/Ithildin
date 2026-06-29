@@ -9,7 +9,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-fixtures mission-control-enterprise-status-fixtures-check
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
-.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map
+.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-operator-trial-readiness
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact packet-check-recursion-guard
 
 test:
@@ -154,6 +154,9 @@ v1-progress-assessment:
 
 technical-mvp-ticket-map:
 	uv run python scripts/technical_mvp_ticket_map.py
+
+technical-mvp-operator-trial-readiness:
+	uv run python scripts/technical_mvp_operator_trial_readiness.py
 
 v1-rc-feature-freeze:
 	uv run python scripts/v1_rc_feature_freeze_check.py
@@ -1576,6 +1579,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 
 release-check: compliance-mapping-external-review-bundle-check
 release-check: packet-check-recursion-guard
+release-check: technical-mvp-operator-trial-readiness
 
 release-check: sandbox-vm-live-poc-response-dry-run
 release-check: sandbox-vm-live-poc-response-kit-check
