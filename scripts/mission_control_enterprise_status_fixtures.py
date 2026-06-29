@@ -57,6 +57,13 @@ FORBIDDEN_PAYLOAD_KEYS = {
     "response_body",
 }
 
+ALLOWED_ACTION_COMMANDS = {
+    "make release-check",
+    "make review-candidate",
+    "make enterprise-review-send-refresh",
+    "make enterprise-response-intake-refresh",
+}
+
 Mutator = Callable[[dict[str, Any]], None]
 
 
@@ -183,7 +190,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "does not add Mission Control runtime behavior",
         "does not approve callbacks into Ithildin",
         "MC-STATUS-NEG-001",
-        "MC-STATUS-NEG-010",
+        "MC-STATUS-NEG-011",
     ]:
         if phrase not in doc:
             failures.append(f"enterprise status fixture doc is missing phrase: {phrase}")
@@ -192,7 +199,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Valid Fixture",
         "Negative Fixtures",
         "MC-STATUS-NEG-001",
-        "MC-STATUS-NEG-010",
+        "MC-STATUS-NEG-011",
+        "unsupported_action_command",
         "runtime_changes_allowed: `false`",
         "mission_control_runtime_allowed: `false`",
     ]:
@@ -207,8 +215,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         failures.append("enterprise status fixture summary has the wrong type")
     if summary.get("tool_count") != 24:
         failures.append("enterprise status fixture summary tool_count must remain 24")
-    if summary.get("negative_case_count") != 10:
-        failures.append("enterprise status fixture summary must include 10 negative cases")
+    if summary.get("negative_case_count") != 11:
+        failures.append("enterprise status fixture summary must include 11 negative cases")
     if summary.get("safe_error_reason_labels_only") is not True:
         failures.append("enterprise status fixture summary must require safe reason labels")
     boundaries = summary.get("forbidden_runtime_authority")
@@ -223,8 +231,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     if not {INDEX_NAME, SUMMARY_NAME, VALID_NAME}.issubset(hashed_paths):
         failures.append("enterprise status fixture hash manifest is missing required artifacts")
     negative_hashes = [path for path in hashed_paths if str(path).startswith("negatives/")]
-    if len(negative_hashes) != 10:
-        failures.append("enterprise status fixture hash manifest must include 10 negative files")
+    if len(negative_hashes) != 11:
+        failures.append("enterprise status fixture hash manifest must include 11 negative files")
     if HASH_NAME in hashed_paths:
         failures.append("enterprise status fixture hash manifest must not hash itself")
     if not _artifact_hashes_match_files(output_dir, hash_manifest):
@@ -327,6 +335,11 @@ def _case_definitions() -> list[tuple[str, str, Mutator]]:
         ),
         ("MC-STATUS-NEG-009", "raw_prompt", _inject("raw_prompt", "summarize this")),
         ("MC-STATUS-NEG-010", "raw_file_contents", _inject("file_contents", "secret")),
+        (
+            "MC-STATUS-NEG-011",
+            "unsafe_action_command",
+            _set("action_commands", ["make enterprise-review-send-refresh", "rm -rf /"]),
+        ),
     ]
 
 
@@ -359,6 +372,11 @@ def _validate_for_display_import(payload: Mapping[str, Any]) -> list[str]:
         "response_present_count"
     ) == 0:
         reasons.append("closure_claim_requires_normalized_response")
+    action_commands = payload.get("action_commands")
+    if not isinstance(action_commands, list) or not action_commands:
+        reasons.append("action_commands_must_be_safe_list")
+    elif any(command not in ALLOWED_ACTION_COMMANDS for command in action_commands):
+        reasons.append("unsupported_action_command")
     if _contains_forbidden_key(payload):
         reasons.append("forbidden_payload_field")
     return sorted(set(reasons))
@@ -382,7 +400,7 @@ def _render_index(summary: dict[str, Any]) -> str:
 
 Status: generated display/import fixtures for Mission Control enterprise status tests.
 
-This packet contains one valid display-only enterprise status export payload and ten negative
+This packet contains one valid display-only enterprise status export payload and eleven negative
 payloads derived from the same seed. It is for importer tests only; it does not call Mission
 Control, call Ithildin APIs, create approvals, start a VM/container, invoke a local model, close
 enterprise lanes, or grant runtime authority.

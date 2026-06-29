@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/mission-control-enterprise-status-acceptance-matrix.md"
 DOC = ROOT / DOC_REL
 VALID_ID = "MC-STATUS-VALID-001"
-NEGATIVE_IDS = [f"MC-STATUS-NEG-{number:03d}" for number in range(1, 11)]
+NEGATIVE_IDS = [f"MC-STATUS-NEG-{number:03d}" for number in range(1, 12)]
 
 REQUIRED_DOC_PHRASES = [
     "Status: acceptance matrix for future Mission Control enterprise status display/import tests.",
@@ -27,7 +27,7 @@ REQUIRED_DOC_PHRASES = [
     "rejected_safe_reason",
     VALID_ID,
     "MC-STATUS-NEG-001",
-    "MC-STATUS-NEG-010",
+    "MC-STATUS-NEG-011",
     "Ithildin remains the execution, policy, approval, audit, review-lane closure, "
     "and runtime authority",
     "does not approve Mission Control importer implementation",
@@ -131,8 +131,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if valid_payload.get("expected_accept") is not True:
         failures.append("valid enterprise status fixture must be accepted as display-only status")
     negative_cases = summary.get("negative_cases", [])
-    if len(negative_cases) != 10:
-        failures.append("enterprise status fixture pack must expose 10 negative cases")
+    if len(negative_cases) != 11:
+        failures.append("enterprise status fixture pack must expose 11 negative cases")
     for case in negative_cases:
         case_id = case.get("id")
         if case_id not in NEGATIVE_IDS:

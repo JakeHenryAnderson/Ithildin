@@ -2318,8 +2318,8 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["negative_case_count"] == 10
-    assert report["negative_fixture_files"] == 10
+    assert report["negative_case_count"] == 11
+    assert report["negative_fixture_files"] == 11
     assert report["artifact_hashes_match_files"] is True
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -2341,8 +2341,12 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     )
     assert summary["tool_count"] == 24
     assert summary["valid_payload"]["expected_accept"] is True
-    assert summary["negative_case_count"] == 10
-    assert len(summary["negative_cases"]) == 10
+    assert summary["negative_case_count"] == 11
+    assert len(summary["negative_cases"]) == 11
+    negative_reasons = {
+        case["id"]: case["expected_reasons"] for case in summary["negative_cases"]
+    }
+    assert negative_reasons["MC-STATUS-NEG-011"] == ["unsupported_action_command"]
     assert valid_payload["artifact_type"] == "ithildin.enterprise_status_export"
     assert valid_payload["status"] == "display_only"
     assert valid_payload["mission_control_runtime_allowed"] is False
@@ -2350,7 +2354,7 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     assert "valid/enterprise-status-valid.json" in hashed_paths
     assert "fixture-summary.json" in hashed_paths
     assert "MISSION_CONTROL_ENTERPRISE_STATUS_FIXTURES.md" in hashed_paths
-    assert len([path for path in hashed_paths if path.startswith("negatives/")]) == 10
+    assert len([path for path in hashed_paths if path.startswith("negatives/")]) == 11
     assert "mission-control-enterprise-status-fixture-artifact-hashes.json" not in hashed_paths
     for phrase in [
         "Status: generated fixture pack for Mission Control enterprise status "
@@ -2362,7 +2366,7 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
         "does not add Mission Control runtime behavior",
         "does not approve callbacks into Ithildin",
         "MC-STATUS-NEG-001",
-        "MC-STATUS-NEG-010",
+        "MC-STATUS-NEG-011",
     ]:
         assert phrase in doc
     for phrase in [
@@ -2370,7 +2374,8 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
         "Valid Fixture",
         "Negative Fixtures",
         "MC-STATUS-NEG-001",
-        "MC-STATUS-NEG-010",
+        "MC-STATUS-NEG-011",
+        "unsupported_action_command",
         "runtime_changes_allowed: `false`",
         "mission_control_runtime_allowed: `false`",
     ]:
@@ -2428,7 +2433,7 @@ def test_mission_control_enterprise_status_acceptance_matrix_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["valid_fixture_id"] == "MC-STATUS-VALID-001"
-    assert report["negative_case_count"] == 10
+    assert report["negative_case_count"] == 11
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["mission_control_execution_allowed"] is False
@@ -2449,7 +2454,8 @@ def test_mission_control_enterprise_status_acceptance_matrix_is_wired() -> None:
         "make mission-control-enterprise-status-acceptance-matrix-check",
         "MC-STATUS-VALID-001",
         "MC-STATUS-NEG-001",
-        "MC-STATUS-NEG-010",
+        "MC-STATUS-NEG-011",
+        "unsupported_action_command",
         "accepted_display_only_status",
         "rejected_safe_reason",
         "does not approve Mission Control importer implementation",
@@ -2522,8 +2528,8 @@ def test_mission_control_enterprise_status_reference_validator_is_wired(tmp_path
     assert report["tool_count"] == 24
     assert report["valid_fixture_id"] == "MC-STATUS-VALID-001"
     assert report["valid_fixture_accepted"] is True
-    assert report["negative_case_count"] == 10
-    assert report["negative_cases_rejected"] == 10
+    assert report["negative_case_count"] == 11
+    assert report["negative_cases_rejected"] == 11
     assert report["safe_reason_labels_only"] is True
     assert report["forbidden_payload_key_cases_rejected"] is True
     assert report["runtime_changes_allowed"] is False
@@ -2548,7 +2554,7 @@ def test_mission_control_enterprise_status_reference_validator_is_wired(tmp_path
         "does not approve Mission Control enterprise status importer implementation",
         "does not call Mission Control",
         "MC-STATUS-VALID-001",
-        "MC-STATUS-NEG-010",
+        "MC-STATUS-NEG-011",
     ]:
         assert phrase in doc
     assert "mission-control-enterprise-status-reference-validator:" in makefile
