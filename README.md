@@ -499,6 +499,8 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-checklist` - validate the operator checklist for attaching the
   current `ERG-003` and `ERG-002` review packets and routing responses through the fail-closed
   inbox.
+- `make enterprise-review-send-quickstart` - generate a one-page operator index naming the exact
+  `ERG-003`/`ERG-002` directories, prompt files, hash manifests, and raw-response placeholders.
 - `make enterprise-review-submission-prompt` - generate a paste-ready operator prompt for sending
   the current `ERG-003` and `ERG-002` review packets as separate review requests.
 - `make enterprise-review-send-receipt-template` - generate an ignored operator receipt template
@@ -1215,6 +1217,12 @@ The enterprise review send checklist is
 checked with `make enterprise-review-send-checklist`; it gives the operator the exact current
 attachments, prompt files, response inbox paths, and post-response commands for the `ERG-003` and
 `ERG-002` send set while still not recording review, normalizing responses, or closing either lane.
+The enterprise review send quickstart is
+[docs/codex/enterprise-review-send-quickstart.md](docs/codex/enterprise-review-send-quickstart.md),
+generated with `make enterprise-review-send-quickstart`; it gives the operator a one-page generated
+index over the current `ERG-003` and `ERG-002` send directories, prompt files, hash manifests, and
+raw-response placeholders while still not recording review, normalizing responses, or closing either
+lane.
 The enterprise review submission prompt is
 [docs/codex/enterprise-review-submission-prompt.md](docs/codex/enterprise-review-submission-prompt.md),
 generated with `make enterprise-review-submission-prompt`; it gives the operator paste-ready

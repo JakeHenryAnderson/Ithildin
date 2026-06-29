@@ -265,6 +265,7 @@ externally closed.
 - [Enterprise Dual Review Outbox](enterprise-dual-review-outbox.md)
 - [Enterprise Review Send Manifest](enterprise-review-send-manifest.md)
 - [Enterprise Review Send Checklist](enterprise-review-send-checklist.md)
+- [Enterprise Review Send Quickstart](enterprise-review-send-quickstart.md)
 - [Enterprise Review Submission Prompt](enterprise-review-submission-prompt.md)
 - [Enterprise Review Send Receipt Template](enterprise-review-send-receipt-template.md)
 - [Enterprise Review Handoff Drill](enterprise-review-handoff-drill.md)

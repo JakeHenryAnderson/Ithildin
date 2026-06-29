@@ -34,6 +34,12 @@ Use the generated send manifest for the overall handoff:
 - `var/review-packets/v3/enterprise-review-send-manifest/enterprise-review-send-manifest.json`
 - `var/review-packets/v3/enterprise-review-send-manifest/enterprise-review-send-manifest-artifact-hashes.json`
 
+Use the generated send quickstart as the one-page operator index:
+
+- `var/review-packets/v3/enterprise-review-send-quickstart/ENTERPRISE_REVIEW_SEND_QUICKSTART.md`
+- `var/review-packets/v3/enterprise-review-send-quickstart/enterprise-review-send-quickstart.json`
+- `var/review-packets/v3/enterprise-review-send-quickstart/enterprise-review-send-quickstart-artifact-hashes.json`
+
 ## Prompt Files
 
 Paste the lane prompt for each review:
@@ -74,6 +80,7 @@ Before sending, run:
 make enterprise-review-send-readiness
 make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
+make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox

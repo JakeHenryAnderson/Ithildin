@@ -47,6 +47,7 @@ With no real enterprise reviewer responses present, the next allowed operator ac
 
    - `var/review-packets/v3/enterprise-dual-review-outbox`
    - `var/review-packets/v3/enterprise-review-send-manifest`
+   - `var/review-packets/v3/enterprise-review-send-quickstart`
    - `var/review-packets/v3/enterprise-review-submission-prompt`
    - `var/review-packets/v3/enterprise-review-send-receipt-template`
 

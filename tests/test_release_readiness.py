@@ -77,6 +77,7 @@ from scripts import (
     enterprise_review_send_manifest,
     enterprise_review_send_preflight,
     enterprise_review_send_preflight_lightweight_check,
+    enterprise_review_send_quickstart,
     enterprise_review_send_readiness,
     enterprise_review_send_receipt_template,
     enterprise_review_submission_prompt,
@@ -3339,6 +3340,125 @@ def test_enterprise_review_send_checklist_is_wired() -> None:
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-review-send-checklist" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_send_quickstart_is_wired() -> None:
+    report = enterprise_review_send_quickstart.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    operator_next_action = Path("docs/codex/enterprise-operator-next-action.md").read_text(
+        encoding="utf-8"
+    )
+    send_checklist = Path("docs/codex/enterprise-review-send-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    submission_prompt = Path(
+        "docs/codex/enterprise-review-submission-prompt.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    refresh_body = makefile.partition("enterprise-review-send-refresh:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-review-send-quickstart")
+    generated = generated_dir / "ENTERPRISE_REVIEW_SEND_QUICKSTART.md"
+    generated_json = generated_dir / "enterprise-review-send-quickstart.json"
+    generated_hashes = json.loads(
+        (
+            generated_dir / "enterprise-review-send-quickstart-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["artifact_hashes_match_files"] is True
+    for key in [
+        "records_external_review",
+        "normalizes_responses",
+        "writes_response_files",
+        "closes_erg_003",
+        "closes_erg_002",
+        "runtime_changes_allowed",
+        "mission_control_runtime_allowed",
+        "live_vm_inspection_allowed",
+        "local_model_invocation_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "siem_adapter_allowed",
+        "compliance_automation_allowed",
+        "public_security_product_positioning_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+    for phrase in [
+        "Status: generated operator quickstart for the current enterprise send set.",
+        "make enterprise-review-send-quickstart",
+        "make enterprise-review-send-quickstart-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record external review",
+        "does not normalize responses",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Send Quickstart",
+        "Send these two review requests",
+        "Attach every file from",
+        "Prompt file",
+        "Hash manifest",
+        "RAW_RESPONSE_ERG-003.md",
+        "RAW_RESPONSE_ERG-002.md",
+        "records_external_review: `false`",
+        "normalizes_responses: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"quickstart_type": "ithildin.enterprise_review_send_quickstart"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"records_external_review": false',
+        '"normalizes_responses": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    assert {
+        "ENTERPRISE_REVIEW_SEND_QUICKSTART.md",
+        "enterprise-review-send-quickstart.json",
+    } <= hashed_paths
+    assert "enterprise-review-send-quickstart-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-send-quickstart:" in makefile
+    assert "enterprise-review-send-quickstart-check:" in makefile
+    assert "enterprise-review-send-quickstart-check" in release_check_body
+    assert "$(MAKE) enterprise-review-send-quickstart" in review_candidate_body
+    assert "$(MAKE) enterprise-review-send-quickstart" in refresh_body
+    assert "make enterprise-review-send-quickstart" in readme
+    assert "enterprise-review-send-quickstart" in operator_next_action
+    assert "enterprise-review-send-quickstart" in send_checklist
+    assert "enterprise-review-send-quickstart" in submission_prompt
+    assert "docs/codex/enterprise-review-send-quickstart.md" in docs_site
+    assert "docs/codex/enterprise-review-send-quickstart.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Send Quickstart" in review_index
+    assert "enterprise-review-send-quickstart-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-quickstart" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
