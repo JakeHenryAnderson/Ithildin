@@ -13,9 +13,6 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
-    enterprise_dual_response_readiness,
-    enterprise_response_command_matrix,
-    enterprise_response_intake_quickstart,
     review_docs,
 )
 
@@ -48,6 +45,7 @@ BOUNDARY_FLAGS = {
 class LaneSpec:
     gap: str
     raw_response_path: str
+    accepted_raw_response_paths: tuple[str, ...]
     finding_namespace: str
     normalization_area: str
     normalizer_command: str
@@ -80,19 +78,7 @@ def build_report(
     failures: list[str] = []
     warnings: list[str] = []
 
-    readiness = enterprise_dual_response_readiness.build_report(repo_root)
-    quickstart = enterprise_response_intake_quickstart.build_report(repo_root)
-    command_matrix = enterprise_response_command_matrix.build_report(repo_root)
-
-    for label, report in [
-        ("enterprise-dual-response-readiness", readiness),
-        ("enterprise-response-intake-quickstart", quickstart),
-        ("enterprise-response-command-matrix", command_matrix),
-    ]:
-        if report.get("valid") is not True:
-            failures.append(f"{label} is not valid")
-
-    lane_specs = _lane_specs(command_matrix)
+    lane_specs = _lane_specs()
     if sorted(lane_specs) != sorted(SUPPORTED_LANES):
         failures.append("paste preflight expected only ERG-003 and ERG-002 lane specs")
 
@@ -117,7 +103,9 @@ def build_report(
     docs_site = _read(repo_root / "scripts/build_docs_site.py")
     review_index = _read(repo_root / "docs/codex/review-docs-index.md")
     release_guardrails = _read(repo_root / "scripts/release_guardrails.py")
-    quickstart_doc = _read(repo_root / enterprise_response_intake_quickstart.DOC_REL)
+    quickstart_doc = _read(
+        repo_root / "docs/codex/enterprise-response-intake-quickstart.md"
+    )
     current_checkpoint = _read(repo_root / "docs/codex/enterprise-current-checkpoint.md")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
@@ -128,8 +116,10 @@ def build_report(
         "make enterprise-response-paste-preflight",
         "--lane ERG-003",
         "--lane ERG-002",
-        "--raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md",
-        "--raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "--raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "--raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "var/review-runs/enterprise-response-inbox/",
+        "fallback/manual flows",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
@@ -186,11 +176,14 @@ def preflight_raw_response(repo_root: Path, spec: LaneSpec, raw_response: Path) 
     warnings: list[str] = []
     raw_path = raw_response if raw_response.is_absolute() else repo_root / raw_response
 
-    expected_path = repo_root / spec.raw_response_path
-    if raw_path.resolve(strict=False) != expected_path.resolve(strict=False):
+    expected_paths = [
+        (repo_root / accepted_path).resolve(strict=False)
+        for accepted_path in spec.accepted_raw_response_paths
+    ]
+    if raw_path.resolve(strict=False) not in expected_paths:
         failures.append(
-            "raw response path does not match the generated inbox path for "
-            f"{spec.gap}: {spec.raw_response_path}"
+            "raw response path does not match an accepted generated inbox path for "
+            f"{spec.gap}: {', '.join(spec.accepted_raw_response_paths)}"
         )
     if not raw_path.exists():
         failures.append("raw response file is missing")
@@ -280,21 +273,60 @@ def render_report(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _lane_specs(command_matrix: dict[str, Any]) -> dict[str, LaneSpec]:
-    specs: dict[str, LaneSpec] = {}
-    for row in command_matrix.get("command_rows", []):
-        if row.get("gap") in SUPPORTED_LANES:
-            specs[row["gap"]] = LaneSpec(
-                gap=row["gap"],
-                raw_response_path=row["raw_response_path"],
-                finding_namespace=row["finding_namespace"],
-                normalization_area=row["normalization_area"],
-                normalizer_command=row["normalizer_command"],
-                dry_run_command=row["dry_run_command"],
-                closure_gate=row["closure_gate"],
-                allowed_next_state=row["allowed_next_state"],
-            )
-    return specs
+def _lane_specs() -> dict[str, LaneSpec]:
+    # Keep this preflight cheap: it validates pasted response shape and doc wiring,
+    # not the heavyweight enterprise packet/readiness dependency graph.
+    return {
+        "ERG-003": _lane_spec(
+            gap="ERG-003",
+            finding_namespace="EXT-SVP-###",
+            normalization_area="sandbox-vm-static-preflight",
+            dry_run_command="make sandbox-vm-static-preflight-response-dry-run",
+            closure_gate="make sandbox-vm-static-preflight-disposition-closure-check",
+            allowed_next_state="closed_local_preview_static_preflight",
+        ),
+        "ERG-002": _lane_spec(
+            gap="ERG-002",
+            finding_namespace="EXT-MC-DISPLAY-###",
+            normalization_area="mission-control-display",
+            dry_run_command="make mission-control-display-response-dry-run",
+            closure_gate="make mission-control-display-disposition-closure-check",
+            allowed_next_state="ready_for_design_only_decision_record",
+        ),
+    }
+
+
+def _lane_spec(
+    *,
+    gap: str,
+    finding_namespace: str,
+    normalization_area: str,
+    dry_run_command: str,
+    closure_gate: str,
+    allowed_next_state: str,
+) -> LaneSpec:
+    raw_response_path = f"var/review-runs/enterprise-response-inbox/RAW_RESPONSE_{gap}.md"
+    return LaneSpec(
+        gap=gap,
+        raw_response_path=raw_response_path,
+        accepted_raw_response_paths=_accepted_raw_response_paths(gap, raw_response_path),
+        finding_namespace=finding_namespace,
+        normalization_area=normalization_area,
+        normalizer_command=(
+            "uv run python scripts/external_response_normalize.py "
+            f"{raw_response_path} "
+            '--reviewer "REVIEWER NAME" '
+            '--reviewer-type "ai_external" '
+            '--source-access source-level '
+            '--reviewed-commit "$(git rev-parse HEAD)" '
+            '--reviewed-packet-hash "sha256:<from generated inbox>" '
+            f"--area {normalization_area} "
+            f"--output var/review-runs/{normalization_area}/normalized-response.json"
+        ),
+        dry_run_command=dry_run_command,
+        closure_gate=closure_gate,
+        allowed_next_state=allowed_next_state,
+    )
 
 
 def _raw_report(
@@ -311,6 +343,7 @@ def _raw_report(
         "warnings": warnings,
         "lane": spec.gap,
         "raw_response_path": raw_path.as_posix(),
+        "accepted_raw_response_paths": list(spec.accepted_raw_response_paths),
         "byte_count": byte_count,
         "finding_namespace": spec.finding_namespace,
         "normalization_area": spec.normalization_area,
@@ -327,6 +360,16 @@ def _raw_report(
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def _accepted_raw_response_paths(gap: str, default_path: str) -> tuple[str, ...]:
+    paths = [default_path]
+    if gap in SUPPORTED_LANES:
+        paths.insert(
+            0,
+            f"var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_{gap}.md",
+        )
+    return tuple(dict.fromkeys(paths))
 
 
 if __name__ == "__main__":

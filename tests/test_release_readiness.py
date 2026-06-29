@@ -3663,6 +3663,9 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
         "--lane ERG-002",
         "Expected finding namespace",
         "explicit no-findings statement",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "fallback/manual flows",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
@@ -3692,13 +3695,28 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 
-    specs = enterprise_response_paste_preflight._lane_specs(  # noqa: SLF001
-        enterprise_response_command_matrix.build_report(Path.cwd())
+    specs = enterprise_response_paste_preflight._lane_specs()  # noqa: SLF001
+    assert (
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
+        in specs["ERG-003"].accepted_raw_response_paths
     )
-    raw_path = Path("var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md")
+    assert (
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md"
+        in specs["ERG-003"].accepted_raw_response_paths
+    )
+    raw_path = Path(
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
+    )
+    fallback_raw_path = Path(
+        "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md"
+    )
     original = raw_path.read_bytes() if raw_path.exists() else None
+    fallback_original = (
+        fallback_raw_path.read_bytes() if fallback_raw_path.exists() else None
+    )
     try:
         raw_path.parent.mkdir(parents=True, exist_ok=True)
+        fallback_raw_path.parent.mkdir(parents=True, exist_ok=True)
         raw_path.write_text(
             "\n".join(
                 [
@@ -3716,6 +3734,15 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
         assert valid_raw["normalizes_responses"] is False
         assert valid_raw["external_review_recorded"] is False
 
+        fallback_raw_path.write_text(raw_path.read_text(encoding="utf-8"), encoding="utf-8")
+        valid_fallback_raw = enterprise_response_paste_preflight.preflight_raw_response(
+            Path.cwd(), specs["ERG-003"], fallback_raw_path
+        )
+        assert valid_fallback_raw["valid"] is True
+        assert valid_fallback_raw["raw_response_path"].endswith(
+            "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md"
+        )
+
         raw_path.write_text(
             "# Raw External Review Response Placeholder: ERG-003\n"
             "Paste the unmodified reviewer response here.\n",
@@ -3731,6 +3758,10 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
             raw_path.unlink(missing_ok=True)
         else:
             raw_path.write_bytes(original)
+        if fallback_original is None:
+            fallback_raw_path.unlink(missing_ok=True)
+        else:
+            fallback_raw_path.write_bytes(fallback_original)
 
 
 def test_enterprise_north_star_roadmap_is_wired() -> None:

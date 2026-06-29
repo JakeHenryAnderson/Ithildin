@@ -22,7 +22,7 @@ After pasting a real reviewer response into the generated inbox path, run:
 ```sh
 uv run python scripts/enterprise_response_paste_preflight.py \
   --lane ERG-003 \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
+  --raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md
 ```
 
 Expected finding namespace: `EXT-SVP-###`.
@@ -34,7 +34,7 @@ means the response is ready for the existing `ERG-003` normalizer and dry-run se
 ```sh
 uv run python scripts/external_response_normalize.py \
   --area sandbox-vm-static-preflight \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md
+  --raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md
 make sandbox-vm-static-preflight-response-dry-run
 make sandbox-vm-static-preflight-disposition-closure-check
 ```
@@ -46,7 +46,7 @@ After pasting a real reviewer response into the generated inbox path, run:
 ```sh
 uv run python scripts/enterprise_response_paste_preflight.py \
   --lane ERG-002 \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md
+  --raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md
 ```
 
 Expected finding namespace: `EXT-MC-DISPLAY-###`.
@@ -58,10 +58,14 @@ means the response is ready for the existing `ERG-002` normalizer and dry-run se
 ```sh
 uv run python scripts/external_response_normalize.py \
   --area mission-control-display \
-  --raw-response var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-002.md
+  --raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md
 make mission-control-display-response-dry-run
 make mission-control-display-disposition-closure-check
 ```
+
+The all-lane inbox paths under `var/review-runs/enterprise-response-inbox/` remain accepted for
+fallback/manual flows, but the current `ERG-003`/`ERG-002` handoff should use the compact
+dual-response inbox and generated cheat sheet.
 
 ## What This Proves
 
