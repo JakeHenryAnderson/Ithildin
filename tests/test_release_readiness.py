@@ -533,6 +533,12 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
         ["apps/api/src/ithildin_api/tools/example.py"]
     )
     docs_report = validation_decision.build_report(["docs/codex/example.md"])
+    enterprise_report = validation_decision.build_report(
+        [
+            "docs/codex/enterprise-response-status-board.md",
+            "scripts/enterprise_response_status_board.py",
+        ]
+    )
 
     assert runtime_report["valid"] is True
     assert runtime_report["recommended_mode"] == "develop_then_handoff_gate"
@@ -542,11 +548,22 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
     ]
     assert runtime_report["deferred_handoff_commands"] == ["make release-check"]
     assert runtime_report["release_or_handoff_required"] is True
+    assert runtime_report["release_slice_categories"] == ["test_lint_typecheck"]
+    assert runtime_report["release_slice_commands"] == [
+        'make release-check-slice ARGS="--category test_lint_typecheck"'
+    ]
     assert runtime_report["gate_guidance"]["make runtime-check"]["release_proof"] is False
     assert runtime_report["gate_guidance"]["make release-check"]["release_proof"] is True
 
     assert docs_report["recommended_mode"] == "development_gate_only"
     assert docs_report["deferred_handoff_commands"] == []
+    assert docs_report["release_slice_commands"] == []
+
+    assert enterprise_report["recommended_mode"] == "development_gate_only"
+    assert enterprise_report["release_slice_categories"] == ["enterprise"]
+    assert enterprise_report["release_slice_commands"] == [
+        'make release-check-slice ARGS="--category enterprise"'
+    ]
 
 
 def test_validation_plan_recommends_gates_by_changed_file_category() -> None:

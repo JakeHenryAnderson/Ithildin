@@ -158,8 +158,8 @@ checked with `make control-mapping-readiness`.
   a curated release/docs smoke test set without generated review-packet rebuilds.
 - `make validation-plan` - inspect the current dirty file set and recommend the smallest honest
   validation gate set for those changes.
-- `make validation-decision` - print the current validation mode, deferred handoff gates, and
-  command guidance for the dirty file set.
+- `make validation-decision` - print the current validation mode, deferred handoff gates, release
+  slice suggestions, and command guidance for the dirty file set.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make smart-handoff-check` - run the current validation plan including deferred release/review

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts import validation_plan  # noqa: E402
+from scripts import release_check_impact, validation_plan  # noqa: E402
 
 GATE_GUIDANCE = {
     "make quick-check": {
@@ -69,12 +69,14 @@ def main() -> int:
 def build_report(files: list[str] | None = None) -> dict[str, Any]:
     changed_files = files or validation_plan.changed_files(ROOT)
     plan = validation_plan.build_report(changed_files)
+    impact = release_check_impact.build_report(ROOT, files=changed_files)
     dirty = bool(changed_files)
     next_commands = plan["recommended_commands"]
     deferred = plan["deferred_handoff_commands"]
     return {
         "schema_version": "1",
-        "valid": True,
+        "valid": impact["valid"],
+        "failures": impact["failures"],
         "repo_root": str(ROOT),
         "git_commit": _git(["rev-parse", "HEAD"]),
         "git_dirty": dirty,
@@ -82,6 +84,8 @@ def build_report(files: list[str] | None = None) -> dict[str, Any]:
         "categories": plan["categories"],
         "next_development_commands": next_commands,
         "deferred_handoff_commands": deferred,
+        "release_slice_categories": impact["slice_categories"],
+        "release_slice_commands": impact["slice_commands"],
         "release_or_handoff_required": bool(deferred),
         "recommended_mode": _recommended_mode(plan),
         "gate_guidance": {
@@ -110,11 +114,17 @@ def render_report(report: dict[str, Any]) -> str:
     if report["deferred_handoff_commands"]:
         lines.append("deferred_handoff_commands:")
         lines.extend(f"- {command}" for command in report["deferred_handoff_commands"])
+    if report["release_slice_commands"]:
+        lines.append("release_slice_commands:")
+        lines.extend(f"- {command}" for command in report["release_slice_commands"])
     lines.append("notes:")
     lines.extend(f"- {note}" for note in report["notes"])
     if report["files"]:
         lines.append("files:")
         lines.extend(f"- {path}" for path in report["files"])
+    if report["failures"]:
+        lines.append("failures:")
+        lines.extend(f"- {failure}" for failure in report["failures"])
     return "\n".join(lines)
 
 
@@ -135,6 +145,7 @@ def _notes(plan: dict[str, Any]) -> list[str]:
         )
     else:
         notes.append("No slow release/review gate is recommended for the current dirty-file set.")
+    notes.append("Release-check slice suggestions are focused development evidence only.")
     return notes
 
 

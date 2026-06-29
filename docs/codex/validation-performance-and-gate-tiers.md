@@ -26,7 +26,8 @@ and recommends the smallest honest command set. You can also pass files directly
 uv run python scripts/validation_plan.py docs/codex/example.md scripts/example.py
 ```
 
-For an operator-friendly decision summary with the current mode and deferred handoff commands, run:
+For an operator-friendly decision summary with the current mode, deferred handoff commands, and
+release-check slice suggestions, run:
 
 ```sh
 make validation-decision
