@@ -16,6 +16,11 @@ if str(ROOT) not in sys.path:
 from scripts import release_check_impact, validation_plan  # noqa: E402
 
 GATE_GUIDANCE = {
+    "make dev-check": {
+        "tier": "dirty_file_aware_default",
+        "use_for": "normal development loop when release or handoff evidence is not being claimed",
+        "release_proof": False,
+    },
     "make quick-check": {
         "tier": "fast",
         "use_for": "small docs/process/script wiring changes",
@@ -39,6 +44,22 @@ GATE_GUIDANCE = {
     "make test-fast": {
         "tier": "broad_python_non_packet",
         "use_for": "broad Python confidence without generated-packet test paths",
+        "release_proof": False,
+    },
+    "make capability-check": {
+        "tier": "bounded_capability_development",
+        "use_for": (
+            "read-only capability implementation before full release or "
+            "source-review handoff proof"
+        ),
+        "release_proof": False,
+    },
+    "make evidence-check": {
+        "tier": "evidence_review_state",
+        "use_for": (
+            "release evidence, findings, review-run manifest, packet recursion, "
+            "and docs wiring changes"
+        ),
         "release_proof": False,
     },
     "make release-check": {

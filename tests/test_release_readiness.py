@@ -446,6 +446,9 @@ def test_validation_performance_tiers_are_wired() -> None:
 
     assert "quick-check:" in makefile
     assert "docs-check:" in makefile
+    assert "dev-check:" in makefile
+    assert "capability-check:" in makefile
+    assert "evidence-check:" in makefile
     assert "test-fast:" in makefile
     assert "runtime-check:" in makefile
     assert "readiness-check:" in makefile
@@ -462,10 +465,24 @@ def test_validation_performance_tiers_are_wired() -> None:
         2
     ].partition("\n\n")[0]
     assert "release-check: packet-check-recursion-guard" in makefile
+    assert "$(MAKE) smart-check" in makefile.partition("dev-check:")[
+        2
+    ].partition("\n\n")[0]
+    capability_body = makefile.partition("capability-check:")[2].partition("\n\n")[0]
+    assert "$(MAKE) no-new-powers-guardrail" in capability_body
+    assert "$(MAKE) runtime-check" in capability_body
+    assert "$(MAKE) test-fast" in capability_body
+    evidence_body = makefile.partition("evidence-check:")[2].partition("\n\n")[0]
+    assert "$(MAKE) release-evidence-gate" in evidence_body
+    assert "$(MAKE) review-run-manifest-check" in evidence_body
+    assert "$(MAKE) docs-check" in evidence_body
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
     assert "make docs-check" in readme
+    assert "make dev-check" in readme
+    assert "make capability-check" in readme
+    assert "make evidence-check" in readme
     assert "make test-fast" in readme
     assert "make runtime-check" in readme
     assert "make readiness-check" in readme
@@ -488,6 +505,9 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "quickstart" in conftest
     assert "Do not use fast gates to claim release readiness" in guide
     assert "make docs-check" in guide
+    assert "make dev-check" in guide
+    assert "make capability-check" in guide
+    assert "make evidence-check" in guide
     assert "make smart-check" in guide
     assert "make smart-handoff-check" in guide
     assert "make test-fast" in guide
@@ -503,9 +523,15 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "--fail-on-budget" in guide
     assert "budget status" in guide
     assert "changed test files" in guide
+    assert "bounded read-only capability implementation work" in guide
+    assert "review/evidence/checkpoint wiring changes" in guide
     assert "make docs-check" in validation_timing.PROFILES["docs"]
+    assert "make dev-check" in validation_timing.PROFILES["dev"]
+    assert "make capability-check" in validation_timing.PROFILES["capability"]
+    assert "make evidence-check" in validation_timing.PROFILES["evidence"]
     assert "make smart-check" in validation_timing.PROFILES["fast"]
     assert validation_timing.PROFILE_BUDGET_SECONDS["fast"] > 0
+    assert validation_timing.PROFILE_BUDGET_SECONDS["capability"] > 0
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100
@@ -578,6 +604,15 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
     ]
     assert runtime_report["gate_guidance"]["make runtime-check"]["release_proof"] is False
     assert runtime_report["gate_guidance"]["make release-check"]["release_proof"] is True
+    assert validation_decision.GATE_GUIDANCE["make dev-check"]["release_proof"] is False
+    assert (
+        validation_decision.GATE_GUIDANCE["make capability-check"]["tier"]
+        == "bounded_capability_development"
+    )
+    assert (
+        validation_decision.GATE_GUIDANCE["make evidence-check"]["tier"]
+        == "evidence_review_state"
+    )
 
     assert docs_report["recommended_mode"] == "development_gate_only"
     assert docs_report["next_development_commands"] == ["make docs-check"]

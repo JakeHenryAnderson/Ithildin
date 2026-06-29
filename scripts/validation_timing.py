@@ -13,14 +13,20 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 PROFILES: dict[str, list[str]] = {
+    "capability": ["make capability-check"],
+    "dev": ["make dev-check"],
     "docs": ["make docs-check"],
+    "evidence": ["make evidence-check"],
     "fast": ["make smart-check"],
     "quick": ["make quick-check"],
     "readiness": ["make readiness-check"],
 }
 
 PROFILE_BUDGET_SECONDS = {
+    "capability": 600.0,
+    "dev": 60.0,
     "docs": 120.0,
+    "evidence": 300.0,
     "fast": 60.0,
     "quick": 180.0,
     "readiness": 300.0,

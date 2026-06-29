@@ -154,10 +154,17 @@ checked with `make control-mapping-readiness`.
   backend iteration before broader release gates.
 - `make docs-check` - run the docs-only fast gate for pure docs/README/AGENTS edits without lint,
   typecheck, or generated review-packet rebuilds.
+- `make dev-check` - default dirty-file-aware development gate; wraps `make smart-check` so routine
+  work uses the smallest honest validation set instead of the full release gate.
 - `make quick-check` - run the fast local development gate: core boundary checks, lint, and
   typecheck without generated review-packet rebuilds.
 - `make readiness-check` - run the medium development gate: `quick-check`, docs generation, and
   a curated release/docs smoke test set without generated review-packet rebuilds.
+- `make capability-check` - run the bounded capability-development gate for read-only tool work:
+  manifest/tool-surface/no-new-powers checks, project-intelligence readiness, policy parity,
+  focused runtime tests, and `test-fast`.
+- `make evidence-check` - run the evidence/review-state gate for docs, findings, release evidence,
+  review-run manifests, packet recursion, and docs-site wiring without the full Python suite.
 - `make validation-plan` - inspect the current dirty file set and recommend the smallest honest
   validation gate set for those changes.
 - `make validation-decision` - print the current validation mode, deferred handoff gates, release

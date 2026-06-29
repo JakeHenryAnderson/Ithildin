@@ -42,10 +42,11 @@ make validation-decision ARGS=apps/api/src/ithildin_api/tools/example.py
 To run the recommended command set directly:
 
 ```sh
-make smart-check
+make dev-check
 ```
 
-`smart-check` prints the same file/category plan, runs the recommended commands, and records
+`dev-check` wraps `smart-check`, which prints the same file/category plan, runs the recommended
+commands, and records
 per-command elapsed time plus a short failure tail when a command fails. It is the default
 development-loop command when you are not preparing a release or review handoff. It avoids
 recommending duplicate sub-gates: for example, mixed docs/process changes run `readiness-check`, not
@@ -170,6 +171,20 @@ This runs release wording guardrails, the curated review-doc/docs-site smoke tes
 generation. It intentionally skips lint and typecheck because there is no code surface in a pure
 docs edit. Mixed docs plus scripts/config/tests still route to `readiness-check`.
 
+### Dev Check
+
+Run:
+
+```sh
+make dev-check
+```
+
+Use this as the normal default after a focused change. It delegates to the dirty-file-aware
+validation planner instead of blindly running the full release gate. If the planner sees runtime,
+manifest, policy, UI, or review-packet surfaces, it reports the slower release/handoff gate as
+deferred evidence so the developer can finish the inner loop first and then run the right checkpoint
+gate intentionally.
+
 ### Quick Check
 
 Run:
@@ -182,6 +197,38 @@ Use this for small docs, bookkeeping, script wiring, and manager-owned cleanup w
 manifest, policy, API/MCP, approval/audit, or UI behavior changed.
 
 This runs core boundary checks, lint, and typecheck. It does not generate review packets.
+
+### Capability Check
+
+Run:
+
+```sh
+make capability-check
+```
+
+Use this for bounded read-only capability implementation work before the full release gate. It checks
+the manifest lock, tool-surface invariant, no-new-powers guardrail, read-only capability inventory,
+project-intelligence readiness, next-capability readiness, policy parity, focused runtime tests, and
+the broad Python suite without generated-packet `slow_packet` tests.
+
+This is stronger than `dev-check` for tool work but still narrower than `release-check`. It is not a
+source-review handoff gate by itself.
+
+### Evidence Check
+
+Run:
+
+```sh
+make evidence-check
+```
+
+Use this for review/evidence/checkpoint wiring changes where the risk is stale handoff state rather
+than runtime behavior. It checks release evidence, reviewer findings, finding summaries,
+review-run manifests, packet recursion, and docs-site wiring without running the full Python suite or
+UI production build.
+
+This is useful after docs, packet, response-kit, or external-review intake work. It is not a
+replacement for `release-check` before a major checkpoint or external handoff.
 
 ### Fast Python Tests
 
@@ -263,14 +310,14 @@ uv run pytest tests/test_release_readiness.py -m "not slow_packet" -q
 ## Rule Of Thumb
 
 - Runtime, executor, manifest, policy, approval/audit, or API/MCP changes: run focused subsystem
-  tests with `make smart-check`, `make runtime-check`, or `make test-fast`, then
+  tests with `make dev-check`, `make runtime-check`, `make capability-check`, or `make test-fast`, then
   `make smart-handoff-check` or `make release-check` before handoff, review, or a meaningful
   checkpoint commit.
 - UI runtime changes: run UI tests/build plus relevant API/readiness tests.
-- Docs/process/review wiring changes: run `make readiness-check`, plus the focused test for the
-  specific script/doc you touched.
+- Docs/process/review wiring changes: run `make readiness-check` or `make evidence-check`, plus the
+  focused test for the specific script/doc you touched.
 - Pure docs edits: run `make docs-check`.
-- Tiny mechanical docs plus code-adjacent edits: run `make quick-check` or `make readiness-check`
+- Tiny mechanical docs plus code-adjacent edits: run `make dev-check`, `make quick-check`, or `make readiness-check`
   according to `make validation-decision`.
 - External-review handoff: run `make review-candidate`.
 

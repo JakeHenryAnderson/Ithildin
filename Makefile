@@ -10,7 +10,7 @@ COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.examp
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check
-.PHONY: docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact packet-check-recursion-guard
+.PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check validation-decision validation-plan validation-timing release-check-profile release-check-slice release-check-impact packet-check-recursion-guard
 
 test:
 	uv run pytest
@@ -47,6 +47,9 @@ docs-check:
 		-q
 	$(MAKE) docs-site
 
+dev-check:
+	$(MAKE) smart-check
+
 readiness-check:
 	$(MAKE) quick-check
 	uv run pytest \
@@ -55,6 +58,27 @@ readiness-check:
 		tests/test_docs_site.py \
 		-q
 	$(MAKE) docs-site
+
+capability-check:
+	$(MAKE) release-context
+	$(MAKE) manifest-lock-check
+	$(MAKE) tool-surface-invariant-gate
+	$(MAKE) no-new-powers-guardrail
+	$(MAKE) read-only-capability-inventory-gate
+	$(MAKE) read-only-project-intelligence
+	$(MAKE) next-capability-readiness
+	$(MAKE) policy-parity
+	$(MAKE) runtime-check
+	$(MAKE) test-fast
+
+evidence-check:
+	$(MAKE) release-context
+	$(MAKE) release-evidence-gate
+	$(MAKE) reviewer-findings-check
+	$(MAKE) review-findings-summary
+	$(MAKE) review-run-manifest-check
+	$(MAKE) packet-check-recursion-guard
+	$(MAKE) docs-check
 
 validation-plan:
 	uv run python scripts/validation_plan.py $(ARGS)
