@@ -19,6 +19,7 @@ The required current-flow commands are:
 
 - `make enterprise-review-send-receipt-template`
 - `make enterprise-dual-response-inbox`
+- `make enterprise-response-waiting-room`
 - `make enterprise-response-paste-preflight`
 
 The check covers the operator-facing current handoff docs:

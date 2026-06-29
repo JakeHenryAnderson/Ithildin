@@ -60,6 +60,7 @@ When responses come back, store raw reviewer text in the ignored response inbox:
 Then run:
 
 ```sh
+make enterprise-response-waiting-room
 make enterprise-response-paste-preflight
 make enterprise-dual-response-readiness
 make enterprise-response-intake-drill

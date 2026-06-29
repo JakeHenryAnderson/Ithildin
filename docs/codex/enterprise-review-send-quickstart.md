@@ -66,6 +66,7 @@ Then run:
 ```sh
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
 make enterprise-response-paste-preflight
 make enterprise-response-intake-refresh
 ```

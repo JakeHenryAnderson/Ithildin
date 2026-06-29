@@ -4356,6 +4356,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
     assert report["required_current_flow_commands"] == [
         "make enterprise-review-send-receipt-template",
         "make enterprise-dual-response-inbox",
+        "make enterprise-response-waiting-room",
         "make enterprise-response-paste-preflight",
     ]
     for expected_doc in [
@@ -4396,6 +4397,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
         "make enterprise-review-send-receipt-template",
         "make enterprise-dual-response-inbox",
+        "make enterprise-response-waiting-room",
         "make enterprise-response-paste-preflight",
         "does not record external review",
         "does not normalize responses",
