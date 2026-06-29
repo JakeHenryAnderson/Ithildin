@@ -12,6 +12,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    enterprise_operator_next_action,
     enterprise_response_status_board,
     enterprise_review_send_readiness,
     next_capability_readiness,
@@ -95,6 +96,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     send_readiness = enterprise_review_send_readiness.build_report(repo_root)
     response_status = enterprise_response_status_board.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
+    operator_next_action = enterprise_operator_next_action.build_report(repo_root)
 
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
     failures.extend(
@@ -106,6 +108,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         for failure in response_status["failures"]
     )
     failures.extend(f"next-capability-readiness: {failure}" for failure in capability["failures"])
+    failures.extend(
+        f"enterprise-operator-next-action: {failure}"
+        for failure in operator_next_action["failures"]
+    )
 
     doc_path = repo_root / DOC_REL
     doc = _read(doc_path)
@@ -126,6 +132,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("next capability candidate is selected")
     if send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]:
         failures.append("recommended enterprise send set must remain ERG-003 then ERG-002")
+    if operator_next_action.get("next_action") != "send_erg_003_and_erg_002":
+        failures.append("operator next action must remain send_erg_003_and_erg_002")
     if response_status.get("response_present_count") != 0:
         failures.append(
             "enterprise responses are present; intake them before using this checkpoint"
@@ -196,6 +204,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_next_enterprise_review": progress.get(
             "recommended_next_enterprise_review"
         ),
+        "next_action": operator_next_action.get("next_action"),
+        "action_commands": operator_next_action.get("action_commands", []),
+        "handoff_artifacts": operator_next_action.get("handoff_artifacts", []),
+        "operator_next_action_doc": operator_next_action.get("next_action_doc"),
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
         **boundary_flags,
@@ -213,6 +225,14 @@ def render_report(report: dict[str, Any]) -> str:
         + ", ".join(report.get("recommended_send_set") or []),
         "recommended_next_enterprise_review: "
         f"{report.get('recommended_next_enterprise_review', 'unknown')}",
+        f"next_action: {report.get('next_action', 'unknown')}",
+        "action_commands:",
+        *[f"- {command}" for command in report.get("action_commands", [])],
+        "handoff_artifacts:",
+        *[
+            f"- {artifact['label']}: {artifact['path']}"
+            for artifact in report.get("handoff_artifacts", [])
+        ],
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
         f"closure_ready_count: {report.get('closure_ready_count', 'unknown')}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",

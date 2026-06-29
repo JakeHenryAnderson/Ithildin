@@ -184,6 +184,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_next_enterprise_review": current.get(
             "recommended_next_enterprise_review"
         ),
+        "next_action": current.get("next_action"),
+        "action_commands": current.get("action_commands", []),
+        "handoff_artifacts": current.get("handoff_artifacts", []),
         "response_present_count": current.get("response_present_count"),
         "closure_ready_count": current.get("closure_ready_count"),
         "enterprise_gap_count": gap_matrix.get("gap_count"),
@@ -211,6 +214,14 @@ def render_report(report: dict[str, Any]) -> str:
         + ", ".join(report.get("recommended_send_set") or []),
         "recommended_next_enterprise_review: "
         f"{report.get('recommended_next_enterprise_review', 'unknown')}",
+        f"next_action: {report.get('next_action', 'unknown')}",
+        "action_commands:",
+        *[f"- {command}" for command in report.get("action_commands", [])],
+        "handoff_artifacts:",
+        *[
+            f"- {artifact['label']}: {artifact['path']}"
+            for artifact in report.get("handoff_artifacts", [])
+        ],
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
         f"closure_ready_count: {report.get('closure_ready_count', 'unknown')}",
         f"enterprise_gap_count: {report.get('enterprise_gap_count', 'unknown')}",
