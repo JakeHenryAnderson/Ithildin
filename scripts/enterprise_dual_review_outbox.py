@@ -22,6 +22,7 @@ DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/enterprise-dual-review-outbox")
 INDEX_NAME = "ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md"
 JSON_NAME = "enterprise-dual-review-outbox.json"
 HASH_NAME = "enterprise-dual-review-outbox-artifact-hashes.json"
+ATTACHMENT_MANIFEST_NAME = "ATTACHMENT_MANIFEST.md"
 
 
 class EnterpriseDualReviewOutboxError(RuntimeError):
@@ -128,6 +129,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Send-ready copy root",
         "ERG-003",
         "ERG-002",
+        "Attachment manifest",
         "runtime_changes_allowed: `false`",
         "closes_erg_003: `false`",
         "closes_erg_002: `false`",
@@ -151,9 +153,11 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "ERG-003/00_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_INDEX.md",
         "ERG-003/01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
         "ERG-003/sandbox-vm-static-preflight-external-review-artifact-hashes.json",
+        f"ERG-003/{ATTACHMENT_MANIFEST_NAME}",
         "ERG-002/00_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_INDEX.md",
         "ERG-002/01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
         "ERG-002/mission-control-display-external-review-artifact-hashes.json",
+        f"ERG-002/{ATTACHMENT_MANIFEST_NAME}",
     }
     missing_hashes = sorted(expected_paths - hashed_paths)
     if missing_hashes:
@@ -268,6 +272,14 @@ def _copy_packet(repo_root: Path, output_dir: Path, packet: dict[str, Any]) -> d
         target = target_dir / filename
         shutil.copy2(source, target)
         copied_files.append(filename)
+    attachment_manifest = _write_attachment_manifest(
+        target_dir=target_dir,
+        gap=gap,
+        name=packet["name"],
+        finding_namespace=packet["finding_namespace"],
+        copied_files=copied_files,
+    )
+    copied_files.append(attachment_manifest)
     return {
         "gap": gap,
         "name": packet["name"],
@@ -275,6 +287,7 @@ def _copy_packet(repo_root: Path, output_dir: Path, packet: dict[str, Any]) -> d
         "outbox_dir": target_dir.relative_to(output_dir).as_posix(),
         "finding_namespace": packet["finding_namespace"],
         "prompt": packet["prompt"],
+        "attachment_manifest": attachment_manifest,
         "copied_files": copied_files,
         "copied_file_count": len(copied_files),
         "response_kit": packet["response_kit"],
@@ -282,6 +295,46 @@ def _copy_packet(repo_root: Path, output_dir: Path, packet: dict[str, Any]) -> d
         "closure_gate": packet["closure_gate"],
         "intake_doc": packet["intake_doc"],
     }
+
+
+def _write_attachment_manifest(
+    *,
+    target_dir: Path,
+    gap: str,
+    name: str,
+    finding_namespace: str,
+    copied_files: list[str],
+) -> str:
+    rows = []
+    for filename in copied_files:
+        path = target_dir / filename
+        data = path.read_bytes()
+        rows.append(
+            f"| `{filename}` | `{len(data)}` | `sha256:{hashlib.sha256(data).hexdigest()}` |"
+        )
+    target_dir.joinpath(ATTACHMENT_MANIFEST_NAME).write_text(
+        "\n".join(
+            [
+                f"# {gap} Attachment Manifest",
+                "",
+                "Status: generated lane-local attachment manifest for enterprise review handoff.",
+                "",
+                f"Review lane: `{name}`",
+                f"Finding namespace: `{finding_namespace}`",
+                "",
+                "This manifest hashes the files to attach for this lane. It does not hash itself,",
+                "record reviewer feedback, normalize responses, close lanes, or approve runtime",
+                "behavior.",
+                "",
+                "| File | Bytes | SHA-256 |",
+                "| --- | ---: | --- |",
+                *rows,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return ATTACHMENT_MANIFEST_NAME
 
 
 def _outbox_payload(
@@ -326,6 +379,8 @@ def _render_index(payload: dict[str, Any]) -> str:
 Finding namespace: `{packet['finding_namespace']}`
 
 Prompt: `{packet['outbox_dir']}/{packet['prompt']}`
+
+Attachment manifest: `{packet['outbox_dir']}/{packet['attachment_manifest']}`
 
 Copied files: `{packet['copied_file_count']}`
 

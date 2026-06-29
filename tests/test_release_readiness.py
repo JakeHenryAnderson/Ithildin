@@ -3165,6 +3165,7 @@ def test_enterprise_dual_review_outbox_is_wired() -> None:
         "make enterprise-dual-review-outbox-check",
         "`ERG-003`",
         "`ERG-002`",
+        "ATTACHMENT_MANIFEST.md",
         "does not record external review",
         "does not close either lane",
     ]:
@@ -3174,6 +3175,7 @@ def test_enterprise_dual_review_outbox_is_wired() -> None:
         "Send-ready copy root",
         "ERG-003",
         "ERG-002",
+        "Attachment manifest",
         "runtime_changes_allowed: `false`",
         "closes_erg_003: `false`",
         "closes_erg_002: `false`",
@@ -3186,6 +3188,7 @@ def test_enterprise_dual_review_outbox_is_wired() -> None:
         '"runtime_changes_allowed": false',
         '"closes_erg_003": false',
         '"closes_erg_002": false',
+        '"attachment_manifest": "ATTACHMENT_MANIFEST.md"',
     ]:
         assert phrase in generated_json_text
     assert {
@@ -3194,9 +3197,11 @@ def test_enterprise_dual_review_outbox_is_wired() -> None:
         "ERG-003/00_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_INDEX.md",
         "ERG-003/01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
         "ERG-003/sandbox-vm-static-preflight-external-review-artifact-hashes.json",
+        "ERG-003/ATTACHMENT_MANIFEST.md",
         "ERG-002/00_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_INDEX.md",
         "ERG-002/01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
         "ERG-002/mission-control-display-external-review-artifact-hashes.json",
+        "ERG-002/ATTACHMENT_MANIFEST.md",
     } <= hashed_paths
     assert "enterprise-dual-review-outbox-artifact-hashes.json" not in hashed_paths
     assert "enterprise-dual-review-outbox:" in makefile
@@ -3271,6 +3276,7 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         "make enterprise-review-send-manifest",
         "make enterprise-review-send-manifest-check",
         "generated submission prompt and send receipt template roots",
+        "ATTACHMENT_MANIFEST.md",
         "`ERG-003`",
         "`ERG-002`",
         "does not record external review",
@@ -3284,6 +3290,7 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         "Companion operator artifacts",
         "Submission prompt root",
         "Send receipt template root",
+        "Attachment manifest",
         "ERG-003",
         "ERG-002",
         "Post-send response path",
@@ -3302,6 +3309,7 @@ def test_enterprise_review_send_manifest_is_wired() -> None:
         '"closes_erg_003": false',
         '"closes_erg_002": false',
         '"outbox_hash_manifest"',
+        '"attachment_manifest"',
         '"submission_prompt_dir"',
         '"receipt_template_dir"',
         '"make enterprise-response-waiting-room"',
@@ -3387,6 +3395,8 @@ def test_enterprise_review_send_checklist_is_wired() -> None:
         "make enterprise-review-send-checklist",
         "var/review-packets/v3/enterprise-dual-review-outbox/ERG-003/",
         "var/review-packets/v3/enterprise-dual-review-outbox/ERG-002/",
+        "ERG-003/ATTACHMENT_MANIFEST.md",
+        "ERG-002/ATTACHMENT_MANIFEST.md",
         "01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
         "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
@@ -3496,6 +3506,7 @@ def test_enterprise_review_send_quickstart_is_wired() -> None:
         "Send these two review requests",
         "Attach every file from",
         "Prompt file",
+        "Attachment manifest",
         "Hash manifest",
         "RAW_RESPONSE_ERG-003.md",
         "RAW_RESPONSE_ERG-002.md",
@@ -3509,6 +3520,7 @@ def test_enterprise_review_send_quickstart_is_wired() -> None:
         '"quickstart_type": "ithildin.enterprise_review_send_quickstart"',
         '"ERG-003"',
         '"ERG-002"',
+        '"attachment_manifest": "ATTACHMENT_MANIFEST.md"',
         '"records_external_review": false',
         '"normalizes_responses": false',
         '"closes_erg_003": false',

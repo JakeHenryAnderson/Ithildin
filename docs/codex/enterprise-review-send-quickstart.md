@@ -27,8 +27,8 @@ var/review-packets/v3/enterprise-review-send-quickstart/
 The send checklist, send manifest, submission prompt, receipt template, and dual-review outbox are
 separate artifacts because each one has a different validation role. This quickstart is the
 operator-facing one-page index over those artifacts. It names the exact `ERG-003` and `ERG-002`
-directories to attach, the prompt file to paste, the hash manifest to keep with each request, and
-the raw-response placeholder to use when responses arrive.
+directories to attach, the prompt file to paste, the lane-local `ATTACHMENT_MANIFEST.md`, the hash
+manifest to keep with each request, and the raw-response placeholder to use when responses arrive.
 
 It does not record external review, does not normalize responses, does not write response files,
 does not mutate findings, and does not close `ERG-003` or `ERG-002`.

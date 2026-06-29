@@ -158,6 +158,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "Companion operator artifacts",
         "ERG-003",
         "ERG-002",
+        "Attachment manifest",
         "Post-send response path",
         "Blocked boundaries",
         "records_external_review: `false`",
@@ -175,6 +176,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"closes_erg_003": false',
         '"closes_erg_002": false',
         '"outbox_hash_manifest"',
+        '"attachment_manifest"',
         '"submission_prompt_dir"',
         '"receipt_template_dir"',
     ]:
@@ -279,6 +281,9 @@ def _manifest_payload(
                 "finding_namespace": packet["finding_namespace"],
                 "outbox_dir": packet["outbox_dir"],
                 "prompt": f"{packet['outbox_dir']}/{packet['prompt']}",
+                "attachment_manifest": (
+                    f"{packet['outbox_dir']}/{packet['attachment_manifest']}"
+                ),
                 "copied_file_count": packet["copied_file_count"],
                 "response_kit": packet["response_kit"],
                 "intake_doc": packet["intake_doc"],
@@ -324,7 +329,8 @@ def _render_markdown(payload: dict[str, Any]) -> str:
     send_rows = "\n".join(
         (
             f"| `{packet['gap']}` | {packet['name']} | `{packet['prompt']}` | "
-            f"`{packet['copied_file_count']}` | `{packet['finding_namespace']}` |"
+            f"`{packet['attachment_manifest']}` | `{packet['copied_file_count']}` | "
+            f"`{packet['finding_namespace']}` |"
         )
         for packet in payload["send_set"]
     )
@@ -354,8 +360,8 @@ Current selected capability: `{payload['selected_capability']}`.
 
 ## Recommended send set
 
-| Gap | Review lane | Prompt | Attachment count | Finding namespace |
-| --- | --- | --- | ---: | --- |
+| Gap | Review lane | Prompt | Attachment manifest | Attachment count | Finding namespace |
+| --- | --- | --- | --- | ---: | --- |
 {send_rows}
 
 Outbox root: `{payload['outbox_dir']}`

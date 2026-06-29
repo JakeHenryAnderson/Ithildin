@@ -162,6 +162,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             "ERG-002",
             "Attach every file from",
             "Prompt file",
+            "Attachment manifest",
             "Hash manifest",
             "After responses arrive",
             "RAW_RESPONSE_ERG-003.md",
@@ -264,6 +265,7 @@ def _quickstart_payload(
                 "title": "Sandbox/VM static preflight disposition",
                 "attach_directory": (outbox_dir / "ERG-003").as_posix(),
                 "prompt_file": "01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
+                "attachment_manifest": "ATTACHMENT_MANIFEST.md",
                 "hash_manifest": (
                     "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
                 ),
@@ -277,6 +279,7 @@ def _quickstart_payload(
                 "title": "Mission Control display/import planning review",
                 "attach_directory": (outbox_dir / "ERG-002").as_posix(),
                 "prompt_file": "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+                "attachment_manifest": "ATTACHMENT_MANIFEST.md",
                 "hash_manifest": "mission-control-display-external-review-artifact-hashes.json",
                 "raw_response_path": (
                     "var/review-runs/enterprise-dual-response-inbox/"
@@ -326,6 +329,7 @@ def _render_markdown(payload: dict[str, Any]) -> str:
                 "",
                 f"- Attach every file from: `{request['attach_directory']}`",
                 f"- Prompt file: `{request['prompt_file']}`",
+                f"- Attachment manifest: `{request['attachment_manifest']}`",
                 f"- Hash manifest: `{request['hash_manifest']}`",
                 f"- Raw response placeholder: `{request['raw_response_path']}`",
                 "",

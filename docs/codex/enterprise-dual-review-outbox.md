@@ -43,8 +43,10 @@ The generated outbox contains:
 - `ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md`;
 - `enterprise-dual-review-outbox.json`;
 - `enterprise-dual-review-outbox-artifact-hashes.json`;
-- `ERG-003/` with the static sandbox/VM preflight review packet files;
-- `ERG-002/` with the Mission Control display/import planning review packet files.
+- `ERG-003/` with the static sandbox/VM preflight review packet files and
+  `ATTACHMENT_MANIFEST.md`;
+- `ERG-002/` with the Mission Control display/import planning review packet files and
+  `ATTACHMENT_MANIFEST.md`.
 
 ## Boundary
 
@@ -61,8 +63,10 @@ Postgres, hosted telemetry, or remote MCP.
 1. Run `make enterprise-review-send-readiness`.
 2. Run `make enterprise-dual-review-handoff`.
 3. Run `make enterprise-dual-review-outbox`.
-4. Send the `ERG-003/` directory as one review packet.
-5. Send the `ERG-002/` directory as a separate review packet.
+4. Send the `ERG-003/` directory as one review packet, including its
+   `ATTACHMENT_MANIFEST.md`.
+5. Send the `ERG-002/` directory as a separate review packet, including its
+   `ATTACHMENT_MANIFEST.md`.
 6. Keep `ENTERPRISE_DUAL_REVIEW_OUTBOX_INDEX.md` and
    `enterprise-dual-review-outbox-artifact-hashes.json` with the handoff notes.
 7. Run `make enterprise-review-send-manifest` to capture the send set, outbox hash manifest,

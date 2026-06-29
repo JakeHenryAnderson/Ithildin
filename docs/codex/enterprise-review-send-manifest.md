@@ -34,7 +34,7 @@ This manifest gives the operator a single checked view of the current enterprise
 ready to send. It sits above the dual-review outbox and records:
 
 - the current recommended send set: `ERG-003` and `ERG-002`;
-- the prompt and attachment count for each lane;
+- the prompt, lane-local `ATTACHMENT_MANIFEST.md`, and attachment count for each lane;
 - the finding namespace each reviewer must use;
 - the outbox artifact hash manifest;
 - the generated submission prompt and send receipt template roots;

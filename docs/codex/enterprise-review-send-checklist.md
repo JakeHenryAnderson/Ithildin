@@ -28,6 +28,11 @@ Attach the lane-local artifact hash manifest for each request:
 - `ERG-003/sandbox-vm-static-preflight-external-review-artifact-hashes.json`
 - `ERG-002/mission-control-display-external-review-artifact-hashes.json`
 
+Attach the lane-local generated attachment manifest for each request:
+
+- `ERG-003/ATTACHMENT_MANIFEST.md`
+- `ERG-002/ATTACHMENT_MANIFEST.md`
+
 Use the generated send manifest for the overall handoff:
 
 - `var/review-packets/v3/enterprise-review-send-manifest/ENTERPRISE_REVIEW_SEND_MANIFEST.md`
