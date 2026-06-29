@@ -88,6 +88,20 @@ uv run python scripts/validation_timing.py --profile readiness --budget-seconds 
 uv run python scripts/validation_timing.py --command "make enterprise-response-paste-preflight" --budget-seconds 10 --fail-on-budget
 ```
 
+### Release Check Profile
+
+Run:
+
+```sh
+make release-check-profile
+```
+
+Use this before assuming `make release-check` is hung or unexpectedly slow. It parses the Makefile
+and reports the static `release-check` prerequisite graph, largest target categories, duplicate
+targets, and whether the full Python test, UI build, and docs-site targets are present. It does not
+run the release gate and is not release proof; it is a fast explanation tool for planning which
+focused command or packet lane deserves attention next.
+
 ### Quick Check
 
 Run:

@@ -235,6 +235,7 @@ from scripts import (
     read_only_capability_inventory_gate,
     read_only_metadata_capability_check,
     release_automation_source_review_bundle,
+    release_check_profile,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -446,6 +447,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "validation-decision:" in makefile
     assert "validation-plan:" in makefile
     assert "validation-timing:" in makefile
+    assert "release-check-profile:" in makefile
     assert "test_release_packet_review_docs_exist" in makefile
     assert "test_validation_performance_tiers_are_wired" in makefile
     assert "make quick-check" in readme
@@ -457,6 +459,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-decision" in readme
     assert "make validation-plan" in readme
     assert "make validation-timing" in readme
+    assert "make release-check-profile" in readme
     assert "slow_packet:" in pyproject
     assert "pytest_collection_modifyitems" in conftest
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
@@ -473,10 +476,20 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-decision" in guide
     assert "make validation-plan" in guide
     assert "make validation-timing" in guide
+    assert "make release-check-profile" in guide
     assert "--fail-on-budget" in guide
     assert "budget status" in guide
     assert "make smart-check" in validation_timing.PROFILES["fast"]
     assert validation_timing.PROFILE_BUDGET_SECONDS["fast"] > 0
+    profile_report = release_check_profile.build_report(Path.cwd())
+    assert profile_report["valid"] is True
+    assert profile_report["unique_target_count"] > 100
+    assert profile_report["contains_full_test"] is True
+    assert profile_report["contains_ui_build"] is True
+    assert profile_report["contains_docs_site"] is True
+    assert any(
+        row["category"] == "enterprise" for row in profile_report["categories"]
+    )
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS

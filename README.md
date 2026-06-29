@@ -167,6 +167,8 @@ checked with `make control-mapping-readiness`.
 - `make validation-timing` - time the fast validation profile so slowdowns are visible before they
   become normal; pass helper arguments with `ARGS=...`, such as
   `make validation-timing ARGS=--dry-run`.
+- `make release-check-profile` - statically summarize the full `release-check` prerequisite graph
+  and largest target groups without running the slow release gate.
 - `make lint` - run Python lint checks.
 - `make typecheck` - run Python and UI type checks.
 - `make manifest-lock` - regenerate `tool-manifests.lock.json` after intentional manifest edits.
