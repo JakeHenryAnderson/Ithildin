@@ -343,6 +343,7 @@ from scripts import (
     v1_assurance_closure_check,
     v1_operator_quickstart_check,
     v1_operator_trial_record,
+    v1_progress_assessment,
     v1_rc_external_review_prompt_check,
     v1_rc_feature_freeze_check,
     v1_rc_final_handoff_check,
@@ -360,6 +361,51 @@ from scripts import (
     workbench_evidence_packet,
     workbench_readiness,
 )
+
+_REPORT_CACHE_MODULES: tuple[Any, ...] = (
+    enterprise_current_checkpoint,
+    enterprise_dependency_ladder,
+    enterprise_dual_response_readiness,
+    enterprise_progress_model,
+    enterprise_readiness_gap_matrix_check,
+    enterprise_response_application_protocol,
+    enterprise_response_command_matrix,
+    enterprise_response_status_board,
+    enterprise_review_send_checklist,
+    enterprise_review_send_readiness,
+    enterprise_transition_map,
+    mission_control_enterprise_status_acceptance_matrix_check,
+    mission_control_enterprise_status_import_check,
+    mission_control_enterprise_status_reference_validator,
+    next_capability_readiness,
+    v1_progress_assessment,
+)
+
+
+def _install_test_report_cache() -> None:
+    """Avoid recomputing pure release-readiness report graphs in this test module."""
+    for module in _REPORT_CACHE_MODULES:
+        original = module.build_report
+        cache: dict[str, dict[str, Any]] = {}
+
+        def cached_build_report(
+            repo_root: Path,
+            *args: Any,
+            _cache: dict[str, dict[str, Any]] = cache,
+            _original: Any = original,
+            **kwargs: Any,
+        ) -> dict[str, Any]:
+            if args or kwargs:
+                return cast(dict[str, Any], _original(repo_root, *args, **kwargs))
+            key = str(Path(repo_root).resolve())
+            if key not in _cache:
+                _cache[key] = cast(dict[str, Any], _original(repo_root))
+            return _cache[key]
+
+        module.build_report = cached_build_report
+
+
+_install_test_report_cache()
 
 
 def test_release_evidence_fails_outside_repo_markers(
