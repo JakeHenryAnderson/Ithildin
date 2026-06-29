@@ -55,6 +55,7 @@ from scripts import (
     enterprise_dual_review_handoff,
     enterprise_dual_review_outbox,
     enterprise_external_review_queue_check,
+    enterprise_handoff_consistency_check,
     enterprise_next_review_handoff,
     enterprise_next_review_ready_check,
     enterprise_north_star_roadmap,
@@ -3901,6 +3902,98 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
             fallback_raw_path.unlink(missing_ok=True)
         else:
             fallback_raw_path.write_bytes(fallback_original)
+
+
+def test_enterprise_handoff_consistency_check_is_wired() -> None:
+    report = enterprise_handoff_consistency_check.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-handoff-consistency.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["current_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["dual_response_inbox_root"] == (
+        "var/review-runs/enterprise-dual-response-inbox"
+    )
+    assert report["raw_response_paths"] == [
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+    ]
+    assert report["required_current_flow_commands"] == [
+        "make enterprise-review-send-receipt-template",
+        "make enterprise-dual-response-inbox",
+        "make enterprise-response-paste-preflight",
+    ]
+    for expected_doc in [
+        "docs/codex/enterprise-review-send-checklist.md",
+        "docs/codex/enterprise-review-submission-prompt.md",
+        "docs/codex/enterprise-review-send-receipt-template.md",
+        "docs/codex/enterprise-review-handoff-drill.md",
+        "docs/codex/enterprise-current-checkpoint.md",
+        "docs/codex/enterprise-north-star-roadmap.md",
+        "docs/codex/enterprise-dependency-ladder.md",
+        "docs/codex/enterprise-transition-map.md",
+        "docs/codex/enterprise-operator-next-action.md",
+    ]:
+        assert expected_doc in report["docs_checked"]
+    for key in [
+        "records_external_review",
+        "normalizes_responses",
+        "writes_response_files",
+        "closes_erg_003",
+        "closes_erg_002",
+        "runtime_changes_allowed",
+        "mission_control_runtime_allowed",
+        "live_vm_inspection_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "siem_adapter_allowed",
+        "compliance_automation_allowed",
+        "public_security_product_positioning_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+    for phrase in [
+        "Status: checked read-only enterprise handoff consistency gate.",
+        "make enterprise-handoff-consistency-check",
+        "var/review-runs/enterprise-dual-response-inbox",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "make enterprise-review-send-receipt-template",
+        "make enterprise-dual-response-inbox",
+        "make enterprise-response-paste-preflight",
+        "does not record external review",
+        "does not normalize responses",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    assert "enterprise-handoff-consistency-check:" in makefile
+    assert (
+        "enterprise-handoff-consistency-check" in release_check_body
+        or "release-check: enterprise-handoff-consistency-check" in makefile
+    )
+    assert "$(MAKE) enterprise-handoff-consistency-check" in review_candidate_body
+    assert "make enterprise-handoff-consistency-check" in readme
+    assert "docs/codex/enterprise-handoff-consistency.md" in readme
+    assert "docs/codex/enterprise-handoff-consistency.md" in docs_site
+    assert "docs/codex/enterprise-handoff-consistency.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Handoff Consistency" in review_index
+    assert "enterprise-handoff-consistency-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-handoff-consistency-check" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
 
 
 def test_enterprise_north_star_roadmap_is_wired() -> None:

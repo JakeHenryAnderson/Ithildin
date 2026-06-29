@@ -69,7 +69,9 @@ make enterprise-review-handoff-drill-check
 2. Send only the `ERG-003` and `ERG-002` attachment sets named in the manifest.
 3. Generate the dual-response inbox.
 4. Paste raw reviewer responses into the lane-specific ignored raw-response files under
-   `var/review-runs/enterprise-dual-response-inbox/`.
+   `var/review-runs/enterprise-dual-response-inbox/`:
+   `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md` and
+   `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md`.
 5. Run `make enterprise-response-paste-preflight`.
 6. Run the lane-specific response dry run.
 7. Run the lane-specific closure gate.

@@ -533,6 +533,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-paste-preflight` - validate pasted `ERG-003` and `ERG-002` raw reviewer
   responses are UTF-8, size-bounded, lane-matched, and non-placeholder before the existing normalizer
   path, without normalizing responses or recording review.
+- `make enterprise-handoff-consistency-check` - validate the current `ERG-003`/`ERG-002`
+  enterprise handoff docs all point to the dual-response inbox, receipt template, and paste
+  preflight flow without recording review or closing lanes.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any
   frozen lane can move beyond documentation or planning into implementation work.
 - `make post-rc-decision-record-template-check` - validate the reusable post-RC decision record
@@ -1250,6 +1253,11 @@ The enterprise response paste preflight is
 checked with `make enterprise-response-paste-preflight`; it checks pasted `ERG-003` and `ERG-002`
 raw responses before normalization without writing normalized responses, recording review, or
 closing enterprise lanes.
+The enterprise handoff consistency gate is
+[docs/codex/enterprise-handoff-consistency.md](docs/codex/enterprise-handoff-consistency.md),
+checked with `make enterprise-handoff-consistency-check`; it keeps the current `ERG-003` and
+`ERG-002` send/receive docs aligned to the dual-response inbox, receipt template, and paste
+preflight flow without recording review, normalizing responses, or closing either lane.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

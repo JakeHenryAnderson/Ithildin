@@ -57,9 +57,11 @@ behavior.
 7. For `ERG-002`, use a separate review request, attach every file from the generated `ERG-002/`
    outbox directory, and paste the `ERG-002` section of the generated prompt.
 8. After a response arrives, run `make enterprise-dual-response-inbox`, open
-   `ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`, save each raw response in the matching ignored
-   placeholder, run `make enterprise-response-paste-preflight`, and then run the lane-specific
-   normalization, dry-run, and closure gate before any committed status update.
+   `var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md`, save
+   each raw response in the matching ignored placeholder under
+   `var/review-runs/enterprise-dual-response-inbox`, run
+   `make enterprise-response-paste-preflight`, and then run the lane-specific normalization,
+   dry-run, and closure gate before any committed status update.
 
 ## Boundary
 
