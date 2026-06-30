@@ -26,7 +26,7 @@ DOC_TITLE = "Ithildin Enterprise Dependency Ladder"
 LADDER_ROWS: tuple[dict[str, str], ...] = (
     {
         "checkpoint": "v1_local_preview_rc",
-        "status": "ready_for_operator_trial",
+        "status": "operator_trial_observed",
         "depends_on": "release-check and review-candidate",
         "unlocks": "local technical-preview handoff only",
     },

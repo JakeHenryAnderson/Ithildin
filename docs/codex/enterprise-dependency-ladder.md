@@ -25,7 +25,7 @@ behavior, or approve public/security-product positioning.
 
 | Checkpoint | Status | Depends on | Unlocks |
 | --- | --- | --- | --- |
-| `v1_local_preview_rc` | `ready_for_operator_trial` | `release-check and review-candidate` | `local technical-preview handoff only` |
+| `v1_local_preview_rc` | `operator_trial_observed` | `release-check and review-candidate` | `local technical-preview handoff only` |
 | `erg_003_static_preflight` | `external_review_required` | `ERG-003 source-level or packet-and-source disposition` | `static preflight local-preview closure only` |
 | `erg_002_mission_control_display` | `planning_only` | `ERG-002 display/import planning disposition` | `Mission Control-side design-only decision record` |
 | `erg_004_live_sandbox_vm_poc` | `blocked` | `favorable ERG-003 disposition and separate decision record` | `live POC implementation planning only` |

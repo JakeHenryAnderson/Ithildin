@@ -27,7 +27,7 @@ DOC_TITLE = "Enterprise Transition Map"
 TRANSITION_ROWS: tuple[dict[str, str], ...] = (
     {
         "lane": "v1_local_preview_rc",
-        "current_state": "ready_for_operator_trial",
+        "current_state": "operator_trial_observed",
         "required_evidence": "release-check and review-candidate evidence",
         "allowed_next_state": "local_technical_preview_handoff",
     },

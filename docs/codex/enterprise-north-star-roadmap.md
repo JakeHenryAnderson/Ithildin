@@ -47,7 +47,7 @@ The current recommended enterprise handoff set remains:
 
 | Phase | Current status | Main proof command | Unlocks | Still blocked |
 | --- | --- | --- | --- | --- |
-| `v1_local_preview_rc` | `ready_for_operator_trial` | `make review-candidate` | local technical-preview handoff only | public/security-product positioning, production identity, hosted operation |
+| `v1_local_preview_rc` | `operator_trial_observed` | `make review-candidate` | local technical-preview handoff only | public/security-product positioning, production identity, hosted operation |
 | `erg_003_static_preflight` | `external_review_required` | `make enterprise-next-review-ready-check` | static preflight local-preview closure only | live VM/container inspection, VM lifecycle, local model invocation, sandbox orchestration |
 | `erg_002_mission_control_display` | `planning_only` | `make mission-control-display-next-review-ready-check` | Mission Control-side design-only decision record | Mission Control runtime importer behavior, execution authority, polling or mutating Ithildin APIs |
 | `erg_004_live_sandbox_vm_poc` | `blocked` | `make sandbox-vm-live-poc-preconditions-ready-check` | live POC implementation planning only after `ERG-003` | live implementation, VM lifecycle management, sandbox orchestration |
