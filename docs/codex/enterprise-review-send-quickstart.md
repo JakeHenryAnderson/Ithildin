@@ -30,7 +30,7 @@ operator-facing one-page index over those artifacts. It names the exact `ERG-003
 directories, the manifest-listed files to attach, the prompt file to paste, the lane-local
 `ATTACHMENT_MANIFEST.md`, the hash manifest to keep with each request, and the raw-response
 placeholder to use when responses arrive. The generated quickstart also shows whether a lane fits a
-10-attachment review surface or should be split into batches.
+10-attachment review surface and lists explicit batch file contents when a lane should be split.
 
 It does not record external review, does not normalize responses, does not write response files,
 does not mutate findings, and does not close `ERG-003` or `ERG-002`.
@@ -48,7 +48,7 @@ does not mutate findings, and does not close `ERG-003` or `ERG-002`.
    `var/review-packets/v3/enterprise-review-send-package/`.
 7. Send `ERG-003` and `ERG-002` as separate review requests using the lane-local prompt and
    attachments named by the generated quickstart. If a lane exceeds a 10-attachment review surface,
-   use the generated batch guidance instead of dropping files silently.
+   use the generated batch file lists instead of dropping files silently.
 8. Preserve the generated send receipt template as local operator evidence after the human send
    step.
 9. Wait for real reviewer responses before running response intake.

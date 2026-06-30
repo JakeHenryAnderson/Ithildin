@@ -160,6 +160,10 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         [
             "Enterprise Review Send Quickstart",
             "Send these two review requests",
+            "Attachment batches",
+            "Batch 1: `10` file(s)",
+            "Batch 1: `6` file(s)",
+            "Batch 2: `5` file(s)",
             "ERG-003",
             "ERG-002",
             "Attach the files listed in the lane manifest from",
@@ -188,6 +192,10 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             '"quickstart_type": "ithildin.enterprise_review_send_quickstart"',
             '"ERG-003"',
             '"ERG-002"',
+            '"attachment_batches"',
+            '"listed_attachments"',
+            '"count": 6',
+            '"count": 5',
             '"records_external_review": false',
             '"normalizes_responses": false',
             '"closes_erg_003": false',
@@ -256,7 +264,55 @@ def _quickstart_payload(
     manifest_dir: Path,
     status: dict[str, Any],
 ) -> dict[str, Any]:
-    return {
+    send_requests: list[dict[str, Any]] = [
+        {
+            "lane": "ERG-003",
+            "title": "Sandbox/VM static preflight disposition",
+            "attach_directory": (outbox_dir / "ERG-003").as_posix(),
+            "prompt_file": "01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
+            "attachment_manifest": "ATTACHMENT_MANIFEST.md",
+            "hash_manifest": (
+                "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
+            ),
+            "listed_attachments": _manifest_attachments(
+                outbox_dir / "ERG-003" / "ATTACHMENT_MANIFEST.md"
+            ),
+            "ten_attachment_limit_guidance": (
+                "Fits a 10-attachment limit when attaching only the files listed "
+                "in ATTACHMENT_MANIFEST.md."
+            ),
+            "raw_response_path": (
+                "var/review-runs/enterprise-dual-response-inbox/"
+                "RAW_RESPONSE_ERG-003.md"
+            ),
+        },
+        {
+            "lane": "ERG-002",
+            "title": "Mission Control display/import planning review",
+            "attach_directory": (outbox_dir / "ERG-002").as_posix(),
+            "prompt_file": "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+            "attachment_manifest": "ATTACHMENT_MANIFEST.md",
+            "hash_manifest": "mission-control-display-external-review-artifact-hashes.json",
+            "listed_attachments": _manifest_attachments(
+                outbox_dir / "ERG-002" / "ATTACHMENT_MANIFEST.md"
+            ),
+            "ten_attachment_limit_guidance": (
+                "Exceeds a 10-attachment limit by one file. Send Batch 1 with "
+                "files 00-05, then Batch 2 with files 06-09 plus the hash "
+                "manifest, or use a reviewer surface that accepts 11 attachments."
+            ),
+            "raw_response_path": (
+                "var/review-runs/enterprise-dual-response-inbox/"
+                "RAW_RESPONSE_ERG-002.md"
+            ),
+        },
+    ]
+    for request in send_requests:
+        listed_attachments = request["listed_attachments"]
+        request["listed_attachment_count"] = len(listed_attachments)
+        request["attachment_batches"] = _attachment_batches(listed_attachments)
+
+    payload = {
         "quickstart_type": "ithildin.enterprise_review_send_quickstart",
         "schema_version": "1",
         "commit": _git(repo_root, ["rev-parse", "HEAD"]),
@@ -266,49 +322,7 @@ def _quickstart_payload(
         "recommended_gaps": RECOMMENDED_GAPS,
         "response_present_count": status.get("response_present_count"),
         "closure_ready_count": status.get("closure_ready_count"),
-        "send_requests": [
-            {
-                "lane": "ERG-003",
-                "title": "Sandbox/VM static preflight disposition",
-                "attach_directory": (outbox_dir / "ERG-003").as_posix(),
-                "prompt_file": "01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
-                "attachment_manifest": "ATTACHMENT_MANIFEST.md",
-                "hash_manifest": (
-                    "sandbox-vm-static-preflight-external-review-artifact-hashes.json"
-                ),
-                "listed_attachment_count": _manifest_attachment_count(
-                    outbox_dir / "ERG-003" / "ATTACHMENT_MANIFEST.md"
-                ),
-                "ten_attachment_limit_guidance": (
-                    "Fits a 10-attachment limit when attaching only the files listed "
-                    "in ATTACHMENT_MANIFEST.md."
-                ),
-                "raw_response_path": (
-                    "var/review-runs/enterprise-dual-response-inbox/"
-                    "RAW_RESPONSE_ERG-003.md"
-                ),
-            },
-            {
-                "lane": "ERG-002",
-                "title": "Mission Control display/import planning review",
-                "attach_directory": (outbox_dir / "ERG-002").as_posix(),
-                "prompt_file": "01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
-                "attachment_manifest": "ATTACHMENT_MANIFEST.md",
-                "hash_manifest": "mission-control-display-external-review-artifact-hashes.json",
-                "listed_attachment_count": _manifest_attachment_count(
-                    outbox_dir / "ERG-002" / "ATTACHMENT_MANIFEST.md"
-                ),
-                "ten_attachment_limit_guidance": (
-                    "Exceeds a 10-attachment limit by one file. Send Batch 1 with "
-                    "files 00-05, then Batch 2 with files 06-09 plus the hash "
-                    "manifest, or use a reviewer surface that accepts 11 attachments."
-                ),
-                "raw_response_path": (
-                    "var/review-runs/enterprise-dual-response-inbox/"
-                    "RAW_RESPONSE_ERG-002.md"
-                ),
-            },
-        ],
+        "send_requests": send_requests,
         "companion_artifacts": {
             "dual_review_outbox": outbox_dir.as_posix(),
             "send_manifest": manifest_dir.as_posix(),
@@ -328,6 +342,7 @@ def _quickstart_payload(
         ],
         "blocked_boundaries": dict(BOUNDARY_FLAGS),
     }
+    return payload
 
 
 def _render_markdown(payload: dict[str, Any]) -> str:
@@ -358,8 +373,19 @@ def _render_markdown(payload: dict[str, Any]) -> str:
                 f"- Hash manifest: `{request['hash_manifest']}`",
                 f"- Raw response placeholder: `{request['raw_response_path']}`",
                 "",
+                "Attachment batches:",
+                "",
             ]
         )
+        for batch in request["attachment_batches"]:
+            lines.extend(
+                [
+                    f"- Batch {batch['batch']}: `{batch['count']}` file(s)",
+                    "",
+                ]
+            )
+            lines.extend(f"  - `{filename}`" for filename in batch["files"])
+            lines.append("")
     lines.extend(
         [
             "## Companion operator artifacts",
@@ -405,9 +431,31 @@ def _render_markdown(payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _manifest_attachment_count(manifest_path: Path) -> int:
+def _manifest_attachments(manifest_path: Path) -> list[str]:
     text = _read(manifest_path)
-    return sum(1 for line in text.splitlines() if line.startswith("| `"))
+    attachments: list[str] = []
+    for line in text.splitlines():
+        if not line.startswith("| `"):
+            continue
+        parts = line.split("|")
+        if len(parts) < 2:
+            continue
+        attachments.append(parts[1].strip().strip("`"))
+    return attachments
+
+
+def _attachment_batches(attachments: list[str], limit: int = 10) -> list[dict[str, Any]]:
+    if len(attachments) <= limit:
+        return [{"batch": 1, "count": len(attachments), "files": attachments}]
+    split_at = min(6, len(attachments))
+    return [
+        {"batch": 1, "count": split_at, "files": attachments[:split_at]},
+        {
+            "batch": 2,
+            "count": len(attachments[split_at:]),
+            "files": attachments[split_at:],
+        },
+    ]
 
 
 def _artifact_hashes(output_dir: Path) -> dict[str, Any]:
