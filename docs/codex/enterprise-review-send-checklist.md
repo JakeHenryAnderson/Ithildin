@@ -96,8 +96,6 @@ make enterprise-review-send-manifest
 make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
-make enterprise-review-send-receipt-copy
-make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 make enterprise-dual-response-inbox
 make enterprise-review-send-checklist
 make packet-redaction-scan
@@ -118,6 +116,20 @@ Expected state:
 - `compliance_automation_allowed: false`
 - `public_security_product_positioning_allowed: false`
 - `new_power_classes_allowed: false`
+
+## After Sending
+
+After the human send step, preserve the local operator receipt. Do not fill the copied receipt
+before sending; it is evidence of what was actually sent and where the reviewer should respond.
+
+```sh
+make enterprise-review-send-receipt-copy
+make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+```
+
+The copied receipt should be edited with the actual send time, reviewer label, send thread or
+message URL, and lane send details. Only after that validation reports response intake is ready
+should you wait for raw reviewer responses and use the response inbox commands.
 
 ## What This Does Not Do
 

@@ -70,16 +70,22 @@ The current recommended enterprise handoff set remains:
    make enterprise-review-send-manifest
    make enterprise-review-submission-prompt
    make enterprise-review-send-receipt-template
-   make enterprise-review-send-receipt-copy
-   make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
    make enterprise-dual-response-inbox
    make enterprise-response-waiting-room
    make enterprise-review-handoff-drill
    ```
 
-3. Send the `ERG-003` and `ERG-002` packets, then wait for real responses.
+3. Send the `ERG-003` and `ERG-002` packets.
 
-4. After responses arrive, paste them into the ignored dual-response inbox at
+4. After the human send step, copy and fill the ignored operator receipt. Do not fill the copied
+   receipt before sending because it records what was actually sent.
+
+   ```sh
+   make enterprise-review-send-receipt-copy
+   make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+   ```
+
+5. After responses arrive, paste them into the ignored dual-response inbox at
    `var/review-runs/enterprise-dual-response-inbox/` and run:
 
    ```sh
@@ -90,7 +96,7 @@ The current recommended enterprise handoff set remains:
    make enterprise-response-intake-quickstart
    ```
 
-5. Use the lane-specific normalizer, dry-run, closure gate, and response application record before
+6. Use the lane-specific normalizer, dry-run, closure gate, and response application record before
    any committed disposition update.
 
 ## Decision Rules

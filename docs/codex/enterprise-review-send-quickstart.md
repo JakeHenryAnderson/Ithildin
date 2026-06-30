@@ -56,8 +56,15 @@ does not mutate findings, and does not close `ERG-003` or `ERG-002`.
 9. Send `ERG-003` and `ERG-002` as separate review requests using the lane-local prompt and
    attachments named by the generated quickstart. If a lane exceeds a 10-attachment review surface,
    use the generated batch file lists instead of dropping files silently.
-10. Preserve the generated send receipt template as local operator evidence after the human send
-   step.
+10. After the human send step, copy and fill the ignored operator receipt. Do not fill this copied
+   receipt before sending; it records what actually happened during the send.
+
+   ```sh
+   make enterprise-review-send-receipt-template
+   make enterprise-review-send-receipt-copy
+   make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+   ```
+
 11. Wait for real reviewer responses before running response intake.
 
 ## Response Intake
@@ -78,8 +85,6 @@ var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md
 Then run:
 
 ```sh
-make enterprise-review-send-receipt-template
-make enterprise-review-send-receipt-copy
 make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 make enterprise-dual-response-inbox
 make enterprise-response-waiting-room

@@ -15,7 +15,8 @@ The current raw response paths are:
 - `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md`
 - `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md`
 
-The required current-flow commands are:
+The required current-flow commands span the refreshed send artifacts, the post-send receipt step,
+and the response intake preflight. They are not all pre-send commands:
 
 - `make enterprise-review-send-receipt-template`
 - `make enterprise-review-send-receipt-copy`
