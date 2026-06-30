@@ -48,6 +48,12 @@ For a local operator record scaffold after package generation, run:
 make enterprise-review-send-session-record
 ```
 
+For pre-grouped upload folders containing only the manifest-listed attachments, run:
+
+```sh
+make enterprise-review-upload-staging
+```
+
 That record ties the current package hashes, lane prompts, raw-response paths, and operator fill-in
 fields together without recording review or closing lanes.
 

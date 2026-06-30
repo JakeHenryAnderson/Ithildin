@@ -106,6 +106,18 @@ EXPECTED_ARTIFACTS: dict[str, ArtifactSpec] = {
             "enterprise-review-send-package.json",
         ],
     },
+    "upload_staging": {
+        "output_dir": "var/review-packets/v3/enterprise-review-upload-staging",
+        "hash_file": "enterprise-review-upload-staging-artifact-hashes.json",
+        "payload_file": "enterprise-review-upload-staging.json",
+        "required_files": [
+            "ENTERPRISE_REVIEW_UPLOAD_STAGING.md",
+            "enterprise-review-upload-staging.json",
+            "ERG-003/batch-1/01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
+            "ERG-002/batch-1/01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+            "ERG-002/batch-2/09_MISSION_CONTROL_REFERENCE_VALIDATOR.md",
+        ],
+    },
     "send_session_record": {
         "output_dir": "var/review-runs/enterprise-review-send-session-record",
         "hash_file": "enterprise-review-send-session-record-artifact-hashes.json",
@@ -227,6 +239,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "make enterprise-review-send-receipt-template",
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-review-send-package",
+        "make enterprise-review-upload-staging",
         "make enterprise-review-send-session-record",
         "make enterprise-dual-response-inbox",
         "make enterprise-handoff-consistency-check",

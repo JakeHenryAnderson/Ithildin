@@ -34,6 +34,7 @@ The preflight is designed to run after these artifacts have been generated:
 - `make enterprise-review-send-receipt-template`
 - `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`
 - `make enterprise-review-send-package`
+- `make enterprise-review-upload-staging`
 - `make enterprise-review-send-session-record`
 - `make enterprise-dual-response-inbox`
 - `make enterprise-dual-response-readiness`
@@ -77,6 +78,7 @@ make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 make enterprise-review-send-package
+make enterprise-review-upload-staging
 make enterprise-review-send-session-record
 make enterprise-dual-response-inbox
 make enterprise-review-handoff-drill

@@ -289,6 +289,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-review-send-receipt-template.md",
     "docs/codex/enterprise-review-send-receipt-validation.md",
     "docs/codex/enterprise-review-send-package.md",
+    "docs/codex/enterprise-review-upload-staging.md",
     "docs/codex/enterprise-review-send-session-record.md",
     "docs/codex/enterprise-review-handoff-drill.md",
     "docs/codex/enterprise-dual-response-inbox.md",

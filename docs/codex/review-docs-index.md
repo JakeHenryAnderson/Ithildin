@@ -274,6 +274,7 @@ externally closed.
 - [Enterprise Review Send Receipt Template](enterprise-review-send-receipt-template.md)
 - [Enterprise Review Send Receipt Validation](enterprise-review-send-receipt-validation.md)
 - [Enterprise Review Send Package](enterprise-review-send-package.md)
+- [Enterprise Review Upload Staging](enterprise-review-upload-staging.md)
 - [Enterprise Review Send Session Record](enterprise-review-send-session-record.md)
 - [Enterprise Review Handoff Drill](enterprise-review-handoff-drill.md)
 - [Enterprise Dual Response Inbox](enterprise-dual-response-inbox.md)

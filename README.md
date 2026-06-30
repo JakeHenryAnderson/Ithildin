@@ -530,6 +530,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-package` - generate a compact operator package index over the
   current `ERG-003` and `ERG-002` prompts, lane attachment manifests, hash manifests, receipt
   template, and response inbox paths without recording review or closing lanes.
+- `make enterprise-review-upload-staging` - copy the current manifest-listed `ERG-003` and
+  `ERG-002` attachments into upload-friendly batch folders, including the two-batch split for
+  `ERG-002`, without recording review or closing lanes.
 - `make enterprise-review-send-session-record` - generate an ignored non-authoritative
   send-session scaffold tying the current package hashes, lane prompts, raw-response paths, and
   operator fill-in fields together without recording review or closing lanes.
@@ -1294,6 +1297,12 @@ generated with `make enterprise-review-send-package`; it gives the operator a co
 index over the current `ERG-003` and `ERG-002` prompts, lane attachment manifests, hash manifests,
 submission prompt, send receipt template, and response inbox paths while still not recording review,
 normalizing responses, writing raw responses, or closing either lane.
+The enterprise review upload staging artifact is
+[docs/codex/enterprise-review-upload-staging.md](docs/codex/enterprise-review-upload-staging.md),
+generated with `make enterprise-review-upload-staging`; it copies only the current manifest-listed
+review attachments into upload-friendly batch folders, including the two-batch split for `ERG-002`,
+while still not recording review, normalizing responses, writing raw responses, or closing either
+lane.
 The enterprise review send session record is
 [docs/codex/enterprise-review-send-session-record.md](docs/codex/enterprise-review-send-session-record.md),
 generated with `make enterprise-review-send-session-record`; it gives the operator a local

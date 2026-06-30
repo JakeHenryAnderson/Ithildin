@@ -87,6 +87,7 @@ from scripts import (
     enterprise_review_send_receipt_validate,
     enterprise_review_send_session_record,
     enterprise_review_submission_prompt,
+    enterprise_review_upload_staging,
     enterprise_sandbox_control_plane_readiness_check,
     enterprise_status_export,
     enterprise_transition_map,
@@ -3937,6 +3938,134 @@ def test_enterprise_review_send_package_is_wired() -> None:
     )
 
 
+def test_enterprise_review_upload_staging_is_wired() -> None:
+    report = enterprise_review_upload_staging.build_check_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-upload-staging.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    quickstart_doc = Path("docs/codex/enterprise-review-send-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    package_doc = Path("docs/codex/enterprise-review-send-package.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    refresh_body = makefile.partition("enterprise-review-send-refresh:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path("var/review-packets/v3/enterprise-review-upload-staging")
+    generated = generated_dir / "ENTERPRISE_REVIEW_UPLOAD_STAGING.md"
+    generated_json = generated_dir / "enterprise-review-upload-staging.json"
+    generated_hashes = json.loads(
+        (
+            generated_dir / "enterprise-review-upload-staging-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_text = generated.read_text(encoding="utf-8")
+    generated_json_text = generated_json.read_text(encoding="utf-8")
+    generated_payload = json.loads(generated_json_text)
+    hashed_paths = {artifact["path"] for artifact in generated_hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["batch_count"] == 3
+    assert report["artifact_hashes_match_files"] is True
+    for key in [
+        "records_external_review",
+        "normalizes_responses",
+        "writes_response_files",
+        "closes_erg_003",
+        "closes_erg_002",
+        "runtime_changes_allowed",
+        "mission_control_runtime_allowed",
+        "live_vm_inspection_allowed",
+        "local_model_invocation_allowed",
+        "sandbox_orchestration_allowed",
+        "trusted_host_promotion_allowed",
+        "siem_adapter_allowed",
+        "compliance_automation_allowed",
+        "public_security_product_positioning_allowed",
+        "new_power_classes_allowed",
+    ]:
+        assert report[key] is False
+    for phrase in [
+        "Status: generated upload-staging batches for the current enterprise send set.",
+        "make enterprise-review-upload-staging",
+        "make enterprise-review-upload-staging-check",
+        "`ERG-003`",
+        "`ERG-002`",
+        "does not record external review",
+        "does not normalize responses",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    for phrase in [
+        "Enterprise Review Upload Staging",
+        "Upload batches",
+        "ERG-003",
+        "ERG-002",
+        "batch-1",
+        "batch-2",
+        "records_external_review: `false`",
+        "normalizes_responses: `false`",
+        "closes_erg_003: `false`",
+        "closes_erg_002: `false`",
+    ]:
+        assert phrase in generated_text
+    for phrase in [
+        '"staging_type": "ithildin.enterprise_review_upload_staging"',
+        '"ERG-003"',
+        '"ERG-002"',
+        '"batch-1"',
+        '"records_external_review": false',
+        '"normalizes_responses": false',
+        '"closes_erg_003": false',
+        '"closes_erg_002": false',
+    ]:
+        assert phrase in generated_json_text
+    lane_counts = {
+        lane["gap"]: [batch["attachment_count"] for batch in lane["batches"]]
+        for lane in generated_payload["lanes"]
+    }
+    assert lane_counts == {"ERG-003": [10], "ERG-002": [6, 5]}
+    assert (generated_dir / "ERG-003" / "batch-1").is_dir()
+    assert (generated_dir / "ERG-002" / "batch-1").is_dir()
+    assert (generated_dir / "ERG-002" / "batch-2").is_dir()
+    assert {
+        "ENTERPRISE_REVIEW_UPLOAD_STAGING.md",
+        "enterprise-review-upload-staging.json",
+        "ERG-003/batch-1/01_SANDBOX_VM_STATIC_PREFLIGHT_EXTERNAL_REVIEW_PROMPT.md",
+        "ERG-002/batch-1/01_MISSION_CONTROL_DISPLAY_EXTERNAL_REVIEW_PROMPT.md",
+        "ERG-002/batch-2/09_MISSION_CONTROL_REFERENCE_VALIDATOR.md",
+    } <= hashed_paths
+    assert "enterprise-review-upload-staging-artifact-hashes.json" not in hashed_paths
+    assert "enterprise-review-upload-staging:" in makefile
+    assert "enterprise-review-upload-staging-check:" in makefile
+    assert "enterprise-review-upload-staging-check" in release_check_body
+    assert "$(MAKE) enterprise-review-upload-staging" in review_candidate_body
+    assert "$(MAKE) enterprise-review-upload-staging" in refresh_body
+    assert "make enterprise-review-upload-staging" in readme
+    assert "enterprise-review-upload-staging" in quickstart_doc
+    assert "enterprise-review-upload-staging" in package_doc
+    assert "docs/codex/enterprise-review-upload-staging.md" in docs_site
+    assert "docs/codex/enterprise-review-upload-staging.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Review Upload Staging" in review_index
+    assert "enterprise-review-upload-staging-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-upload-staging" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
 def test_enterprise_review_send_session_record_is_wired() -> None:
     report = enterprise_review_send_session_record.build_check_report(Path.cwd())
     doc = Path("docs/codex/enterprise-review-send-session-record.md").read_text(
@@ -4989,6 +5118,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "submission_prompt": True,
         "send_receipt_template": True,
         "send_package": True,
+        "upload_staging": True,
         "send_session_record": True,
         "dual_response_inbox": True,
         "dual_response_readiness": True,
@@ -5018,6 +5148,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "submission_prompt",
         "send_receipt_template",
         "send_package",
+        "upload_staging",
         "send_session_record",
         "dual_response_inbox",
         "handoff_drill",
@@ -5050,6 +5181,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "make enterprise-review-send-receipt-template",
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-review-send-package",
+        "make enterprise-review-upload-staging",
         "make enterprise-review-send-session-record",
         "make enterprise-dual-response-inbox",
         "make enterprise-handoff-consistency-check",
@@ -5079,6 +5211,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert "$(MAKE) enterprise-review-submission-prompt" in refresh_body
     assert "$(MAKE) enterprise-review-send-receipt-template" in refresh_body
     assert "$(MAKE) enterprise-review-send-package" in refresh_body
+    assert "$(MAKE) enterprise-review-upload-staging" in refresh_body
     assert "$(MAKE) enterprise-review-send-session-record" in refresh_body
     assert "$(MAKE) enterprise-dual-response-inbox" in refresh_body
     assert "$(MAKE) enterprise-review-handoff-drill" in refresh_body

@@ -46,12 +46,15 @@ does not mutate findings, and does not close `ERG-003` or `ERG-002`.
    `artifact_commits_match_current: true`, and `artifact_payloads_clean: true`.
 6. Optionally open the generated package index in
    `var/review-packets/v3/enterprise-review-send-package/`.
-7. Send `ERG-003` and `ERG-002` as separate review requests using the lane-local prompt and
+7. Optionally open the generated upload staging batches in
+   `var/review-packets/v3/enterprise-review-upload-staging/` or regenerate them with
+   `make enterprise-review-upload-staging`.
+8. Send `ERG-003` and `ERG-002` as separate review requests using the lane-local prompt and
    attachments named by the generated quickstart. If a lane exceeds a 10-attachment review surface,
    use the generated batch file lists instead of dropping files silently.
-8. Preserve the generated send receipt template as local operator evidence after the human send
+9. Preserve the generated send receipt template as local operator evidence after the human send
    step.
-9. Wait for real reviewer responses before running response intake.
+10. Wait for real reviewer responses before running response intake.
 
 ## Response Intake
 
