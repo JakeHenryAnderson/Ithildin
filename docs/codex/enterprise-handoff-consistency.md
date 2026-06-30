@@ -18,6 +18,7 @@ The current raw response paths are:
 The required current-flow commands are:
 
 - `make enterprise-review-send-receipt-template`
+- `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`
 - `make enterprise-dual-response-inbox`
 - `make enterprise-response-waiting-room`
 - `make enterprise-response-paste-preflight`

@@ -138,6 +138,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
             "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
             "make enterprise-review-send-receipt-template",
+            "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
             "make enterprise-dual-response-inbox",
             "make enterprise-response-paste-preflight",
             "make enterprise-dual-response-readiness",

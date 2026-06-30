@@ -73,6 +73,7 @@ REQUIRED_DOC_PHRASES = [
     "No row in this ladder approves runtime behavior",
     "Do not manually promote a lane",
     "make enterprise-review-send-receipt-template",
+    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
     "make enterprise-dual-response-inbox",
     "make enterprise-response-waiting-room",
     "make enterprise-response-paste-preflight",

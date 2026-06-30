@@ -40,6 +40,7 @@ make enterprise-review-send-manifest
 make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
+make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 make enterprise-review-send-package
 make enterprise-review-send-session-record
 make enterprise-dual-response-inbox

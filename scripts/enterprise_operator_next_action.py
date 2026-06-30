@@ -94,6 +94,7 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-operator-next-action",
     "With no real enterprise reviewer responses present",
     "make enterprise-review-send-refresh",
+    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
     "handoff_artifacts",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",

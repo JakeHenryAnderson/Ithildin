@@ -40,6 +40,7 @@ REQUIRED_PHRASES = [
     "make enterprise-review-send-manifest",
     "make enterprise-review-submission-prompt",
     "make enterprise-review-send-receipt-template",
+    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
     "make enterprise-dual-response-inbox",
     "make enterprise-review-handoff-drill",
     "var/review-runs/enterprise-dual-response-inbox/",

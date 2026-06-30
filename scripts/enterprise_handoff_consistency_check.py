@@ -22,8 +22,12 @@ RAW_RESPONSE_PATHS = [
     f"{DUAL_INBOX_ROOT}/RAW_RESPONSE_ERG-003.md",
     f"{DUAL_INBOX_ROOT}/RAW_RESPONSE_ERG-002.md",
 ]
+RECEIPT_VALIDATE_COMMAND = (
+    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json"
+)
 CURRENT_FLOW_COMMANDS = [
     "make enterprise-review-send-receipt-template",
+    RECEIPT_VALIDATE_COMMAND,
     "make enterprise-dual-response-inbox",
     "make enterprise-response-waiting-room",
     "make enterprise-response-paste-preflight",
@@ -47,6 +51,7 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
     "docs/codex/enterprise-review-send-receipt-template.md": [
         *RAW_RESPONSE_PATHS,
         "make enterprise-dual-response-inbox",
+        RECEIPT_VALIDATE_COMMAND,
     ],
     "docs/codex/enterprise-review-handoff-drill.md": [
         DUAL_INBOX_ROOT,
