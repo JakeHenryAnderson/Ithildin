@@ -29179,6 +29179,13 @@ def test_development_efficiency_status_is_wired() -> None:
     assert report["enterprise_send_artifact_commits_match_current"] is True
     assert isinstance(report["enterprise_send_artifact_payloads_clean"], bool)
     assert report["enterprise_send_artifact_hashes_match_files"] is True
+    assert report["v1_rc_packet_exists"] is True
+    assert isinstance(report["v1_rc_packet_commit_matches_current"], bool)
+    assert report["review_candidate_release_transcript_exists"] is True
+    assert isinstance(
+        report["review_candidate_release_transcript_commit_matches_current"], bool
+    )
+    assert isinstance(report["review_candidate_release_transcript_passed"], bool)
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["runtime_changes_allowed"] is False
@@ -29214,6 +29221,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "make review-candidate",
         "make enterprise-review-send-refresh",
         "does not start services",
+        "review-candidate artifact freshness",
         "does not call governed tools",
         "does not approve runtime changes",
         "does not replace release-check",

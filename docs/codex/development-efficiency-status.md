@@ -33,6 +33,8 @@ The report is intentionally small and operator-facing. It records:
 - whether the latest local operator trial has been observed from `DEMO_FLOW_RESULT.md`;
 - whether the current enterprise send package is fresh for the current commit, generated from a
   clean tree, and hash-consistent;
+- review-candidate artifact freshness for the compact v1.0 RC packet and captured release-check
+  transcript;
 - enterprise response/closure counts and the current ERG-003/ERG-002 send action;
 - key handoff artifact paths.
 

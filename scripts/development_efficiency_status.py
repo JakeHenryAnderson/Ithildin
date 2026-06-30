@@ -37,11 +37,17 @@ REQUIRED_DOC_PHRASES = [
     "make release-check",
     "make review-candidate",
     "make enterprise-review-send-refresh",
+    "review-candidate artifact freshness",
     "does not start services",
     "does not call governed tools",
     "does not approve runtime changes",
     "does not replace release-check",
 ]
+
+V1_RC_PACKET_INDEX = Path("var/review-packets/v1.0/rc/00_V1_RC_PACKET_INDEX.md")
+REVIEW_CANDIDATE_RELEASE_TRANSCRIPT = Path(
+    "var/review-packets/v3/review-candidate-release-check.txt"
+)
 
 FORBIDDEN_PHRASES = [
     "release proof replacement",
@@ -89,6 +95,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     commit = _git(repo_root, ["rev-parse", "HEAD"])
     dirty = bool(_git(repo_root, ["status", "--short"]))
+    handoff_status = _handoff_artifact_status(repo_root, current_commit=commit)
     next_development_commands = list(validation.get("next_development_commands", []))
     deferred_handoff_commands = list(validation.get("deferred_handoff_commands", []))
     recommended_now_commands = (
@@ -130,6 +137,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "enterprise_send_artifact_hashes_match_files": enterprise_send_preflight.get(
             "artifact_hashes_match_files"
         ),
+        **handoff_status,
         "response_present_count": enterprise.get("response_present_count"),
         "closure_ready_count": enterprise.get("closure_ready_count"),
         "recommended_handoff_commands": [
@@ -182,6 +190,17 @@ def render_report(report: dict[str, Any]) -> str:
         f"{str(report['enterprise_send_artifact_payloads_clean']).lower()}",
         "- hashes_match_files: "
         f"{str(report['enterprise_send_artifact_hashes_match_files']).lower()}",
+        "review_candidate_artifacts:",
+        "- v1_rc_packet_exists: "
+        f"{str(report['v1_rc_packet_exists']).lower()}",
+        "- v1_rc_packet_commit_matches_current: "
+        f"{str(report['v1_rc_packet_commit_matches_current']).lower()}",
+        "- release_check_transcript_exists: "
+        f"{str(report['review_candidate_release_transcript_exists']).lower()}",
+        "- release_check_transcript_commit_matches_current: "
+        f"{str(report['review_candidate_release_transcript_commit_matches_current']).lower()}",
+        "- release_check_transcript_passed: "
+        f"{str(report['review_candidate_release_transcript_passed']).lower()}",
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         "recommended_now_commands:",
@@ -267,6 +286,48 @@ def _git(repo_root: Path, args: list[str]) -> str:
         capture_output=True,
     )
     return result.stdout.strip()
+
+
+def _handoff_artifact_status(repo_root: Path, *, current_commit: str) -> dict[str, Any]:
+    v1_packet_index = repo_root / V1_RC_PACKET_INDEX
+    release_transcript = repo_root / REVIEW_CANDIDATE_RELEASE_TRANSCRIPT
+    v1_packet_text = _read(v1_packet_index)
+    release_transcript_text = _read(release_transcript)
+    v1_packet_commit = _extract_prefixed_backtick_value(v1_packet_text, "- Commit:")
+    transcript_commit = _extract_prefixed_value(release_transcript_text, "git_commit=")
+    transcript_returncode = _extract_prefixed_value(release_transcript_text, "returncode=")
+    return {
+        "v1_rc_packet_path": V1_RC_PACKET_INDEX.as_posix(),
+        "v1_rc_packet_exists": v1_packet_index.exists(),
+        "v1_rc_packet_commit": v1_packet_commit,
+        "v1_rc_packet_commit_matches_current": v1_packet_commit == current_commit,
+        "review_candidate_release_transcript_path": (
+            REVIEW_CANDIDATE_RELEASE_TRANSCRIPT.as_posix()
+        ),
+        "review_candidate_release_transcript_exists": release_transcript.exists(),
+        "review_candidate_release_transcript_commit": transcript_commit,
+        "review_candidate_release_transcript_commit_matches_current": (
+            transcript_commit == current_commit
+        ),
+        "review_candidate_release_transcript_passed": transcript_returncode == "0",
+    }
+
+
+def _extract_prefixed_value(text: str, prefix: str) -> str | None:
+    for line in text.splitlines():
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return None
+
+
+def _extract_prefixed_backtick_value(text: str, prefix: str) -> str | None:
+    for line in text.splitlines():
+        if not line.startswith(prefix):
+            continue
+        parts = line.split("`")
+        if len(parts) >= 2:
+            return parts[1]
+    return None
 
 
 def _read(path: Path) -> str:
