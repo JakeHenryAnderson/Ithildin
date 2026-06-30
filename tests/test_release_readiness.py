@@ -521,6 +521,16 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "release-check-profile:" in makefile
     assert "release-check-slice:" in makefile
     assert "packet-check-recursion-guard:" in makefile
+    assert "enterprise-send-quick-check:" in makefile
+    enterprise_send_quick_body = makefile.partition("enterprise-send-quick-check:")[
+        2
+    ].partition("\n\n")[0]
+    assert "$(MAKE) enterprise-review-send-preflight-lightweight-check" in (
+        enterprise_send_quick_body
+    )
+    assert "$(MAKE) enterprise-review-send-package-check" in enterprise_send_quick_body
+    assert "$(MAKE) enterprise-review-upload-staging-check" in enterprise_send_quick_body
+    assert "$(MAKE) enterprise-response-waiting-room" in enterprise_send_quick_body
     assert "$(MAKE) packet-check-recursion-guard" in makefile.partition("quick-check:")[
         2
     ].partition("\n\n")[0]
@@ -555,6 +565,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-profile" in readme
     assert "make release-check-slice" in readme
     assert "make packet-check-recursion-guard" in readme
+    assert "make enterprise-send-quick-check" in readme
     assert "slow_packet:" in pyproject
     assert "pytest_collection_modifyitems" in conftest
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
@@ -29362,6 +29373,7 @@ def test_development_efficiency_status_is_wired() -> None:
     assert report["public_security_product_positioning_allowed"] is False
     assert "make release-check" in report["recommended_handoff_commands"]
     assert "make review-candidate" in report["recommended_handoff_commands"]
+    assert "make enterprise-send-quick-check" in report["recommended_handoff_commands"]
     assert "make development-efficiency-status" in readme
     assert "development-efficiency-status:" in makefile
     assert (
@@ -29382,6 +29394,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "make technical-mvp-operator-trial-readiness",
         "make enterprise-current-checkpoint",
         "make enterprise-review-send-preflight",
+        "make enterprise-send-quick-check",
         "make dev-check",
         "make release-check",
         "make review-candidate",
@@ -29392,6 +29405,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "does not approve runtime changes",
         "does not replace release-check",
         "enterprise send package is fresh for the current commit",
+        "cheap current-send confirmation",
     ]:
         assert phrase in doc
 

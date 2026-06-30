@@ -18,6 +18,8 @@ The command consolidates:
 - `make technical-mvp-operator-trial-readiness` for the local-preview operator-trial state.
 - `make enterprise-current-checkpoint` for the current enterprise handoff action.
 - `make enterprise-review-send-preflight` for current ERG-003/ERG-002 handoff artifact freshness.
+- `make enterprise-send-quick-check` for cheap current-send confirmation after a full candidate
+  refresh.
 
 ## What It Answers
 
@@ -74,10 +76,16 @@ For the current enterprise handoff lane:
 
 ```sh
 make development-efficiency-status
+make enterprise-send-quick-check
 make release-check
 make review-candidate
 make enterprise-review-send-refresh
 ```
+
+`make enterprise-send-quick-check` is a current-artifact confirmation path, not release proof. It
+runs the lightweight preflight, send-package reuse check, upload-staging check, and response
+waiting-room state without starting services, recording review, normalizing responses, or closing
+enterprise lanes.
 
 The status command is included in `make release-check` so stale gate-selection guidance cannot drift
 out of release evidence.
