@@ -17846,7 +17846,17 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "/app/var/review-packets/v3/operator-workbench/DEMO_FLOW_RESULT.md" in makefile
     assert status_report["valid"] is True
     assert status_report["endpoints"]["api_healthz"]["safe_error"] == "probe_skipped"
+    assert "expected_services_present" in status_report["compose"]
+    assert "expected_services_running" in status_report["compose"]
+    assert set(status_report["compose"]["expected_service_states"]) == {
+        "ithildin-api",
+        "ithildin-ui",
+    }
     assert "make live-demo-environment-diagnostics" in operator_index
+    assert "Compose Service Snapshot" in operator_index
+    assert "compose_expected_services_running" in operator_index
+    assert "`ithildin-api`" in operator_index
+    assert "`ithildin-ui`" in operator_index
     assert summary_report["valid"] is True
     assert summary_report["preflight"]["tool_count"] == 24
     assert generated == expected
@@ -17947,7 +17957,66 @@ def test_live_demo_status_compose_probe_times_out_safely(
     assert report == {
         "available": False,
         "running_hint": False,
+        "service_count": 0,
+        "expected_services_present": False,
+        "expected_services_running": False,
+        "expected_service_states": {
+            "ithildin-api": "missing",
+            "ithildin-ui": "missing",
+        },
         "safe_error": "compose status timed out",
+    }
+
+
+def test_live_demo_status_parses_compose_service_states() -> None:
+    ndjson_report = live_demo_status._compose_details(
+        "\n".join(
+            [
+                json.dumps({"Service": "ithildin-api", "State": "running"}),
+                json.dumps({"Service": "ithildin-ui", "State": "running"}),
+                json.dumps({"Service": "unrelated", "State": "exited"}),
+            ]
+        )
+    )
+    list_report = live_demo_status._compose_details(
+        json.dumps(
+            [
+                {"Service": "ithildin-api", "State": "running"},
+                {"Service": "ithildin-ui", "State": "exited"},
+            ]
+        )
+    )
+    malformed_report = live_demo_status._compose_details("{not json")
+
+    assert ndjson_report == {
+        "service_count": 3,
+        "expected_services_present": True,
+        "expected_services_running": True,
+        "expected_service_states": {
+            "ithildin-api": "running",
+            "ithildin-ui": "running",
+        },
+        "safe_error": None,
+    }
+    assert list_report == {
+        "service_count": 2,
+        "expected_services_present": True,
+        "expected_services_running": False,
+        "expected_service_states": {
+            "ithildin-api": "running",
+            "ithildin-ui": "exited",
+        },
+        "safe_error": None,
+    }
+    assert malformed_report == {
+        "service_count": 0,
+        "expected_services_present": False,
+        "expected_services_running": False,
+        "expected_service_states": {
+            "ithildin-api": "missing",
+            "ithildin-ui": "missing",
+        },
+        "safe_error": "compose ps output could not be parsed",
     }
 
 

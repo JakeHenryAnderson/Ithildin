@@ -36,8 +36,9 @@ make live-demo-status
 ```
 
 This writes `var/review-packets/v3/live-demo/LIVE_DEMO_INDEX.md`. It summarizes preflight state,
-Compose visibility, local API/UI reachability if the stack is already running, generated packet
-paths, next actions, and cleanup reminders. It does not start or stop services.
+Compose visibility, parsed expected service status for `ithildin-api` and `ithildin-ui`, local
+API/UI reachability if the stack is already running, generated packet paths, next actions, and
+cleanup reminders. It does not start or stop services.
 
 ## Setup
 

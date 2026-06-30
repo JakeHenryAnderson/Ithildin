@@ -62,6 +62,7 @@ ARTIFACTS = [
     ),
 ]
 COMPOSE_STATUS_TIMEOUT_SECONDS = 10
+EXPECTED_COMPOSE_SERVICES = ("ithildin-api", "ithildin-ui")
 
 
 class LiveDemoStatusError(RuntimeError):
@@ -154,13 +155,36 @@ def render_index(report: dict[str, Any]) -> str:
         f"- loopback_ports_valid: `{str(report['preflight']['loopback_ports_valid']).lower()}`",
         f"- docker_socket_mounted: `{str(report['preflight']['docker_socket_mounted']).lower()}`",
         f"- telemetry_enabled: `{str(report['preflight']['telemetry_enabled']).lower()}`",
+        f"- compose_available: `{str(report['compose']['available']).lower()}`",
+        f"- compose_expected_services_present: "
+        f"`{str(report['compose']['expected_services_present']).lower()}`",
+        f"- compose_expected_services_running: "
+        f"`{str(report['compose']['expected_services_running']).lower()}`",
         "- api_healthz_reachable: "
         f"`{str(report['endpoints']['api_healthz']['reachable']).lower()}`",
         f"- ui_root_reachable: `{str(report['endpoints']['ui_root']['reachable']).lower()}`",
         "",
-        "## Artifact Map",
+        "## Compose Service Snapshot",
+        "",
+        "This snapshot is parsed from `docker compose ps --format json` if Compose is available.",
+        "It reports only the expected Ithildin demo service labels and coarse states.",
         "",
     ]
+    for service, state in report["compose"]["expected_service_states"].items():
+        lines.append(f"- `{service}`: `{state}`")
+    lines.extend(
+        [
+            "",
+            f"- parsed_service_count: `{report['compose']['service_count']}`",
+            "",
+        ]
+    )
+    lines.extend(
+        [
+            "## Artifact Map",
+            "",
+        ]
+    )
     for name, entry in artifacts.items():
         lines.append(f"- `{name}`: `{entry['path']}` exists=`{str(entry['exists']).lower()}`")
     lines.extend(
@@ -248,20 +272,77 @@ def _compose_status(repo_root: Path) -> dict[str, Any]:
         return {
             "available": False,
             "running_hint": False,
+            "service_count": 0,
+            "expected_services_present": False,
+            "expected_services_running": False,
+            "expected_service_states": _missing_expected_service_states(),
             "safe_error": "compose status timed out",
         }
     if result.returncode != 0:
         return {
             "available": False,
             "running_hint": False,
+            "service_count": 0,
+            "expected_services_present": False,
+            "expected_services_running": False,
+            "expected_service_states": _missing_expected_service_states(),
             "safe_error": (result.stderr or result.stdout).strip()[:200] or "compose unavailable",
         }
-    output = result.stdout.lower()
+    compose_details = _compose_details(result.stdout)
     return {
         "available": True,
-        "running_hint": "ithildin-api" in output and "ithildin-ui" in output,
-        "safe_error": None,
+        "running_hint": compose_details["expected_services_running"],
+        **compose_details,
     }
+
+
+def _compose_details(output: str) -> dict[str, Any]:
+    entries, parse_error = _parse_compose_ps(output)
+    service_states = _missing_expected_service_states()
+    for entry in entries:
+        service = str(entry.get("Service") or entry.get("Name") or "")
+        if service not in service_states:
+            continue
+        state = str(entry.get("State") or entry.get("Status") or "unknown").lower()
+        service_states[service] = state or "unknown"
+    expected_services_present = all(state != "missing" for state in service_states.values())
+    expected_services_running = all(state == "running" for state in service_states.values())
+    return {
+        "service_count": len(entries),
+        "expected_services_present": expected_services_present,
+        "expected_services_running": expected_services_running,
+        "expected_service_states": service_states,
+        "safe_error": parse_error,
+    }
+
+
+def _parse_compose_ps(output: str) -> tuple[list[dict[str, Any]], str | None]:
+    stripped = output.strip()
+    if not stripped:
+        return [], None
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError:
+        entries: list[dict[str, Any]] = []
+        for line in stripped.splitlines():
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError:
+                return [], "compose ps output could not be parsed"
+            if isinstance(item, dict):
+                entries.append(item)
+            else:
+                return [], "compose ps output could not be parsed"
+        return entries, None
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)], None
+    if isinstance(payload, dict):
+        return [payload], None
+    return [], "compose ps output could not be parsed"
+
+
+def _missing_expected_service_states() -> dict[str, str]:
+    return {service: "missing" for service in EXPECTED_COMPOSE_SERVICES}
 
 
 def _artifact_status(repo_root: Path) -> dict[str, dict[str, Any]]:
@@ -286,9 +367,11 @@ def _next_actions(
     if not preflight["valid"]:
         return ["fix preflight failures before running the live demo"]
     actions = ["run make demo-seed before any demo-flow execution"]
-    if not compose["available"] or not compose["running_hint"]:
+    if not compose["available"]:
         actions.append("run make live-demo-environment-diagnostics if Compose is unavailable")
-    if not api["reachable"] or not ui["reachable"]:
+    elif not compose["expected_services_running"]:
+        actions.append("run make compose-up and make compose-smoke to start/check demo services")
+    if compose["expected_services_running"] and (not api["reachable"] or not ui["reachable"]):
         actions.append("run make compose-up and make compose-smoke for local API/UI demo")
     actions.extend(
         [
@@ -307,6 +390,13 @@ def _print_human(report: dict[str, Any]) -> None:
     print(f"tool_count: {report['preflight']['tool_count']}")
     print(f"compose_available: {str(report['compose']['available']).lower()}")
     print(f"compose_running_hint: {str(report['compose']['running_hint']).lower()}")
+    print(
+        "compose_expected_services_running: "
+        f"{str(report['compose']['expected_services_running']).lower()}"
+    )
+    print("compose_expected_service_states:")
+    for service, state in report["compose"]["expected_service_states"].items():
+        print(f"- {service}: {state}")
     print(f"api_healthz_reachable: {str(report['endpoints']['api_healthz']['reachable']).lower()}")
     print(f"ui_root_reachable: {str(report['endpoints']['ui_root']['reachable']).lower()}")
     print("\nartifacts:")
