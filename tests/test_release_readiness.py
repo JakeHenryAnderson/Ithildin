@@ -28807,9 +28807,16 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["selected_capability"] == "not selected"
-    assert report["technical_mvp_state"] == "ready_for_operator_trial"
+    assert report["technical_mvp_state"] in {
+        "ready_for_operator_trial",
+        "operator_trial_observed",
+    }
     assert report["operator_trial_ready"] is True
-    assert report["hands_on_trial_required"] is True
+    assert isinstance(report["operator_trial_observed"], bool)
+    assert report["hands_on_trial_required"] is (not report["operator_trial_observed"])
+    if report["operator_trial_observed"]:
+        assert report["observed_trial"]["patch_apply_status"] == "completed"
+        assert report["observed_trial"]["audit_verification_valid"] == "true"
     assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
     assert report["response_present_count"] == 0
     assert report["runtime_changes_allowed"] is False
@@ -28836,10 +28843,12 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
         "Status: checked operator-trial readiness view for the technical MVP.",
         "What Is Ready",
         "What Remains Before A Hands-On Technical MVP Trial",
+        "Observed Trial State",
         "What Remains Beyond Technical MVP",
         "make release-check",
         "make review-candidate",
         "make v1-operator-trial-record",
+        "make v1-operator-trial-observed-check",
         "make demo-seed",
         "make compose-up",
         "make compose-smoke",
@@ -28868,8 +28877,12 @@ def test_development_efficiency_status_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["selected_capability"] == "not selected"
-    assert report["technical_mvp_state"] == "ready_for_operator_trial"
+    assert report["technical_mvp_state"] in {
+        "ready_for_operator_trial",
+        "operator_trial_observed",
+    }
     assert report["operator_trial_ready"] is True
+    assert isinstance(report["operator_trial_observed"], bool)
     assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0

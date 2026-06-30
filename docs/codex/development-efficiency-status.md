@@ -29,6 +29,7 @@ The report is intentionally small and operator-facing. It records:
   `make enterprise-review-send-refresh`;
 - release-check target counts and heaviest target categories;
 - technical MVP operator-trial readiness;
+- whether the latest local operator trial has been observed from `DEMO_FLOW_RESULT.md`;
 - enterprise response/closure counts and the current ERG-003/ERG-002 send action;
 - key handoff artifact paths.
 

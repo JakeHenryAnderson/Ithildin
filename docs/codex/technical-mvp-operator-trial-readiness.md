@@ -15,12 +15,15 @@ make technical-mvp-operator-trial-readiness
 ## Current Answer
 
 Ithildin is ready for a local-preview operator trial of the technical MVP surface when the checked
-gates continue to pass from the same commit.
+gates continue to pass from the same commit. When `make v1-operator-trial-observed-check` reports
+`status: observed`, the current state advances from `ready_for_operator_trial` to
+`operator_trial_observed` for the local-preview technical MVP surface.
 
 That means a local operator can validate the governed gateway, review console, Agent Run evidence,
-approval and audit surfaces, local demo packets, and existing bounded governed tools. The remaining
-hands-on work is to run the operator trial, record pass/fail evidence, and keep enterprise blocked
-lanes from being mistaken for completed product capabilities.
+approval and audit surfaces, local demo packets, and existing bounded governed tools. If observed
+trial evidence is already present, the remaining work is no longer to prove the basic local demo
+path; it is to keep the evidence fresh for handoff and keep enterprise blocked lanes from being
+mistaken for completed product capabilities.
 
 ## What Is Ready
 
@@ -32,7 +35,22 @@ The following surfaces are ready for local-preview operator trial:
 | Read-only and Git/project intelligence | `closed_local_preview` | `make read-only-capability-inventory-gate`, `make read-only-project-intelligence`, `make next-capability-readiness` |
 | Evidence and review packets | `closed_local_preview` | `make review-candidate`, `make packet-redaction-scan`, `make v1-operator-trial-record` |
 | Operator workbench and demo docs | `ready_for_operator_trial` | `make workbench-readiness`, `make demo-flow-readiness`, `make demo-evidence-readiness`, `make operator-sandbox-demo-readiness` |
+| Observed local operator demo | `operator_trial_observed` when present | `make v1-operator-trial-observed-check`, `make demo-flow-result-check`, `make live-demo-status` |
 | Current technical MVP map | `checked` | `make technical-mvp-ticket-map` |
+
+## Observed Trial State
+
+The current checked state may be one of two local-preview states:
+
+- `ready_for_operator_trial`: all readiness gates pass, but no current observed demo-flow result is
+  present.
+- `operator_trial_observed`: `DEMO_FLOW_RESULT.md` exists, validates as secret-free, records
+  `patch_apply_status: completed`, records `audit_verification_valid: true`, and
+  `make live-demo-status` shows the Compose stack is no longer running.
+
+The observed state proves only the Ithildin-mediated local demo path. It does not prove production
+deployment safety, OS isolation, VM/container security, Mission Control execution authority, SIEM
+custody, compliance automation, trusted-host promotion, or public/security-product positioning.
 
 ## What Remains Before A Hands-On Technical MVP Trial
 
@@ -42,6 +60,7 @@ Run the local trial from a clean tree:
 make release-check
 make review-candidate
 make v1-operator-trial-record
+make v1-operator-trial-observed-check
 ```
 
 If Docker Compose is available and the operator wants to exercise the local API/UI path:

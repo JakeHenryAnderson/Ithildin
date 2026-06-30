@@ -20,6 +20,7 @@ from scripts import (
     review_docs,
     technical_mvp_ticket_map,
     v1_operator_trial_checklist_check,
+    v1_operator_trial_observed,
     v1_operator_trial_record,
     v1_rc_readiness_check,
     workbench_readiness,
@@ -45,10 +46,12 @@ REQUIRED_DOC_PHRASES = [
     "make technical-mvp-operator-trial-readiness",
     "What Is Ready",
     "What Remains Before A Hands-On Technical MVP Trial",
+    "Observed Trial State",
     "What Remains Beyond Technical MVP",
     "make release-check",
     "make review-candidate",
     "make v1-operator-trial-record",
+    "make v1-operator-trial-observed-check",
     "make demo-seed",
     "make compose-up",
     "make compose-smoke",
@@ -126,6 +129,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             repo_root,
             repo_root / "var/review-packets/v1.0/operator-trial",
         ),
+        "v1_operator_trial_observed": v1_operator_trial_observed.build_observed_record(
+            repo_root,
+            repo_root / "var/review-packets/v1.0/operator-trial-observed",
+        ),
         "v1_rc_readiness": v1_rc_readiness_check.build_report(repo_root),
         "workbench_readiness": workbench_readiness.build_report(repo_root),
         "demo_flow_readiness": demo_flow_readiness.build_report(repo_root),
@@ -143,6 +150,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     commit = _git(repo_root, ["rev-parse", "HEAD"])
     dirty = bool(_git(repo_root, ["status", "--short"]))
     ticket_map = reports["technical_mvp_ticket_map"]
+    observed = reports["v1_operator_trial_observed"]
     next_action = reports["enterprise_operator_next_action"]
 
     if ticket_map.get("tool_count") != 24:
@@ -154,6 +162,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if next_action.get("response_present_count") != 0:
         failures.append("enterprise responses are present; use response intake flow")
 
+    observed_trial_passed = (
+        observed.get("valid") is True
+        and observed.get("status") == "observed"
+        and observed.get("result_present") is True
+        and observed.get("observed", {}).get("patch_apply_status") == "completed"
+        and observed.get("observed", {}).get("audit_verification_valid") == "true"
+    )
+
     return {
         "schema_version": "1",
         "valid": not failures,
@@ -164,11 +180,25 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": ticket_map.get("tool_count"),
         "latest_implemented_tool": ticket_map.get("latest_implemented_tool"),
         "selected_capability": ticket_map.get("selected_capability"),
-        "technical_mvp_state": "ready_for_operator_trial",
+        "technical_mvp_state": (
+            "operator_trial_observed"
+            if observed_trial_passed
+            else "ready_for_operator_trial"
+        ),
         "operator_trial_ready": all(
             reports[name].get("valid") is True for name in READY_STATES
         ),
-        "hands_on_trial_required": True,
+        "operator_trial_observed": observed_trial_passed,
+        "hands_on_trial_required": not observed_trial_passed,
+        "observed_trial": {
+            "status": observed.get("status"),
+            "result_present": observed.get("result_present"),
+            "patch_apply_status": observed.get("observed", {}).get("patch_apply_status"),
+            "audit_verification_valid": observed.get("observed", {}).get(
+                "audit_verification_valid"
+            ),
+            "demo_result_path": observed.get("demo_result_path"),
+        },
         "recommended_next_enterprise_review": next_action.get(
             "recommended_next_enterprise_review"
         ),
@@ -202,6 +232,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"selected_capability: {report['selected_capability']}",
         f"technical_mvp_state: {report['technical_mvp_state']}",
         f"operator_trial_ready: {str(report['operator_trial_ready']).lower()}",
+        f"operator_trial_observed: {str(report['operator_trial_observed']).lower()}",
         f"hands_on_trial_required: {str(report['hands_on_trial_required']).lower()}",
         f"enterprise_next_action: {report['enterprise_next_action']}",
         "runtime_changes_allowed: false",
