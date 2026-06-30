@@ -83,6 +83,7 @@ from scripts import (
     enterprise_review_send_preflight_lightweight_check,
     enterprise_review_send_quickstart,
     enterprise_review_send_readiness,
+    enterprise_review_send_receipt_dry_run,
     enterprise_review_send_receipt_template,
     enterprise_review_send_receipt_validate,
     enterprise_review_send_session_record,
@@ -4585,6 +4586,78 @@ def test_enterprise_review_send_receipt_validation_is_wired(tmp_path: Path) -> N
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
     assert "$(MAKE) enterprise-review-send-receipt-validate" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_review_send_receipt_dry_run_is_wired() -> None:
+    report = enterprise_review_send_receipt_dry_run.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-review-send-receipt-dry-run.md").read_text(
+        encoding="utf-8"
+    )
+    template_doc = Path("docs/codex/enterprise-review-send-receipt-template.md").read_text(
+        encoding="utf-8"
+    )
+    validation_doc = Path("docs/codex/enterprise-review-send-receipt-validation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    refresh_body = makefile.partition("enterprise-review-send-refresh:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["filled_receipt_ready"] is True
+    assert report["malformed_receipt_rejected"] is True
+    assert report["filled_next_operator_action"] == (
+        "wait_for_responses_then_run_enterprise_response_paste_preflight"
+    )
+    assert report["malformed_next_operator_action"] == "fix_receipt_validation_failures"
+    assert report["temp_files_only"] is True
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    for phrase in [
+        "make enterprise-review-send-receipt-dry-run",
+        "filled_receipt_ready: true",
+        "malformed_receipt_rejected: true",
+        "does not record external review",
+        "does not normalize responses",
+        "does not write response files",
+        "does not close `ERG-003` or `ERG-002`",
+    ]:
+        assert phrase in doc
+    assert "make enterprise-review-send-receipt-dry-run" in template_doc
+    assert "make enterprise-review-send-receipt-dry-run" in validation_doc
+    assert "make enterprise-review-send-receipt-dry-run" in readme
+    assert "enterprise-review-send-receipt-dry-run:" in makefile
+    assert (
+        "enterprise-review-send-receipt-dry-run" in release_check_body
+        or "release-check: enterprise-review-send-receipt-dry-run" in makefile
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-dry-run" in review_candidate_body
+    assert "$(MAKE) enterprise-review-send-receipt-dry-run" in refresh_body
+    assert "docs/codex/enterprise-review-send-receipt-dry-run.md" in docs_site
+    assert (
+        "docs/codex/enterprise-review-send-receipt-dry-run.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Review Send Receipt Dry Run" in review_index
+    assert "enterprise-review-send-receipt-dry-run" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-dry-run" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
 

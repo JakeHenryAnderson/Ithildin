@@ -42,6 +42,8 @@ does not mutate findings, and does not close `ERG-003` or `ERG-002`.
 3. Run `make enterprise-review-send-refresh`.
 4. Run `make enterprise-send-quick-check` to confirm the current package, upload staging, and
    response waiting room still match the refreshed candidate.
+   The refresh path also runs `make enterprise-review-send-receipt-dry-run` so the copied-receipt
+   transition is rehearsed before the human send step.
 5. Open the generated quickstart in
    `var/review-packets/v3/enterprise-review-send-quickstart/`.
 6. Confirm the final preflight reports `valid: true`, `current_dirty: false`,

@@ -8,6 +8,13 @@ Run:
 make enterprise-review-send-receipt-validate
 ```
 
+To rehearse the copied filled receipt and malformed copied receipt paths with temporary fixture
+files:
+
+```sh
+make enterprise-review-send-receipt-dry-run
+```
+
 To validate a copied, filled receipt instead of the generated unsent template:
 
 ```sh

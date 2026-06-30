@@ -527,6 +527,9 @@ checked with `make control-mapping-readiness`.
   after the human send step, without recording review or closing lanes.
 - `make enterprise-review-send-receipt-validate` - validate the generated or copied send receipt
   JSON before response intake without recording review, writing responses, or closing lanes.
+- `make enterprise-review-send-receipt-dry-run` - rehearse a copied filled receipt and a malformed
+  copied receipt with temporary fixture files, proving the copied-receipt transition without
+  recording review or writing responses.
 - `make enterprise-review-send-package` - generate a compact operator package index over the
   current `ERG-003` and `ERG-002` prompts, lane attachment manifests, hash manifests, receipt
   template, and response inbox paths without recording review or closing lanes, reusing current

@@ -250,6 +250,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-review-submission-prompt.md",
     "docs/codex/enterprise-review-send-receipt-template.md",
     "docs/codex/enterprise-review-send-receipt-validation.md",
+    "docs/codex/enterprise-review-send-receipt-dry-run.md",
     "docs/codex/enterprise-review-send-package.md",
     "docs/codex/enterprise-review-upload-staging.md",
     "docs/codex/enterprise-review-send-session-record.md",

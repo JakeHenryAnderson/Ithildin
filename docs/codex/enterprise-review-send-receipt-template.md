@@ -52,14 +52,15 @@ Expected raw responses are later pasted under the ignored response inbox at
 3. Run `make enterprise-review-submission-prompt`.
 4. Run `make enterprise-review-send-receipt-template`.
 5. Run `make enterprise-review-send-receipt-validate`.
-6. Run `make enterprise-review-send-package`.
-7. Send `ERG-003` and `ERG-002` in separate review threads.
-8. Copy the ignored generated receipt template after the human send step, then fill in the send
+6. Run `make enterprise-review-send-receipt-dry-run`.
+7. Run `make enterprise-review-send-package`.
+8. Send `ERG-003` and `ERG-002` in separate review threads.
+9. Copy the ignored generated receipt template after the human send step, then fill in the send
    timestamp, channel, reviewer label, thread URL or message ID, and expected raw-response path.
-9. Run `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`.
-10. Confirm the copied receipt reports
+10. Run `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`.
+11. Confirm the copied receipt reports
    `next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight`.
-11. Wait for real reviewer responses, then route responses through
+12. Wait for real reviewer responses, then route responses through
    `make enterprise-dual-response-inbox`, `make enterprise-response-waiting-room`, and the
    lane-specific response kit.
 
