@@ -51,7 +51,10 @@ With no real enterprise reviewer responses present, the next allowed operator ac
    - `var/review-packets/v3/enterprise-review-send-quickstart`
    - `var/review-packets/v3/enterprise-review-submission-prompt`
    - `var/review-packets/v3/enterprise-review-send-receipt-template`
+   - `var/review-runs/enterprise-review-send-receipts/enterprise-review-send-receipt-copy.json`
    - `var/review-packets/v3/enterprise-review-send-package`
+   - `var/review-packets/v3/enterprise-review-upload-staging`
+   - `var/review-runs/enterprise-dual-response-inbox`
    - `var/review-runs/enterprise-review-send-session-record`
 
 5. Wait for real reviewer responses before running any response-normalization or closure flow.

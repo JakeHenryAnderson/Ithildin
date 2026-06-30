@@ -65,9 +65,27 @@ SEND_ARTIFACTS = [
         "description": "operator receipt template to fill after sending",
     },
     {
+        "label": "send_receipt_copy",
+        "path": (
+            "var/review-runs/enterprise-review-send-receipts/"
+            "enterprise-review-send-receipt-copy.json"
+        ),
+        "description": "ignored copied receipt path for the human send step",
+    },
+    {
         "label": "send_package",
         "path": "var/review-packets/v3/enterprise-review-send-package",
         "description": "compact package index for current send artifacts",
+    },
+    {
+        "label": "upload_staging",
+        "path": "var/review-packets/v3/enterprise-review-upload-staging",
+        "description": "10-attachment-friendly upload staging batches",
+    },
+    {
+        "label": "dual_response_inbox",
+        "path": "var/review-runs/enterprise-dual-response-inbox",
+        "description": "ignored raw-response inbox placeholders for ERG-003 and ERG-002",
     },
     {
         "label": "send_session_record",

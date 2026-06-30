@@ -2157,7 +2157,10 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
+        "send_receipt_copy",
         "send_package",
+        "upload_staging",
+        "dual_response_inbox",
         "send_session_record",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
@@ -2166,7 +2169,13 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "var/review-packets/v3/enterprise-review-send-quickstart",
         "var/review-packets/v3/enterprise-review-submission-prompt",
         "var/review-packets/v3/enterprise-review-send-receipt-template",
+        (
+            "var/review-runs/enterprise-review-send-receipts/"
+            "enterprise-review-send-receipt-copy.json"
+        ),
         "var/review-packets/v3/enterprise-review-send-package",
+        "var/review-packets/v3/enterprise-review-upload-staging",
+        "var/review-runs/enterprise-dual-response-inbox",
         "var/review-runs/enterprise-review-send-session-record",
     }
     assert report["operator_next_action_doc"] == (
@@ -2236,7 +2245,10 @@ def test_enterprise_progress_model_is_wired() -> None:
         "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
+        "send_receipt_copy",
         "send_package",
+        "upload_staging",
+        "dual_response_inbox",
         "send_session_record",
     ]
     assert report["response_present_count"] == 0
@@ -5694,11 +5706,30 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "send_quickstart",
         "submission_prompt",
         "send_receipt_template",
+        "send_receipt_copy",
         "send_package",
+        "upload_staging",
+        "dual_response_inbox",
         "send_session_record",
     ]
     assert any(
         artifact["path"] == "var/review-packets/v3/enterprise-review-send-quickstart"
+        for artifact in report["handoff_artifacts"]
+    )
+    assert any(
+        artifact["path"]
+        == (
+            "var/review-runs/enterprise-review-send-receipts/"
+            "enterprise-review-send-receipt-copy.json"
+        )
+        for artifact in report["handoff_artifacts"]
+    )
+    assert any(
+        artifact["path"] == "var/review-packets/v3/enterprise-review-upload-staging"
+        for artifact in report["handoff_artifacts"]
+    )
+    assert any(
+        artifact["path"] == "var/review-runs/enterprise-dual-response-inbox"
         for artifact in report["handoff_artifacts"]
     )
     assert report["runtime_changes_allowed"] is False
