@@ -28,7 +28,10 @@ DOC_TITLE = "Development Efficiency Status"
 REQUIRED_DOC_PHRASES = [
     "Status: checked development-efficiency view.",
     "make development-efficiency-status",
+    "make status-now",
     "make validation-decision",
+    "make validation-recommendation",
+    "make artifact-freshness-check",
     "make release-check-profile",
     "make technical-mvp-operator-trial-readiness",
     "make enterprise-current-checkpoint",
@@ -39,6 +42,7 @@ REQUIRED_DOC_PHRASES = [
     "make review-candidate",
     "make enterprise-review-send-refresh",
     "review-candidate artifact freshness",
+    "diagnostic shortcut, not release proof",
     "does not start services",
     "does not call governed tools",
     "does not approve runtime changes",

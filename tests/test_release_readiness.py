@@ -25,6 +25,7 @@ from scripts import (
     agent_run_timeline_packet,
     agent_run_timeline_readiness,
     agent_workflow_check,
+    artifact_freshness_check,
     capability_decision_report,
     capability_expansion_gate,
     closure_matrix_evidence_sync,
@@ -321,6 +322,7 @@ from scripts import (
     siem_export_adapter_response_kit,
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
+    status_now,
     technical_mvp_operator_trial_readiness,
     technical_mvp_ticket_map,
     test_determinism_gate,
@@ -370,6 +372,7 @@ from scripts import (
     v3_next_capability_candidate_check,
     validation_decision,
     validation_plan,
+    validation_recommendation,
     validation_timing,
     workbench_demo_smoke,
     workbench_evidence_packet,
@@ -517,6 +520,9 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "smart-handoff-check:" in makefile
     assert "validation-decision:" in makefile
     assert "validation-plan:" in makefile
+    assert "validation-recommendation:" in makefile
+    assert "artifact-freshness-check:" in makefile
+    assert "status-now:" in makefile
     assert "validation-timing:" in makefile
     assert "release-check-impact:" in makefile
     assert "release-check-profile:" in makefile
@@ -564,6 +570,9 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-handoff-check" in readme
     assert "make validation-decision" in readme
     assert "make validation-plan" in readme
+    assert "make validation-recommendation" in readme
+    assert "make artifact-freshness-check" in readme
+    assert "make status-now" in readme
     assert "make validation-timing" in readme
     assert "make release-check-impact" in readme
     assert "make release-check-profile" in readme
@@ -589,6 +598,9 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make runtime-check" in guide
     assert "make validation-decision" in guide
     assert "make validation-plan" in guide
+    assert "make validation-recommendation" in guide
+    assert "make artifact-freshness-check" in guide
+    assert "make status-now" in guide
     assert "make validation-timing" in guide
     assert "make release-check-impact" in guide
     assert "make release-check-profile" in guide
@@ -700,6 +712,20 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
     assert enterprise_report["release_slice_commands"] == [
         'make release-check-slice ARGS="--category enterprise"'
     ]
+
+
+def test_validation_recommendation_is_plan_only() -> None:
+    report = validation_recommendation.build_report(
+        ["apps/api/src/ithildin_api/tools/example.py"]
+    )
+
+    assert report["valid"] is True
+    assert report["recommended_mode"] == "develop_then_handoff_gate"
+    assert report["recommended_commands"] == ["make quick-check", "make runtime-check"]
+    assert report["deferred_handoff_commands"] == ["make release-check"]
+    assert report["release_proof"] is False
+    assert report["handoff_proof"] is False
+    assert any("does not run commands" in note for note in report["notes"])
 
 
 def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
@@ -815,6 +841,38 @@ def test_validation_plan_run_commands_reports_execution(monkeypatch: pytest.Monk
         "make readiness-check",
     ]
     assert all(result["returncode"] == 0 for result in execution["results"])
+
+
+def test_artifact_freshness_and_status_now_report_current_posture() -> None:
+    freshness = artifact_freshness_check.build_report(Path.cwd())
+    status = status_now.build_report(Path.cwd())
+
+    assert freshness["tool_count"] == 24
+    assert freshness["runtime_changes_allowed"] is False
+    assert freshness["new_power_classes_allowed"] is False
+    assert freshness["records_external_review"] is False
+    assert freshness["normalizes_responses"] is False
+    assert freshness["closes_enterprise_lanes"] is False
+    assert set(freshness["checks"]) >= {
+        "enterprise_send_artifact_commits_match_current",
+        "enterprise_send_artifact_payloads_clean",
+        "enterprise_send_artifact_hashes_match_files",
+        "v1_rc_packet_exists",
+        "v1_rc_packet_commit_matches_current",
+        "review_candidate_release_transcript_exists",
+        "review_candidate_release_transcript_commit_matches_current",
+        "review_candidate_release_transcript_passed",
+    }
+
+    assert status["valid"] is True
+    assert status["tool_count"] == 24
+    assert status["selected_capability"] == "not selected"
+    assert status["runtime_changes_allowed"] is False
+    assert status["new_power_classes_allowed"] is False
+    assert status["sandbox_orchestration_allowed"] is False
+    assert status["mission_control_execution_allowed"] is False
+    assert status["public_security_product_positioning_allowed"] is False
+    assert status["recommended_next_commands"]
 
 
 def test_agent_workflow_instruction_layer_is_wired() -> None:

@@ -33,6 +33,12 @@ release-check slice suggestions, run:
 make validation-decision
 ```
 
+For a shorter recommendation-only view that never runs commands and never claims release proof, run:
+
+```sh
+make validation-recommendation
+```
+
 or pass a hypothetical file set through Make:
 
 ```sh
@@ -137,6 +143,36 @@ make release-check-slice ARGS="--category enterprise --run"
 
 Slice runs are focused development evidence, not full release proof. Use them to debug a slow or
 failing lane before returning to `make release-check` for a release, handoff, or major checkpoint.
+
+### Artifact Freshness
+
+Run:
+
+```sh
+make artifact-freshness-check
+```
+
+Use this before starting a long gate when the likely failure is stale generated evidence rather than
+implementation breakage. The command checks the current enterprise send artifacts, compact v1.0 RC
+packet, and captured release-check transcript against the current commit. It prints refresh commands
+such as `make enterprise-review-send-refresh` or `make review-candidate` when those artifacts are
+stale.
+
+This command does not start services, does not call governed tools, does not record external review,
+and does not replace `make release-check` or `make review-candidate`.
+
+### Status Now
+
+Run:
+
+```sh
+make status-now
+```
+
+Use this when you want the smallest current-state answer: commit, dirty state, tool count, selected
+capability, technical MVP status, enterprise next action, validation mode, artifact freshness, and
+the next command to run. It is a status command only. It is not release proof and is not handoff
+proof.
 
 ### Packet Recursion Guard
 
@@ -319,6 +355,8 @@ uv run pytest tests/test_release_readiness.py -m "not slow_packet" -q
 - Pure docs edits: run `make docs-check`.
 - Tiny mechanical docs plus code-adjacent edits: run `make dev-check`, `make quick-check`, or `make readiness-check`
   according to `make validation-decision`.
+- Stale packet suspicion before a long gate: run `make artifact-freshness-check`.
+- Quick operator orientation: run `make status-now`.
 - External-review handoff: run `make review-candidate`.
 
 Do not use fast gates to claim release readiness. Fast gates are a development accelerator, not a

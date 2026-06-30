@@ -14,10 +14,15 @@ make development-efficiency-status
 The command consolidates:
 
 - `make validation-decision` for the current dirty-file validation mode.
+- `make validation-recommendation` when a command recommendation is enough and no command should
+  run.
 - `make release-check-profile` for the static shape of the full release gate.
 - `make technical-mvp-operator-trial-readiness` for the local-preview operator-trial state.
 - `make enterprise-current-checkpoint` for the current enterprise handoff action.
 - `make enterprise-review-send-preflight` for current ERG-003/ERG-002 handoff artifact freshness.
+- `make artifact-freshness-check` when packet/handoff freshness needs to be checked before a long
+  gate.
+- `make status-now` for the shortest current-state and next-command answer.
 - `make enterprise-send-quick-check` for cheap current-send confirmation after a full candidate
   refresh.
 
@@ -60,6 +65,8 @@ It also does not approve:
 For routine development:
 
 ```sh
+make status-now
+make validation-recommendation
 make development-efficiency-status
 make dev-check
 ```
@@ -86,6 +93,15 @@ make enterprise-review-send-refresh
 runs the lightweight preflight, copied-receipt dry run, send-package reuse check, upload-staging
 check, and response waiting-room state without starting services, recording review, normalizing
 responses, or closing enterprise lanes.
+
+Use `make artifact-freshness-check` before a long gate when you suspect stale packet state. It
+reports whether enterprise send artifacts, the compact v1.0 RC packet, and the captured
+release-check transcript match the current commit, then recommends refresh commands. It is a
+diagnostic shortcut, not release proof.
+
+Use `make status-now` as the quick "what should I do next?" view. It combines validation mode,
+artifact freshness, current enterprise action, and boundary flags without running services or
+governed tools.
 
 The status command is included in `make release-check` so stale gate-selection guidance cannot drift
 out of release evidence.

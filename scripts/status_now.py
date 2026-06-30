@@ -1,0 +1,151 @@
+"""Print the compact current development and handoff posture."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import (  # noqa: E402
+    artifact_freshness_check,
+    validation_decision,
+)
+
+ROOT = Path(__file__).resolve().parents[1]
+SEND_MANIFEST_JSON = Path(
+    "var/review-packets/v3/enterprise-review-send-manifest/"
+    "enterprise-review-send-manifest.json"
+)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    report = build_report(ROOT)
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print(render_report(report))
+    return 0 if report["valid"] else 1
+
+
+def build_report(repo_root: Path) -> dict[str, Any]:
+    validation = validation_decision.build_report()
+    freshness = artifact_freshness_check.build_report(repo_root)
+    next_commands = _recommended_next_commands(validation, freshness)
+    return {
+        "schema_version": "1",
+        "valid": validation.get("valid") is True,
+        "commit": freshness.get("commit"),
+        "dirty": freshness.get("dirty"),
+        "tool_count": freshness.get("tool_count"),
+        "latest_implemented_tool": _latest_implemented_tool(repo_root),
+        "selected_capability": _selected_capability(repo_root),
+        "technical_mvp_state": freshness.get("technical_mvp_state"),
+        "enterprise_next_action": freshness.get("enterprise_next_action"),
+        "response_present_count": _send_manifest_count(repo_root, "response_present_count"),
+        "closure_ready_count": _send_manifest_count(repo_root, "closure_ready_count"),
+        "validation_mode": validation.get("recommended_mode"),
+        "validation_categories": validation.get("categories", []),
+        "next_development_commands": validation.get("next_development_commands", []),
+        "deferred_handoff_commands": validation.get("deferred_handoff_commands", []),
+        "release_slice_commands": validation.get("release_slice_commands", []),
+        "artifact_freshness_valid": freshness.get("valid"),
+        "artifact_refresh_commands": freshness.get("refresh_commands", []),
+        "recommended_next_commands": next_commands,
+        "release_or_handoff_required": validation.get("release_or_handoff_required"),
+        "runtime_changes_allowed": False,
+        "new_power_classes_allowed": False,
+        "sandbox_orchestration_allowed": False,
+        "mission_control_execution_allowed": False,
+        "public_security_product_positioning_allowed": False,
+    }
+
+
+def render_report(report: dict[str, Any]) -> str:
+    lines = [
+        "Ithildin status now",
+        f"valid: {str(report['valid']).lower()}",
+        f"commit: {report['commit']}",
+        f"dirty: {str(report['dirty']).lower()}",
+        f"tool_count: {report['tool_count']}",
+        f"latest_implemented_tool: {report['latest_implemented_tool']}",
+        f"selected_capability: {report['selected_capability']}",
+        f"technical_mvp_state: {report['technical_mvp_state']}",
+        f"enterprise_next_action: {report['enterprise_next_action']}",
+        f"response_present_count: {report['response_present_count']}",
+        f"closure_ready_count: {report['closure_ready_count']}",
+        f"validation_mode: {report['validation_mode']}",
+        "validation_categories: "
+        + (", ".join(report["validation_categories"]) or "none"),
+        f"artifact_freshness_valid: {str(report['artifact_freshness_valid']).lower()}",
+        "recommended_next_commands:",
+    ]
+    lines.extend(f"- {command}" for command in report["recommended_next_commands"])
+    if report["release_slice_commands"]:
+        lines.append("release_slice_commands:")
+        lines.extend(f"- {command}" for command in report["release_slice_commands"])
+    lines.extend(
+        [
+            "boundaries:",
+            "- status-only; does not start services or call governed tools",
+            "- not release proof; use make release-check before checkpoint claims",
+            "- not handoff proof; use make review-candidate before packet handoff",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _recommended_next_commands(
+    validation: dict[str, Any],
+    freshness: dict[str, Any],
+) -> list[str]:
+    if validation.get("git_dirty"):
+        return list(validation.get("next_development_commands", []))
+    if not freshness.get("valid"):
+        return list(freshness.get("refresh_commands", []))
+    if freshness.get("enterprise_next_action") == "send_erg_003_and_erg_002":
+        return ["make enterprise-send-quick-check"]
+    return ["make dev-check"]
+
+
+def _latest_implemented_tool(repo_root: Path) -> str:
+    text = (repo_root / "var/review-packets/v1.0/rc/00_V1_RC_PACKET_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    for line in text.splitlines():
+        if line.startswith("- Latest implemented tool:"):
+            parts = line.split("`")
+            if len(parts) >= 2:
+                return parts[1]
+    return "unknown"
+
+
+def _selected_capability(repo_root: Path) -> str:
+    text = (repo_root / "docs/codex/next-capability-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    for line in text.splitlines():
+        if line.startswith("- Selected candidate:"):
+            return line.removeprefix("- Selected candidate:").strip(" .`")
+    return "unknown"
+
+
+def _send_manifest_count(repo_root: Path, key: str) -> int:
+    path = repo_root / SEND_MANIFEST_JSON
+    if not path.exists():
+        return 0
+    data = json.loads(path.read_text(encoding="utf-8"))
+    value = data.get(key)
+    return value if isinstance(value, int) else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

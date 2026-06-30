@@ -169,6 +169,12 @@ checked with `make control-mapping-readiness`.
   validation gate set for those changes.
 - `make validation-decision` - print the current validation mode, deferred handoff gates, release
   slice suggestions, and command guidance for the dirty file set.
+- `make validation-recommendation` - print a shorter recommendation-only view; it never runs
+  commands and is not release or handoff proof.
+- `make artifact-freshness-check` - cheaply check whether enterprise send artifacts, the compact
+  v1.0 RC packet, and the captured release-check transcript match the current commit.
+- `make status-now` - print the compact current state, artifact freshness, and recommended next
+  command without starting services or calling governed tools.
 - `make development-efficiency-status` - print the compact current-state view that combines
   validation choice, release-check shape, technical MVP operator-trial readiness, and enterprise
   handoff action.
@@ -1121,6 +1127,9 @@ The development efficiency status is
 and is checked with `make development-efficiency-status`; it combines validation-decision,
 release-check profile, technical MVP readiness, and enterprise-current-checkpoint evidence into one
 small decision view without replacing `make release-check` or `make review-candidate`.
+For faster day-to-day routing, use `make status-now` for the compact next-action view,
+`make validation-recommendation` for a recommendation-only gate plan, and
+`make artifact-freshness-check` before long gates when generated packet state may be stale.
 The v1.0 RC feature-freeze decision is
 [docs/codex/v1.0-rc-feature-freeze.md](docs/codex/v1.0-rc-feature-freeze.md) and is checked with
 `make v1-rc-feature-freeze`; it blocks new manifests, executors, policy powers, MCP/API behavior,
