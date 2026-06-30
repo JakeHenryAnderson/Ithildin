@@ -43,8 +43,9 @@ planning, approve runtime behavior, or approve public/security-product positioni
 - Do not manually promote a lane from this map. Use the lane-specific response kit, normalizer,
   closure gate, and decision-record path.
 - For the current `ERG-003` and `ERG-002` send set, paste responses under
-  `var/review-runs/enterprise-dual-response-inbox/` and run
-  `make enterprise-response-paste-preflight` before any lane-specific closure flow.
+  `var/review-runs/enterprise-dual-response-inbox/`, run `make enterprise-response-waiting-room`,
+  run `make enterprise-response-now`, and run `make enterprise-response-paste-preflight` before
+  any lane-specific closure flow.
 
 ## Blocked Boundaries
 

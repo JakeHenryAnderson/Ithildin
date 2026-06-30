@@ -31,6 +31,7 @@ CURRENT_FLOW_COMMANDS = [
     RECEIPT_VALIDATE_COMMAND,
     "make enterprise-dual-response-inbox",
     "make enterprise-response-waiting-room",
+    "make enterprise-response-now",
     "make enterprise-response-paste-preflight",
 ]
 

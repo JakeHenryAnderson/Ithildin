@@ -46,6 +46,7 @@ Regenerate the current response inbox and status evidence:
 make enterprise-dual-response-inbox
 make enterprise-dual-response-readiness
 make enterprise-response-waiting-room
+make enterprise-response-now
 make enterprise-response-status-board
 make enterprise-response-command-matrix
 make enterprise-response-application-protocol

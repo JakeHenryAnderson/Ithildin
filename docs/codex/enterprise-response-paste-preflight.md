@@ -12,6 +12,8 @@ make enterprise-response-paste-preflight
 
 Before running a lane-specific paste preflight, `make enterprise-response-waiting-room` can confirm
 whether the ignored raw-response files are still placeholders or appear populated.
+Use `make enterprise-response-now` when you want the compact lane-specific command sequence before
+running any normalizer.
 
 This preflight does not normalize responses, does not write response files, does not mutate
 findings, does not record external review, does not close either lane, and does not approve runtime behavior.

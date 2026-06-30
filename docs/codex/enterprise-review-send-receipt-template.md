@@ -68,8 +68,9 @@ Expected raw responses are later pasted under the ignored response inbox at
 11. Confirm the copied receipt reports
    `next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight`.
 12. Wait for real reviewer responses, then route responses through
-   `make enterprise-dual-response-inbox`, `make enterprise-response-waiting-room`, and the
-   lane-specific response kit.
+   `make enterprise-dual-response-inbox`, `make enterprise-response-waiting-room`,
+   `make enterprise-response-now`, `make enterprise-response-paste-preflight`, and the lane-specific
+   response kit.
 
 ## Boundary
 

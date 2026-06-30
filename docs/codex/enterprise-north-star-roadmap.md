@@ -72,6 +72,7 @@ The current recommended enterprise handoff set remains:
    make enterprise-review-send-receipt-template
    make enterprise-dual-response-inbox
    make enterprise-response-waiting-room
+   make enterprise-response-now
    make enterprise-review-handoff-drill
    ```
 
@@ -90,6 +91,7 @@ The current recommended enterprise handoff set remains:
 
    ```sh
    make enterprise-response-waiting-room
+   make enterprise-response-now
    make enterprise-response-paste-preflight
    make enterprise-response-inbox
    make enterprise-response-status-board

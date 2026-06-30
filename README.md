@@ -564,6 +564,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-response-waiting-room` - summarize whether ignored `ERG-003`/`ERG-002`
   raw-response files are still placeholders or look ready for paste preflight, without reading
   response contents into output.
+- `make enterprise-response-now` - print the current response-inbox state and exact next
+  lane-specific paste-preflight, normalizer, dry-run, and closure-gate commands without normalizing
+  responses, writing response files, recording review, or closing lanes.
 - `make enterprise-response-status-board` - summarize normalized-response presence across all
   enterprise review lanes and fail closed until any present response is handled by lane intake.
 - `make enterprise-response-status-board-snapshot` - write an ignored, hashed, read-only snapshot of
@@ -1352,6 +1355,11 @@ The enterprise response waiting room is
 checked with `make enterprise-response-waiting-room`; it reports whether ignored `ERG-003` and
 `ERG-002` raw-response files are still placeholders or appear ready for paste preflight without
 normalizing responses, recording review, or closing either lane.
+The enterprise response-now summary is
+[docs/codex/enterprise-response-now.md](docs/codex/enterprise-response-now.md), checked with
+`make enterprise-response-now`; it prints the current receive-side lane state and the exact next
+paste-preflight, normalizer, dry-run, and closure-gate commands without running those commands or
+closing either lane.
 The enterprise response status board is
 [docs/codex/enterprise-response-status-board.md](docs/codex/enterprise-response-status-board.md),
 checked with `make enterprise-response-status-board`; it aggregates normalized-response state for

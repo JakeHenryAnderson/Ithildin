@@ -34,6 +34,15 @@ make enterprise-response-paste-preflight
 for deterministic docs/wiring validation before running the lane-specific preflight command with
 `--lane` and `--raw-response`.
 
+For a compact receive-side command summary, run:
+
+```sh
+make enterprise-response-now
+```
+
+It prints the current lane state plus the exact paste-preflight, normalizer, dry-run, and closure-gate
+commands without running them.
+
 ## What This Proves
 
 - The ignored raw-response path exists, is missing, or still appears to be a placeholder.

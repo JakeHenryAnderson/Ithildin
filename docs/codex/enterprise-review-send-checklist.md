@@ -68,6 +68,7 @@ Then run:
 
 ```sh
 make enterprise-response-waiting-room
+make enterprise-response-now
 make enterprise-response-paste-preflight
 make enterprise-dual-response-readiness
 make enterprise-response-intake-drill
@@ -97,6 +98,7 @@ make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
 make enterprise-dual-response-inbox
+make enterprise-response-now
 make enterprise-review-send-checklist
 make packet-redaction-scan
 ```

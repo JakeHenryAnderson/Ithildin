@@ -73,6 +73,7 @@ from scripts import (
     enterprise_response_intake_drill,
     enterprise_response_intake_quickstart,
     enterprise_response_normalization_coverage,
+    enterprise_response_now,
     enterprise_response_paste_preflight,
     enterprise_response_status_board,
     enterprise_response_waiting_room,
@@ -693,6 +694,7 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
         "make enterprise-review-send-receipt-copy after the human send step"
         in report["next_after_send"]
     )
+    assert "make enterprise-response-now" in report["next_after_send"]
     assert report["records_external_review"] is False
     assert report["normalizes_responses"] is False
     assert report["writes_response_files"] is False
@@ -5187,6 +5189,137 @@ def test_enterprise_response_intake_quickstart_is_wired() -> None:
     )
 
 
+def test_enterprise_response_now_is_wired() -> None:
+    report = enterprise_response_now.build_report(Path.cwd())
+    doc = Path("docs/codex/enterprise-response-now.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    waiting_room = Path("docs/codex/enterprise-response-waiting-room.md").read_text(
+        encoding="utf-8"
+    )
+    paste_preflight = Path("docs/codex/enterprise-response-paste-preflight.md").read_text(
+        encoding="utf-8"
+    )
+    quickstart = Path("docs/codex/enterprise-response-intake-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    refresh_body = makefile.partition("enterprise-response-intake-refresh:")[
+        2
+    ].partition("\n\n")[0]
+    send_quick_body = makefile.partition("enterprise-send-quick-check:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["next_action"] == "wait_for_external_response"
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["records_external_review"] is False
+    assert report["mutates_findings"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for lane in report["lanes"]:
+        assert lane["content_excerpt_included"] is False
+        assert lane["normalizes_response"] is False
+        assert lane["writes_response_files"] is False
+        assert lane["records_external_review"] is False
+        assert lane["closes_external_review"] is False
+        assert lane["paste_preflight"]
+        assert lane["normalizer"]
+        assert lane["dry_run"]
+        assert lane["closure_gate"]
+    for phrase in [
+        "Status: read-only current response-intake command summary.",
+        "Current governed tool count: `24`.",
+        "make enterprise-response-now",
+        "make enterprise-response-waiting-room",
+        "make enterprise-response-paste-preflight",
+        "does not normalize responses",
+        "does not write response files",
+        "does not record external review",
+        "does not close either lane",
+        "does not approve runtime behavior",
+    ]:
+        assert phrase in doc
+    assert "enterprise-response-now:" in makefile
+    assert "enterprise-response-now" in release_check_body
+    assert "$(MAKE) enterprise-response-now" in review_candidate_body
+    assert "$(MAKE) enterprise-response-now" in refresh_body
+    assert "$(MAKE) enterprise-response-now" in send_quick_body
+    assert "make enterprise-response-now" in readme
+    assert "docs/codex/enterprise-response-now.md" in readme
+    assert "docs/codex/enterprise-response-now.md" in docs_site
+    assert "docs/codex/enterprise-response-now.md" in review_docs.REVIEW_DOCS
+    assert "Enterprise Response Now" in review_index
+    assert "make enterprise-response-now" in waiting_room
+    assert "make enterprise-response-now" in paste_preflight
+    assert "make enterprise-response-now" in quickstart
+    assert "make enterprise-response-now" in current_checkpoint
+    assert "enterprise-response-now" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-response-now" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+    raw_path = Path(
+        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
+    )
+    original = raw_path.read_bytes() if raw_path.exists() else None
+    try:
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_path.write_text(
+            "\n".join(
+                [
+                    "External source review for ERG-003.",
+                    "No implementation findings were found.",
+                    "The lane can close for the local-preview static preflight boundary.",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        populated = enterprise_response_now.build_report(Path.cwd())
+        assert populated["valid"] is True
+        assert populated["candidate_response_count"] == 1
+        assert (
+            populated["next_action"]
+            == "run_lane_paste_preflight_then_normalizer_dry_run_and_closure_gate"
+        )
+        erg003 = next(row for row in populated["lanes"] if row["gap"] == "ERG-003")
+        assert erg003["state"] == "candidate_response"
+        assert "enterprise_response_paste_preflight.py" in erg003["paste_preflight"]
+        assert "external_response_normalize.py" in erg003["normalizer"]
+        assert "sandbox-vm-static-preflight-response-dry-run" in erg003["dry_run"]
+        assert (
+            "sandbox-vm-static-preflight-disposition-closure-check"
+            in erg003["closure_gate"]
+        )
+        assert "No implementation findings" not in enterprise_response_now.render_report(
+            populated
+        )
+    finally:
+        if original is None:
+            raw_path.unlink(missing_ok=True)
+        else:
+            raw_path.write_bytes(original)
+
+
 def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
     report = enterprise_response_paste_preflight.build_report(Path.cwd())
     doc = Path("docs/codex/enterprise-response-paste-preflight.md").read_text(
@@ -5361,6 +5494,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-dual-response-inbox",
         "make enterprise-response-waiting-room",
+        "make enterprise-response-now",
         "make enterprise-response-paste-preflight",
     ]
     for expected_doc in [

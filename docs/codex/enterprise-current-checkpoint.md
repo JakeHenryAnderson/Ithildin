@@ -44,6 +44,7 @@ make enterprise-review-send-package
 make enterprise-review-send-session-record
 make enterprise-dual-response-inbox
 make enterprise-response-waiting-room
+make enterprise-response-now
 make enterprise-review-handoff-drill
 make enterprise-send-quick-check
 ```
@@ -64,6 +65,7 @@ send set, paste the raw responses under the ignored dual-response inbox at
 
 ```sh
 make enterprise-response-waiting-room
+make enterprise-response-now
 make enterprise-response-paste-preflight
 make enterprise-response-inbox
 make enterprise-response-status-board
@@ -71,7 +73,6 @@ make enterprise-response-intake-drill
 make enterprise-response-application-protocol
 make enterprise-response-application-rehearsal
 make enterprise-response-intake-quickstart
-make enterprise-response-paste-preflight
 ```
 
 Follow each lane-specific response kit and closure gate before any committed disposition update.

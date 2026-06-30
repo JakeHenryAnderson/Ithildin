@@ -53,6 +53,8 @@ make enterprise-review-send-receipt-template
 make enterprise-review-send-receipt-copy
 make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 make enterprise-dual-response-inbox
+make enterprise-response-waiting-room
+make enterprise-response-now
 make enterprise-response-paste-preflight
 make enterprise-response-status-board
 make enterprise-response-intake-drill
@@ -77,7 +79,8 @@ make enterprise-review-handoff-drill-check
    `var/review-runs/enterprise-dual-response-inbox/`:
    `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md` and
    `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md`.
-6. Run `make enterprise-response-paste-preflight`.
+6. Run `make enterprise-response-waiting-room`, then `make enterprise-response-now`, then
+   `make enterprise-response-paste-preflight`.
 7. Run the lane-specific response dry run.
 8. Run the lane-specific closure gate.
 9. Apply any favorable response through the committed lane-specific response-application path.

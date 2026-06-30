@@ -63,6 +63,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "fill the copied receipt after the human send step",
             "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
             "make enterprise-response-waiting-room",
+            "make enterprise-response-now",
             "make enterprise-response-paste-preflight after reviewer responses are pasted",
         ],
         "records_external_review": False,
