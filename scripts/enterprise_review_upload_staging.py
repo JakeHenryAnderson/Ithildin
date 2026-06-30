@@ -53,15 +53,30 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument(
+        "--prefer-existing-package",
+        action="store_true",
+        help=(
+            "reuse the generated enterprise review send package when it matches "
+            "the current commit/dirty state; rebuild it otherwise"
+        ),
+    )
     args = parser.parse_args()
 
     if args.check:
-        report = build_check_report(ROOT)
+        report = build_check_report(
+            ROOT,
+            prefer_existing_package=args.prefer_existing_package,
+        )
         print(render_check_report(report))
         return 0 if report["valid"] else 1
 
     try:
-        output_dir = build_staging(ROOT, args.output_dir)
+        output_dir = build_staging(
+            ROOT,
+            args.output_dir,
+            prefer_existing_package=args.prefer_existing_package,
+        )
     except EnterpriseReviewUploadStagingError as exc:
         print(f"enterprise review upload staging failed: {exc}", file=sys.stderr)
         return 1
@@ -69,18 +84,33 @@ def main() -> int:
     return 0
 
 
-def build_staging(repo_root: Path, output_dir: Path) -> Path:
+def build_staging(
+    repo_root: Path,
+    output_dir: Path,
+    *,
+    prefer_existing_package: bool = False,
+) -> Path:
     _validate_repo_root(repo_root)
-    package_dir = enterprise_review_send_package.build_package(
-        repo_root, enterprise_review_send_package.DEFAULT_OUTPUT_DIR
-    )
-    package_payload = _read_json(package_dir / enterprise_review_send_package.JSON_NAME)
+    package_dir = enterprise_review_send_package.DEFAULT_OUTPUT_DIR
+    package_payload = None
+    source_package_reused = False
+    if prefer_existing_package:
+        package_payload = _current_package_payload(repo_root, package_dir)
+        source_package_reused = package_payload is not None
+    if package_payload is None:
+        package_dir = enterprise_review_send_package.build_package(repo_root, package_dir)
+        package_payload = _read_json(package_dir / enterprise_review_send_package.JSON_NAME)
 
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    payload = _staging_payload(repo_root, output_dir, package_payload)
+    payload = _staging_payload(
+        repo_root,
+        output_dir,
+        package_payload,
+        source_package_reused=source_package_reused,
+    )
     _copy_batches(repo_root, output_dir, payload)
     (output_dir / MARKDOWN_NAME).write_text(_render_markdown(payload), encoding="utf-8")
     (output_dir / JSON_NAME).write_text(
@@ -93,10 +123,18 @@ def build_staging(repo_root: Path, output_dir: Path) -> Path:
     return output_dir
 
 
-def build_check_report(repo_root: Path) -> dict[str, Any]:
+def build_check_report(
+    repo_root: Path,
+    *,
+    prefer_existing_package: bool = False,
+) -> dict[str, Any]:
     failures: list[str] = []
     try:
-        output_dir = build_staging(repo_root, DEFAULT_OUTPUT_DIR)
+        output_dir = build_staging(
+            repo_root,
+            DEFAULT_OUTPUT_DIR,
+            prefer_existing_package=prefer_existing_package,
+        )
     except EnterpriseReviewUploadStagingError as exc:
         failures.append(str(exc))
         output_dir = DEFAULT_OUTPUT_DIR
@@ -211,6 +249,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "recommended_gaps": RECOMMENDED_GAPS,
         "tool_count": 24,
         "batch_count": sum(len(lane.get("batches", [])) for lane in payload.get("lanes", [])),
+        "source_package_reused": bool(payload.get("source_package_reused")),
         "artifact_hashes_match_files": _artifact_hashes_match_files(output_dir, hashes),
         **BOUNDARY_FLAGS,
     }
@@ -225,6 +264,7 @@ def render_check_report(report: dict[str, Any]) -> str:
         "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
         f"tool_count: {report['tool_count']}",
         f"batch_count: {report['batch_count']}",
+        f"source_package_reused: {str(report['source_package_reused']).lower()}",
         f"artifact_hashes_match_files: {str(report['artifact_hashes_match_files']).lower()}",
     ]
     lines.extend(f"{key}: {str(value).lower()}" for key, value in BOUNDARY_FLAGS.items())
@@ -235,7 +275,11 @@ def render_check_report(report: dict[str, Any]) -> str:
 
 
 def _staging_payload(
-    repo_root: Path, output_dir: Path, package_payload: dict[str, Any]
+    repo_root: Path,
+    output_dir: Path,
+    package_payload: dict[str, Any],
+    *,
+    source_package_reused: bool,
 ) -> dict[str, Any]:
     lanes = []
     for lane in package_payload.get("send_set", []):
@@ -286,6 +330,7 @@ def _staging_payload(
             repo_root,
             enterprise_review_send_package.DEFAULT_OUTPUT_DIR,
         ),
+        "source_package_reused": source_package_reused,
         "lanes": lanes,
         "blocked_boundaries": dict(BOUNDARY_FLAGS),
     }
@@ -335,6 +380,8 @@ Tool count: `{payload['tool_count']}`
 Recommended send set: `ERG-003`, `ERG-002`
 
 Maximum attachments per batch: `{payload['max_attachments_per_batch']}`
+
+Current send package reused: `{str(payload['source_package_reused']).lower()}`
 
 ## Upload batches
 
@@ -438,6 +485,31 @@ def _validate_payload_files(
         failures.append("ERG-002 batch-1 directory is missing")
     if not (output_dir / "ERG-002" / "batch-2").is_dir():
         failures.append("ERG-002 batch-2 directory is missing")
+
+
+def _current_package_payload(repo_root: Path, package_dir: Path) -> dict[str, Any] | None:
+    package_path = package_dir / enterprise_review_send_package.JSON_NAME
+    hashes_path = package_dir / enterprise_review_send_package.HASH_NAME
+    if not package_path.is_file() or not hashes_path.is_file():
+        return None
+    try:
+        payload = _read_json(package_path)
+        hashes = _read_json(hashes_path)
+    except (json.JSONDecodeError, OSError):
+        return None
+    if payload.get("package_type") != "ithildin.enterprise_review_send_package":
+        return None
+    if payload.get("commit") != _git(repo_root, ["rev-parse", "HEAD"]):
+        return None
+    if bool(payload.get("dirty")) != bool(_git(repo_root, ["status", "--short"])):
+        return None
+    if sorted(payload.get("recommended_gaps", [])) != sorted(RECOMMENDED_GAPS):
+        return None
+    if payload.get("blocked_boundaries") != BOUNDARY_FLAGS:
+        return None
+    if not _artifact_hashes_match_files(package_dir, hashes):
+        return None
+    return payload
 
 
 def _validate_repo_root(repo_root: Path) -> None:

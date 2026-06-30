@@ -34,6 +34,11 @@ preserve the existing hashes for each copied attachment. Operator-reference file
 `ATTACHMENT_MANIFEST.md` stay in the source outbox and are not copied into the upload batches unless
 they are explicitly manifest-listed.
 
+For validation speed, the Make target may reuse the current generated enterprise review send package
+when that package matches the current commit, dirty state, boundary flags, recommended gaps, and
+artifact hashes. If that evidence is missing or stale, the staging script rebuilds the send package
+before copying batches.
+
 ## Expected Layout
 
 - `ERG-003/batch-1`: the static sandbox/VM preflight request, fitting a 10-attachment surface.
@@ -68,4 +73,5 @@ It does not approve:
 `make enterprise-review-upload-staging-check` verifies that the generated batches match the current
 send package and attachment manifests, that staged file hashes match, that `ERG-003` remains a single
 10-file batch, that `ERG-002` is split into two batches, and that the staging artifact is wired into
-the release and review-candidate gates.
+the release and review-candidate gates. It may reuse a current generated send package only when the
+package evidence matches the current tree.

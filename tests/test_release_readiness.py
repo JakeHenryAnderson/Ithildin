@@ -3977,6 +3977,7 @@ def test_enterprise_review_upload_staging_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
     assert report["batch_count"] == 3
+    assert isinstance(report["source_package_reused"], bool)
     assert report["artifact_hashes_match_files"] is True
     for key in [
         "records_external_review",
@@ -4005,6 +4006,7 @@ def test_enterprise_review_upload_staging_is_wired() -> None:
         "does not record external review",
         "does not normalize responses",
         "does not close `ERG-003` or `ERG-002`",
+        "may reuse the current generated enterprise review send package",
     ]:
         assert phrase in doc
     for phrase in [
@@ -4018,6 +4020,7 @@ def test_enterprise_review_upload_staging_is_wired() -> None:
         "normalizes_responses: `false`",
         "closes_erg_003: `false`",
         "closes_erg_002: `false`",
+        "Current send package reused:",
     ]:
         assert phrase in generated_text
     for phrase in [
@@ -4025,6 +4028,7 @@ def test_enterprise_review_upload_staging_is_wired() -> None:
         '"ERG-003"',
         '"ERG-002"',
         '"batch-1"',
+        '"source_package_reused"',
         '"records_external_review": false',
         '"normalizes_responses": false',
         '"closes_erg_003": false',
@@ -4049,6 +4053,14 @@ def test_enterprise_review_upload_staging_is_wired() -> None:
     assert "enterprise-review-upload-staging-artifact-hashes.json" not in hashed_paths
     assert "enterprise-review-upload-staging:" in makefile
     assert "enterprise-review-upload-staging-check:" in makefile
+    assert (
+        "uv run python scripts/enterprise_review_upload_staging.py "
+        "--prefer-existing-package"
+    ) in makefile
+    assert (
+        "uv run python scripts/enterprise_review_upload_staging.py --check "
+        "--prefer-existing-package"
+    ) in makefile
     assert "enterprise-review-upload-staging-check" in release_check_body
     assert "$(MAKE) enterprise-review-upload-staging" in review_candidate_body
     assert "$(MAKE) enterprise-review-upload-staging" in refresh_body

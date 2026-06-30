@@ -512,10 +512,10 @@ enterprise-review-send-package-check:
 	uv run python scripts/enterprise_review_send_package.py --check
 
 enterprise-review-upload-staging:
-	uv run python scripts/enterprise_review_upload_staging.py
+	uv run python scripts/enterprise_review_upload_staging.py --prefer-existing-package
 
 enterprise-review-upload-staging-check:
-	uv run python scripts/enterprise_review_upload_staging.py --check
+	uv run python scripts/enterprise_review_upload_staging.py --check --prefer-existing-package
 
 enterprise-review-send-session-record:
 	uv run python scripts/enterprise_review_send_session_record.py
