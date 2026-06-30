@@ -529,6 +529,9 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "$(MAKE) enterprise-review-send-preflight-lightweight-check" in (
         enterprise_send_quick_body
     )
+    assert "$(MAKE) enterprise-review-send-receipt-dry-run" in (
+        enterprise_send_quick_body
+    )
     assert "$(MAKE) enterprise-review-send-package-check" in enterprise_send_quick_body
     assert "$(MAKE) enterprise-review-upload-staging-check" in enterprise_send_quick_body
     assert "$(MAKE) enterprise-response-waiting-room" in enterprise_send_quick_body

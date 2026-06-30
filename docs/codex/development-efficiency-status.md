@@ -83,9 +83,9 @@ make enterprise-review-send-refresh
 ```
 
 `make enterprise-send-quick-check` is a current-artifact confirmation path, not release proof. It
-runs the lightweight preflight, send-package reuse check, upload-staging check, and response
-waiting-room state without starting services, recording review, normalizing responses, or closing
-enterprise lanes.
+runs the lightweight preflight, copied-receipt dry run, send-package reuse check, upload-staging
+check, and response waiting-room state without starting services, recording review, normalizing
+responses, or closing enterprise lanes.
 
 The status command is included in `make release-check` so stale gate-selection guidance cannot drift
 out of release evidence.
