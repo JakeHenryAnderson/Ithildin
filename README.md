@@ -524,6 +524,8 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-receipt-template` - generate an ignored operator receipt template
   for recording send timestamps, reviewer/thread placeholders, packet hashes, and raw-response paths
   after the human send step, without recording review or closing lanes.
+- `make enterprise-review-send-receipt-validate` - validate the generated or copied send receipt
+  JSON before response intake without recording review, writing responses, or closing lanes.
 - `make enterprise-review-send-package` - generate a compact operator package index over the
   current `ERG-003` and `ERG-002` prompts, lane attachment manifests, hash manifests, receipt
   template, and response inbox paths without recording review or closing lanes.
@@ -1280,6 +1282,11 @@ generated with `make enterprise-review-send-receipt-template`; it gives the oper
 template for tying sent-thread metadata and raw-response paths back to the generated packet hashes
 after the human send step while still not recording review, normalizing responses, writing raw
 responses, or closing either lane.
+The enterprise review send receipt validator is
+[docs/codex/enterprise-review-send-receipt-validation.md](docs/codex/enterprise-review-send-receipt-validation.md),
+checked with `make enterprise-review-send-receipt-validate`; it verifies whether a copied send
+receipt is structurally ready for response intake while still not recording review, writing
+responses, mutating findings, or closing either lane.
 The enterprise review send package is
 [docs/codex/enterprise-review-send-package.md](docs/codex/enterprise-review-send-package.md),
 generated with `make enterprise-review-send-package`; it gives the operator a compact generated

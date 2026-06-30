@@ -84,6 +84,7 @@ from scripts import (
     enterprise_review_send_quickstart,
     enterprise_review_send_readiness,
     enterprise_review_send_receipt_template,
+    enterprise_review_send_receipt_validate,
     enterprise_review_send_session_record,
     enterprise_review_submission_prompt,
     enterprise_sandbox_control_plane_readiness_check,
@@ -4287,6 +4288,109 @@ def test_enterprise_review_send_receipt_template_is_wired() -> None:
     )
     assert "var/review-packets/v3/enterprise-dual-response-inbox" not in generated_text
     assert "var/review-packets/v3/enterprise-dual-response-inbox" not in generated_json_text
+
+
+def test_enterprise_review_send_receipt_validation_is_wired(tmp_path: Path) -> None:
+    report = enterprise_review_send_receipt_validate.build_report(
+        Path.cwd(),
+        enterprise_review_send_receipt_validate.DEFAULT_RECEIPT,
+    )
+    receipt_payload = json.loads(
+        enterprise_review_send_receipt_validate.DEFAULT_RECEIPT.read_text(
+            encoding="utf-8"
+        )
+    )
+    filled_receipt = tmp_path / "filled-receipt.json"
+    receipt_payload["dirty"] = False
+    for receipt in receipt_payload["receipts"]:
+        receipt["sent"] = True
+        receipt["sent_at"] = "2026-06-30T00:00:00Z"
+        receipt["channel"] = "manual-review"
+        receipt["reviewer_label"] = "external-reviewer"
+        receipt["thread_or_message_url"] = "https://example.test/review"
+    receipt_payload["sent"] = True
+    filled_receipt.write_text(json.dumps(receipt_payload), encoding="utf-8")
+    filled_report = enterprise_review_send_receipt_validate.build_report(
+        Path.cwd(),
+        filled_receipt,
+    )
+    missing_field_receipt = tmp_path / "missing-field-receipt.json"
+    receipt_payload["receipts"][0]["thread_or_message_url"] = ""
+    receipt_payload["receipts"][0]["message_id"] = ""
+    missing_field_receipt.write_text(json.dumps(receipt_payload), encoding="utf-8")
+    missing_field_report = enterprise_review_send_receipt_validate.build_report(
+        Path.cwd(),
+        missing_field_receipt,
+    )
+    doc = Path("docs/codex/enterprise-review-send-receipt-validation.md").read_text(
+        encoding="utf-8"
+    )
+    template_doc = Path("docs/codex/enterprise-review-send-receipt-template.md").read_text(
+        encoding="utf-8"
+    )
+    quickstart = Path("docs/codex/enterprise-response-intake-quickstart.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["sent"] is False
+    assert report["all_receipts_sent"] is False
+    assert report["operator_fields_filled"] is False
+    assert report["ready_for_response_intake"] is False
+    assert report["records_external_review"] is False
+    assert report["writes_response_files"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert filled_report["valid"] is True
+    assert filled_report["sent"] is True
+    assert filled_report["all_receipts_sent"] is True
+    assert filled_report["operator_fields_filled"] is True
+    assert filled_report["ready_for_response_intake"] is True
+    assert filled_report["new_power_classes_allowed"] is False
+    assert missing_field_report["valid"] is False
+    assert missing_field_report["ready_for_response_intake"] is False
+    assert "ERG-003 sent receipt needs thread_or_message_url or message_id" in (
+        missing_field_report["failures"]
+    )
+    for phrase in [
+        "make enterprise-review-send-receipt-validate",
+        "ready_for_response_intake: false",
+        "does not record external review",
+        "does not normalize responses",
+        "does not write response files",
+        "does not close lanes",
+    ]:
+        assert phrase in doc
+    assert "make enterprise-review-send-receipt-validate" in template_doc
+    assert "make enterprise-review-send-receipt-validate" in quickstart
+    assert "make enterprise-review-send-receipt-validate" in readme
+    assert "enterprise-review-send-receipt-validate:" in makefile
+    assert (
+        "enterprise-review-send-receipt-validate" in release_check_body
+        or "release-check: enterprise-review-send-receipt-validate" in makefile
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-validate" in review_candidate_body
+    assert "docs/codex/enterprise-review-send-receipt-validation.md" in docs_site
+    assert (
+        "docs/codex/enterprise-review-send-receipt-validation.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Enterprise Review Send Receipt Validation" in review_index
+    assert "enterprise-review-send-receipt-validate" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-validate" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
 
 
 def test_enterprise_dual_response_readiness_is_wired() -> None:

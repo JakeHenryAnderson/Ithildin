@@ -15,6 +15,12 @@ Validate:
 make enterprise-review-send-receipt-template-check
 ```
 
+Validate the generated or copied receipt JSON before response intake:
+
+```sh
+make enterprise-review-send-receipt-validate
+```
+
 The generated template is written under:
 
 ```text
@@ -45,12 +51,14 @@ Expected raw responses are later pasted under the ignored response inbox at
 2. Run `make enterprise-review-send-manifest`.
 3. Run `make enterprise-review-submission-prompt`.
 4. Run `make enterprise-review-send-receipt-template`.
-5. Run `make enterprise-review-send-package`.
-6. Send `ERG-003` and `ERG-002` in separate review threads.
-7. Copy the ignored generated receipt template if you want a local operator note, then fill in the
+5. Run `make enterprise-review-send-receipt-validate`.
+6. Run `make enterprise-review-send-package`.
+7. Send `ERG-003` and `ERG-002` in separate review threads.
+8. Copy the ignored generated receipt template if you want a local operator note, then fill in the
    send timestamp, channel, reviewer label, thread URL or message ID, and raw-response path after a
    response arrives.
-8. Route responses through `make enterprise-dual-response-inbox`,
+9. Run `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`.
+10. Route responses through `make enterprise-dual-response-inbox`,
    `make enterprise-response-waiting-room`, and the lane-specific response kit.
 
 ## Boundary

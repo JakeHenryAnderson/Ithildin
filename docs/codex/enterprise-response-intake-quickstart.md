@@ -26,6 +26,15 @@ normalize real responses, does not write response files, does not mutate finding
 either lane, and does not approve runtime behavior.
 Boundary shorthand: this quickstart does not normalize real responses.
 
+If you copied and filled the ignored send receipt after sending the packets, validate it before
+pasting responses:
+
+```sh
+make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+```
+
+The generated unsent template should validate but remain `ready_for_response_intake: false`.
+
 ## Before Pasting A Response
 
 Regenerate the current response inbox and status evidence:
