@@ -69,6 +69,14 @@ The negative fixtures must be rejected or quarantined:
 - unsafe action commands outside the checked Ithildin operator refresh helpers;
 - unsafe handoff artifact paths outside ignored review artifact roots.
 
+The valid fixture may display only these checked action commands:
+
+- `make release-check`;
+- `make review-candidate`;
+- `make enterprise-review-send-refresh`;
+- `make enterprise-send-quick-check`;
+- `make enterprise-response-intake-refresh`.
+
 The final two fixtures are explicit handoff-safety cases: `MC-STATUS-NEG-011` rejects unsafe
 action commands with `unsupported_action_command`, and `MC-STATUS-NEG-012` rejects unsafe handoff
 artifact paths with `unsafe_handoff_artifact`.

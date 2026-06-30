@@ -61,6 +61,7 @@ ALLOWED_ACTION_COMMANDS = {
     "make release-check",
     "make review-candidate",
     "make enterprise-review-send-refresh",
+    "make enterprise-send-quick-check",
     "make enterprise-response-intake-refresh",
 }
 
