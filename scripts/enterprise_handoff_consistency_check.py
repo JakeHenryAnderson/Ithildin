@@ -27,6 +27,7 @@ RECEIPT_VALIDATE_COMMAND = (
 )
 CURRENT_FLOW_COMMANDS = [
     "make enterprise-review-send-receipt-template",
+    "make enterprise-review-send-receipt-copy",
     RECEIPT_VALIDATE_COMMAND,
     "make enterprise-dual-response-inbox",
     "make enterprise-response-waiting-room",
@@ -50,6 +51,7 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
     ],
     "docs/codex/enterprise-review-send-receipt-template.md": [
         *RAW_RESPONSE_PATHS,
+        "make enterprise-review-send-receipt-copy",
         "make enterprise-dual-response-inbox",
         RECEIPT_VALIDATE_COMMAND,
     ],

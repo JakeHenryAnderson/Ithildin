@@ -50,6 +50,7 @@ make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
+make enterprise-review-send-receipt-copy
 make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 make enterprise-dual-response-inbox
 make enterprise-response-paste-preflight
@@ -68,7 +69,8 @@ make enterprise-review-handoff-drill-check
 
 1. Generate the current outbox, send manifest, submission prompt, and send receipt template.
 2. Send only the `ERG-003` and `ERG-002` attachment sets named in the manifest.
-3. After sending, validate the copied local receipt with
+3. After sending, run `make enterprise-review-send-receipt-copy`, fill the copied local receipt, and
+   validate it with
    `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`.
 4. Generate the dual-response inbox.
 5. Paste raw reviewer responses into the lane-specific ignored raw-response files under

@@ -5334,6 +5334,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
     ]
     assert report["required_current_flow_commands"] == [
         "make enterprise-review-send-receipt-template",
+        "make enterprise-review-send-receipt-copy",
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-dual-response-inbox",
         "make enterprise-response-waiting-room",
@@ -5376,6 +5377,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
         "make enterprise-review-send-receipt-template",
+        "make enterprise-review-send-receipt-copy",
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-dual-response-inbox",
         "make enterprise-response-waiting-room",

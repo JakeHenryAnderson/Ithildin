@@ -75,6 +75,7 @@ This ladder does not approve:
 1. Refresh the send set with `make enterprise-dual-review-outbox`,
    `make enterprise-review-send-manifest`, `make enterprise-review-submission-prompt`,
    `make enterprise-review-send-receipt-template`,
+   `make enterprise-review-send-receipt-copy`,
    `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`,
    `make enterprise-dual-response-inbox`, `make enterprise-response-waiting-room`, and
    `make enterprise-response-paste-preflight`, then `make enterprise-review-handoff-drill`.
