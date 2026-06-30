@@ -1032,6 +1032,9 @@ live-demo-status:
 live-demo-compose-smoke-evidence:
 	uv run python scripts/live_demo_compose_smoke_evidence.py
 
+live-demo-compose-smoke-observed:
+	uv run python scripts/live_demo_compose_smoke_evidence.py --run-smoke
+
 live-demo-smoke:
 	uv run python scripts/live_demo_smoke.py
 

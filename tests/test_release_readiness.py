@@ -18044,6 +18044,8 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "live-demo-preflight:" in makefile
     assert "live-demo-status:" in makefile
     assert "live-demo-compose-smoke-evidence:" in makefile
+    assert "live-demo-compose-smoke-observed:" in makefile
+    assert "live_demo_compose_smoke_evidence.py --run-smoke" in makefile
     assert "live-demo-smoke:" in makefile
     assert "live-demo-evidence-summary:" in makefile
     assert "live-demo-packet:" in makefile
@@ -18055,6 +18057,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "make live-demo-preflight" in readme
     assert "make live-demo-status" in readme
     assert "make live-demo-compose-smoke-evidence" in readme
+    assert "make live-demo-compose-smoke-observed" in readme
     assert "make live-demo-smoke" in readme
     assert "make live-demo-evidence-summary" in readme
     assert "make live-demo-packet" in readme
@@ -18071,6 +18074,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "make live-demo-preflight" in runbook
     assert "make live-demo-status" in runbook
     assert "make live-demo-compose-smoke-evidence" in runbook
+    assert "make live-demo-compose-smoke-observed" in runbook
     assert "make live-demo-smoke" in runbook
     assert "make live-demo-evidence-summary" in runbook
     assert "make live-demo-packet" in runbook
