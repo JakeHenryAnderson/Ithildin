@@ -123,6 +123,7 @@ from scripts import (
     http_fetch_source_review_bundle,
     incident_reconstruction_check,
     internal_review_packet,
+    live_demo_compose_smoke_evidence,
     live_demo_environment_diagnostics,
     live_demo_evidence_summary,
     live_demo_packet,
@@ -17770,6 +17771,11 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         output=output_dir / "LIVE_DEMO_SMOKE.md",
         run_commands=False,
     )
+    compose_report = live_demo_compose_smoke_evidence.build_evidence(
+        repo_root=Path.cwd(),
+        output=output_dir / "LIVE_DEMO_COMPOSE_SMOKE.md",
+        run_smoke=False,
+    )
     summary_report = live_demo_evidence_summary.build_summary(
         repo_root=Path.cwd(),
         output=output_dir / "LIVE_DEMO_EVIDENCE_SUMMARY.md",
@@ -17795,6 +17801,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
         "08_LIVE_DEMO_ARTIFACT_POINTERS.md",
         "LIVE_DEMO_SMOKE.md",
         "LIVE_DEMO_INDEX.md",
+        "LIVE_DEMO_COMPOSE_SMOKE.md",
         "LIVE_DEMO_EVIDENCE_SUMMARY.md",
         "live-demo-artifact-hashes.json",
     }
@@ -17817,6 +17824,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     pointers = (output_dir / "08_LIVE_DEMO_ARTIFACT_POINTERS.md").read_text(encoding="utf-8")
     smoke = smoke_path.read_text(encoding="utf-8")
     operator_index = (output_dir / "LIVE_DEMO_INDEX.md").read_text(encoding="utf-8")
+    compose_smoke = (output_dir / "LIVE_DEMO_COMPOSE_SMOKE.md").read_text(encoding="utf-8")
     summary = (output_dir / "LIVE_DEMO_EVIDENCE_SUMMARY.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -17857,6 +17865,16 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "compose_expected_services_running" in operator_index
     assert "`ithildin-api`" in operator_index
     assert "`ithildin-ui`" in operator_index
+    assert compose_report["valid"] is True
+    assert compose_report["smoke"]["status"] == "not_run"
+    assert compose_report["preflight"]["tool_count"] == 24
+    assert "Live Demo Compose Smoke Evidence" in compose_smoke
+    assert "By default it does not run `make compose-smoke`" in compose_smoke
+    assert "does not start services" in compose_smoke
+    assert "grant Docker authority to Ithildin" in compose_smoke
+    assert "compose_expected_services_running" in compose_smoke
+    assert "`ithildin-api`" in compose_smoke
+    assert "`ithildin-ui`" in compose_smoke
     assert summary_report["valid"] is True
     assert summary_report["preflight"]["tool_count"] == 24
     assert generated == expected
@@ -17868,6 +17886,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "operator-managed-sandbox-demo-guide.md" in contracts
     assert "agent-run-evidence-export-implementation.md" in contracts
     assert "make live-demo-status" in evidence
+    assert "make live-demo-compose-smoke-evidence" in evidence
     assert "make live-demo-preflight" in evidence
     assert "make live-demo-smoke" in evidence
     assert "make live-demo-evidence-summary" in evidence
@@ -17891,6 +17910,7 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "Live Demo Operator Index" in operator_index_bundle
     assert "Live Demo Evidence Summary" in summary
     assert "signed_evidence_demo_summary" in summary
+    assert "live_demo_compose_smoke_evidence" in summary
     assert "negative_review_transcripts" in summary
     assert "sandbox_artifact_observed_demo" in summary
     assert "agent_run_correlation_packet" in summary
@@ -17900,15 +17920,18 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "Live Demo Evidence Summary" in summary_bundle
     assert "live-demo-preflight:" in makefile
     assert "live-demo-status:" in makefile
+    assert "live-demo-compose-smoke-evidence:" in makefile
     assert "live-demo-smoke:" in makefile
     assert "live-demo-evidence-summary:" in makefile
     assert "live-demo-packet:" in makefile
     assert "$(MAKE) live-demo-status" in makefile.partition("review-candidate:")[2]
+    assert "$(MAKE) live-demo-compose-smoke-evidence" in makefile.partition("review-candidate:")[2]
     assert "$(MAKE) live-demo-smoke" in makefile.partition("review-candidate:")[2]
     assert "$(MAKE) live-demo-evidence-summary" in makefile.partition("review-candidate:")[2]
     assert "$(MAKE) live-demo-packet" in makefile.partition("review-candidate:")[2]
     assert "make live-demo-preflight" in readme
     assert "make live-demo-status" in readme
+    assert "make live-demo-compose-smoke-evidence" in readme
     assert "make live-demo-smoke" in readme
     assert "make live-demo-evidence-summary" in readme
     assert "make live-demo-packet" in readme
@@ -17917,12 +17940,14 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     assert "289 - Live demo smoke evidence | Done" in backlog
     assert "290 - Live demo operator status | Done" in backlog
     assert "291 - Live demo evidence summary | Done" in backlog
+    assert "291A - Live demo Compose smoke evidence | Done" in backlog
     assert "docs/codex/live-demo-runbook.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/live-demo-runbook.md" in docs_site
     assert "Live Demo Runbook" in review_index
     assert "live-demo-runbook.md" in reproduction_map
     assert "make live-demo-preflight" in runbook
     assert "make live-demo-status" in runbook
+    assert "make live-demo-compose-smoke-evidence" in runbook
     assert "make live-demo-smoke" in runbook
     assert "make live-demo-evidence-summary" in runbook
     assert "make live-demo-packet" in runbook
@@ -17935,13 +17960,57 @@ def test_live_demo_preflight_and_packet_are_wired(tmp_path: Path) -> None:
     ]:
         assert forbidden not in smoke
         assert forbidden not in smoke_bundle
+        assert forbidden not in compose_smoke
         assert forbidden not in operator_index
         assert forbidden not in operator_index_bundle
         assert forbidden not in summary
         assert forbidden not in summary_bundle
     for forbidden in ["diff --git", "response body:"]:
+        assert forbidden not in compose_smoke
         assert forbidden not in summary
         assert forbidden not in summary_bundle
+
+
+def test_live_demo_compose_smoke_evidence_records_smoke_result_safely(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["make", "compose-smoke"],
+            returncode=1,
+            stdout="api health check failed\n",
+            stderr="ui root unreachable\n",
+        )
+
+    monkeypatch.setattr("scripts.live_demo_compose_smoke_evidence.subprocess.run", fake_run)
+    output = tmp_path / "LIVE_DEMO_COMPOSE_SMOKE.md"
+    report = live_demo_compose_smoke_evidence.build_evidence(
+        repo_root=Path.cwd(),
+        output=output,
+        run_smoke=True,
+    )
+    rendered = output.read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["run_smoke"] is True
+    assert report["smoke"]["status"] == "failed"
+    assert report["smoke"]["returncode"] == 1
+    assert report["smoke"]["safe_error"] == "compose smoke failed"
+    assert "api health check failed" in rendered
+    assert "ui root unreachable" in rendered
+    assert "does not start services" in rendered
+    for forbidden in [
+        "PRIVATE KEY",
+        "BEGIN OPENSSH",
+        "ITHILDIN_ADMIN_TOKEN=",
+        "dev-admin-token-change-me",
+        "Authorization:",
+        "Bearer ",
+        "diff --git",
+        "response body:",
+    ]:
+        assert forbidden not in rendered
 
 
 def test_live_demo_status_compose_probe_times_out_safely(

@@ -14,7 +14,12 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import live_demo_evidence_summary, live_demo_smoke, live_demo_status
+from scripts import (
+    live_demo_compose_smoke_evidence,
+    live_demo_evidence_summary,
+    live_demo_smoke,
+    live_demo_status,
+)
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/live-demo")
 HASH_MANIFEST = "live-demo-artifact-hashes.json"
@@ -39,6 +44,7 @@ EVIDENCE_DOCS = [
 ]
 COMMANDS = [
     ["make", "live-demo-status"],
+    ["make", "live-demo-compose-smoke-evidence"],
     ["make", "live-demo-smoke"],
     ["make", "live-demo-evidence-summary"],
     ["make", "live-demo-preflight"],
@@ -99,6 +105,11 @@ def build_packet(
         output=output_dir / "LIVE_DEMO_INDEX.md",
         probe_endpoints=run_commands,
     )
+    live_demo_compose_smoke_evidence.build_evidence(
+        repo_root=repo_root,
+        output=output_dir / "LIVE_DEMO_COMPOSE_SMOKE.md",
+        run_smoke=False,
+    )
     live_demo_evidence_summary.build_summary(
         repo_root=repo_root,
         output=output_dir / "LIVE_DEMO_EVIDENCE_SUMMARY.md",
@@ -158,8 +169,9 @@ demo-readiness packet only.
 9. `08_LIVE_DEMO_ARTIFACT_POINTERS.md`
 10. `LIVE_DEMO_SMOKE.md`
 11. `LIVE_DEMO_INDEX.md`
-12. `LIVE_DEMO_EVIDENCE_SUMMARY.md`
-13. `live-demo-artifact-hashes.json`
+12. `LIVE_DEMO_COMPOSE_SMOKE.md`
+13. `LIVE_DEMO_EVIDENCE_SUMMARY.md`
+14. `live-demo-artifact-hashes.json`
 
 ## What This Packet Does Not Prove
 

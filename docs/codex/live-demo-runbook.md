@@ -124,6 +124,11 @@ Expected ignored outputs:
 
 `make live-demo-status` writes `var/review-packets/v3/live-demo/LIVE_DEMO_INDEX.md`, a compact
 operator index with paths, status, and cleanup reminders.
+`make live-demo-compose-smoke-evidence` writes
+`var/review-packets/v3/live-demo/LIVE_DEMO_COMPOSE_SMOKE.md`, a secret-free status artifact for
+the optional Docker Compose smoke path. By default it records current Compose service posture and
+does not start services; use `uv run python scripts/live_demo_compose_smoke_evidence.py --run-smoke`
+only after intentionally starting the local stack.
 `make live-demo-smoke` writes `var/review-packets/v3/live-demo/LIVE_DEMO_SMOKE.md`, a
 secret-free transcript of readiness checks plus the operator-run sequence.
 `make live-demo-evidence-summary` writes

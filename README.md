@@ -369,6 +369,7 @@ checked with `make control-mapping-readiness`.
 - `make live-demo-environment-diagnostics` - run bounded optional Docker/Compose/Rosetta diagnostics
   for the local UI/API demo path without starting services.
 - `make live-demo-status` - print local demo status, expected Compose service states, and write the ignored `LIVE_DEMO_INDEX.md` operator index.
+- `make live-demo-compose-smoke-evidence` - record optional Docker Compose smoke posture without starting services.
 - `make live-demo-smoke` - generate a secret-free live-demo smoke transcript without starting services.
 - `make live-demo-evidence-summary` - generate a secret-free digest of live-demo status, smoke, signed fixture evidence, negative transcripts, correlation packets, and consolidated handoff artifacts.
 - `make live-demo-packet` - generate an ignored live-demo readiness packet tying together preflight, sandbox demo, Agent Run correlation, and no-new-powers evidence.

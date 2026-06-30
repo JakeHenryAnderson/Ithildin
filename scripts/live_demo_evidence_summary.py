@@ -25,6 +25,9 @@ PROJECT_MARKERS = [
 ]
 ARTIFACTS = {
     "live_demo_status": Path("var/review-packets/v3/live-demo/LIVE_DEMO_INDEX.md"),
+    "live_demo_compose_smoke_evidence": Path(
+        "var/review-packets/v3/live-demo/LIVE_DEMO_COMPOSE_SMOKE.md"
+    ),
     "live_demo_smoke": Path("var/review-packets/v3/live-demo/LIVE_DEMO_SMOKE.md"),
     "signed_evidence_demo_summary": Path(
         "var/review-packets/v0.2/signed-evidence-demo/SIGNED_EVIDENCE_DEMO.md"
