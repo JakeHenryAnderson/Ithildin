@@ -112,7 +112,11 @@ def _recommended_next_commands(
     if not freshness.get("valid"):
         return list(freshness.get("refresh_commands", []))
     if freshness.get("enterprise_next_action") == "send_erg_003_and_erg_002":
-        return ["make enterprise-send-quick-check"]
+        return [
+            "make enterprise-send-quick-check",
+            "make enterprise-send-now",
+            "make enterprise-review-send-receipt-copy after the human send step",
+        ]
     return ["make dev-check"]
 
 

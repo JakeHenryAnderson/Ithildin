@@ -604,8 +604,9 @@ checked with `make control-mapping-readiness`.
   current `ERG-003`/`ERG-002` send artifacts, response landing pad, handoff drill, response state,
   and consistency gate without recording review or closing lanes.
 - `make enterprise-send-quick-check` - run the cheap current-send confirmation path after a full
-  candidate refresh: lightweight preflight, send-package reuse check, upload-staging check, and
-  response waiting-room state without starting services or recording review.
+  candidate refresh: lightweight preflight, receipt-copy check, copied-receipt dry run,
+  send-package reuse check, upload-staging check, and response waiting-room state without starting
+  services or recording review.
 - `make enterprise-review-send-refresh` - regenerate the current ignored `ERG-003`/`ERG-002`
   send artifacts and response landing pad, then run the final pre-send preflight.
 - `make post-rc-decision-gate` - validate the required post-RC decision-record gate before any

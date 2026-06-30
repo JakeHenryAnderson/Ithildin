@@ -90,9 +90,9 @@ make enterprise-review-send-refresh
 ```
 
 `make enterprise-send-quick-check` is a current-artifact confirmation path, not release proof. It
-runs the lightweight preflight, copied-receipt dry run, send-package reuse check, upload-staging
-check, and response waiting-room state without starting services, recording review, normalizing
-responses, or closing enterprise lanes.
+runs the lightweight preflight, receipt-copy check, copied-receipt dry run, send-package reuse
+check, upload-staging check, and response waiting-room state without starting services, recording
+review, normalizing responses, or closing enterprise lanes.
 
 Use `make artifact-freshness-check` before a long gate when you suspect stale packet state. It
 reports whether enterprise send artifacts, the compact v1.0 RC packet, and the captured

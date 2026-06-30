@@ -638,6 +638,7 @@ enterprise-review-send-refresh:
 
 enterprise-send-quick-check:
 	$(MAKE) enterprise-review-send-preflight-lightweight-check
+	$(MAKE) enterprise-review-send-receipt-copy-check
 	$(MAKE) enterprise-review-send-receipt-dry-run
 	$(MAKE) enterprise-review-send-package-check
 	$(MAKE) enterprise-review-upload-staging-check

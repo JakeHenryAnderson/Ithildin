@@ -537,6 +537,9 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "$(MAKE) enterprise-review-send-preflight-lightweight-check" in (
         enterprise_send_quick_body
     )
+    assert "$(MAKE) enterprise-review-send-receipt-copy-check" in (
+        enterprise_send_quick_body
+    )
     assert "$(MAKE) enterprise-review-send-receipt-dry-run" in (
         enterprise_send_quick_body
     )
@@ -914,6 +917,14 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["mission_control_execution_allowed"] is False
     assert status["public_security_product_positioning_allowed"] is False
     assert status["recommended_next_commands"]
+    assert status_now._recommended_next_commands(
+        {"git_dirty": False},
+        {"valid": True, "enterprise_next_action": "send_erg_003_and_erg_002"},
+    ) == [
+        "make enterprise-send-quick-check",
+        "make enterprise-send-now",
+        "make enterprise-review-send-receipt-copy after the human send step",
+    ]
 
 
 def test_agent_workflow_instruction_layer_is_wired() -> None:
