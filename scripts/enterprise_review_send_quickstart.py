@@ -172,6 +172,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             "Attachment manifest",
             "Hash manifest",
             "After responses arrive",
+            "make enterprise-review-send-receipt-validate",
             "RAW_RESPONSE_ERG-003.md",
             "RAW_RESPONSE_ERG-002.md",
             "Final freshness check",
@@ -336,6 +337,7 @@ def _quickstart_payload(
         },
         "post_response_commands": [
             "make enterprise-review-send-receipt-template",
+            "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
             "make enterprise-dual-response-inbox",
             "make enterprise-response-paste-preflight",
             "make enterprise-response-intake-refresh",
