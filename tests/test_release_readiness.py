@@ -28910,6 +28910,10 @@ def test_development_efficiency_status_is_wired() -> None:
     assert report["operator_trial_ready"] is True
     assert isinstance(report["operator_trial_observed"], bool)
     assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["enterprise_send_ready"] is True
+    assert report["enterprise_send_artifact_commits_match_current"] is True
+    assert isinstance(report["enterprise_send_artifact_payloads_clean"], bool)
+    assert report["enterprise_send_artifact_hashes_match_files"] is True
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["runtime_changes_allowed"] is False
@@ -28939,6 +28943,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "make release-check-profile",
         "make technical-mvp-operator-trial-readiness",
         "make enterprise-current-checkpoint",
+        "make enterprise-review-send-preflight",
         "make dev-check",
         "make release-check",
         "make review-candidate",
@@ -28947,6 +28952,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "does not call governed tools",
         "does not approve runtime changes",
         "does not replace release-check",
+        "enterprise send package is fresh for the current commit",
     ]:
         assert phrase in doc
 

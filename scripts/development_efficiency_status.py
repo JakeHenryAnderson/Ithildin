@@ -14,6 +14,7 @@ if __package__ in {None, ""}:
 
 from scripts import (
     enterprise_current_checkpoint,
+    enterprise_review_send_preflight,
     release_check_profile,
     review_docs,
     technical_mvp_operator_trial_readiness,
@@ -31,6 +32,7 @@ REQUIRED_DOC_PHRASES = [
     "make release-check-profile",
     "make technical-mvp-operator-trial-readiness",
     "make enterprise-current-checkpoint",
+    "make enterprise-review-send-preflight",
     "make dev-check",
     "make release-check",
     "make review-candidate",
@@ -69,6 +71,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     profile = release_check_profile.build_report(repo_root)
     technical_mvp = technical_mvp_operator_trial_readiness.build_report(repo_root)
     enterprise = enterprise_current_checkpoint.build_report(repo_root)
+    enterprise_send_preflight = enterprise_review_send_preflight.build_report(repo_root)
 
     failures = []
     for name, report in [
@@ -76,6 +79,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ("release-check-profile", profile),
         ("technical-mvp-operator-trial-readiness", technical_mvp),
         ("enterprise-current-checkpoint", enterprise),
+        ("enterprise-review-send-preflight", enterprise_send_preflight),
     ]:
         if report.get("valid") is not True:
             failures.append(f"{name} is not valid")
@@ -116,6 +120,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "hands_on_trial_required": technical_mvp.get("hands_on_trial_required"),
         "enterprise_next_action": enterprise.get("next_action"),
         "recommended_send_set": enterprise.get("recommended_send_set"),
+        "enterprise_send_ready": enterprise_send_preflight.get("valid"),
+        "enterprise_send_artifact_commits_match_current": enterprise_send_preflight.get(
+            "artifact_commits_match_current"
+        ),
+        "enterprise_send_artifact_payloads_clean": enterprise_send_preflight.get(
+            "artifact_payloads_clean"
+        ),
+        "enterprise_send_artifact_hashes_match_files": enterprise_send_preflight.get(
+            "artifact_hashes_match_files"
+        ),
         "response_present_count": enterprise.get("response_present_count"),
         "closure_ready_count": enterprise.get("closure_ready_count"),
         "recommended_handoff_commands": [
@@ -160,6 +174,14 @@ def render_report(report: dict[str, Any]) -> str:
         f"operator_trial_ready: {str(report['operator_trial_ready']).lower()}",
         f"operator_trial_observed: {str(report['operator_trial_observed']).lower()}",
         f"enterprise_next_action: {report['enterprise_next_action']}",
+        f"enterprise_send_ready: {str(report['enterprise_send_ready']).lower()}",
+        "enterprise_send_artifacts:",
+        "- commits_match_current: "
+        f"{str(report['enterprise_send_artifact_commits_match_current']).lower()}",
+        "- payloads_clean: "
+        f"{str(report['enterprise_send_artifact_payloads_clean']).lower()}",
+        "- hashes_match_files: "
+        f"{str(report['enterprise_send_artifact_hashes_match_files']).lower()}",
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         "recommended_now_commands:",

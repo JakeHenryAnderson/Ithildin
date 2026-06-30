@@ -17,6 +17,7 @@ The command consolidates:
 - `make release-check-profile` for the static shape of the full release gate.
 - `make technical-mvp-operator-trial-readiness` for the local-preview operator-trial state.
 - `make enterprise-current-checkpoint` for the current enterprise handoff action.
+- `make enterprise-review-send-preflight` for current ERG-003/ERG-002 handoff artifact freshness.
 
 ## What It Answers
 
@@ -30,6 +31,8 @@ The report is intentionally small and operator-facing. It records:
 - release-check target counts and heaviest target categories;
 - technical MVP operator-trial readiness;
 - whether the latest local operator trial has been observed from `DEMO_FLOW_RESULT.md`;
+- whether the current enterprise send package is fresh for the current commit, generated from a
+  clean tree, and hash-consistent;
 - enterprise response/closure counts and the current ERG-003/ERG-002 send action;
 - key handoff artifact paths.
 
