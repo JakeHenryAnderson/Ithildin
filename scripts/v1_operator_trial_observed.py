@@ -69,11 +69,14 @@ def main() -> int:
     return 0 if report["valid"] else 1
 
 
-def build_observed_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
+def build_observed_record(
+    repo_root: Path, output_dir: Path, *, write_artifacts: bool = True
+) -> dict[str, Any]:
     output_dir = output_dir.resolve()
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if write_artifacts:
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     demo_check = demo_flow_result_check.build_report(DEMO_RESULT)
     parsed_result = _parse_demo_result(DEMO_RESULT) if DEMO_RESULT.exists() else {}
@@ -107,12 +110,13 @@ def build_observed_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         "failures": failures,
     }
     report["valid"] = not report["failures"]
-    (output_dir / "V1_OPERATOR_TRIAL_OBSERVED.md").write_text(
-        render_observed_markdown(report), encoding="utf-8"
-    )
-    (output_dir / "v1-operator-trial-observed.json").write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    if write_artifacts:
+        (output_dir / "V1_OPERATOR_TRIAL_OBSERVED.md").write_text(
+            render_observed_markdown(report), encoding="utf-8"
+        )
+        (output_dir / "v1-operator-trial-observed.json").write_text(
+            json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
     return report
 
 

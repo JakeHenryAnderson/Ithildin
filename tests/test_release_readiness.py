@@ -28792,6 +28792,32 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
         assert phrase in doc
 
 
+def test_observed_operator_trial_report_can_be_built_without_artifacts(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "operator-trial-observed"
+
+    report = v1_operator_trial_observed.build_observed_record(
+        Path.cwd(), output_dir, write_artifacts=False
+    )
+
+    assert report["schema_version"] == "1"
+    assert output_dir.exists() is False
+
+
+def test_operator_trial_status_reports_can_run_concurrently() -> None:
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(technical_mvp_operator_trial_readiness.build_report, Path.cwd()),
+            executor.submit(development_efficiency_status.build_report, Path.cwd()),
+        ]
+
+    reports = [future.result() for future in futures]
+
+    assert reports[0]["valid"] is True
+    assert reports[1]["valid"] is True
+
+
 def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
     report = technical_mvp_operator_trial_readiness.build_report(Path.cwd())
     doc = Path("docs/codex/technical-mvp-operator-trial-readiness.md").read_text(

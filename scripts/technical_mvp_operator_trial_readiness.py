@@ -132,6 +132,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "v1_operator_trial_observed": v1_operator_trial_observed.build_observed_record(
             repo_root,
             repo_root / "var/review-packets/v1.0/operator-trial-observed",
+            write_artifacts=False,
         ),
         "v1_rc_readiness": v1_rc_readiness_check.build_report(repo_root),
         "workbench_readiness": workbench_readiness.build_report(repo_root),
