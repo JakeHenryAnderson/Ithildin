@@ -23,6 +23,10 @@ SEND_MANIFEST_JSON = Path(
 )
 UPLOAD_STAGING_DIR = "var/review-packets/v3/enterprise-review-upload-staging"
 DUAL_RESPONSE_INBOX_DIR = "var/review-runs/enterprise-dual-response-inbox"
+SEND_RECEIPT_COPY = (
+    "var/review-runs/enterprise-review-send-receipts/"
+    "enterprise-review-send-receipt-copy.json"
+)
 
 
 def main() -> int:
@@ -167,6 +171,7 @@ def _handoff_paths(repo_root: Path) -> dict[str, str]:
         "dual_review_outbox": data.get("outbox_dir"),
         "submission_prompt": data.get("submission_prompt_dir"),
         "send_receipt_template": data.get("receipt_template_dir"),
+        "send_receipt_copy": SEND_RECEIPT_COPY,
         "upload_staging": UPLOAD_STAGING_DIR,
         "dual_response_inbox": DUAL_RESPONSE_INBOX_DIR,
     }
