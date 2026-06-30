@@ -4523,6 +4523,10 @@ def test_enterprise_review_send_receipt_validation_is_wired(tmp_path: Path) -> N
     assert report["all_receipts_sent"] is False
     assert report["operator_fields_filled"] is False
     assert report["ready_for_response_intake"] is False
+    assert (
+        report["next_operator_action"]
+        == "copy_template_fill_send_receipt_then_rerun_validation"
+    )
     assert report["records_external_review"] is False
     assert report["writes_response_files"] is False
     assert report["closes_erg_003"] is False
@@ -4532,9 +4536,14 @@ def test_enterprise_review_send_receipt_validation_is_wired(tmp_path: Path) -> N
     assert filled_report["all_receipts_sent"] is True
     assert filled_report["operator_fields_filled"] is True
     assert filled_report["ready_for_response_intake"] is True
+    assert (
+        filled_report["next_operator_action"]
+        == "wait_for_responses_then_run_enterprise_response_paste_preflight"
+    )
     assert filled_report["new_power_classes_allowed"] is False
     assert missing_field_report["valid"] is False
     assert missing_field_report["ready_for_response_intake"] is False
+    assert missing_field_report["next_operator_action"] == "fix_receipt_validation_failures"
     assert "ERG-003 sent receipt needs thread_or_message_url or message_id" in (
         missing_field_report["failures"]
     )
@@ -4545,10 +4554,20 @@ def test_enterprise_review_send_receipt_validation_is_wired(tmp_path: Path) -> N
         "does not normalize responses",
         "does not write response files",
         "does not close lanes",
+        "next_operator_action: copy_template_fill_send_receipt_then_rerun_validation",
+        "next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight",
     ]:
         assert phrase in doc
     assert "make enterprise-review-send-receipt-validate" in template_doc
+    assert (
+        "next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight"
+        in template_doc
+    )
     assert "make enterprise-review-send-receipt-validate" in quickstart
+    assert (
+        "next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight"
+        in quickstart
+    )
     assert "make enterprise-review-send-receipt-validate" in readme
     assert "enterprise-review-send-receipt-validate:" in makefile
     assert (

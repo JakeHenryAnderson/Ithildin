@@ -33,6 +33,24 @@ A copied receipt becomes ready for response intake only when all of these are tr
 - the tool count is `24`, selected capability is `not selected`, and blocked-boundary flags remain
   false.
 
+When the default generated template is still unsent, the validator should report:
+
+```text
+ready_for_response_intake: false
+next_operator_action: copy_template_fill_send_receipt_then_rerun_validation
+```
+
+When a copied receipt has been filled after the human send step, the validator should report:
+
+```text
+ready_for_response_intake: true
+next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight
+```
+
+This means only that the send evidence is ready for the response-intake path. It does not mean a
+reviewer response exists yet. Wait for real reviewer responses, paste them into the ignored
+lane-local raw-response files, and then run the response paste preflight.
+
 ## Boundary
 
 This validator does not record external review, normalize responses, write response files, mutate

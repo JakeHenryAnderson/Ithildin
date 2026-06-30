@@ -81,6 +81,10 @@ def build_report(repo_root: Path, receipt_path: Path) -> dict[str, Any]:
     all_sent = bool(receipts) and len(sent_receipts) == len(receipts)
     filled = _operator_fields_filled(payload, receipts)
 
+    ready_for_response_intake = bool(
+        not failures and payload.get("sent") is True and all_sent and filled
+    )
+
     return {
         "schema_version": "1",
         "valid": not failures,
@@ -93,8 +97,13 @@ def build_report(repo_root: Path, receipt_path: Path) -> dict[str, Any]:
         "sent": payload.get("sent") is True,
         "all_receipts_sent": all_sent,
         "operator_fields_filled": filled,
-        "ready_for_response_intake": bool(
-            not failures and payload.get("sent") is True and all_sent and filled
+        "ready_for_response_intake": ready_for_response_intake,
+        "next_operator_action": _next_operator_action(
+            failures=failures,
+            sent=payload.get("sent") is True,
+            all_sent=all_sent,
+            filled=filled,
+            ready_for_response_intake=ready_for_response_intake,
         ),
         **BOUNDARY_FLAGS,
     }
@@ -113,6 +122,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"all_receipts_sent: {str(report['all_receipts_sent']).lower()}",
         f"operator_fields_filled: {str(report['operator_fields_filled']).lower()}",
         f"ready_for_response_intake: {str(report['ready_for_response_intake']).lower()}",
+        f"next_operator_action: {report['next_operator_action']}",
     ]
     lines.extend(f"{key}: {str(value).lower()}" for key, value in BOUNDARY_FLAGS.items())
     if report["failures"]:
@@ -218,6 +228,23 @@ def _operator_fields_filled(payload: dict[str, Any], receipts: list[Any]) -> boo
     return True
 
 
+def _next_operator_action(
+    *,
+    failures: list[str],
+    sent: bool,
+    all_sent: bool,
+    filled: bool,
+    ready_for_response_intake: bool,
+) -> str:
+    if failures:
+        return "fix_receipt_validation_failures"
+    if ready_for_response_intake:
+        return "wait_for_responses_then_run_enterprise_response_paste_preflight"
+    if not sent or not all_sent or not filled:
+        return "copy_template_fill_send_receipt_then_rerun_validation"
+    return "inspect_receipt_state"
+
+
 def _validate_repo_wiring(repo_root: Path, failures: list[str]) -> None:
     makefile = _read(repo_root / "Makefile")
     readme = _read(repo_root / "README.md")
@@ -227,6 +254,7 @@ def _validate_repo_wiring(repo_root: Path, failures: list[str]) -> None:
     receipt_template_doc = _read(
         repo_root / "docs/codex/enterprise-review-send-receipt-template.md"
     )
+    receipt_validation_doc = _read(repo_root / DOC_REL)
     response_quickstart = _read(repo_root / "docs/codex/enterprise-response-intake-quickstart.md")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
@@ -253,6 +281,10 @@ def _validate_repo_wiring(repo_root: Path, failures: list[str]) -> None:
         "Response quickstart pointer": (
             "enterprise-review-send-receipt-validate",
             response_quickstart,
+        ),
+        "Receipt validation next action doc": (
+            "next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight",
+            receipt_validation_doc + receipt_template_doc + response_quickstart,
         ),
     }
     if not release_check_wired:

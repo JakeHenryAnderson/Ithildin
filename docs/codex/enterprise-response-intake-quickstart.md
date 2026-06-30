@@ -33,7 +33,10 @@ pasting responses:
 make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 ```
 
-The generated unsent template should validate but remain `ready_for_response_intake: false`.
+The generated unsent template should validate but remain `ready_for_response_intake: false`. A
+copied receipt filled after the human send step should report
+`next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight` before you
+paste raw reviewer responses.
 
 ## Before Pasting A Response
 
