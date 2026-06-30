@@ -21,6 +21,8 @@ SEND_MANIFEST_JSON = Path(
     "var/review-packets/v3/enterprise-review-send-manifest/"
     "enterprise-review-send-manifest.json"
 )
+UPLOAD_STAGING_DIR = "var/review-packets/v3/enterprise-review-upload-staging"
+DUAL_RESPONSE_INBOX_DIR = "var/review-runs/enterprise-dual-response-inbox"
 
 
 def main() -> int:
@@ -60,6 +62,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "artifact_freshness_valid": freshness.get("valid"),
         "artifact_refresh_commands": freshness.get("refresh_commands", []),
         "recommended_next_commands": next_commands,
+        "handoff_paths": _handoff_paths(repo_root),
         "release_or_handoff_required": validation.get("release_or_handoff_required"),
         "runtime_changes_allowed": False,
         "new_power_classes_allowed": False,
@@ -89,6 +92,10 @@ def render_report(report: dict[str, Any]) -> str:
         "recommended_next_commands:",
     ]
     lines.extend(f"- {command}" for command in report["recommended_next_commands"])
+    if report["handoff_paths"]:
+        lines.append("handoff_paths:")
+        for label, path in report["handoff_paths"].items():
+            lines.append(f"- {label}: {path}")
     if report["release_slice_commands"]:
         lines.append("release_slice_commands:")
         lines.extend(f"- {command}" for command in report["release_slice_commands"])
@@ -149,6 +156,21 @@ def _send_manifest_count(repo_root: Path, key: str) -> int:
     data = json.loads(path.read_text(encoding="utf-8"))
     value = data.get(key)
     return value if isinstance(value, int) else 0
+
+
+def _handoff_paths(repo_root: Path) -> dict[str, str]:
+    path = repo_root / SEND_MANIFEST_JSON
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    paths = {
+        "dual_review_outbox": data.get("outbox_dir"),
+        "submission_prompt": data.get("submission_prompt_dir"),
+        "send_receipt_template": data.get("receipt_template_dir"),
+        "upload_staging": UPLOAD_STAGING_DIR,
+        "dual_response_inbox": DUAL_RESPONSE_INBOX_DIR,
+    }
+    return {key: value for key, value in paths.items() if isinstance(value, str) and value}
 
 
 if __name__ == "__main__":

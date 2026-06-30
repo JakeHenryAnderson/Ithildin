@@ -917,6 +917,13 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["mission_control_execution_allowed"] is False
     assert status["public_security_product_positioning_allowed"] is False
     assert status["recommended_next_commands"]
+    assert status["handoff_paths"] == {
+        "dual_review_outbox": "var/review-packets/v3/enterprise-dual-review-outbox",
+        "submission_prompt": "var/review-packets/v3/enterprise-review-submission-prompt",
+        "send_receipt_template": "var/review-packets/v3/enterprise-review-send-receipt-template",
+        "upload_staging": "var/review-packets/v3/enterprise-review-upload-staging",
+        "dual_response_inbox": "var/review-runs/enterprise-dual-response-inbox",
+    }
     assert status_now._recommended_next_commands(
         {"git_dirty": False},
         {"valid": True, "enterprise_next_action": "send_erg_003_and_erg_002"},
