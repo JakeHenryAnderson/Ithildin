@@ -40,8 +40,6 @@ make enterprise-review-send-manifest
 make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
-make enterprise-review-send-receipt-copy
-make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
 make enterprise-review-send-package
 make enterprise-review-send-session-record
 make enterprise-dual-response-inbox
@@ -49,6 +47,16 @@ make enterprise-response-waiting-room
 make enterprise-review-handoff-drill
 make enterprise-send-quick-check
 ```
+
+After the human send step, preserve the local send receipt:
+
+```sh
+make enterprise-review-send-receipt-copy
+make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+```
+
+Do not fill the copied receipt before sending because it records the actual reviewer thread,
+reviewer label, and response path for the send that already happened.
 
 After responses arrive, do not edit status docs directly. For the current `ERG-003` and `ERG-002`
 send set, paste the raw responses under the ignored dual-response inbox at

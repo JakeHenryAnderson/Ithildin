@@ -32,7 +32,7 @@ The preflight is designed to run after these artifacts have been generated:
 - `make enterprise-review-send-quickstart`
 - `make enterprise-review-submission-prompt`
 - `make enterprise-review-send-receipt-template`
-- `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`
+- `make enterprise-review-send-receipt-validate`
 - `make enterprise-review-send-package`
 - `make enterprise-review-upload-staging`
 - `make enterprise-review-send-session-record`
@@ -76,7 +76,7 @@ make enterprise-review-send-checklist
 make enterprise-review-send-quickstart
 make enterprise-review-submission-prompt
 make enterprise-review-send-receipt-template
-make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+make enterprise-review-send-receipt-validate
 make enterprise-review-send-package
 make enterprise-review-upload-staging
 make enterprise-review-send-session-record
@@ -94,6 +94,17 @@ make enterprise-review-send-refresh
 
 If the preflight fails because response evidence is present, stop the send flow
 and switch to the response-intake flow instead.
+
+After the human send step, create and fill the copied operator receipt, then validate that copied
+receipt before response intake:
+
+```sh
+make enterprise-review-send-receipt-copy
+make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+```
+
+Do not fill the copied receipt before sending; it records the actual reviewer thread, reviewer
+label, and send evidence.
 
 ## Boundary
 
