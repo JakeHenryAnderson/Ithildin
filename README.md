@@ -544,6 +544,9 @@ checked with `make control-mapping-readiness`.
   `ERG-002` attachments into upload-friendly batch folders, including the two-batch split for
   `ERG-002`, reusing the current generated send package when its commit/hash evidence matches,
   without recording review or closing lanes.
+- `make enterprise-send-now` - print the current send-ready review lanes, prompt files, upload
+  batch folders, raw-response placeholders, and post-response commands from existing generated
+  artifacts without recording review or closing lanes.
 - `make enterprise-review-send-session-record` - generate an ignored non-authoritative
   send-session scaffold tying the current package hashes, lane prompts, raw-response paths, and
   operator fill-in fields together without recording review or closing lanes.

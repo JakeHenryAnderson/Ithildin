@@ -91,6 +91,7 @@ from scripts import (
     enterprise_review_submission_prompt,
     enterprise_review_upload_staging,
     enterprise_sandbox_control_plane_readiness_check,
+    enterprise_send_now,
     enterprise_status_export,
     enterprise_transition_map,
     evidence_confusion_gate,
@@ -579,6 +580,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-slice" in readme
     assert "make packet-check-recursion-guard" in readme
     assert "make enterprise-send-quick-check" in readme
+    assert "make enterprise-send-now" in readme
     assert "slow_packet:" in pyproject
     assert "pytest_collection_modifyitems" in conftest
     assert "SLOW_PACKET_NAME_MARKERS" in conftest
@@ -663,6 +665,40 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert all(
         rule["forbidden_import_count"] == 0 for rule in recursion_report["rules"]
     )
+
+
+def test_enterprise_send_now_reports_send_ready_batches() -> None:
+    report = enterprise_send_now.build_report(Path.cwd())
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    if report["valid"] is not True:
+        assert set(report["failures"]).issubset(
+            {
+                "handoff artifacts are stale; run make review-candidate",
+                "upload staging was not generated from a clean tree",
+                "upload staging commit does not match current HEAD",
+                "response inbox commit does not match current HEAD",
+            }
+        )
+    assert report["tool_count"] == 24
+    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["lane_count"] == 2
+    assert report["batch_count"] == 3
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "enterprise-send-now:" in makefile
+    assert "make enterprise-send-now" in readme
+    assert any(lane["gap"] == "ERG-003" for lane in report["lanes"])
+    assert any(lane["gap"] == "ERG-002" for lane in report["lanes"])
 
 
 def test_validation_decision_reports_development_and_handoff_modes() -> None:

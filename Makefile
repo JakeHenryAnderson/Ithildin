@@ -529,6 +529,9 @@ enterprise-review-upload-staging:
 enterprise-review-upload-staging-check:
 	uv run python scripts/enterprise_review_upload_staging.py --check --prefer-existing-package
 
+enterprise-send-now:
+	uv run python scripts/enterprise_send_now.py
+
 enterprise-review-send-session-record:
 	uv run python scripts/enterprise_review_send_session_record.py
 
@@ -633,7 +636,7 @@ enterprise-send-quick-check:
 	$(MAKE) enterprise-review-upload-staging-check
 	$(MAKE) enterprise-response-waiting-room
 
-.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-send-quickstart enterprise-review-send-quickstart-check enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-send-receipt-template enterprise-review-send-receipt-template-check enterprise-review-send-receipt-validate enterprise-review-send-receipt-dry-run enterprise-review-send-package enterprise-review-send-package-check enterprise-review-upload-staging enterprise-review-upload-staging-check enterprise-review-send-session-record enterprise-review-send-session-record-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-waiting-room enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol enterprise-response-application-rehearsal enterprise-response-intake-quickstart enterprise-response-paste-preflight enterprise-response-intake-refresh enterprise-handoff-consistency-check enterprise-review-send-preflight enterprise-review-send-preflight-lightweight-check enterprise-send-quick-check enterprise-review-send-refresh enterprise-north-star-roadmap enterprise-operator-next-action
+.PHONY: enterprise-dual-review-outbox enterprise-dual-review-outbox-check enterprise-review-send-manifest enterprise-review-send-manifest-check enterprise-review-send-checklist enterprise-review-send-quickstart enterprise-review-send-quickstart-check enterprise-review-submission-prompt enterprise-review-submission-prompt-check enterprise-review-send-receipt-template enterprise-review-send-receipt-template-check enterprise-review-send-receipt-validate enterprise-review-send-receipt-dry-run enterprise-review-send-package enterprise-review-send-package-check enterprise-review-upload-staging enterprise-review-upload-staging-check enterprise-send-now enterprise-review-send-session-record enterprise-review-send-session-record-check enterprise-review-handoff-drill enterprise-review-handoff-drill-check enterprise-dual-response-inbox enterprise-dual-response-inbox-check enterprise-response-waiting-room enterprise-response-normalization-coverage enterprise-response-inbox enterprise-response-inbox-check enterprise-response-intake-drill enterprise-response-command-matrix enterprise-response-application-protocol enterprise-response-application-rehearsal enterprise-response-intake-quickstart enterprise-response-paste-preflight enterprise-response-intake-refresh enterprise-handoff-consistency-check enterprise-review-send-preflight enterprise-review-send-preflight-lightweight-check enterprise-send-quick-check enterprise-review-send-refresh enterprise-north-star-roadmap enterprise-operator-next-action
 
 sandbox-vm-live-poc-decision-packet:
 	uv run python scripts/sandbox_vm_live_poc_decision_packet.py
