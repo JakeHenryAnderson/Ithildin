@@ -36,8 +36,8 @@ REQUIRED_PHRASES = [
     "Runtime changes: blocked",
     "Public/security-product positioning: blocked",
     "Local governed tool gateway | `92-96%`",
-    "v1.0 local-preview RC | `80-88%`",
-    "Operator workbench and demo path | `70-80%`",
+    "v1.0 local-preview RC | `84-90%`",
+    "Operator workbench and demo path | `78-86%`",
     "Mission Control display/import path | `50-65%`",
     "Sandbox/VM governed agent workflow | `45-60%`",
     "Enterprise control-plane architecture | `35-50%`",
@@ -138,6 +138,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("enterprise responses are present; use response application flow")
     if response_status.get("closure_ready_count") != 0:
         failures.append("enterprise closure-ready lanes exist; use lane-specific closure flow")
+    if progress.get("progress_bands", {}).get("v1_local_preview_rc") != "84-90%":
+        failures.append("v1 local-preview RC progress band drifted")
+    if progress.get("progress_bands", {}).get("operator_workbench_demo") != "78-86%":
+        failures.append("operator workbench progress band drifted")
     if progress.get("progress_bands", {}).get("enterprise_security_product_readiness") != "35-50%":
         failures.append("enterprise progress band drifted")
     if gap_matrix.get("gap_count") != 10:
@@ -208,8 +212,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "enterprise_gap_count": gap_matrix.get("gap_count"),
         "progress_bands": {
             "local_governed_tool_gateway": "92-96%",
-            "v1_local_preview_rc": "80-88%",
-            "operator_workbench_demo": "70-80%",
+            "v1_local_preview_rc": "84-90%",
+            "operator_workbench_demo": "78-86%",
             "mission_control_display_import": "50-65%",
             "sandbox_vm_governed_workflow": "45-60%",
             "enterprise_control_plane_architecture": "35-50%",

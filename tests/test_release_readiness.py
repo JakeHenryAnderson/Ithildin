@@ -2110,7 +2110,8 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["compliance_automation_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
     assert report["new_power_classes_allowed"] is False
-    assert report["progress_bands"]["v1_local_preview_rc"] == "80-88%"
+    assert report["progress_bands"]["v1_local_preview_rc"] == "84-90%"
+    assert report["progress_bands"]["operator_workbench_demo"] == "78-86%"
     assert (
         report["progress_bands"]["enterprise_control_plane_architecture"]
         == "35-50%"
@@ -2121,7 +2122,10 @@ def test_enterprise_progress_model_is_wired() -> None:
         "Current selected capability: `not selected`",
         "Recommended next enterprise review: `ERG-003`",
         "Local governed tool gateway | `92-96%`",
-        "v1.0 local-preview RC | `80-88%`",
+        "v1.0 local-preview RC | `84-90%`",
+        "Operator workbench and demo path | `78-86%`",
+        "Technical MVP state: `operator_trial_observed`",
+        "Enterprise send package ready: `true`",
         "Enterprise control-plane architecture | `35-50%`",
         "Checkpoint C: Sandbox/VM Static Preflight Disposition",
         "make enterprise-dual-response-inbox",

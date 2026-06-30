@@ -13,6 +13,8 @@ compliance claim, or permission to add runtime powers.
 - Current selected capability: `not selected`.
 - Recommended next enterprise review: `ERG-003`.
 - Recommended send set: `ERG-003` then `ERG-002`.
+- Technical MVP state: `operator_trial_observed`.
+- Enterprise send package ready: `true`.
 - Enterprise response evidence present: `0`.
 - Enterprise closure-ready lanes: `0`.
 - Capability expansion: blocked.
@@ -24,8 +26,8 @@ compliance claim, or permission to add runtime powers.
 | Checkpoint | Approximate band | Current status | What moves it |
 | --- | ---: | --- | --- |
 | Local governed tool gateway | `92-96%` | Mature for local preview. | Keep `make release-check`, policy parity, tool-surface invariants, audit/evidence checks, and review packets green. |
-| v1.0 local-preview RC | `80-88%` | RC handoff machinery is ready to regenerate. | Same-commit `make release-check`, `make review-candidate`, packet redaction `findings: 0`, and final local handoff evidence. |
-| Operator workbench and demo path | `70-80%` | Useful local review-console and demo evidence exist. | A cleaner guided demo, operator trial records, and more real user feedback without new runtime powers. |
+| v1.0 local-preview RC | `84-90%` | RC handoff machinery is ready to regenerate, the operator trial is observed, and the current enterprise send package is fresh. | Same-commit `make release-check`, `make review-candidate`, packet redaction `findings: 0`, and final local handoff evidence. |
+| Operator workbench and demo path | `78-86%` | Useful local review-console, Agent Run evidence, demo packets, and observed demo-flow evidence exist. | A cleaner guided demo and more real user feedback without new runtime powers. |
 | Mission Control display/import path | `50-65%` | Design/display lane is packaged but not closed. | Favorable `ERG-002` disposition and a later Mission Control-side display-only implementation plan. |
 | Sandbox/VM governed agent workflow | `45-60%` | Static profile/preflight evidence exists; live VM/container work remains blocked. | Favorable `ERG-003` disposition before any live preflight or local-model/sandbox planning advances. |
 | Enterprise control-plane architecture | `35-50%` | Major lanes are explicit but blocked or planning-only. | Separate decisions for identity/storage, SIEM-shaped adapters, compliance mapping support, trusted-host promotion, and public claim wording. |

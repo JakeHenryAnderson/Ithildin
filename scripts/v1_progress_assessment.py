@@ -13,8 +13,10 @@ if __package__ in {None, ""}:
 
 from scripts import (
     enterprise_readiness_gap_matrix_check,
+    enterprise_review_send_preflight,
     next_capability_readiness,
     review_docs,
+    v1_operator_trial_observed,
     v1_rc_status_check,
 )
 
@@ -32,12 +34,14 @@ REQUIRED_PHRASES = [
     "Enterprise readiness gap count: `10`",
     "Recommended next enterprise review: `ERG-003`",
     "Core governed local tool gateway | `92-96%`",
-    "v1.0 local-preview RC foundation | `80-88%`",
-    "Operator workbench and local demo experience | `70-80%`",
+    "v1.0 local-preview RC foundation | `84-90%`",
+    "Operator workbench and local demo experience | `78-86%`",
     "Mission Control plus Ithildin integration path | `50-65%`",
     "Sandbox/VM governed agent workflow | `45-60%`",
     "Enterprise/security-product readiness | `35-50%`",
     "Full long-term governed-agent workbench vision | `55-65%`",
+    "Technical MVP state: `operator_trial_observed`",
+    "Enterprise send package ready: `true`",
     "same-commit `make release-check` and `make review-candidate`",
     "favorable external/source disposition for `ERG-003`",
     "Mission Control remains a display/import layer",
@@ -87,10 +91,24 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     status = v1_rc_status_check.build_report(repo_root)
     gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
+    observed_trial = v1_operator_trial_observed.build_observed_record(
+        repo_root,
+        repo_root / "var/review-packets/v1.0/operator-trial-observed",
+        write_artifacts=False,
+    )
+    enterprise_send = enterprise_review_send_preflight.build_report(repo_root)
 
     failures.extend(f"v1-rc-status: {failure}" for failure in status["failures"])
     failures.extend(f"enterprise-gap-matrix: {failure}" for failure in gap_matrix["failures"])
     failures.extend(f"next-capability: {failure}" for failure in capability["failures"])
+    failures.extend(
+        f"v1-operator-trial-observed: {failure}"
+        for failure in observed_trial["failures"]
+    )
+    failures.extend(
+        f"enterprise-review-send-preflight: {failure}"
+        for failure in enterprise_send["failures"]
+    )
 
     doc_rel = DOC_PATH.relative_to(ROOT).as_posix()
     doc_path = repo_root / doc_rel
@@ -114,6 +132,21 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("runtime changes are allowed")
     if status.get("public_security_product_positioning_allowed"):
         failures.append("public/security-product positioning is allowed")
+    operator_trial_observed = (
+        observed_trial.get("valid") is True
+        and observed_trial.get("status") == "observed"
+        and observed_trial.get("result_present") is True
+        and observed_trial.get("observed", {}).get("patch_apply_status") == "completed"
+        and observed_trial.get("observed", {}).get("audit_verification_valid") == "true"
+    )
+    if not operator_trial_observed:
+        failures.append("technical MVP state is not operator_trial_observed")
+    if enterprise_send.get("valid") is not True:
+        failures.append("enterprise send preflight is not valid")
+    if enterprise_send.get("artifact_commits_match_current") is not True:
+        failures.append("enterprise send artifacts do not match the current commit")
+    if enterprise_send.get("artifact_hashes_match_files") is not True:
+        failures.append("enterprise send artifact hashes do not match files")
 
     if not doc_path.exists():
         failures.append("v1.0 progress assessment doc is missing")
@@ -158,6 +191,22 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": status.get("tool_count"),
         "latest_implemented_tool": status.get("latest_implemented_tool"),
         "selected_capability": capability.get("next_candidate"),
+        "technical_mvp_state": (
+            "operator_trial_observed"
+            if operator_trial_observed
+            else "ready_for_operator_trial"
+        ),
+        "operator_trial_observed": operator_trial_observed,
+        "enterprise_send_ready": enterprise_send.get("valid"),
+        "enterprise_send_artifact_commits_match_current": enterprise_send.get(
+            "artifact_commits_match_current"
+        ),
+        "enterprise_send_artifact_payloads_clean": enterprise_send.get(
+            "artifact_payloads_clean"
+        ),
+        "enterprise_send_artifact_hashes_match_files": enterprise_send.get(
+            "artifact_hashes_match_files"
+        ),
         "enterprise_gap_count": gap_matrix.get("gap_count"),
         "recommended_next_enterprise_review": "ERG-003",
         "capability_expansion_allowed": False,
@@ -165,8 +214,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "public_security_product_positioning_allowed": False,
         "progress_bands": {
             "core_local_gateway": "92-96%",
-            "v1_local_preview_rc": "80-88%",
-            "operator_workbench_demo": "70-80%",
+            "v1_local_preview_rc": "84-90%",
+            "operator_workbench_demo": "78-86%",
             "mission_control_integration": "50-65%",
             "sandbox_vm_governed_workflow": "45-60%",
             "enterprise_security_product_readiness": "35-50%",
@@ -183,6 +232,16 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report.get('tool_count', 'unknown')}",
         f"latest_implemented_tool: {report.get('latest_implemented_tool', 'unknown')}",
         f"selected_capability: {report.get('selected_capability', 'unknown')}",
+        f"technical_mvp_state: {report.get('technical_mvp_state', 'unknown')}",
+        f"operator_trial_observed: {str(report['operator_trial_observed']).lower()}",
+        f"enterprise_send_ready: {str(report['enterprise_send_ready']).lower()}",
+        "enterprise_send_artifacts:",
+        "- commits_match_current: "
+        f"{str(report['enterprise_send_artifact_commits_match_current']).lower()}",
+        "- payloads_clean: "
+        f"{str(report['enterprise_send_artifact_payloads_clean']).lower()}",
+        "- hashes_match_files: "
+        f"{str(report['enterprise_send_artifact_hashes_match_files']).lower()}",
         f"enterprise_gap_count: {report.get('enterprise_gap_count', 'unknown')}",
         f"recommended_next_enterprise_review: {report['recommended_next_enterprise_review']}",
         "capability_expansion_allowed: "
