@@ -36,6 +36,7 @@ With no real enterprise reviewer responses present, the next allowed operator ac
 
    ```sh
    make enterprise-review-send-refresh
+   make enterprise-send-quick-check
    ```
 
 3. Send only the current recommended enterprise packets:

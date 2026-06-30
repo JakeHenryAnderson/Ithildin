@@ -31,6 +31,7 @@ SEND_COMMANDS = [
     "make release-check",
     "make review-candidate",
     "make enterprise-review-send-refresh",
+    "make enterprise-send-quick-check",
 ]
 
 RESPONSE_COMMANDS = [
@@ -94,6 +95,7 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-operator-next-action",
     "With no real enterprise reviewer responses present",
     "make enterprise-review-send-refresh",
+    "make enterprise-send-quick-check",
     "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
     "handoff_artifacts",
     "`ERG-003`: static sandbox/VM preflight disposition",

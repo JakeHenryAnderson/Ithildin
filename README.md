@@ -1199,9 +1199,9 @@ and enterprise architecture lanes without approving runtime powers.
 The enterprise operator next-action summary is
 [docs/codex/enterprise-operator-next-action.md](docs/codex/enterprise-operator-next-action.md),
 checked with `make enterprise-operator-next-action`; it reports the current allowed operator step
-from the checked enterprise state, pointing to `make enterprise-review-send-refresh` or
-`make enterprise-response-intake-refresh` as appropriate, without recording review, normalizing
-responses, closing lanes, or approving runtime powers.
+from the checked enterprise state, pointing to `make enterprise-review-send-refresh`,
+`make enterprise-send-quick-check`, or `make enterprise-response-intake-refresh` as appropriate,
+without recording review, normalizing responses, closing lanes, or approving runtime powers.
 The enterprise external-review queue is
 [docs/codex/enterprise-external-review-queue.md](docs/codex/enterprise-external-review-queue.md),
 checked with `make enterprise-external-review-queue-check`; it orders the post-RC review lanes,
@@ -1376,7 +1376,8 @@ checked with `make enterprise-review-send-preflight`; it gives the operator one 
 status across the current send artifacts, response landing pad, handoff drill, response state, and
 handoff consistency gate without sending packets, recording review, or closing either lane. Use
 `make enterprise-review-send-refresh` to regenerate the ignored send artifacts and run that
-preflight in one command.
+preflight in one command, then use `make enterprise-send-quick-check` for a cheap current-send
+confirmation before handoff.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

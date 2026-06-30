@@ -2024,6 +2024,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make release-check",
         "make review-candidate",
         "make enterprise-review-send-refresh",
+        "make enterprise-send-quick-check",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
@@ -2067,6 +2068,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "`ERG-002`: Mission Control display/import planning review",
         "make enterprise-dual-review-outbox",
         "make enterprise-review-send-manifest",
+        "make enterprise-send-quick-check",
         "make enterprise-review-submission-prompt",
         "make enterprise-response-status-board",
         "What This Checkpoint Does Not Approve",
@@ -5396,6 +5398,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make release-check",
         "make review-candidate",
         "make enterprise-review-send-refresh",
+        "make enterprise-send-quick-check",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
@@ -5425,6 +5428,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-operator-next-action",
         "With no real enterprise reviewer responses present",
         "make enterprise-review-send-refresh",
+        "make enterprise-send-quick-check",
         "handoff_artifacts",
         "var/review-packets/v3/enterprise-review-send-manifest",
         "`ERG-003`: static sandbox/VM preflight disposition",

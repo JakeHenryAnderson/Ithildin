@@ -38,6 +38,7 @@ REQUIRED_PHRASES = [
     "`ERG-002`: Mission Control display/import planning review",
     "make enterprise-dual-review-outbox",
     "make enterprise-review-send-manifest",
+    "make enterprise-send-quick-check",
     "make enterprise-review-submission-prompt",
     "make enterprise-review-send-receipt-template",
     "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",

@@ -46,6 +46,7 @@ make enterprise-review-send-session-record
 make enterprise-dual-response-inbox
 make enterprise-response-waiting-room
 make enterprise-review-handoff-drill
+make enterprise-send-quick-check
 ```
 
 After responses arrive, do not edit status docs directly. For the current `ERG-003` and `ERG-002`
