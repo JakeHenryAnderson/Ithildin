@@ -529,7 +529,8 @@ checked with `make control-mapping-readiness`.
   JSON before response intake without recording review, writing responses, or closing lanes.
 - `make enterprise-review-send-package` - generate a compact operator package index over the
   current `ERG-003` and `ERG-002` prompts, lane attachment manifests, hash manifests, receipt
-  template, and response inbox paths without recording review or closing lanes.
+  template, and response inbox paths without recording review or closing lanes, reusing current
+  generated send artifacts when their commit/hash evidence matches.
 - `make enterprise-review-upload-staging` - copy the current manifest-listed `ERG-003` and
   `ERG-002` attachments into upload-friendly batch folders, including the two-batch split for
   `ERG-002`, reusing the current generated send package when its commit/hash evidence matches,

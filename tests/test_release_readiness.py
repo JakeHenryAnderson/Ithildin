@@ -3856,6 +3856,15 @@ def test_enterprise_review_send_package_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
     assert report["artifact_hashes_match_files"] is True
+    assert isinstance(report["source_artifacts_reused"], dict)
+    assert set(report["source_artifacts_reused"]) == {
+        "dual_review_outbox",
+        "send_manifest",
+        "send_quickstart",
+        "submission_prompt",
+        "send_receipt_template",
+        "dual_response_inbox",
+    }
     for key in [
         "records_external_review",
         "normalizes_responses",
@@ -3878,6 +3887,7 @@ def test_enterprise_review_send_package_is_wired() -> None:
         "Status: generated operator package index for the current enterprise send set.",
         "make enterprise-review-send-package",
         "make enterprise-review-send-package-check",
+        "commit, dirty-state, boundary, and hash evidence match",
         "`ERG-003`",
         "`ERG-002`",
         "does not record external review",
@@ -3896,6 +3906,7 @@ def test_enterprise_review_send_package_is_wired() -> None:
         "Submission prompt",
         "Send receipt template",
         "Dual response inbox",
+        "Current upstream artifacts reused",
         "records_external_review: `false`",
         "normalizes_responses: `false`",
         "closes_erg_003: `false`",
@@ -3907,6 +3918,7 @@ def test_enterprise_review_send_package_is_wired() -> None:
         '"ERG-003"',
         '"ERG-002"',
         '"attachment_manifest"',
+        '"source_artifacts_reused"',
         '"records_external_review": false',
         '"normalizes_responses": false',
         '"closes_erg_003": false',
@@ -3920,6 +3932,11 @@ def test_enterprise_review_send_package_is_wired() -> None:
     assert "enterprise-review-send-package-artifact-hashes.json" not in hashed_paths
     assert "enterprise-review-send-package:" in makefile
     assert "enterprise-review-send-package-check:" in makefile
+    assert "enterprise_review_send_package.py --prefer-existing-artifacts" in makefile
+    assert (
+        "enterprise_review_send_package.py --check --prefer-existing-artifacts"
+        in makefile
+    )
     assert "enterprise-review-send-package-check" in release_check_body
     assert "$(MAKE) enterprise-review-send-package" in review_candidate_body
     assert "$(MAKE) enterprise-review-send-package" in refresh_body

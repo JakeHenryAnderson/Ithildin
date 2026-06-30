@@ -506,10 +506,10 @@ enterprise-review-send-receipt-validate:
 	uv run python scripts/enterprise_review_send_receipt_validate.py --receipt "$(RECEIPT)"
 
 enterprise-review-send-package:
-	uv run python scripts/enterprise_review_send_package.py
+	uv run python scripts/enterprise_review_send_package.py --prefer-existing-artifacts
 
 enterprise-review-send-package-check:
-	uv run python scripts/enterprise_review_send_package.py --check
+	uv run python scripts/enterprise_review_send_package.py --check --prefer-existing-artifacts
 
 enterprise-review-upload-staging:
 	uv run python scripts/enterprise_review_upload_staging.py --prefer-existing-package

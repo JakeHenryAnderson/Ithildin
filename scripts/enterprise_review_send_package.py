@@ -58,15 +58,31 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument(
+        "--prefer-existing-artifacts",
+        action="store_true",
+        help=(
+            "reuse current upstream enterprise send artifacts when their "
+            "commit/dirty state and hash manifests match; rebuild stale or "
+            "missing artifacts"
+        ),
+    )
     args = parser.parse_args()
 
     if args.check:
-        report = build_check_report(ROOT)
+        report = build_check_report(
+            ROOT,
+            prefer_existing_artifacts=args.prefer_existing_artifacts,
+        )
         print(render_check_report(report))
         return 0 if report["valid"] else 1
 
     try:
-        output_dir = build_package(ROOT, args.output_dir)
+        output_dir = build_package(
+            ROOT,
+            args.output_dir,
+            prefer_existing_artifacts=args.prefer_existing_artifacts,
+        )
     except EnterpriseReviewSendPackageError as exc:
         print(f"enterprise review send package failed: {exc}", file=sys.stderr)
         return 1
@@ -74,30 +90,101 @@ def main() -> int:
     return 0
 
 
-def build_package(repo_root: Path, output_dir: Path) -> Path:
+def build_package(
+    repo_root: Path,
+    output_dir: Path,
+    *,
+    prefer_existing_artifacts: bool = False,
+) -> Path:
     _validate_repo_root(repo_root)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    outbox_dir = enterprise_dual_review_outbox.build_outbox(
-        repo_root, enterprise_dual_review_outbox.DEFAULT_OUTPUT_DIR
+    outbox_dir, outbox_reused = _current_or_rebuilt_artifact(
+        repo_root,
+        enterprise_dual_review_outbox.DEFAULT_OUTPUT_DIR,
+        enterprise_dual_review_outbox.JSON_NAME,
+        enterprise_dual_review_outbox.HASH_NAME,
+        "outbox_type",
+        "ithildin.enterprise_dual_review_outbox",
+        lambda: enterprise_dual_review_outbox.build_outbox(
+            repo_root, enterprise_dual_review_outbox.DEFAULT_OUTPUT_DIR
+        ),
+        prefer_existing_artifacts=prefer_existing_artifacts,
     )
-    manifest_dir = enterprise_review_send_manifest.build_manifest(
-        repo_root, enterprise_review_send_manifest.DEFAULT_OUTPUT_DIR
+    manifest_dir, manifest_reused = _current_or_rebuilt_artifact(
+        repo_root,
+        enterprise_review_send_manifest.DEFAULT_OUTPUT_DIR,
+        enterprise_review_send_manifest.JSON_NAME,
+        enterprise_review_send_manifest.HASH_NAME,
+        "manifest_type",
+        "ithildin.enterprise_review_send_manifest",
+        lambda: enterprise_review_send_manifest.build_manifest(
+            repo_root, enterprise_review_send_manifest.DEFAULT_OUTPUT_DIR
+        ),
+        boundary_flags=enterprise_review_send_manifest.BOUNDARY_FLAGS,
+        prefer_existing_artifacts=prefer_existing_artifacts,
     )
-    quickstart_dir = enterprise_review_send_quickstart.build_quickstart(
-        repo_root, enterprise_review_send_quickstart.DEFAULT_OUTPUT_DIR
+    quickstart_dir, quickstart_reused = _current_or_rebuilt_artifact(
+        repo_root,
+        enterprise_review_send_quickstart.DEFAULT_OUTPUT_DIR,
+        enterprise_review_send_quickstart.JSON_NAME,
+        enterprise_review_send_quickstart.HASH_NAME,
+        "quickstart_type",
+        "ithildin.enterprise_review_send_quickstart",
+        lambda: enterprise_review_send_quickstart.build_quickstart(
+            repo_root, enterprise_review_send_quickstart.DEFAULT_OUTPUT_DIR
+        ),
+        boundary_flags=enterprise_review_send_quickstart.BOUNDARY_FLAGS,
+        prefer_existing_artifacts=prefer_existing_artifacts,
     )
-    submission_dir = enterprise_review_submission_prompt.build_prompt(
-        repo_root, enterprise_review_submission_prompt.DEFAULT_OUTPUT_DIR
+    submission_dir, submission_reused = _current_or_rebuilt_artifact(
+        repo_root,
+        enterprise_review_submission_prompt.DEFAULT_OUTPUT_DIR,
+        enterprise_review_submission_prompt.JSON_NAME,
+        enterprise_review_submission_prompt.HASH_NAME,
+        "prompt_type",
+        "ithildin.enterprise_review_submission_prompt",
+        lambda: enterprise_review_submission_prompt.build_prompt(
+            repo_root, enterprise_review_submission_prompt.DEFAULT_OUTPUT_DIR
+        ),
+        boundary_flags=enterprise_review_submission_prompt.BOUNDARY_FLAGS,
+        prefer_existing_artifacts=prefer_existing_artifacts,
     )
-    receipt_dir = enterprise_review_send_receipt_template.build_template(
-        repo_root, enterprise_review_send_receipt_template.DEFAULT_OUTPUT_DIR
+    receipt_dir, receipt_reused = _current_or_rebuilt_artifact(
+        repo_root,
+        enterprise_review_send_receipt_template.DEFAULT_OUTPUT_DIR,
+        enterprise_review_send_receipt_template.JSON_NAME,
+        enterprise_review_send_receipt_template.HASH_NAME,
+        "template_type",
+        "ithildin.enterprise_review_send_receipt_template",
+        lambda: enterprise_review_send_receipt_template.build_template(
+            repo_root, enterprise_review_send_receipt_template.DEFAULT_OUTPUT_DIR
+        ),
+        boundary_flags=enterprise_review_send_receipt_template.BOUNDARY_FLAGS,
+        prefer_existing_artifacts=prefer_existing_artifacts,
     )
-    inbox_dir = enterprise_dual_response_inbox.build_inbox(
-        repo_root, enterprise_dual_response_inbox.DEFAULT_OUTPUT_DIR
+    inbox_dir, inbox_reused = _current_or_rebuilt_artifact(
+        repo_root,
+        enterprise_dual_response_inbox.DEFAULT_OUTPUT_DIR,
+        enterprise_dual_response_inbox.JSON_NAME,
+        enterprise_dual_response_inbox.HASH_NAME,
+        "inbox_type",
+        "ithildin.enterprise_dual_response_inbox",
+        lambda: enterprise_dual_response_inbox.build_inbox(
+            repo_root, enterprise_dual_response_inbox.DEFAULT_OUTPUT_DIR
+        ),
+        prefer_existing_artifacts=prefer_existing_artifacts,
     )
 
     manifest_payload = _read_json(manifest_dir / enterprise_review_send_manifest.JSON_NAME)
+    source_artifacts_reused = {
+        "dual_review_outbox": outbox_reused,
+        "send_manifest": manifest_reused,
+        "send_quickstart": quickstart_reused,
+        "submission_prompt": submission_reused,
+        "send_receipt_template": receipt_reused,
+        "dual_response_inbox": inbox_reused,
+    }
     payload = _package_payload(
         repo_root=repo_root,
         outbox_dir=outbox_dir,
@@ -107,6 +194,7 @@ def build_package(repo_root: Path, output_dir: Path) -> Path:
         receipt_dir=receipt_dir,
         inbox_dir=inbox_dir,
         manifest_payload=manifest_payload,
+        source_artifacts_reused=source_artifacts_reused,
     )
     (output_dir / MARKDOWN_NAME).write_text(_render_markdown(payload), encoding="utf-8")
     (output_dir / JSON_NAME).write_text(
@@ -121,10 +209,18 @@ def build_package(repo_root: Path, output_dir: Path) -> Path:
     return output_dir
 
 
-def build_check_report(repo_root: Path) -> dict[str, Any]:
+def build_check_report(
+    repo_root: Path,
+    *,
+    prefer_existing_artifacts: bool = False,
+) -> dict[str, Any]:
     failures: list[str] = []
     try:
-        output_dir = build_package(repo_root, DEFAULT_OUTPUT_DIR)
+        output_dir = build_package(
+            repo_root,
+            DEFAULT_OUTPUT_DIR,
+            prefer_existing_artifacts=prefer_existing_artifacts,
+        )
     except EnterpriseReviewSendPackageError as exc:
         failures.append(str(exc))
         output_dir = DEFAULT_OUTPUT_DIR
@@ -154,6 +250,11 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     except json.JSONDecodeError:
         hashes = {"artifacts": []}
         failures.append("enterprise review send package hashes are not valid JSON")
+    try:
+        payload = json.loads(json_text) if json_text else {}
+    except json.JSONDecodeError:
+        payload = {}
+        failures.append("enterprise review send package JSON is not valid JSON")
     hashed_paths = {artifact.get("path") for artifact in hashes.get("artifacts", [])}
 
     _require_phrases(
@@ -187,6 +288,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             "Submission prompt",
             "Send receipt template",
             "Dual response inbox",
+            "Current upstream artifacts reused",
             "records_external_review: `false`",
             "normalizes_responses: `false`",
             "closes_erg_003: `false`",
@@ -202,6 +304,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             '"ERG-003"',
             '"ERG-002"',
             '"attachment_manifest"',
+            '"source_artifacts_reused"',
             '"records_external_review": false',
             '"normalizes_responses": false',
             '"closes_erg_003": false',
@@ -242,6 +345,10 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "output_dir": output_dir.as_posix(),
         "recommended_gaps": RECOMMENDED_GAPS,
         "tool_count": 24,
+        "source_artifacts_reused": payload.get("source_artifacts_reused", {}),
+        "source_artifact_reuse_count": sum(
+            1 for value in payload.get("source_artifacts_reused", {}).values() if value
+        ),
         "artifact_hashes_match_files": _artifact_hashes_match_files(output_dir, hashes),
         **BOUNDARY_FLAGS,
     }
@@ -255,6 +362,7 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"output_dir: {report['output_dir']}",
         "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
         f"tool_count: {report['tool_count']}",
+        f"source_artifact_reuse_count: {report['source_artifact_reuse_count']}",
         f"artifact_hashes_match_files: {str(report['artifact_hashes_match_files']).lower()}",
     ]
     lines.extend(f"{key}: {str(value).lower()}" for key, value in BOUNDARY_FLAGS.items())
@@ -274,6 +382,7 @@ def _package_payload(
     receipt_dir: Path,
     inbox_dir: Path,
     manifest_payload: dict[str, Any],
+    source_artifacts_reused: dict[str, bool],
 ) -> dict[str, Any]:
     return {
         "schema_version": "1",
@@ -291,6 +400,7 @@ def _package_payload(
             "send_receipt_template": _repo_rel(repo_root, receipt_dir),
             "dual_response_inbox": _repo_rel(repo_root, inbox_dir),
         },
+        "source_artifacts_reused": source_artifacts_reused,
         "send_set": [
             _send_lane(manifest_payload["outbox_dir"], packet)
             for packet in manifest_payload["send_set"]
@@ -316,6 +426,10 @@ def _render_markdown(payload: dict[str, Any]) -> str:
     blocked = "\n".join(
         f"- {key}: `{str(value).lower()}`"
         for key, value in payload["blocked_boundaries"].items()
+    )
+    reused = "\n".join(
+        f"- {key}: `{str(value).lower()}`"
+        for key, value in payload["source_artifacts_reused"].items()
     )
     return f"""# Enterprise Review Send Package
 
@@ -347,6 +461,10 @@ Outbox files including references count local operator-reference files too.
 | Artifact | Path |
 | --- | --- |
 {artifact_rows}
+
+## Current upstream artifacts reused
+
+{reused}
 
 ## Boundary flags
 
@@ -418,6 +536,65 @@ def _validate_repo_root(repo_root: Path) -> None:
         )
 
 
+def _current_or_rebuilt_artifact(
+    repo_root: Path,
+    output_dir: Path,
+    json_name: str,
+    hash_name: str,
+    type_key: str,
+    type_value: str,
+    builder: Any,
+    *,
+    boundary_flags: dict[str, bool] | None = None,
+    prefer_existing_artifacts: bool,
+) -> tuple[Path, bool]:
+    if prefer_existing_artifacts and _current_artifact_payload(
+        repo_root,
+        output_dir,
+        json_name,
+        hash_name,
+        type_key,
+        type_value,
+        boundary_flags=boundary_flags,
+    ) is not None:
+        return output_dir, True
+    return builder(), False
+
+
+def _current_artifact_payload(
+    repo_root: Path,
+    output_dir: Path,
+    json_name: str,
+    hash_name: str,
+    type_key: str,
+    type_value: str,
+    *,
+    boundary_flags: dict[str, bool] | None = None,
+) -> dict[str, Any] | None:
+    artifact_path = output_dir / json_name
+    hashes_path = output_dir / hash_name
+    if not artifact_path.is_file() or not hashes_path.is_file():
+        return None
+    try:
+        payload = _read_json(artifact_path)
+        hashes = _read_json(hashes_path)
+    except (json.JSONDecodeError, OSError):
+        return None
+    if payload.get(type_key) != type_value:
+        return None
+    if payload.get("commit") != _git(repo_root, ["rev-parse", "HEAD"]):
+        return None
+    if bool(payload.get("dirty")) != bool(_git(repo_root, ["status", "--short"])):
+        return None
+    if sorted(payload.get("recommended_gaps", RECOMMENDED_GAPS)) != sorted(RECOMMENDED_GAPS):
+        return None
+    if boundary_flags is not None and payload.get("blocked_boundaries") != boundary_flags:
+        return None
+    if not _artifact_hashes_match_files(output_dir, hashes):
+        return None
+    return payload
+
+
 def _artifact_hashes(output_dir: Path) -> dict[str, Any]:
     artifacts = []
     for path in sorted(output_dir.rglob("*")):
@@ -442,7 +619,9 @@ def _artifact_hashes_match_files(output_dir: Path, manifest: dict[str, Any]) -> 
         data = path.read_bytes()
         if artifact.get("bytes") != len(data):
             return False
-        if artifact.get("sha256") != "sha256:" + hashlib.sha256(data).hexdigest():
+        actual = hashlib.sha256(data).hexdigest()
+        expected = artifact.get("sha256")
+        if expected not in {actual, "sha256:" + actual}:
             return False
     return True
 

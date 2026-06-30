@@ -42,6 +42,10 @@ or directly with:
 make enterprise-review-send-package
 ```
 
+The Make targets pass `--prefer-existing-artifacts`, so the package generator reuses current
+upstream send artifacts only when their commit, dirty-state, boundary, and hash evidence match the
+current repository state. Missing or stale artifacts are rebuilt automatically.
+
 For a local operator record scaffold after package generation, run:
 
 ```sh
