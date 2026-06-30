@@ -84,6 +84,7 @@ from scripts import (
     enterprise_review_send_preflight_lightweight_check,
     enterprise_review_send_quickstart,
     enterprise_review_send_readiness,
+    enterprise_review_send_receipt_copy,
     enterprise_review_send_receipt_dry_run,
     enterprise_review_send_receipt_template,
     enterprise_review_send_receipt_validate,
@@ -685,6 +686,10 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
     assert report["lane_count"] == 2
     assert report["batch_count"] == 3
+    assert (
+        "make enterprise-review-send-receipt-copy after the human send step"
+        in report["next_after_send"]
+    )
     assert report["records_external_review"] is False
     assert report["normalizes_responses"] is False
     assert report["writes_response_files"] is False
@@ -4563,6 +4568,76 @@ def test_enterprise_review_send_receipt_template_is_wired() -> None:
     )
     assert "var/review-packets/v3/enterprise-dual-response-inbox" not in generated_text
     assert "var/review-packets/v3/enterprise-dual-response-inbox" not in generated_json_text
+
+
+def test_enterprise_review_send_receipt_copy_is_wired(tmp_path: Path) -> None:
+    output = tmp_path / "operator-send-receipt.json"
+    copy_report = enterprise_review_send_receipt_copy.build_copy_report(
+        Path.cwd(), output, force=False
+    )
+    duplicate_error = pytest.raises(
+        enterprise_review_send_receipt_copy.EnterpriseReviewSendReceiptCopyError,
+        enterprise_review_send_receipt_copy.build_copy_report,
+        Path.cwd(),
+        output,
+        force=False,
+    )
+    check_report = enterprise_review_send_receipt_copy.build_check_report(Path.cwd())
+    validation_report = enterprise_review_send_receipt_validate.build_report(
+        Path.cwd(), output
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    template_doc = Path("docs/codex/enterprise-review-send-receipt-template.md").read_text(
+        encoding="utf-8"
+    )
+    validation_doc = Path(
+        "docs/codex/enterprise-review-send-receipt-validation.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert copy_report["valid"] is True
+    assert copy_report["tool_count"] == 24
+    assert copy_report["ready_for_response_intake"] is False
+    assert (
+        copy_report["next_operator_action"]
+        == "copy_template_fill_send_receipt_then_rerun_validation"
+    )
+    assert copy_report["records_external_review"] is False
+    assert copy_report["normalizes_responses"] is False
+    assert copy_report["writes_response_files"] is False
+    assert copy_report["closes_erg_003"] is False
+    assert copy_report["closes_erg_002"] is False
+    assert copy_report["runtime_changes_allowed"] is False
+    assert copy_report["new_power_classes_allowed"] is False
+    assert "receipt copy already exists" in str(duplicate_error.value)
+    assert check_report["valid"] is True
+    assert check_report["copy_report_valid"] is True
+    assert validation_report["valid"] is True
+    assert validation_report["ready_for_response_intake"] is False
+    assert payload["sent"] is False
+    assert payload["tool_count"] == 24
+    assert payload["selected_capability"] == "not selected"
+    assert "enterprise-review-send-receipt-copy:" in makefile
+    assert "enterprise-review-send-receipt-copy-check:" in makefile
+    assert (
+        "enterprise-review-send-receipt-copy-check" in release_check_body
+        or "release-check: enterprise-review-send-receipt-copy-check" in makefile
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-copy-check" in review_candidate_body
+    assert "make enterprise-review-send-receipt-copy" in readme
+    assert "make enterprise-review-send-receipt-copy" in template_doc
+    assert "enterprise-review-send-receipt-copy" in validation_doc
+    assert "enterprise-review-send-receipt-copy-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-review-send-receipt-copy-check" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
 
 
 def test_enterprise_review_send_receipt_validation_is_wired(tmp_path: Path) -> None:

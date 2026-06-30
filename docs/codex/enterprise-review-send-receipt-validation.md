@@ -21,6 +21,12 @@ To validate a copied, filled receipt instead of the generated unsent template:
 uv run python scripts/enterprise_review_send_receipt_validate.py --receipt path/to/copied-receipt.json
 ```
 
+The helper command for creating the ignored operator-editable copy is:
+
+```sh
+make enterprise-review-send-receipt-copy
+```
+
 The default command validates the generated receipt template under
 `var/review-packets/v3/enterprise-review-send-receipt-template/`. A valid unsent template remains
 `ready_for_response_intake: false`; that is expected until the operator fills the send evidence

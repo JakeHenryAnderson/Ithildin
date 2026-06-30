@@ -59,7 +59,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "batch_count": sum(len(lane["batches"]) for lane in lanes),
         "lanes": lanes,
         "next_after_send": [
-            "copy the send receipt template before editing it",
+            "make enterprise-review-send-receipt-copy after the human send step",
             "fill the copied receipt after the human send step",
             "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
             "make enterprise-response-waiting-room",
