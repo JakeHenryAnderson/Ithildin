@@ -526,6 +526,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "validation-recommendation:" in makefile
     assert "artifact-freshness-check:" in makefile
     assert "status-now:" in makefile
+    assert "enterprise-status-quick:" in makefile
     assert "enterprise-status-slice:" in makefile
     assert "validation-timing:" in makefile
     assert "release-check-impact:" in makefile
@@ -580,6 +581,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-recommendation" in readme
     assert "make artifact-freshness-check" in readme
     assert "make status-now" in readme
+    assert "make enterprise-status-quick" in readme
     assert "make enterprise-status-slice" in readme
     assert "make validation-timing" in readme
     assert "make release-check-impact" in readme
@@ -610,12 +612,34 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-recommendation" in guide
     assert "make artifact-freshness-check" in guide
     assert "make status-now" in guide
+    assert "make enterprise-status-quick" in guide
     assert "make enterprise-status-slice" in guide
     assert "make validation-timing" in guide
     assert "make release-check-impact" in guide
     assert "make release-check-profile" in guide
     assert "make release-check-slice" in guide
     assert "make packet-check-recursion-guard" in guide
+    enterprise_status_quick_body = makefile.partition("enterprise-status-quick:")[
+        2
+    ].partition("\n\n")[0]
+    assert "$(MAKE) enterprise-review-send-refresh" not in enterprise_status_quick_body
+    assert "$(MAKE) status-now" in enterprise_status_quick_body
+    assert "$(MAKE) enterprise-operator-next-action" in enterprise_status_quick_body
+    assert "$(MAKE) enterprise-current-checkpoint" not in enterprise_status_quick_body
+    assert "$(MAKE) enterprise-status-export-check" not in enterprise_status_quick_body
+    assert "$(MAKE) mission-control-enterprise-status-import-check" not in (
+        enterprise_status_quick_body
+    )
+    enterprise_status_slice_body = makefile.partition("enterprise-status-slice:")[
+        2
+    ].partition("\n\n")[0]
+    assert "$(MAKE) enterprise-review-send-refresh" in enterprise_status_slice_body
+    assert "$(MAKE) enterprise-status-quick" in enterprise_status_slice_body
+    assert "$(MAKE) enterprise-current-checkpoint" in enterprise_status_slice_body
+    assert "$(MAKE) enterprise-status-export-check" in enterprise_status_slice_body
+    assert "$(MAKE) mission-control-enterprise-status-import-check" in (
+        enterprise_status_slice_body
+    )
     assert "Do not nest high-level packet/status/export report builders" in guide
     assert "--fail-on-budget" in guide
     assert "budget status" in guide

@@ -175,9 +175,12 @@ checked with `make control-mapping-readiness`.
   v1.0 RC packet, and the captured release-check transcript match the current commit.
 - `make status-now` - print the compact current state, artifact freshness, and recommended next
   command without starting services or calling governed tools.
-- `make enterprise-status-slice` - run the fast enterprise status/send-guidance contract slice
-  after small operator-handoff, status export, or Mission Control display-import edits; this is
-  focused development evidence, not release or handoff proof.
+- `make enterprise-status-quick` - run the no-refresh enterprise status/send-guidance contract
+  hints after small docs or bookkeeping edits; this is focused development evidence, not release,
+  handoff, export, or Mission Control import proof.
+- `make enterprise-status-slice` - refresh the current ERG-003/ERG-002 send artifacts, then run
+  `make enterprise-status-quick` plus export/import contract checks; use it when send-package
+  evidence may be stale.
 - `make development-efficiency-status` - print the compact current-state view that combines
   validation choice, release-check shape, technical MVP operator-trial readiness, and enterprise
   handoff action.

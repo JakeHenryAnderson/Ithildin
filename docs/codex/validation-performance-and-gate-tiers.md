@@ -123,18 +123,29 @@ To inspect one category from that graph, run:
 make release-check-slice ARGS="--category enterprise"
 ```
 
-For the common, narrower enterprise status/send-guidance loop, run:
+For the common, no-refresh enterprise status/send-guidance loop, run:
+
+```sh
+make enterprise-status-quick
+```
+
+This quick slice runs the compact status view and operator next-action guidance. It does not refresh
+generated ERG-003/ERG-002 send artifacts, does not validate the current-checkpoint packet, and does
+not validate the status export or Mission Control display-import contract.
+
+When the send artifacts themselves may be stale and need to be rebuilt before the same status checks,
+run:
 
 ```sh
 make enterprise-status-slice
 ```
 
-This slice refreshes the current ERG-003/ERG-002 send artifacts, then runs the compact status view,
-current checkpoint, operator next action, enterprise status export check, Mission Control
-display-import contract check. It is focused development evidence only; use `make enterprise-send-now`
-on a clean tree for the final send summary, `make artifact-freshness-check` when you need full
-generated artifact freshness, `make review-candidate` before handoff, and `make release-check`
-before broad checkpoint claims.
+This refresh-inclusive slice runs `make enterprise-review-send-refresh`, then `make
+enterprise-status-quick`, then the current checkpoint, status export check, and Mission Control
+display-import contract check. Both status slices are focused development evidence only; use `make
+enterprise-send-now` on a clean tree for the final send summary, `make artifact-freshness-check`
+when you need full generated artifact freshness, `make review-candidate` before handoff, and `make
+release-check` before broad checkpoint claims.
 
 To infer relevant slices from the current dirty file set, run:
 
