@@ -224,6 +224,11 @@ After a favorable source-level response, the committed update path must use
 `sandbox-vm-static-preflight-disposition-record-skeleton.md` as the disposition-record shape. The
 skeleton permits only the static-preflight local-preview disposition and does not unblock `ERG-004`.
 
+The received `ERG-003`/`ERG-002` disposition is now recorded in
+`enterprise-dual-response-disposition-record.md`. It closes only the static-preflight evidence lane
+allowed by the closure gate, allows only Mission Control design-only continuation, records the open
+low advisory `EXT-MC-DISPLAY-001`, and keeps capability expansion and runtime authority blocked.
+
 ## Stop Conditions
 
 Stop the queue and keep affected lanes blocked if:

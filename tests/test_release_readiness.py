@@ -1513,11 +1513,11 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "compose_demo_ready" in rendered_trial_record
     assert "docker_daemon_status" in rendered_trial_record
     assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
-        "send_erg_003_and_erg_002"
+        "prepare_post_erg003_live_poc_decision"
     )
     assert operator_trial_record_report["enterprise_review_state"][
         "recommended_send_set"
-    ] == ["ERG-003", "ERG-002"]
+    ] == ["ERG-004"]
     assert (
         operator_trial_record_report["enterprise_review_state"]["candidate_response_count"]
         == 0
@@ -1929,13 +1929,13 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "What The Record Does Not Do" in trial_record
     assert "validation decision summary" in trial_record
     assert "Enterprise Review State" in trial_record
-    assert "- next_action: `send_erg_003_and_erg_002`" in trial_record
-    assert "- recommended_send_set: `ERG-003`, `ERG-002`" in trial_record
+    assert "- next_action: `prepare_post_erg003_live_poc_decision`" in trial_record
+    assert "- recommended_send_set: `ERG-004`" in trial_record
     assert "- candidate_response_count: `0`" in trial_record
     assert "- placeholder_count: `2`" in trial_record
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
-    assert "`dual_review_outbox`" in trial_record
-    assert "`send_manifest`" in trial_record
+    assert "`dual_response_disposition_record`" in trial_record
+    assert "`live_poc_decision_packet`" in trial_record
     assert "Ithildin v1.0 Observed Operator Trial Evidence" in observed_trial
     assert "patch_apply_status" in observed_trial
     assert "audit_verification_valid" in observed_trial
@@ -2505,15 +2505,14 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["recommended_next_enterprise_review"] == "ERG-003"
-    assert report["next_action"] == "send_erg_003_and_erg_002"
+    assert report["recommended_send_set"] == ["ERG-004"]
+    assert report["recommended_next_enterprise_review"] == "ERG-004"
+    assert report["next_action"] == "prepare_post_erg003_live_poc_decision"
     assert report["action_commands"] == [
-        "make release-check",
-        "make review-candidate",
-        "make enterprise-review-send-refresh",
-        "make handoff-dry-run",
-        "make enterprise-send-now",
+        "make sandbox-vm-live-poc-post-erg003-handoff-check",
+        "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
+        "make sandbox-vm-live-poc-decision-packet-check",
+        "make sandbox-vm-live-poc-external-review-bundle-check",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -2523,31 +2522,14 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make enterprise-response-paste-preflight",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "dual_review_outbox",
-        "send_manifest",
-        "send_quickstart",
-        "submission_prompt",
-        "send_receipt_template",
-        "send_receipt_copy",
-        "send_package",
-        "upload_staging",
-        "dual_response_inbox",
-        "send_session_record",
+        "dual_response_disposition_record",
+        "live_poc_post_erg003_handoff",
+        "live_poc_decision_packet",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
-        "var/review-packets/v3/enterprise-dual-review-outbox",
-        "var/review-packets/v3/enterprise-review-send-manifest",
-        "var/review-packets/v3/enterprise-review-send-quickstart",
-        "var/review-packets/v3/enterprise-review-submission-prompt",
-        "var/review-packets/v3/enterprise-review-send-receipt-template",
-        (
-            "var/review-runs/enterprise-review-send-receipts/"
-            "enterprise-review-send-receipt-copy.json"
-        ),
-        "var/review-packets/v3/enterprise-review-send-package",
-        "var/review-packets/v3/enterprise-review-upload-staging",
-        "var/review-runs/enterprise-dual-response-inbox",
-        "var/review-runs/enterprise-review-send-session-record",
+        "docs/codex/enterprise-dual-response-disposition-record.md",
+        "docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md",
+        "docs/codex/sandbox-vm-live-poc-decision-packet.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2608,19 +2590,12 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["recommended_send_set"] == ["ERG-004"]
+    assert report["recommended_next_enterprise_review"] == "ERG-004"
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "dual_review_outbox",
-        "send_manifest",
-        "send_quickstart",
-        "submission_prompt",
-        "send_receipt_template",
-        "send_receipt_copy",
-        "send_package",
-        "upload_staging",
-        "dual_response_inbox",
-        "send_session_record",
+        "dual_response_disposition_record",
+        "live_poc_post_erg003_handoff",
+        "live_poc_decision_packet",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -2848,8 +2823,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     assert report["status"] == "display_only"
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["recommended_send_set"] == ["ERG-004"]
+    assert report["recommended_next_enterprise_review"] == "ERG-004"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["enterprise_gap_count"] == 10
@@ -2903,15 +2878,17 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     for phrase in [
         "Enterprise Status Export",
         "display-only enterprise status export",
-        "recommended_send_set: `ERG-003, ERG-002`",
-        "next_action: `send_erg_003_and_erg_002`",
-        "`make enterprise-review-send-refresh`",
-        "`make enterprise-response-paste-preflight`",
+        "recommended_send_set: `ERG-004`",
+        "next_action: `prepare_post_erg003_live_poc_decision`",
+        "`make sandbox-vm-live-poc-post-erg003-handoff-check`",
+        "`make sandbox-vm-live-poc-external-review-bundle-check`",
         "handoff_artifacts:",
-        "`send_manifest`: `var/review-packets/v3/enterprise-review-send-manifest`",
-        "`send_quickstart`: `var/review-packets/v3/enterprise-review-send-quickstart`",
-        "`send_package`: `var/review-packets/v3/enterprise-review-send-package`",
-        "`send_session_record`: `var/review-runs/enterprise-review-send-session-record`",
+        (
+            "`dual_response_disposition_record`: "
+            "`docs/codex/enterprise-dual-response-disposition-record.md`"
+        ),
+        "`live_poc_post_erg003_handoff`: `docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md`",
+        "`live_poc_decision_packet`: `docs/codex/sandbox-vm-live-poc-decision-packet.md`",
         "## Packet Paths",
         "`enterprise_review_send_package`: `var/review-packets/v3/enterprise-review-send-package`",
         "`enterprise_review_send_session_record`: "
@@ -2925,20 +2902,19 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "send_erg_003_and_erg_002"',
+        '"next_action": "prepare_post_erg003_live_poc_decision"',
         '"handoff_artifacts": [',
-        '"label": "send_manifest"',
-        '"label": "send_quickstart"',
-        '"label": "send_package"',
-        '"label": "send_session_record"',
+        '"label": "dual_response_disposition_record"',
+        '"label": "live_poc_post_erg003_handoff"',
+        '"label": "live_poc_decision_packet"',
         '"enterprise_review_send_quickstart": '
         '"var/review-packets/v3/enterprise-review-send-quickstart"',
         '"enterprise_review_send_package": '
         '"var/review-packets/v3/enterprise-review-send-package"',
         '"enterprise_review_send_session_record": '
         '"var/review-runs/enterprise-review-send-session-record"',
-        '"make enterprise-review-send-refresh"',
-        '"make enterprise-response-paste-preflight"',
+        '"make sandbox-vm-live-poc-post-erg003-handoff-check"',
+        '"make sandbox-vm-live-poc-external-review-bundle-check"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
@@ -2993,8 +2969,8 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
     assert report["source_artifact_type"] == "ithildin.enterprise_status_export"
     assert report["source_status"] == "display_only"
     assert report["tool_count"] == 24
-    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["recommended_send_set"] == ["ERG-004"]
+    assert report["recommended_next_enterprise_review"] == "ERG-004"
     assert "next_action" in report["allowed_import_fields"]
     assert "action_commands" in report["allowed_import_fields"]
     assert "next_after_send_commands" in report["allowed_import_fields"]
@@ -5966,27 +5942,18 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["current_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["expected_action"] == "send_erg_003_and_erg_002"
+    assert report["current_send_set"] == ["ERG-004"]
+    assert report["expected_action"] == "prepare_post_erg003_live_poc_decision"
+    assert report["preflight_mode"] == "post_disposition_next_review"
     assert report["current_commit"]
     assert isinstance(report["current_dirty"], bool)
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["component_validity"] == {
-        "operator_next_action": True,
-        "dual_review_outbox": True,
-        "send_manifest": True,
-        "send_quickstart": True,
-        "submission_prompt": True,
-        "send_receipt_template": True,
-        "send_package": True,
-        "upload_staging": True,
-        "send_session_record": True,
-        "dual_response_inbox": True,
         "dual_response_readiness": True,
-        "response_status_board": True,
-        "handoff_drill": True,
         "handoff_consistency": True,
+        "operator_next_action": True,
+        "response_status_board": True,
     }
     assert report["artifact_hashes_match_files"] is True
     if report["current_dirty"] is False:
@@ -6003,19 +5970,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         f"artifact_payloads_clean: {str(report['artifact_payloads_clean']).lower()}"
         in rendered
     )
-    for output_key in [
-        "dual_review_outbox",
-        "send_manifest",
-        "send_quickstart",
-        "submission_prompt",
-        "send_receipt_template",
-        "send_package",
-        "upload_staging",
-        "send_session_record",
-        "dual_response_inbox",
-        "handoff_drill",
-    ]:
-        assert report["component_outputs"][output_key]
+    assert report["component_outputs"] == {}
     for key in [
         "records_external_review",
         "normalizes_responses",
@@ -6209,17 +6164,16 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["recommended_send_set"] == ["ERG-004"]
+    assert report["recommended_next_enterprise_review"] == "ERG-004"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
-    assert report["next_action"] == "send_erg_003_and_erg_002"
+    assert report["next_action"] == "prepare_post_erg003_live_poc_decision"
     assert report["action_commands"] == [
-        "make release-check",
-        "make review-candidate",
-        "make enterprise-review-send-refresh",
-        "make handoff-dry-run",
-        "make enterprise-send-now",
+        "make sandbox-vm-live-poc-post-erg003-handoff-check",
+        "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
+        "make sandbox-vm-live-poc-decision-packet-check",
+        "make sandbox-vm-live-poc-external-review-bundle-check",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -6229,35 +6183,23 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-response-paste-preflight",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "dual_review_outbox",
-        "send_manifest",
-        "send_quickstart",
-        "submission_prompt",
-        "send_receipt_template",
-        "send_receipt_copy",
-        "send_package",
-        "upload_staging",
-        "dual_response_inbox",
-        "send_session_record",
+        "dual_response_disposition_record",
+        "live_poc_post_erg003_handoff",
+        "live_poc_decision_packet",
     ]
     assert any(
-        artifact["path"] == "var/review-packets/v3/enterprise-review-send-quickstart"
+        artifact["path"] == "docs/codex/enterprise-dual-response-disposition-record.md"
         for artifact in report["handoff_artifacts"]
     )
     assert any(
         artifact["path"]
         == (
-            "var/review-runs/enterprise-review-send-receipts/"
-            "enterprise-review-send-receipt-copy.json"
+            "docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md"
         )
         for artifact in report["handoff_artifacts"]
     )
     assert any(
-        artifact["path"] == "var/review-packets/v3/enterprise-review-upload-staging"
-        for artifact in report["handoff_artifacts"]
-    )
-    assert any(
-        artifact["path"] == "var/review-runs/enterprise-dual-response-inbox"
+        artifact["path"] == "docs/codex/sandbox-vm-live-poc-decision-packet.md"
         for artifact in report["handoff_artifacts"]
     )
     assert report["runtime_changes_allowed"] is False
@@ -30086,8 +30028,8 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
-    assert report["recommended_next_enterprise_review"] == "ERG-003"
-    assert report["next_action"] == "send_erg_003_and_erg_002"
+    assert report["recommended_next_enterprise_review"] == "ERG-004"
+    assert report["next_action"] == "prepare_post_erg003_live_poc_decision"
     assert report["response_present_count"] == 0
     assert report["capability_expansion_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
@@ -30142,13 +30084,13 @@ def test_technical_mvp_execution_board_is_wired() -> None:
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["selected_capability"] == "not selected"
     assert report["technical_mvp_state"] == "operator_trial_observed"
-    assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["enterprise_next_action"] == "prepare_post_erg003_live_poc_decision"
     assert report["active_resume_checkpoint"] == "ENT-001"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["technical_milestone_count"] == 10
     assert report["enterprise_milestone_count"] == 12
-    assert report["current_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["current_send_set"] == ["ERG-004"]
     assert report["runtime_changes_allowed"] is False
     assert report["capability_expansion_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -30189,18 +30131,18 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Status: checked technical-MVP execution board and batch-control map.",
         "Current governed tool count: `24`",
         "Technical MVP state: `operator_trial_observed`",
-        "Current enterprise next action: `send_erg_003_and_erg_002`",
+        "Current enterprise next action: `prepare_post_erg003_live_poc_decision`",
         "Active resume checkpoint: `ENT-001`",
-        "The paused umbrella goal resumes through `ENT-001` only",
+        "The paused umbrella goal resumes through the post-`ENT-001` decision-prep slice only",
         "Development Validation Ladder",
         "Stop Conditions",
     ]:
         assert phrase in technical_doc
     for phrase in [
         "Status: checked enterprise roadmap control board",
-        "Current send set: `ERG-003`, `ERG-002`",
+        "Current send set: `ERG-004`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to `ENT-001`",
+        "The current resumed goal is limited to post-`ENT-001` decision prep",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
     ]:
@@ -30210,7 +30152,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Tier 1: inner loop",
         "Tier 2: batch checkpoint",
         "Tier 3: handoff freeze",
-        "`ERG-003` and `ERG-002` send workflow | active resume checkpoint",
+        "`ERG-004` live-POC decision prep | active resume checkpoint",
         "Safe Batch Shapes",
         "Unsafe Batch Shapes",
     ]:
@@ -30268,7 +30210,7 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
     if report["operator_trial_observed"]:
         assert report["observed_trial"]["patch_apply_status"] == "completed"
         assert report["observed_trial"]["audit_verification_valid"] == "true"
-    assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["enterprise_next_action"] == "prepare_post_erg003_live_poc_decision"
     assert report["response_present_count"] == 0
     assert report["runtime_changes_allowed"] is False
     assert report["capability_expansion_allowed"] is False
@@ -30334,7 +30276,7 @@ def test_development_efficiency_status_is_wired() -> None:
     }
     assert isinstance(report["operator_trial_ready"], bool)
     assert isinstance(report["operator_trial_observed"], bool)
-    assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["enterprise_next_action"] == "prepare_post_erg003_live_poc_decision"
     assert isinstance(report["enterprise_send_ready"], bool)
     assert isinstance(report["enterprise_send_artifact_commits_match_current"], bool)
     assert isinstance(report["enterprise_send_artifact_payloads_clean"], bool)

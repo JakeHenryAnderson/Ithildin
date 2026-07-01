@@ -61,6 +61,10 @@ REQUIRED_DOC_PHRASES = [
     "current enterprise send set, waiting-room counts, and handoff artifact pointers",
     "local-preview handoff evidence only",
 ]
+ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
+    "send_erg_003_and_erg_002",
+    "prepare_post_erg003_live_poc_decision",
+}
 BLOCKED_PHRASES = [
     "production deployment readiness",
     "kernel sandbox claim",
@@ -127,8 +131,8 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
     ]
     if packet_scan["findings_count"] != 0:
         failures.append("packet redaction scan has findings")
-    if enterprise_next_action.get("next_action") != "send_erg_003_and_erg_002":
-        failures.append("enterprise next action is not the current send flow")
+    if enterprise_next_action.get("next_action") not in ALLOWED_ENTERPRISE_NEXT_ACTIONS:
+        failures.append("enterprise next action is not an allowed review flow")
     if enterprise_waiting_room.get("candidate_response_count") != 0:
         failures.append("enterprise waiting room has candidate responses")
     if enterprise_waiting_room.get("placeholder_count") != 2:

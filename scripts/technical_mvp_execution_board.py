@@ -21,6 +21,7 @@ SEND_MANIFEST_JSON = Path(
     "var/review-packets/v3/enterprise-review-send-manifest/"
     "enterprise-review-send-manifest.json"
 )
+POST_DISPOSITION_ACTION = "prepare_post_erg003_live_poc_decision"
 
 REQUIRED_DOCS = [TECHNICAL_DOC, ENTERPRISE_DOC, BATCH_DOC]
 TECHNICAL_IDS = [f"MVP-{index:03d}" for index in range(1, 11)]
@@ -33,7 +34,7 @@ REQUIRED_COMMANDS = [
     "make release-check",
     "make review-candidate",
     "make artifact-freshness-check",
-    "make enterprise-send-now",
+    "make sandbox-vm-live-poc-decision-packet-check",
     "make enterprise-response-waiting-room",
 ]
 REQUIRED_PHRASES = {
@@ -43,9 +44,9 @@ REQUIRED_PHRASES = {
         "Current selected capability: `not selected`",
         "Latest implemented tool: `sandbox.artifact.write_text`",
         "Technical MVP state: `operator_trial_observed`",
-        "Current enterprise next action: `send_erg_003_and_erg_002`",
+        "Current enterprise next action: `prepare_post_erg003_live_poc_decision`",
         "Active resume checkpoint: `ENT-001`",
-        "The paused umbrella goal resumes through `ENT-001` only",
+        "The paused umbrella goal resumes through the post-`ENT-001` decision-prep slice only",
         "Development Validation Ladder",
         "Stop Conditions",
         "no sandbox orchestration",
@@ -55,11 +56,11 @@ REQUIRED_PHRASES = {
         "Status: checked enterprise roadmap control board for the v1.0 enterprise-grade target.",
         "Current governed tool count: `24`",
         "Current selected capability: `not selected`",
-        "Current send set: `ERG-003`, `ERG-002`",
+        "Current send set: `ERG-004`",
         "Current response count: `0`",
         "Current closure-ready count: `0`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to `ENT-001`",
+        "The current resumed goal is limited to post-`ENT-001` decision prep",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
         "No new governed power class",
@@ -109,7 +110,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     status = status_now.build_report(repo_root)
-    current_send_set = _current_send_set(repo_root)
+    current_send_set = status.get("recommended_send_set") or _current_send_set(repo_root)
 
     if status.get("valid") is not True:
         failures.append("status-now is not valid")
@@ -145,14 +146,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("selected capability is not blocked")
     if status.get("technical_mvp_state") != "operator_trial_observed":
         failures.append("technical MVP state is not operator_trial_observed")
-    if status.get("enterprise_next_action") != "send_erg_003_and_erg_002":
-        failures.append("enterprise next action is not send_erg_003_and_erg_002")
+    if status.get("enterprise_next_action") != POST_DISPOSITION_ACTION:
+        failures.append("enterprise next action is not ERG-004 decision prep")
     if status.get("response_present_count") != 0:
         failures.append("response evidence is present; response intake flow should take over")
     if status.get("closure_ready_count") != 0:
         failures.append("closure-ready lanes are present; closure flow should take over")
-    if current_send_set != ["ERG-003", "ERG-002"]:
-        failures.append("send manifest no longer recommends ERG-003 then ERG-002")
+    if current_send_set != ["ERG-004"]:
+        failures.append("current send set is not ERG-004")
 
     if "technical-mvp-execution-board:" not in makefile:
         failures.append("Make target is missing: technical-mvp-execution-board")

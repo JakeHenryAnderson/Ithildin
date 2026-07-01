@@ -383,4 +383,10 @@ source-reviewed local-preview static preflight disposition and keeps `ERG-004`, 
 runtime implementation, Mission Control runtime behavior, local model invocation, trusted-host
 promotion, and new powers blocked.
 
+The received `ERG-003` and `ERG-002` response disposition is tracked in
+`enterprise-dual-response-disposition-record.md`. It records the allowed static-preflight closure,
+the Mission Control design-only continuation state, and the open low advisory
+`EXT-MC-DISPLAY-001` without approving runtime importer behavior, live sandbox/VM implementation,
+or new governed tool powers.
+
 All checks must remain green before `make release-check` can pass.

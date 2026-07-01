@@ -65,9 +65,14 @@ ALLOWED_ACTION_COMMANDS = {
     "make enterprise-send-quick-check",
     "make enterprise-send-now",
     "make enterprise-response-intake-refresh",
+    "make sandbox-vm-live-poc-post-erg003-handoff-check",
+    "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
+    "make sandbox-vm-live-poc-decision-packet-check",
+    "make sandbox-vm-live-poc-external-review-bundle-check",
 }
 
 SAFE_HANDOFF_ARTIFACT_PATH_PREFIXES = (
+    "docs/codex/",
     "var/review-packets/v3/",
     "var/review-runs/",
 )

@@ -11,15 +11,15 @@ Current governed tool count: `24`
 Current selected capability: `not selected`
 Latest implemented tool: `sandbox.artifact.write_text`
 Technical MVP state: `operator_trial_observed`
-Current enterprise next action: `send_erg_003_and_erg_002`
+Current enterprise next action: `prepare_post_erg003_live_poc_decision`
 Active resume checkpoint: `ENT-001`
 
 ## Active Resume Scope
 
-The paused umbrella goal resumes through `ENT-001` only: send the current `ERG-003` and `ERG-002`
-external review packets, record the send receipt, and then wait for reviewer responses. This resume
-slice does not add runtime behavior, close review lanes, implement Mission Control integration,
-start sandbox/VM control, or select a new capability.
+The paused umbrella goal resumes through the post-`ENT-001` decision-prep slice only: prepare the
+`ERG-004` live sandbox/VM proof-of-concept decision packet after the recorded `ERG-003` and
+`ERG-002` dispositions. This resume slice does not add runtime behavior, implement Mission Control
+integration, start sandbox/VM control, or select a new capability.
 
 ## Boundary
 
@@ -40,18 +40,17 @@ promotion engine, public/security-product release, or broad write platform.
 | `MVP-005` | Agent Run and operator workbench evidence | done for local preview | Agent Run timeline, evidence export, dashboard readiness, and workbench packet gates pass. | `make workbench-readiness` | `make review-candidate` | no run pause, abort, replay, or repair controls |
 | `MVP-006` | Local-preview sandbox artifact path | observed | `sandbox.artifact.write_text` remains bounded and the observed demo reports completed patch apply plus valid audit verification. | `make sandbox-artifact-observed-demo-check` | `make release-check` | no sandbox orchestration or trusted-host promotion |
 | `MVP-007` | v1.0 local-preview RC handoff | ready | v1.0 RC packet exists, release transcript passed, packet redaction has zero findings, and artifact freshness is valid. | `make artifact-freshness-check` | `make review-candidate` | no public/security-product positioning |
-| `MVP-008` | `ERG-003` static sandbox/VM preflight | send-ready | Upload batch, prompt, response path, dry-run, and closure gate pointers are present. | `make enterprise-send-now` | `make review-candidate` | no live VM/container inspection or lifecycle management |
-| `MVP-009` | `ERG-002` Mission Control display/import planning | send-ready | Upload batches, prompt, response path, dry-run, and closure gate pointers are present. | `make enterprise-send-now` | `make review-candidate` | no Mission Control execution, policy, approval, or audit authority |
-| `MVP-010` | Enterprise response intake waiting room | ready and waiting | Placeholder raw-response paths exist for `ERG-003` and `ERG-002`; no response is normalized until real review text is pasted. | `make enterprise-response-waiting-room` | `make handoff-dry-run` | no external review recorded and no lanes closed |
+| `MVP-008` | `ERG-003` static sandbox/VM preflight | disposition recorded | Static preflight is closed for local-preview planning only; live VM/container work still needs a separate `ERG-004` decision packet. | `make enterprise-dual-response-disposition-record-check` | `make release-check` | no live VM/container inspection or lifecycle management |
+| `MVP-009` | `ERG-002` Mission Control display/import planning | disposition recorded | Display/import planning may continue as design-only work with `EXT-MC-DISPLAY-001` tracked as low advisory packet coverage. | `make enterprise-dual-response-disposition-record-check` | `make release-check` | no Mission Control execution, policy, approval, or audit authority |
+| `MVP-010` | Enterprise response intake waiting room | reset to placeholders | Raw response placeholders are reset after disposition; no active normalized response evidence is present. | `make enterprise-response-waiting-room` | `make handoff-dry-run` | no new external review recorded and no additional lanes closed |
 
 ## Current Batch Queue
 
 | Batch | Status | Subtasks | Fast gate | Escalation gate |
 | --- | --- | --- | --- | --- |
-| Send `ERG-003` and `ERG-002` | ready | Send upload batches, copy/fill send receipt, validate receipt, wait for responses. | `make enterprise-send-now` | `make handoff-dry-run` |
-| Intake reviewer responses | blocked on external response | Paste raw responses, run paste preflight, normalize fixture/dry-run, run lane closure gates. | `make enterprise-response-now` | lane-specific closure gate |
-| Close `ERG-003` static preflight | blocked on response | Normalize `EXT-SVP-###` findings, run dry run, produce disposition, decide whether live POC planning may continue. | `make sandbox-vm-static-preflight-response-dry-run` | `make sandbox-vm-static-preflight-disposition-closure-check` |
-| Close `ERG-002` display/import planning | blocked on response | Normalize `EXT-MC-DISPLAY-###` findings, run dry run, produce display/import decision record. | `make mission-control-display-response-dry-run` | `make mission-control-display-disposition-closure-check` |
+| Prepare `ERG-004` live-POC decision packet | active | Verify the post-`ERG-003` handoff, prerequisite disposition dry-run, decision packet, and external-review bundle. | `make sandbox-vm-live-poc-decision-packet-check` | `make sandbox-vm-live-poc-external-review-bundle-check` |
+| Intake future `ERG-004` response | blocked on external response | Paste raw response, run paste preflight, normalize fixture/dry-run, run lane closure gates. | `make enterprise-response-now` | lane-specific closure gate |
+| Track `EXT-MC-DISPLAY-001` | later advisory | Improve Mission Control launch-bundle artifact coverage before implementation, without blocking design-only continuation. | `make reviewer-findings-check` | `make review-findings-summary` |
 
 ## Development Validation Ladder
 

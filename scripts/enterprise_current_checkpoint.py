@@ -23,6 +23,9 @@ from scripts import (
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-current-checkpoint.md"
 DOC_TITLE = "Enterprise Current Checkpoint"
+PRE_DISPOSITION_ACTION = "send_erg_003_and_erg_002"
+POST_DISPOSITION_ACTION = "prepare_post_erg003_live_poc_decision"
+ALLOWED_NEXT_ACTIONS = {PRE_DISPOSITION_ACTION, POST_DISPOSITION_ACTION}
 
 REQUIRED_PHRASES = [
     "Status: checked operator checkpoint",
@@ -132,10 +135,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("response-status tool count is not 24")
     if capability.get("next_candidate") != "not selected":
         failures.append("next capability candidate is selected")
-    if send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]:
+    next_action = operator_next_action.get("next_action")
+    post_disposition_mode = next_action == POST_DISPOSITION_ACTION
+    if (
+        not post_disposition_mode
+        and send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]
+    ):
         failures.append("recommended enterprise send set must remain ERG-003 then ERG-002")
-    if operator_next_action.get("next_action") != "send_erg_003_and_erg_002":
-        failures.append("operator next action must remain send_erg_003_and_erg_002")
+    if next_action not in ALLOWED_NEXT_ACTIONS:
+        failures.append("operator next action is not an allowed enterprise flow")
     if response_status.get("response_present_count") != 0:
         failures.append(
             "enterprise responses are present; intake them before using this checkpoint"
@@ -202,11 +210,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "checkpoint_doc": DOC_REL,
         "tool_count": 24,
         "selected_capability": capability.get("next_candidate"),
-        "recommended_send_set": send_readiness.get("recommended_now"),
+        "recommended_send_set": operator_next_action.get(
+            "recommended_send_set",
+            send_readiness.get("recommended_now"),
+        ),
         "recommended_next_enterprise_review": progress.get(
             "recommended_next_enterprise_review"
         ),
-        "next_action": operator_next_action.get("next_action"),
+        "next_action": next_action,
         "action_commands": operator_next_action.get("action_commands", []),
         "next_after_send_commands": operator_next_action.get(
             "next_after_send_commands", []

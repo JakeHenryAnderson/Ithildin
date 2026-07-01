@@ -13,6 +13,7 @@ if __package__ in {None, ""}:
 
 from scripts import (  # noqa: E402
     artifact_freshness_check,
+    enterprise_operator_next_action,
     validation_decision,
 )
 
@@ -45,7 +46,8 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     validation = validation_decision.build_report()
     freshness = artifact_freshness_check.build_report(repo_root)
-    next_commands = _recommended_next_commands(validation, freshness)
+    enterprise_next = enterprise_operator_next_action.build_report(repo_root)
+    next_commands = _recommended_next_commands(validation, enterprise_next)
     return {
         "schema_version": "1",
         "valid": validation.get("valid") is True,
@@ -55,9 +57,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "latest_implemented_tool": _latest_implemented_tool(repo_root),
         "selected_capability": _selected_capability(repo_root),
         "technical_mvp_state": freshness.get("technical_mvp_state"),
-        "enterprise_next_action": freshness.get("enterprise_next_action"),
-        "response_present_count": _send_manifest_count(repo_root, "response_present_count"),
-        "closure_ready_count": _send_manifest_count(repo_root, "closure_ready_count"),
+        "enterprise_next_action": enterprise_next.get("next_action"),
+        "recommended_send_set": enterprise_next.get("recommended_send_set"),
+        "response_present_count": enterprise_next.get("response_present_count"),
+        "closure_ready_count": enterprise_next.get("closure_ready_count"),
         "validation_mode": validation.get("recommended_mode"),
         "validation_categories": validation.get("categories", []),
         "next_development_commands": validation.get("next_development_commands", []),
@@ -132,6 +135,13 @@ def _recommended_next_commands(
             "make enterprise-response-waiting-room after reviewer responses arrive",
             "make enterprise-response-now after reviewer responses arrive",
             "make enterprise-response-paste-preflight after reviewer responses arrive",
+        ]
+    if freshness.get("enterprise_next_action") == "prepare_post_erg003_live_poc_decision":
+        return [
+            "make sandbox-vm-live-poc-post-erg003-handoff-check",
+            "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
+            "make sandbox-vm-live-poc-decision-packet-check",
+            "make sandbox-vm-live-poc-external-review-bundle-check",
         ]
     return ["make dev-check"]
 

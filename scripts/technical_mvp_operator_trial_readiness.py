@@ -104,6 +104,10 @@ RECOMMENDED_REVIEW_COMMANDS = [
     "make enterprise-review-send-refresh",
     "make enterprise-response-waiting-room",
 ]
+ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
+    "send_erg_003_and_erg_002",
+    "prepare_post_erg003_live_poc_decision",
+}
 
 
 def main() -> int:
@@ -158,8 +162,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("tool count is not 24")
     if ticket_map.get("selected_capability") != "not selected":
         failures.append("selected capability is not not selected")
-    if ticket_map.get("next_action") != "send_erg_003_and_erg_002":
-        failures.append("technical MVP next action is not ERG-003/ERG-002 send")
+    if ticket_map.get("next_action") not in ALLOWED_ENTERPRISE_NEXT_ACTIONS:
+        failures.append("technical MVP next action is not an allowed enterprise flow")
     if next_action.get("response_present_count") != 0:
         failures.append("enterprise responses are present; use response intake flow")
 

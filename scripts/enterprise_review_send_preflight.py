@@ -25,6 +25,9 @@ DOC_REL = "docs/codex/enterprise-review-send-preflight.md"
 DOC_TITLE = "Enterprise Review Send Preflight"
 CURRENT_SEND_SET = ["ERG-003", "ERG-002"]
 EXPECTED_ACTION = "send_erg_003_and_erg_002"
+POST_DISPOSITION_SEND_SET = ["ERG-004"]
+POST_DISPOSITION_ACTION = "prepare_post_erg003_live_poc_decision"
+ALLOWED_ACTIONS = {EXPECTED_ACTION, POST_DISPOSITION_ACTION}
 BOUNDARY_FLAGS = {
     "records_external_review": False,
     "normalizes_responses": False,
@@ -185,11 +188,21 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"{name} is not valid")
             failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
 
-    if operator_next.get("next_action") != EXPECTED_ACTION:
-        failures.append("operator next action is not the expected send flow")
-    if operator_next.get("recommended_send_set") != CURRENT_SEND_SET:
-        failures.append("operator next-action send set is not ERG-003 then ERG-002")
-    if handoff_consistency.get("current_send_set") != CURRENT_SEND_SET:
+    next_action = operator_next.get("next_action")
+    post_disposition_mode = next_action == POST_DISPOSITION_ACTION
+    active_send_set = (
+        POST_DISPOSITION_SEND_SET
+        if post_disposition_mode
+        else CURRENT_SEND_SET
+    )
+    if next_action not in ALLOWED_ACTIONS:
+        failures.append("operator next action is not an allowed enterprise review flow")
+    if operator_next.get("recommended_send_set") != active_send_set:
+        failures.append("operator next-action send set is not the active enterprise review set")
+    if (
+        not post_disposition_mode
+        and handoff_consistency.get("current_send_set") != CURRENT_SEND_SET
+    ):
         failures.append("handoff consistency current send set drifted")
     if response_status.get("response_present_count") != 0:
         failures.append("response evidence is present; use response-intake flow instead")
@@ -200,10 +213,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if dual_response.get("closure_ready_count") != 0:
         failures.append("dual-response readiness reports closure-ready evidence")
 
-    artifact_reports = _artifact_reports(
-        repo_root,
-        current_commit=current_commit,
-        current_dirty=current_dirty,
+    artifact_reports = (
+        {}
+        if post_disposition_mode
+        else _artifact_reports(
+            repo_root,
+            current_commit=current_commit,
+            current_dirty=current_dirty,
+        )
     )
     for name, artifact_report in artifact_reports.items():
         if not artifact_report["valid"]:
@@ -275,8 +292,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "preflight_doc": DOC_REL,
         "tool_count": 24,
         "selected_capability": "not selected",
-        "current_send_set": CURRENT_SEND_SET,
-        "expected_action": EXPECTED_ACTION,
+        "current_send_set": active_send_set,
+        "expected_action": next_action,
+        "preflight_mode": (
+            "post_disposition_next_review"
+            if post_disposition_mode
+            else "send_preflight"
+        ),
         "current_commit": current_commit,
         "current_dirty": current_dirty,
         "response_present_count": response_status.get("response_present_count"),
@@ -306,6 +328,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"preflight_doc: {report['preflight_doc']}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report['selected_capability']}",
+        f"preflight_mode: {report['preflight_mode']}",
         "current_send_set: " + ", ".join(report["current_send_set"]),
         f"expected_action: {report['expected_action']}",
         f"current_commit: {report['current_commit']}",

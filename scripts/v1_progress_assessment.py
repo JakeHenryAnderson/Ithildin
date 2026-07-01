@@ -22,6 +22,7 @@ from scripts import (
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_PATH = ROOT / "docs/codex/v1.0-progress-assessment.md"
+POST_DISPOSITION_MODE = "post_disposition_next_review"
 
 REQUIRED_PHRASES = [
     "Status: conservative progress-assessment snapshot",
@@ -141,11 +142,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     if not operator_trial_observed:
         failures.append("technical MVP state is not operator_trial_observed")
+    post_disposition_mode = enterprise_send.get("preflight_mode") == POST_DISPOSITION_MODE
     if enterprise_send.get("valid") is not True:
         failures.append("enterprise send preflight is not valid")
-    if enterprise_send.get("artifact_commits_match_current") is not True:
+    if (
+        not post_disposition_mode
+        and enterprise_send.get("artifact_commits_match_current") is not True
+    ):
         failures.append("enterprise send artifacts do not match the current commit")
-    if enterprise_send.get("artifact_hashes_match_files") is not True:
+    if (
+        not post_disposition_mode
+        and enterprise_send.get("artifact_hashes_match_files") is not True
+    ):
         failures.append("enterprise send artifact hashes do not match files")
 
     if not doc_path.exists():
@@ -198,6 +206,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "operator_trial_observed": operator_trial_observed,
         "enterprise_send_ready": enterprise_send.get("valid"),
+        "enterprise_send_preflight_mode": enterprise_send.get("preflight_mode"),
         "enterprise_send_artifact_commits_match_current": enterprise_send.get(
             "artifact_commits_match_current"
         ),
@@ -208,7 +217,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "artifact_hashes_match_files"
         ),
         "enterprise_gap_count": gap_matrix.get("gap_count"),
-        "recommended_next_enterprise_review": "ERG-003",
+        "recommended_next_enterprise_review": enterprise_send.get(
+            "current_send_set",
+            ["ERG-003"],
+        )[0],
         "capability_expansion_allowed": False,
         "runtime_changes_allowed": False,
         "public_security_product_positioning_allowed": False,
@@ -235,6 +247,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"technical_mvp_state: {report.get('technical_mvp_state', 'unknown')}",
         f"operator_trial_observed: {str(report['operator_trial_observed']).lower()}",
         f"enterprise_send_ready: {str(report['enterprise_send_ready']).lower()}",
+        "enterprise_send_preflight_mode: "
+        f"{report.get('enterprise_send_preflight_mode', 'unknown')}",
         "enterprise_send_artifacts:",
         "- commits_match_current: "
         f"{str(report['enterprise_send_artifact_commits_match_current']).lower()}",

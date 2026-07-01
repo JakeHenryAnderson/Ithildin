@@ -9,7 +9,7 @@ implementation plan, source review, response intake, closure evidence, and expli
 
 Current governed tool count: `24`
 Current selected capability: `not selected`
-Current send set: `ERG-003`, `ERG-002`
+Current send set: `ERG-004`
 Current response count: `0`
 Current closure-ready count: `0`
 Active resume checkpoint: `ENT-001`
@@ -25,19 +25,18 @@ properties today.
 
 ## Current Resume Scope
 
-The current resumed goal is limited to `ENT-001`: prepare, send, and record the `ERG-003` static
-sandbox/VM preflight and `ERG-002` Mission Control display/import planning review handoff. Response
-normalization, lane closure, live sandbox/VM planning, Mission Control implementation, and capability
-selection remain blocked until reviewer responses are present and intake gates pass.
+The current resumed goal is limited to post-`ENT-001` decision prep: use the recorded `ERG-003` and
+`ERG-002` dispositions to prepare the `ERG-004` live sandbox/VM proof-of-concept decision packet.
+Live sandbox/VM execution, Mission Control implementation, and capability selection remain blocked.
 
 ## Enterprise Milestones
 
 | ID | Milestone | Current status | Entry requirement | Done criteria | Proof command | Still blocked after done |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ENT-001` | Send current external review packets | ready | Fresh `review-candidate`, valid send package, valid receipt template. | `ERG-003` and `ERG-002` sent; send receipt filled and validated. | `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json` | response normalization and lane closure |
-| `ENT-002` | Close `ERG-003` static sandbox/VM preflight | blocked on response | Raw `EXT-SVP-###` response pasted into ignored inbox. | Favorable or dispositioned response; static preflight lane closed for local-preview planning. | `make sandbox-vm-static-preflight-disposition-closure-check` | live VM/container execution |
-| `ENT-003` | Close `ERG-002` Mission Control display/import planning | blocked on response | Raw `EXT-MC-DISPLAY-###` response pasted into ignored inbox. | Display/import planning disposition recorded; Mission Control implementation ticket may proceed if favorable. | `make mission-control-display-disposition-closure-check` | Mission Control execution, policy, approval, or audit authority |
-| `ENT-004` | Stage 2 live sandbox/VM proof of concept | blocked | Favorable `ERG-003` plus separate live POC decision record. | A small local agent/VM demonstration is specified, bounded, observed, and reviewable. | `make sandbox-vm-live-poc-decision-closure-check` | enterprise sandbox orchestration claims |
+| `ENT-001` | Send current external review packets | done | Fresh `review-candidate`, valid send package, valid receipt template. | `ERG-003` and `ERG-002` sent; send receipt filled and validated. | `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json` | response normalization and lane closure |
+| `ENT-002` | Close `ERG-003` static sandbox/VM preflight | done for static preflight | Raw `EXT-SVP-###` response pasted into ignored inbox. | Static preflight lane closed for local-preview planning. | `make enterprise-dual-response-disposition-record-check` | live VM/container execution |
+| `ENT-003` | Close `ERG-002` Mission Control display/import planning | done for design-only continuation | Raw `EXT-MC-DISPLAY-###` response pasted into ignored inbox. | Display/import planning disposition recorded; Mission Control implementation remains separate. | `make enterprise-dual-response-disposition-record-check` | Mission Control execution, policy, approval, or audit authority |
+| `ENT-004` | Stage 2 live sandbox/VM proof of concept | decision-prep active | Favorable `ERG-003` plus separate live POC decision record. | A small local agent/VM demonstration is specified, bounded, observed, and reviewable. | `make sandbox-vm-live-poc-decision-packet-check` | enterprise sandbox orchestration claims |
 | `ENT-005` | Mission Control display/import implementation | blocked | Favorable `ERG-002` plus display-only implementation ticket. | Mission Control can display/import Ithildin status artifacts without polling or mutating Ithildin authority. | Mission Control-side acceptance plus Ithildin fixture checks | Mission Control runtime execution authority |
 | `ENT-006` | Trusted-host promotion design | blocked | Static/live sandbox evidence and promotion evidence contract reviewed. | Promotion state machine, negative fixtures, zone contract, and response kit dispositioned. | `make trusted-host-promotion-disposition-closure-check` | automatic promotion, overwrite/delete/move, broad host writes |
 | `ENT-007` | SIEM-shaped export adapter design | planning-only | Evidence schema, redaction rules, and incident reconstruction reviewed. | Export adapter architecture dispositioned without claiming custody-grade SIEM behavior. | `make siem-export-adapter-disposition-closure-check` | hosted SIEM integration or custody claims |
@@ -49,9 +48,9 @@ selection remain blocked until reviewer responses are present and intake gates p
 
 ## Dependency Order
 
-1. Complete `ENT-001`: send `ERG-003` and `ERG-002`.
-2. Close `ENT-002` before planning a live sandbox/VM POC.
-3. Close `ENT-003` before implementing Mission Control display/import behavior.
+1. Keep `ENT-001`, `ENT-002`, and `ENT-003` as recorded dispositions.
+2. Prepare `ENT-004` as a decision packet before any live sandbox/VM POC.
+3. Keep Mission Control display/import implementation separate from the `ENT-003` planning disposition.
 4. Use `ENT-004` and `ENT-005` to prove the operator-control-plane split.
 5. Only then revisit trusted-host promotion, SIEM adapters, identity/storage, compliance mapping,
    and public positioning.

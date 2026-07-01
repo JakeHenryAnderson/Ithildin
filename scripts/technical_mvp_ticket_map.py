@@ -22,6 +22,11 @@ from scripts import (
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/technical-mvp-ticket-map.md"
 DOC_TITLE = "Ithildin Technical MVP Ticket Map"
+ALLOWED_NEXT_ENTERPRISE_REVIEWS = {"ERG-003", "ERG-004"}
+ALLOWED_NEXT_ACTIONS = {
+    "send_erg_003_and_erg_002",
+    "prepare_post_erg003_live_poc_decision",
+}
 
 REQUIRED_PHRASES = [
     "Status: checked technical-MVP ticket map",
@@ -151,10 +156,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("tool surface tool count is not 24")
     if capability.get("next_candidate") != "not selected":
         failures.append("next capability candidate is selected")
-    if progress.get("recommended_next_enterprise_review") != "ERG-003":
-        failures.append("recommended next enterprise review is not ERG-003")
-    if next_action.get("next_action") != "send_erg_003_and_erg_002":
-        failures.append("operator next action is not send_erg_003_and_erg_002")
+    if progress.get("recommended_next_enterprise_review") not in ALLOWED_NEXT_ENTERPRISE_REVIEWS:
+        failures.append("recommended next enterprise review is not allowed")
+    if next_action.get("next_action") not in ALLOWED_NEXT_ACTIONS:
+        failures.append("operator next action is not an allowed enterprise flow")
     if next_action.get("response_present_count") != 0:
         failures.append("enterprise response evidence is present; use response intake flow")
 

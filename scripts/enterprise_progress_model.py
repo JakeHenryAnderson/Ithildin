@@ -23,6 +23,10 @@ from scripts import (
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-progress-model.md"
 DOC_TITLE = "Ithildin Enterprise Progress Model"
+ALLOWED_NEXT_ACTIONS = {
+    "send_erg_003_and_erg_002",
+    "prepare_post_erg003_live_poc_decision",
+}
 
 REQUIRED_PHRASES = [
     "Status: checked progress model",
@@ -132,8 +136,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("next capability readiness tool count is not 24")
     if capability.get("next_candidate") != "not selected":
         failures.append("next capability selected candidate is not blocked")
-    if operator_next_action.get("next_action") != "send_erg_003_and_erg_002":
-        failures.append("operator next action must remain send_erg_003_and_erg_002")
+    next_action = operator_next_action.get("next_action")
+    if next_action not in ALLOWED_NEXT_ACTIONS:
+        failures.append("operator next action is not an allowed enterprise flow")
     if response_status.get("response_present_count") != 0:
         failures.append("enterprise responses are present; use response application flow")
     if response_status.get("closure_ready_count") != 0:
@@ -202,9 +207,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "progress_model_doc": DOC_REL,
         "tool_count": 24,
         "selected_capability": capability.get("next_candidate"),
-        "recommended_send_set": ["ERG-003", "ERG-002"],
-        "recommended_next_enterprise_review": "ERG-003",
-        "next_action": operator_next_action.get("next_action"),
+        "recommended_send_set": operator_next_action.get("recommended_send_set", []),
+        "recommended_next_enterprise_review": operator_next_action.get(
+            "recommended_next_enterprise_review"
+        ),
+        "next_action": next_action,
         "action_commands": operator_next_action.get("action_commands", []),
         "handoff_artifacts": operator_next_action.get("handoff_artifacts", []),
         "response_present_count": response_status.get("response_present_count"),

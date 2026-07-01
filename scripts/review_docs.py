@@ -298,6 +298,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-review-handoff-drill.md",
     "docs/codex/enterprise-dual-response-inbox.md",
     "docs/codex/enterprise-dual-response-readiness.md",
+    "docs/codex/enterprise-dual-response-disposition-record.md",
     "docs/codex/enterprise-response-waiting-room.md",
     "docs/codex/enterprise-response-now.md",
     "docs/codex/enterprise-response-status-board.md",

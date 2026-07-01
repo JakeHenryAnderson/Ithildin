@@ -89,6 +89,13 @@ The only future `ERG-003` static preflight disposition-record shape is
 source-level evidence passes the closure gate and still keeps `ERG-004` and live sandbox/VM runtime
 work blocked.
 
+The current received-response disposition is recorded in
+`enterprise-dual-response-disposition-record.md`. It records `ERG-003` as
+`closed_local_preview_static_preflight` for CLI-only static preflight evidence and `ERG-002` as
+`ready_for_design_only_decision_record` for Mission Control display/import planning only, while
+preserving the open low advisory `EXT-MC-DISPLAY-001` and keeping runtime/importer/live-VM powers
+blocked.
+
 ## Validation
 
 Run:

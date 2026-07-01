@@ -47,6 +47,13 @@ RESPONSE_COMMANDS = [
     "make enterprise-response-intake-refresh",
 ]
 
+POST_ERG003_COMMANDS = [
+    "make sandbox-vm-live-poc-post-erg003-handoff-check",
+    "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
+    "make sandbox-vm-live-poc-decision-packet-check",
+    "make sandbox-vm-live-poc-external-review-bundle-check",
+]
+
 SEND_ARTIFACTS = [
     {
         "label": "dual_review_outbox",
@@ -116,11 +123,31 @@ RESPONSE_ARTIFACTS = [
     },
 ]
 
+POST_ERG003_ARTIFACTS = [
+    {
+        "label": "dual_response_disposition_record",
+        "path": "docs/codex/enterprise-dual-response-disposition-record.md",
+        "description": "committed ERG-003/ERG-002 response disposition record",
+    },
+    {
+        "label": "live_poc_post_erg003_handoff",
+        "path": "docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md",
+        "description": "blocked live POC handoff map after static preflight disposition",
+    },
+    {
+        "label": "live_poc_decision_packet",
+        "path": "docs/codex/sandbox-vm-live-poc-decision-packet.md",
+        "description": "decision-only packet for later ERG-004 review",
+    },
+]
+
 REQUIRED_DOC_PHRASES = [
     "Status: checked read-only operator next-action summary",
     "Current governed tool count: `24`",
     "make enterprise-operator-next-action",
     "With no real enterprise reviewer responses present",
+    "If the dual-response disposition record is present",
+    "make sandbox-vm-live-poc-post-erg003-handoff-check",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
@@ -178,21 +205,29 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     response_state = _response_state(repo_root)
     response_present_count = response_state["response_present_count"]
     closure_ready_count = response_state["closure_ready_count"]
-    next_action = _next_action(response_present_count, closure_ready_count)
-    action_commands = (
-        SEND_COMMANDS
-        if next_action == "send_erg_003_and_erg_002"
-        else RESPONSE_COMMANDS
+    disposition_recorded = _dual_response_disposition_recorded(repo_root)
+    next_action = _next_action(
+        response_present_count,
+        closure_ready_count,
+        disposition_recorded=disposition_recorded,
     )
-    handoff_artifacts = (
-        SEND_ARTIFACTS
-        if next_action == "send_erg_003_and_erg_002"
-        else RESPONSE_ARTIFACTS
-    )
+    if next_action == "send_erg_003_and_erg_002":
+        action_commands = SEND_COMMANDS
+        handoff_artifacts = SEND_ARTIFACTS
+        recommended_send_set = ["ERG-003", "ERG-002"]
+        recommended_next_enterprise_review = "ERG-003"
+    elif next_action == "prepare_post_erg003_live_poc_decision":
+        action_commands = POST_ERG003_COMMANDS
+        handoff_artifacts = POST_ERG003_ARTIFACTS
+        recommended_send_set = ["ERG-004"]
+        recommended_next_enterprise_review = "ERG-004"
+    else:
+        action_commands = RESPONSE_COMMANDS
+        handoff_artifacts = RESPONSE_ARTIFACTS
+        recommended_send_set = ["ERG-003", "ERG-002"]
+        recommended_next_enterprise_review = "ERG-003"
 
     selected_capability = "not selected"
-    recommended_send_set = ["ERG-003", "ERG-002"]
-    recommended_next_enterprise_review = "ERG-003"
 
     boundary_flags = {
         "runtime_changes_allowed": False,
@@ -268,6 +303,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_next_enterprise_review": recommended_next_enterprise_review,
         "response_present_count": response_present_count,
         "closure_ready_count": closure_ready_count,
+        "dual_response_disposition_recorded": disposition_recorded,
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": NEXT_AFTER_SEND_COMMANDS,
@@ -321,12 +357,28 @@ def render_report(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _next_action(response_present_count: int, closure_ready_count: int) -> str:
+def _next_action(
+    response_present_count: int, closure_ready_count: int, *, disposition_recorded: bool
+) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if disposition_recorded:
+        return "prepare_post_erg003_live_poc_decision"
     return "send_erg_003_and_erg_002"
+
+
+def _dual_response_disposition_recorded(repo_root: Path) -> bool:
+    path = repo_root / "docs/codex/enterprise-dual-response-disposition-record.md"
+    text = _read(path)
+    return (
+        "`closed_local_preview_static_preflight`" in text
+        and "`ready_for_design_only_decision_record`" in text
+        and "EXT-MC-DISPLAY-001" in text
+        and "runtime importer behavior" in text
+        and "live VM/container inspection" in text
+    )
 
 
 def _response_state(repo_root: Path) -> dict[str, Any]:

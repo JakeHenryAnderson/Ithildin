@@ -1395,6 +1395,12 @@ The dual-response readiness summary is
 [docs/codex/enterprise-dual-response-readiness.md](docs/codex/enterprise-dual-response-readiness.md),
 checked with `make enterprise-dual-response-readiness`; it reports whether normalized review
 responses are present and which lane-specific dry-run command should run next.
+The dual-response disposition record is
+[docs/codex/enterprise-dual-response-disposition-record.md](docs/codex/enterprise-dual-response-disposition-record.md),
+checked with `make enterprise-dual-response-disposition-record-check`; it records the received
+`ERG-003` and `ERG-002` external responses, closes only the static-preflight evidence lane allowed
+by the closure gate, preserves the Mission Control design-only boundary, and keeps runtime work
+blocked.
 The enterprise response waiting room is
 [docs/codex/enterprise-response-waiting-room.md](docs/codex/enterprise-response-waiting-room.md),
 checked with `make enterprise-response-waiting-room`; it reports whether ignored `ERG-003` and

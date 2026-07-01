@@ -67,6 +67,12 @@ This map does not approve:
 - public/security-product positioning;
 - new governed tool powers.
 
+The latest committed response disposition is
+`enterprise-dual-response-disposition-record.md`. It records `ERG-003` as
+`closed_local_preview_static_preflight` for static preflight evidence only and `ERG-002` as
+`ready_for_design_only_decision_record` for Mission Control design-only planning only. It does not
+change any blocked runtime boundary in this map.
+
 ## Validation
 
 Run:

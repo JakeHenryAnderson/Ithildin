@@ -737,3 +737,11 @@ The future committed disposition shape is defined in
 source-level `ERG-003` static preflight disposition and keeps `ERG-004`, live POC planning, runtime
 implementation, Mission Control runtime behavior, local model invocation, trusted-host promotion,
 and new governed tool powers blocked.
+
+The received `ERG-003` and `ERG-002` responses are recorded in
+`enterprise-dual-response-disposition-record.md`. That record captures the favorable static
+preflight disposition, the Mission Control design-only continuation outcome, the open low advisory
+`EXT-MC-DISPLAY-001`, and the unchanged block on live VM/container inspection, sandbox
+orchestration, Mission Control runtime behavior, local model invocation, trusted-host promotion,
+SIEM adapter behavior, compliance automation, public/security-product positioning, and new governed
+tool powers.
