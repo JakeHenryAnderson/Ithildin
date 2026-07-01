@@ -5,11 +5,16 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts import artifact_freshness_check  # noqa: E402
 
 DIRTY_COMMAND = "make dev-check"
 CLEAN_COMMAND = "make handoff-dry-run"
@@ -26,6 +31,14 @@ def main() -> int:
         help="print the selected command without running it",
     )
     parser.add_argument(
+        "--refresh-stale",
+        action="store_true",
+        help=(
+            "on a clean tree, run artifact-freshness refresh commands before the "
+            "selected clean-tree handoff sanity path"
+        ),
+    )
+    parser.add_argument(
         "--timeout",
         type=float,
         default=1800.0,
@@ -33,7 +46,12 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    report = build_report(ROOT, dry_run=args.dry_run, timeout_seconds=args.timeout)
+    report = build_report(
+        ROOT,
+        dry_run=args.dry_run,
+        refresh_stale=args.refresh_stale,
+        timeout_seconds=args.timeout,
+    )
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
@@ -45,6 +63,7 @@ def build_report(
     repo_root: Path,
     *,
     dry_run: bool = False,
+    refresh_stale: bool = False,
     timeout_seconds: float = 1800.0,
 ) -> dict[str, Any]:
     dirty_files = _dirty_files(repo_root)
@@ -62,14 +81,39 @@ def build_report(
         "mode": mode,
         "selected_command": command,
         "dry_run": dry_run,
+        "refresh_stale_requested": refresh_stale,
+        "refresh_stale_applied": False,
+        "refresh_commands": [],
+        "refresh_execution": [],
         "release_proof": False,
         "handoff_proof": False,
         "deferred_proof_commands": DEFERRED_PROOF_COMMANDS,
-        "notes": _notes(dirty),
+        "notes": _notes(dirty, refresh_stale=refresh_stale),
         "execution": None,
     }
     if dry_run:
+        if refresh_stale and not dirty:
+            freshness = artifact_freshness_check.build_report(repo_root)
+            report["refresh_commands"] = freshness.get("refresh_commands", [])
         return report
+
+    if refresh_stale and not dirty:
+        freshness = artifact_freshness_check.build_report(repo_root)
+        refresh_commands = freshness.get("refresh_commands", [])
+        report["refresh_commands"] = refresh_commands
+        if refresh_commands:
+            report["refresh_stale_applied"] = True
+            refresh_results = [
+                _run(command, repo_root=repo_root, timeout_seconds=timeout_seconds)
+                for command in refresh_commands
+            ]
+            report["refresh_execution"] = refresh_results
+            failed_refresh = [
+                result for result in refresh_results if result["returncode"] != 0
+            ]
+            if failed_refresh:
+                report["valid"] = False
+                return report
 
     execution = _run(command, repo_root=repo_root, timeout_seconds=timeout_seconds)
     report["execution"] = execution
@@ -87,6 +131,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"mode: {report['mode']}",
         f"selected_command: {report['selected_command']}",
         f"dry_run: {str(report['dry_run']).lower()}",
+        f"refresh_stale_requested: {str(report['refresh_stale_requested']).lower()}",
+        f"refresh_stale_applied: {str(report['refresh_stale_applied']).lower()}",
         f"release_proof: {str(report['release_proof']).lower()}",
         f"handoff_proof: {str(report['handoff_proof']).lower()}",
         "deferred_proof_commands:",
@@ -100,6 +146,21 @@ def render_report(report: dict[str, Any]) -> str:
         omitted = len(report["dirty_files"]) - 40
         if omitted > 0:
             lines.append(f"- ... {omitted} more")
+    if report["refresh_commands"]:
+        lines.append("refresh_commands:")
+        lines.extend(f"- {command}" for command in report["refresh_commands"])
+    if report["refresh_execution"]:
+        lines.append("refresh_execution:")
+        for result in report["refresh_execution"]:
+            lines.append(
+                "- "
+                f"{result['command']} "
+                f"returncode={result['returncode']} "
+                f"elapsed_seconds={result['elapsed_seconds']}"
+            )
+            if result["returncode"] != 0 and result["output_tail"]:
+                lines.append("  output_tail:")
+                lines.extend(f"  {line}" for line in result["output_tail"].splitlines())
     execution = report.get("execution")
     if execution:
         lines.extend(
@@ -133,19 +194,27 @@ def _dirty_files(repo_root: Path) -> list[str]:
     return files
 
 
-def _notes(dirty: bool) -> list[str]:
+def _notes(dirty: bool, *, refresh_stale: bool) -> list[str]:
     if dirty:
-        return [
+        notes = [
             "Dirty tree: run the dirty-file-aware development gate first.",
             "This is not release proof and does not refresh reviewer handoff packets.",
             "Run deferred proof commands before release, checkpoint, or handoff claims.",
         ]
-    return [
+        if refresh_stale:
+            notes.append("--refresh-stale is ignored while the tree is dirty.")
+        return notes
+    notes = [
         "Clean tree: run the cheap current-artifact handoff sanity path.",
         "This checks artifact freshness and send/readiness routing without rebuilding the "
         "full packet.",
         "Run deferred proof commands before release, checkpoint, or handoff claims.",
     ]
+    if refresh_stale:
+        notes.append(
+            "--refresh-stale may run artifact-freshness refresh commands before the sanity path."
+        )
+    return notes
 
 
 def _run(command: str, *, repo_root: Path, timeout_seconds: float) -> dict[str, Any]:

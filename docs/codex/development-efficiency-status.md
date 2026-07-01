@@ -25,6 +25,8 @@ The command consolidates:
 - `make status-now` for the shortest current-state and next-command answer.
 - `make progress-check` for the automatic efficient progress gate: dirty trees run `make
   dev-check`; clean trees run `make handoff-dry-run`.
+- `make progress-check ARGS=--refresh-stale` for the clean-tree case where generated handoff
+  artifacts should be refreshed before the same sanity path.
 - `make handoff-dry-run` for cheap current-artifact handoff readiness after a full candidate
   refresh; it includes `make enterprise-send-quick-check` plus artifact freshness and no-refresh
   enterprise status.
@@ -105,6 +107,11 @@ make enterprise-review-send-refresh
 `make progress-check` is the default "keep moving" command. It saves the manager from deciding
 between a dirty-file development gate and a clean-tree handoff sanity check, but it remains focused
 development evidence only. It does not replace release-check or review-candidate.
+
+Use `make progress-check ARGS=--refresh-stale` when the tree is already clean but the last commit
+made generated handoff artifacts stale. This intentionally runs the refresh commands reported by
+artifact freshness before rechecking the clean-tree path. It still does not replace release-check or
+review-candidate before checkpoint claims.
 
 `make handoff-dry-run` is a current-artifact confirmation path, not release proof. It includes the
 cheap current-send confirmation path, artifact freshness, and no-refresh enterprise status without

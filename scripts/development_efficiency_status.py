@@ -37,6 +37,7 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-current-checkpoint",
     "make enterprise-review-send-preflight",
     "make progress-check",
+    "make progress-check ARGS=--refresh-stale",
     "make handoff-dry-run",
     "make enterprise-send-quick-check",
     "make dev-check",

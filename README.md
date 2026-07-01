@@ -186,6 +186,8 @@ checked with `make control-mapping-readiness`.
   handoff action.
 - `make progress-check` - run the current efficient progress gate automatically: dirty trees use
   `make dev-check`; clean trees use `make handoff-dry-run`. It is not release or handoff proof.
+  Add `ARGS=--refresh-stale` on a clean tree when stale generated handoff artifacts should be
+  refreshed before the same sanity path.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make smart-handoff-check` - run the current validation plan including deferred release/review
@@ -1155,6 +1157,7 @@ release-check profile, technical MVP readiness, and enterprise-current-checkpoin
 small decision view without replacing `make release-check` or `make review-candidate`.
 For faster day-to-day routing, use `make status-now` for the compact next-action view,
 `make progress-check` for the current efficient progress gate,
+`make progress-check ARGS=--refresh-stale` when clean-tree generated artifacts should be refreshed,
 `make validation-recommendation` for a recommendation-only gate plan, and
 `make artifact-freshness-check` before long gates when generated packet state may be stale.
 The v1.0 RC feature-freeze decision is

@@ -580,6 +580,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-check" in readme
     assert "make smart-handoff-check" in readme
     assert "make progress-check" in readme
+    assert "make progress-check ARGS=--refresh-stale" in readme
     assert "make validation-decision" in readme
     assert "make validation-plan" in readme
     assert "make validation-recommendation" in readme
@@ -614,6 +615,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-check" in guide
     assert "make smart-handoff-check" in guide
     assert "make progress-check" in guide
+    assert "make progress-check ARGS=--refresh-stale" in guide
     assert "make test-fast" in guide
     assert "make runtime-check" in guide
     assert "make validation-decision" in guide
@@ -693,6 +695,8 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert progress_report["dry_run"] is True
     assert progress_report["release_proof"] is False
     assert progress_report["handoff_proof"] is False
+    assert progress_report["refresh_stale_requested"] is False
+    assert progress_report["refresh_stale_applied"] is False
     assert progress_report["selected_command"] in {
         "make dev-check",
         "make handoff-dry-run",
@@ -703,6 +707,17 @@ def test_validation_performance_tiers_are_wired() -> None:
         "make release-check",
         "make review-candidate",
     ]
+    refresh_report = progress_check.build_report(
+        Path.cwd(),
+        dry_run=True,
+        refresh_stale=True,
+    )
+    assert refresh_report["valid"] is True
+    assert refresh_report["dry_run"] is True
+    assert refresh_report["refresh_stale_requested"] is True
+    assert refresh_report["refresh_stale_applied"] is False
+    assert refresh_report["release_proof"] is False
+    assert refresh_report["handoff_proof"] is False
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100
@@ -29976,6 +29991,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "make enterprise-current-checkpoint",
         "make enterprise-review-send-preflight",
         "make progress-check",
+        "make progress-check ARGS=--refresh-stale",
         "make handoff-dry-run",
         "make enterprise-send-quick-check",
         "make dev-check",

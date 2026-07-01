@@ -46,6 +46,16 @@ handoff artifacts still line up with the latest commit. It is not release proof,
 and not a replacement for `make release-check` or `make review-candidate` before checkpoint or
 review claims.
 
+On a clean tree where generated handoff artifacts are expected to be stale after a commit, run:
+
+```sh
+make progress-check ARGS=--refresh-stale
+```
+
+This mode runs the refresh commands reported by `make artifact-freshness-check` before the same
+clean-tree handoff sanity path. It is still not release proof or handoff proof; use it to repair
+stale generated state before returning to the normal checkpoint gates.
+
 For a shorter recommendation-only view that never runs commands and never claims release proof, run:
 
 ```sh
