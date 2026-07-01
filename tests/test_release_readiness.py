@@ -15271,7 +15271,12 @@ def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
     ]:
         assert phrase in implementation
     for phrase in [
-        "Status: preimplementation fixture contract",
+        "Status: fixture/test contract retained after implementation",
+        "Runtime implementation is present",
+        "Implemented tool: `project.risk.summary`",
+        "Proposed resource type: `project_risk`",
+        "Tool count remains `24`",
+        "Runtime implementation is bounded by the approved implementation gate",
         "empty workspace / no risk-shaped files",
         "coarse risk signal files present by category only",
         "secrets-adjacent shaped files counted without secret names or values",
@@ -15302,6 +15307,15 @@ def test_project_risk_summary_proposal_and_plan_are_wired() -> None:
     assert "At selection time, implementation was blocked" in selection
     assert "Post-implementation note" in selection
     assert "implementation remains blocked" not in implementation.lower()
+    current_status_surfaces = "\n".join([readme, fixture_plan, source_review])
+    for stale_phrase in [
+        "runtime remains absent",
+        "without claiming runtime source exists",
+        "implementation remains blocked pending a later explicit decision",
+        "approves only a later bounded read-only implementation boundary "
+        "while keeping runtime blocked",
+    ]:
+        assert stale_phrase not in current_status_surfaces.lower()
     assert "make project-risk-summary-proposal-check" in readme
     assert "make project-risk-summary-implementation-plan-check" in readme
     assert "make project-risk-summary-implementation-gate" in readme
@@ -15694,6 +15708,13 @@ def test_project_release_summary_preimplementation_check_is_wired() -> None:
     assert "project.release.summary" in proposal
     assert "project.release.summary" in plan
     assert "project.release.summary" in decision
+    current_status_surfaces = "\n".join([readme, fixture_plan, decision])
+    for stale_phrase in [
+        "runtime remains absent",
+        "without claiming runtime source exists",
+        "intentionally rejects `project.release.summary` manifest or runtime source",
+    ]:
+        assert stale_phrase not in current_status_surfaces.lower()
     assert Path("tool-manifests/project-release-summary.yaml").exists()
     assert "project-release-summary" in lockfile
 

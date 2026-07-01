@@ -1,10 +1,15 @@
 # project.risk.summary Fixture Plan
 
-Status: preimplementation fixture contract.
+Status: fixture/test contract retained after implementation.
+Runtime implementation is present.
+Implemented tool: `project.risk.summary`.
+Proposed resource type: `project_risk`.
+Tool count remains `24`.
+Runtime implementation is bounded by the approved implementation gate.
 
-This fixture plan defines the future regression coverage expected before `project.risk.summary`
-runtime code is added. The future tool must stay count-only and label-only. It must not expose the
-raw evidence behind the counts.
+This fixture plan defines the regression coverage and negative-test expectations for the implemented
+`project.risk.summary` runtime lane. The tool must stay count-only and label-only. It must not expose
+the raw evidence behind the counts.
 
 ## Required Scenarios
 

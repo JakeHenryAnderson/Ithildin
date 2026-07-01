@@ -941,20 +941,17 @@ checked with `make control-mapping-readiness`.
 - `make project-ci-summary-design-review-packet` - generate the design-review packet for the
   selected `project.ci.summary` proposal.
 - `make project-release-summary-proposal-check` - validate the selected
-  `project.release.summary` design-only proposal without authorizing runtime work.
+  `project.release.summary` historical proposal that preceded runtime implementation.
 - `make project-release-summary-implementation-plan-check` - validate the
-  `project.release.summary` implementation-planning packet without authorizing runtime work.
+  `project.release.summary` historical implementation-planning packet.
 - `make project-release-summary-preimplementation-check` - validate the fixture/test contract and
-  readiness wiring for `project.release.summary` without authorizing runtime work.
+  readiness wiring retained for `project.release.summary`.
 - `make project-release-summary-implementation-gate` - validate the approved limited
-  read-only implementation boundary without authorizing runtime work; the current gate
-  intentionally rejects `project.release.summary` manifest or runtime source until a later explicit
-  implementation checkpoint replaces the preimplementation guard.
+  read-only implementation boundary and current runtime wiring for `project.release.summary`.
 - `make project-release-summary-transition-check` - validate the canonical transition checklist for
-  the later manager-owned `project.release.summary` implementation sprint without adding runtime
-  behavior.
+  the manager-owned `project.release.summary` implementation sprint.
 - `make project-release-summary-review-handoff-check` - validate the implemented source-review handoff
-  for `project.release.summary` without claiming runtime source exists.
+  for `project.release.summary` without claiming external/source closure.
 - `make project-release-summary-design-review-packet` - generate the design-review packet for
   the selected `project.release.summary` proposal.
 - `make project-release-summary-source-review-bundle` - generate the ignored implemented
