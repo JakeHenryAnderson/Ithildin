@@ -51,6 +51,7 @@ from scripts import (
     demo_state_report,
     development_efficiency_status,
     docs_claims_public_preview_disposition_closure_check,
+    enterprise_active_route_clarity,
     enterprise_current_checkpoint,
     enterprise_dependency_ladder,
     enterprise_dual_response_inbox,
@@ -27159,6 +27160,64 @@ def test_sandbox_vm_live_poc_decision_record_and_plan_are_wired() -> None:
         assert name in gap_matrix
         assert name in decision_register
         assert name in readiness
+
+
+def test_enterprise_active_route_clarity_is_wired() -> None:
+    report = enterprise_active_route_clarity.build_report(Path.cwd())
+    doc_path = "docs/codex/enterprise-active-route-clarity.md"
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["active_send_set"] == ["ERG-004"]
+    assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["expected_action"] == "prepare_post_erg003_live_poc_decision"
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+
+    for phrase in [
+        "The active post-disposition route is `ERG-004`.",
+        "Historical dual-send route: `ERG-003`, then `ERG-002`.",
+        "Older ERG-003/ERG-002 generated packet surfaces remain",
+        "What This Does Not Approve",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+
+    assert "enterprise-active-route-clarity:" in makefile
+    assert (
+        "enterprise-active-route-clarity" in release_check_body
+        or "release-check: enterprise-active-route-clarity" in makefile
+    )
+    assert "$(MAKE) enterprise-active-route-clarity" in review_candidate_body
+    assert "enterprise-active-route-clarity" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) enterprise-active-route-clarity" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "make enterprise-active-route-clarity" in readme
+    assert doc_path in readme
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert "Enterprise Active Route Clarity" in review_index
 
 
 def test_mission_control_display_response_dry_run_is_wired() -> None:

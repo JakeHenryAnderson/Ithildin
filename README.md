@@ -645,6 +645,8 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-preflight` - run the final operator pre-send check across the
   current `ERG-003`/`ERG-002` send artifacts, response landing pad, handoff drill, response state,
   and consistency gate without recording review or closing lanes.
+- `make enterprise-active-route-clarity` - distinguish the active post-disposition `ERG-004`
+  route from historical `ERG-003`/`ERG-002` packet lineage without approving runtime behavior.
 - `make enterprise-send-quick-check` - run the cheap current-send confirmation path after a full
   candidate refresh: lightweight preflight, receipt-copy check, copied-receipt dry run,
   send-package reuse check, upload-staging check, and response waiting-room state without starting
@@ -1464,6 +1466,10 @@ handoff consistency gate without sending packets, recording review, or closing e
 `make enterprise-review-send-refresh` to regenerate the ignored send artifacts and run that
 preflight in one command, then use `make enterprise-send-quick-check` for a cheap current-send
 confirmation before handoff.
+The enterprise active-route clarity note is
+[docs/codex/enterprise-active-route-clarity.md](docs/codex/enterprise-active-route-clarity.md),
+checked with `make enterprise-active-route-clarity`; it records that the current post-disposition
+route is `ERG-004` while older ERG-003/ERG-002 packet generators remain historical lineage.
 The sandbox/control-plane readiness map is
 [docs/codex/enterprise-sandbox-control-plane-readiness.md](docs/codex/enterprise-sandbox-control-plane-readiness.md)
 and is checked with `make enterprise-sandbox-control-plane-readiness-check`; it links Mission

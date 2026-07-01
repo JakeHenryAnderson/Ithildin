@@ -439,6 +439,11 @@ sandbox-vm-live-poc-external-review-bundle-check:
 
 .PHONY: sandbox-vm-live-poc-preconditions-ready-check sandbox-vm-live-poc-post-erg003-handoff-check sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-decision-record-skeleton-check sandbox-vm-live-poc-decision-record-check sandbox-vm-live-poc-implementation-plan-check sandbox-vm-live-poc-response-dry-run sandbox-vm-live-poc-prerequisite-disposition-dry-run sandbox-vm-live-poc-response-kit sandbox-vm-live-poc-response-kit-check sandbox-vm-live-poc-external-review-bundle sandbox-vm-live-poc-external-review-bundle-check
 
+enterprise-active-route-clarity:
+	uv run python scripts/enterprise_active_route_clarity.py
+
+.PHONY: enterprise-active-route-clarity
+
 enterprise-sandbox-control-plane-readiness-check:
 	uv run python scripts/enterprise_sandbox_control_plane_readiness_check.py
 
@@ -1639,6 +1644,7 @@ review-candidate:
 	$(MAKE) enterprise-response-paste-preflight
 	$(MAKE) enterprise-handoff-consistency-check
 	$(MAKE) enterprise-review-send-preflight
+	$(MAKE) enterprise-active-route-clarity
 	$(MAKE) sandbox-vm-live-poc-decision-packet
 	$(MAKE) sandbox-vm-live-poc-external-review-bundle
 	$(MAKE) sandbox-vm-live-poc-response-kit
@@ -1718,6 +1724,7 @@ release-check: sandbox-vm-live-poc-external-review-bundle-check
 release-check: enterprise-response-paste-preflight
 release-check: enterprise-handoff-consistency-check
 release-check: enterprise-review-send-preflight
+release-check: enterprise-active-route-clarity
 release-check: enterprise-review-send-receipt-validate
 release-check: enterprise-review-send-receipt-dry-run
 release-check: enterprise-review-send-preflight-lightweight-check
