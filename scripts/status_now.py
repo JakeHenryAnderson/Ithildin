@@ -130,6 +130,7 @@ def _recommended_next_commands(
             "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
             "make enterprise-response-waiting-room after reviewer responses arrive",
             "make enterprise-response-now after reviewer responses arrive",
+            "make enterprise-response-paste-preflight after reviewer responses arrive",
         ]
     return ["make dev-check"]
 

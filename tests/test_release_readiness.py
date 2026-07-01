@@ -940,6 +940,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-response-waiting-room after reviewer responses arrive",
         "make enterprise-response-now after reviewer responses arrive",
+        "make enterprise-response-paste-preflight after reviewer responses arrive",
     ]
 
 
