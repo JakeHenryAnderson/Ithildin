@@ -290,6 +290,7 @@ from scripts import (
     sandbox_vm_live_poc_external_response_intake_check,
     sandbox_vm_live_poc_external_review_bundle,
     sandbox_vm_live_poc_implementation_plan_check,
+    sandbox_vm_live_poc_implementation_review_bundle,
     sandbox_vm_live_poc_post_erg003_handoff_check,
     sandbox_vm_live_poc_preconditions_map_check,
     sandbox_vm_live_poc_preconditions_ready_check,
@@ -13225,6 +13226,149 @@ def test_sandbox_vm_live_poc_external_review_bundle_is_wired(tmp_path: Path) -> 
     assert "sandbox-vm-live-poc-external-review-bundle.md" in gap_matrix
     assert "sandbox-vm-live-poc-external-review-bundle.md" in queue
     assert "sandbox-vm-live-poc-external-review-bundle.md" in decision_register
+
+
+def test_sandbox_vm_live_poc_implementation_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    report = sandbox_vm_live_poc_implementation_review_bundle.build_check_report(
+        Path.cwd()
+    )
+    output_dir = tmp_path / "sandbox-vm-live-poc-implementation-review"
+    sandbox_vm_live_poc_implementation_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_SANDBOX_VM_LIVE_POC_IMPLEMENTATION_REVIEW_INDEX.md",
+        "01_SANDBOX_VM_LIVE_POC_IMPLEMENTATION_REVIEW_PROMPT.md",
+        "02_ERG004_DECISION_AND_IMPLEMENTATION_PLAN.md",
+        "03_ERG004_CONTRACTS_AND_PRECONDITIONS.md",
+        "04_ERG004_STATIC_FIXTURE_AND_NEGATIVE_PLAN.md",
+        "05_ERG004_COMMAND_EVIDENCE.md",
+        "sandbox-vm-live-poc-implementation-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir
+            / "sandbox-vm-live-poc-implementation-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_SANDBOX_VM_LIVE_POC_IMPLEMENTATION_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = (
+        output_dir / "01_SANDBOX_VM_LIVE_POC_IMPLEMENTATION_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    plan = (output_dir / "02_ERG004_DECISION_AND_IMPLEMENTATION_PLAN.md").read_text(
+        encoding="utf-8"
+    )
+    contracts = (output_dir / "03_ERG004_CONTRACTS_AND_PRECONDITIONS.md").read_text(
+        encoding="utf-8"
+    )
+    static_plan = (
+        output_dir / "04_ERG004_STATIC_FIXTURE_AND_NEGATIVE_PLAN.md"
+    ).read_text(encoding="utf-8")
+    evidence = (output_dir / "05_ERG004_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "ready_for_implementation_planning_only"
+    assert report["finding_namespace"] == "EXT-LIVE-IMPL-###"
+    assert report["vm_first"] is True
+    assert report["container_profiles_deferred"] is True
+    assert report["implementation_planning_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["external_review_required_before_runtime"] is True
+    assert report["closes_erg_004"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "sandbox-vm-live-poc-implementation-review-artifact-hashes.json"
+    }
+
+    assert "Tool count remains `24`" in index
+    assert "ready_for_implementation_planning_only" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "Finding namespace: `EXT-LIVE-IMPL-###`" in prompt
+    assert "Do not approve runtime implementation" in prompt
+    assert "Do not approve live VM/container inspection" in prompt
+    assert "Do not approve local model invocation" in prompt
+    assert "sandbox-vm-live-poc-decision-record.md" in plan
+    assert "sandbox-vm-live-poc-implementation-plan.md" in plan
+    assert "enterprise-active-route-clarity.md" in plan
+    assert "sandbox-vm-live-poc-evidence-contract.md" in contracts
+    assert "sandbox-vm-live-poc-preconditions-map.md" in contracts
+    assert "operator_intent_id" in static_plan
+    assert "vm_profile_hash" in static_plan
+    assert "mount_root_label" in static_plan
+    assert "network_posture_label" in static_plan
+    assert "cleanup_plan_hash" in static_plan
+    assert "failure_transcript_hash" in static_plan
+    assert "promotion_status: not_promoted" in static_plan
+    for flag in [
+        '"sandbox-vm-live-poc-decision-record-check"',
+        '"sandbox-vm-live-poc-implementation-plan-check"',
+        '"enterprise-active-route-clarity"',
+        '"runtime_changes_allowed": false',
+        '"runtime_implementation_allowed": false',
+        '"live_vm_inspection_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"new_power_classes_allowed": false',
+    ]:
+        assert flag in evidence
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "new governed tool powers are approved",
+    ]:
+        combined = "\n".join([index, prompt, plan, contracts, static_plan, evidence])
+        assert forbidden not in combined
+
+    assert "make sandbox-vm-live-poc-implementation-review-bundle" in readme
+    assert "sandbox-vm-live-poc-implementation-review-bundle:" in makefile
+    assert "sandbox-vm-live-poc-implementation-review-bundle-check:" in makefile
+    assert (
+        "sandbox-vm-live-poc-implementation-review-bundle-check" in release_check_body
+        or "release-check: sandbox-vm-live-poc-implementation-review-bundle-check"
+        in makefile
+    )
+    assert (
+        "$(MAKE) sandbox-vm-live-poc-implementation-review-bundle"
+        in review_candidate_body
+    )
+    assert "sandbox-vm-live-poc-implementation-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-implementation-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-implementation-review-bundle.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-live-poc-implementation-review-bundle.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Implementation Review Bundle" in review_index
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:

@@ -845,6 +845,9 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-implementation-plan-check` - validate the VM-first, operator-managed
   implementation-planning packet for `ERG-004`; container profiles remain deferred and no runtime
   behavior is approved until a later explicit implementation and external/source-review gate.
+- `make sandbox-vm-live-poc-implementation-review-bundle` - generate the external-review packet
+  for the ERG-004 implementation-planning lane, asking whether a later runtime proposal may be
+  prepared while still blocking runtime behavior.
 - `make sandbox-vm-static-preflight-disposition-record-skeleton-check` - validate the `ERG-003`
   static preflight disposition-record skeleton for a future source-reviewed local-preview static
   preflight disposition while keeping `ERG-004`, live sandbox/VM work, runtime implementation, and
@@ -1986,6 +1989,11 @@ The live sandbox/VM POC decision packet is
 and is generated with `make sandbox-vm-live-poc-decision-packet`; it packages the decision intake,
 evidence contract, enterprise sandbox readiness map, prerequisite static-preflight disposition
 evidence, command output, and artifact hashes while keeping `ERG-004` blocked.
+The live sandbox/VM POC implementation-review bundle is
+[docs/codex/sandbox-vm-live-poc-implementation-review-bundle.md](docs/codex/sandbox-vm-live-poc-implementation-review-bundle.md)
+and is generated with `make sandbox-vm-live-poc-implementation-review-bundle`; it packages the
+VM-first planning record, active-route clarity, static fixture plan, negative transcript plan, and
+command evidence for external review before any runtime proposal is allowed.
 The internal source-review pass is
 [docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
 it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label
