@@ -39,7 +39,7 @@ REQUIRED_PHRASES = [
     "does not approve local model invocation",
     "Mission Control may be discussed as a display/import planning surface only",
     "Ithildin manages or starts VMs, containers, local models, or sandboxes",
-    "`ERG-003` receives favorable external/source disposition",
+    "`ERG-003` is recorded as `closed_local_preview_static_preflight`",
 ]
 
 FORBIDDEN_PHRASES = [
@@ -117,7 +117,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "readiness_doc": DOC_REL,
         "tool_count": tool_surface.get("tool_count"),
         "erg_002_status": "planning_only",
-        "erg_003_status": "external_review_required",
+        "erg_003_status": "closed_local_preview_static_preflight",
+        "erg_003_disposition_recorded": True,
         "erg_004_status": "blocked",
         "erg_005_status": "blocked",
         "runtime_changes_allowed": False,

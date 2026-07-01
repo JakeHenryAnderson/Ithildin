@@ -19,13 +19,17 @@ It does not approve local model invocation.
 
 The live sandbox/VM proof-of-concept lane remains blocked.
 
+`ERG-003` is recorded as `closed_local_preview_static_preflight`; this records the CLI-only static
+preflight local-preview disposition and does not approve `ERG-004` live VM/container inspection or
+implementation planning.
+
 ## Current Source Of Truth
 
 | Lane | Current status | Current evidence | Next allowed action |
 | --- | --- | --- | --- |
 | `ERG-002` Mission Control display/importer | `planning_only` | `mission-control-display-disposition-packet.md`, `mission-control-display-disposition-closure-gate.md`, `mission-control-side-handoff-plan.md`, `mission-control-integration-implementation-ticket.md` | Mission Control-side display-only planning and source-review preparation |
 | `ERG-003` Sandbox/VM static preflight | `closed_local_preview_static_preflight` | `enterprise-dual-response-disposition-record.md`, `sandbox-vm-static-preflight-disposition-packet.md`, `sandbox-vm-static-preflight-disposition-plan.md`, `sandbox-vm-static-preflight-external-response-intake.md`, `sandbox-vm-static-preflight-triage-update.md` | Recorded disposition for CLI-only static preflight local-preview evidence |
-| `ERG-004` Live sandbox/VM worker proof of concept | `blocked` | `sandbox-vm-live-poc-decision-intake.md`, `sandbox-vm-live-poc-evidence-contract.md`, `sandbox-vm-live-poc-preconditions-ready-check.md`, `sandbox-vm-live-poc-decision-packet.md`, `sandbox-vm-live-poc-external-review-bundle.md`, `sandbox-vm-live-poc-response-kit.md`, `sandbox-vm-live-poc-decision-record-skeleton.md`, `sandbox-vm-live-poc-decision-closure-gate.md`, `sandbox-vm-live-poc-response-dry-run.md`, `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md` | Decision-packet review only after favorable `ERG-003` disposition |
+| `ERG-004` Live sandbox/VM worker proof of concept | `blocked` | `sandbox-vm-live-poc-decision-intake.md`, `sandbox-vm-live-poc-evidence-contract.md`, `sandbox-vm-live-poc-preconditions-ready-check.md`, `sandbox-vm-live-poc-decision-packet.md`, `sandbox-vm-live-poc-external-review-bundle.md`, `sandbox-vm-live-poc-response-kit.md`, `sandbox-vm-live-poc-decision-record-skeleton.md`, `sandbox-vm-live-poc-decision-closure-gate.md`, `sandbox-vm-live-poc-response-dry-run.md`, `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md` | Decision-packet review and a separate `ERG-004` decision record |
 | `ERG-005` Trusted-host artifact promotion | `blocked` | `trusted-host-promotion-source-review.md`, `trusted-host-promotion-disposition-packet.md`, `trusted-host-promotion-response-kit.md`, `trusted-host-promotion-disposition-closure-gate.md`, `trusted-host-promotion-response-dry-run.md`, `v3-trusted-host-promotion-internal-review.md` | Disposition review and design-only cleanup |
 
 ## Enterprise Claim Map
@@ -54,8 +58,8 @@ Blocked current claims:
 
 The live sandbox/VM POC lane must stay blocked until all of these are true:
 
-1. `ERG-003` receives favorable external/source disposition with no unresolved critical/high
-   findings.
+1. `ERG-003` remains recorded as `closed_local_preview_static_preflight` with no unresolved
+   critical/high findings.
 2. A post-RC decision record names the reviewed commit, evidence packet, allowed planning scope,
    forbidden runtime behavior, and stop conditions.
 3. The live POC decision packet is reviewed and either kept blocked or allowed to move into a later

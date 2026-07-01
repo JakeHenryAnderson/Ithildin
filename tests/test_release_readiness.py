@@ -12750,7 +12750,8 @@ def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["erg_002_status"] == "planning_only"
-    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_003_status"] == "closed_local_preview_static_preflight"
+    assert report["erg_003_disposition_recorded"] is True
     assert report["erg_004_status"] == "blocked"
     assert report["erg_005_status"] == "blocked"
     assert report["runtime_changes_allowed"] is False
