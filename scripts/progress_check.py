@@ -18,7 +18,10 @@ from scripts import artifact_freshness_check  # noqa: E402
 
 DIRTY_COMMAND = "make dev-check"
 CLEAN_COMMAND = "make handoff-dry-run"
-CLEAN_REFRESH_PREREQUISITE_COMMANDS = ["make review-run-manifest-refresh"]
+CLEAN_REFRESH_PREREQUISITE_COMMANDS = [
+    "make review-run-manifest-refresh",
+    "make enterprise-review-send-refresh",
+]
 DEFERRED_PROOF_COMMANDS = ["make release-check", "make review-candidate"]
 OUTPUT_TAIL_LINES = 80
 
@@ -244,8 +247,8 @@ def _notes(dirty: bool, *, refresh_stale: bool) -> list[str]:
     ]
     if refresh_stale:
         notes.append(
-            "--refresh-stale refreshes review-run manifests and may run artifact-freshness "
-            "refresh commands before the sanity path."
+            "--refresh-stale refreshes review-run manifests, enterprise send artifacts, "
+            "and may run artifact-freshness refresh commands before the sanity path."
         )
     return notes
 

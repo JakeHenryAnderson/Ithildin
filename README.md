@@ -187,7 +187,8 @@ checked with `make control-mapping-readiness`.
 - `make progress-check` - run the current efficient progress gate automatically: dirty trees use
   `make dev-check`; clean trees use `make handoff-dry-run`. It is not release or handoff proof.
   Add `ARGS=--refresh-stale` on a clean tree when stale generated handoff artifacts should be
-  refreshed, including review-run manifests, before the same sanity path.
+  refreshed, including review-run manifests and enterprise send artifacts, before the same sanity
+  path.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make smart-handoff-check` - run the current validation plan including deferred release/review

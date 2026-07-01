@@ -109,9 +109,10 @@ between a dirty-file development gate and a clean-tree handoff sanity check, but
 development evidence only. It does not replace release-check or review-candidate.
 
 Use `make progress-check ARGS=--refresh-stale` when the tree is already clean but the last commit
-made generated handoff artifacts stale. This intentionally refreshes review-run manifests, then runs
-the refresh commands reported by artifact freshness before rechecking the clean-tree path. It still
-does not replace release-check or review-candidate before checkpoint claims.
+made generated handoff artifacts stale. This intentionally refreshes review-run manifests and
+enterprise send artifacts, then runs the refresh commands reported by artifact freshness before
+rechecking the clean-tree path. It still does not replace release-check or review-candidate before
+checkpoint claims.
 
 `make handoff-dry-run` is a current-artifact confirmation path, not release proof. It includes the
 cheap current-send confirmation path, artifact freshness, and no-refresh enterprise status without

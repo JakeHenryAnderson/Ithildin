@@ -719,6 +719,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     if not refresh_report["git_dirty"]:
         assert refresh_report["pre_refresh_commands"] == [
             "make review-run-manifest-refresh",
+            "make enterprise-review-send-refresh",
         ]
     assert refresh_report["release_proof"] is False
     assert refresh_report["handoff_proof"] is False
