@@ -562,6 +562,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-receipt-copy` - copy the generated receipt template into an ignored
   operator-editable receipt file after the human send step, refusing overwrite unless the script is
   explicitly forced and still not recording review or closing lanes.
+- `make enterprise-review-send-receipt-fill ARGS="..."` - optionally fill that ignored send
+  receipt from explicit operator-provided send metadata after the human send step, then validate it;
+  this records send metadata only and still does not normalize responses or close lanes.
 - `make enterprise-review-send-receipt-validate` - validate the generated or copied send receipt
   JSON before response intake without recording review, writing responses, or closing lanes.
 - `make enterprise-review-send-receipt-dry-run` - rehearse a copied filled receipt and a malformed

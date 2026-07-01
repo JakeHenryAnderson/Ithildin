@@ -27,6 +27,18 @@ After the human send step, create an operator-editable receipt copy:
 make enterprise-review-send-receipt-copy
 ```
 
+Optionally fill that copied receipt from explicit operator send metadata instead of editing JSON by
+hand:
+
+```sh
+make enterprise-review-send-receipt-fill ARGS="\
+  --sent-at 2026-07-01T12:00:00Z \
+  --channel chatgpt \
+  --reviewer-label gpt-5.5-pro \
+  --erg-003-thread-or-message-url https://example.test/erg-003 \
+  --erg-002-thread-or-message-url https://example.test/erg-002"
+```
+
 The generated template is written under:
 
 ```text
@@ -63,7 +75,8 @@ Expected raw responses are later pasted under the ignored response inbox at
 8. Send `ERG-003` and `ERG-002` in separate review threads.
 9. Run `make enterprise-review-send-receipt-copy` after the human send step, then fill in the send
    timestamp, channel, reviewer label, thread URL or message ID, and expected raw-response path in
-   the copied receipt.
+   the copied receipt. You may use `make enterprise-review-send-receipt-fill ARGS="..."` for this
+   explicit send-metadata fill step.
 10. Run `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`.
 11. Confirm the copied receipt reports
    `next_operator_action: wait_for_responses_then_run_enterprise_response_paste_preflight`.

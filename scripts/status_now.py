@@ -127,6 +127,7 @@ def _recommended_next_commands(
             "make handoff-dry-run",
             "make enterprise-send-now",
             "make enterprise-review-send-receipt-copy after the human send step",
+            "make enterprise-review-send-receipt-fill ARGS=\"...\" after the human send step",
             "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
             "make enterprise-response-waiting-room after reviewer responses arrive",
             "make enterprise-response-now after reviewer responses arrive",

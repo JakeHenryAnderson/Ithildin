@@ -27,6 +27,17 @@ The helper command for creating the ignored operator-editable copy is:
 make enterprise-review-send-receipt-copy
 ```
 
+The optional helper for filling that copied receipt after the human send step is:
+
+```sh
+make enterprise-review-send-receipt-fill ARGS="\
+  --sent-at 2026-07-01T12:00:00Z \
+  --channel chatgpt \
+  --reviewer-label gpt-5.5-pro \
+  --erg-003-thread-or-message-url https://example.test/erg-003 \
+  --erg-002-thread-or-message-url https://example.test/erg-002"
+```
+
 The default command validates the generated receipt template under
 `var/review-packets/v3/enterprise-review-send-receipt-template/`. A valid unsent template remains
 `ready_for_response_intake: false`; that is expected until the operator fills the send evidence
@@ -63,6 +74,9 @@ next_operator_action: wait_for_responses_then_run_enterprise_response_paste_pref
 This means only that the send evidence is ready for the response-intake path. It does not mean a
 reviewer response exists yet. Wait for real reviewer responses, paste them into the ignored
 lane-local raw-response files, and then run the response paste preflight.
+
+The fill helper records operator send metadata only. It does not record reviewer findings, normalize
+responses, write raw response files, close lanes, or approve runtime behavior.
 
 ## Boundary
 

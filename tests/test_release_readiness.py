@@ -87,6 +87,7 @@ from scripts import (
     enterprise_review_send_readiness,
     enterprise_review_send_receipt_copy,
     enterprise_review_send_receipt_dry_run,
+    enterprise_review_send_receipt_fill,
     enterprise_review_send_receipt_template,
     enterprise_review_send_receipt_validate,
     enterprise_review_send_session_record,
@@ -935,6 +936,62 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert check_report["closes_erg_002"] is False
 
 
+def test_enterprise_review_send_receipt_fill_is_bounded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        enterprise_review_send_receipt_template,
+        "_git",
+        lambda _repo_root, args: "fixture-commit" if args == ["rev-parse", "HEAD"] else "",
+    )
+    output = tmp_path / "enterprise-review-send-receipt-copy.json"
+
+    report = enterprise_review_send_receipt_fill.build_fill_report(
+        Path.cwd(),
+        output=output,
+        sent_at="2026-07-01T12:00:00Z",
+        channel="chatgpt",
+        reviewer_label="gpt-5.5-pro",
+        lane_links={
+            "ERG-003": "https://example.test/erg-003",
+            "ERG-002": "https://example.test/erg-002",
+        },
+        lane_message_ids={"ERG-003": "", "ERG-002": ""},
+        operator_notes="fixture only",
+        force=True,
+    )
+    check_report = enterprise_review_send_receipt_fill.build_check_report(Path.cwd())
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    template_doc = Path("docs/codex/enterprise-review-send-receipt-template.md").read_text(
+        encoding="utf-8"
+    )
+    validation_doc = Path("docs/codex/enterprise-review-send-receipt-validation.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["ready_for_response_intake"] is True
+    assert report["next_operator_action"] == (
+        "wait_for_responses_then_run_enterprise_response_paste_preflight"
+    )
+    assert report["records_send_receipt"] is True
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["closes_erg_003"] is False
+    assert report["closes_erg_002"] is False
+    assert output.exists()
+    assert check_report["valid"] is True
+    assert check_report["records_send_receipt"] is False
+    assert "enterprise-review-send-receipt-fill:" in makefile
+    assert "enterprise-review-send-receipt-fill-check:" in makefile
+    assert "make enterprise-review-send-receipt-fill" in readme
+    assert "make enterprise-review-send-receipt-fill" in template_doc
+    assert "make enterprise-review-send-receipt-fill" in validation_doc
+
+
 def test_validation_decision_reports_development_and_handoff_modes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1230,6 +1287,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make handoff-dry-run",
         "make enterprise-send-now",
         "make enterprise-review-send-receipt-copy after the human send step",
+        'make enterprise-review-send-receipt-fill ARGS="..." after the human send step',
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-response-waiting-room after reviewer responses arrive",
         "make enterprise-response-now after reviewer responses arrive",
