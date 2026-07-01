@@ -193,6 +193,7 @@ from scripts import (
     production_identity_storage_external_review_bundle,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
+    progress_check,
     project_ci_summary_design_review_packet,
     project_ci_summary_implementation_gate,
     project_ci_summary_implementation_plan_check,
@@ -521,6 +522,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "readiness-check:" in makefile
     assert "smart-check:" in makefile
     assert "smart-handoff-check:" in makefile
+    assert "progress-check:" in makefile
     assert "validation-decision:" in makefile
     assert "validation-plan:" in makefile
     assert "validation-recommendation:" in makefile
@@ -577,6 +579,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make readiness-check" in readme
     assert "make smart-check" in readme
     assert "make smart-handoff-check" in readme
+    assert "make progress-check" in readme
     assert "make validation-decision" in readme
     assert "make validation-plan" in readme
     assert "make validation-recommendation" in readme
@@ -610,6 +613,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make evidence-check" in guide
     assert "make smart-check" in guide
     assert "make smart-handoff-check" in guide
+    assert "make progress-check" in guide
     assert "make test-fast" in guide
     assert "make runtime-check" in guide
     assert "make validation-decision" in guide
@@ -623,6 +627,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "scripts/validation_timing.py --profile enterprise-status" in guide
     assert "scripts/validation_timing.py --profile handoff-dry-run" in guide
     assert "make handoff-dry-run" in guide
+    assert "`progress-check` chooses `make dev-check`" in guide
     assert "`enterprise-status`: times the no-refresh" in guide
     assert "`enterprise-send-refresh`: times regeneration" in guide
     assert "`handoff-dry-run`: times the cheap current-artifact" in guide
@@ -683,6 +688,21 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert validation_timing.PROFILE_BUDGET_SECONDS["capability"] > 0
     assert validation_timing.PROFILE_BUDGET_SECONDS["enterprise-status"] > 0
     assert validation_timing.PROFILE_BUDGET_SECONDS["handoff"] > 0
+    progress_report = progress_check.build_report(Path.cwd(), dry_run=True)
+    assert progress_report["valid"] is True
+    assert progress_report["dry_run"] is True
+    assert progress_report["release_proof"] is False
+    assert progress_report["handoff_proof"] is False
+    assert progress_report["selected_command"] in {
+        "make dev-check",
+        "make handoff-dry-run",
+    }
+    if not progress_report["git_dirty"]:
+        assert progress_report["selected_command"] == "make handoff-dry-run"
+    assert progress_report["deferred_proof_commands"] == [
+        "make release-check",
+        "make review-candidate",
+    ]
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100
@@ -29933,6 +29953,7 @@ def test_development_efficiency_status_is_wired() -> None:
     assert report["public_security_product_positioning_allowed"] is False
     assert "make release-check" in report["recommended_handoff_commands"]
     assert "make review-candidate" in report["recommended_handoff_commands"]
+    assert "make progress-check" in report["recommended_handoff_commands"]
     assert "make handoff-dry-run" in report["recommended_handoff_commands"]
     assert "make development-efficiency-status" in readme
     assert "development-efficiency-status:" in makefile
@@ -29954,6 +29975,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "make technical-mvp-operator-trial-readiness",
         "make enterprise-current-checkpoint",
         "make enterprise-review-send-preflight",
+        "make progress-check",
         "make handoff-dry-run",
         "make enterprise-send-quick-check",
         "make dev-check",
@@ -29967,6 +29989,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "does not replace release-check",
         "enterprise send package is fresh for the current commit",
         "cheap current-send confirmation",
+        "default \"keep moving\" command",
         "readiness warnings",
         "do not make this diagnostic command itself fail",
         "`--json` for the full list",

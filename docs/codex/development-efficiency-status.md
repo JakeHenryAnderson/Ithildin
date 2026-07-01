@@ -23,6 +23,8 @@ The command consolidates:
 - `make artifact-freshness-check` when packet/handoff freshness needs to be checked before a long
   gate.
 - `make status-now` for the shortest current-state and next-command answer.
+- `make progress-check` for the automatic efficient progress gate: dirty trees run `make
+  dev-check`; clean trees run `make handoff-dry-run`.
 - `make handoff-dry-run` for cheap current-artifact handoff readiness after a full candidate
   refresh; it includes `make enterprise-send-quick-check` plus artifact freshness and no-refresh
   enterprise status.
@@ -33,7 +35,8 @@ The report is intentionally small and operator-facing. It records:
 
 - the current commit and dirty state;
 - tool count, latest implemented tool, and selected next capability;
-- the recommended development gate, usually `make dev-check` on a clean tree;
+- the recommended development gate, usually `make dev-check` while files are dirty and `make
+  handoff-dry-run` once the tree is clean and artifacts should be checked;
 - deferred handoff commands such as `make release-check`, `make review-candidate`, and
   `make enterprise-review-send-refresh`;
 - release-check target counts and heaviest target categories;
@@ -75,9 +78,9 @@ For routine development:
 
 ```sh
 make status-now
+make progress-check
 make validation-recommendation
 make development-efficiency-status
-make dev-check
 ```
 
 For a meaningful checkpoint or review handoff:
@@ -92,11 +95,16 @@ For the current enterprise handoff lane:
 
 ```sh
 make development-efficiency-status
+make progress-check
 make handoff-dry-run
 make release-check
 make review-candidate
 make enterprise-review-send-refresh
 ```
+
+`make progress-check` is the default "keep moving" command. It saves the manager from deciding
+between a dirty-file development gate and a clean-tree handoff sanity check, but it remains focused
+development evidence only. It does not replace release-check or review-candidate.
 
 `make handoff-dry-run` is a current-artifact confirmation path, not release proof. It includes the
 cheap current-send confirmation path, artifact freshness, and no-refresh enterprise status without

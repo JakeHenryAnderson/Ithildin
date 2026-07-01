@@ -184,6 +184,8 @@ checked with `make control-mapping-readiness`.
 - `make development-efficiency-status` - print the compact current-state view that combines
   validation choice, release-check shape, technical MVP operator-trial readiness, and enterprise
   handoff action.
+- `make progress-check` - run the current efficient progress gate automatically: dirty trees use
+  `make dev-check`; clean trees use `make handoff-dry-run`. It is not release or handoff proof.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make smart-handoff-check` - run the current validation plan including deferred release/review
@@ -1152,6 +1154,7 @@ and is checked with `make development-efficiency-status`; it combines validation
 release-check profile, technical MVP readiness, and enterprise-current-checkpoint evidence into one
 small decision view without replacing `make release-check` or `make review-candidate`.
 For faster day-to-day routing, use `make status-now` for the compact next-action view,
+`make progress-check` for the current efficient progress gate,
 `make validation-recommendation` for a recommendation-only gate plan, and
 `make artifact-freshness-check` before long gates when generated packet state may be stale.
 The v1.0 RC feature-freeze decision is

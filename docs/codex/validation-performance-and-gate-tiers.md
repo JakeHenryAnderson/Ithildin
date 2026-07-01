@@ -33,6 +33,19 @@ release-check slice suggestions, run:
 make validation-decision
 ```
 
+To execute the current efficient progress gate without deciding manually between the development
+loop and the cheap handoff sanity path, run:
+
+```sh
+make progress-check
+```
+
+`progress-check` chooses `make dev-check` when the tree is dirty and `make handoff-dry-run` when the
+tree is clean. It is useful after focused implementation work or while checking whether the current
+handoff artifacts still line up with the latest commit. It is not release proof, not handoff proof,
+and not a replacement for `make release-check` or `make review-candidate` before checkpoint or
+review claims.
+
 For a shorter recommendation-only view that never runs commands and never claims release proof, run:
 
 ```sh
