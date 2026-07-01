@@ -46,7 +46,7 @@ make enterprise-dual-response-inbox
 make enterprise-response-waiting-room
 make enterprise-response-now
 make enterprise-review-handoff-drill
-make enterprise-send-quick-check
+make handoff-dry-run
 ```
 
 After the human send step, preserve the local send receipt:

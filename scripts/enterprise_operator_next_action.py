@@ -31,7 +31,7 @@ SEND_COMMANDS = [
     "make release-check",
     "make review-candidate",
     "make enterprise-review-send-refresh",
-    "make enterprise-send-quick-check",
+    "make handoff-dry-run",
     "make enterprise-send-now",
 ]
 
@@ -122,7 +122,7 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-operator-next-action",
     "With no real enterprise reviewer responses present",
     "make enterprise-review-send-refresh",
-    "make enterprise-send-quick-check",
+    "make handoff-dry-run",
     "make enterprise-send-now",
     "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
     "handoff_artifacts",

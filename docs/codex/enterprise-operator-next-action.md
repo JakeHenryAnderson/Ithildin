@@ -36,7 +36,7 @@ With no real enterprise reviewer responses present, the next allowed operator ac
 
    ```sh
    make enterprise-review-send-refresh
-   make enterprise-send-quick-check
+   make handoff-dry-run
    make enterprise-send-now
    ```
 
