@@ -169,6 +169,8 @@ checked with `make control-mapping-readiness`.
   validation gate set for those changes.
 - `make validation-decision` - print the current validation mode, deferred handoff gates, release
   slice suggestions, and command guidance for the dirty file set.
+- `make validation-decision-run` - print the same decision, then run only the recommended
+  development commands; it never runs deferred release or handoff proof gates.
 - `make validation-recommendation` - print a shorter recommendation-only view; it never runs
   commands and is not release or handoff proof.
 - `make artifact-freshness-check` - cheaply check whether enterprise send artifacts, the compact

@@ -525,6 +525,7 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert "smart-handoff-check:" in makefile
     assert "progress-check:" in makefile
     assert "validation-decision:" in makefile
+    assert "validation-decision-run:" in makefile
     assert "validation-plan:" in makefile
     assert "validation-recommendation:" in makefile
     assert "artifact-freshness-check:" in makefile
@@ -585,6 +586,7 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert "make progress-check ARGS=--refresh-stale" in readme
     assert "make review-candidate-release-transcript" in readme
     assert "make validation-decision" in readme
+    assert "make validation-decision-run" in readme
     assert "make validation-plan" in readme
     assert "make validation-recommendation" in readme
     assert "make artifact-freshness-check" in readme
@@ -624,6 +626,7 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert "make test-fast" in guide
     assert "make runtime-check" in guide
     assert "make validation-decision" in guide
+    assert "make validation-decision-run" in guide
     assert "make validation-plan" in guide
     assert "make validation-recommendation" in guide
     assert "make artifact-freshness-check" in guide
@@ -643,6 +646,8 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert "make release-check-profile" in guide
     assert "make release-check-slice" in guide
     assert "make release-check-transcript-summary" in guide
+    assert "one-command development-loop shortcut" in guide
+    assert "not run wholesale" in guide
     assert "make packet-check-recursion-guard" in guide
     enterprise_status_quick_body = makefile.partition("enterprise-status-quick:")[
         2
@@ -955,6 +960,53 @@ def test_validation_decision_reports_development_and_handoff_modes(
     assert "release_slice_commands:" in rendered_enterprise_report
 
 
+def test_validation_decision_run_development_executes_only_development_commands(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_commands: list[str] = []
+
+    def fake_run_commands(
+        commands: list[str],
+        *,
+        timeout_seconds: float,
+    ) -> dict[str, object]:
+        captured_commands.extend(commands)
+        assert timeout_seconds == 123.0
+        return {
+            "valid": True,
+            "command_count": len(commands),
+            "total_elapsed_seconds": 0.0,
+            "results": [
+                {
+                    "command": command,
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "output_tail": "",
+                }
+                for command in commands
+            ],
+        }
+
+    monkeypatch.setattr(validation_decision, "_git_dirty", lambda: False)
+    monkeypatch.setattr(validation_plan, "run_commands", fake_run_commands)
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "validation_decision.py",
+            "--run-development",
+            "--timeout",
+            "123",
+            "apps/api/src/ithildin_api/tools/example.py",
+        ],
+    )
+
+    assert validation_decision.main() == 0
+    assert captured_commands == ["make quick-check", "make runtime-check"]
+    assert "make release-check" not in captured_commands
+
+
 def test_validation_recommendation_is_plan_only() -> None:
     report = validation_recommendation.build_report(
         ["apps/api/src/ithildin_api/tools/example.py"]
@@ -978,6 +1030,7 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
         ["apps/api/src/ithildin_api/tools/example.py"]
     )
     tests_report = validation_plan.build_report(["tests/test_example.py"])
+    broad_tests_report = validation_plan.build_report(["tests/test_release_readiness.py"])
     manifest_report = validation_plan.build_report(["tool-manifests/example.yaml"])
 
     assert pure_docs_report["categories"] == ["docs"]
@@ -1003,6 +1056,16 @@ def test_validation_plan_recommends_gates_by_changed_file_category() -> None:
     ]
     assert "make release-check" not in tests_report["recommended_commands"]
     assert "make release-check" not in tests_report["deferred_handoff_commands"]
+    assert broad_tests_report["categories"] == ["tests"]
+    assert "make readiness-check" in broad_tests_report["recommended_commands"]
+    assert (
+        'uv run pytest tests/test_release_readiness.py -m "not slow_packet" -q'
+        not in broad_tests_report["recommended_commands"]
+    )
+    assert any(
+        "Broad release-readiness test files are not run wholesale" in note
+        for note in broad_tests_report["notes"]
+    )
     assert manifest_report["categories"] == ["manifest"]
     assert "make manifest-lock-check" in manifest_report["recommended_commands"]
     assert "make release-check" not in manifest_report["recommended_commands"]

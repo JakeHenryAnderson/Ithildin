@@ -82,13 +82,35 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("files", nargs="*", help="changed files to classify")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    parser.add_argument(
+        "--run-development",
+        action="store_true",
+        help=(
+            "run only the recommended development commands after printing the decision; "
+            "deferred release/handoff gates are never executed by this option"
+        ),
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=900.0,
+        help="per-command timeout in seconds when --run-development is used",
+    )
     args = parser.parse_args()
 
     report = build_report(args.files)
+    if args.run_development:
+        report["development_execution"] = validation_plan.run_commands(
+            report["next_development_commands"],
+            timeout_seconds=args.timeout,
+        )
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
         print(render_report(report))
+    execution = report.get("development_execution")
+    if execution and not execution["valid"]:
+        return 1
     return 0 if report["valid"] else 1
 
 
@@ -153,6 +175,26 @@ def render_report(report: dict[str, Any]) -> str:
     if report["files"]:
         lines.append("files:")
         lines.extend(f"- {path}" for path in report["files"])
+    if "development_execution" in report:
+        execution = report["development_execution"]
+        lines.extend(
+            [
+                "development_execution:",
+                f"- valid: {str(execution['valid']).lower()}",
+                f"- command_count: {execution['command_count']}",
+                f"- total_elapsed_seconds: {execution['total_elapsed_seconds']}",
+            ]
+        )
+        for result in execution["results"]:
+            lines.append(
+                "- "
+                f"{result['command']} "
+                f"returncode={result['returncode']} "
+                f"elapsed_seconds={result['elapsed_seconds']}"
+            )
+            if result["returncode"] != 0 and result["output_tail"]:
+                lines.append("  output_tail:")
+                lines.extend(f"  {line}" for line in result["output_tail"].splitlines())
     if report["failures"]:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])

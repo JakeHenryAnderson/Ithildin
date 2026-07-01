@@ -39,6 +39,16 @@ paths for hypothetical planning without making the clean worktree look dirty, an
 affected full-gate areas before deciding whether to run a focused slice or save the full
 `make release-check` for checkpoint proof.
 
+To print the same decision and immediately run only the recommended development commands, run:
+
+```sh
+make validation-decision-run
+```
+
+`validation-decision-run` deliberately does not run deferred release or handoff gates. It is a
+one-command development-loop shortcut, not release proof, handoff proof, or a replacement for
+`make release-check` / `make review-candidate` before checkpoint claims.
+
 To execute the current efficient progress gate without deciding manually between the development
 loop and the cheap handoff sanity path, run:
 
@@ -111,6 +121,10 @@ directly with `slow_packet` tests excluded as focused evidence. That keeps test-
 honest without jumping straight to the full Python suite or generated-packet tests. Use
 `make test-fast`, `make test`, or `make release-check` when a change needs broader confidence or
 checkpoint evidence.
+The omnibus `tests/test_release_readiness.py` file is intentionally not run wholesale by this
+heuristic because it mixes many unrelated status and generated-artifact assertions; pass explicit
+pytest node IDs for touched assertions or rely on `readiness-check` for the curated docs/readiness
+smoke.
 
 ### Validation Timing
 

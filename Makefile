@@ -11,7 +11,7 @@ RECEIPT ?= var/review-packets/v3/enterprise-review-send-receipt-template/enterpr
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
-.PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
+.PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
 
 test:
 	uv run pytest
@@ -86,6 +86,9 @@ validation-plan:
 
 validation-decision:
 	uv run python scripts/validation_decision.py $(ARGS)
+
+validation-decision-run:
+	uv run python scripts/validation_decision.py --run-development $(ARGS)
 
 validation-recommendation:
 	uv run python scripts/validation_recommendation.py $(ARGS)

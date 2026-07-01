@@ -34,6 +34,9 @@ CONFIG_FILES = {
     "apps/ui/package-lock.json",
 }
 DOC_FILES = {"README.md", "AGENTS.md"}
+BROAD_TEST_FILES = {
+    "tests/test_release_readiness.py",
+}
 
 
 def main() -> int:
@@ -95,7 +98,7 @@ def build_report(files: list[str], *, include_release: bool = False) -> dict[str
         "include_release": include_release,
         "full_release_gate_required": _requires_full_release(categories),
         "review_candidate_required": "review_packet" in categories,
-        "notes": _notes_for_categories(categories),
+        "notes": _notes_for_categories(categories, normalized),
     }
 
 
@@ -238,7 +241,7 @@ def _requires_full_release(categories: list[str]) -> bool:
     return bool(release_categories.intersection(categories))
 
 
-def _notes_for_categories(categories: list[str]) -> list[str]:
+def _notes_for_categories(categories: list[str], files: list[str]) -> list[str]:
     notes: list[str] = []
     if "runtime" in categories:
         notes.append("Runtime changes need focused subsystem tests before the full release gate.")
@@ -258,6 +261,12 @@ def _notes_for_categories(categories: list[str]) -> list[str]:
         notes.append(
             "Changed Python test files are run directly as focused evidence; broaden to "
             "test-fast or release-check before checkpoint claims when risk warrants it."
+        )
+    broad_test_files = _broad_test_files(files)
+    if broad_test_files:
+        notes.append(
+            "Broad release-readiness test files are not run wholesale by the fast plan; pass "
+            "specific pytest node IDs when you need those exact tests."
         )
     if categories == ["docs"]:
         notes.append(
@@ -292,11 +301,16 @@ def _changed_test_commands(files: list[str]) -> list[str]:
         if path.startswith("tests/")
         and path.endswith(".py")
         and "::" not in path
+        and path not in BROAD_TEST_FILES
     ]
     if not test_files:
         return []
     quoted_paths = " ".join(shlex.quote(path) for path in test_files)
     return [f'uv run pytest {quoted_paths} -m "not slow_packet" -q']
+
+
+def _broad_test_files(files: list[str]) -> list[str]:
+    return [path for path in files if path in BROAD_TEST_FILES]
 
 
 def _normalize_path(path: str) -> str:
