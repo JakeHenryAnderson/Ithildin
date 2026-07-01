@@ -28,7 +28,7 @@ SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 REQUIRED_DOC_PHRASES = [
     "Status: temporary fixture dry run for the blocked `ERG-004` prerequisite chain.",
     "Current governed tool count: `24`.",
-    "Current `ERG-003` status: `external_review_required`.",
+    "Current `ERG-003` status: `closed_local_preview_static_preflight`.",
     "Current `ERG-004` status: `blocked`.",
     "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
     "missing static-preflight disposition record is rejected",
@@ -98,7 +98,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "allowed_disposition_outcome": EXPECTED_OUTCOME,
         "area": "sandbox-vm-live-poc-prerequisite-disposition",
         "tool_count": 24,
-        "erg_003_status": "external_review_required",
+        "erg_003_status": "closed_local_preview_static_preflight",
+        "erg_003_disposition_recorded": True,
         "erg_004_status": "blocked",
         "cases": cases,
         "temporary_fixtures_only": True,
@@ -399,6 +400,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"area: {report['area']}",
         f"tool_count: {report['tool_count']}",
         f"erg_003_status: {report['erg_003_status']}",
+        "erg_003_disposition_recorded: "
+        f"{str(report['erg_003_disposition_recorded']).lower()}",
         f"erg_004_status: {report['erg_004_status']}",
         f"temporary_fixtures_only: {str(report['temporary_fixtures_only']).lower()}",
         "real_normalized_response_mutated: "

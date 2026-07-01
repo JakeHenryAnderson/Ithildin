@@ -180,7 +180,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"new_power_classes_allowed": false',
         '"erg_004_unblocked": false',
         '"closes_erg_004": false',
-        '"erg_003_closed": false',
+        '"erg_003_disposition_recorded": true',
         '"sandbox-vm-live-poc-preconditions-ready-check"',
         '"ready_for_implementation_planning": false',
         '"response_dry_run"',
@@ -230,6 +230,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "erg_004_status": "blocked",
         "recommended_next_review": "ERG-004",
+        "erg_003_status": "closed_local_preview_static_preflight",
+        "erg_003_disposition_recorded": True,
         "runtime_changes_allowed": False,
         "implementation_planning_allowed": False,
         "live_vm_inspection_allowed": False,
@@ -240,7 +242,6 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "siem_adapter_allowed": False,
         "new_power_classes_allowed": False,
         "public_security_product_positioning_allowed": False,
-        "erg_003_closed": False,
         "erg_004_unblocked": False,
         "closes_erg_004": False,
     }
@@ -481,7 +482,7 @@ def _command_evidence(commit: str, dirty: bool, reports: list[dict[str, Any]]) -
             "trusted_host_promotion_allowed": False,
             "siem_adapter_allowed": False,
             "new_power_classes_allowed": False,
-            "erg_003_closed": False,
+            "erg_003_disposition_recorded": True,
             "erg_004_unblocked": False,
             "closes_erg_004": False,
         },
@@ -555,6 +556,9 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         f"erg_004_status: {report['erg_004_status']}",
         f"recommended_next_review: {report['recommended_next_review']}",
+        f"erg_003_status: {report['erg_003_status']}",
+        "erg_003_disposition_recorded: "
+        f"{str(report['erg_003_disposition_recorded']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "implementation_planning_allowed: "
         f"{str(report['implementation_planning_allowed']).lower()}",
@@ -565,7 +569,6 @@ def render_report(report: dict[str, Any]) -> str:
         f"sandbox_orchestration_allowed: {str(report['sandbox_orchestration_allowed']).lower()}",
         f"trusted_host_promotion_allowed: {str(report['trusted_host_promotion_allowed']).lower()}",
         f"new_power_classes_allowed: {str(report['new_power_classes_allowed']).lower()}",
-        f"erg_003_closed: {str(report['erg_003_closed']).lower()}",
         f"erg_004_unblocked: {str(report['erg_004_unblocked']).lower()}",
         f"closes_erg_004: {str(report['closes_erg_004']).lower()}",
     ]

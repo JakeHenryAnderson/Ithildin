@@ -13,8 +13,13 @@ checklist. It does not approve live VM/container inspection, does not approve sa
 orchestration, does not approve local model invocation, does not approve Mission Control runtime
 behavior, does not approve trusted-host promotion, and does not approve network expansion.
 
-`ERG-004` remains blocked until a future post-RC decision record can reference favorable `ERG-003`
-static preflight disposition evidence. A future decision record must include favorable `ERG-003` static preflight disposition evidence before any later implementation-planning packet may be authorized. This map is not that decision record.
+`ERG-004` remains blocked until a future post-RC decision record references the committed `ERG-003`
+static preflight disposition evidence. A future decision record must include that favorable
+`ERG-003` static preflight disposition before any later implementation-planning packet may be
+authorized. This map is not that decision record.
+
+The required prerequisite remains favorable `ERG-003` static preflight disposition evidence; that
+evidence is now recorded for the static-preflight local-preview lane, not as live POC approval.
 
 ## Purpose
 
@@ -39,7 +44,7 @@ preconditions must be true:
 
 | Preconditions | Required evidence | Current expected state |
 | --- | --- | --- |
-| Favorable static preflight disposition | `ERG-003` external/source reviewer response, disposition packet, response intake result | missing; `ERG-004` remains blocked |
+| Favorable static preflight disposition | `ERG-003` external/source reviewer response, disposition packet, response intake result | recorded as `closed_local_preview_static_preflight`; `ERG-004` remains blocked |
 | No open critical/high static-preflight findings | committed finding records and verification notes | must be true before planning |
 | Post-RC decision record | `PRD-SANDBOX-LIVE-POC-001` decision record naming commit and reviewed packets | missing; required later |
 | Operator-managed VM/container profile | profile contract, mount/root posture, network posture, unsupported-profile warnings | design evidence only |
@@ -109,7 +114,7 @@ make tool-surface-invariant-gate
 
 Expected safe outcome today:
 
-- `ERG-003` remains `external_review_required`;
+- `ERG-003` is recorded as `closed_local_preview_static_preflight`;
 - `ERG-004` remains `blocked`;
 - live VM/container inspection remains blocked;
 - sandbox orchestration remains blocked;
@@ -136,14 +141,17 @@ behavior, production identity, compliance automation, or any new governed tool p
 
 ## What This Map Does Not Prove
 
-This map does not prove external review has happened, does not close `ERG-003`, does not close
-`ERG-004`, does not approve live VM/container inspection, and does not prove a sandbox is safe. It
-does not authorize runtime work. It only defines the preconditions that must be satisfied before a
-future decision record may permit implementation planning.
+This map does not close `ERG-004`, does not approve live VM/container inspection, and does not
+prove a sandbox is safe. It does not authorize runtime work. It only defines the remaining
+preconditions that must be satisfied before a future decision record may permit implementation
+planning.
 
-The `ERG-003` prerequisite must be recorded through
-`sandbox-vm-static-preflight-disposition-record-skeleton.md` after favorable source-level static
-preflight evidence. Without that disposition record, `ERG-004` remains blocked.
+The `ERG-003` prerequisite is recorded through
+`enterprise-dual-response-disposition-record.md` for static-preflight local-preview evidence.
+The allowed static-preflight disposition-record shape remains documented in
+`sandbox-vm-static-preflight-disposition-record-skeleton.md`.
+Even with that disposition record, `ERG-004` remains blocked until the separate live POC decision
+record exists.
 
 Validate this map with:
 

@@ -63,7 +63,7 @@ REQUIRED_ARTIFACTS = [
 ]
 
 REQUIRED_BOUNDARIES = [
-    "`ERG-003` remains `external_review_required`",
+    "`ERG-003` is recorded as `closed_local_preview_static_preflight`",
     "`ERG-004` remains `blocked`",
     "live VM/container inspection remains blocked",
     "sandbox orchestration remains blocked",
@@ -150,7 +150,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "preconditions_map_doc": DOC_REL,
         "tool_count": 24,
-        "erg_003_status": "external_review_required",
+        "erg_003_status": "closed_local_preview_static_preflight",
+        "erg_003_disposition_recorded": True,
         "erg_004_status": "blocked",
         "runtime_changes_allowed": False,
         "live_vm_inspection_allowed": False,
@@ -172,6 +173,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"preconditions_map_doc: {report['preconditions_map_doc']}",
         f"tool_count: {report['tool_count']}",
         f"erg_003_status: {report['erg_003_status']}",
+        "erg_003_disposition_recorded: "
+        f"{str(report['erg_003_disposition_recorded']).lower()}",
         f"erg_004_status: {report['erg_004_status']}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"live_vm_inspection_allowed: {str(report['live_vm_inspection_allowed']).lower()}",

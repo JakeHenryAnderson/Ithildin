@@ -248,7 +248,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "artifact_count": len(expected),
         "artifact_hashes_match_files": artifact_hashes_match_files,
         "tool_count": 24,
-        "erg_003_status": "external_review_required",
+        "erg_003_status": "closed_local_preview_static_preflight",
+        "erg_003_disposition_recorded": True,
         "erg_004_status": "blocked",
         "recommended_next_review": "ERG-004 only after ERG-003 disposition",
         "runtime_changes_allowed": False,
@@ -333,7 +334,7 @@ Dirty state when generated: `{str(dirty).lower()}`
 
 Tool count remains `24`.
 
-Current `ERG-003` status: `external_review_required`.
+Current `ERG-003` status: `closed_local_preview_static_preflight`.
 
 Current `ERG-004` status: `blocked`.
 
@@ -639,6 +640,8 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"artifact_hashes_match_files: {str(report['artifact_hashes_match_files']).lower()}",
         f"tool_count: {report['tool_count']}",
         f"erg_003_status: {report['erg_003_status']}",
+        "erg_003_disposition_recorded: "
+        f"{str(report['erg_003_disposition_recorded']).lower()}",
         f"erg_004_status: {report['erg_004_status']}",
         f"recommended_next_review: {report['recommended_next_review']}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",

@@ -207,7 +207,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"ready_for_implementation_planning": false',
         '"closes_erg_004": false',
         '"erg_004_unblocked": false',
-        '"erg_003_closed": false',
+        '"erg_003_disposition_recorded": true',
         '"temporary_fixtures_only": true',
     ]:
         if phrase not in evidence:
@@ -248,7 +248,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "erg_004_status": "blocked",
         "prd_id": "PRD-SANDBOX-LIVE-POC-001",
-        "requires_erg_003_favorable_disposition": True,
+        "requires_erg_003_favorable_disposition": False,
+        "erg_003_status": "closed_local_preview_static_preflight",
+        "erg_003_disposition_recorded": True,
         "runtime_changes_allowed": False,
         "live_vm_inspection_allowed": False,
         "mission_control_runtime_allowed": False,
@@ -461,7 +463,9 @@ def _command_evidence(
                 "tool_count": 24,
                 "erg_004_status": "blocked",
                 "prd_id": "PRD-SANDBOX-LIVE-POC-001",
-                "requires_erg_003_favorable_disposition": True,
+                "requires_erg_003_favorable_disposition": False,
+                "erg_003_status": "closed_local_preview_static_preflight",
+                "erg_003_disposition_recorded": True,
                 "runtime_changes_allowed": False,
                 "live_vm_inspection_allowed": False,
                 "mission_control_runtime_allowed": False,
@@ -578,6 +582,9 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         f"erg_004_status: {report['erg_004_status']}",
         f"prd_id: {report['prd_id']}",
+        f"erg_003_status: {report['erg_003_status']}",
+        "erg_003_disposition_recorded: "
+        f"{str(report['erg_003_disposition_recorded']).lower()}",
         "requires_erg_003_favorable_disposition: "
         f"{str(report['requires_erg_003_favorable_disposition']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",

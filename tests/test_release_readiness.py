@@ -12027,7 +12027,8 @@ def test_sandbox_vm_live_poc_preconditions_map_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_003_status"] == "closed_local_preview_static_preflight"
+    assert report["erg_003_disposition_recorded"] is True
     assert report["erg_004_status"] == "blocked"
     assert report["runtime_changes_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -12060,7 +12061,7 @@ def test_sandbox_vm_live_poc_preconditions_map_is_wired() -> None:
     ]:
         assert phrase in doc
     for blocked in [
-        "`ERG-003` remains `external_review_required`",
+        "`ERG-003` is recorded as `closed_local_preview_static_preflight`",
         "`ERG-004` remains `blocked`",
         "live VM/container inspection remains blocked",
         "sandbox orchestration remains blocked",
@@ -12111,7 +12112,8 @@ def test_sandbox_vm_live_poc_preconditions_ready_check_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_003_status"] == "closed_local_preview_static_preflight"
+    assert report["erg_003_disposition_recorded"] is True
     assert report["erg_004_status"] == "blocked"
     assert report["preconditions_map_valid"] is True
     assert report["decision_intake_valid"] is True
@@ -12120,7 +12122,7 @@ def test_sandbox_vm_live_poc_preconditions_ready_check_is_wired() -> None:
     assert report["closure_gate_valid"] is True
     assert report["normalized_response_present"] is False
     assert report["closure_ready"] is False
-    assert report["blocking_prerequisite"] == "favorable ERG-003 static preflight disposition"
+    assert report["blocking_prerequisite"] == "separate ERG-004 live POC decision record"
     assert report["ready_for_implementation_planning"] is False
     assert report["implementation_planning_allowed"] is False
     assert report["runtime_changes_allowed"] is False
@@ -12138,7 +12140,7 @@ def test_sandbox_vm_live_poc_preconditions_ready_check_is_wired() -> None:
     for phrase in [
         "Status: deterministic readiness check for blocked `ERG-004`.",
         "ready_for_implementation_planning: false",
-        "blocking_prerequisite: favorable `ERG-003` static preflight disposition",
+        "blocking_prerequisite: separate `ERG-004` live POC decision record",
         "ERG-004 wiring is ready to await external/source review feedback",
         "This check does not approve live VM/container inspection",
         "make sandbox-vm-live-poc-preconditions-ready-check",
@@ -12207,9 +12209,10 @@ def test_sandbox_vm_live_poc_post_erg003_handoff_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_003_status"] == "closed_local_preview_static_preflight"
+    assert report["erg_003_disposition_recorded"] is True
     assert report["erg_004_status"] == "blocked"
-    assert report["requires_favorable_erg003_disposition"] is True
+    assert report["requires_favorable_erg003_disposition"] is False
     assert report["requires_later_decision_record"] is True
     assert report["ready_for_implementation_planning"] is False
     assert report["implementation_planning_allowed"] is False
@@ -12635,7 +12638,8 @@ def test_sandbox_vm_live_poc_prerequisite_disposition_dry_run_is_wired() -> None
         "closed_local_preview_static_preflight"
     )
     assert report["tool_count"] == 24
-    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_003_status"] == "closed_local_preview_static_preflight"
+    assert report["erg_003_disposition_recorded"] is True
     assert report["erg_004_status"] == "blocked"
     assert all(report["cases"].values())
     assert report["temporary_fixtures_only"] is True
@@ -12837,7 +12841,9 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
     assert report["tool_count"] == 24
     assert report["erg_004_status"] == "blocked"
     assert report["prd_id"] == "PRD-SANDBOX-LIVE-POC-001"
-    assert report["requires_erg_003_favorable_disposition"] is True
+    assert report["requires_erg_003_favorable_disposition"] is False
+    assert report["erg_003_status"] == "closed_local_preview_static_preflight"
+    assert report["erg_003_disposition_recorded"] is True
     assert report["runtime_changes_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -12874,7 +12880,7 @@ def test_sandbox_vm_live_poc_decision_packet_is_wired(tmp_path: Path) -> None:
         '"ready_for_implementation_planning": false',
         '"closes_erg_004": false',
         '"erg_004_unblocked": false',
-        '"erg_003_closed": false',
+        '"erg_003_disposition_recorded": true',
         '"temporary_fixtures_only": true',
     ]:
         assert phrase in evidence
@@ -12977,7 +12983,8 @@ def test_sandbox_vm_live_poc_response_kit_is_wired(tmp_path: Path) -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["erg_003_status"] == "external_review_required"
+    assert report["erg_003_status"] == "closed_local_preview_static_preflight"
+    assert report["erg_003_disposition_recorded"] is True
     assert report["erg_004_status"] == "blocked"
     assert report["runtime_changes_allowed"] is False
     assert report["implementation_planning_allowed"] is False
@@ -13145,7 +13152,7 @@ def test_sandbox_vm_live_poc_external_review_bundle_is_wired(tmp_path: Path) -> 
     assert report["trusted_host_promotion_allowed"] is False
     assert report["siem_adapter_allowed"] is False
     assert report["new_power_classes_allowed"] is False
-    assert report["erg_003_closed"] is False
+    assert report["erg_003_disposition_recorded"] is True
     assert report["erg_004_unblocked"] is False
     assert report["closes_erg_004"] is False
     assert generated == expected
@@ -13183,7 +13190,7 @@ def test_sandbox_vm_live_poc_external_review_bundle_is_wired(tmp_path: Path) -> 
         '"new_power_classes_allowed": false',
         '"sandbox-vm-live-poc-preconditions-ready-check"',
         '"ready_for_implementation_planning": false',
-        '"erg_003_closed": false',
+        '"erg_003_disposition_recorded": true',
         '"erg_004_unblocked": false',
         '"closes_erg_004": false',
         '"response_dry_run"',

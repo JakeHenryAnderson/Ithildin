@@ -4,7 +4,7 @@ Status: response-intake kit for blocked `ERG-004` after external/source decision
 
 Current governed tool count: `24`.
 
-Current `ERG-003` status: `external_review_required`.
+Current `ERG-003` status: `closed_local_preview_static_preflight`.
 
 Current `ERG-004` status: `blocked`.
 
@@ -54,7 +54,7 @@ The kit generates:
 
 ## Boundary
 
-This kit does not prove external review happened, does not close `ERG-004`, does not close `ERG-003`,
+This kit does not prove live POC external review happened, does not close `ERG-004`,
 does not approve implementation planning, and does not approve live VM/container inspection,
 VM/container lifecycle management, sandbox orchestration, Mission Control runtime behavior, local
 model invocation, trusted-host promotion, network expansion, API/MCP profile loading, new governed

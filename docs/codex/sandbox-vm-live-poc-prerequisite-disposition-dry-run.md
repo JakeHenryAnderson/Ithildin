@@ -4,7 +4,7 @@ Status: temporary fixture dry run for the blocked `ERG-004` prerequisite chain.
 
 Current governed tool count: `24`.
 
-Current `ERG-003` status: `external_review_required`.
+Current `ERG-003` status: `closed_local_preview_static_preflight`.
 
 Current `ERG-004` status: `blocked`.
 
@@ -15,10 +15,11 @@ make sandbox-vm-live-poc-prerequisite-disposition-dry-run
 ```
 
 This dry run exercises favorable and unfavorable `ERG-003` static-preflight disposition-record
-fixtures before any live sandbox/VM POC planning decision is considered. It does not record external
-review, does not close `ERG-003`, does not unblock `ERG-004`, does not write the real normalized
-review response path, does not record a post-RC decision record, and does not approve
-implementation.
+fixtures before any live sandbox/VM POC planning decision is considered. The real `ERG-003`
+disposition is already recorded separately for static-preflight local-preview evidence. This dry
+run does not record external review, does not itself close `ERG-003`, does not unblock `ERG-004`,
+does not write the real normalized review response path, does not record a post-RC decision record,
+and does not approve implementation.
 
 The dry run uses temporary fixture files only. It exists to prove that the `ERG-004` precondition
 chain can distinguish a narrow favorable static-preflight disposition from malformed, stale,
@@ -74,9 +75,7 @@ public/security-product positioning approval. A favorable fixture only proves th
 precondition logic can recognize the allowed static-preflight disposition-record shape while keeping
 `ERG-004` blocked.
 
-Any real movement of `ERG-003` still requires favorable source-level static-preflight review evidence,
-the real normalized response path, the real disposition closure gate, and a committed triage update.
-Any later movement of `ERG-004` still requires that committed `ERG-003` disposition plus a separate
+Any later movement of `ERG-004` still requires the committed `ERG-003` disposition plus a separate
 post-RC live POC decision record. No fixture outcome in this dry run approves live POC planning,
 runtime behavior, VM/container lifecycle management, sandbox orchestration, Mission Control runtime
 behavior, local model invocation, trusted-host promotion, SIEM adapter behavior, or new governed

@@ -14,10 +14,11 @@ review feedback, while still clearly reporting that implementation planning is n
 
 `ready_for_implementation_planning: false`
 
-`blocking_prerequisite: favorable `ERG-003` static preflight disposition`
+`blocking_prerequisite: separate `ERG-004` live POC decision record`
 
-`ERG-004` remains `blocked` until a favorable static preflight disposition, a valid normalized
-external/source review response, and a later committed decision record exist.
+`ERG-004` remains `blocked` until a valid live POC normalized external/source review response and a
+later committed live POC decision record exist. The prior `ERG-003` static preflight disposition is
+already recorded for local-preview static-preflight evidence.
 
 ERG-004 wiring is ready to await external/source review feedback. This is not the same as approving
 implementation planning.
@@ -32,7 +33,7 @@ implementation planning.
 - [sandbox-vm-live-poc-post-erg003-handoff.md](sandbox-vm-live-poc-post-erg003-handoff.md)
 
 The check validates those artifacts and reports whether the only expected blocker remains the
-missing favorable `ERG-003` disposition and normalized `ERG-004` response.
+missing normalized `ERG-004` response and later decision record.
 
 ## Command
 
@@ -68,5 +69,5 @@ promotion, network expansion, API/MCP profile loading, SIEM adapter behavior, pr
 runtime Postgres, hosted telemetry, remote MCP, compliance automation, new governed tool powers, or
 public/security-product positioning.
 
-It also does not close `ERG-003` or `ERG-004`. It is only a deterministic readiness/status check for
-the blocked lane.
+It also does not close `ERG-004`. It is only a deterministic readiness/status check for the blocked
+lane.

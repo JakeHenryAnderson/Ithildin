@@ -124,9 +124,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "post_erg003_handoff_doc": DOC_REL,
         "tool_count": 24,
-        "erg_003_status": "external_review_required",
+        "erg_003_status": "closed_local_preview_static_preflight",
+        "erg_003_disposition_recorded": True,
         "erg_004_status": "blocked",
-        "requires_favorable_erg003_disposition": True,
+        "requires_favorable_erg003_disposition": False,
         "requires_later_decision_record": True,
         "ready_for_implementation_planning": False,
         "implementation_planning_allowed": False,
@@ -150,6 +151,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"post_erg003_handoff_doc: {report['post_erg003_handoff_doc']}",
         f"tool_count: {report['tool_count']}",
         f"erg_003_status: {report['erg_003_status']}",
+        "erg_003_disposition_recorded: "
+        f"{str(report['erg_003_disposition_recorded']).lower()}",
         f"erg_004_status: {report['erg_004_status']}",
         "requires_favorable_erg003_disposition: "
         f"{str(report['requires_favorable_erg003_disposition']).lower()}",
