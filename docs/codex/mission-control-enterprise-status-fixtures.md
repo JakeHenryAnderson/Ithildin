@@ -75,6 +75,7 @@ The valid fixture may display only these checked action commands:
 - `make review-candidate`;
 - `make enterprise-review-send-refresh`;
 - `make enterprise-send-quick-check`;
+- `make enterprise-send-now`;
 - `make enterprise-response-intake-refresh`.
 
 The final two fixtures are explicit handoff-safety cases: `MC-STATUS-NEG-011` rejects unsafe

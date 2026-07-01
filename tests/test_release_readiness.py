@@ -2152,6 +2152,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make review-candidate",
         "make enterprise-review-send-refresh",
         "make enterprise-send-quick-check",
+        "make enterprise-send-now",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
@@ -5833,6 +5834,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make review-candidate",
         "make enterprise-review-send-refresh",
         "make enterprise-send-quick-check",
+        "make enterprise-send-now",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
