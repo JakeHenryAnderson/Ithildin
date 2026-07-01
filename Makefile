@@ -10,7 +10,7 @@ RECEIPT ?= var/review-packets/v3/enterprise-review-send-receipt-template/enterpr
 .PHONY: mission-control-enterprise-status-fixtures mission-control-enterprise-status-fixtures-check
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
-.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
+.PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-execution-board roadmap-status technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
 
 test:
@@ -176,6 +176,12 @@ v1-progress-assessment:
 
 technical-mvp-ticket-map:
 	uv run python scripts/technical_mvp_ticket_map.py
+
+technical-mvp-execution-board:
+	uv run python scripts/technical_mvp_execution_board.py
+
+roadmap-status:
+	uv run python scripts/roadmap_status.py
 
 technical-mvp-operator-trial-readiness:
 	uv run python scripts/technical_mvp_operator_trial_readiness.py
@@ -1705,6 +1711,7 @@ release-check: enterprise-review-send-preflight
 release-check: enterprise-review-send-receipt-validate
 release-check: enterprise-review-send-receipt-dry-run
 release-check: enterprise-review-send-preflight-lightweight-check
+release-check: technical-mvp-execution-board
 release-check: enterprise-north-star-roadmap
 release-check: enterprise-operator-next-action
 release-check: mission-control-display-response-dry-run

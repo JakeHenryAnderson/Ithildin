@@ -207,6 +207,7 @@ def _category(target: str) -> str:
         return "risk_findings"
     if target in {
         "technical-mvp-ticket-map",
+        "technical-mvp-execution-board",
         "development-efficiency-status",
     }:
         return "status_efficiency"

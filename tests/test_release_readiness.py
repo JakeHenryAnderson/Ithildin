@@ -329,6 +329,7 @@ from scripts import (
     signed_evidence_source_review_bundle,
     source_review_transcript_packet,
     status_now,
+    technical_mvp_execution_board,
     technical_mvp_operator_trial_readiness,
     technical_mvp_ticket_map,
     test_determinism_gate,
@@ -30117,6 +30118,97 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
         "Live sandbox/VM worker proof of concept",
     ]:
         assert phrase in doc
+
+
+def test_technical_mvp_execution_board_is_wired() -> None:
+    report = technical_mvp_execution_board.build_report(Path.cwd())
+    technical_doc = Path("docs/codex/technical-mvp-execution-board.md").read_text(
+        encoding="utf-8"
+    )
+    enterprise_doc = Path("docs/codex/enterprise-roadmap-control-board.md").read_text(
+        encoding="utf-8"
+    )
+    batch_doc = Path("docs/codex/batch-validation-strategy.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
+    assert report["selected_capability"] == "not selected"
+    assert report["technical_mvp_state"] == "operator_trial_observed"
+    assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
+    assert report["technical_milestone_count"] == 10
+    assert report["enterprise_milestone_count"] == 12
+    assert report["current_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["runtime_changes_allowed"] is False
+    assert report["capability_expansion_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "technical-mvp-execution-board:" in makefile
+    assert "roadmap-status:" in makefile
+    assert (
+        "technical-mvp-execution-board" in release_check_body
+        or "release-check: technical-mvp-execution-board" in makefile
+    )
+    assert (
+        "technical-mvp-execution-board"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "make technical-mvp-execution-board" in readme
+    assert "make roadmap-status" in readme
+    for doc_path in [
+        "docs/codex/technical-mvp-execution-board.md",
+        "docs/codex/enterprise-roadmap-control-board.md",
+        "docs/codex/batch-validation-strategy.md",
+    ]:
+        assert doc_path in readme
+        assert doc_path in docs_site
+        assert doc_path in review_docs.REVIEW_DOCS
+    for title in [
+        "Ithildin Technical MVP Execution Board",
+        "Ithildin Enterprise Roadmap Control Board",
+        "Ithildin Batch Validation Strategy",
+    ]:
+        assert title in review_index
+    for ticket_id in [f"MVP-{index:03d}" for index in range(1, 11)]:
+        assert ticket_id in technical_doc
+    for ticket_id in [f"ENT-{index:03d}" for index in range(1, 13)]:
+        assert ticket_id in enterprise_doc
+    for phrase in [
+        "Status: checked technical-MVP execution board and batch-control map.",
+        "Current governed tool count: `24`",
+        "Technical MVP state: `operator_trial_observed`",
+        "Current enterprise next action: `send_erg_003_and_erg_002`",
+        "Development Validation Ladder",
+        "Stop Conditions",
+    ]:
+        assert phrase in technical_doc
+    for phrase in [
+        "Status: checked enterprise roadmap control board",
+        "Current send set: `ERG-003`, `ERG-002`",
+        "Enterprise Target Definition",
+        "Non-Negotiable Gates",
+    ]:
+        assert phrase in enterprise_doc
+    for phrase in [
+        "Status: checked batch validation strategy",
+        "Tier 1: inner loop",
+        "Tier 2: batch checkpoint",
+        "Tier 3: handoff freeze",
+        "Safe Batch Shapes",
+        "Unsafe Batch Shapes",
+    ]:
+        assert phrase in batch_doc
 
 
 def test_observed_operator_trial_report_can_be_built_without_artifacts(

@@ -128,7 +128,7 @@ def render_report(report: dict[str, Any]) -> str:
 
 
 def _run_slice(targets: list[str], *, timeout_seconds: float) -> dict[str, Any]:
-    argv = ["make", *targets]
+    argv = ["make", "ARGS=", *targets]
     started = time.monotonic()
     try:
         completed = subprocess.run(

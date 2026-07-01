@@ -456,6 +456,11 @@ checked with `make control-mapping-readiness`.
 - `make technical-mvp-ticket-map` - validate the current technical MVP ticket map across the
   closed local-preview foundations, ready operator trial surface, blocked sandbox/VM promotion
   lanes, and enterprise architecture backlog.
+- `make technical-mvp-execution-board` - validate the concise technical MVP execution board,
+  enterprise roadmap control board, and batch validation strategy against the current tool count,
+  operator-trial state, ERG-003/ERG-002 send posture, and blocked authority boundaries.
+- `make roadmap-status` - print the compact roadmap status from the execution board without
+  regenerating packets, starting services, calling governed tools, or replacing release evidence.
 - `make technical-mvp-operator-trial-readiness` - validate the checked local-preview operator-trial
   readiness view for the technical MVP and the exact remaining hands-on trial commands.
 - `make development-efficiency-status` - validate the compact gate-selection and handoff-status
@@ -1158,6 +1163,13 @@ with `make technical-mvp-ticket-map`; it turns the current roadmap into explicit
 the governed gateway foundation, read-only/Git intelligence tools, evidence/packet machinery,
 operator workbench trial, Mission Control handoff, sandbox/VM readiness, trusted-host promotion,
 and enterprise architecture lanes.
+The technical MVP execution board is
+[docs/codex/technical-mvp-execution-board.md](docs/codex/technical-mvp-execution-board.md), paired
+with [docs/codex/enterprise-roadmap-control-board.md](docs/codex/enterprise-roadmap-control-board.md)
+and [docs/codex/batch-validation-strategy.md](docs/codex/batch-validation-strategy.md), and is
+checked with `make technical-mvp-execution-board`; it gives the definitive milestone/task/subtask
+board for the current local-preview MVP, the enterprise-grade target path, and the validation tier
+to use before paying the full release-check/review-candidate cost.
 The technical MVP operator-trial readiness view is
 [docs/codex/technical-mvp-operator-trial-readiness.md](docs/codex/technical-mvp-operator-trial-readiness.md)
 and is checked with `make technical-mvp-operator-trial-readiness`; it consolidates the checked
