@@ -198,6 +198,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "next_action": next_action.get("next_action"),
         "action_commands": next_action.get("action_commands"),
+        "next_after_send_commands": next_action.get("next_after_send_commands"),
         "handoff_artifacts": next_action.get("handoff_artifacts"),
         "operator_next_action_doc": next_action.get("next_action_doc"),
         "response_present_count": responses.get("response_present_count"),
@@ -256,6 +257,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"next_action: {report['next_action']}",
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands") or []],
+        "next_after_send_commands:",
+        *[
+            f"- {command}"
+            for command in report.get("next_after_send_commands") or []
+        ],
         "handoff_artifacts:",
         *[
             f"- {artifact['label']}: {artifact['path']}"
@@ -316,6 +322,10 @@ def render_markdown(report: dict[str, Any]) -> str:
     action_command_lines = "\n".join(
         f"  - `{command}`" for command in report.get("action_commands") or []
     )
+    next_after_send_command_lines = "\n".join(
+        f"  - `{command}`"
+        for command in report.get("next_after_send_commands") or []
+    )
     handoff_artifact_lines = "\n".join(
         f"  - `{artifact['label']}`: `{artifact['path']}`"
         for artifact in report.get("handoff_artifacts") or []
@@ -345,6 +355,8 @@ runtime behavior, and not an enterprise lane closure record.
 - next_action: `{report['next_action']}`
 - action_commands:
 {action_command_lines}
+- next_after_send_commands:
+{next_after_send_command_lines}
 - handoff_artifacts:
 {handoff_artifact_lines}
 - response_present_count: `{report['response_present_count']}`
@@ -407,6 +419,7 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         "recommended_send_set: `ERG-003, ERG-002`",
         "next_action: `send_erg_003_and_erg_002`",
         "`make enterprise-review-send-refresh`",
+        "`make enterprise-response-paste-preflight`",
         "handoff_artifacts:",
         "enterprise-review-send-manifest",
         "enterprise-review-send-package",
@@ -427,6 +440,7 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         "enterprise-review-send-package",
         "enterprise-review-send-session-record",
         '"make enterprise-review-send-refresh"',
+        '"make enterprise-response-paste-preflight"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:

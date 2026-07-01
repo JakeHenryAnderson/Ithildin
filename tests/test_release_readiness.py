@@ -2158,6 +2158,13 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make enterprise-send-quick-check",
         "make enterprise-send-now",
     ]
+    assert report["next_after_send_commands"] == [
+        "make enterprise-review-send-receipt-copy",
+        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+        "make enterprise-response-waiting-room",
+        "make enterprise-response-now",
+        "make enterprise-response-paste-preflight",
+    ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
         "send_manifest",
@@ -2522,6 +2529,7 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "make enterprise-status-export-check",
         "make enterprise-operator-next-action",
         "safe action commands",
+        "next_after_send_commands",
         "send package",
         "send-session record",
         "display-only handoff artifact",
@@ -2541,6 +2549,7 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "recommended_send_set: `ERG-003, ERG-002`",
         "next_action: `send_erg_003_and_erg_002`",
         "`make enterprise-review-send-refresh`",
+        "`make enterprise-response-paste-preflight`",
         "handoff_artifacts:",
         "`send_manifest`: `var/review-packets/v3/enterprise-review-send-manifest`",
         "`send_quickstart`: `var/review-packets/v3/enterprise-review-send-quickstart`",
@@ -2572,6 +2581,7 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"enterprise_review_send_session_record": '
         '"var/review-runs/enterprise-review-send-session-record"',
         '"make enterprise-review-send-refresh"',
+        '"make enterprise-response-paste-preflight"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
@@ -2630,6 +2640,7 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
     assert report["recommended_next_enterprise_review"] == "ERG-003"
     assert "next_action" in report["allowed_import_fields"]
     assert "action_commands" in report["allowed_import_fields"]
+    assert "next_after_send_commands" in report["allowed_import_fields"]
     assert "handoff_artifacts" in report["allowed_import_fields"]
     assert "operator_next_action_doc" in report["allowed_import_fields"]
     assert report["response_present_count"] == 0
@@ -2661,6 +2672,7 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
         "does not approve Mission Control enterprise status importer implementation",
         "Mission Control may display this artifact as non-authoritative status",
         "safe action commands",
+        "next_after_send_commands",
         "send package/send-session record",
         "must not treat the package as review evidence",
         "session record as proof that a review occurred",
@@ -5840,6 +5852,13 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-send-quick-check",
         "make enterprise-send-now",
     ]
+    assert report["next_after_send_commands"] == [
+        "make enterprise-review-send-receipt-copy",
+        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+        "make enterprise-response-waiting-room",
+        "make enterprise-response-now",
+        "make enterprise-response-paste-preflight",
+    ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "dual_review_outbox",
         "send_manifest",
@@ -5959,6 +5978,13 @@ def test_enterprise_operator_next_action_routes_response_present_mode(
     assert report["closure_ready_count"] == 0
     assert report["next_action"] == "run_response_intake_preflight"
     assert report["action_commands"] == ["make enterprise-response-intake-refresh"]
+    assert report["next_after_send_commands"] == [
+        "make enterprise-review-send-receipt-copy",
+        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+        "make enterprise-response-waiting-room",
+        "make enterprise-response-now",
+        "make enterprise-response-paste-preflight",
+    ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "response_inbox",
         "response_status_board",

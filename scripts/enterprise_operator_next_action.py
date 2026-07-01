@@ -35,6 +35,14 @@ SEND_COMMANDS = [
     "make enterprise-send-now",
 ]
 
+NEXT_AFTER_SEND_COMMANDS = [
+    "make enterprise-review-send-receipt-copy",
+    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+    "make enterprise-response-waiting-room",
+    "make enterprise-response-now",
+    "make enterprise-response-paste-preflight",
+]
+
 RESPONSE_COMMANDS = [
     "make enterprise-response-intake-refresh",
 ]
@@ -262,6 +270,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "closure_ready_count": closure_ready_count,
         "next_action": next_action,
         "action_commands": action_commands,
+        "next_after_send_commands": NEXT_AFTER_SEND_COMMANDS,
         "handoff_artifacts": handoff_artifacts,
         "normalized_response_paths": response_state["normalized_response_paths"],
         **boundary_flags,
@@ -284,6 +293,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"next_action: {report.get('next_action', 'unknown')}",
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands", [])],
+        "next_after_send_commands:",
+        *[
+            f"- {command}"
+            for command in report.get("next_after_send_commands", [])
+        ],
         "handoff_artifacts:",
         *[
             f"- {artifact['label']}: {artifact['path']}"

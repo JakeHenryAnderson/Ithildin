@@ -208,6 +208,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "next_action": operator_next_action.get("next_action"),
         "action_commands": operator_next_action.get("action_commands", []),
+        "next_after_send_commands": operator_next_action.get(
+            "next_after_send_commands", []
+        ),
         "handoff_artifacts": operator_next_action.get("handoff_artifacts", []),
         "operator_next_action_doc": operator_next_action.get("next_action_doc"),
         "response_present_count": response_status.get("response_present_count"),
@@ -230,6 +233,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"next_action: {report.get('next_action', 'unknown')}",
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands", [])],
+        "next_after_send_commands:",
+        *[
+            f"- {command}"
+            for command in report.get("next_after_send_commands", [])
+        ],
         "handoff_artifacts:",
         *[
             f"- {artifact['label']}: {artifact['path']}"

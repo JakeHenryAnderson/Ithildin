@@ -29,10 +29,10 @@ The export composes existing checked reports instead of creating a new source of
 - `make enterprise-response-status-board`
 
 The export includes current commit/dirty state, tool count, selected capability state, recommended
-enterprise send set, current next action, safe action commands, display-only handoff artifact
-pointers, response/closure counts, progress bands, review-lane status, generated packet paths
-including the enterprise review send quickstart, send package, send-session record, and blocked
-authority flags.
+enterprise send set, current next action, safe action commands, post-send receipt/response
+breadcrumbs under `next_after_send_commands`, display-only handoff artifact pointers,
+response/closure counts, progress bands, review-lane status, generated packet paths including the
+enterprise review send quickstart, send package, send-session record, and blocked authority flags.
 
 ## Output Artifacts
 

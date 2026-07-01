@@ -28,6 +28,7 @@ ALLOWED_IMPORT_FIELDS = [
     "recommended_next_enterprise_review",
     "next_action",
     "action_commands",
+    "next_after_send_commands",
     "handoff_artifacts",
     "operator_next_action_doc",
     "response_present_count",
