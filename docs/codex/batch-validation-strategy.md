@@ -50,8 +50,8 @@ A batch is complete only when:
 
 | Batch | Status | Use now? | Fast validation |
 | --- | --- | --- | --- |
-| Technical MVP execution-board cleanup | active for this sprint | yes | `make technical-mvp-execution-board`, `make roadmap-status` |
-| `ERG-003` and `ERG-002` send workflow | ready | yes, after operator send | `make enterprise-send-now`, `make handoff-dry-run` |
+| Technical MVP execution-board cleanup | done | no | `make technical-mvp-execution-board`, `make roadmap-status` |
+| `ERG-003` and `ERG-002` send workflow | active resume checkpoint | yes | `make enterprise-send-now`, `make handoff-dry-run` |
 | `ERG-003` response intake | blocked on response | not until response arrives | `make sandbox-vm-static-preflight-response-dry-run` |
 | `ERG-002` response intake | blocked on response | not until response arrives | `make mission-control-display-response-dry-run` |
 | live sandbox/VM POC | blocked on `ERG-003` | no | `make sandbox-vm-live-poc-preconditions-ready-check` |
@@ -62,4 +62,3 @@ If a change only updates docs or scripts for one lane, use Tier 1 and Tier 2. If
 runtime authority, policy semantics, manifests, public claims, or review packets that will be sent,
 finish the batch with Tier 3. If a full gate fails because of generated artifact staleness, refresh
 only the documented artifacts; do not rewrite product claims to make the gate pass.
-

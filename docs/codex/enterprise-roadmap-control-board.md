@@ -12,6 +12,7 @@ Current selected capability: `not selected`
 Current send set: `ERG-003`, `ERG-002`
 Current response count: `0`
 Current closure-ready count: `0`
+Active resume checkpoint: `ENT-001`
 
 ## Enterprise Target Definition
 
@@ -21,6 +22,13 @@ workspace boundaries keep agent work reviewable before artifacts move toward tru
 The target requires strong identity/storage decisions, evidence export contracts, incident
 reconstruction, deployment guidance, and external review. The current repo is not claiming those
 properties today.
+
+## Current Resume Scope
+
+The current resumed goal is limited to `ENT-001`: prepare, send, and record the `ERG-003` static
+sandbox/VM preflight and `ERG-002` Mission Control display/import planning review handoff. Response
+normalization, lane closure, live sandbox/VM planning, Mission Control implementation, and capability
+selection remain blocked until reviewer responses are present and intake gates pass.
 
 ## Enterprise Milestones
 
@@ -59,4 +67,3 @@ properties today.
   operator decision points are reviewed.
 - No production identity, runtime Postgres, hosted telemetry, remote MCP, SIEM adapter, compliance
   automation, or public/security-product positioning without separate closure.
-

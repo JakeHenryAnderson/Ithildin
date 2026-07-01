@@ -30143,6 +30143,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["technical_mvp_state"] == "operator_trial_observed"
     assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
+    assert report["active_resume_checkpoint"] == "ENT-001"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["technical_milestone_count"] == 10
@@ -30189,6 +30190,8 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Current governed tool count: `24`",
         "Technical MVP state: `operator_trial_observed`",
         "Current enterprise next action: `send_erg_003_and_erg_002`",
+        "Active resume checkpoint: `ENT-001`",
+        "The paused umbrella goal resumes through `ENT-001` only",
         "Development Validation Ladder",
         "Stop Conditions",
     ]:
@@ -30196,6 +30199,8 @@ def test_technical_mvp_execution_board_is_wired() -> None:
     for phrase in [
         "Status: checked enterprise roadmap control board",
         "Current send set: `ERG-003`, `ERG-002`",
+        "Active resume checkpoint: `ENT-001`",
+        "The current resumed goal is limited to `ENT-001`",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
     ]:
@@ -30205,6 +30210,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Tier 1: inner loop",
         "Tier 2: batch checkpoint",
         "Tier 3: handoff freeze",
+        "`ERG-003` and `ERG-002` send workflow | active resume checkpoint",
         "Safe Batch Shapes",
         "Unsafe Batch Shapes",
     ]:

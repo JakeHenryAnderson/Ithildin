@@ -12,6 +12,14 @@ Current selected capability: `not selected`
 Latest implemented tool: `sandbox.artifact.write_text`
 Technical MVP state: `operator_trial_observed`
 Current enterprise next action: `send_erg_003_and_erg_002`
+Active resume checkpoint: `ENT-001`
+
+## Active Resume Scope
+
+The paused umbrella goal resumes through `ENT-001` only: send the current `ERG-003` and `ERG-002`
+external review packets, record the send receipt, and then wait for reviewer responses. This resume
+slice does not add runtime behavior, close review lanes, implement Mission Control integration,
+start sandbox/VM control, or select a new capability.
 
 ## Boundary
 
@@ -61,4 +69,3 @@ Stop batching and report status if a critical/high trust-boundary issue appears,
 gate fails three times, a fix requires changing this boundary, a batch would mix runtime authority
 with planning-only docs, or generated artifacts become stale in a way that cannot be repaired by the
 documented refresh commands.
-

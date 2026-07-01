@@ -37,6 +37,7 @@ def _render(report: dict[str, object]) -> str:
         f"selected_capability: {report['selected_capability']}",
         f"technical_mvp_state: {report['technical_mvp_state']}",
         f"enterprise_next_action: {report['enterprise_next_action']}",
+        f"active_resume_checkpoint: {report['active_resume_checkpoint']}",
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         f"technical_milestones: {report['technical_milestone_count']}",
