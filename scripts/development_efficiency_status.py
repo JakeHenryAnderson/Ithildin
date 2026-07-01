@@ -36,6 +36,7 @@ REQUIRED_DOC_PHRASES = [
     "make technical-mvp-operator-trial-readiness",
     "make enterprise-current-checkpoint",
     "make enterprise-review-send-preflight",
+    "make handoff-dry-run",
     "make enterprise-send-quick-check",
     "make dev-check",
     "make release-check",
@@ -159,7 +160,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_handoff_commands": [
             "make release-check",
             "make review-candidate",
-            "make enterprise-send-quick-check",
+            "make handoff-dry-run",
             "make enterprise-review-send-refresh",
         ],
         "handoff_artifacts": {

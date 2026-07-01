@@ -991,7 +991,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         {"git_dirty": False},
         {"valid": True, "enterprise_next_action": "send_erg_003_and_erg_002"},
     ) == [
-        "make enterprise-send-quick-check",
+        "make handoff-dry-run",
         "make enterprise-send-now",
         "make enterprise-review-send-receipt-copy after the human send step",
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
@@ -29921,7 +29921,7 @@ def test_development_efficiency_status_is_wired() -> None:
     assert report["public_security_product_positioning_allowed"] is False
     assert "make release-check" in report["recommended_handoff_commands"]
     assert "make review-candidate" in report["recommended_handoff_commands"]
-    assert "make enterprise-send-quick-check" in report["recommended_handoff_commands"]
+    assert "make handoff-dry-run" in report["recommended_handoff_commands"]
     assert "make development-efficiency-status" in readme
     assert "development-efficiency-status:" in makefile
     assert (
@@ -29942,6 +29942,7 @@ def test_development_efficiency_status_is_wired() -> None:
         "make technical-mvp-operator-trial-readiness",
         "make enterprise-current-checkpoint",
         "make enterprise-review-send-preflight",
+        "make handoff-dry-run",
         "make enterprise-send-quick-check",
         "make dev-check",
         "make release-check",

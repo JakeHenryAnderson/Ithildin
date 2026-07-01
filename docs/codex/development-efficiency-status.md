@@ -23,8 +23,9 @@ The command consolidates:
 - `make artifact-freshness-check` when packet/handoff freshness needs to be checked before a long
   gate.
 - `make status-now` for the shortest current-state and next-command answer.
-- `make enterprise-send-quick-check` for cheap current-send confirmation after a full candidate
-  refresh.
+- `make handoff-dry-run` for cheap current-artifact handoff readiness after a full candidate
+  refresh; it includes `make enterprise-send-quick-check` plus artifact freshness and no-refresh
+  enterprise status.
 
 ## What It Answers
 
@@ -91,16 +92,15 @@ For the current enterprise handoff lane:
 
 ```sh
 make development-efficiency-status
-make enterprise-send-quick-check
+make handoff-dry-run
 make release-check
 make review-candidate
 make enterprise-review-send-refresh
 ```
 
-`make enterprise-send-quick-check` is a current-artifact confirmation path, not release proof. It
-runs the lightweight preflight, receipt-copy check, copied-receipt dry run, send-package reuse
-check, upload-staging check, and response waiting-room state without starting services, recording
-review, normalizing responses, or closing enterprise lanes.
+`make handoff-dry-run` is a current-artifact confirmation path, not release proof. It includes the
+cheap current-send confirmation path, artifact freshness, and no-refresh enterprise status without
+starting services, recording review, normalizing responses, or closing enterprise lanes.
 
 Use `make artifact-freshness-check` before a long gate when you suspect stale packet state. It
 reports whether enterprise send artifacts, the compact v1.0 RC packet, and the captured
