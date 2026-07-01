@@ -756,6 +756,8 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert profile_report["unique_target_count"] > 100
     assert profile_report["duplicate_target_count"] == 0
     assert profile_report["duplicate_targets"] == []
+    assert profile_report["other_target_count"] == 0
+    assert profile_report["other_targets"] == []
     assert profile_report["contains_full_test"] is True
     assert profile_report["contains_ui_build"] is True
     assert profile_report["contains_docs_site"] is True

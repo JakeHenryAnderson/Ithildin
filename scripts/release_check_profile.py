@@ -14,14 +14,20 @@ CATEGORY_PREFIXES: tuple[tuple[str, str], ...] = (
     ("enterprise-", "enterprise"),
     ("mission-control-", "mission_control"),
     ("sandbox-vm-", "sandbox_vm"),
+    ("sandbox-artifact-", "sandbox_artifact"),
     ("trusted-host-", "trusted_host"),
     ("production-identity-", "production_identity_storage"),
     ("siem-", "siem"),
     ("compliance-", "compliance"),
     ("public-", "public_positioning"),
+    ("post-rc-", "post_rc_decision"),
     ("project-", "project_metadata"),
     ("git-", "git_metadata"),
     ("agent-run-", "agent_run"),
+    ("agent-workflow-", "agent_workflow"),
+    ("low-implementer-", "agent_workflow"),
+    ("governed-artifact-transfer-", "governed_artifact_transfer"),
+    ("hello-world-", "governed_artifact_transfer"),
     ("v1-", "v1_rc"),
     ("v0", "versioned_review"),
     ("v3-", "v3_readiness"),
@@ -51,6 +57,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     category_counts = Counter(_category(target) for target in unique_targets)
     grouped_targets = targets_by_category(unique_targets)
+    other_targets = grouped_targets.get("other", [])
     categories = [
         {
             "category": category,
@@ -89,6 +96,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "unique_target_count": len(unique_targets),
         "duplicate_target_count": len(duplicates),
         "duplicate_targets": duplicates,
+        "other_target_count": len(other_targets),
+        "other_targets": other_targets,
         "categories": categories,
         "heaviest_categories": heaviest_categories,
         "contains_full_test": "test" in unique_targets,
@@ -111,6 +120,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"target_count: {report['target_count']}",
         f"unique_target_count: {report['unique_target_count']}",
         f"duplicate_target_count: {report['duplicate_target_count']}",
+        f"other_target_count: {report['other_target_count']}",
         f"contains_full_test: {str(report['contains_full_test']).lower()}",
         f"contains_ui_build: {str(report['contains_ui_build']).lower()}",
         f"contains_docs_site: {str(report['contains_docs_site']).lower()}",
@@ -123,6 +133,9 @@ def render_report(report: dict[str, Any]) -> str:
     if report["duplicate_targets"]:
         lines.append("duplicate_targets:")
         lines.extend(f"- {target}" for target in report["duplicate_targets"])
+    if report["other_targets"]:
+        lines.append("other_targets:")
+        lines.extend(f"- {target}" for target in report["other_targets"])
     if report["notes"]:
         lines.append("notes:")
         lines.extend(f"- {note}" for note in report["notes"])
@@ -161,6 +174,42 @@ def _category(target: str) -> str:
         return "test_lint_typecheck"
     if target in {"docs-site", "release-guardrails", "release-context"}:
         return "core_release"
+    if target in {
+        "filesystem-contract-check",
+        "determinism-check",
+        "adversarial-corpus-check",
+        "resource-limit-check",
+    }:
+        return "hardening"
+    if target in {
+        "tool-surface-invariant-gate",
+        "no-new-powers-guardrail",
+        "read-only-metadata-capability-check",
+        "read-only-capability-inventory-gate",
+        "read-only-project-intelligence",
+        "next-capability-readiness",
+        "next-capability-candidate-evaluation-2-check",
+        "capability-decision-report",
+    }:
+        return "capability_governance"
+    if target in {
+        "data-classification-design-check",
+        "control-mapping-design-check",
+        "incident-reconstruction-check",
+        "observability-readiness",
+        "control-mapping-readiness",
+    }:
+        return "observability_control"
+    if target in {
+        "accepted-risk-register-check",
+        "external-findings-intake-dry-run",
+    }:
+        return "risk_findings"
+    if target in {
+        "technical-mvp-ticket-map",
+        "development-efficiency-status",
+    }:
+        return "status_efficiency"
     if "review" in target or "packet" in target:
         return "review_packet"
     if "evidence" in target or "audit" in target:

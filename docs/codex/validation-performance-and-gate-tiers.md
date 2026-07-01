@@ -159,9 +159,11 @@ make release-check-profile
 
 Use this before assuming `make release-check` is hung or unexpectedly slow. It parses the Makefile
 and reports the static `release-check` prerequisite graph, largest target categories, duplicate
-targets, and whether the full Python test, UI build, and docs-site targets are present. It does not
-run the release gate and is not release proof; it is a fast explanation tool for planning which
-focused command or packet lane deserves attention next.
+targets, uncategorized targets, and whether the full Python test, UI build, and docs-site targets
+are present. The `other_target_count` field should stay at zero or near-zero; if it grows, classify
+the new targets before relying on slice guidance. It does not run the release gate and is not release
+proof; it is a fast explanation tool for planning which focused command or packet lane deserves
+attention next.
 
 To inspect one category from that graph, run:
 
