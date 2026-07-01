@@ -716,6 +716,10 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert refresh_report["dry_run"] is True
     assert refresh_report["refresh_stale_requested"] is True
     assert refresh_report["refresh_stale_applied"] is False
+    if not refresh_report["git_dirty"]:
+        assert refresh_report["pre_refresh_commands"] == [
+            "make review-run-manifest-refresh",
+        ]
     assert refresh_report["release_proof"] is False
     assert refresh_report["handoff_proof"] is False
     profile_report = release_check_profile.build_report(Path.cwd())

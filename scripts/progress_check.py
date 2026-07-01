@@ -18,6 +18,7 @@ from scripts import artifact_freshness_check  # noqa: E402
 
 DIRTY_COMMAND = "make dev-check"
 CLEAN_COMMAND = "make handoff-dry-run"
+CLEAN_REFRESH_PREREQUISITE_COMMANDS = ["make review-run-manifest-refresh"]
 DEFERRED_PROOF_COMMANDS = ["make release-check", "make review-candidate"]
 OUTPUT_TAIL_LINES = 80
 
@@ -83,6 +84,10 @@ def build_report(
         "dry_run": dry_run,
         "refresh_stale_requested": refresh_stale,
         "refresh_stale_applied": False,
+        "pre_refresh_commands": (
+            CLEAN_REFRESH_PREREQUISITE_COMMANDS if refresh_stale and not dirty else []
+        ),
+        "pre_refresh_execution": [],
         "refresh_commands": [],
         "refresh_execution": [],
         "release_proof": False,
@@ -98,6 +103,18 @@ def build_report(
         return report
 
     if refresh_stale and not dirty:
+        pre_refresh_results = [
+            _run(command, repo_root=repo_root, timeout_seconds=timeout_seconds)
+            for command in CLEAN_REFRESH_PREREQUISITE_COMMANDS
+        ]
+        report["pre_refresh_execution"] = pre_refresh_results
+        failed_pre_refresh = [
+            result for result in pre_refresh_results if result["returncode"] != 0
+        ]
+        if failed_pre_refresh:
+            report["valid"] = False
+            return report
+
         freshness = artifact_freshness_check.build_report(repo_root)
         refresh_commands = freshness.get("refresh_commands", [])
         report["refresh_commands"] = refresh_commands
@@ -146,6 +163,21 @@ def render_report(report: dict[str, Any]) -> str:
         omitted = len(report["dirty_files"]) - 40
         if omitted > 0:
             lines.append(f"- ... {omitted} more")
+    if report["pre_refresh_commands"]:
+        lines.append("pre_refresh_commands:")
+        lines.extend(f"- {command}" for command in report["pre_refresh_commands"])
+    if report["pre_refresh_execution"]:
+        lines.append("pre_refresh_execution:")
+        for result in report["pre_refresh_execution"]:
+            lines.append(
+                "- "
+                f"{result['command']} "
+                f"returncode={result['returncode']} "
+                f"elapsed_seconds={result['elapsed_seconds']}"
+            )
+            if result["returncode"] != 0 and result["output_tail"]:
+                lines.append("  output_tail:")
+                lines.extend(f"  {line}" for line in result["output_tail"].splitlines())
     if report["refresh_commands"]:
         lines.append("refresh_commands:")
         lines.extend(f"- {command}" for command in report["refresh_commands"])
@@ -212,7 +244,8 @@ def _notes(dirty: bool, *, refresh_stale: bool) -> list[str]:
     ]
     if refresh_stale:
         notes.append(
-            "--refresh-stale may run artifact-freshness refresh commands before the sanity path."
+            "--refresh-stale refreshes review-run manifests and may run artifact-freshness "
+            "refresh commands before the sanity path."
         )
     return notes
 
