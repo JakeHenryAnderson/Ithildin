@@ -581,6 +581,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-handoff-check" in readme
     assert "make progress-check" in readme
     assert "make progress-check ARGS=--refresh-stale" in readme
+    assert "make review-candidate-release-transcript" in readme
     assert "make validation-decision" in readme
     assert "make validation-plan" in readme
     assert "make validation-recommendation" in readme
@@ -616,6 +617,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make smart-handoff-check" in guide
     assert "make progress-check" in guide
     assert "make progress-check ARGS=--refresh-stale" in guide
+    assert "make review-candidate-release-transcript" in guide
     assert "make test-fast" in guide
     assert "make runtime-check" in guide
     assert "make validation-decision" in guide
@@ -727,6 +729,24 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "ARGS" not in child_env
     assert "MAKEFLAGS" not in child_env
     assert "MFLAGS" not in child_env
+    assert artifact_freshness_check._refresh_commands(
+        [
+            "review_candidate_release_transcript_commit_matches_current",
+            "v1_rc_packet_commit_matches_current",
+        ]
+    ) == [
+        "make review-candidate-release-transcript",
+        "make v1-rc-packet",
+    ]
+    assert artifact_freshness_check._refresh_commands(
+        [
+            "enterprise_send_artifact_commits_match_current",
+            "review_candidate_release_transcript_passed",
+        ]
+    ) == [
+        "make enterprise-review-send-refresh",
+        "make review-candidate-release-transcript",
+    ]
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100
@@ -17848,7 +17868,7 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
     assert target is not None
     body = target.group("body")
     expected_commands = [
-        "$(MAKE) release-check",
+        "$(MAKE) review-candidate-release-transcript",
         "$(MAKE) filesystem-contract-check",
         "$(MAKE) signed-evidence-demo",
         "$(MAKE) signed-evidence-demo-verify",
@@ -17867,6 +17887,13 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
     ]
     positions = [body.index(command) for command in expected_commands]
     assert positions == sorted(positions)
+    transcript_target = re.search(
+        r"^review-candidate-release-transcript:\n(?P<body>(?:\t.*\n)+)",
+        makefile,
+        re.MULTILINE,
+    )
+    assert transcript_target is not None
+    assert "$(MAKE) release-check" in transcript_target.group("body")
     assert "review-candidate-release-check.txt" in body
     assert "v1.0 RC packet ready: var/review-packets/v1.0/rc" in body
     assert (

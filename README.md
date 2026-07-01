@@ -189,6 +189,10 @@ checked with `make control-mapping-readiness`.
   Add `ARGS=--refresh-stale` on a clean tree when stale generated handoff artifacts should be
   refreshed, including review-run manifests and enterprise send artifacts, before the same sanity
   path.
+- `make review-candidate-release-transcript` - refresh only the captured same-commit
+  `release-check` transcript used by review-candidate evidence; use this through
+  `make progress-check ARGS=--refresh-stale` or `make artifact-freshness-check` guidance when
+  packet artifacts are otherwise current.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make smart-handoff-check` - run the current validation plan including deferred release/review

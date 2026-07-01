@@ -334,7 +334,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "docs-site",
 ]
 REQUIRED_REVIEW_CANDIDATE_STEPS = [
-    "$(MAKE) release-check",
+    "$(MAKE) review-candidate-release-transcript",
     "$(MAKE) filesystem-contract-check",
     "$(MAKE) signed-evidence-demo",
     "$(MAKE) signed-evidence-demo-verify",
@@ -569,6 +569,13 @@ def _check_release_targets() -> list[str]:
         if fragment not in release_check_body and additive_release_check not in makefile:
             failures.append(f"release-check does not include {fragment}")
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    transcript_body = makefile.partition("review-candidate-release-transcript:")[2].partition(
+        "\n\n"
+    )[0]
+    if "$(MAKE) release-check" not in transcript_body:
+        failures.append(
+            "review-candidate-release-transcript does not include $(MAKE) release-check"
+        )
     previous_index = -1
     for step in REQUIRED_REVIEW_CANDIDATE_STEPS:
         index = review_candidate_body.find(step)

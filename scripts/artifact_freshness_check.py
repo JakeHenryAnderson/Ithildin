@@ -122,12 +122,10 @@ def _refresh_commands(stale: list[str]) -> list[str]:
     commands: list[str] = []
     if any(name.startswith("enterprise_send_") for name in stale):
         commands.append("make enterprise-review-send-refresh")
-    if any(
-        name.startswith("v1_rc_packet_")
-        or name.startswith("review_candidate_release_transcript_")
-        for name in stale
-    ):
-        commands.append("make review-candidate")
+    if any(name.startswith("review_candidate_release_transcript_") for name in stale):
+        commands.append("make review-candidate-release-transcript")
+    if any(name.startswith("v1_rc_packet_") for name in stale):
+        commands.append("make v1-rc-packet")
     return commands
 
 

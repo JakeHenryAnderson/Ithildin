@@ -54,8 +54,10 @@ make progress-check ARGS=--refresh-stale
 
 This mode first refreshes review-run manifests and enterprise send artifacts, then runs the refresh
 commands reported by `make artifact-freshness-check` before the same clean-tree handoff sanity path.
-It is still not release proof or handoff proof; use it to repair stale generated state before
-returning to the normal checkpoint gates.
+For stale review-candidate release transcripts or compact v1.0 RC packets, that repair path uses
+`make review-candidate-release-transcript` and `make v1-rc-packet` instead of rebuilding every
+review-candidate artifact. It is still not release proof or handoff proof; use it to repair stale
+generated state before returning to the normal checkpoint gates.
 
 For a shorter recommendation-only view that never runs commands and never claims release proof, run:
 
@@ -223,8 +225,9 @@ make artifact-freshness-check
 Use this before starting a long gate when the likely failure is stale generated evidence rather than
 implementation breakage. The command checks the current enterprise send artifacts, compact v1.0 RC
 packet, and captured release-check transcript against the current commit. It prints refresh commands
-such as `make enterprise-review-send-refresh` or `make review-candidate` when those artifacts are
-stale.
+such as `make enterprise-review-send-refresh`, `make review-candidate-release-transcript`, or
+`make v1-rc-packet` when those artifacts are stale. Full `make review-candidate` remains the broad
+handoff proof path, not the default repair command for those narrower freshness markers.
 
 This command does not start services, does not call governed tools, does not record external review,
 and does not replace `make release-check` or `make review-candidate`.

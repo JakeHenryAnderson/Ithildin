@@ -102,6 +102,8 @@ make handoff-dry-run
 make release-check
 make review-candidate
 make enterprise-review-send-refresh
+make review-candidate-release-transcript
+make v1-rc-packet
 ```
 
 `make progress-check` is the default "keep moving" command. It saves the manager from deciding
@@ -111,8 +113,10 @@ development evidence only. It does not replace release-check or review-candidate
 Use `make progress-check ARGS=--refresh-stale` when the tree is already clean but the last commit
 made generated handoff artifacts stale. This intentionally refreshes review-run manifests and
 enterprise send artifacts, then runs the refresh commands reported by artifact freshness before
-rechecking the clean-tree path. It still does not replace release-check or review-candidate before
-checkpoint claims.
+rechecking the clean-tree path. For stale review-candidate release transcripts or the compact v1.0
+RC packet, the freshness repair path uses the narrower `make review-candidate-release-transcript`
+and `make v1-rc-packet` targets instead of rebuilding every review-candidate artifact. It still does
+not replace release-check or review-candidate before checkpoint claims.
 
 `make handoff-dry-run` is a current-artifact confirmation path, not release proof. It includes the
 cheap current-send confirmation path, artifact freshness, and no-refresh enterprise status without
@@ -120,7 +124,7 @@ starting services, recording review, normalizing responses, or closing enterpris
 
 Use `make artifact-freshness-check` before a long gate when you suspect stale packet state. It
 reports whether enterprise send artifacts, the compact v1.0 RC packet, and the captured
-release-check transcript match the current commit, then recommends refresh commands. It is a
+release-check transcript match the current commit, then recommends focused refresh commands. It is a
 diagnostic shortcut, not release proof.
 
 Use `make status-now` as the quick "what should I do next?" view. It combines validation mode,
