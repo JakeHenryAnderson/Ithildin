@@ -35,6 +35,7 @@ The current recommended enterprise handoff set is:
 Generate or refresh the send-ready operator artifacts with:
 
 ```sh
+make enterprise-review-send-refresh
 make enterprise-dual-review-outbox
 make enterprise-review-send-manifest
 make enterprise-review-send-quickstart
@@ -47,6 +48,7 @@ make enterprise-response-waiting-room
 make enterprise-response-now
 make enterprise-review-handoff-drill
 make handoff-dry-run
+make enterprise-send-now
 ```
 
 After the human send step, preserve the local send receipt:

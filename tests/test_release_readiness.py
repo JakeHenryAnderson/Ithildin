@@ -5571,6 +5571,13 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "make enterprise-response-now",
         "make enterprise-response-paste-preflight",
     ]
+    assert report["required_pre_send_commands"] == [
+        "make release-check",
+        "make review-candidate",
+        "make enterprise-review-send-refresh",
+        "make handoff-dry-run",
+        "make enterprise-send-now",
+    ]
     for expected_doc in [
         "docs/codex/enterprise-review-send-checklist.md",
         "docs/codex/enterprise-review-send-quickstart.md",
@@ -5607,6 +5614,11 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "var/review-runs/enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
+        "make release-check",
+        "make review-candidate",
+        "make enterprise-review-send-refresh",
+        "make handoff-dry-run",
+        "make enterprise-send-now",
         "make enterprise-review-send-receipt-template",
         "make enterprise-review-send-receipt-copy",
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",

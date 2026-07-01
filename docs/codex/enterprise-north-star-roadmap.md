@@ -66,14 +66,9 @@ The current recommended enterprise handoff set remains:
 2. Refresh the enterprise handoff set:
 
    ```sh
-   make enterprise-dual-review-outbox
-   make enterprise-review-send-manifest
-   make enterprise-review-submission-prompt
-   make enterprise-review-send-receipt-template
-   make enterprise-dual-response-inbox
-   make enterprise-response-waiting-room
-   make enterprise-response-now
-   make enterprise-review-handoff-drill
+   make enterprise-review-send-refresh
+   make handoff-dry-run
+   make enterprise-send-now
    ```
 
 3. Send the `ERG-003` and `ERG-002` packets.
@@ -82,6 +77,7 @@ The current recommended enterprise handoff set remains:
    receipt before sending because it records what was actually sent.
 
    ```sh
+   make enterprise-review-send-receipt-template
    make enterprise-review-send-receipt-copy
    make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
    ```
@@ -90,6 +86,7 @@ The current recommended enterprise handoff set remains:
    `var/review-runs/enterprise-dual-response-inbox/` and run:
 
    ```sh
+   make enterprise-dual-response-inbox
    make enterprise-response-waiting-room
    make enterprise-response-now
    make enterprise-response-paste-preflight

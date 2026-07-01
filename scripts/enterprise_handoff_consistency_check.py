@@ -25,6 +25,13 @@ RAW_RESPONSE_PATHS = [
 RECEIPT_VALIDATE_COMMAND = (
     "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json"
 )
+CURRENT_PRE_SEND_COMMANDS = [
+    "make release-check",
+    "make review-candidate",
+    "make enterprise-review-send-refresh",
+    "make handoff-dry-run",
+    "make enterprise-send-now",
+]
 CURRENT_FLOW_COMMANDS = [
     "make enterprise-review-send-receipt-template",
     "make enterprise-review-send-receipt-copy",
@@ -63,14 +70,17 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
     ],
     "docs/codex/enterprise-current-checkpoint.md": [
         DUAL_INBOX_ROOT,
+        *CURRENT_PRE_SEND_COMMANDS,
         *CURRENT_FLOW_COMMANDS,
     ],
     "docs/codex/enterprise-north-star-roadmap.md": [
         DUAL_INBOX_ROOT,
+        *CURRENT_PRE_SEND_COMMANDS,
         *CURRENT_FLOW_COMMANDS,
     ],
     "docs/codex/enterprise-dependency-ladder.md": [
         DUAL_INBOX_ROOT,
+        *CURRENT_PRE_SEND_COMMANDS,
         *CURRENT_FLOW_COMMANDS,
     ],
     "docs/codex/enterprise-transition-map.md": [
@@ -78,6 +88,7 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
         "make enterprise-response-paste-preflight",
     ],
     "docs/codex/enterprise-operator-next-action.md": [
+        *CURRENT_PRE_SEND_COMMANDS,
         *CURRENT_FLOW_COMMANDS,
     ],
 }
@@ -172,6 +183,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "Status: checked read-only enterprise handoff consistency gate.",
         "make enterprise-handoff-consistency-check",
         DUAL_INBOX_ROOT,
+        *CURRENT_PRE_SEND_COMMANDS,
         *CURRENT_FLOW_COMMANDS,
         *RAW_RESPONSE_PATHS,
         "does not record external review",
@@ -192,6 +204,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "dual_response_inbox_root": DUAL_INBOX_ROOT,
         "raw_response_paths": RAW_RESPONSE_PATHS,
         "required_current_flow_commands": CURRENT_FLOW_COMMANDS,
+        "required_pre_send_commands": CURRENT_PRE_SEND_COMMANDS,
         **BOUNDARY_FLAGS,
     }
 
@@ -208,6 +221,8 @@ def render_report(report: dict[str, Any]) -> str:
         *[f"- {path}" for path in report["docs_checked"]],
         "required_current_flow_commands:",
         *[f"- {command}" for command in report["required_current_flow_commands"]],
+        "required_pre_send_commands:",
+        *[f"- {command}" for command in report["required_pre_send_commands"]],
     ]
     for key in BOUNDARY_FLAGS:
         lines.append(f"{key}: {str(report[key]).lower()}")
