@@ -945,6 +945,11 @@ def test_enterprise_review_send_receipt_fill_is_bounded(
         "_git",
         lambda _repo_root, args: "fixture-commit" if args == ["rev-parse", "HEAD"] else "",
     )
+    monkeypatch.setattr(
+        enterprise_review_send_receipt_template,
+        "DEFAULT_OUTPUT_DIR",
+        tmp_path / "enterprise-review-send-receipt-template",
+    )
     output = tmp_path / "enterprise-review-send-receipt-copy.json"
 
     report = enterprise_review_send_receipt_fill.build_fill_report(
