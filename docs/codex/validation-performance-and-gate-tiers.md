@@ -33,6 +33,10 @@ release-check slice suggestions, run:
 make validation-decision
 ```
 
+The decision output prints both `release_slice_categories` and `release_slice_commands`, so you can
+see the affected full-gate areas before deciding whether to run a focused slice or save the full
+`make release-check` for checkpoint proof.
+
 To execute the current efficient progress gate without deciding manually between the development
 loop and the cheap handoff sanity path, run:
 

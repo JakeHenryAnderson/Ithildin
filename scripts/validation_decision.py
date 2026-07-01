@@ -140,6 +140,9 @@ def render_report(report: dict[str, Any]) -> str:
     if report["deferred_handoff_commands"]:
         lines.append("deferred_handoff_commands:")
         lines.extend(f"- {command}" for command in report["deferred_handoff_commands"])
+    if report["release_slice_categories"]:
+        lines.append("release_slice_categories:")
+        lines.extend(f"- {category}" for category in report["release_slice_categories"])
     if report["release_slice_commands"]:
         lines.append("release_slice_commands:")
         lines.extend(f"- {command}" for command in report["release_slice_commands"])

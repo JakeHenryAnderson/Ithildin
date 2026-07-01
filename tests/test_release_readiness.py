@@ -942,6 +942,10 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
     assert enterprise_report["release_slice_commands"] == [
         'make release-check-slice ARGS="--category enterprise"'
     ]
+    rendered_enterprise_report = validation_decision.render_report(enterprise_report)
+    assert "release_slice_categories:" in rendered_enterprise_report
+    assert "- enterprise" in rendered_enterprise_report
+    assert "release_slice_commands:" in rendered_enterprise_report
 
 
 def test_validation_recommendation_is_plan_only() -> None:
