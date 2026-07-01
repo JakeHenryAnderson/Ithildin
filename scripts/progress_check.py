@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -258,6 +259,7 @@ def _run(command: str, *, repo_root: Path, timeout_seconds: float) -> dict[str, 
     result = subprocess.run(
         command,
         cwd=repo_root,
+        env=_child_command_env(),
         shell=True,
         text=True,
         capture_output=True,
@@ -271,6 +273,15 @@ def _run(command: str, *, repo_root: Path, timeout_seconds: float) -> dict[str, 
         "elapsed_seconds": elapsed,
         "output_tail": _tail(output),
     }
+
+
+def _child_command_env() -> dict[str, str]:
+    env = os.environ.copy()
+    # `make progress-check ARGS=...` should not leak progress-check-only args into
+    # nested Make targets such as release-check or review-candidate.
+    for key in ["ARGS", "MAKEFLAGS", "MFLAGS"]:
+        env.pop(key, None)
+    return env
 
 
 def _tail(text: str) -> str:

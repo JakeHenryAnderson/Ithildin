@@ -723,6 +723,10 @@ def test_validation_performance_tiers_are_wired() -> None:
         ]
     assert refresh_report["release_proof"] is False
     assert refresh_report["handoff_proof"] is False
+    child_env = progress_check._child_command_env()
+    assert "ARGS" not in child_env
+    assert "MAKEFLAGS" not in child_env
+    assert "MFLAGS" not in child_env
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100
