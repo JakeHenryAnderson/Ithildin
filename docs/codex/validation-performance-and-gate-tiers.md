@@ -113,6 +113,16 @@ Handoff-oriented timing profiles are measurement aids, not proof gates:
   review candidate.
 - `handoff`: times `make review-candidate`, the full release/handoff proof path.
 
+For the same cheap current-artifact handoff readiness path without timing instrumentation, run:
+
+```sh
+make handoff-dry-run
+```
+
+It runs artifact freshness, the current send quick-check, and no-refresh enterprise status. It is
+still not release proof and still not a replacement for `make review-candidate` before an actual
+handoff.
+
 ### Release Check Profile
 
 Run:

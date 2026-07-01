@@ -529,6 +529,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "enterprise-status-quick:" in makefile
     assert "enterprise-status-slice:" in makefile
     assert "validation-timing:" in makefile
+    assert "handoff-dry-run:" in makefile
     assert "release-check-impact:" in makefile
     assert "release-check-profile:" in makefile
     assert "release-check-slice:" in makefile
@@ -586,6 +587,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-timing" in readme
     assert "make validation-timing ARGS=--profile enterprise-status" in readme
     assert "make validation-timing ARGS=--profile handoff-dry-run" in readme
+    assert "make handoff-dry-run" in readme
     assert "make validation-timing ARGS=--profile handoff" in readme
     assert "make release-check-impact" in readme
     assert "make release-check-profile" in readme
@@ -620,6 +622,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-timing" in guide
     assert "scripts/validation_timing.py --profile enterprise-status" in guide
     assert "scripts/validation_timing.py --profile handoff-dry-run" in guide
+    assert "make handoff-dry-run" in guide
     assert "`enterprise-status`: times the no-refresh" in guide
     assert "`enterprise-send-refresh`: times regeneration" in guide
     assert "`handoff-dry-run`: times the cheap current-artifact" in guide
@@ -649,6 +652,12 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "$(MAKE) mission-control-enterprise-status-import-check" in (
         enterprise_status_slice_body
     )
+    handoff_dry_run_body = makefile.partition("handoff-dry-run:")[2].partition("\n\n")[
+        0
+    ]
+    assert "$(MAKE) artifact-freshness-check" in handoff_dry_run_body
+    assert "$(MAKE) enterprise-send-quick-check" in handoff_dry_run_body
+    assert "$(MAKE) enterprise-status-quick" in handoff_dry_run_body
     assert "Do not nest high-level packet/status/export report builders" in guide
     assert "--fail-on-budget" in guide
     assert "budget status" in guide

@@ -195,6 +195,8 @@ checked with `make control-mapping-readiness`.
   status lane.
 - `make validation-timing ARGS=--profile handoff-dry-run` - time the cheap current-artifact
   handoff readiness path without rebuilding the full review candidate.
+- `make handoff-dry-run` - run that cheap current-artifact handoff readiness path directly:
+  artifact freshness, current send quick-check, and no-refresh enterprise status.
 - `make validation-timing ARGS=--profile handoff` - time the full `make review-candidate` path
   when you intentionally need broad release/handoff proof.
 - `make release-check-profile` - statically summarize the full `release-check` prerequisite graph
