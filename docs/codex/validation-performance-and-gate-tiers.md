@@ -176,9 +176,11 @@ the captured transcript without rerunning the gate:
 make release-check-transcript-summary
 ```
 
-This parser reports the transcript commit, return code, command counts, last observed subcommand,
-and a short safe tail. It is useful for answering "what was release-check doing?" after a slow or
-failed run. It does not rerun release-check and is diagnostic evidence only, not release proof.
+This parser reports the transcript commit, whether that commit matches the current repo commit,
+return code, command counts, last observed subcommand, and a short safe tail. It is useful for
+answering "what was release-check doing?" after a slow or failed run and for distinguishing
+current proof from a valid-but-stale transcript. It does not rerun release-check and is diagnostic
+evidence only, not release proof.
 
 For the common, no-refresh enterprise status/send-guidance loop, run:
 

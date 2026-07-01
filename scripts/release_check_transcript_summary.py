@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -44,6 +45,8 @@ def main() -> int:
 
 def build_report(path: Path, *, tail_lines: int = DEFAULT_TAIL_LINES) -> dict[str, Any]:
     failures: list[str] = []
+    current_commit = _git(["rev-parse", "HEAD"])
+    current_dirty = bool(_git(["status", "--short"]))
     if not path.exists():
         return {
             "schema_version": "1",
@@ -55,6 +58,10 @@ def build_report(path: Path, *, tail_lines: int = DEFAULT_TAIL_LINES) -> dict[st
             "returncode": None,
             "git_commit": None,
             "git_dirty": None,
+            "current_commit": current_commit,
+            "current_dirty": current_dirty,
+            "commit_matches_current": False,
+            "freshness_status": "missing",
             "line_count": 0,
             "command_count": 0,
             "command_prefix_counts": {},
@@ -91,6 +98,14 @@ def build_report(path: Path, *, tail_lines: int = DEFAULT_TAIL_LINES) -> dict[st
         "returncode": returncode,
         "git_commit": git_commit,
         "git_dirty": _bool_value(git_dirty),
+        "current_commit": current_commit,
+        "current_dirty": current_dirty,
+        "commit_matches_current": git_commit == current_commit,
+        "freshness_status": _freshness_status(
+            exists=True,
+            git_commit=git_commit,
+            current_commit=current_commit,
+        ),
         "line_count": len(lines),
         "command_count": len(commands),
         "command_prefix_counts": dict(sorted(prefix_counts.items())),
@@ -120,6 +135,10 @@ def render_report(report: dict[str, Any]) -> str:
         f"returncode: {report['returncode']}",
         f"git_commit: {report['git_commit']}",
         f"git_dirty: {report['git_dirty']}",
+        f"current_commit: {report['current_commit']}",
+        f"current_dirty: {str(report['current_dirty']).lower()}",
+        f"commit_matches_current: {str(report['commit_matches_current']).lower()}",
+        f"freshness_status: {report['freshness_status']}",
         f"line_count: {report['line_count']}",
         f"command_count: {report['command_count']}",
         f"script_command_count: {report['script_command_count']}",
@@ -195,6 +214,35 @@ def _bool_value(value: str | None) -> bool | None:
     if value == "false":
         return False
     return None
+
+
+def _freshness_status(
+    *,
+    exists: bool,
+    git_commit: str | None,
+    current_commit: str,
+) -> str:
+    if not exists:
+        return "missing"
+    if git_commit is None:
+        return "unknown"
+    if git_commit != current_commit:
+        return "stale"
+    return "current"
+
+
+def _git(args: list[str]) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if completed.returncode != 0:
+        return ""
+    return completed.stdout.strip()
 
 
 def _display_path(path: Path) -> str:

@@ -806,6 +806,9 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert transcript_report["returncode"] == 0
     assert transcript_report["git_commit"] == "abc123"
     assert transcript_report["git_dirty"] is False
+    assert transcript_report["current_commit"]
+    assert transcript_report["commit_matches_current"] is False
+    assert transcript_report["freshness_status"] == "stale"
     assert transcript_report["script_command_count"] == 1
     assert transcript_report["pytest_invocation_count"] == 1
     assert transcript_report["npm_invocation_count"] == 1
@@ -814,6 +817,7 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
         tmp_path / "missing.txt"
     )
     assert missing_transcript_report["valid"] is False
+    assert missing_transcript_report["freshness_status"] == "missing"
     assert "missing" in missing_transcript_report["failures"][0]
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site

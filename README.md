@@ -195,7 +195,7 @@ checked with `make control-mapping-readiness`.
   packet artifacts are otherwise current.
 - `make release-check-transcript-summary` - summarize the latest captured `release-check`
   transcript without rerunning it; use this after a long pass or failure to see the commit,
-  return code, command counts, last observed subcommand, and safe output tail.
+  freshness status, return code, command counts, last observed subcommand, and safe output tail.
 - `make smart-check` - run the current validation plan automatically and print per-command timing
   evidence; use this as the default development gate when you are not preparing a release handoff.
 - `make smart-handoff-check` - run the current validation plan including deferred release/review
