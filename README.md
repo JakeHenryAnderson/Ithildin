@@ -578,6 +578,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-send-now` - print the current send-ready review lanes, prompt files, upload
   batch folders, raw-response placeholders, and post-response commands from existing generated
   artifacts without recording review or closing lanes.
+- `make enterprise-send-now-artifact` - write the same current send-ready summary as ignored JSON
+  and Markdown under `var/review-packets/v3/enterprise-send-now/` for operator handoff without
+  recording review or closing lanes.
 - `make enterprise-review-send-session-record` - generate an ignored non-authoritative
   send-session scaffold tying the current package hashes, lane prompts, raw-response paths, and
   operator fill-in fields together without recording review or closing lanes.

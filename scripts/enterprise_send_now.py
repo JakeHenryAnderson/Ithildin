@@ -22,14 +22,25 @@ UPLOAD_STAGING_JSON = Path(
 DUAL_RESPONSE_INBOX_JSON = Path(
     "var/review-runs/enterprise-dual-response-inbox/enterprise-dual-response-inbox.json"
 )
+DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/enterprise-send-now")
+JSON_NAME = "enterprise-send-now.json"
+MD_NAME = "ENTERPRISE_SEND_NOW.md"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--write", action="store_true", help="write ignored JSON/Markdown output")
+    parser.add_argument("--check", action="store_true", help="validate generated artifact wiring")
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args()
 
-    report = build_report(ROOT)
+    if args.check:
+        report = build_check_report(ROOT, args.output_dir)
+    elif args.write:
+        report = build_artifact(ROOT, args.output_dir)
+    else:
+        report = build_report(ROOT)
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
@@ -55,6 +66,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_gaps": upload.get("recommended_gaps", []),
         "upload_staging_path": UPLOAD_STAGING_JSON.parent.as_posix(),
         "response_inbox_path": DUAL_RESPONSE_INBOX_JSON.parent.as_posix(),
+        "send_now_artifact_path": DEFAULT_OUTPUT_DIR.as_posix(),
         "lane_count": len(lanes),
         "batch_count": sum(len(lane["batches"]) for lane in lanes),
         "lanes": lanes,
@@ -84,6 +96,101 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     }
 
 
+def build_artifact(repo_root: Path, output_dir: Path) -> dict[str, Any]:
+    report = build_report(repo_root)
+    output_path = output_dir if output_dir.is_absolute() else repo_root / output_dir
+    output_path.mkdir(parents=True, exist_ok=True)
+    json_path = output_path / JSON_NAME
+    md_path = output_path / MD_NAME
+    json_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    md_path.write_text(render_report(report) + "\n", encoding="utf-8")
+    return {
+        **report,
+        "artifact_output_dir": _repo_rel_path(repo_root, output_path).as_posix(),
+        "artifact_json": _repo_rel_path(repo_root, json_path).as_posix(),
+        "artifact_markdown": _repo_rel_path(repo_root, md_path).as_posix(),
+        "artifact_written": True,
+    }
+
+
+def build_check_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
+    output_path = output_dir if output_dir.is_absolute() else repo_root / output_dir
+    report = build_report(repo_root)
+    json_path = output_path / JSON_NAME
+    md_path = output_path / MD_NAME
+    failures = list(report["failures"])
+
+    if not json_path.exists():
+        failures.append(
+            "send-now JSON artifact is missing: "
+            f"{_repo_rel_path(repo_root, json_path)}"
+        )
+    if not md_path.exists():
+        failures.append(
+            "send-now Markdown artifact is missing: "
+            f"{_repo_rel_path(repo_root, md_path)}"
+        )
+    if json_path.exists():
+        try:
+            artifact = json.loads(json_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            artifact = {}
+            failures.append("send-now JSON artifact is not valid JSON")
+        if artifact.get("commit") != report["commit"]:
+            failures.append("send-now JSON artifact commit does not match current HEAD")
+        if artifact.get("recommended_gaps") != ["ERG-003", "ERG-002"]:
+            failures.append("send-now JSON artifact recommended gaps drifted")
+        for key in [
+            "records_external_review",
+            "normalizes_responses",
+            "writes_response_files",
+            "closes_erg_003",
+            "closes_erg_002",
+            "runtime_changes_allowed",
+            "mission_control_runtime_allowed",
+            "live_vm_inspection_allowed",
+            "sandbox_orchestration_allowed",
+            "new_power_classes_allowed",
+        ]:
+            if artifact.get(key) is not False:
+                failures.append(f"send-now JSON artifact boundary flag drifted: {key}")
+    if md_path.exists():
+        markdown = md_path.read_text(encoding="utf-8")
+        for needle in [
+            "Ithildin enterprise send now",
+            "ERG-003",
+            "ERG-002",
+            "next_after_send:",
+            "runtime_changes_allowed: false",
+            "new_power_classes_allowed: false",
+        ]:
+            if needle not in markdown:
+                failures.append(f"send-now Markdown artifact is missing {needle}")
+
+    makefile = _read(repo_root / "Makefile")
+    readme = _read(repo_root / "README.md")
+    required = {
+        "Make artifact target": ("enterprise-send-now-artifact:", makefile),
+        "Make artifact check target": ("enterprise-send-now-artifact-check:", makefile),
+        "README command": ("make enterprise-send-now-artifact", readme),
+    }
+    for label, (needle, haystack) in required.items():
+        if needle not in haystack:
+            failures.append(f"{label} is missing {needle}")
+
+    return {
+        **report,
+        "valid": not failures,
+        "failures": failures,
+        "artifact_output_dir": _repo_rel_path(repo_root, output_path).as_posix(),
+        "artifact_json": _repo_rel_path(repo_root, json_path).as_posix(),
+        "artifact_markdown": _repo_rel_path(repo_root, md_path).as_posix(),
+        "artifact_json_exists": json_path.exists(),
+        "artifact_markdown_exists": md_path.exists(),
+        "artifact_written": False,
+    }
+
+
 def render_report(report: dict[str, Any]) -> str:
     lines = [
         "Ithildin enterprise send now",
@@ -94,6 +201,7 @@ def render_report(report: dict[str, Any]) -> str:
         "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
         f"upload_staging_path: {report['upload_staging_path']}",
         f"response_inbox_path: {report['response_inbox_path']}",
+        f"send_now_artifact_path: {report['send_now_artifact_path']}",
         f"lane_count: {report['lane_count']}",
         f"batch_count: {report['batch_count']}",
         "lanes:",
@@ -138,6 +246,14 @@ def render_report(report: dict[str, Any]) -> str:
     if report["failures"]:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])
+    if "artifact_json" in report:
+        lines.extend(
+            [
+                "artifacts:",
+                f"- json: {report['artifact_json']}",
+                f"- markdown: {report['artifact_markdown']}",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -217,6 +333,21 @@ def _read_json(path: Path) -> dict[str, Any]:
         return {}
     data = json.loads(path.read_text(encoding="utf-8"))
     return data if isinstance(data, dict) else {}
+
+
+def _read(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ""
+
+
+def _repo_rel_path(repo_root: Path, path: Path) -> Path:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(repo_root.resolve())
+    except ValueError:
+        return resolved
 
 
 def _git(repo_root: Path, args: list[str]) -> str:

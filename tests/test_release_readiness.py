@@ -863,6 +863,14 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
 
 def test_enterprise_send_now_reports_send_ready_batches() -> None:
     report = enterprise_send_now.build_report(Path.cwd())
+    artifact_report = enterprise_send_now.build_artifact(
+        Path.cwd(),
+        Path("var/review-packets/v3/enterprise-send-now"),
+    )
+    check_report = enterprise_send_now.build_check_report(
+        Path.cwd(),
+        Path("var/review-packets/v3/enterprise-send-now"),
+    )
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
 
@@ -895,9 +903,36 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert report["sandbox_orchestration_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert "enterprise-send-now:" in makefile
+    assert "enterprise-send-now-artifact:" in makefile
+    assert "enterprise-send-now-artifact-check:" in makefile
     assert "make enterprise-send-now" in readme
+    assert "make enterprise-send-now-artifact" in readme
     assert any(lane["gap"] == "ERG-003" for lane in report["lanes"])
     assert any(lane["gap"] == "ERG-002" for lane in report["lanes"])
+    assert artifact_report["artifact_written"] is True
+    if artifact_report["valid"] is not True:
+        assert set(artifact_report["failures"]).issubset(
+            {
+                "handoff artifacts are stale; run make review-candidate",
+                "upload staging was not generated from a clean tree",
+                "upload staging commit does not match current HEAD",
+                "response inbox commit does not match current HEAD",
+            }
+        )
+    if check_report["valid"] is not True:
+        assert set(check_report["failures"]).issubset(
+            {
+                "handoff artifacts are stale; run make review-candidate",
+                "upload staging was not generated from a clean tree",
+                "upload staging commit does not match current HEAD",
+                "response inbox commit does not match current HEAD",
+            }
+        )
+    assert check_report["artifact_json_exists"] is True
+    assert check_report["artifact_markdown_exists"] is True
+    assert check_report["records_external_review"] is False
+    assert check_report["closes_erg_003"] is False
+    assert check_report["closes_erg_002"] is False
 
 
 def test_validation_decision_reports_development_and_handoff_modes(
