@@ -584,6 +584,9 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make enterprise-status-quick" in readme
     assert "make enterprise-status-slice" in readme
     assert "make validation-timing" in readme
+    assert "make validation-timing ARGS=--profile enterprise-status" in readme
+    assert "make validation-timing ARGS=--profile handoff-dry-run" in readme
+    assert "make validation-timing ARGS=--profile handoff" in readme
     assert "make release-check-impact" in readme
     assert "make release-check-profile" in readme
     assert "make release-check-slice" in readme
@@ -615,6 +618,12 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make enterprise-status-quick" in guide
     assert "make enterprise-status-slice" in guide
     assert "make validation-timing" in guide
+    assert "scripts/validation_timing.py --profile enterprise-status" in guide
+    assert "scripts/validation_timing.py --profile handoff-dry-run" in guide
+    assert "`enterprise-status`: times the no-refresh" in guide
+    assert "`enterprise-send-refresh`: times regeneration" in guide
+    assert "`handoff-dry-run`: times the cheap current-artifact" in guide
+    assert "`handoff`: times `make review-candidate`" in guide
     assert "make release-check-impact" in guide
     assert "make release-check-profile" in guide
     assert "make release-check-slice" in guide
@@ -650,9 +659,21 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make dev-check" in validation_timing.PROFILES["dev"]
     assert "make capability-check" in validation_timing.PROFILES["capability"]
     assert "make evidence-check" in validation_timing.PROFILES["evidence"]
+    assert "make enterprise-review-send-refresh" in (
+        validation_timing.PROFILES["enterprise-send-refresh"]
+    )
+    assert "make enterprise-status-quick" in (
+        validation_timing.PROFILES["enterprise-status"]
+    )
     assert "make smart-check" in validation_timing.PROFILES["fast"]
+    assert "make review-candidate" in validation_timing.PROFILES["handoff"]
+    assert "make enterprise-send-quick-check" in (
+        validation_timing.PROFILES["handoff-dry-run"]
+    )
     assert validation_timing.PROFILE_BUDGET_SECONDS["fast"] > 0
     assert validation_timing.PROFILE_BUDGET_SECONDS["capability"] > 0
+    assert validation_timing.PROFILE_BUDGET_SECONDS["enterprise-status"] > 0
+    assert validation_timing.PROFILE_BUDGET_SECONDS["handoff"] > 0
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100

@@ -99,9 +99,19 @@ Examples:
 ```sh
 uv run python scripts/validation_timing.py --dry-run
 uv run python scripts/validation_timing.py --profile docs
+uv run python scripts/validation_timing.py --profile enterprise-status
+uv run python scripts/validation_timing.py --profile handoff-dry-run
 uv run python scripts/validation_timing.py --profile readiness --budget-seconds 300
 uv run python scripts/validation_timing.py --command "make enterprise-response-paste-preflight" --budget-seconds 10 --fail-on-budget
 ```
+
+Handoff-oriented timing profiles are measurement aids, not proof gates:
+
+- `enterprise-status`: times the no-refresh `make enterprise-status-quick` operator-status lane.
+- `enterprise-send-refresh`: times regeneration of the current ERG-003/ERG-002 send artifacts.
+- `handoff-dry-run`: times the cheap current-artifact readiness path without rebuilding the full
+  review candidate.
+- `handoff`: times `make review-candidate`, the full release/handoff proof path.
 
 ### Release Check Profile
 

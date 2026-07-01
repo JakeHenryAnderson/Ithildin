@@ -191,6 +191,12 @@ checked with `make control-mapping-readiness`.
 - `make validation-timing` - time the fast validation profile so slowdowns are visible before they
   become normal; pass helper arguments with `ARGS=...`, such as
   `make validation-timing ARGS=--dry-run`.
+- `make validation-timing ARGS=--profile enterprise-status` - time the no-refresh enterprise
+  status lane.
+- `make validation-timing ARGS=--profile handoff-dry-run` - time the cheap current-artifact
+  handoff readiness path without rebuilding the full review candidate.
+- `make validation-timing ARGS=--profile handoff` - time the full `make review-candidate` path
+  when you intentionally need broad release/handoff proof.
 - `make release-check-profile` - statically summarize the full `release-check` prerequisite graph
   and largest target groups without running the slow release gate.
 - `make release-check-impact` - inspect the dirty file set and suggest relevant `release-check`
