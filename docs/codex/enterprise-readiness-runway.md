@@ -118,6 +118,12 @@ Current readiness evidence:
 - the blocked live POC decision-record skeleton in
   [sandbox-vm-live-poc-decision-record-skeleton.md](sandbox-vm-live-poc-decision-record-skeleton.md),
   validated with `make sandbox-vm-live-poc-decision-record-skeleton-check`;
+- the committed live POC decision record in
+  [sandbox-vm-live-poc-decision-record.md](sandbox-vm-live-poc-decision-record.md),
+  validated with `make sandbox-vm-live-poc-decision-record-check`;
+- the VM-first implementation-planning packet in
+  [sandbox-vm-live-poc-implementation-plan.md](sandbox-vm-live-poc-implementation-plan.md),
+  validated with `make sandbox-vm-live-poc-implementation-plan-check`;
 - the live POC external response intake template in
   [sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md),
   validated with `make sandbox-vm-live-poc-external-response-intake-check`.
@@ -699,6 +705,20 @@ implementation-planning-only decision shape a favorable normalized `ERG-004` res
 while keeping runtime implementation, live VM/container inspection, sandbox orchestration, Mission
 Control runtime behavior, local model invocation, trusted-host promotion, and new tool powers
 blocked.
+
+The committed live sandbox/VM POC decision record is
+[sandbox-vm-live-poc-decision-record.md](sandbox-vm-live-poc-decision-record.md) and is validated
+with `make sandbox-vm-live-poc-decision-record-check`. It records the favorable GPT 5.5 Pro
+packet/source disposition, moves `ERG-004` to `ready_for_implementation_planning_only`, chooses a
+VM-first planning posture, defers container profiles, and keeps runtime implementation, live
+VM/container inspection, sandbox orchestration, Mission Control runtime behavior, local model
+invocation, trusted-host promotion, and new tool powers blocked.
+
+The live sandbox/VM POC implementation plan is
+[sandbox-vm-live-poc-implementation-plan.md](sandbox-vm-live-poc-implementation-plan.md) and is
+validated with `make sandbox-vm-live-poc-implementation-plan-check`. It defines only operator-managed
+VM profile, evidence, cleanup/failure transcript, and source-review planning work; runtime
+implementation still requires a later explicit implementation gate and external/source review.
 
 The live sandbox/VM POC response kit is
 [sandbox-vm-live-poc-response-kit.md](sandbox-vm-live-poc-response-kit.md) and is generated with

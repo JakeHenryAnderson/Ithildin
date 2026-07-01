@@ -40,7 +40,7 @@ Current selected capability: `not selected`.
 | --- | --- | --- | --- | --- | --- |
 | `PRD-MC-DISPLAY-001` | Mission Control display importer continuation | `approved_for_planning` | Prepare display-only schema, packet, static fixtures, and source-review handoff; include `mission-control-integration-readiness-packet.md` and `mission-control-integration-implementation-ticket.md` before Mission Control-side implementation | `false` | Mission Control-side review packet, `mission-control-integration-readiness-packet.md`, `mission-control-integration-implementation-ticket.md`, and implementation plan before runtime importer work |
 | `PRD-SANDBOX-PREFLIGHT-001` | Live sandbox/VM preflight | `no_go` | Continue static fixture evidence and source-review disposition only | `false` | Separate live-preflight decision record, implementation plan, and external/source review |
-| `PRD-SANDBOX-LIVE-POC-001` | Live sandbox/VM worker proof of concept | `no_go` | Maintain the decision-intake packet and wait for favorable `ERG-003` disposition | `false` | Favorable static-preflight disposition, `sandbox-vm-live-poc-post-erg003-handoff.md`, `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md`, live POC decision record, implementation plan, cleanup/failure transcripts, and external/source review |
+| `PRD-SANDBOX-LIVE-POC-001` | Live sandbox/VM worker proof of concept | `approved_for_implementation_planning_only` | Prepare VM-first operator-managed planning docs, static profile sketches, cleanup/failure transcript plans, and source-review handoff; container profiles remain deferred | `false` | `sandbox-vm-live-poc-decision-record.md`, `sandbox-vm-live-poc-implementation-plan.md`, cleanup/failure transcripts, explicit implementation gate, and external/source review before runtime |
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
 | `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, implementation-plan skeleton, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, and external/source review |
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, the disposition packet in `siem-export-adapter-disposition-packet.md`, the response intake template in `siem-export-adapter-external-response-intake.md`, the fail-closed closure gate in `siem-export-adapter-disposition-closure-gate.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
@@ -141,6 +141,19 @@ Current selected capability: `not selected`.
   `ready_for_implementation_planning_only` and does not approve runtime implementation, live
   VM/container inspection, sandbox orchestration, Mission Control runtime behavior, local model
   invocation, trusted-host promotion, SIEM adapter behavior, or new governed tool powers.
+- Current committed decision evidence:
+  `sandbox-vm-live-poc-decision-record.md` records the favorable GPT 5.5 Pro packet/source
+  disposition and moves `ERG-004` to `ready_for_implementation_planning_only`.
+  `sandbox-vm-live-poc-implementation-plan.md` is the VM-first planning packet. Runtime
+  implementation, live VM/container inspection, Mission Control runtime behavior, local model
+  invocation, sandbox orchestration, trusted-host promotion, SIEM adapter behavior, and new governed
+  tool powers remain blocked until a later explicit implementation gate and external/source review.
+- Historical pre-decision action: Maintain the decision-intake packet and wait for favorable
+  `ERG-003` disposition. That condition is now satisfied only for planning; it does not approve
+  runtime behavior.
+- Historical prerequisite evidence remains in `sandbox-vm-live-poc-prerequisite-disposition-dry-run.md`
+  for packet compatibility and to show that favorable `ERG-003` evidence was only a prerequisite,
+  not runtime approval.
 
 ### PRD-CAPABILITY-001
 

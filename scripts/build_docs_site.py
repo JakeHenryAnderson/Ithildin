@@ -361,6 +361,8 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-live-poc-external-response-intake.md",
     "docs/codex/sandbox-vm-live-poc-decision-closure-gate.md",
     "docs/codex/sandbox-vm-live-poc-decision-record-skeleton.md",
+    "docs/codex/sandbox-vm-live-poc-decision-record.md",
+    "docs/codex/sandbox-vm-live-poc-implementation-plan.md",
     "docs/codex/sandbox-vm-live-poc-response-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-decision-packet.md",

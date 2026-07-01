@@ -835,6 +835,14 @@ checked with `make control-mapping-readiness`.
   decision-record skeleton for a future implementation-planning-only decision while keeping live
   VM/container inspection, sandbox orchestration, Mission Control runtime behavior, local model
   invocation, and runtime implementation blocked.
+- `make sandbox-vm-live-poc-decision-record-check` - validate the committed `ERG-004` decision
+  record that moves the lane to `ready_for_implementation_planning_only` after favorable external
+  packet/source review while keeping runtime implementation, live VM/container inspection, sandbox
+  orchestration, Mission Control runtime behavior, local model invocation, trusted-host promotion,
+  and new tool powers blocked.
+- `make sandbox-vm-live-poc-implementation-plan-check` - validate the VM-first, operator-managed
+  implementation-planning packet for `ERG-004`; container profiles remain deferred and no runtime
+  behavior is approved until a later explicit implementation and external/source-review gate.
 - `make sandbox-vm-static-preflight-disposition-record-skeleton-check` - validate the `ERG-003`
   static preflight disposition-record skeleton for a future source-reviewed local-preview static
   preflight disposition while keeping `ERG-004`, live sandbox/VM work, runtime implementation, and
@@ -1942,6 +1950,19 @@ implementation-planning-only post-RC decision shape a favorable normalized ERG-0
 support, while keeping runtime implementation, live VM/container inspection, sandbox orchestration,
 Mission Control runtime behavior, local model invocation, trusted-host promotion, and new tool
 powers blocked.
+The committed live sandbox/VM POC decision record is
+[docs/codex/sandbox-vm-live-poc-decision-record.md](docs/codex/sandbox-vm-live-poc-decision-record.md)
+and is checked with `make sandbox-vm-live-poc-decision-record-check`; it records GPT 5.5 Pro's
+limited `ERG-004` disposition, moves the lane to `ready_for_implementation_planning_only`, chooses a
+VM-first planning posture, defers container profiles, and keeps runtime implementation, live
+VM/container inspection, Mission Control runtime behavior, local model invocation, sandbox
+orchestration, trusted-host promotion, and new governed tool powers blocked.
+The live sandbox/VM POC implementation plan is
+[docs/codex/sandbox-vm-live-poc-implementation-plan.md](docs/codex/sandbox-vm-live-poc-implementation-plan.md)
+and is checked with `make sandbox-vm-live-poc-implementation-plan-check`; it defines only the next
+operator-managed VM profile, evidence, cleanup/failure transcript, and source-review planning work.
+It does not approve live VM/container inspection, local model invocation, Mission Control runtime
+behavior, sandbox orchestration, trusted-host promotion, or runtime implementation.
 The live sandbox/VM POC response dry run is
 [docs/codex/sandbox-vm-live-poc-response-dry-run.md](docs/codex/sandbox-vm-live-poc-response-dry-run.md)
 and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily exercises favorable

@@ -216,6 +216,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-external-response-intake-check",
     "sandbox-vm-live-poc-decision-closure-check",
     "sandbox-vm-live-poc-decision-record-skeleton-check",
+    "sandbox-vm-live-poc-decision-record-check",
+    "sandbox-vm-live-poc-implementation-plan-check",
     "sandbox-vm-live-poc-response-dry-run",
     "sandbox-vm-live-poc-prerequisite-disposition-dry-run",
     "sandbox-vm-live-poc-response-kit-check",

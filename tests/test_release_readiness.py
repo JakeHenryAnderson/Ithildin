@@ -283,10 +283,12 @@ from scripts import (
     sandbox_vm_live_poc_decision_closure_check,
     sandbox_vm_live_poc_decision_intake_check,
     sandbox_vm_live_poc_decision_packet,
+    sandbox_vm_live_poc_decision_record_check,
     sandbox_vm_live_poc_decision_record_skeleton_check,
     sandbox_vm_live_poc_evidence_contract_check,
     sandbox_vm_live_poc_external_response_intake_check,
     sandbox_vm_live_poc_external_review_bundle,
+    sandbox_vm_live_poc_implementation_plan_check,
     sandbox_vm_live_poc_post_erg003_handoff_check,
     sandbox_vm_live_poc_preconditions_map_check,
     sandbox_vm_live_poc_preconditions_ready_check,
@@ -27035,6 +27037,128 @@ def test_sandbox_vm_live_poc_decision_record_skeleton_is_wired() -> None:
     assert "sandbox-vm-live-poc-decision-record-skeleton.md" in closure_gate
     assert "sandbox-vm-live-poc-decision-record-skeleton.md" in decision_packet
     assert "sandbox-vm-live-poc-decision-record-skeleton.md" in readiness
+
+
+def test_sandbox_vm_live_poc_decision_record_and_plan_are_wired() -> None:
+    decision_report = sandbox_vm_live_poc_decision_record_check.build_report(Path.cwd())
+    plan_report = sandbox_vm_live_poc_implementation_plan_check.build_report(Path.cwd())
+    decision_doc = Path("docs/codex/sandbox-vm-live-poc-decision-record.md").read_text(
+        encoding="utf-8"
+    )
+    plan_doc = Path("docs/codex/sandbox-vm-live-poc-implementation-plan.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = Path("docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = Path("docs/codex/enterprise-sandbox-control-plane-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert decision_report["valid"] is True
+    assert decision_report["tool_count"] == 24
+    assert decision_report["erg_004_status"] == "ready_for_implementation_planning_only"
+    assert decision_report["decision_outcome"] == "approved_for_implementation_planning_only"
+    assert decision_report["vm_first"] is True
+    assert decision_report["container_profiles_deferred"] is True
+    assert decision_report["implementation_planning_allowed"] is True
+    assert decision_report["runtime_changes_allowed"] is False
+    assert decision_report["runtime_implementation_allowed"] is False
+    assert decision_report["live_vm_inspection_allowed"] is False
+    assert decision_report["sandbox_orchestration_allowed"] is False
+    assert decision_report["local_model_invocation_allowed"] is False
+    assert decision_report["new_power_classes_allowed"] is False
+    assert decision_report["closes_erg_004"] is False
+
+    assert plan_report["valid"] is True
+    assert plan_report["decision_record_valid"] is True
+    assert plan_report["tool_count"] == 24
+    assert plan_report["erg_004_status"] == "ready_for_implementation_planning_only"
+    assert plan_report["vm_first"] is True
+    assert plan_report["container_profiles_deferred"] is True
+    assert plan_report["implementation_planning_allowed"] is True
+    assert plan_report["runtime_changes_allowed"] is False
+    assert plan_report["runtime_implementation_allowed"] is False
+    assert plan_report["live_vm_inspection_allowed"] is False
+    assert plan_report["mission_control_runtime_allowed"] is False
+    assert plan_report["local_model_invocation_allowed"] is False
+    assert plan_report["sandbox_orchestration_allowed"] is False
+    assert plan_report["external_review_required_before_runtime"] is True
+    assert plan_report["closes_erg_004"] is False
+
+    for phrase in [
+        (
+            "Status: committed decision record for `ERG-004` implementation-planning-only "
+            "continuation."
+        ),
+        "Recorded `ERG-004` status: `ready_for_implementation_planning_only`.",
+        (
+            "Reviewed packet hash: "
+            "`sha256:b12459b7714912d8cfe40ff66a9e64370faa402e3d890add7da6631ca2ff817f`."
+        ),
+        "ERG-004: blocked -> ready_for_implementation_planning_only",
+        "VM-first framing:",
+        "Container profiles are deferred",
+    ]:
+        assert phrase in decision_doc
+    for phrase in [
+        "Status: implementation-planning-only packet for `ERG-004`.",
+        "operator-managed VM",
+        "The future POC should be VM-first and operator-managed.",
+        "Container profiles remain deferred",
+        "Future Source Review Requirement",
+        "Stop Conditions",
+    ]:
+        assert phrase in plan_doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "sandbox orchestration is approved",
+        "trusted-host promotion is approved",
+        "new governed tool powers are approved",
+        "public security product approved",
+    ]:
+        assert forbidden not in decision_doc
+        assert forbidden not in plan_doc
+
+    for target in [
+        "sandbox-vm-live-poc-decision-record-check",
+        "sandbox-vm-live-poc-implementation-plan-check",
+    ]:
+        assert f"make {target}" in readme
+        assert f"{target}:" in makefile
+        assert target in release_check_body
+        assert target in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+    for doc_path, title in [
+        (
+            "docs/codex/sandbox-vm-live-poc-decision-record.md",
+            "Sandbox/VM Live POC Decision Record",
+        ),
+        (
+            "docs/codex/sandbox-vm-live-poc-implementation-plan.md",
+            "Sandbox/VM Live POC Implementation Plan",
+        ),
+    ]:
+        name = Path(doc_path).name
+        assert doc_path in docs_site
+        assert doc_path in review_docs.REVIEW_DOCS
+        assert title in review_index
+        assert name in runway
+        assert name in gap_matrix
+        assert name in decision_register
+        assert name in readiness
 
 
 def test_mission_control_display_response_dry_run_is_wired() -> None:
