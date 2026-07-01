@@ -895,7 +895,10 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert any(lane["gap"] == "ERG-002" for lane in report["lanes"])
 
 
-def test_validation_decision_reports_development_and_handoff_modes() -> None:
+def test_validation_decision_reports_development_and_handoff_modes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(validation_decision, "_git_dirty", lambda: False)
     runtime_report = validation_decision.build_report(
         ["apps/api/src/ithildin_api/tools/example.py"]
     )
@@ -908,6 +911,8 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
     )
 
     assert runtime_report["valid"] is True
+    assert runtime_report["git_dirty"] is False
+    assert runtime_report["input_files_provided"] is True
     assert runtime_report["recommended_mode"] == "develop_then_handoff_gate"
     assert runtime_report["next_development_commands"] == [
         "make quick-check",
@@ -943,6 +948,8 @@ def test_validation_decision_reports_development_and_handoff_modes() -> None:
         'make release-check-slice ARGS="--category enterprise"'
     ]
     rendered_enterprise_report = validation_decision.render_report(enterprise_report)
+    assert "git_dirty: false" in rendered_enterprise_report
+    assert "input_files_provided: true" in rendered_enterprise_report
     assert "release_slice_categories:" in rendered_enterprise_report
     assert "- enterprise" in rendered_enterprise_report
     assert "release_slice_commands:" in rendered_enterprise_report

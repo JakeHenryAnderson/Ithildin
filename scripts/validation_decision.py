@@ -93,10 +93,10 @@ def main() -> int:
 
 
 def build_report(files: list[str] | None = None) -> dict[str, Any]:
+    input_files_provided = bool(files)
     changed_files = files or validation_plan.changed_files(ROOT)
     plan = validation_plan.build_report(changed_files)
     impact = release_check_impact.build_report(ROOT, files=changed_files)
-    dirty = bool(changed_files)
     next_commands = plan["recommended_commands"]
     deferred = plan["deferred_handoff_commands"]
     return {
@@ -105,7 +105,8 @@ def build_report(files: list[str] | None = None) -> dict[str, Any]:
         "failures": impact["failures"],
         "repo_root": str(ROOT),
         "git_commit": _git(["rev-parse", "HEAD"]),
-        "git_dirty": dirty,
+        "git_dirty": _git_dirty(),
+        "input_files_provided": input_files_provided,
         "file_count": plan["file_count"],
         "categories": plan["categories"],
         "next_development_commands": next_commands,
@@ -130,6 +131,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"git_commit: {report['git_commit']}",
         f"git_dirty: {str(report['git_dirty']).lower()}",
+        f"input_files_provided: {str(report['input_files_provided']).lower()}",
         f"file_count: {report['file_count']}",
         "categories: " + (", ".join(report["categories"]) or "none"),
         f"recommended_mode: {report['recommended_mode']}",
@@ -180,6 +182,10 @@ def _notes(plan: dict[str, Any]) -> list[str]:
 
 def _git(args: list[str]) -> str:
     return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
+
+
+def _git_dirty() -> bool:
+    return bool(_git(["status", "--short"]))
 
 
 if __name__ == "__main__":

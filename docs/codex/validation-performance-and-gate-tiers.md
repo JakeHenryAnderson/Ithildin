@@ -33,8 +33,10 @@ release-check slice suggestions, run:
 make validation-decision
 ```
 
-The decision output prints both `release_slice_categories` and `release_slice_commands`, so you can
-see the affected full-gate areas before deciding whether to run a focused slice or save the full
+The decision output prints actual `git_dirty` state separately from `input_files_provided`, then
+prints both `release_slice_categories` and `release_slice_commands`. That lets you use explicit
+paths for hypothetical planning without making the clean worktree look dirty, and it shows the
+affected full-gate areas before deciding whether to run a focused slice or save the full
 `make release-check` for checkpoint proof.
 
 To execute the current efficient progress gate without deciding manually between the development
