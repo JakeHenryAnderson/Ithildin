@@ -937,6 +937,9 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make enterprise-send-quick-check",
         "make enterprise-send-now",
         "make enterprise-review-send-receipt-copy after the human send step",
+        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+        "make enterprise-response-waiting-room after reviewer responses arrive",
+        "make enterprise-response-now after reviewer responses arrive",
     ]
 
 
