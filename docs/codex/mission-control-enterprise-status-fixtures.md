@@ -74,6 +74,7 @@ The valid fixture may display only these checked action commands:
 - `make release-check`;
 - `make review-candidate`;
 - `make enterprise-review-send-refresh`;
+- `make handoff-dry-run`;
 - `make enterprise-send-quick-check`;
 - `make enterprise-send-now`;
 - `make enterprise-response-intake-refresh`.
