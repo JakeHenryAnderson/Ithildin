@@ -169,6 +169,17 @@ To inspect one category from that graph, run:
 make release-check-slice ARGS="--category enterprise"
 ```
 
+After a long `review-candidate-release-transcript` or `release-check` transcript finishes, summarize
+the captured transcript without rerunning the gate:
+
+```sh
+make release-check-transcript-summary
+```
+
+This parser reports the transcript commit, return code, command counts, last observed subcommand,
+and a short safe tail. It is useful for answering "what was release-check doing?" after a slow or
+failed run. It does not rerun release-check and is diagnostic evidence only, not release proof.
+
 For the common, no-refresh enterprise status/send-guidance loop, run:
 
 ```sh

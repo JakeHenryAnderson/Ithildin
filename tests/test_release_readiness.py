@@ -258,6 +258,7 @@ from scripts import (
     release_check_impact,
     release_check_profile,
     release_check_slice,
+    release_check_transcript_summary,
     release_evidence,
     release_guardrails,
     release_packet,
@@ -501,7 +502,7 @@ def test_release_packet_review_docs_exist() -> None:
     assert missing == []
 
 
-def test_validation_performance_tiers_are_wired() -> None:
+def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
@@ -535,6 +536,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "release-check-impact:" in makefile
     assert "release-check-profile:" in makefile
     assert "release-check-slice:" in makefile
+    assert "release-check-transcript-summary:" in makefile
     assert "packet-check-recursion-guard:" in makefile
     assert "enterprise-send-quick-check:" in makefile
     enterprise_send_quick_body = makefile.partition("enterprise-send-quick-check:")[
@@ -597,6 +599,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-impact" in readme
     assert "make release-check-profile" in readme
     assert "make release-check-slice" in readme
+    assert "make release-check-transcript-summary" in readme
     assert "make packet-check-recursion-guard" in readme
     assert "make enterprise-send-quick-check" in readme
     assert "make enterprise-send-now" in readme
@@ -639,6 +642,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make release-check-impact" in guide
     assert "make release-check-profile" in guide
     assert "make release-check-slice" in guide
+    assert "make release-check-transcript-summary" in guide
     assert "make packet-check-recursion-guard" in guide
     enterprise_status_quick_body = makefile.partition("enterprise-status-quick:")[
         2
@@ -780,6 +784,37 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert impact_report["slice_commands"] == [
         'make release-check-slice ARGS="--category enterprise"'
     ]
+    transcript_path = tmp_path / "release-check.txt"
+    transcript_path.write_text(
+        "\n".join(
+            [
+                "$ make release-check",
+                "repo_root=/tmp/ithildin",
+                "git_commit=abc123",
+                "git_dirty=false",
+                "uv run python scripts/release_guardrails.py",
+                "uv run pytest",
+                "npm run test --prefix apps/ui",
+                "returncode=0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    transcript_report = release_check_transcript_summary.build_report(transcript_path)
+    assert transcript_report["valid"] is True
+    assert transcript_report["passed"] is True
+    assert transcript_report["returncode"] == 0
+    assert transcript_report["git_commit"] == "abc123"
+    assert transcript_report["git_dirty"] is False
+    assert transcript_report["script_command_count"] == 1
+    assert transcript_report["pytest_invocation_count"] == 1
+    assert transcript_report["npm_invocation_count"] == 1
+    assert transcript_report["last_observed_command"] == "npm run test --prefix apps/ui"
+    missing_transcript_report = release_check_transcript_summary.build_report(
+        tmp_path / "missing.txt"
+    )
+    assert missing_transcript_report["valid"] is False
+    assert "missing" in missing_transcript_report["failures"][0]
     assert "make review-candidate" in guide
     assert "docs/codex/validation-performance-and-gate-tiers.md" in docs_site
     assert "docs/codex/validation-performance-and-gate-tiers.md" in review_docs.REVIEW_DOCS
