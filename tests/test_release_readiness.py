@@ -786,6 +786,28 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert impact_report["slice_commands"] == [
         'make release-check-slice ARGS="--category enterprise"'
     ]
+    refined_impact_report = release_check_impact.build_report(
+        Path.cwd(),
+        files=[
+            "docs/codex/sandbox-artifact-write-text-source-review.md",
+            "scripts/sandbox_artifact_write_text_source_review_bundle.py",
+            "docs/codex/agent-workflow-instruction-layer.md",
+            "scripts/agent_workflow_check.py",
+            "docs/codex/development-efficiency-status.md",
+            "scripts/development_efficiency_status.py",
+        ],
+    )
+    assert refined_impact_report["valid"] is True
+    assert refined_impact_report["slice_categories"] == [
+        "agent_workflow",
+        "status_efficiency",
+        "sandbox_artifact",
+    ]
+    assert refined_impact_report["slice_commands"] == [
+        'make release-check-slice ARGS="--category agent_workflow"',
+        'make release-check-slice ARGS="--category status_efficiency"',
+        'make release-check-slice ARGS="--category sandbox_artifact"',
+    ]
     transcript_path = tmp_path / "release-check.txt"
     transcript_path.write_text(
         "\n".join(
