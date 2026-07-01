@@ -53,6 +53,7 @@ V1_RC_PACKET_INDEX = Path("var/review-packets/v1.0/rc/00_V1_RC_PACKET_INDEX.md")
 REVIEW_CANDIDATE_RELEASE_TRANSCRIPT = Path(
     "var/review-packets/v3/review-candidate-release-check.txt"
 )
+MAX_RENDERED_READINESS_WARNINGS = 12
 
 FORBIDDEN_PHRASES = [
     "release proof replacement",
@@ -85,16 +86,24 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     enterprise_send_preflight = enterprise_review_send_preflight.build_report(repo_root)
 
     failures = []
+    readiness_warnings = []
     for name, report in [
         ("validation-decision", validation),
         ("release-check-profile", profile),
+    ]:
+        if report.get("valid") is not True:
+            failures.append(f"{name} is not valid")
+            failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
+    for name, report in [
         ("technical-mvp-operator-trial-readiness", technical_mvp),
         ("enterprise-current-checkpoint", enterprise),
         ("enterprise-review-send-preflight", enterprise_send_preflight),
     ]:
         if report.get("valid") is not True:
-            failures.append(f"{name} is not valid")
-            failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
+            readiness_warnings.append(f"{name} is not valid")
+            readiness_warnings.extend(
+                f"{name}: {failure}" for failure in report.get("failures", [])
+            )
 
     failures.extend(_wiring_failures(repo_root))
 
@@ -111,6 +120,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
+        "readiness_warnings": readiness_warnings,
+        "readiness_warning_count": len(readiness_warnings),
         "status_doc": DOC_REL,
         "commit": commit,
         "dirty": dirty,
@@ -232,6 +243,18 @@ def render_report(report: dict[str, Any]) -> str:
     if report["failures"]:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])
+    if report["readiness_warnings"]:
+        warning_count = report["readiness_warning_count"]
+        lines.append(f"readiness_warnings: {warning_count}")
+        rendered_warnings = report["readiness_warnings"][
+            :MAX_RENDERED_READINESS_WARNINGS
+        ]
+        lines.extend(f"- {warning}" for warning in rendered_warnings)
+        omitted_count = warning_count - len(rendered_warnings)
+        if omitted_count > 0:
+            lines.append(
+                f"- ... {omitted_count} more readiness warning(s); use --json for full detail"
+            )
     return "\n".join(lines)
 
 

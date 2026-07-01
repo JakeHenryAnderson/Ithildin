@@ -29865,13 +29865,15 @@ def test_development_efficiency_status_is_wired() -> None:
         "ready_for_operator_trial",
         "operator_trial_observed",
     }
-    assert report["operator_trial_ready"] is True
+    assert isinstance(report["operator_trial_ready"], bool)
     assert isinstance(report["operator_trial_observed"], bool)
     assert report["enterprise_next_action"] == "send_erg_003_and_erg_002"
-    assert report["enterprise_send_ready"] is True
-    assert report["enterprise_send_artifact_commits_match_current"] is True
+    assert isinstance(report["enterprise_send_ready"], bool)
+    assert isinstance(report["enterprise_send_artifact_commits_match_current"], bool)
     assert isinstance(report["enterprise_send_artifact_payloads_clean"], bool)
     assert report["enterprise_send_artifact_hashes_match_files"] is True
+    assert isinstance(report["readiness_warnings"], list)
+    assert report["readiness_warning_count"] == len(report["readiness_warnings"])
     assert report["v1_rc_packet_exists"] is True
     assert isinstance(report["v1_rc_packet_commit_matches_current"], bool)
     assert report["review_candidate_release_transcript_exists"] is True
@@ -29922,6 +29924,9 @@ def test_development_efficiency_status_is_wired() -> None:
         "does not replace release-check",
         "enterprise send package is fresh for the current commit",
         "cheap current-send confirmation",
+        "readiness warnings",
+        "do not make this diagnostic command itself fail",
+        "`--json` for the full list",
     ]:
         assert phrase in doc
 

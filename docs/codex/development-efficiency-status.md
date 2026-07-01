@@ -43,6 +43,8 @@ The report is intentionally small and operator-facing. It records:
 - review-candidate artifact freshness for the compact v1.0 RC packet and captured release-check
   transcript;
 - enterprise response/closure counts and the current ERG-003/ERG-002 send action;
+- readiness warnings when strict handoff artifacts are stale or a downstream checkpoint gate is not
+  currently green;
 - key handoff artifact paths.
 
 ## Boundaries
@@ -50,6 +52,12 @@ The report is intentionally small and operator-facing. It records:
 This command does not start services, does not call governed tools, does not approve runtime changes,
 and does not replace release-check. It is a decision aid for choosing the smallest honest next
 validation step.
+
+Stale generated packets, stale send artifacts, or stale captured release transcripts are reported as
+readiness warnings. They still require the normal refresh or release gates before handoff, but they
+do not make this diagnostic command itself fail.
+
+The human-readable output caps readiness warning detail and points to `--json` for the full list.
 
 It also does not approve:
 
