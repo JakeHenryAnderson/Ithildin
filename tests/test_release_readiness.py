@@ -526,6 +526,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "validation-recommendation:" in makefile
     assert "artifact-freshness-check:" in makefile
     assert "status-now:" in makefile
+    assert "enterprise-status-slice:" in makefile
     assert "validation-timing:" in makefile
     assert "release-check-impact:" in makefile
     assert "release-check-profile:" in makefile
@@ -579,6 +580,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-recommendation" in readme
     assert "make artifact-freshness-check" in readme
     assert "make status-now" in readme
+    assert "make enterprise-status-slice" in readme
     assert "make validation-timing" in readme
     assert "make release-check-impact" in readme
     assert "make release-check-profile" in readme
@@ -608,6 +610,7 @@ def test_validation_performance_tiers_are_wired() -> None:
     assert "make validation-recommendation" in guide
     assert "make artifact-freshness-check" in guide
     assert "make status-now" in guide
+    assert "make enterprise-status-slice" in guide
     assert "make validation-timing" in guide
     assert "make release-check-impact" in guide
     assert "make release-check-profile" in guide
