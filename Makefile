@@ -649,7 +649,6 @@ enterprise-review-send-refresh:
 	$(MAKE) enterprise-review-send-receipt-dry-run
 	$(MAKE) enterprise-review-send-package
 	$(MAKE) enterprise-review-upload-staging
-	$(MAKE) enterprise-send-now-artifact
 	$(MAKE) enterprise-review-send-session-record
 	$(MAKE) enterprise-dual-response-inbox
 	$(MAKE) enterprise-review-handoff-drill
