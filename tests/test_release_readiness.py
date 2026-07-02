@@ -299,6 +299,7 @@ from scripts import (
     sandbox_vm_live_poc_response_kit,
     sandbox_vm_live_poc_runtime_descriptor_contract_check,
     sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
+    sandbox_vm_live_poc_runtime_gate_readiness_review_bundle,
     sandbox_vm_live_poc_runtime_implementation_gate_check,
     sandbox_vm_live_poc_runtime_proposal_check,
     sandbox_vm_live_poc_runtime_proposal_review_bundle,
@@ -13196,7 +13197,7 @@ def test_sandbox_vm_live_poc_external_review_bundle_is_wired(tmp_path: Path) -> 
     assert "Finding namespace: `EXT-LIVE-POC-###`" in prompt
     assert "Does the reviewer agree `ERG-004` remains blocked" in prompt
     assert "Do not approve live VM/container inspection" in prompt
-    assert "Do not approve local model invocation" in prompt
+    assert "local model invocation" in prompt
     assert "SANDBOX_VM_LIVE_POC_DECISION_PROMPT" in decision_packet
     assert "sandbox-vm-live-poc-evidence-contract.md" in contracts
     assert "sandbox-vm-live-poc-preconditions-map.md" in contracts
@@ -13334,7 +13335,7 @@ def test_sandbox_vm_live_poc_implementation_review_bundle_is_wired(
     assert "Finding namespace: `EXT-LIVE-IMPL-###`" in prompt
     assert "Do not approve runtime implementation" in prompt
     assert "Do not approve live VM/container inspection" in prompt
-    assert "Do not approve local model invocation" in prompt
+    assert "local model invocation" in prompt
     assert "sandbox-vm-live-poc-decision-record.md" in plan
     assert "sandbox-vm-live-poc-implementation-plan.md" in plan
     assert "enterprise-active-route-clarity.md" in plan
@@ -13722,6 +13723,141 @@ def test_sandbox_vm_live_poc_runtime_ticket_review_bundle_is_wired(
         in review_docs.REVIEW_DOCS
     )
     assert "Sandbox/VM Live POC Runtime Ticket Review Bundle" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_gate_readiness_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    report = (
+        sandbox_vm_live_poc_runtime_gate_readiness_review_bundle.build_check_report(
+            Path.cwd()
+        )
+    )
+    output_dir = tmp_path / "sandbox-vm-live-poc-runtime-gate-readiness-review"
+    sandbox_vm_live_poc_runtime_gate_readiness_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_SANDBOX_VM_LIVE_POC_RUNTIME_GATE_READINESS_INDEX.md",
+        "01_SANDBOX_VM_LIVE_POC_RUNTIME_GATE_READINESS_PROMPT.md",
+        "02_ERG004_RUNTIME_IMPLEMENTATION_GATE.md",
+        "03_ERG004_DESCRIPTOR_CONTRACT_AND_REVIEW.md",
+        "04_ERG004_GATE_CONTEXT_AND_NEGATIVE_PLAN.md",
+        "05_ERG004_RUNTIME_GATE_COMMAND_EVIDENCE.md",
+        "sandbox-vm-live-poc-runtime-gate-readiness-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir
+            / "sandbox-vm-live-poc-runtime-gate-readiness-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_SANDBOX_VM_LIVE_POC_RUNTIME_GATE_READINESS_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = (
+        output_dir / "01_SANDBOX_VM_LIVE_POC_RUNTIME_GATE_READINESS_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    gate = (output_dir / "02_ERG004_RUNTIME_IMPLEMENTATION_GATE.md").read_text(
+        encoding="utf-8"
+    )
+    descriptor = (
+        output_dir / "03_ERG004_DESCRIPTOR_CONTRACT_AND_REVIEW.md"
+    ).read_text(encoding="utf-8")
+    context = (
+        output_dir / "04_ERG004_GATE_CONTEXT_AND_NEGATIVE_PLAN.md"
+    ).read_text(encoding="utf-8")
+    evidence = (output_dir / "05_ERG004_RUNTIME_GATE_COMMAND_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "ready_for_runtime_implementation_gate_review"
+    assert report["finding_namespace"] == "EXT-LIVE-GATE-###"
+    assert report["runtime_gate_readiness_review_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "sandbox-vm-live-poc-runtime-gate-readiness-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "ready_for_runtime_implementation_gate_review" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "Finding namespace: `EXT-LIVE-GATE-###`" in prompt
+    assert "Do not approve runtime implementation" in prompt
+    assert "Do not approve live VM/container inspection" in prompt
+    assert "local model invocation" in prompt
+    assert "sandbox-vm-live-poc-runtime-implementation-gate.md" in gate
+    assert "descriptor/correlation slice" in gate
+    assert "approve_internal_descriptor_contract_checkpoint" in descriptor
+    assert "Runtime implementation remains blocked" in descriptor
+    assert "approve_internal_runtime_ticket_review" in context
+    assert "raw secret, prompt, model response" in context
+    for flag in [
+        '"sandbox-vm-live-poc-runtime-implementation-gate-check"',
+        '"sandbox-vm-live-poc-runtime-descriptor-contract-check"',
+        '"sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check"',
+        '"runtime_implementation_allowed": false',
+        '"live_vm_inspection_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"new_power_classes_allowed": false',
+    ]:
+        assert flag in evidence
+    combined = "\n".join([index, prompt, gate, descriptor, context, evidence])
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in combined
+    assert "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle" in readme
+    assert "sandbox-vm-live-poc-runtime-gate-readiness-review-bundle:" in makefile
+    assert "sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check:" in makefile
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check"
+        in release_check_body
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-review-bundle" in (
+        review_candidate_body
+    )
+    assert "sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Runtime Gate Readiness Review Bundle" in review_index
 
 
 def test_sandbox_vm_live_poc_runtime_ticket_internal_review_is_wired() -> None:

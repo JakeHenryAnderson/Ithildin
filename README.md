@@ -868,6 +868,11 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check` - validate the
   internal xhigh review record for the descriptor/correlation contract checkpoint; this permits only
   continued ERG-004 implementation-gate preparation and does not approve runtime behavior.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle` - generate the focused
+  gate-readiness review packet for the ERG-004 descriptor/correlation runtime gate; this asks
+  whether a later descriptor-only runtime implementation sprint may be planned while keeping runtime
+  behavior, live VM/container inspection, local model invocation, Mission Control runtime authority,
+  host writes, network expansion, API/MCP profile loading, and new tool powers blocked.
 - `make sandbox-vm-live-poc-runtime-ticket-review-bundle` - generate the focused review packet for
   the draft runtime ticket without approving runtime implementation or any live VM/container,
   Mission Control, local-model, host-write, network, or new-tool authority.
@@ -2036,6 +2041,11 @@ The focused runtime-ticket review bundle is
 and is generated with `make sandbox-vm-live-poc-runtime-ticket-review-bundle`; it packages the
 ticket for review while still keeping runtime implementation and all live VM/container behavior
 blocked.
+The focused runtime gate-readiness review bundle is
+[docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md)
+and is generated with `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle`; it packages
+the implementation gate draft, descriptor contract, internal review evidence, and command evidence
+for review while still keeping runtime implementation and all live VM/container behavior blocked.
 The live sandbox/VM POC response dry run is
 [docs/codex/sandbox-vm-live-poc-response-dry-run.md](docs/codex/sandbox-vm-live-poc-response-dry-run.md)
 and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily exercises favorable

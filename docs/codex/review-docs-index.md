@@ -135,6 +135,7 @@ externally closed.
 - [Sandbox/VM Live POC Runtime Negative Fixtures](sandbox-vm-live-poc-runtime-negative-fixtures.md)
 - [Sandbox/VM Live POC Runtime Descriptor Contract Internal Review](sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md)
 - [Sandbox/VM Live POC Runtime Ticket Review Bundle](sandbox-vm-live-poc-runtime-ticket-review-bundle.md)
+- [Sandbox/VM Live POC Runtime Gate Readiness Review Bundle](sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md)
 - [Sandbox/VM Live POC Response Dry Run](sandbox-vm-live-poc-response-dry-run.md)
 - [Sandbox/VM Live POC Prerequisite Disposition Dry Run](sandbox-vm-live-poc-prerequisite-disposition-dry-run.md)
 - [Sandbox/VM Live POC Response Kit](sandbox-vm-live-poc-response-kit.md)
