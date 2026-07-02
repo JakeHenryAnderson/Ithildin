@@ -93,6 +93,8 @@ The best next action is the ERG-004 runtime implementation-gate prep lane:
 ```sh
 make sandbox-vm-live-poc-runtime-ticket-internal-review-check
 make sandbox-vm-live-poc-runtime-implementation-gate-check
+make sandbox-vm-live-poc-runtime-descriptor-contract-check
+make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
 ```
 
 This gate draft remains non-runtime work. If a later implementation packet receives a response,

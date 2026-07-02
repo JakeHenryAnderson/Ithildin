@@ -54,6 +54,8 @@ REQUIRED_PHRASES = [
     "Checkpoint F: Enterprise Architecture Lanes",
     "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
     "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "Do not manually promote a lane",
 ]
 

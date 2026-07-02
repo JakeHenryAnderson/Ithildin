@@ -2621,6 +2621,8 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "live_poc_runtime_ticket_internal_review",
         "live_poc_runtime_implementation_gate",
+        "live_poc_runtime_descriptor_contract",
+        "live_poc_runtime_descriptor_contract_internal_review",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -2655,6 +2657,8 @@ def test_enterprise_progress_model_is_wired() -> None:
         "Checkpoint C: Sandbox/VM Static Preflight Disposition",
         "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
         "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
         "Do not manually promote a lane",
         "public/security-product positioning",
         "new governed tool powers",
