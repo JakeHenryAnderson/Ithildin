@@ -13813,6 +13813,9 @@ def test_sandbox_vm_live_poc_runtime_gate_readiness_review_bundle_is_wired(
         "sandbox-vm-live-poc-runtime-gate-readiness-artifact-hashes.json"
     }
     assert "Tool count remains `24`" in index
+    assert report["current_commit"] in index
+    assert report["current_commit"] in prompt
+    assert report["current_commit"] in evidence
     assert "ready_for_runtime_implementation_gate_review" in index
     assert "What This Bundle Does Not Prove" in index
     assert "Finding namespace: `EXT-LIVE-GATE-###`" in prompt

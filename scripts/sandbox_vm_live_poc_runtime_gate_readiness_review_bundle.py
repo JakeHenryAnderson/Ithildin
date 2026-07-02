@@ -138,6 +138,7 @@ def build_bundle(
 
 def build_check_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
+    current_commit = _git(repo_root, ["rev-parse", "HEAD"])
     makefile = _read(repo_root / "Makefile")
     readme = _read(repo_root / "README.md")
     docs_site = _read(repo_root / "scripts/build_docs_site.py")
@@ -190,6 +191,16 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     descriptor = contents.get("03_ERG004_DESCRIPTOR_CONTRACT_AND_REVIEW.md", "")
     context = contents.get("04_ERG004_GATE_CONTEXT_AND_NEGATIVE_PLAN.md", "")
     evidence = contents.get("05_ERG004_RUNTIME_GATE_COMMAND_EVIDENCE.md", "")
+
+    for name, content in [
+        ("index", index),
+        ("prompt", prompt),
+        ("command evidence", evidence),
+    ]:
+        if current_commit not in content:
+            failures.append(
+                f"runtime gate-readiness {name} does not reference current commit"
+            )
 
     for phrase in [
         "Tool count remains `24`",
@@ -276,6 +287,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "output_dir": str(DEFAULT_OUTPUT_DIR),
         "artifact_count": len(expected),
+        "current_commit": current_commit,
         "tool_count": 24,
         "erg_004_status": "ready_for_runtime_implementation_gate_review",
         "finding_namespace": "EXT-LIVE-GATE-###",
