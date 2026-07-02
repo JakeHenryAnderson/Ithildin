@@ -1280,6 +1280,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["sandbox_orchestration_allowed"] is False
     assert status["mission_control_execution_allowed"] is False
     assert status["public_security_product_positioning_allowed"] is False
+    assert status["enterprise_next_action"] == "prepare_post_erg003_live_poc_decision"
     assert status["recommended_next_commands"]
     assert status["handoff_paths"] == {
         "dual_review_outbox": "var/review-packets/v3/enterprise-dual-review-outbox",
@@ -1294,7 +1295,8 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     }
     assert status_now._recommended_next_commands(
         {"git_dirty": False},
-        {"valid": True, "enterprise_next_action": "send_erg_003_and_erg_002"},
+        {"valid": True},
+        {"next_action": "send_erg_003_and_erg_002"},
     ) == [
         "make handoff-dry-run",
         "make enterprise-send-now",
@@ -1304,6 +1306,16 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make enterprise-response-waiting-room after reviewer responses arrive",
         "make enterprise-response-now after reviewer responses arrive",
         "make enterprise-response-paste-preflight after reviewer responses arrive",
+    ]
+    assert status_now._recommended_next_commands(
+        {"git_dirty": False},
+        {"valid": True},
+        {"next_action": "prepare_post_erg003_live_poc_decision"},
+    ) == [
+        "make sandbox-vm-live-poc-post-erg003-handoff-check",
+        "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
+        "make sandbox-vm-live-poc-decision-packet-check",
+        "make sandbox-vm-live-poc-external-review-bundle-check",
     ]
 
 

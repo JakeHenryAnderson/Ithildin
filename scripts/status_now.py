@@ -47,7 +47,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     validation = validation_decision.build_report()
     freshness = artifact_freshness_check.build_report(repo_root)
     enterprise_next = enterprise_operator_next_action.build_report(repo_root)
-    next_commands = _recommended_next_commands(validation, enterprise_next)
+    next_commands = _recommended_next_commands(validation, freshness, enterprise_next)
     return {
         "schema_version": "1",
         "valid": validation.get("valid") is True,
@@ -120,12 +120,13 @@ def render_report(report: dict[str, Any]) -> str:
 def _recommended_next_commands(
     validation: dict[str, Any],
     freshness: dict[str, Any],
+    enterprise_next: dict[str, Any],
 ) -> list[str]:
     if validation.get("git_dirty"):
         return list(validation.get("next_development_commands", []))
     if not freshness.get("valid"):
         return list(freshness.get("refresh_commands", []))
-    if freshness.get("enterprise_next_action") == "send_erg_003_and_erg_002":
+    if enterprise_next.get("next_action") == "send_erg_003_and_erg_002":
         return [
             "make handoff-dry-run",
             "make enterprise-send-now",
@@ -136,7 +137,7 @@ def _recommended_next_commands(
             "make enterprise-response-now after reviewer responses arrive",
             "make enterprise-response-paste-preflight after reviewer responses arrive",
         ]
-    if freshness.get("enterprise_next_action") == "prepare_post_erg003_live_poc_decision":
+    if enterprise_next.get("next_action") == "prepare_post_erg003_live_poc_decision":
         return [
             "make sandbox-vm-live-poc-post-erg003-handoff-check",
             "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
