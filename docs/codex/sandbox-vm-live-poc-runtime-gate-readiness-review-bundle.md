@@ -20,8 +20,9 @@ var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review/
 ```
 
 This packet packages the runtime implementation gate draft, descriptor/correlation contract,
-negative fixtures, internal xhigh descriptor-contract review, runtime-ticket context, and command
-evidence. It asks whether a later descriptor-only runtime implementation sprint may be planned.
+negative fixtures, internal xhigh descriptor-contract review, runtime-ticket context, response dry
+run, and command evidence. It asks whether a later descriptor-only runtime implementation sprint may
+be planned.
 
 ## Artifacts
 
@@ -67,7 +68,8 @@ The bundle must include:
 - the descriptor contract and negative fixtures;
 - the internal descriptor-contract xhigh review record;
 - the runtime-ticket internal review record;
-- command evidence for the four active ERG-004 gate-preparation checks;
+- command evidence for the five active ERG-004 gate-preparation checks, including the response dry
+  run;
 - artifact hashes for every generated packet artifact except the hash manifest itself;
 - explicit non-approval language for runtime behavior and product claims.
 

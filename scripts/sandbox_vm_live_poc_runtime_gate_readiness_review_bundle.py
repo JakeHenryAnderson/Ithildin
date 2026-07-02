@@ -55,6 +55,10 @@ COMMANDS = [
         "sandbox-vm-live-poc-runtime-ticket-internal-review-check",
         ["make", "sandbox-vm-live-poc-runtime-ticket-internal-review-check"],
     ),
+    (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+        ["make", "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run"],
+    ),
 ]
 FORBIDDEN_APPROVAL_PHRASES = [
     "runtime implementation is approved",
@@ -205,6 +209,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Tool count remains `24`",
         "Current `ERG-004` status: `ready_for_runtime_implementation_gate_review`",
+        "response dry run",
         "What This Bundle Does Not Prove",
     ]:
         if phrase not in index:
@@ -247,6 +252,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         '"sandbox-vm-live-poc-runtime-implementation-gate-check"',
         '"sandbox-vm-live-poc-runtime-descriptor-contract-check"',
         '"sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check"',
+        '"sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run"',
         '"runtime_implementation_allowed": false',
         '"live_vm_inspection_allowed": false',
         '"sandbox_orchestration_allowed": false',
@@ -343,8 +349,9 @@ Tool count remains `24`.
 Current `ERG-004` status: `ready_for_runtime_implementation_gate_review`.
 
 This packet packages the ERG-004 runtime implementation gate draft, descriptor/correlation
-contract, internal xhigh descriptor-contract review, runtime-ticket context, and command evidence.
-It asks whether a later descriptor-only runtime implementation sprint may be planned.
+contract, internal xhigh descriptor-contract review, runtime-ticket context, response dry run, and
+command evidence. It asks whether a later descriptor-only runtime implementation sprint may be
+planned.
 
 ## Artifacts
 

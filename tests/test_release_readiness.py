@@ -13819,6 +13819,7 @@ def test_sandbox_vm_live_poc_runtime_gate_readiness_review_bundle_is_wired(
         "sandbox-vm-live-poc-runtime-gate-readiness-artifact-hashes.json"
     }
     assert "Tool count remains `24`" in index
+    assert "response dry run" in index
     assert report["current_commit"] in index
     assert report["current_commit"] in prompt
     assert report["current_commit"] in evidence
@@ -13838,6 +13839,7 @@ def test_sandbox_vm_live_poc_runtime_gate_readiness_review_bundle_is_wired(
         '"sandbox-vm-live-poc-runtime-implementation-gate-check"',
         '"sandbox-vm-live-poc-runtime-descriptor-contract-check"',
         '"sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check"',
+        '"sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run"',
         '"runtime_implementation_allowed": false',
         '"live_vm_inspection_allowed": false',
         '"sandbox_orchestration_allowed": false',
