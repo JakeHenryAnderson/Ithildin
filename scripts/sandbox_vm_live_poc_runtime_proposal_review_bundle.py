@@ -102,7 +102,7 @@ def build_bundle(
             ],
         ),
         "04_ERG004_CONTRACTS_AND_NEGATIVE_PLAN.md": _docs_bundle(
-            "ERG-004 Contracts And Negative Plan",
+            "ERG-004 Historical Contracts And Negative Plan",
             repo_root,
             [
                 "docs/codex/sandbox-vm-live-poc-evidence-contract.md",
@@ -207,6 +207,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         if phrase not in context:
             failures.append(f"planning context bundle is missing phrase: {phrase}")
     for phrase in [
+        "ERG-004 Historical Contracts And Negative Plan",
+        "Current packet status: `ready_for_runtime_proposal_review`.",
         "sandbox-vm-live-poc-evidence-contract.md",
         "sandbox-vm-live-poc-preconditions-map.md",
         "attempted live VM/container",
@@ -384,6 +386,12 @@ Use finding IDs `EXT-LIVE-RUNTIME-###`.
 
 def _negative_plan_summary() -> str:
     return """# ERG-004 Runtime Proposal Negative Plan Summary
+
+Current packet status: `ready_for_runtime_proposal_review`.
+
+The bundled contract and precondition docs above are prerequisite/historical context. Older
+`blocked` status labels in those source docs describe their original lane state, not the current
+runtime-proposal review packet status.
 
 The runtime proposal requires negative transcripts or fixtures for attempted live VM/container
 inspection by Ithildin, attempted VM/container lifecycle management by Ithildin, attempted local

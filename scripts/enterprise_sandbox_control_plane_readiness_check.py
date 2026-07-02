@@ -25,7 +25,7 @@ REQUIRED_PHRASES = [
     "Mission Control display lane",
     "sandbox/VM static preflight lane",
     "live sandbox/VM proof-of-concept runtime remains blocked",
-    "implementation-planning review artifacts only",
+    "implementation-planning and runtime-proposal review artifacts only",
     "trusted-host promotion lane",
     "`ERG-002` Mission Control display/importer",
     "`ERG-003` Sandbox/VM static preflight",

@@ -113,7 +113,7 @@ Current selected capability: `not selected`.
 
 ### PRD-SANDBOX-LIVE-POC-001
 
-- Status: `no_go`.
+- Status: `approved_for_runtime_proposal_review_only`.
 - Current allowed scope: decision-intake evidence in
   `sandbox-vm-live-poc-decision-intake.md`, favorable `ERG-003` disposition tracking,
   decision-record drafting, docs, review packets, the readiness map in
@@ -127,7 +127,10 @@ Current selected capability: `not selected`.
   `sandbox-vm-live-poc-external-response-intake.md`, the fail-closed closure gate in
   `sandbox-vm-live-poc-decision-closure-gate.md`, the decision-record skeleton in
   `sandbox-vm-live-poc-decision-record-skeleton.md`, the response dry-run fixture checker in
-  `sandbox-vm-live-poc-response-dry-run.md`, and operator warnings.
+  `sandbox-vm-live-poc-response-dry-run.md`, the implementation plan in
+  `sandbox-vm-live-poc-implementation-plan.md`, the runtime proposal in
+  `sandbox-vm-live-poc-runtime-proposal.md`, the runtime-proposal review bundle in
+  `sandbox-vm-live-poc-runtime-proposal-review-bundle.md`, and operator warnings.
 - Current forbidden scope: live VM/container inspection, local model invocation, Mission Control
   runtime behavior, sandbox orchestration, SSH, shell, Docker socket access, Kubernetes tools,
   browser automation, arbitrary HTTP, broad filesystem writes, trusted-host promotion, runtime

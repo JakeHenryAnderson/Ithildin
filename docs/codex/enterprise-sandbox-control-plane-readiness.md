@@ -18,7 +18,7 @@ It does not approve sandbox orchestration.
 It does not approve local model invocation.
 
 The live sandbox/VM proof-of-concept runtime remains blocked. `ERG-004` is allowed to prepare
-implementation-planning review artifacts only.
+implementation-planning and runtime-proposal review artifacts only.
 
 `ERG-003` is recorded as `closed_local_preview_static_preflight`; this records the CLI-only static
 preflight local-preview disposition and does not approve `ERG-004` live VM/container inspection or
