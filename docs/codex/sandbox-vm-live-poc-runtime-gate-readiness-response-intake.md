@@ -75,6 +75,7 @@ After saving the raw response transcript, run the generic normalizer with the ru
 gate-readiness area:
 
 ```sh
+make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox
 uv run python scripts/external_response_normalize.py \
   path/to/raw-response.md \
   --reviewer "reviewer label" \
@@ -132,6 +133,7 @@ Run:
 
 ```sh
 make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check
+make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
 make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
 make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check

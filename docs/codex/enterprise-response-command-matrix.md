@@ -43,6 +43,18 @@ make enterprise-response-inbox
 The all-lane inbox is the fallback for `ERG-005+`, `ERG-004`, `ERG-010`, and any enterprise lane
 outside the current dual send set.
 
+For the active `ERG-004` runtime gate-readiness review, prefer the focused runtime gate-readiness
+inbox instead of the older generic `ERG-004` lane row:
+
+```sh
+make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox
+make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
+```
+
+That focused inbox uses normalization area `sandbox-vm-live-poc-runtime-gate-readiness`, finding
+namespace `EXT-LIVE-GATE-###`, and
+`RAW_RESPONSE_ERG-004-RUNTIME-GATE-READINESS.md`.
+
 For `ERG-003`, use
 [Sandbox/VM Static Preflight Response Application Preflight](sandbox-vm-static-preflight-response-application-preflight.md)
 before applying a real reviewer response. It verifies the raw-response path, normalized-response

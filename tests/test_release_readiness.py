@@ -301,6 +301,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
     sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
     sandbox_vm_live_poc_runtime_gate_readiness_response_dry_run,
+    sandbox_vm_live_poc_runtime_gate_readiness_response_inbox,
     sandbox_vm_live_poc_runtime_gate_readiness_response_intake_check,
     sandbox_vm_live_poc_runtime_gate_readiness_review_bundle,
     sandbox_vm_live_poc_runtime_implementation_gate_check,
@@ -14179,6 +14180,109 @@ def test_sandbox_vm_live_poc_runtime_gate_readiness_response_intake_is_wired() -
         ]
         == "LIVE-GATE"
     )
+
+
+def test_sandbox_vm_live_poc_runtime_gate_readiness_response_inbox_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_gate_readiness_response_inbox.build_check_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-inbox.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    matrix_doc = Path("docs/codex/enterprise-response-command-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    intake_doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"
+    ).read_text(encoding="utf-8")
+    dry_run_doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["gap"] == "ERG-004"
+    assert report["normalization_area"] == "sandbox-vm-live-poc-runtime-gate-readiness"
+    assert report["finding_namespace"] == "EXT-LIVE-GATE-###"
+    assert (
+        report["raw_response_file"]
+        == "RAW_RESPONSE_ERG-004-RUNTIME-GATE-READINESS.md"
+    )
+    assert report["reviewed_packet_hash"].startswith("sha256:")
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["external_review_recorded"] is False
+    assert report["mutates_findings"] is False
+    assert report["closes_erg_004"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: generated response inbox for the active ERG-004 runtime gate-readiness review.",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox",
+        "var/review-runs/sandbox-vm-live-poc-runtime-gate-readiness-response-inbox/",
+        "RAW_RESPONSE_ERG-004-RUNTIME-GATE-READINESS.md",
+        "EXT-LIVE-GATE-###",
+        "does not normalize responses",
+        "does not record external review",
+        "does not close `ERG-004`",
+        "does not approve runtime implementation",
+    ]:
+        assert phrase in doc
+    assert "make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox" in readme
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-inbox:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check"
+        in release_check_body
+        or (
+            "release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check"
+            in makefile
+        )
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-response-inbox" in (
+        review_candidate_body
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-response-inbox" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-inbox.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-inbox.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "Sandbox/VM Live POC Runtime Gate Readiness Response Inbox"
+        in review_index
+    )
+    for source in [matrix_doc, intake_doc, dry_run_doc]:
+        assert "sandbox-vm-live-poc-runtime-gate-readiness-response-inbox" in source
 
 
 def test_sandbox_vm_live_poc_runtime_gate_readiness_response_dry_run_is_wired() -> None:

@@ -877,6 +877,10 @@ checked with `make control-mapping-readiness`.
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or
   approve live VM/container behavior.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox` - generate the focused ignored
+  raw-response placeholder, reviewed packet hash, and cheat sheet for an active `EXT-LIVE-GATE-###`
+  runtime gate-readiness response; see
+  [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-inbox.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-inbox.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run` - exercise favorable and
   blocked `EXT-LIVE-GATE-###` response fixtures without recording external review, mutating
   findings, closing `ERG-004`, or approving runtime behavior.

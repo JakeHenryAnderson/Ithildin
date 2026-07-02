@@ -449,6 +449,12 @@ sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check:
 sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_intake_check.py
 
+sandbox-vm-live-poc-runtime-gate-readiness-response-inbox:
+	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_inbox.py
+
+sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check:
+	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_inbox.py --check
+
 sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run:
 	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_dry_run.py
 
@@ -488,7 +494,7 @@ sandbox-vm-live-poc-runtime-proposal-review-bundle:
 sandbox-vm-live-poc-runtime-proposal-review-bundle-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_proposal_review_bundle.py --check
 
-.PHONY: sandbox-vm-live-poc-preconditions-ready-check sandbox-vm-live-poc-post-erg003-handoff-check sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-decision-record-skeleton-check sandbox-vm-live-poc-decision-record-check sandbox-vm-live-poc-implementation-plan-check sandbox-vm-live-poc-runtime-proposal-check sandbox-vm-live-poc-runtime-ticket-check sandbox-vm-live-poc-runtime-ticket-internal-review-check sandbox-vm-live-poc-runtime-implementation-gate-check sandbox-vm-live-poc-runtime-descriptor-contract-check sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check sandbox-vm-live-poc-runtime-gate-readiness-review-bundle sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run sandbox-vm-live-poc-runtime-ticket-review-bundle sandbox-vm-live-poc-runtime-ticket-review-bundle-check sandbox-vm-live-poc-response-dry-run sandbox-vm-live-poc-prerequisite-disposition-dry-run sandbox-vm-live-poc-response-kit sandbox-vm-live-poc-response-kit-check sandbox-vm-live-poc-external-review-bundle sandbox-vm-live-poc-external-review-bundle-check sandbox-vm-live-poc-implementation-review-bundle sandbox-vm-live-poc-implementation-review-bundle-check sandbox-vm-live-poc-runtime-proposal-review-bundle sandbox-vm-live-poc-runtime-proposal-review-bundle-check
+.PHONY: sandbox-vm-live-poc-preconditions-ready-check sandbox-vm-live-poc-post-erg003-handoff-check sandbox-vm-live-poc-decision-closure-check sandbox-vm-live-poc-decision-record-skeleton-check sandbox-vm-live-poc-decision-record-check sandbox-vm-live-poc-implementation-plan-check sandbox-vm-live-poc-runtime-proposal-check sandbox-vm-live-poc-runtime-ticket-check sandbox-vm-live-poc-runtime-ticket-internal-review-check sandbox-vm-live-poc-runtime-implementation-gate-check sandbox-vm-live-poc-runtime-descriptor-contract-check sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check sandbox-vm-live-poc-runtime-gate-readiness-review-bundle sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check sandbox-vm-live-poc-runtime-gate-readiness-response-inbox sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run sandbox-vm-live-poc-runtime-ticket-review-bundle sandbox-vm-live-poc-runtime-ticket-review-bundle-check sandbox-vm-live-poc-response-dry-run sandbox-vm-live-poc-prerequisite-disposition-dry-run sandbox-vm-live-poc-response-kit sandbox-vm-live-poc-response-kit-check sandbox-vm-live-poc-external-review-bundle sandbox-vm-live-poc-external-review-bundle-check sandbox-vm-live-poc-implementation-review-bundle sandbox-vm-live-poc-implementation-review-bundle-check sandbox-vm-live-poc-runtime-proposal-review-bundle sandbox-vm-live-poc-runtime-proposal-review-bundle-check
 
 enterprise-active-route-clarity:
 	uv run python scripts/enterprise_active_route_clarity.py
@@ -1702,6 +1708,7 @@ review-candidate:
 	$(MAKE) sandbox-vm-live-poc-runtime-proposal-review-bundle
 	$(MAKE) sandbox-vm-live-poc-runtime-ticket-review-bundle
 	$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-review-bundle
+	$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-response-inbox
 	$(MAKE) sandbox-vm-live-poc-response-kit
 	$(MAKE) trusted-host-promotion-source-review-packet
 	$(MAKE) trusted-host-promotion-disposition-packet
@@ -1778,6 +1785,7 @@ release-check: sandbox-vm-live-poc-response-kit-check
 release-check: sandbox-vm-live-poc-external-review-bundle-check
 release-check: sandbox-vm-live-poc-implementation-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-proposal-review-bundle-check
+release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
 release-check: enterprise-response-paste-preflight
 release-check: enterprise-handoff-consistency-check
 release-check: enterprise-review-send-preflight

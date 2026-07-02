@@ -5,6 +5,7 @@ Status: temporary fixture dry run for `ERG-004` runtime gate-readiness response 
 Validation command:
 
 ```sh
+make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
 ```
 
