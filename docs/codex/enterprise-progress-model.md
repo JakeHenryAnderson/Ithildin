@@ -95,6 +95,7 @@ make sandbox-vm-live-poc-runtime-ticket-internal-review-check
 make sandbox-vm-live-poc-runtime-implementation-gate-check
 make sandbox-vm-live-poc-runtime-descriptor-contract-check
 make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
+make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
 ```
 
 This gate draft remains non-runtime work. If a later implementation packet receives a response,

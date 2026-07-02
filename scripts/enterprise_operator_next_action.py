@@ -58,6 +58,7 @@ RUNTIME_GATE_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
 ]
 
 SEND_ARTIFACTS = [
@@ -171,6 +172,11 @@ RUNTIME_GATE_ARTIFACTS = [
         ),
         "description": "internal xhigh review record for the descriptor/correlation contract",
     },
+    {
+        "label": "live_poc_runtime_gate_readiness_review_bundle",
+        "path": "var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review",
+        "description": "focused packet for runtime gate-readiness review",
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -183,6 +189,7 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",

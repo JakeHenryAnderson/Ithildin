@@ -48,7 +48,7 @@ promotion engine, public/security-product release, or broad write platform.
 
 | Batch | Status | Subtasks | Fast gate | Escalation gate |
 | --- | --- | --- | --- | --- |
-| Prepare `ERG-004` live-POC runtime implementation gate | active | Validate the runtime-ticket internal review, draft implementation-gate contract, descriptor contract, and descriptor-contract internal review while keeping runtime blocked. | `make sandbox-vm-live-poc-runtime-ticket-internal-review-check`; `make sandbox-vm-live-poc-runtime-descriptor-contract-check` | `make sandbox-vm-live-poc-runtime-implementation-gate-check`; `make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check` |
+| Prepare `ERG-004` live-POC runtime implementation gate | active | Validate the runtime-ticket internal review, draft implementation-gate contract, descriptor contract, descriptor-contract internal review, and gate-readiness packet while keeping runtime blocked. | `make sandbox-vm-live-poc-runtime-ticket-internal-review-check`; `make sandbox-vm-live-poc-runtime-descriptor-contract-check` | `make sandbox-vm-live-poc-runtime-implementation-gate-check`; `make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check`; `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check` |
 | Intake future `ERG-004` response | blocked on external response | Paste raw response, run paste preflight, normalize fixture/dry-run, run lane closure gates. | `make enterprise-response-now` | lane-specific closure gate |
 | Track `EXT-MC-DISPLAY-001` | later advisory | Improve Mission Control launch-bundle artifact coverage before implementation, without blocking design-only continuation. | `make reviewer-findings-check` | `make review-findings-summary` |
 

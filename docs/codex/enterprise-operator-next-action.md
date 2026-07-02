@@ -32,6 +32,7 @@ make sandbox-vm-live-poc-runtime-ticket-internal-review-check
 make sandbox-vm-live-poc-runtime-implementation-gate-check
 make sandbox-vm-live-poc-runtime-descriptor-contract-check
 make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
+make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
 ```
 
 This is runtime implementation-gate preparation only. It does not approve runtime implementation,
