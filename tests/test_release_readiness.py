@@ -1320,6 +1320,8 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     ) == [
         "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
         "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     ]
 
 
@@ -2533,6 +2535,8 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["action_commands"] == [
         "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
         "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -2544,10 +2548,14 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "live_poc_runtime_ticket_internal_review",
         "live_poc_runtime_implementation_gate",
+        "live_poc_runtime_descriptor_contract",
+        "live_poc_runtime_descriptor_contract_internal_review",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
         "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md",
         "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -6182,6 +6190,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["action_commands"] == [
         "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
         "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -6193,6 +6203,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
         "live_poc_runtime_ticket_internal_review",
         "live_poc_runtime_implementation_gate",
+        "live_poc_runtime_descriptor_contract",
+        "live_poc_runtime_descriptor_contract_internal_review",
     ]
     assert any(
         artifact["path"] == "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md"
@@ -6200,6 +6212,15 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     )
     assert any(
         artifact["path"] == "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md"
+        for artifact in report["handoff_artifacts"]
+    )
+    assert any(
+        artifact["path"] == "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md"
+        for artifact in report["handoff_artifacts"]
+    )
+    assert any(
+        artifact["path"]
+        == "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md"
         for artifact in report["handoff_artifacts"]
     )
     assert report["runtime_changes_allowed"] is False

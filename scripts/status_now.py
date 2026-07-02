@@ -147,6 +147,8 @@ def _recommended_next_commands(
         return [
             "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
             "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+            "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+            "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
         ]
     return ["make dev-check"]
 

@@ -56,6 +56,8 @@ POST_ERG003_COMMANDS = [
 RUNTIME_GATE_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
     "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
 ]
 
 SEND_ARTIFACTS = [
@@ -156,6 +158,19 @@ RUNTIME_GATE_ARTIFACTS = [
         "path": "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md",
         "description": "draft-only runtime implementation gate for a future sprint",
     },
+    {
+        "label": "live_poc_runtime_descriptor_contract",
+        "path": "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md",
+        "description": "planning-only descriptor/correlation contract for a future sprint",
+    },
+    {
+        "label": "live_poc_runtime_descriptor_contract_internal_review",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md"
+        ),
+        "description": "internal xhigh review record for the descriptor/correlation contract",
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -166,6 +181,8 @@ REQUIRED_DOC_PHRASES = [
     "current route after the recorded dispositions",
     "If the dual-response disposition record and runtime-ticket internal review are present",
     "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
