@@ -10865,7 +10865,7 @@ def test_sandbox_vm_static_preflight_response_kit_is_wired(tmp_path: Path) -> No
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["erg_003_status"] == "external_review_required"
-    assert report["erg_004_status"] == "blocked"
+    assert report["erg_004_status"] == "ready_for_runtime_proposal_review"
     assert report["recommended_next_review"] == "ERG-003"
     assert report["runtime_changes_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -11896,7 +11896,7 @@ def test_sandbox_vm_live_poc_decision_intake_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["erg_004_status"] == "blocked"
+    assert report["erg_004_status"] == "ready_for_runtime_proposal_review"
     assert report["requires_erg_003_favorable_disposition"] is True
     assert report["decision_record_required"] is True
     assert report["implementation_approved"] is False
@@ -12758,7 +12758,7 @@ def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:
     assert report["erg_002_status"] == "planning_only"
     assert report["erg_003_status"] == "closed_local_preview_static_preflight"
     assert report["erg_003_disposition_recorded"] is True
-    assert report["erg_004_status"] == "blocked"
+    assert report["erg_004_status"] == "ready_for_runtime_proposal_review"
     assert report["erg_005_status"] == "blocked"
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -12777,6 +12777,8 @@ def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:
         "`ERG-004` Live sandbox/VM worker proof of concept",
         "`ERG-005` Trusted-host artifact promotion",
         "sandbox-vm-live-poc-decision-packet.md",
+        "implementation-planning and runtime-proposal review artifacts only",
+        "sandbox-vm-live-poc-runtime-proposal.md",
     ]:
         assert phrase in doc
     for blocked in [
