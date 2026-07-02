@@ -220,7 +220,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"runtime gate-readiness prompt is missing phrase: {phrase}")
     for phrase in [
         "sandbox-vm-live-poc-runtime-implementation-gate.md",
-        "ready_for_runtime_implementation_gate_draft",
+        "ready_for_runtime_implementation_gate_review",
         "descriptor/correlation slice",
         "Required Future Runtime Tests",
     ]:

@@ -14091,8 +14091,9 @@ def test_sandbox_vm_live_poc_runtime_implementation_gate_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["erg_004_status"] == "ready_for_runtime_implementation_gate_draft"
+    assert report["erg_004_status"] == "ready_for_runtime_implementation_gate_review"
     assert report["runtime_gate_draft_allowed"] is True
+    assert report["runtime_gate_review_ready"] is True
     assert report["runtime_changes_allowed"] is False
     assert report["runtime_implementation_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -14107,7 +14108,7 @@ def test_sandbox_vm_live_poc_runtime_implementation_gate_is_wired() -> None:
     assert report["new_power_classes_allowed"] is False
     assert report["closes_erg_004"] is False
     for phrase in [
-        "Current `ERG-004` status: `ready_for_runtime_implementation_gate_draft`.",
+        "Current `ERG-004` status: `ready_for_runtime_implementation_gate_review`.",
         "make sandbox-vm-live-poc-runtime-implementation-gate-check",
         "Runtime implementation remains blocked.",
         "Required Future Implementation Artifacts",

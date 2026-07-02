@@ -1,4 +1,4 @@
-"""Validate the draft ERG-004 runtime implementation gate."""
+"""Validate the review-ready ERG-004 runtime implementation gate."""
 
 from __future__ import annotations
 
@@ -22,9 +22,9 @@ DOC_TITLE = "Sandbox/VM Live POC Runtime Implementation Gate"
 TARGET = "sandbox-vm-live-poc-runtime-implementation-gate-check"
 
 REQUIRED_PHRASES = [
-    "Status: draft-only implementation gate for a future `ERG-004` runtime slice.",
+    "Status: review-ready implementation-gate draft for a future `ERG-004` runtime slice.",
     "Current governed tool count: `24`.",
-    "Current `ERG-004` status: `ready_for_runtime_implementation_gate_draft`.",
+    "Current `ERG-004` status: `ready_for_runtime_implementation_gate_review`.",
     "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     "approve_internal_runtime_ticket_review",
     "This disposition permits only preparation of this gate. It does not close `ERG-004`.",
@@ -167,9 +167,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "runtime_implementation_gate_doc": DOC_REL,
         "tool_count": 24,
-        "erg_004_status": "ready_for_runtime_implementation_gate_draft",
+        "erg_004_status": "ready_for_runtime_implementation_gate_review",
         "internal_review_disposition": internal_review.get("disposition"),
         "runtime_gate_draft_allowed": True,
+        "runtime_gate_review_ready": True,
         "runtime_changes_allowed": False,
         "runtime_implementation_allowed": False,
         "live_vm_inspection_allowed": False,
@@ -195,6 +196,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"erg_004_status: {report['erg_004_status']}",
         f"internal_review_disposition: {report['internal_review_disposition']}",
         f"runtime_gate_draft_allowed: {str(report['runtime_gate_draft_allowed']).lower()}",
+        f"runtime_gate_review_ready: {str(report['runtime_gate_review_ready']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "runtime_implementation_allowed: "
         f"{str(report['runtime_implementation_allowed']).lower()}",

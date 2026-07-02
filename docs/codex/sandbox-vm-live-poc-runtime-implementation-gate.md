@@ -1,10 +1,10 @@
 # Sandbox/VM Live POC Runtime Implementation Gate
 
-Status: draft-only implementation gate for a future `ERG-004` runtime slice.
+Status: review-ready implementation-gate draft for a future `ERG-004` runtime slice.
 
 Current governed tool count: `24`.
 
-Current `ERG-004` status: `ready_for_runtime_implementation_gate_draft`.
+Current `ERG-004` status: `ready_for_runtime_implementation_gate_review`.
 
 Validation:
 
