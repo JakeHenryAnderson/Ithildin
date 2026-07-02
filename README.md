@@ -860,6 +860,11 @@ checked with `make control-mapping-readiness`.
   runtime implementation gate for `ERG-004`; this defines prerequisites for a later sprint while
   keeping runtime behavior, live VM/container inspection, local model invocation, and new powers
   blocked.
+- `make sandbox-vm-live-poc-runtime-descriptor-contract-check` - validate the planning-only
+  descriptor/correlation contract pack for `ERG-004`; this defines safe fields, correlation
+  requirements, and negative fixtures while keeping runtime implementation, API/MCP behavior, VM
+  inspection/lifecycle control, Mission Control runtime authority, local model invocation, host
+  writes, network expansion, and new powers blocked.
 - `make sandbox-vm-live-poc-runtime-ticket-review-bundle` - generate the focused review packet for
   the draft runtime ticket without approving runtime implementation or any live VM/container,
   Mission Control, local-model, host-write, network, or new-tool authority.
@@ -2012,6 +2017,12 @@ The runtime implementation gate draft is
 [docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md](docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md)
 and is checked with `make sandbox-vm-live-poc-runtime-implementation-gate-check`; it defines the
 future implementation prerequisites while still approving no runtime behavior.
+The runtime descriptor/correlation contract pack is
+[docs/codex/sandbox-vm-live-poc-runtime-implementation-decision.md](docs/codex/sandbox-vm-live-poc-runtime-implementation-decision.md),
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md),
+and [docs/codex/sandbox-vm-live-poc-runtime-negative-fixtures.md](docs/codex/sandbox-vm-live-poc-runtime-negative-fixtures.md);
+it is checked with `make sandbox-vm-live-poc-runtime-descriptor-contract-check` and remains
+planning-only.
 The focused runtime-ticket review bundle is
 [docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md)
 and is generated with `make sandbox-vm-live-poc-runtime-ticket-review-bundle`; it packages the

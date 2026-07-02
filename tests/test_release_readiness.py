@@ -297,6 +297,7 @@ from scripts import (
     sandbox_vm_live_poc_prerequisite_disposition_dry_run,
     sandbox_vm_live_poc_response_dry_run,
     sandbox_vm_live_poc_response_kit,
+    sandbox_vm_live_poc_runtime_descriptor_contract_check,
     sandbox_vm_live_poc_runtime_implementation_gate_check,
     sandbox_vm_live_poc_runtime_proposal_check,
     sandbox_vm_live_poc_runtime_proposal_review_bundle,
@@ -13810,6 +13811,72 @@ def test_sandbox_vm_live_poc_runtime_implementation_gate_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "Sandbox/VM Live POC Runtime Implementation Gate" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_contract_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_descriptor_contract_check.build_report(
+        Path.cwd()
+    )
+    decision = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-implementation-decision.md"
+    ).read_text(encoding="utf-8")
+    contract = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md"
+    ).read_text(encoding="utf-8")
+    negative = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-negative-fixtures.md"
+    ).read_text(encoding="utf-8")
+    gate = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "runtime_descriptor_contract_planning"
+    assert report["runtime_implementation_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    assert (
+        "Status: planning-only implementation decision for the `ERG-004` "
+        "descriptor/correlation slice."
+    ) in decision
+    assert "Runtime implementation remains blocked." in decision
+    assert "Ithildin does not yet accept, store, render" in contract
+    assert "descriptor_source: operator_supplied" in contract
+    assert "ithildin_live_inspection_performed: false" in contract
+    assert "Forbidden Payload Content" in contract
+    assert "Forbidden Authority Attempts" in negative
+    assert "Required Transcript Shape" in negative
+    for doc_path in [
+        "docs/codex/sandbox-vm-live-poc-runtime-implementation-decision.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-negative-fixtures.md",
+    ]:
+        assert doc_path in gate
+        assert doc_path in docs_site
+        assert doc_path in review_docs.REVIEW_DOCS
+        assert doc_path.rsplit("/", 1)[1] in review_index
+    assert "make sandbox-vm-live-poc-runtime-descriptor-contract-check" in readme
+    assert "sandbox-vm-live-poc-runtime-descriptor-contract-check:" in makefile
+    assert "sandbox-vm-live-poc-runtime-descriptor-contract-check" in release_check_body
+    assert "sandbox-vm-live-poc-runtime-descriptor-contract-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:

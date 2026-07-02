@@ -27,6 +27,9 @@ Before any implementation sprint starts, the following committed artifacts must 
 - `docs/codex/sandbox-vm-live-poc-runtime-proposal.md`
 - `docs/codex/sandbox-vm-live-poc-runtime-ticket.md`
 - `docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md`
+- `docs/codex/sandbox-vm-live-poc-runtime-implementation-decision.md`
+- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md`
+- `docs/codex/sandbox-vm-live-poc-runtime-negative-fixtures.md`
 - `var/review-packets/v3/sandbox-vm-live-poc-runtime-ticket-review/`
 
 The internal runtime-ticket disposition must remain:
@@ -141,6 +144,7 @@ trust-boundary gate fails three times.
 This gate draft is complete when:
 
 - `make sandbox-vm-live-poc-runtime-implementation-gate-check` passes;
+- `make sandbox-vm-live-poc-runtime-descriptor-contract-check` passes;
 - `make sandbox-vm-live-poc-runtime-ticket-internal-review-check` passes;
 - `make no-new-powers-guardrail` passes;
 - `make tool-surface-invariant-gate` passes;
