@@ -123,8 +123,8 @@ Before any runtime implementation, a future source-review packet must include:
 - exact stop conditions;
 - focused command evidence.
 
-The future reviewer must decide whether a bounded runtime implementation may be planned. This packet
-does not make that decision.
+The future reviewer must decide whether a bounded runtime implementation proposal may be prepared
+for a later runtime gate. This packet does not make that decision.
 
 ## Stop Conditions
 

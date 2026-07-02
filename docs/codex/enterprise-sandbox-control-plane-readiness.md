@@ -17,11 +17,12 @@ It does not approve sandbox orchestration.
 
 It does not approve local model invocation.
 
-The live sandbox/VM proof-of-concept lane remains blocked.
+The live sandbox/VM proof-of-concept runtime remains blocked. `ERG-004` is allowed to prepare
+implementation-planning review artifacts only.
 
 `ERG-003` is recorded as `closed_local_preview_static_preflight`; this records the CLI-only static
 preflight local-preview disposition and does not approve `ERG-004` live VM/container inspection or
-implementation planning.
+runtime implementation.
 
 ## Current Source Of Truth
 
@@ -56,7 +57,7 @@ Blocked current claims:
 
 ## Required Future Promotion Path
 
-The live sandbox/VM POC lane must stay blocked until all of these are true:
+The live sandbox/VM POC runtime lane must stay blocked until all of these are true:
 
 1. `ERG-003` remains recorded as `closed_local_preview_static_preflight` with no unresolved
    critical/high findings.
