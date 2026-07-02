@@ -458,6 +458,15 @@ sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check:
 sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run:
 	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_dry_run.py
 
+sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check:
+	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_application_record_check.py
+
+sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check:
+	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_application_playbook_check.py
+
+sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check:
+	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_response_application_preflight_check.py
+
 sandbox-vm-live-poc-runtime-ticket-review-bundle:
 	uv run python scripts/sandbox_vm_live_poc_runtime_ticket_review_bundle.py
 
@@ -1786,6 +1795,9 @@ release-check: sandbox-vm-live-poc-external-review-bundle-check
 release-check: sandbox-vm-live-poc-implementation-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-proposal-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
+release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check
+release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check
+release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check
 release-check: enterprise-response-paste-preflight
 release-check: enterprise-handoff-consistency-check
 release-check: enterprise-review-send-preflight

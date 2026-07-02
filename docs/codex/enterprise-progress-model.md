@@ -98,6 +98,9 @@ make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
 make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
+make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check
+make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check
+make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check
 make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
 ```
 

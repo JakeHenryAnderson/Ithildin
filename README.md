@@ -884,6 +884,18 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run` - exercise favorable and
   blocked `EXT-LIVE-GATE-###` response fixtures without recording external review, mutating
   findings, closing `ERG-004`, or approving runtime behavior.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check` - validate
+  the manager-owned response-application checklist for a future real `EXT-LIVE-GATE-###`
+  gate-readiness response while keeping runtime implementation and `ERG-004` closure blocked; see
+  [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-application-record.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-application-record.md).
+- `make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check` -
+  validate the command order, allowed future status transition, and committed-file scope for a
+  later favorable `EXT-LIVE-GATE-###` response without approving runtime behavior; see
+  [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook.md).
+- `make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check` -
+  validate the complete response-application path before any future real `EXT-LIVE-GATE-###`
+  response is applied; see
+  [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check` - validate the
   design-only decision-record skeleton for a future favorable `EXT-LIVE-GATE-###` disposition; this
   gives the runtime gate-readiness packet a landing zone without approving runtime implementation.

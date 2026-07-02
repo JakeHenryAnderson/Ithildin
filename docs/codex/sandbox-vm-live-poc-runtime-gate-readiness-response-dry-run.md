@@ -9,6 +9,12 @@ make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
 ```
 
+Before applying any future real response, also validate
+[sandbox-vm-live-poc-runtime-gate-readiness-response-application-record.md](sandbox-vm-live-poc-runtime-gate-readiness-response-application-record.md),
+[sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook.md](sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook.md),
+and
+[sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight.md](sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight.md).
+
 This dry run exercises favorable and blocked fixtures for
 `sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md` without recording external review,
 mutating committed findings, recording a decision record, closing `ERG-004`, or approving runtime

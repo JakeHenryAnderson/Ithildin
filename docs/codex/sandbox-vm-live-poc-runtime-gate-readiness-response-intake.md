@@ -135,7 +135,17 @@ Run:
 make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
+make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check
+make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check
+make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check
 make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
 make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
 make external-findings-intake-dry-run
 ```
+
+Use
+[sandbox-vm-live-poc-runtime-gate-readiness-response-application-record.md](sandbox-vm-live-poc-runtime-gate-readiness-response-application-record.md),
+[sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook.md](sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook.md),
+and
+[sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight.md](sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight.md)
+before committing any later response-application decision.

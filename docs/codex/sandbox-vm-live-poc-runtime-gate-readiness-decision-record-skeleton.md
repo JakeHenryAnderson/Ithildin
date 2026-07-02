@@ -96,6 +96,12 @@ Runtime behavior remains blocked.
   `sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md`.
 - Required response dry run:
   `sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md`.
+- Required response application record:
+  `sandbox-vm-live-poc-runtime-gate-readiness-response-application-record.md`.
+- Required response application playbook:
+  `sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook.md`.
+- Required response application preflight:
+  `sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight.md`.
 - Required reviewed commit: the reviewed commit in the packet must match the current committed
   checkpoint being dispositioned.
 - Required reviewed packet hash: artifact hashes must match the generated packet files.
@@ -105,6 +111,9 @@ Runtime behavior remains blocked.
 - Required command evidence:
   `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`,
   `make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run`,
+  `make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check`,
+  `make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check`,
+  `make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check`,
   `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check`,
   `make sandbox-vm-live-poc-runtime-implementation-gate-check`,
   `make sandbox-vm-live-poc-runtime-descriptor-contract-check`,

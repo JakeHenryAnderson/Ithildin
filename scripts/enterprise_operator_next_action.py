@@ -61,6 +61,9 @@ RUNTIME_GATE_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
 ]
 
@@ -211,6 +214,9 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
