@@ -59,7 +59,9 @@ RUNTIME_GATE_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
 ]
 
 SEND_ARTIFACTS = [
@@ -178,6 +180,22 @@ RUNTIME_GATE_ARTIFACTS = [
         "path": "var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review",
         "description": "focused packet for runtime gate-readiness review",
     },
+    {
+        "label": "live_poc_runtime_gate_readiness_response_intake",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"
+        ),
+        "description": "response-intake template for future runtime gate-readiness review",
+    },
+    {
+        "label": "live_poc_runtime_gate_readiness_decision_record_skeleton",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+        ),
+        "description": "decision-record skeleton for descriptor-only planning disposition",
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -191,7 +209,9 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
