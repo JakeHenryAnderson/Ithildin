@@ -52,10 +52,11 @@ Finding namespace:
 EXT-LIVE-GATE-###
 ```
 
-A future favorable disposition must be recorded with
-`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`. That record shape does not
-approve runtime implementation; it only permits a later descriptor-only implementation-planning
-sprint if the reviewed commit, packet hash, and finding state match.
+A future favorable disposition must be recorded through
+`sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md` and
+`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`. Those record shapes do not
+approve runtime implementation; they only permit a later descriptor-only implementation-planning
+sprint if the reviewed commit, packet hash, response intake, and finding state match.
 
 ## Required Evidence
 

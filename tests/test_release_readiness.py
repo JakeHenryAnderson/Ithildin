@@ -300,6 +300,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_contract_check,
     sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
     sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
+    sandbox_vm_live_poc_runtime_gate_readiness_response_intake_check,
     sandbox_vm_live_poc_runtime_gate_readiness_review_bundle,
     sandbox_vm_live_poc_runtime_implementation_gate_check,
     sandbox_vm_live_poc_runtime_proposal_check,
@@ -14015,6 +14016,138 @@ def test_sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_is_
         )
 
 
+def test_sandbox_vm_live_poc_runtime_gate_readiness_response_intake_is_wired() -> None:
+    report = (
+        sandbox_vm_live_poc_runtime_gate_readiness_response_intake_check.build_report(
+            Path.cwd()
+        )
+    )
+    doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    bundle_doc = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md"
+    ).read_text(encoding="utf-8")
+    skeleton_doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    active_route = Path("docs/codex/enterprise-active-route-clarity.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-live-poc-runtime-gate-readiness"
+    assert report["finding_namespace"] == "EXT-LIVE-GATE-###"
+    assert report["erg_004_status"] == "ready_for_runtime_implementation_gate_review"
+    assert report["mutates_findings"] is False
+    assert report["closes_external_review"] is False
+    assert report["descriptor_only_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: response-intake template for `ERG-004` runtime gate-readiness review.",
+        "Current governed tool count: `24`.",
+        "Current `ERG-004` status before reviewer disposition: "
+        "`ready_for_runtime_implementation_gate_review`.",
+        "Finding namespace: `EXT-LIVE-GATE-###`.",
+        "Reviewed area for normalization: `sandbox-vm-live-poc-runtime-gate-readiness`.",
+        "approved_for_descriptor_only_runtime_implementation_planning",
+        "mutates_findings: false",
+        "closes_external_review: false",
+        "Only a later committed decision record may move `ERG-004`",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "live VM/container inspection",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "host writes",
+        "network expansion",
+        "API/MCP profile loading",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "trusted-host promotion is approved",
+        "host writes are approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert (
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check"
+        in readme
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check"
+        in release_check_body
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "Sandbox/VM Live POC Runtime Gate Readiness Response Intake"
+        in review_index
+    )
+    for source in [bundle_doc, skeleton_doc, checkpoint, active_route]:
+        assert (
+            "sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"
+            in source
+        )
+    assert (
+        external_response_normalize.AREA_NAMESPACES[
+            "sandbox-vm-live-poc-runtime-gate-readiness"
+        ]
+        == "LIVE-GATE"
+    )
+
+
 def test_sandbox_vm_live_poc_runtime_ticket_internal_review_is_wired() -> None:
     report = sandbox_vm_live_poc_runtime_ticket_internal_review_check.build_report(
         Path.cwd()
@@ -23720,6 +23853,33 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
     )
     assert live_poc_normalized["findings"][0]["finding_id"] == "EXT-LIVE-POC-001"
     assert live_poc_normalized["findings"][0]["area"] == "sandbox-vm-live-poc"
+
+    live_gate_response = "\n".join(
+        [
+            "# Runtime Gate Readiness Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-LIVE-GATE-001 | medium | sandbox-vm-live-poc-runtime-gate-readiness | "
+            "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md | "
+            "should-fix | open | clarify descriptor-only planning wording |",
+        ]
+    )
+    live_gate_normalized = external_response_normalize.normalize_response(
+        live_gate_response,
+        reviewer="High reviewer",
+        reviewer_type="internal-model",
+        source_access="packet-and-source",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="sandbox-vm-live-poc-runtime-gate-readiness",
+    )
+    assert live_gate_normalized["findings"][0]["finding_id"] == "EXT-LIVE-GATE-001"
+    assert (
+        live_gate_normalized["findings"][0]["area"]
+        == "sandbox-vm-live-poc-runtime-gate-readiness"
+    )
 
     trusted_host_response = "\n".join(
         [

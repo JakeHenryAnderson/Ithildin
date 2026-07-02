@@ -26,8 +26,9 @@ Current runtime gate-readiness packet:
 `var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review`.
 
 Future favorable gate-readiness dispositions must use
-`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`; that skeleton keeps
-runtime implementation blocked until a separate implementation sprint and source-review gate exist.
+`sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md` and
+`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`; those records keep runtime
+implementation blocked until a separate implementation sprint and source-review gate exist.
 
 The active route is reported by:
 

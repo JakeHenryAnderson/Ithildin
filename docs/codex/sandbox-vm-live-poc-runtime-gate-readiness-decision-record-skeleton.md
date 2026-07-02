@@ -56,6 +56,8 @@ slice. It still does not approve runtime implementation.
 - Review stage: runtime gate-readiness.
 - Related packet:
   `var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review`
+- Related response intake:
+  `sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md`
 - Related prompt:
   `var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review/01_SANDBOX_VM_LIVE_POC_RUNTIME_GATE_READINESS_PROMPT.md`
 - Related findings: `EXT-LIVE-GATE-###` if present.
@@ -89,6 +91,8 @@ Runtime behavior remains blocked.
 
 - Required packet evidence:
   `var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review`.
+- Required response intake:
+  `sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md`.
 - Required reviewed commit: the reviewed commit in the packet must match the current committed
   checkpoint being dispositioned.
 - Required reviewed packet hash: artifact hashes must match the generated packet files.
@@ -96,6 +100,7 @@ Runtime behavior remains blocked.
   descriptor-only runtime implementation sprint later.
 - Required negative finding state: no critical/high `EXT-LIVE-GATE-###` finding is open.
 - Required command evidence:
+  `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`,
   `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check`,
   `make sandbox-vm-live-poc-runtime-implementation-gate-check`,
   `make sandbox-vm-live-poc-runtime-descriptor-contract-check`,

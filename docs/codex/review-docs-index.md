@@ -137,6 +137,7 @@ externally closed.
 - [Sandbox/VM Live POC Runtime Ticket Review Bundle](sandbox-vm-live-poc-runtime-ticket-review-bundle.md)
 - [Sandbox/VM Live POC Runtime Gate Readiness Review Bundle](sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md)
 - [Sandbox/VM Live POC Runtime Gate Readiness Decision Record Skeleton](sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md)
+- [Sandbox/VM Live POC Runtime Gate Readiness Response Intake](sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)
 - [Sandbox/VM Live POC Response Dry Run](sandbox-vm-live-poc-response-dry-run.md)
 - [Sandbox/VM Live POC Prerequisite Disposition Dry Run](sandbox-vm-live-poc-prerequisite-disposition-dry-run.md)
 - [Sandbox/VM Live POC Response Kit](sandbox-vm-live-poc-response-kit.md)

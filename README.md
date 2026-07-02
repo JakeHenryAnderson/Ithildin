@@ -873,6 +873,10 @@ checked with `make control-mapping-readiness`.
   whether a later descriptor-only runtime implementation sprint may be planned while keeping runtime
   behavior, live VM/container inspection, local model invocation, Mission Control runtime authority,
   host writes, network expansion, API/MCP profile loading, and new tool powers blocked.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check` - validate the
+  response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
+  confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or
+  approve live VM/container behavior.
 - `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check` - validate the
   design-only decision-record skeleton for a future favorable `EXT-LIVE-GATE-###` disposition; this
   gives the runtime gate-readiness packet a landing zone without approving runtime implementation.
@@ -2049,6 +2053,11 @@ The focused runtime gate-readiness review bundle is
 and is generated with `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle`; it packages
 the implementation gate draft, descriptor contract, internal review evidence, and command evidence
 for review while still keeping runtime implementation and all live VM/container behavior blocked.
+The runtime gate-readiness response intake is
+[docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)
+and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`; it
+defines the normalization area and future response requirements for `EXT-LIVE-GATE-###` reviews
+without mutating findings, closing `ERG-004`, or approving runtime behavior.
 The runtime gate-readiness decision-record skeleton is
 [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md)
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check`;
