@@ -853,6 +853,9 @@ checked with `make control-mapping-readiness`.
   ticket for a later implementation gate while keeping runtime implementation, live VM/container
   inspection, lifecycle control, local model invocation, Mission Control runtime authority,
   trusted-host promotion, host writes, network expansion, and new tool powers blocked.
+- `make sandbox-vm-live-poc-runtime-ticket-review-bundle` - generate the focused review packet for
+  the draft runtime ticket without approving runtime implementation or any live VM/container,
+  Mission Control, local-model, host-write, network, or new-tool authority.
 - `make sandbox-vm-live-poc-implementation-review-bundle` - generate the external-review packet
   for the ERG-004 implementation-planning lane, asking whether a later runtime proposal may be
   prepared while still blocking runtime behavior.
@@ -1994,6 +1997,11 @@ The live sandbox/VM POC runtime ticket draft is
 and is checked with `make sandbox-vm-live-poc-runtime-ticket-check`; it translates the runtime
 proposal and xhigh checkpoint into a future implementation-task outline, but is not an
 implementation gate and keeps all runtime behavior blocked.
+The focused runtime-ticket review bundle is
+[docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md)
+and is generated with `make sandbox-vm-live-poc-runtime-ticket-review-bundle`; it packages the
+ticket for review while still keeping runtime implementation and all live VM/container behavior
+blocked.
 The live sandbox/VM POC response dry run is
 [docs/codex/sandbox-vm-live-poc-response-dry-run.md](docs/codex/sandbox-vm-live-poc-response-dry-run.md)
 and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily exercises favorable

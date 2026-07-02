@@ -300,6 +300,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_proposal_check,
     sandbox_vm_live_poc_runtime_proposal_review_bundle,
     sandbox_vm_live_poc_runtime_ticket_check,
+    sandbox_vm_live_poc_runtime_ticket_review_bundle,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
@@ -13598,6 +13599,123 @@ def test_sandbox_vm_live_poc_runtime_ticket_is_wired() -> None:
     assert "docs/codex/sandbox-vm-live-poc-runtime-ticket.md" in docs_site
     assert "docs/codex/sandbox-vm-live-poc-runtime-ticket.md" in review_docs.REVIEW_DOCS
     assert "Sandbox/VM Live POC Runtime Ticket" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_ticket_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    report = sandbox_vm_live_poc_runtime_ticket_review_bundle.build_check_report(
+        Path.cwd()
+    )
+    output_dir = tmp_path / "sandbox-vm-live-poc-runtime-ticket-review"
+    sandbox_vm_live_poc_runtime_ticket_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    expected = {
+        "00_SANDBOX_VM_LIVE_POC_RUNTIME_TICKET_REVIEW_INDEX.md",
+        "01_SANDBOX_VM_LIVE_POC_RUNTIME_TICKET_REVIEW_PROMPT.md",
+        "02_ERG004_RUNTIME_TICKET.md",
+        "03_ERG004_RUNTIME_CONTEXT.md",
+        "04_ERG004_TICKET_EVIDENCE_AND_NEGATIVE_PLAN.md",
+        "05_ERG004_RUNTIME_TICKET_COMMAND_EVIDENCE.md",
+        "sandbox-vm-live-poc-runtime-ticket-review-artifact-hashes.json",
+    }
+    generated = {path.name for path in output_dir.iterdir()}
+    hashes = json.loads(
+        (
+            output_dir
+            / "sandbox-vm-live-poc-runtime-ticket-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+    index = (
+        output_dir / "00_SANDBOX_VM_LIVE_POC_RUNTIME_TICKET_REVIEW_INDEX.md"
+    ).read_text(encoding="utf-8")
+    prompt = (
+        output_dir / "01_SANDBOX_VM_LIVE_POC_RUNTIME_TICKET_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    ticket = (output_dir / "02_ERG004_RUNTIME_TICKET.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (
+        output_dir / "05_ERG004_RUNTIME_TICKET_COMMAND_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["artifact_count"] == len(expected)
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "ready_for_runtime_ticket_draft"
+    assert report["finding_namespace"] == "EXT-LIVE-TICKET-###"
+    assert report["runtime_ticket_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    assert generated == expected
+    assert {entry["path"] for entry in hashes["artifacts"]} == expected - {
+        "sandbox-vm-live-poc-runtime-ticket-review-artifact-hashes.json"
+    }
+    assert "Tool count remains `24`" in index
+    assert "ready_for_runtime_ticket_draft" in index
+    assert "What This Bundle Does Not Prove" in index
+    assert "Finding namespace: `EXT-LIVE-TICKET-###`" in prompt
+    assert "Do not approve runtime implementation" in prompt
+    assert "Do not approve live VM/container inspection" in prompt
+    assert "Do not approve local model invocation" in prompt
+    assert "sandbox-vm-live-poc-runtime-ticket.md" in ticket
+    assert "approve_draft_runtime_ticket" in ticket
+    for flag in [
+        '"sandbox-vm-live-poc-runtime-ticket-check"',
+        '"runtime_changes_allowed": false',
+        '"runtime_implementation_allowed": false',
+        '"live_vm_inspection_allowed": false',
+        '"sandbox_orchestration_allowed": false',
+        '"new_power_classes_allowed": false',
+    ]:
+        assert flag in evidence
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "new governed tool powers are approved",
+    ]:
+        combined = "\n".join([index, prompt, ticket, evidence])
+        assert forbidden not in combined
+    assert "make sandbox-vm-live-poc-runtime-ticket-review-bundle" in readme
+    assert "sandbox-vm-live-poc-runtime-ticket-review-bundle:" in makefile
+    assert "sandbox-vm-live-poc-runtime-ticket-review-bundle-check:" in makefile
+    assert "sandbox-vm-live-poc-runtime-ticket-review-bundle-check" in release_check_body
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-ticket-review-bundle" in (
+        review_candidate_body
+    )
+    assert "sandbox-vm-live-poc-runtime-ticket-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-ticket-review-bundle" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Runtime Ticket Review Bundle" in review_index
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
