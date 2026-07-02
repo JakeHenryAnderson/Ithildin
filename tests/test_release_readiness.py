@@ -1954,7 +1954,8 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "- placeholder_count: `2`" in trial_record
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
     assert "`dual_response_disposition_record`" in trial_record
-    assert "`live_poc_decision_packet`" in trial_record
+    assert "`live_poc_runtime_ticket`" in trial_record
+    assert "`live_poc_runtime_ticket_review_bundle`" in trial_record
     assert "Ithildin v1.0 Observed Operator Trial Evidence" in observed_trial
     assert "patch_apply_status" in observed_trial
     assert "audit_verification_valid" in observed_trial
