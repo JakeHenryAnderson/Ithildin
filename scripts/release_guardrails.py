@@ -221,6 +221,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-implementation-plan-check",
     "sandbox-vm-live-poc-runtime-proposal-check",
     "sandbox-vm-live-poc-runtime-ticket-check",
+    "sandbox-vm-live-poc-runtime-ticket-internal-review-check",
     "sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
     "sandbox-vm-live-poc-response-dry-run",
     "sandbox-vm-live-poc-prerequisite-disposition-dry-run",

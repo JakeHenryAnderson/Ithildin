@@ -300,6 +300,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_proposal_check,
     sandbox_vm_live_poc_runtime_proposal_review_bundle,
     sandbox_vm_live_poc_runtime_ticket_check,
+    sandbox_vm_live_poc_runtime_ticket_internal_review_check,
     sandbox_vm_live_poc_runtime_ticket_review_bundle,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
@@ -13710,6 +13711,67 @@ def test_sandbox_vm_live_poc_runtime_ticket_review_bundle_is_wired(
         in review_docs.REVIEW_DOCS
     )
     assert "Sandbox/VM Live POC Runtime Ticket Review Bundle" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_ticket_internal_review_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_ticket_internal_review_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["disposition"] == "approve_internal_runtime_ticket_review"
+    assert report["critical_high_findings"] == 0
+    assert report["medium_low_findings"] == 0
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    assert report["next_gate_preparation_allowed"] is True
+    for phrase in [
+        "approve_internal_runtime_ticket_review",
+        "Critical/high findings: none.",
+        "Medium/low/documentation findings: none.",
+        "The next allowed action is to prepare a separate explicit runtime implementation gate.",
+        "does not approve:",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-live-poc-runtime-ticket-internal-review-check" in readme
+    assert "sandbox-vm-live-poc-runtime-ticket-internal-review-check:" in makefile
+    assert "sandbox-vm-live-poc-runtime-ticket-internal-review-check" in (
+        release_check_body
+    )
+    assert "sandbox-vm-live-poc-runtime-ticket-internal-review-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Runtime Ticket Internal Review" in review_index
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
