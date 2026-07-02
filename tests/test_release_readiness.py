@@ -2642,6 +2642,8 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_descriptor_contract",
         "live_poc_runtime_descriptor_contract_internal_review",
         "live_poc_runtime_gate_readiness_review_bundle",
+        "live_poc_runtime_gate_readiness_response_intake",
+        "live_poc_runtime_gate_readiness_decision_record_skeleton",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
