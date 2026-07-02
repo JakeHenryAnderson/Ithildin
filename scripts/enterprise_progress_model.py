@@ -57,7 +57,9 @@ REQUIRED_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     "Do not manually promote a lane",
 ]
 
