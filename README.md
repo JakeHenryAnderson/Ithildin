@@ -856,6 +856,10 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-runtime-ticket-internal-review-check` - validate the internal xhigh
   review record for the runtime-ticket packet; this permits only next-gate preparation and does not
   approve runtime implementation or live VM/container behavior.
+- `make sandbox-vm-live-poc-runtime-implementation-gate-check` - validate the draft-only future
+  runtime implementation gate for `ERG-004`; this defines prerequisites for a later sprint while
+  keeping runtime behavior, live VM/container inspection, local model invocation, and new powers
+  blocked.
 - `make sandbox-vm-live-poc-runtime-ticket-review-bundle` - generate the focused review packet for
   the draft runtime ticket without approving runtime implementation or any live VM/container,
   Mission Control, local-model, host-write, network, or new-tool authority.
@@ -2004,6 +2008,10 @@ The runtime-ticket internal review record is
 [docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md](docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md)
 and is checked with `make sandbox-vm-live-poc-runtime-ticket-internal-review-check`; it records the
 `approve_internal_runtime_ticket_review` checkpoint while keeping runtime implementation blocked.
+The runtime implementation gate draft is
+[docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md](docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md)
+and is checked with `make sandbox-vm-live-poc-runtime-implementation-gate-check`; it defines the
+future implementation prerequisites while still approving no runtime behavior.
 The focused runtime-ticket review bundle is
 [docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md)
 and is generated with `make sandbox-vm-live-poc-runtime-ticket-review-bundle`; it packages the

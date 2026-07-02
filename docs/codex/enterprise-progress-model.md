@@ -88,16 +88,16 @@ behavior can be added.
 
 ## Current Best Next Action
 
-The best next action is the ERG-004 runtime-ticket review lane:
+The best next action is the ERG-004 runtime implementation-gate prep lane:
 
 ```sh
-make sandbox-vm-live-poc-runtime-ticket-check
-make sandbox-vm-live-poc-runtime-ticket-review-bundle
-make sandbox-vm-live-poc-runtime-ticket-review-bundle-check
+make sandbox-vm-live-poc-runtime-ticket-internal-review-check
+make sandbox-vm-live-poc-runtime-implementation-gate-check
 ```
 
-After that packet receives a response, save the raw response only under the ignored enterprise
-response inbox, check the waiting-room state, and run:
+This gate draft remains non-runtime work. If a later implementation packet receives a response,
+save the raw response only under the ignored enterprise response inbox, check the waiting-room
+state, and run:
 
 ```sh
 make enterprise-dual-response-inbox

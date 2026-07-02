@@ -143,6 +143,11 @@ def _recommended_next_commands(
             "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
             "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
         ]
+    if enterprise_next.get("next_action") == "prepare_erg004_runtime_implementation_gate":
+        return [
+            "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
+            "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+        ]
     return ["make dev-check"]
 
 

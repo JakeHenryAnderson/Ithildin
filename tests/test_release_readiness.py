@@ -297,6 +297,7 @@ from scripts import (
     sandbox_vm_live_poc_prerequisite_disposition_dry_run,
     sandbox_vm_live_poc_response_dry_run,
     sandbox_vm_live_poc_response_kit,
+    sandbox_vm_live_poc_runtime_implementation_gate_check,
     sandbox_vm_live_poc_runtime_proposal_check,
     sandbox_vm_live_poc_runtime_proposal_review_bundle,
     sandbox_vm_live_poc_runtime_ticket_check,
@@ -1283,7 +1284,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["sandbox_orchestration_allowed"] is False
     assert status["mission_control_execution_allowed"] is False
     assert status["public_security_product_positioning_allowed"] is False
-    assert status["enterprise_next_action"] == "prepare_erg004_runtime_ticket_review"
+    assert status["enterprise_next_action"] == "prepare_erg004_runtime_implementation_gate"
     assert status["recommended_next_commands"]
     assert status["handoff_paths"] == {
         "dual_review_outbox": "var/review-packets/v3/enterprise-dual-review-outbox",
@@ -1313,11 +1314,10 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status_now._recommended_next_commands(
         {"git_dirty": False},
         {"valid": True},
-        {"next_action": "prepare_erg004_runtime_ticket_review"},
+        {"next_action": "prepare_erg004_runtime_implementation_gate"},
     ) == [
-        "make sandbox-vm-live-poc-runtime-ticket-check",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
+        "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     ]
 
 
@@ -1533,7 +1533,7 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "compose_demo_ready" in rendered_trial_record
     assert "docker_daemon_status" in rendered_trial_record
     assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
-        "prepare_erg004_runtime_ticket_review"
+        "prepare_erg004_runtime_implementation_gate"
     )
     assert operator_trial_record_report["enterprise_review_state"][
         "recommended_send_set"
@@ -1949,14 +1949,13 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "What The Record Does Not Do" in trial_record
     assert "validation decision summary" in trial_record
     assert "Enterprise Review State" in trial_record
-    assert "- next_action: `prepare_erg004_runtime_ticket_review`" in trial_record
+    assert "- next_action: `prepare_erg004_runtime_implementation_gate`" in trial_record
     assert "- recommended_send_set: `ERG-004`" in trial_record
     assert "- candidate_response_count: `0`" in trial_record
     assert "- placeholder_count: `2`" in trial_record
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
-    assert "`dual_response_disposition_record`" in trial_record
-    assert "`live_poc_runtime_ticket`" in trial_record
-    assert "`live_poc_runtime_ticket_review_bundle`" in trial_record
+    assert "`live_poc_runtime_ticket_internal_review`" in trial_record
+    assert "`live_poc_runtime_implementation_gate`" in trial_record
     assert "Ithildin v1.0 Observed Operator Trial Evidence" in observed_trial
     assert "patch_apply_status" in observed_trial
     assert "audit_verification_valid" in observed_trial
@@ -2528,11 +2527,10 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["recommended_send_set"] == ["ERG-004"]
     assert report["recommended_next_enterprise_review"] == "ERG-004"
-    assert report["next_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["next_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["action_commands"] == [
-        "make sandbox-vm-live-poc-runtime-ticket-check",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
+        "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -2542,14 +2540,12 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make enterprise-response-paste-preflight",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "dual_response_disposition_record",
-        "live_poc_runtime_ticket",
-        "live_poc_runtime_ticket_review_bundle",
+        "live_poc_runtime_ticket_internal_review",
+        "live_poc_runtime_implementation_gate",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
-        "docs/codex/enterprise-dual-response-disposition-record.md",
-        "docs/codex/sandbox-vm-live-poc-runtime-ticket.md",
-        "var/review-packets/v3/sandbox-vm-live-poc-runtime-ticket-review",
+        "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2613,9 +2609,8 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["recommended_send_set"] == ["ERG-004"]
     assert report["recommended_next_enterprise_review"] == "ERG-004"
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "dual_response_disposition_record",
-        "live_poc_runtime_ticket",
-        "live_poc_runtime_ticket_review_bundle",
+        "live_poc_runtime_ticket_internal_review",
+        "live_poc_runtime_implementation_gate",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -2648,9 +2643,8 @@ def test_enterprise_progress_model_is_wired() -> None:
         "Enterprise send package ready: `true`",
         "Enterprise control-plane architecture | `35-50%`",
         "Checkpoint C: Sandbox/VM Static Preflight Disposition",
-        "make sandbox-vm-live-poc-runtime-ticket-check",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
+        "make sandbox-vm-live-poc-runtime-implementation-gate-check",
         "Do not manually promote a lane",
         "public/security-product positioning",
         "new governed tool powers",
@@ -2896,17 +2890,14 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "Enterprise Status Export",
         "display-only enterprise status export",
         "recommended_send_set: `ERG-004`",
-        "next_action: `prepare_erg004_runtime_ticket_review`",
-        "`make sandbox-vm-live-poc-runtime-ticket-check`",
-        "`make sandbox-vm-live-poc-runtime-ticket-review-bundle-check`",
+        "next_action: `prepare_erg004_runtime_implementation_gate`",
+        "`make sandbox-vm-live-poc-runtime-ticket-internal-review-check`",
+        "`make sandbox-vm-live-poc-runtime-implementation-gate-check`",
         "handoff_artifacts:",
-        (
-            "`dual_response_disposition_record`: "
-            "`docs/codex/enterprise-dual-response-disposition-record.md`"
-        ),
-        "`live_poc_runtime_ticket`: `docs/codex/sandbox-vm-live-poc-runtime-ticket.md`",
-        "`live_poc_runtime_ticket_review_bundle`: "
-        "`var/review-packets/v3/sandbox-vm-live-poc-runtime-ticket-review`",
+        "`live_poc_runtime_ticket_internal_review`: "
+        "`docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md`",
+        "`live_poc_runtime_implementation_gate`: "
+        "`docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md`",
         "## Packet Paths",
         "`enterprise_review_send_package`: `var/review-packets/v3/enterprise-review-send-package`",
         "`enterprise_review_send_session_record`: "
@@ -2920,19 +2911,18 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_erg004_runtime_ticket_review"',
+        '"next_action": "prepare_erg004_runtime_implementation_gate"',
         '"handoff_artifacts": [',
-        '"label": "dual_response_disposition_record"',
-        '"label": "live_poc_runtime_ticket"',
-        '"label": "live_poc_runtime_ticket_review_bundle"',
+        '"label": "live_poc_runtime_ticket_internal_review"',
+        '"label": "live_poc_runtime_implementation_gate"',
         '"enterprise_review_send_quickstart": '
         '"var/review-packets/v3/enterprise-review-send-quickstart"',
         '"enterprise_review_send_package": '
         '"var/review-packets/v3/enterprise-review-send-package"',
         '"enterprise_review_send_session_record": '
         '"var/review-runs/enterprise-review-send-session-record"',
-        '"make sandbox-vm-live-poc-runtime-ticket-check"',
-        '"make sandbox-vm-live-poc-runtime-ticket-review-bundle-check"',
+        '"make sandbox-vm-live-poc-runtime-ticket-internal-review-check"',
+        '"make sandbox-vm-live-poc-runtime-implementation-gate-check"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
@@ -5961,7 +5951,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["current_send_set"] == ["ERG-004"]
-    assert report["expected_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["expected_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["preflight_mode"] == "post_disposition_next_review"
     assert report["current_commit"]
     assert isinstance(report["current_dirty"], bool)
@@ -6186,11 +6176,10 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["recommended_next_enterprise_review"] == "ERG-004"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
-    assert report["next_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["next_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["action_commands"] == [
-        "make sandbox-vm-live-poc-runtime-ticket-check",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
-        "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
+        "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -6200,21 +6189,15 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-response-paste-preflight",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "dual_response_disposition_record",
-        "live_poc_runtime_ticket",
-        "live_poc_runtime_ticket_review_bundle",
+        "live_poc_runtime_ticket_internal_review",
+        "live_poc_runtime_implementation_gate",
     ]
     assert any(
-        artifact["path"] == "docs/codex/enterprise-dual-response-disposition-record.md"
+        artifact["path"] == "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md"
         for artifact in report["handoff_artifacts"]
     )
     assert any(
-        artifact["path"] == "docs/codex/sandbox-vm-live-poc-runtime-ticket.md"
-        for artifact in report["handoff_artifacts"]
-    )
-    assert any(
-        artifact["path"]
-        == "var/review-packets/v3/sandbox-vm-live-poc-runtime-ticket-review"
+        artifact["path"] == "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md"
         for artifact in report["handoff_artifacts"]
     )
     assert report["runtime_changes_allowed"] is False
@@ -13772,6 +13755,60 @@ def test_sandbox_vm_live_poc_runtime_ticket_internal_review_is_wired() -> None:
         in review_docs.REVIEW_DOCS
     )
     assert "Sandbox/VM Live POC Runtime Ticket Internal Review" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_implementation_gate_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_implementation_gate_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "ready_for_runtime_implementation_gate_draft"
+    assert report["runtime_gate_draft_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        "Current `ERG-004` status: `ready_for_runtime_implementation_gate_draft`.",
+        "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+        "Runtime implementation remains blocked.",
+        "Required Future Implementation Artifacts",
+        "Required Future Runtime Tests",
+    ]:
+        assert phrase in doc
+    assert "make sandbox-vm-live-poc-runtime-implementation-gate-check" in readme
+    assert "sandbox-vm-live-poc-runtime-implementation-gate-check:" in makefile
+    assert "sandbox-vm-live-poc-runtime-implementation-gate-check" in (
+        release_check_body
+    )
+    assert "sandbox-vm-live-poc-runtime-implementation-gate-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md" in docs_site
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Runtime Implementation Gate" in review_index
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:
@@ -27724,7 +27761,7 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["active_send_set"] == ["ERG-004"]
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["expected_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["expected_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["runtime_changes_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
     assert report["sandbox_orchestration_allowed"] is False
@@ -30767,7 +30804,7 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["recommended_next_enterprise_review"] == "ERG-004"
-    assert report["next_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["next_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["response_present_count"] == 0
     assert report["capability_expansion_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
@@ -30822,7 +30859,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["selected_capability"] == "not selected"
     assert report["technical_mvp_state"] == "operator_trial_observed"
-    assert report["enterprise_next_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["enterprise_next_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["active_resume_checkpoint"] == "ENT-001"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -30869,11 +30906,11 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Status: checked technical-MVP execution board and batch-control map.",
         "Current governed tool count: `24`",
         "Technical MVP state: `operator_trial_observed`",
-        "Current enterprise next action: `prepare_erg004_runtime_ticket_review`",
+        "Current enterprise next action: `prepare_erg004_runtime_implementation_gate`",
         "Active resume checkpoint: `ENT-001`",
         (
             "The paused umbrella goal resumes through the post-`ENT-001` "
-            "runtime-ticket review slice only"
+            "runtime implementation-gate prep slice"
         ),
         "Development Validation Ladder",
         "Stop Conditions",
@@ -30883,7 +30920,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Status: checked enterprise roadmap control board",
         "Current send set: `ERG-004`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` runtime-ticket review",
+        "The current resumed goal is limited to post-`ENT-001` runtime implementation-gate prep",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
     ]:
@@ -30893,7 +30930,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Tier 1: inner loop",
         "Tier 2: batch checkpoint",
         "Tier 3: handoff freeze",
-            "`ERG-004` live-POC runtime-ticket review prep | active resume checkpoint",
+            "`ERG-004` live-POC runtime implementation-gate prep | active resume checkpoint",
         "Safe Batch Shapes",
         "Unsafe Batch Shapes",
     ]:
@@ -30951,7 +30988,7 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
     if report["operator_trial_observed"]:
         assert report["observed_trial"]["patch_apply_status"] == "completed"
         assert report["observed_trial"]["audit_verification_valid"] == "true"
-    assert report["enterprise_next_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["enterprise_next_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["response_present_count"] == 0
     assert report["runtime_changes_allowed"] is False
     assert report["capability_expansion_allowed"] is False
@@ -31017,7 +31054,7 @@ def test_development_efficiency_status_is_wired() -> None:
     }
     assert isinstance(report["operator_trial_ready"], bool)
     assert isinstance(report["operator_trial_observed"], bool)
-    assert report["enterprise_next_action"] == "prepare_erg004_runtime_ticket_review"
+    assert report["enterprise_next_action"] == "prepare_erg004_runtime_implementation_gate"
     assert isinstance(report["enterprise_send_ready"], bool)
     assert isinstance(report["enterprise_send_artifact_commits_match_current"], bool)
     assert isinstance(report["enterprise_send_artifact_payloads_clean"], bool)

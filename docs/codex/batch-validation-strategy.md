@@ -51,7 +51,7 @@ A batch is complete only when:
 | Batch | Status | Use now? | Fast validation |
 | --- | --- | --- | --- |
 | Technical MVP execution-board cleanup | done | no | `make technical-mvp-execution-board`, `make roadmap-status` |
-| `ERG-004` live-POC runtime-ticket review prep | active resume checkpoint | yes | `make sandbox-vm-live-poc-runtime-ticket-check`, `make sandbox-vm-live-poc-runtime-ticket-review-bundle-check` |
+| `ERG-004` live-POC runtime implementation-gate prep | active resume checkpoint | yes | `make sandbox-vm-live-poc-runtime-ticket-internal-review-check`, `make sandbox-vm-live-poc-runtime-implementation-gate-check` |
 | `ERG-003` response intake | blocked on response | not until response arrives | `make sandbox-vm-static-preflight-response-dry-run` |
 | `ERG-002` response intake | blocked on response | not until response arrives | `make mission-control-display-response-dry-run` |
 | live sandbox/VM POC | blocked on `ERG-003` | no | `make sandbox-vm-live-poc-preconditions-ready-check` |

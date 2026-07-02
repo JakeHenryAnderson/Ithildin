@@ -16,7 +16,7 @@ make enterprise-active-route-clarity
 
 The active post-disposition route is `ERG-004`.
 
-Current expected action: `prepare_erg004_runtime_ticket_review`.
+Current expected action: `prepare_erg004_runtime_implementation_gate`.
 
 Current active packet: `sandbox-vm-live-poc-runtime-ticket-review`.
 

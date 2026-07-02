@@ -63,7 +63,7 @@ REQUIRED_DOC_PHRASES = [
 ]
 ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
-    "prepare_erg004_runtime_ticket_review",
+    "prepare_erg004_runtime_implementation_gate",
 }
 BLOCKED_PHRASES = [
     "production deployment readiness",

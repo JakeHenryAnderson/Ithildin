@@ -25,7 +25,7 @@ DOC_REL = "docs/codex/enterprise-progress-model.md"
 DOC_TITLE = "Ithildin Enterprise Progress Model"
 ALLOWED_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
-    "prepare_erg004_runtime_ticket_review",
+    "prepare_erg004_runtime_implementation_gate",
 }
 
 REQUIRED_PHRASES = [
@@ -52,9 +52,8 @@ REQUIRED_PHRASES = [
     "Checkpoint D: Live Sandbox/VM Proof Of Concept",
     "Checkpoint E: Trusted-Host Promotion",
     "Checkpoint F: Enterprise Architecture Lanes",
-    "make sandbox-vm-live-poc-runtime-ticket-check",
-    "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
-    "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
+    "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     "Do not manually promote a lane",
 ]
 

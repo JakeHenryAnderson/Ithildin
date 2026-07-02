@@ -367,6 +367,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-live-poc-runtime-proposal.md",
     "docs/codex/sandbox-vm-live-poc-runtime-ticket.md",
     "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md",
+    "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md",
     "docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md",
     "docs/codex/sandbox-vm-live-poc-response-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",

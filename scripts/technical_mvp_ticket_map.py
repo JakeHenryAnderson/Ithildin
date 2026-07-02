@@ -25,7 +25,7 @@ DOC_TITLE = "Ithildin Technical MVP Ticket Map"
 ALLOWED_NEXT_ENTERPRISE_REVIEWS = {"ERG-003", "ERG-004"}
 ALLOWED_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
-    "prepare_erg004_runtime_ticket_review",
+    "prepare_erg004_runtime_implementation_gate",
 }
 
 REQUIRED_PHRASES = [

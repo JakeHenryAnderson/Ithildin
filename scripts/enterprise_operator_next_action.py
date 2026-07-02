@@ -53,6 +53,11 @@ POST_ERG003_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
 ]
 
+RUNTIME_GATE_COMMANDS = [
+    "make sandbox-vm-live-poc-runtime-ticket-internal-review-check",
+    "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+]
+
 SEND_ARTIFACTS = [
     {
         "label": "dual_review_outbox",
@@ -140,13 +145,26 @@ POST_ERG003_ARTIFACTS = [
     },
 ]
 
+RUNTIME_GATE_ARTIFACTS = [
+    {
+        "label": "live_poc_runtime_ticket_internal_review",
+        "path": "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md",
+        "description": "internal xhigh review record for the runtime-ticket packet",
+    },
+    {
+        "label": "live_poc_runtime_implementation_gate",
+        "path": "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md",
+        "description": "draft-only runtime implementation gate for a future sprint",
+    },
+]
+
 REQUIRED_DOC_PHRASES = [
     "Status: checked read-only operator next-action summary",
     "Current governed tool count: `24`",
     "make enterprise-operator-next-action",
     "With no real enterprise reviewer responses present",
-    "If the dual-response disposition record is present",
-    "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
+    "If the dual-response disposition record and runtime-ticket internal review are present",
+    "make sandbox-vm-live-poc-runtime-implementation-gate-check",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
@@ -205,10 +223,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     response_present_count = response_state["response_present_count"]
     closure_ready_count = response_state["closure_ready_count"]
     disposition_recorded = _dual_response_disposition_recorded(repo_root)
+    internal_review_recorded = _runtime_ticket_internal_review_recorded(repo_root)
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
         disposition_recorded=disposition_recorded,
+        internal_review_recorded=internal_review_recorded,
     )
     if next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
@@ -218,6 +238,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     elif next_action == "prepare_erg004_runtime_ticket_review":
         action_commands = POST_ERG003_COMMANDS
         handoff_artifacts = POST_ERG003_ARTIFACTS
+        recommended_send_set = ["ERG-004"]
+        recommended_next_enterprise_review = "ERG-004"
+    elif next_action == "prepare_erg004_runtime_implementation_gate":
+        action_commands = RUNTIME_GATE_COMMANDS
+        handoff_artifacts = RUNTIME_GATE_ARTIFACTS
         recommended_send_set = ["ERG-004"]
         recommended_next_enterprise_review = "ERG-004"
     else:
@@ -303,6 +328,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "response_present_count": response_present_count,
         "closure_ready_count": closure_ready_count,
         "dual_response_disposition_recorded": disposition_recorded,
+        "runtime_ticket_internal_review_recorded": internal_review_recorded,
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": NEXT_AFTER_SEND_COMMANDS,
@@ -357,12 +383,18 @@ def render_report(report: dict[str, Any]) -> str:
 
 
 def _next_action(
-    response_present_count: int, closure_ready_count: int, *, disposition_recorded: bool
+    response_present_count: int,
+    closure_ready_count: int,
+    *,
+    disposition_recorded: bool,
+    internal_review_recorded: bool,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if internal_review_recorded:
+        return "prepare_erg004_runtime_implementation_gate"
     if disposition_recorded:
         return "prepare_erg004_runtime_ticket_review"
     return "send_erg_003_and_erg_002"
@@ -377,6 +409,18 @@ def _dual_response_disposition_recorded(repo_root: Path) -> bool:
         and "EXT-MC-DISPLAY-001" in text
         and "runtime importer behavior" in text
         and "live VM/container inspection" in text
+    )
+
+
+def _runtime_ticket_internal_review_recorded(repo_root: Path) -> bool:
+    path = repo_root / "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md"
+    text = _read(path)
+    return (
+        "approve_internal_runtime_ticket_review" in text
+        and "Critical/high findings: none." in text
+        and "The next allowed action is to prepare a separate explicit runtime implementation gate."
+        in text
+        and "make sandbox-vm-live-poc-runtime-ticket-internal-review-check" in text
     )
 
 
