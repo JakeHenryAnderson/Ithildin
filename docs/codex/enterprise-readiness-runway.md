@@ -124,6 +124,9 @@ Current readiness evidence:
 - the VM-first implementation-planning packet in
   [sandbox-vm-live-poc-implementation-plan.md](sandbox-vm-live-poc-implementation-plan.md),
   validated with `make sandbox-vm-live-poc-implementation-plan-check`;
+- the runtime-proposal packet in
+  [sandbox-vm-live-poc-runtime-proposal.md](sandbox-vm-live-poc-runtime-proposal.md),
+  validated with `make sandbox-vm-live-poc-runtime-proposal-check`;
 - the live POC external response intake template in
   [sandbox-vm-live-poc-external-response-intake.md](sandbox-vm-live-poc-external-response-intake.md),
   validated with `make sandbox-vm-live-poc-external-response-intake-check`.
@@ -719,6 +722,13 @@ The live sandbox/VM POC implementation plan is
 validated with `make sandbox-vm-live-poc-implementation-plan-check`. It defines only operator-managed
 VM profile, evidence, cleanup/failure transcript, and source-review planning work; runtime
 implementation still requires a later explicit implementation gate and external/source review.
+
+The live sandbox/VM POC runtime proposal is
+[sandbox-vm-live-poc-runtime-proposal.md](sandbox-vm-live-poc-runtime-proposal.md) and is validated
+with `make sandbox-vm-live-poc-runtime-proposal-check`. It defines only a descriptor/correlation
+proposal for later source review; runtime implementation, live VM/container inspection, lifecycle
+control, local model invocation, Mission Control runtime authority, trusted-host promotion, host
+writes, network expansion, and new governed tool powers remain blocked.
 
 The live sandbox/VM POC response kit is
 [sandbox-vm-live-poc-response-kit.md](sandbox-vm-live-poc-response-kit.md) and is generated with

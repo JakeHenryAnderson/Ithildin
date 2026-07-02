@@ -845,9 +845,16 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-implementation-plan-check` - validate the VM-first, operator-managed
   implementation-planning packet for `ERG-004`; container profiles remain deferred and no runtime
   behavior is approved until a later explicit implementation and external/source-review gate.
+- `make sandbox-vm-live-poc-runtime-proposal-check` - validate the VM-first, operator-managed
+  runtime proposal for `ERG-004`; this permits review of a later runtime-ticket draft only and does
+  not approve runtime implementation, live VM/container inspection, lifecycle control, local model
+  invocation, Mission Control runtime behavior, or new tool powers.
 - `make sandbox-vm-live-poc-implementation-review-bundle` - generate the external-review packet
   for the ERG-004 implementation-planning lane, asking whether a later runtime proposal may be
   prepared while still blocking runtime behavior.
+- `make sandbox-vm-live-poc-runtime-proposal-review-bundle` - generate the external-review packet
+  for the ERG-004 runtime proposal, asking whether a bounded runtime implementation ticket may be
+  drafted for a later gate while still blocking runtime behavior.
 - `make sandbox-vm-static-preflight-disposition-record-skeleton-check` - validate the `ERG-003`
   static preflight disposition-record skeleton for a future source-reviewed local-preview static
   preflight disposition while keeping `ERG-004`, live sandbox/VM work, runtime implementation, and
@@ -1972,6 +1979,12 @@ and is checked with `make sandbox-vm-live-poc-implementation-plan-check`; it def
 operator-managed VM profile, evidence, cleanup/failure transcript, and source-review planning work.
 It does not approve live VM/container inspection, local model invocation, Mission Control runtime
 behavior, sandbox orchestration, trusted-host promotion, or runtime implementation.
+The live sandbox/VM POC runtime proposal is
+[docs/codex/sandbox-vm-live-poc-runtime-proposal.md](docs/codex/sandbox-vm-live-poc-runtime-proposal.md)
+and is checked with `make sandbox-vm-live-poc-runtime-proposal-check`; it defines only a future
+descriptor/correlation proposal for review and keeps runtime implementation, live VM/container
+inspection, VM/container lifecycle control, local model invocation, Mission Control runtime
+authority, trusted-host promotion, host writes, network expansion, and new powers blocked.
 The live sandbox/VM POC response dry run is
 [docs/codex/sandbox-vm-live-poc-response-dry-run.md](docs/codex/sandbox-vm-live-poc-response-dry-run.md)
 and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily exercises favorable
@@ -1993,7 +2006,12 @@ The live sandbox/VM POC implementation-review bundle is
 [docs/codex/sandbox-vm-live-poc-implementation-review-bundle.md](docs/codex/sandbox-vm-live-poc-implementation-review-bundle.md)
 and is generated with `make sandbox-vm-live-poc-implementation-review-bundle`; it packages the
 VM-first planning record, active-route clarity, static fixture plan, negative transcript plan, and
-command evidence for external review before any runtime proposal is allowed.
+command evidence that supported preparing the later runtime proposal.
+The live sandbox/VM POC runtime-proposal review bundle is
+[docs/codex/sandbox-vm-live-poc-runtime-proposal-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-proposal-review-bundle.md)
+and is generated with `make sandbox-vm-live-poc-runtime-proposal-review-bundle`; it asks whether a
+bounded runtime implementation ticket may be drafted for a later gate and does not approve runtime
+implementation.
 The internal source-review pass is
 [docs/codex/v3-sandbox-vm-static-preflight-internal-review.md](docs/codex/v3-sandbox-vm-static-preflight-internal-review.md);
 it records the CLI-only fixture preflight runner as locally reviewed after tightening echoed label

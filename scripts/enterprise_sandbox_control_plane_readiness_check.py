@@ -120,7 +120,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "erg_002_status": "planning_only",
         "erg_003_status": "closed_local_preview_static_preflight",
         "erg_003_disposition_recorded": True,
-        "erg_004_status": "blocked",
+        "erg_004_status": "ready_for_runtime_proposal_review",
         "erg_005_status": "blocked",
         "runtime_changes_allowed": False,
         "mission_control_runtime_allowed": False,
