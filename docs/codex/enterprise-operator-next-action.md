@@ -36,7 +36,11 @@ This is runtime implementation-gate preparation only. It does not approve runtim
 live VM/container inspection, VM/container lifecycle management, local model invocation, sandbox
 orchestration, Mission Control runtime behavior, trusted-host promotion, or new governed tool powers.
 
-With no real enterprise reviewer responses present, the next allowed operator action is:
+## Historical Send Fallback
+
+If the dual-response disposition record or runtime-ticket internal review is absent in a future
+fresh checkout, the command may fall back to the historical ERG-003/ERG-002 send route. That is not
+the current route after the recorded dispositions. In that fallback state, the operator action is:
 
 1. Refresh the current local evidence:
 

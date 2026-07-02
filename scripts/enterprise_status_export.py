@@ -66,6 +66,7 @@ def main() -> int:
         generated = _build_artifacts(report)
         failures = list(report["failures"])
         failures.extend(_validate_generated_artifacts(generated))
+        failures.extend(_validate_persisted_export(args.output_dir, report))
         if failures:
             for failure in failures:
                 print(f"enterprise status export failed: {failure}", file=sys.stderr)
@@ -447,6 +448,46 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     return failures
 
 
+def _validate_persisted_export(output_dir: Path, report: dict[str, Any]) -> list[str]:
+    if not output_dir.exists():
+        return []
+    failures: list[str] = []
+    markdown_path = output_dir / MARKDOWN_NAME
+    json_path = output_dir / JSON_NAME
+    hash_path = output_dir / HASH_NAME
+    for path in [markdown_path, json_path, hash_path]:
+        if not path.exists():
+            failures.append(f"persisted enterprise status export missing: {path.name}")
+    if failures:
+        return failures
+
+    markdown = markdown_path.read_text(encoding="utf-8")
+    try:
+        persisted_json = json.loads(json_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        failures.append(f"persisted enterprise status JSON is invalid: {exc}")
+        persisted_json = {}
+    try:
+        persisted_hashes = json.loads(hash_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        failures.append(f"persisted enterprise status hash manifest is invalid: {exc}")
+        persisted_hashes = {}
+
+    current_commit = report["git"]["commit"]
+    current_action = report["next_action"]
+    if f"commit: `{current_commit}`" not in markdown:
+        failures.append("persisted enterprise status markdown commit is stale")
+    if f"next_action: `{current_action}`" not in markdown:
+        failures.append("persisted enterprise status markdown next_action is stale")
+    if persisted_json.get("git", {}).get("commit") != current_commit:
+        failures.append("persisted enterprise status JSON commit is stale")
+    if persisted_json.get("next_action") != current_action:
+        failures.append("persisted enterprise status JSON next_action is stale")
+    if not _artifact_hashes_match_files(output_dir, persisted_hashes):
+        failures.append("persisted enterprise status artifact hashes do not match files")
+    return failures
+
+
 def _artifact_hashes(output_dir: Path) -> dict[str, Any]:
     artifacts = []
     for path in sorted(output_dir.rglob("*")):
@@ -466,6 +507,28 @@ def _artifact_hashes(output_dir: Path) -> dict[str, Any]:
         "artifact_count": len(artifacts),
         "hash_manifest_self_hashed": False,
     }
+
+
+def _artifact_hashes_match_files(output_dir: Path, manifest: dict[str, Any]) -> bool:
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, list):
+        return False
+    expected = {
+        str(item.get("path")): item
+        for item in artifacts
+        if isinstance(item, dict) and item.get("path")
+    }
+    actual = _artifact_hashes(output_dir).get("artifacts", [])
+    actual_by_path = {str(item["path"]): item for item in actual}
+    if set(expected) != set(actual_by_path):
+        return False
+    for path, expected_item in expected.items():
+        actual_item = actual_by_path[path]
+        if expected_item.get("sha256") != actual_item.get("sha256"):
+            return False
+        if expected_item.get("bytes") != actual_item.get("bytes"):
+            return False
+    return manifest.get("hash_manifest_self_hashed") is False
 
 
 def _git_state(repo_root: Path) -> dict[str, Any]:
