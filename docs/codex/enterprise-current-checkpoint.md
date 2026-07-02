@@ -24,8 +24,32 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - Runtime changes remain blocked outside already-approved local-preview tool behavior.
 - Public/security-product positioning remains blocked.
 - Enterprise response evidence is not present yet.
+- The active post-disposition route is now `ERG-004`: prepare the runtime gate-readiness review
+  checkpoint without approving runtime implementation.
+
+Validate the active ERG-004 gate-preparation surface with:
+
+```sh
+make sandbox-vm-live-poc-runtime-ticket-internal-review-check
+make sandbox-vm-live-poc-runtime-implementation-gate-check
+make sandbox-vm-live-poc-runtime-descriptor-contract-check
+make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
+make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
+make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
+```
+
+Future favorable `EXT-LIVE-GATE-###` dispositions must use
+`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`. That skeleton provides a
+landing zone for descriptor-only implementation-planning approval and still does not approve runtime
+implementation, live VM/container inspection, sandbox orchestration, Mission Control runtime
+behavior, local model invocation, host writes, trusted-host promotion, network expansion, API/MCP
+profile loading, or new governed tool powers.
 
 ## Recommended Next Actions
+
+The historical dual-send artifacts remain below for lineage and response-intake fallback. They are
+not the active post-disposition route while `make enterprise-operator-next-action` reports
+`prepare_erg004_runtime_implementation_gate`.
 
 The current recommended enterprise handoff set is:
 

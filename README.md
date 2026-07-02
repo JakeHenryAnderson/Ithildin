@@ -873,6 +873,9 @@ checked with `make control-mapping-readiness`.
   whether a later descriptor-only runtime implementation sprint may be planned while keeping runtime
   behavior, live VM/container inspection, local model invocation, Mission Control runtime authority,
   host writes, network expansion, API/MCP profile loading, and new tool powers blocked.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check` - validate the
+  design-only decision-record skeleton for a future favorable `EXT-LIVE-GATE-###` disposition; this
+  gives the runtime gate-readiness packet a landing zone without approving runtime implementation.
 - `make sandbox-vm-live-poc-runtime-ticket-review-bundle` - generate the focused review packet for
   the draft runtime ticket without approving runtime implementation or any live VM/container,
   Mission Control, local-model, host-write, network, or new-tool authority.
@@ -2046,6 +2049,11 @@ The focused runtime gate-readiness review bundle is
 and is generated with `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle`; it packages
 the implementation gate draft, descriptor contract, internal review evidence, and command evidence
 for review while still keeping runtime implementation and all live VM/container behavior blocked.
+The runtime gate-readiness decision-record skeleton is
+[docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md)
+and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check`;
+it defines the only future record shape for a favorable `EXT-LIVE-GATE-###` disposition while still
+keeping runtime implementation and all live VM/container behavior blocked.
 The live sandbox/VM POC response dry run is
 [docs/codex/sandbox-vm-live-poc-response-dry-run.md](docs/codex/sandbox-vm-live-poc-response-dry-run.md)
 and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily exercises favorable

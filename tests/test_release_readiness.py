@@ -299,6 +299,7 @@ from scripts import (
     sandbox_vm_live_poc_response_kit,
     sandbox_vm_live_poc_runtime_descriptor_contract_check,
     sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
+    sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
     sandbox_vm_live_poc_runtime_gate_readiness_review_bundle,
     sandbox_vm_live_poc_runtime_implementation_gate_check,
     sandbox_vm_live_poc_runtime_proposal_check,
@@ -13873,6 +13874,145 @@ def test_sandbox_vm_live_poc_runtime_gate_readiness_review_bundle_is_wired(
         in review_docs.REVIEW_DOCS
     )
     assert "Sandbox/VM Live POC Runtime Gate Readiness Review Bundle" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_is_wired() -> None:
+    report = (
+        sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check.build_report(
+            Path.cwd()
+        )
+    )
+    doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    active_route = Path("docs/codex/enterprise-active-route-clarity.md").read_text(
+        encoding="utf-8"
+    )
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    execution_board = Path("docs/codex/technical-mvp-execution-board.md").read_text(
+        encoding="utf-8"
+    )
+    gate_doc = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md"
+    ).read_text(encoding="utf-8")
+    bundle_doc = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "ready_for_runtime_implementation_gate_review"
+    assert (
+        report["allowed_future_status"]
+        == "ready_for_descriptor_only_runtime_implementation_planning"
+    )
+    assert report["finding_namespace"] == "EXT-LIVE-GATE-###"
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["descriptor_only_planning_after_favorable_review_allowed"] is True
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        (
+            "Status: design-only decision-record skeleton for the `ERG-004` "
+            "runtime gate-readiness review."
+        ),
+        "Current governed tool count: `24`.",
+        "Current `ERG-004` status: `ready_for_runtime_implementation_gate_review`.",
+        "approved_for_descriptor_only_runtime_implementation_planning",
+        (
+            "ERG-004: ready_for_runtime_implementation_gate_review -> "
+            "ready_for_descriptor_only_runtime_implementation_planning"
+        ),
+        "Runtime behavior remains blocked.",
+        "Runtime surfaces touched: none.",
+        "Tool count impact: none; remains `24`.",
+        "Required reviewed commit:",
+        "Required reviewed packet hash:",
+        "Escalate to High review first",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "live VM/container inspection",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "trusted-host promotion",
+        "host writes",
+        "network expansion",
+        "API/MCP profile loading",
+        "SIEM adapter runtime behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "Mission Control runtime behavior is approved",
+        "local model invocation is approved",
+        "trusted-host promotion is approved",
+        "host writes are approved",
+        "new governed tool powers are approved",
+        "ERG-004 is closed",
+    ]:
+        assert forbidden not in doc
+    assert (
+        "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check"
+        in readme
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check"
+        in release_check_body
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "Sandbox/VM Live POC Runtime Gate Readiness Decision Record Skeleton"
+        in review_index
+    )
+    for source in [active_route, current_checkpoint, execution_board, gate_doc, bundle_doc]:
+        assert (
+            "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+            in source
+        )
 
 
 def test_sandbox_vm_live_poc_runtime_ticket_internal_review_is_wired() -> None:

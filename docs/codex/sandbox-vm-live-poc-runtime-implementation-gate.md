@@ -60,6 +60,8 @@ mount posture, local model startup, and file transfer as operator-managed and op
 A future runtime implementation sprint must add or update all of these before any runtime claim:
 
 - runtime implementation decision document;
+- `sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md` disposition record
+  evidence, if a favorable `EXT-LIVE-GATE-###` review is used to start implementation planning;
 - descriptor schema contract;
 - descriptor validation test fixture pack;
 - cleanup and failure transcript hash contract;
@@ -146,6 +148,7 @@ This gate draft is complete when:
 - `make sandbox-vm-live-poc-runtime-implementation-gate-check` passes;
 - `make sandbox-vm-live-poc-runtime-descriptor-contract-check` passes;
 - `make sandbox-vm-live-poc-runtime-ticket-internal-review-check` passes;
+- `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check` passes;
 - `make no-new-powers-guardrail` passes;
 - `make tool-surface-invariant-gate` passes;
 - `make release-check` passes;
