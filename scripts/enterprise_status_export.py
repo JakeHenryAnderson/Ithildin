@@ -424,6 +424,7 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         "`make sandbox-vm-live-poc-runtime-descriptor-contract-check`",
         "`make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check`",
         "`make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check`",
+        "`make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run`",
         "handoff_artifacts:",
         "sandbox-vm-live-poc-runtime-ticket-internal-review.md",
         "sandbox-vm-live-poc-runtime-implementation-gate.md",
@@ -452,6 +453,7 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"make sandbox-vm-live-poc-runtime-descriptor-contract-check"',
         '"make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check"',
         '"make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check"',
+        '"make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:

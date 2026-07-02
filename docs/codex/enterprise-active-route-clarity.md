@@ -27,6 +27,7 @@ Current runtime gate-readiness packet:
 
 Future favorable gate-readiness dispositions must use
 `sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md` and
+`sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md` before a later
 `sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`; those records keep runtime
 implementation blocked until a separate implementation sprint and source-review gate exist.
 

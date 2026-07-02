@@ -24,6 +24,7 @@ Use this skeleton only after:
 - `make sandbox-vm-live-poc-runtime-descriptor-contract-check` passes;
 - `make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check` passes;
 - `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check` passes;
+- `make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run` passes;
 - a future `EXT-LIVE-GATE-###` source/packet review explicitly says a descriptor-only runtime
   implementation sprint may be planned later;
 - no critical/high `EXT-LIVE-GATE-###` finding is open;
@@ -93,6 +94,8 @@ Runtime behavior remains blocked.
   `var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review`.
 - Required response intake:
   `sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md`.
+- Required response dry run:
+  `sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md`.
 - Required reviewed commit: the reviewed commit in the packet must match the current committed
   checkpoint being dispositioned.
 - Required reviewed packet hash: artifact hashes must match the generated packet files.
@@ -101,6 +104,7 @@ Runtime behavior remains blocked.
 - Required negative finding state: no critical/high `EXT-LIVE-GATE-###` finding is open.
 - Required command evidence:
   `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`,
+  `make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run`,
   `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check`,
   `make sandbox-vm-live-poc-runtime-implementation-gate-check`,
   `make sandbox-vm-live-poc-runtime-descriptor-contract-check`,
@@ -127,6 +131,7 @@ Run:
 ```sh
 make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
 make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
+make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
 ```
 
 These checks must remain green before `make release-check` can pass.

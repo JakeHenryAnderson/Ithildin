@@ -36,16 +36,18 @@ make sandbox-vm-live-poc-runtime-descriptor-contract-check
 make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
 make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check
+make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
 make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
 ```
 
 Future favorable `EXT-LIVE-GATE-###` dispositions must use
 `sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md` and
-`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`. Those records provide a
-landing zone for descriptor-only implementation-planning approval and still do not approve runtime
-implementation, live VM/container inspection, sandbox orchestration, Mission Control runtime
-behavior, local model invocation, host writes, trusted-host promotion, network expansion, API/MCP
-profile loading, or new governed tool powers.
+`sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md` before any later
+`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md` record is considered.
+Those records provide a landing zone for descriptor-only implementation-planning approval and still
+do not approve runtime implementation, live VM/container inspection, sandbox orchestration, Mission
+Control runtime behavior, local model invocation, host writes, trusted-host promotion, network
+expansion, API/MCP profile loading, or new governed tool powers.
 
 ## Recommended Next Actions
 

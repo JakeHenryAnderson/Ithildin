@@ -28,6 +28,7 @@ REQUIRED_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
     "EXT-LIVE-GATE-###",
     "approved_for_descriptor_only_runtime_implementation_planning",
     (

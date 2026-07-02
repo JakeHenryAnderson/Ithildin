@@ -877,6 +877,9 @@ checked with `make control-mapping-readiness`.
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or
   approve live VM/container behavior.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run` - exercise favorable and
+  blocked `EXT-LIVE-GATE-###` response fixtures without recording external review, mutating
+  findings, closing `ERG-004`, or approving runtime behavior.
 - `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check` - validate the
   design-only decision-record skeleton for a future favorable `EXT-LIVE-GATE-###` disposition; this
   gives the runtime gate-readiness packet a landing zone without approving runtime implementation.
@@ -2058,6 +2061,11 @@ The runtime gate-readiness response intake is
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`; it
 defines the normalization area and future response requirements for `EXT-LIVE-GATE-###` reviews
 without mutating findings, closing `ERG-004`, or approving runtime behavior.
+The runtime gate-readiness response dry run is
+[docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md)
+and is exercised with `make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run`; it checks
+favorable and blocked fixtures while restoring the ignored normalized-response path and preserving
+all runtime blocks.
 The runtime gate-readiness decision-record skeleton is
 [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md)
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check`;

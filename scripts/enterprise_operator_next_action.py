@@ -59,6 +59,7 @@ RUNTIME_GATE_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
 ]
 
 SEND_ARTIFACTS = [
@@ -190,6 +191,7 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",

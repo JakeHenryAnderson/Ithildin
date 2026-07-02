@@ -300,6 +300,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_contract_check,
     sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
     sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
+    sandbox_vm_live_poc_runtime_gate_readiness_response_dry_run,
     sandbox_vm_live_poc_runtime_gate_readiness_response_intake_check,
     sandbox_vm_live_poc_runtime_gate_readiness_review_bundle,
     sandbox_vm_live_poc_runtime_implementation_gate_check,
@@ -1326,6 +1327,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
         "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
     ]
 
 
@@ -2542,6 +2544,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
         "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -6205,6 +6208,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
         "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
     ]
     assert report["next_after_send_commands"] == [
         "make enterprise-review-send-receipt-copy",
@@ -14146,6 +14150,119 @@ def test_sandbox_vm_live_poc_runtime_gate_readiness_response_intake_is_wired() -
         ]
         == "LIVE-GATE"
     )
+
+
+def test_sandbox_vm_live_poc_runtime_gate_readiness_response_dry_run_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_gate_readiness_response_dry_run.run_dry_run(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    active_route = Path("docs/codex/enterprise-active-route-clarity.md").read_text(
+        encoding="utf-8"
+    )
+    bundle_doc = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md"
+    ).read_text(encoding="utf-8")
+    skeleton_doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-live-poc-runtime-gate-readiness"
+    assert report["finding_namespace"] == "EXT-LIVE-GATE-###"
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_004_closed"] is False
+    assert report["decision_record_recorded"] is False
+    assert report["descriptor_only_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["response_restored"] is True
+    expected_cases = {
+        "absent_response_keeps_intake_valid",
+        "absent_response_keeps_planning_blocked",
+        "favorable_response_shape_intakes",
+        "packet_only_response_not_decision_ready",
+        "docs_only_response_not_decision_ready",
+        "missing_outcome_not_decision_ready",
+        "critical_high_finding_not_decision_ready",
+        "bad_hash_rejected",
+        "wrong_namespace_rejected",
+        "secret_marker_rejected",
+        "missing_explicit_finding_statement_rejected",
+    }
+    assert set(report["cases"]) == expected_cases
+    assert all(report["cases"].values())
+    for phrase in [
+        "Status: temporary fixture dry run for `ERG-004` runtime gate-readiness response intake.",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+        "favorable and blocked fixtures",
+        "response path is restored",
+        "descriptor_only_planning_allowed: false",
+        "runtime_implementation_allowed: false",
+        "live_vm_inspection_allowed: false",
+        "sandbox_orchestration_allowed: false",
+        "public_security_product_positioning_allowed: false",
+    ]:
+        assert phrase in doc
+    assert (
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run"
+        in readme
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run"
+        in release_check_body
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "Sandbox/VM Live POC Runtime Gate Readiness Response Dry Run"
+        in review_index
+    )
+    for source in [checkpoint, active_route, bundle_doc, skeleton_doc]:
+        assert (
+            "sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md"
+            in source
+        )
 
 
 def test_sandbox_vm_live_poc_runtime_ticket_internal_review_is_wired() -> None:
