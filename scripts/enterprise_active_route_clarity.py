@@ -26,7 +26,7 @@ DOC_TITLE = "Enterprise Active Route Clarity"
 TARGET = "enterprise-active-route-clarity"
 ACTIVE_SEND_SET = ["ERG-004"]
 HISTORICAL_SEND_SET = ["ERG-003", "ERG-002"]
-EXPECTED_ACTION = "prepare_post_erg003_live_poc_decision"
+EXPECTED_ACTION = "prepare_erg004_runtime_ticket_review"
 
 REQUIRED_DOC_PHRASES = [
     "Status: checked active-route clarification for the current enterprise review path.",
@@ -34,7 +34,7 @@ REQUIRED_DOC_PHRASES = [
     "Current selected capability: `not selected`.",
     "make enterprise-active-route-clarity",
     "The active post-disposition route is `ERG-004`.",
-    "Current expected action: `prepare_post_erg003_live_poc_decision`.",
+    "Current expected action: `prepare_erg004_runtime_ticket_review`.",
     "Current active send set: `ERG-004`.",
     "Older ERG-003/ERG-002 generated packet surfaces remain in the repository for provenance",
     "Historical dual-send route: `ERG-003`, then `ERG-002`.",

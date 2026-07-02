@@ -11,15 +11,15 @@ Current governed tool count: `24`
 Current selected capability: `not selected`
 Latest implemented tool: `sandbox.artifact.write_text`
 Technical MVP state: `operator_trial_observed`
-Current enterprise next action: `prepare_post_erg003_live_poc_decision`
+Current enterprise next action: `prepare_erg004_runtime_ticket_review`
 Active resume checkpoint: `ENT-001`
 
 ## Active Resume Scope
 
-The paused umbrella goal resumes through the post-`ENT-001` decision-prep slice only: prepare the
-`ERG-004` live sandbox/VM proof-of-concept decision packet after the recorded `ERG-003` and
-`ERG-002` dispositions. This resume slice does not add runtime behavior, implement Mission Control
-integration, start sandbox/VM control, or select a new capability.
+The paused umbrella goal resumes through the post-`ENT-001` runtime-ticket review slice only:
+prepare the `ERG-004` live sandbox/VM proof-of-concept runtime-ticket review packet after the
+recorded `ERG-003` and `ERG-002` dispositions. This resume slice does not add runtime behavior,
+implement Mission Control integration, start sandbox/VM control, or select a new capability.
 
 ## Boundary
 
@@ -48,7 +48,7 @@ promotion engine, public/security-product release, or broad write platform.
 
 | Batch | Status | Subtasks | Fast gate | Escalation gate |
 | --- | --- | --- | --- | --- |
-| Prepare `ERG-004` live-POC decision packet | active | Verify the post-`ERG-003` handoff, prerequisite disposition dry-run, decision packet, and external-review bundle. | `make sandbox-vm-live-poc-decision-packet-check` | `make sandbox-vm-live-poc-external-review-bundle-check` |
+| Prepare `ERG-004` live-POC runtime-ticket review packet | active | Verify the runtime-ticket draft and focused review bundle while keeping runtime blocked. | `make sandbox-vm-live-poc-runtime-ticket-check` | `make sandbox-vm-live-poc-runtime-ticket-review-bundle-check` |
 | Intake future `ERG-004` response | blocked on external response | Paste raw response, run paste preflight, normalize fixture/dry-run, run lane closure gates. | `make enterprise-response-now` | lane-specific closure gate |
 | Track `EXT-MC-DISPLAY-001` | later advisory | Improve Mission Control launch-bundle artifact coverage before implementation, without blocking design-only continuation. | `make reviewer-findings-check` | `make review-findings-summary` |
 

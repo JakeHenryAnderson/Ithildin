@@ -26,7 +26,7 @@ DOC_TITLE = "Enterprise Review Send Preflight"
 CURRENT_SEND_SET = ["ERG-003", "ERG-002"]
 EXPECTED_ACTION = "send_erg_003_and_erg_002"
 POST_DISPOSITION_SEND_SET = ["ERG-004"]
-POST_DISPOSITION_ACTION = "prepare_post_erg003_live_poc_decision"
+POST_DISPOSITION_ACTION = "prepare_erg004_runtime_ticket_review"
 ALLOWED_ACTIONS = {EXPECTED_ACTION, POST_DISPOSITION_ACTION}
 BOUNDARY_FLAGS = {
     "records_external_review": False,

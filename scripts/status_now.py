@@ -137,12 +137,11 @@ def _recommended_next_commands(
             "make enterprise-response-now after reviewer responses arrive",
             "make enterprise-response-paste-preflight after reviewer responses arrive",
         ]
-    if enterprise_next.get("next_action") == "prepare_post_erg003_live_poc_decision":
+    if enterprise_next.get("next_action") == "prepare_erg004_runtime_ticket_review":
         return [
-            "make sandbox-vm-live-poc-post-erg003-handoff-check",
-            "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
-            "make sandbox-vm-live-poc-decision-packet-check",
-            "make sandbox-vm-live-poc-external-review-bundle-check",
+            "make sandbox-vm-live-poc-runtime-ticket-check",
+            "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
+            "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
         ]
     return ["make dev-check"]
 

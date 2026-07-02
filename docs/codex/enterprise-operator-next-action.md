@@ -24,18 +24,17 @@ the heavier validation artifacts.
 ## Current Expected Action
 
 If the dual-response disposition record is present, the next allowed operator action is to prepare
-the still-blocked `ERG-004` live sandbox/VM POC decision lane:
+the still-blocked `ERG-004` live sandbox/VM POC runtime-ticket review lane:
 
 ```sh
-make sandbox-vm-live-poc-post-erg003-handoff-check
-make sandbox-vm-live-poc-prerequisite-disposition-dry-run
-make sandbox-vm-live-poc-decision-packet-check
-make sandbox-vm-live-poc-external-review-bundle-check
+make sandbox-vm-live-poc-runtime-ticket-check
+make sandbox-vm-live-poc-runtime-ticket-review-bundle
+make sandbox-vm-live-poc-runtime-ticket-review-bundle-check
 ```
 
-This is decision-packet preparation only. It does not approve live VM/container inspection, VM/container
-lifecycle management, local model invocation, sandbox orchestration, Mission Control runtime
-behavior, trusted-host promotion, or new governed tool powers.
+This is runtime-ticket review preparation only. It does not approve runtime implementation, live
+VM/container inspection, VM/container lifecycle management, local model invocation, sandbox
+orchestration, Mission Control runtime behavior, trusted-host promotion, or new governed tool powers.
 
 With no real enterprise reviewer responses present, the next allowed operator action is:
 

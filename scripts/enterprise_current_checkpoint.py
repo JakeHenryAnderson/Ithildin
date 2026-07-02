@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-current-checkpoint.md"
 DOC_TITLE = "Enterprise Current Checkpoint"
 PRE_DISPOSITION_ACTION = "send_erg_003_and_erg_002"
-POST_DISPOSITION_ACTION = "prepare_post_erg003_live_poc_decision"
+POST_DISPOSITION_ACTION = "prepare_erg004_runtime_ticket_review"
 ALLOWED_NEXT_ACTIONS = {PRE_DISPOSITION_ACTION, POST_DISPOSITION_ACTION}
 
 REQUIRED_PHRASES = [

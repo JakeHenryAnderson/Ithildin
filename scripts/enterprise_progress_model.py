@@ -25,15 +25,15 @@ DOC_REL = "docs/codex/enterprise-progress-model.md"
 DOC_TITLE = "Ithildin Enterprise Progress Model"
 ALLOWED_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
-    "prepare_post_erg003_live_poc_decision",
+    "prepare_erg004_runtime_ticket_review",
 }
 
 REQUIRED_PHRASES = [
     "Status: checked progress model",
     "Governed tool count: `24`",
     "Current selected capability: `not selected`",
-    "Recommended next enterprise review: `ERG-003`",
-    "Recommended send set: `ERG-003` then `ERG-002`",
+    "Recommended next enterprise review: `ERG-004`",
+    "Recommended send set: `ERG-004`",
     "Enterprise response evidence present: `0`",
     "Enterprise closure-ready lanes: `0`",
     "Capability expansion: blocked",
@@ -52,13 +52,9 @@ REQUIRED_PHRASES = [
     "Checkpoint D: Live Sandbox/VM Proof Of Concept",
     "Checkpoint E: Trusted-Host Promotion",
     "Checkpoint F: Enterprise Architecture Lanes",
-    "make enterprise-dual-response-inbox",
-    "make enterprise-response-waiting-room",
-    "make enterprise-response-paste-preflight",
-    "make enterprise-response-inbox",
-    "make enterprise-response-status-board",
-    "make enterprise-response-intake-drill",
-    "make enterprise-response-application-protocol",
+    "make sandbox-vm-live-poc-runtime-ticket-check",
+    "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
+    "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
     "Do not manually promote a lane",
 ]
 

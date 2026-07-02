@@ -25,9 +25,10 @@ properties today.
 
 ## Current Resume Scope
 
-The current resumed goal is limited to post-`ENT-001` decision prep: use the recorded `ERG-003` and
-`ERG-002` dispositions to prepare the `ERG-004` live sandbox/VM proof-of-concept decision packet.
-Live sandbox/VM execution, Mission Control implementation, and capability selection remain blocked.
+The current resumed goal is limited to post-`ENT-001` runtime-ticket review: use the recorded
+`ERG-003` and `ERG-002` dispositions to review the draft `ERG-004` live sandbox/VM
+proof-of-concept runtime ticket. Live sandbox/VM execution, Mission Control implementation, and
+capability selection remain blocked.
 
 ## Enterprise Milestones
 
@@ -36,7 +37,7 @@ Live sandbox/VM execution, Mission Control implementation, and capability select
 | `ENT-001` | Send current external review packets | done | Fresh `review-candidate`, valid send package, valid receipt template. | `ERG-003` and `ERG-002` sent; send receipt filled and validated. | `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json` | response normalization and lane closure |
 | `ENT-002` | Close `ERG-003` static sandbox/VM preflight | done for static preflight | Raw `EXT-SVP-###` response pasted into ignored inbox. | Static preflight lane closed for local-preview planning. | `make enterprise-dual-response-disposition-record-check` | live VM/container execution |
 | `ENT-003` | Close `ERG-002` Mission Control display/import planning | done for design-only continuation | Raw `EXT-MC-DISPLAY-###` response pasted into ignored inbox. | Display/import planning disposition recorded; Mission Control implementation remains separate. | `make enterprise-dual-response-disposition-record-check` | Mission Control execution, policy, approval, or audit authority |
-| `ENT-004` | Stage 2 live sandbox/VM proof of concept | decision-prep active | Favorable `ERG-003` plus separate live POC decision record. | A small local agent/VM demonstration is specified, bounded, observed, and reviewable. | `make sandbox-vm-live-poc-decision-packet-check` | enterprise sandbox orchestration claims |
+| `ENT-004` | Stage 2 live sandbox/VM proof of concept | runtime-ticket review active | Favorable `ERG-003`, live POC decision record, implementation plan, runtime proposal, and draft runtime ticket. | A small local agent/VM demonstration is specified, bounded, observed, and reviewable. | `make sandbox-vm-live-poc-runtime-ticket-review-bundle-check` | enterprise sandbox orchestration claims |
 | `ENT-005` | Mission Control display/import implementation | blocked | Favorable `ERG-002` plus display-only implementation ticket. | Mission Control can display/import Ithildin status artifacts without polling or mutating Ithildin authority. | Mission Control-side acceptance plus Ithildin fixture checks | Mission Control runtime execution authority |
 | `ENT-006` | Trusted-host promotion design | blocked | Static/live sandbox evidence and promotion evidence contract reviewed. | Promotion state machine, negative fixtures, zone contract, and response kit dispositioned. | `make trusted-host-promotion-disposition-closure-check` | automatic promotion, overwrite/delete/move, broad host writes |
 | `ENT-007` | SIEM-shaped export adapter design | planning-only | Evidence schema, redaction rules, and incident reconstruction reviewed. | Export adapter architecture dispositioned without claiming custody-grade SIEM behavior. | `make siem-export-adapter-disposition-closure-check` | hosted SIEM integration or custody claims |

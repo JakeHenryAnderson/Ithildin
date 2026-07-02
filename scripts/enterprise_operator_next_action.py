@@ -48,10 +48,9 @@ RESPONSE_COMMANDS = [
 ]
 
 POST_ERG003_COMMANDS = [
-    "make sandbox-vm-live-poc-post-erg003-handoff-check",
-    "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
-    "make sandbox-vm-live-poc-decision-packet-check",
-    "make sandbox-vm-live-poc-external-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-ticket-check",
+    "make sandbox-vm-live-poc-runtime-ticket-review-bundle",
+    "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
 ]
 
 SEND_ARTIFACTS = [
@@ -130,14 +129,14 @@ POST_ERG003_ARTIFACTS = [
         "description": "committed ERG-003/ERG-002 response disposition record",
     },
     {
-        "label": "live_poc_post_erg003_handoff",
-        "path": "docs/codex/sandbox-vm-live-poc-post-erg003-handoff.md",
-        "description": "blocked live POC handoff map after static preflight disposition",
+        "label": "live_poc_runtime_ticket",
+        "path": "docs/codex/sandbox-vm-live-poc-runtime-ticket.md",
+        "description": "draft-only runtime ticket for a later implementation gate",
     },
     {
-        "label": "live_poc_decision_packet",
-        "path": "docs/codex/sandbox-vm-live-poc-decision-packet.md",
-        "description": "decision-only packet for later ERG-004 review",
+        "label": "live_poc_runtime_ticket_review_bundle",
+        "path": "var/review-packets/v3/sandbox-vm-live-poc-runtime-ticket-review",
+        "description": "focused review packet for the runtime-ticket draft",
     },
 ]
 
@@ -147,7 +146,7 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-operator-next-action",
     "With no real enterprise reviewer responses present",
     "If the dual-response disposition record is present",
-    "make sandbox-vm-live-poc-post-erg003-handoff-check",
+    "make sandbox-vm-live-poc-runtime-ticket-review-bundle-check",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
@@ -216,7 +215,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         handoff_artifacts = SEND_ARTIFACTS
         recommended_send_set = ["ERG-003", "ERG-002"]
         recommended_next_enterprise_review = "ERG-003"
-    elif next_action == "prepare_post_erg003_live_poc_decision":
+    elif next_action == "prepare_erg004_runtime_ticket_review":
         action_commands = POST_ERG003_COMMANDS
         handoff_artifacts = POST_ERG003_ARTIFACTS
         recommended_send_set = ["ERG-004"]
@@ -365,7 +364,7 @@ def _next_action(
     if response_present_count > 0:
         return "run_response_intake_preflight"
     if disposition_recorded:
-        return "prepare_post_erg003_live_poc_decision"
+        return "prepare_erg004_runtime_ticket_review"
     return "send_erg_003_and_erg_002"
 
 
