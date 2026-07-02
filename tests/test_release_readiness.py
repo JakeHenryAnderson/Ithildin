@@ -299,6 +299,7 @@ from scripts import (
     sandbox_vm_live_poc_response_kit,
     sandbox_vm_live_poc_runtime_proposal_check,
     sandbox_vm_live_poc_runtime_proposal_review_bundle,
+    sandbox_vm_live_poc_runtime_ticket_check,
     sandbox_vm_poc_review_packet,
     sandbox_vm_preflight_contract_check,
     sandbox_vm_profile_contract_check,
@@ -13557,6 +13558,46 @@ def test_sandbox_vm_live_poc_runtime_proposal_review_bundle_is_wired(
         in review_docs.REVIEW_DOCS
     )
     assert "Sandbox/VM Live POC Runtime Proposal Review Bundle" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_ticket_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_ticket_check.build_report(Path.cwd())
+    ticket = Path("docs/codex/sandbox-vm-live-poc-runtime-ticket.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == "ready_for_runtime_ticket_draft"
+    assert report["ticket_draft_allowed"] is True
+    assert report["runtime_proposal_valid"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["runtime_ticket_is_implementation_gate"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["external_review_required_before_runtime"] is True
+    assert report["closes_erg_004"] is False
+    assert "approve_draft_runtime_ticket" in ticket
+    assert "descriptor_source: operator_supplied" in ticket
+    assert "ithildin_lifecycle_control_performed: false" in ticket
+    assert "future runtime work remains blocked until a separate implementation gate" in ticket
+    assert "make sandbox-vm-live-poc-runtime-ticket-check" in readme
+    assert "sandbox-vm-live-poc-runtime-ticket-check:" in makefile
+    assert "sandbox-vm-live-poc-runtime-ticket-check" in release_check_body
+    assert "sandbox-vm-live-poc-runtime-ticket-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/sandbox-vm-live-poc-runtime-ticket.md" in docs_site
+    assert "docs/codex/sandbox-vm-live-poc-runtime-ticket.md" in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Runtime Ticket" in review_index
 
 
 def test_sandbox_vm_static_preflight_implementation_gate_is_wired() -> None:

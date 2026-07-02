@@ -220,6 +220,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-decision-record-check",
     "sandbox-vm-live-poc-implementation-plan-check",
     "sandbox-vm-live-poc-runtime-proposal-check",
+    "sandbox-vm-live-poc-runtime-ticket-check",
     "sandbox-vm-live-poc-response-dry-run",
     "sandbox-vm-live-poc-prerequisite-disposition-dry-run",
     "sandbox-vm-live-poc-response-kit-check",

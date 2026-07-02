@@ -402,6 +402,7 @@ REVIEW_DOCS = [
     "docs/codex/sandbox-vm-live-poc-decision-record.md",
     "docs/codex/sandbox-vm-live-poc-implementation-plan.md",
     "docs/codex/sandbox-vm-live-poc-runtime-proposal.md",
+    "docs/codex/sandbox-vm-live-poc-runtime-ticket.md",
     "docs/codex/sandbox-vm-live-poc-response-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-decision-packet.md",
