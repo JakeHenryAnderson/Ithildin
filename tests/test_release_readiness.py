@@ -298,6 +298,7 @@ from scripts import (
     sandbox_vm_live_poc_response_dry_run,
     sandbox_vm_live_poc_response_kit,
     sandbox_vm_live_poc_runtime_descriptor_contract_check,
+    sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
     sandbox_vm_live_poc_runtime_implementation_gate_check,
     sandbox_vm_live_poc_runtime_proposal_check,
     sandbox_vm_live_poc_runtime_proposal_review_bundle,
@@ -13876,6 +13877,83 @@ def test_sandbox_vm_live_poc_runtime_descriptor_contract_is_wired() -> None:
     assert "sandbox-vm-live-poc-runtime-descriptor-contract-check" in release_check_body
     assert "sandbox-vm-live-poc-runtime-descriptor-contract-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_is_wired() -> None:
+    report = (
+        sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check.build_report(
+            Path.cwd()
+        )
+    )
+    doc = Path(
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["disposition"] == "approve_internal_descriptor_contract_checkpoint"
+    assert report["critical_high_findings"] == 0
+    assert report["medium_low_findings"] == 0
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["api_mcp_behavior_allowed"] is False
+    assert report["profile_loading_allowed"] is False
+    assert report["persisted_descriptor_state_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    assert report["next_gate_preparation_allowed"] is True
+    for phrase in [
+        "approve_internal_descriptor_contract_checkpoint",
+        "Critical/high findings: none.",
+        "Medium/low/documentation findings: none.",
+        "The next allowed action is to continue preparing ERG-004 implementation-gate evidence",
+        "does not approve:",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "API or MCP behavior is approved",
+        "live VM/container inspection is approved",
+        "sandbox orchestration is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert (
+        "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check"
+        in readme
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check"
+        in release_check_body
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md"
+        in docs_site
+    )
+    assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "Sandbox/VM Live POC Runtime Descriptor Contract Internal Review" in (
+        review_index
     )
 
 

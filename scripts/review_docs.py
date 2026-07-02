@@ -408,6 +408,7 @@ REVIEW_DOCS = [
     "docs/codex/sandbox-vm-live-poc-runtime-implementation-decision.md",
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract.md",
     "docs/codex/sandbox-vm-live-poc-runtime-negative-fixtures.md",
+    "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md",
     "docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md",
     "docs/codex/sandbox-vm-live-poc-response-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-prerequisite-disposition-dry-run.md",
