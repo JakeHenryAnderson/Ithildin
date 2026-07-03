@@ -168,6 +168,7 @@ def _recommended_next_commands(
             "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
             "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
             "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
+            "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
             "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
             "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
             "make no-new-powers-guardrail",

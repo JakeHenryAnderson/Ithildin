@@ -464,7 +464,10 @@ sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle:
 sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle.py --check
 
-.PHONY: sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
+.PHONY: sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
+sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check:
+	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_check.py
+
 sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle:
 	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle.py
 
@@ -1831,6 +1834,7 @@ release-check: sandbox-vm-live-poc-runtime-proposal-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-implementation-check
+release-check: sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
 release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check

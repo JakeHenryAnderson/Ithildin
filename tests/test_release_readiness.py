@@ -302,6 +302,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_check,
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_decision_check,
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_check,
     sandbox_vm_live_poc_runtime_descriptor_only_plan_check,
     sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle,
     sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle,
@@ -1340,6 +1341,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make no-new-powers-guardrail",
@@ -2580,6 +2582,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make no-new-powers-guardrail",
@@ -2598,6 +2601,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "live_poc_runtime_descriptor_only_implementation_ticket",
         "live_poc_runtime_descriptor_only_implementation_decision",
         "live_poc_runtime_descriptor_only_implementation",
+        "live_poc_runtime_descriptor_only_internal_source_review",
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
     ]
@@ -2607,6 +2611,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md",
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review",
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review",
     }
@@ -2677,6 +2682,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_descriptor_only_implementation_ticket",
         "live_poc_runtime_descriptor_only_implementation_decision",
         "live_poc_runtime_descriptor_only_implementation",
+        "live_poc_runtime_descriptor_only_internal_source_review",
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
     ]
@@ -6253,6 +6259,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make no-new-powers-guardrail",
@@ -6271,6 +6278,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "live_poc_runtime_descriptor_only_implementation_ticket",
         "live_poc_runtime_descriptor_only_implementation_decision",
         "live_poc_runtime_descriptor_only_implementation",
+        "live_poc_runtime_descriptor_only_internal_source_review",
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
     ]
@@ -15146,6 +15154,90 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle_is_wir
     assert doc_path in docs_site
     assert doc_path in review_docs.REVIEW_DOCS
     assert "Sandbox/VM Live POC Runtime Descriptor-Only Source Review Bundle" in review_index
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_is_wired() -> None:
+    report = (
+        sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_check.build_report(
+            Path.cwd()
+        )
+    )
+    doc_path = (
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md"
+    )
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    status_now = Path("scripts/status_now.py").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == (
+        "descriptor_only_runtime_implemented_internal_reviewed"
+    )
+    assert report["finding_namespace"] == "INT-LIVE-DESC-###"
+    assert report["blocking_findings_open"] is False
+    assert report["descriptor_only_internal_review_complete"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    assert report["external_source_disposition_required"] is True
+    for phrase in [
+        "Status: internal source review completed",
+        "Files Inspected",
+        "Claims Reviewed",
+        "No `INT-LIVE-DESC-###` findings were opened",
+        "external/source disposition remains pending",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "ERG-004 is closed",
+        "live VM/container inspection is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert (
+        "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check"
+        in readme
+    )
+    assert doc_path in readme
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check"
+        in release_check_body
+        or "release-check: "
+        "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert (
+        "Sandbox/VM Live POC Runtime Descriptor-Only Internal Source Review"
+        in review_index
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check"
+        in status_now
+    )
 
 
 def test_sandbox_vm_live_poc_runtime_implementation_gate_is_wired() -> None:

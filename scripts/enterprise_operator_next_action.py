@@ -77,6 +77,7 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make no-new-powers-guardrail",
@@ -302,6 +303,16 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
         ),
     },
     {
+        "label": "live_poc_runtime_descriptor_only_internal_source_review",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md"
+        ),
+        "description": (
+            "internal source review for the implemented descriptor-only runtime slice"
+        ),
+    },
+    {
         "label": "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "path": (
             "var/review-packets/v3/"
@@ -333,6 +344,7 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make no-new-powers-guardrail",

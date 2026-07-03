@@ -901,6 +901,12 @@ checked with `make control-mapping-readiness`.
   Control runtime authority, trusted-host promotion, host writes, network expansion, API/MCP profile
   loading, and new tool powers; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check` - validate the
+  internal source review for the implemented descriptor-only ERG-004 runtime slice while keeping
+  external/source disposition pending and blocking live VM/container inspection, lifecycle control,
+  Mission Control runtime authority, trusted-host promotion, host writes, network expansion,
+  API/MCP profile loading, and new tool powers; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md).
 - `make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle` - generate the focused
   review packet for the ERG-004 descriptor-only implementation ticket using the
   `EXT-LIVE-DESC-###` namespace while keeping runtime implementation, VM/container inspection,
@@ -2146,6 +2152,11 @@ and is checked with `make sandbox-vm-live-poc-runtime-descriptor-only-implementa
 implements only operator-attested descriptor records, admin-only descriptor status APIs, and safe
 audit metadata while keeping VM/container inspection, lifecycle authority, Mission Control runtime
 authority, host writes, network expansion, API/MCP profile loading, and new tool powers blocked.
+The runtime descriptor-only internal source review is
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md)
+and is checked with `make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check`;
+it records a local source inspection for continued local-preview development while preserving
+external/source disposition as the required closure step.
 The runtime descriptor-only ticket review bundle is
 [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md)
 and is generated with `make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle`; it
