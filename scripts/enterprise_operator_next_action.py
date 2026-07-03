@@ -78,6 +78,7 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -310,6 +311,16 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
             "focused review packet for the descriptor-only implementation ticket"
         ),
     },
+    {
+        "label": "live_poc_runtime_descriptor_only_source_review_bundle",
+        "path": (
+            "var/review-packets/v3/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-source-review"
+        ),
+        "description": (
+            "focused source-review packet for the implemented descriptor-only runtime slice"
+        ),
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -323,6 +334,7 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",

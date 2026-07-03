@@ -907,6 +907,12 @@ checked with `make control-mapping-readiness`.
   lifecycle control, Mission Control runtime authority, local model invocation, trusted-host
   promotion, host writes, network expansion, API/MCP profile loading, and new powers blocked; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle` - generate the focused
+  source-review packet for the implemented ERG-004 descriptor-only runtime slice using the
+  `EXT-LIVE-DESC-###` namespace while still blocking VM/container inspection, lifecycle control,
+  Mission Control runtime authority, local model invocation, trusted-host promotion, host writes,
+  network expansion, API/MCP profile loading, and new powers; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check` - validate the
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or
@@ -2146,6 +2152,12 @@ and is generated with `make sandbox-vm-live-poc-runtime-descriptor-only-ticket-r
 packages the descriptor-only ticket for `EXT-LIVE-DESC-###` review without approving runtime
 implementation, live VM/container inspection, lifecycle control, Mission Control runtime authority,
 local model invocation, trusted-host promotion, host writes, network expansion, API/MCP profile
+loading, or new tool powers. The runtime descriptor-only source review bundle is
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md)
+and is generated with `make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle`; it
+packages the implemented descriptor records, admin-only descriptor APIs, `/system/status` evidence,
+safe audit metadata, focused tests, and command evidence for `EXT-LIVE-DESC-###` source review
+without closing `ERG-004`.
 loading, or new governed tool powers.
 The runtime gate-readiness response intake is
 [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)

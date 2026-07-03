@@ -31,15 +31,18 @@ still-blocked `ERG-004` descriptor-only runtime implementation-planning checkpoi
 make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
 make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
 make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
+make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check
+make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check
 make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
+make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
 
-The descriptor-only plan and implementation ticket are the current non-runtime bridge before any
-future descriptor slice can be implemented. This is descriptor-only implementation planning only. It
-does not approve runtime implementation in this checkpoint, live VM/container inspection,
-VM/container lifecycle management, local model invocation, sandbox orchestration, Mission Control
+The descriptor-only implementation is now a bounded operator-attested descriptor-record slice, and
+the current handoff is source review of that slice. This remains descriptor-only and does not
+approve live VM/container inspection, VM/container lifecycle management, local model invocation,
+sandbox orchestration, Mission Control
 runtime behavior, trusted-host promotion, host writes, network expansion, API/MCP profile loading,
 or new governed tool powers.
 
