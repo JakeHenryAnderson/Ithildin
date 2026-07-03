@@ -877,6 +877,11 @@ checked with `make control-mapping-readiness`.
   High review record for the ERG-004 runtime gate-readiness checkpoint; this supports only the next
   descriptor-only planning step and does not approve runtime behavior or external closure; see
   [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-plan-check` - validate the descriptor-only
+  implementation-planning packet for the next ERG-004 runtime checkpoint while keeping API/MCP
+  behavior, live VM/container inspection, lifecycle control, Mission Control runtime authority, host
+  writes, network expansion, SIEM adapters, and new tool powers blocked; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check` - validate the
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or
@@ -2081,6 +2086,12 @@ The runtime gate-readiness internal review is
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check`; it
 supports only a later descriptor-only planning checkpoint and does not approve runtime behavior,
 external closure, or product-readiness claims.
+The runtime descriptor-only plan is
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md)
+and is checked with `make sandbox-vm-live-poc-runtime-descriptor-only-plan-check`; it defines the
+future operator-supplied descriptor slice while keeping runtime implementation, live VM/container
+inspection, lifecycle control, Mission Control runtime authority, trusted-host promotion, host
+writes, network expansion, API/MCP profile loading, SIEM adapters, and new tool powers blocked.
 The runtime gate-readiness response intake is
 [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`; it
