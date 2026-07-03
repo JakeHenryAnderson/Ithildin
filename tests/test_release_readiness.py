@@ -2619,6 +2619,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
+        "live_poc_runtime_descriptor_only_response_inbox",
         "live_poc_runtime_descriptor_only_response_dry_run",
         "live_poc_runtime_descriptor_only_response_application_preflight",
     ]
@@ -2632,6 +2633,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review",
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md",
     }
@@ -2706,6 +2708,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
+        "live_poc_runtime_descriptor_only_response_inbox",
         "live_poc_runtime_descriptor_only_response_dry_run",
         "live_poc_runtime_descriptor_only_response_application_preflight",
     ]
@@ -6309,6 +6312,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
+        "live_poc_runtime_descriptor_only_response_inbox",
         "live_poc_runtime_descriptor_only_response_dry_run",
         "live_poc_runtime_descriptor_only_response_application_preflight",
     ]

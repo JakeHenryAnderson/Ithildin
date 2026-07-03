@@ -347,6 +347,16 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
         ),
     },
     {
+        "label": "live_poc_runtime_descriptor_only_response_inbox",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md"
+        ),
+        "description": (
+            "focused raw-response inbox for descriptor-only runtime source review"
+        ),
+    },
+    {
         "label": "live_poc_runtime_descriptor_only_response_dry_run",
         "path": (
             "docs/codex/"
