@@ -1338,6 +1338,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
@@ -2569,6 +2570,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
@@ -2592,6 +2594,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "live_poc_runtime_gate_readiness_internal_review",
         "live_poc_runtime_descriptor_only_plan",
         "live_poc_runtime_descriptor_only_implementation_ticket",
+        "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_gate_readiness_response_intake",
         "live_poc_runtime_gate_readiness_decision_record_skeleton",
     ]
@@ -2604,6 +2607,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md",
+        "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review",
         "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md",
         "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md",
     }
@@ -2677,6 +2681,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_gate_readiness_internal_review",
         "live_poc_runtime_descriptor_only_plan",
         "live_poc_runtime_descriptor_only_implementation_ticket",
+        "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_gate_readiness_response_intake",
         "live_poc_runtime_gate_readiness_decision_record_skeleton",
     ]
@@ -6256,6 +6261,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
@@ -6279,6 +6285,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "live_poc_runtime_gate_readiness_internal_review",
         "live_poc_runtime_descriptor_only_plan",
         "live_poc_runtime_descriptor_only_implementation_ticket",
+        "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_gate_readiness_response_intake",
         "live_poc_runtime_gate_readiness_decision_record_skeleton",
     ]
@@ -6314,6 +6321,14 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         == (
             "docs/codex/"
             "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md"
+        )
+        for artifact in report["handoff_artifacts"]
+    )
+    assert any(
+        artifact["path"]
+        == (
+            "var/review-packets/v3/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review"
         )
         for artifact in report["handoff_artifacts"]
     )
