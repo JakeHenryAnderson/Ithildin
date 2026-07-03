@@ -919,6 +919,12 @@ checked with `make control-mapping-readiness`.
   Mission Control runtime authority, local model invocation, trusted-host promotion, host writes,
   network expansion, API/MCP profile loading, and new powers; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check` - validate the
+  response-intake template for the implemented ERG-004 descriptor-only source-review packet using
+  the `EXT-LIVE-DESC-###` namespace while keeping external/source disposition pending and blocking
+  live VM/container inspection, lifecycle control, Mission Control runtime authority, trusted-host
+  promotion, host writes, network expansion, API/MCP profile loading, and new powers; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check` - validate the
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or

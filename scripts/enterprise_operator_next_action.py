@@ -80,6 +80,7 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -332,6 +333,16 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
             "focused source-review packet for the implemented descriptor-only runtime slice"
         ),
     },
+    {
+        "label": "live_poc_runtime_descriptor_only_external_response_intake",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md"
+        ),
+        "description": (
+            "response-intake template for the descriptor-only runtime source review"
+        ),
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -347,6 +358,7 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",

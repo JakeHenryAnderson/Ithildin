@@ -25,6 +25,7 @@ AREA_NAMESPACES = {
     "sandbox-vm-static-preflight": "SVP",
     "sandbox-vm-live-poc": "LIVE-POC",
     "sandbox-vm-live-poc-runtime-gate-readiness": "LIVE-GATE",
+    "sandbox-vm-live-poc-runtime-descriptor-only": "LIVE-DESC",
     "trusted-host-promotion": "TRUSTED-HOST",
     "production-identity-storage": "PROD-IAM-STORAGE",
     "siem-export-adapter": "SIEM-ADAPTER",

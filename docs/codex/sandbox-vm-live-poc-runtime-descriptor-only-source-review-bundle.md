@@ -35,6 +35,10 @@ The packet asks a reviewer to inspect:
 
 The packet uses the `EXT-LIVE-DESC-###` finding namespace.
 
+Reviewer responses for this source-review packet should use
+[`sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md`](sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md)
+and `make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check`.
+
 ## Boundary
 
 This bundle does not close `ERG-004`, does not approve live VM/container inspection, does not start

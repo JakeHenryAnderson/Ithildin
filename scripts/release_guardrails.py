@@ -234,6 +234,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
     "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
+    "sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
     "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
     "sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
