@@ -35,6 +35,7 @@ make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
 make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
 make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check
 make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
+make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check
 make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
 make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check
@@ -43,10 +44,11 @@ make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-c
 make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
 ```
 
-The descriptor-only plan is the current non-runtime bridge before any future descriptor slice can be
-planned. This is runtime implementation-gate preparation only. It does not approve runtime implementation,
-live VM/container inspection, VM/container lifecycle management, local model invocation, sandbox
-orchestration, Mission Control runtime behavior, trusted-host promotion, or new governed tool powers.
+The descriptor-only plan and implementation ticket are the current non-runtime bridge before any
+future descriptor slice can be implemented. This is runtime implementation-gate preparation only. It
+does not approve runtime implementation in this checkpoint, live VM/container inspection,
+VM/container lifecycle management, local model invocation, sandbox orchestration, Mission Control
+runtime behavior, trusted-host promotion, or new governed tool powers.
 
 ## Historical Send Fallback
 

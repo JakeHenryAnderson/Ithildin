@@ -59,6 +59,7 @@ REQUIRED_PHRASES = [
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",

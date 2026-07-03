@@ -882,6 +882,12 @@ checked with `make control-mapping-readiness`.
   behavior, live VM/container inspection, lifecycle control, Mission Control runtime authority, host
   writes, network expansion, SIEM adapters, and new tool powers blocked; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check` - validate the
+  descriptor-only implementation ticket for the next ERG-004 runtime checkpoint while keeping
+  runtime changes in this checkpoint, live VM/container inspection, lifecycle control, Mission
+  Control runtime authority, trusted-host promotion, API/MCP profile loading, host writes, network
+  expansion, and new tool powers blocked; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check` - validate the
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or
@@ -2092,6 +2098,13 @@ and is checked with `make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
 future operator-supplied descriptor slice while keeping runtime implementation, live VM/container
 inspection, lifecycle control, Mission Control runtime authority, trusted-host promotion, host
 writes, network expansion, API/MCP profile loading, SIEM adapters, and new tool powers blocked.
+The runtime descriptor-only implementation ticket is
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md)
+and is checked with `make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check`;
+it narrows the future descriptor/correlation implementation sprint while keeping runtime changes in
+this checkpoint, live VM/container inspection, lifecycle control, Mission Control runtime authority,
+trusted-host promotion, API/MCP profile loading, host writes, network expansion, and new tool powers
+blocked.
 The runtime gate-readiness response intake is
 [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`; it
