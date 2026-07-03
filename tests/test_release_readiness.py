@@ -2275,7 +2275,10 @@ def test_enterprise_external_review_queue_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["queue_row_count"] == 8
-    assert report["recommended_next_review"] == "ERG-003"
+    assert report["active_route"] == "ERG-004"
+    assert report["recommended_next_review"] == "ERG-004"
+    assert report["historical_recommended_review"] == "ERG-003"
+    assert report["expected_action"] == "prepare_erg004_runtime_implementation_gate"
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["sandbox_orchestration_allowed"] is False
@@ -2288,7 +2291,10 @@ def test_enterprise_external_review_queue_is_wired() -> None:
         "Status: planning-only queue for post-RC enterprise review lanes.",
         "Current governed tool count: `24`.",
         "Current selected capability: `not selected`.",
-        "Recommended next review: `ERG-003` static sandbox/VM preflight disposition.",
+        "Active Route Versus Historical Queue",
+        "Current active route: `ERG-004` runtime implementation gate preparation.",
+        "Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.",
+        "`prepare_erg004_runtime_implementation_gate`",
         "sandbox-vm-static-preflight-disposition-packet.md",
         "mission-control-integration-readiness-packet.md",
         "trusted-host-promotion-disposition-packet.md",

@@ -51,7 +51,30 @@ make enterprise-response-intake-drill
 - public/security-product positioning remains a no-go lane until its exact claim evidence is
   independently reviewed and explicitly approved by a later decision record.
 
-## Review Queue
+## Active Route Versus Historical Queue
+
+The post-disposition active route is now `ERG-004`: prepare the still-blocked live
+sandbox/VM POC runtime implementation gate. The historical `ERG-003`/`ERG-002` review rows remain
+below for provenance, response-intake fallback, and dependency traceability. They are not the
+current operator next action while `make enterprise-operator-next-action` reports
+`prepare_erg004_runtime_implementation_gate`.
+
+Current active route: `ERG-004` runtime implementation gate preparation.
+
+Current active route validation:
+
+```sh
+make enterprise-active-route-clarity
+make sandbox-vm-live-poc-runtime-implementation-gate-check
+make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
+```
+
+This active route still does not approve runtime implementation, live VM/container inspection,
+VM/container lifecycle management, sandbox orchestration, Mission Control runtime behavior, local
+model invocation, trusted-host promotion, host writes, network expansion, API/MCP profile loading,
+SIEM adapter behavior, public/security-product positioning, or new governed tool powers.
+
+## Historical Review Queue
 
 | Order | Gap / PRD | Status before review | Primary packet or doc | Intake / response path | Allowed next action | Runtime allowed |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -117,13 +140,19 @@ then follow `sandbox-vm-static-preflight-response-application-playbook.md`,
 8. `ERG-010` is last because public/security-product positioning depends on the exact claims that
    prior rows can or cannot support.
 
-## Current Recommended Next Review
+## Historical Recommended Review
 
-Recommended next review: `ERG-003` static sandbox/VM preflight disposition.
+Recommended next review (historical): `ERG-003` static sandbox/VM preflight disposition.
+
+Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.
 
 Reason: it is the earliest dependency for the live sandbox/VM worker proof of concept and has the
 most complete source-review packet, disposition packet, response-intake template, reviewer
 reproduction map, negative fixtures, and internal review evidence.
+
+That dependency has since been dispositioned for the local-preview planning path. Keep the section
+below as a fallback for old packet reproduction and response-intake lineage; use the active
+`ERG-004` route above for current work.
 
 For a compact operator handoff pointer, run:
 
