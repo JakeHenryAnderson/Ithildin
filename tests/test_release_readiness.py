@@ -309,6 +309,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_only_response_application_preflight_check,
     sandbox_vm_live_poc_runtime_descriptor_only_response_application_record_check,
     sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run,
+    sandbox_vm_live_poc_runtime_descriptor_only_response_inbox,
     sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle,
     sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle,
     sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
@@ -1350,6 +1351,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
@@ -2594,6 +2596,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
@@ -6283,6 +6286,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
@@ -15274,6 +15278,99 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_external_response_intake_is
     assert "sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md" in (
         source_bundle_doc
     )
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_only_response_inbox_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_descriptor_only_response_inbox.build_check_report(
+        Path.cwd()
+    )
+    doc_path = (
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md"
+    )
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    matrix_doc = Path("docs/codex/enterprise-response-command-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    intake_doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md"
+    ).read_text(encoding="utf-8")
+    dry_run_doc = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["gap"] == "ERG-004"
+    assert report["normalization_area"] == "sandbox-vm-live-poc-runtime-descriptor-only"
+    assert report["finding_namespace"] == "EXT-LIVE-DESC-###"
+    assert report["raw_response_file"] == "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+    assert report["reviewed_packet_hash"].startswith("sha256:")
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["external_review_recorded"] is False
+    assert report["mutates_findings"] is False
+    assert report["closes_erg_004"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["descriptor_only_source_disposition_allowed_now"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    for phrase in [
+        "Status: generated response inbox for the active ERG-004 runtime descriptor-only review.",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
+        "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/",
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+        "EXT-LIVE-DESC-###",
+        "does not normalize responses",
+        "does not record external review",
+        "does not close `ERG-004`",
+        "does not approve descriptor-only local preview disposition",
+    ]:
+        assert phrase in doc
+    assert "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox" in readme
+    assert doc_path in readme
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox:" in makefile
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check"
+        in release_check_body
+        or (
+            "release-check: "
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check"
+            in makefile
+        )
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-response-inbox" in (
+        review_candidate_body
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-response-inbox" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert (
+        "Sandbox/VM Live POC Runtime Descriptor-Only Response Inbox" in review_index
+    )
+    for source in [matrix_doc, intake_doc, dry_run_doc]:
+        assert "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox" in source
 
 
 def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired() -> None:

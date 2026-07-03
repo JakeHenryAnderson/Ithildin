@@ -18,7 +18,9 @@ Reviewed packet artifact hash: SHA-256 of
 payload agreed by the reviewer.
 
 This intake exists so a source reviewer response for the descriptor-only runtime slice can be
-normalized without hand-editing committed findings or closure state. It does not close `ERG-004`,
+normalized without hand-editing committed findings or closure state. Use
+[sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md](sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md)
+to create the ignored raw-response placeholder and reviewed packet hash before normalization. It does not close `ERG-004`,
 does not record external review by itself, and does not approve any live VM/container behavior.
 Use `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run` to exercise favorable,
 packet-only, wrong-namespace, bad-hash, secret-marker, and critical/high-finding response fixtures

@@ -383,6 +383,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md",
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md",
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
+    "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md",
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md",
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md",
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook.md",

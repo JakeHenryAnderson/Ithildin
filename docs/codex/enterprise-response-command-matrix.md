@@ -55,6 +55,17 @@ That focused inbox uses normalization area `sandbox-vm-live-poc-runtime-gate-rea
 namespace `EXT-LIVE-GATE-###`, and
 `RAW_RESPONSE_ERG-004-RUNTIME-GATE-READINESS.md`.
 
+For the active `ERG-004` descriptor-only source review, prefer the focused descriptor-only response
+inbox before using the descriptor-only response dry run or application preflight:
+
+```sh
+make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox
+make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
+```
+
+That focused inbox uses normalization area `sandbox-vm-live-poc-runtime-descriptor-only`, finding
+namespace `EXT-LIVE-DESC-###`, and `RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md`.
+
 For `ERG-003`, use
 [Sandbox/VM Static Preflight Response Application Preflight](sandbox-vm-static-preflight-response-application-preflight.md)
 before applying a real reviewer response. It verifies the raw-response path, normalized-response

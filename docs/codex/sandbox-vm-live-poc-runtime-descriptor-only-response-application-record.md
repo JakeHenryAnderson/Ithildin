@@ -48,6 +48,7 @@ Before a committed descriptor-only disposition record is considered, run:
 ```sh
 make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
 make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check
+make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
 make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
 make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check
 make sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check

@@ -8,8 +8,10 @@ Current `ERG-004` descriptor-only status before reviewer disposition:
 `descriptor_only_runtime_implemented_source_review_pending`.
 
 This dry-run exercises the descriptor-only external response intake without recording review,
-closing `ERG-004`, mutating committed findings, or approving runtime behavior. It is a local
-release gate for the response path only.
+closing `ERG-004`, mutating committed findings, or approving runtime behavior. Use
+[sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md](sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md)
+to capture a real raw response path and reviewed packet hash before normalizing a live reviewer
+response. This is a local release gate for the response path only.
 
 ## Command
 

@@ -925,6 +925,10 @@ checked with `make control-mapping-readiness`.
   live VM/container inspection, lifecycle control, Mission Control runtime authority, trusted-host
   promotion, host writes, network expansion, API/MCP profile loading, and new powers; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox` - generate the focused ignored
+  raw-response placeholder, reviewed packet hash, and cheat sheet for an active `EXT-LIVE-DESC-###`
+  descriptor-only response; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md).
 - `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run` - exercise descriptor-only
   source-review response fixtures without recording external review, closing `ERG-004`, or
   approving runtime behavior; see

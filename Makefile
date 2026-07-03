@@ -464,7 +464,7 @@ sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle:
 sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle.py --check
 
-.PHONY: sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
+.PHONY: sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check sandbox-vm-live-poc-runtime-descriptor-only-response-inbox sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
 sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_check.py
 
@@ -476,6 +476,12 @@ sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check:
 
 sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_external_response_intake_check.py
+
+sandbox-vm-live-poc-runtime-descriptor-only-response-inbox:
+	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_response_inbox.py
+
+sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check:
+	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_response_inbox.py --check
 
 sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run:
 	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run.py
@@ -1768,6 +1774,7 @@ review-candidate:
 	$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-review-bundle
 	$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle
 	$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle
+	$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-response-inbox
 	$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
 	$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-response-inbox
 	$(MAKE) sandbox-vm-live-poc-response-kit
@@ -1852,6 +1859,7 @@ release-check: sandbox-vm-live-poc-runtime-descriptor-only-implementation-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check
+release-check: sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check
 release-check: sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check

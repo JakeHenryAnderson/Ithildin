@@ -27,6 +27,8 @@ implementation.
   `sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md`.
 - Response intake:
   `sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md`.
+- Response inbox:
+  `sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md`.
 - Response dry run:
   `sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md`.
 - Response application record:
@@ -41,6 +43,7 @@ make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check
 make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check
 make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
 make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check
+make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
 make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
 make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check
 make sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check
