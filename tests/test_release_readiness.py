@@ -301,6 +301,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_check,
     sandbox_vm_live_poc_runtime_descriptor_only_plan_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle,
     sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
     sandbox_vm_live_poc_runtime_gate_readiness_internal_review_check,
     sandbox_vm_live_poc_runtime_gate_readiness_response_application_playbook_check,
@@ -14878,6 +14879,73 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_is_wi
         "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check"
         in operator_next
     )
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle.build_check_report(
+        Path.cwd()
+    )
+    doc_path = (
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md"
+    )
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == (
+        "ready_for_descriptor_only_runtime_implementation_ticket"
+    )
+    assert report["finding_namespace"] == "EXT-LIVE-DESC-###"
+    assert report["descriptor_only_ticket_review_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        "Status: checked review-bundle definition",
+        "Current governed tool count: `24`.",
+        "ready_for_descriptor_only_runtime_implementation_ticket",
+        "EXT-LIVE-DESC-###",
+        "This bundle does not approve",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle" in readme
+    assert doc_path in readme
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle:" in makefile
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check"
+        in release_check_body
+        or "release-check: sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check"
+        in makefile
+    )
+    assert (
+        "$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle"
+        in review_candidate_body
+    )
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Runtime Descriptor-Only Ticket Review Bundle" in review_index
 
 
 def test_sandbox_vm_live_poc_runtime_implementation_gate_is_wired() -> None:

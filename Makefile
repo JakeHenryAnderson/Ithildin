@@ -452,6 +452,12 @@ sandbox-vm-live-poc-runtime-descriptor-only-plan-check:
 sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_check.py
 
+sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle:
+	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle.py
+
+sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check:
+	uv run python scripts/sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle.py --check
+
 sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check:
 	uv run python scripts/sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check.py
 
@@ -1726,6 +1732,7 @@ review-candidate:
 	$(MAKE) sandbox-vm-live-poc-runtime-proposal-review-bundle
 	$(MAKE) sandbox-vm-live-poc-runtime-ticket-review-bundle
 	$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-review-bundle
+	$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle
 	$(MAKE) sandbox-vm-live-poc-runtime-gate-readiness-response-inbox
 	$(MAKE) sandbox-vm-live-poc-response-kit
 	$(MAKE) trusted-host-promotion-source-review-packet
@@ -1803,6 +1810,7 @@ release-check: sandbox-vm-live-poc-response-kit-check
 release-check: sandbox-vm-live-poc-external-review-bundle-check
 release-check: sandbox-vm-live-poc-implementation-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-proposal-review-bundle-check
+release-check: sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
 release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-inbox-check
 release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check
 release-check: sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check
@@ -1823,6 +1831,8 @@ release-check: mission-control-enterprise-status-import-check
 release-check: mission-control-enterprise-status-fixtures-check
 release-check: mission-control-enterprise-status-acceptance-matrix-check
 release-check: mission-control-enterprise-status-reference-validator
+
+.PHONY: sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
 release-check: mission-control-display-external-review-bundle-check
 release-check: mission-control-display-response-kit-check
 
