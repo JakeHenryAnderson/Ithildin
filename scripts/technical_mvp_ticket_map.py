@@ -26,6 +26,7 @@ ALLOWED_NEXT_ENTERPRISE_REVIEWS = {"ERG-003", "ERG-004"}
 ALLOWED_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
     "prepare_erg004_runtime_implementation_gate",
+    "prepare_erg004_descriptor_only_runtime_planning",
 }
 
 REQUIRED_PHRASES = [

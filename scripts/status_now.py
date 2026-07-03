@@ -161,6 +161,15 @@ def _recommended_next_commands(
             "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check",
             "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
         ]
+    if enterprise_next.get("next_action") == "prepare_erg004_descriptor_only_runtime_planning":
+        return [
+            "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
+            "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
+            "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+            "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
+            "make no-new-powers-guardrail",
+            "make tool-surface-invariant-gate",
+        ]
     return ["make dev-check"]
 
 

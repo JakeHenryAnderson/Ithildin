@@ -23,33 +23,25 @@ the heavier validation artifacts.
 
 ## Current Expected Action
 
-If the dual-response disposition record and runtime-ticket internal review are present, the next
-allowed operator action is to prepare the still-blocked `ERG-004` live sandbox/VM POC runtime
-implementation gate:
+If the dual-response disposition record, runtime-ticket internal review, and runtime
+gate-readiness decision record are present, the next allowed operator action is to prepare the
+still-blocked `ERG-004` descriptor-only runtime implementation-planning checkpoint:
 
 ```sh
-make sandbox-vm-live-poc-runtime-ticket-internal-review-check
-make sandbox-vm-live-poc-runtime-implementation-gate-check
-make sandbox-vm-live-poc-runtime-descriptor-contract-check
-make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
-make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
-make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check
+make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
 make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
 make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
 make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
-make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check
-make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
+make no-new-powers-guardrail
+make tool-surface-invariant-gate
 ```
 
 The descriptor-only plan and implementation ticket are the current non-runtime bridge before any
-future descriptor slice can be implemented. This is runtime implementation-gate preparation only. It
+future descriptor slice can be implemented. This is descriptor-only implementation planning only. It
 does not approve runtime implementation in this checkpoint, live VM/container inspection,
 VM/container lifecycle management, local model invocation, sandbox orchestration, Mission Control
-runtime behavior, trusted-host promotion, or new governed tool powers.
+runtime behavior, trusted-host promotion, host writes, network expansion, API/MCP profile loading,
+or new governed tool powers.
 
 ## Historical Send Fallback
 

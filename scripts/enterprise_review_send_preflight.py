@@ -27,7 +27,12 @@ CURRENT_SEND_SET = ["ERG-003", "ERG-002"]
 EXPECTED_ACTION = "send_erg_003_and_erg_002"
 POST_DISPOSITION_SEND_SET = ["ERG-004"]
 POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
-ALLOWED_ACTIONS = {EXPECTED_ACTION, POST_DISPOSITION_ACTION}
+DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
+ALLOWED_ACTIONS = {
+    EXPECTED_ACTION,
+    POST_DISPOSITION_ACTION,
+    DESCRIPTOR_ONLY_PLANNING_ACTION,
+}
 BOUNDARY_FLAGS = {
     "records_external_review": False,
     "normalizes_responses": False,
@@ -189,7 +194,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
 
     next_action = operator_next.get("next_action")
-    post_disposition_mode = next_action == POST_DISPOSITION_ACTION
+    post_disposition_mode = next_action in {
+        POST_DISPOSITION_ACTION,
+        DESCRIPTOR_ONLY_PLANNING_ACTION,
+    }
     active_send_set = (
         POST_DISPOSITION_SEND_SET
         if post_disposition_mode

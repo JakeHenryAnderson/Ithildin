@@ -25,7 +25,12 @@ DOC_REL = "docs/codex/enterprise-current-checkpoint.md"
 DOC_TITLE = "Enterprise Current Checkpoint"
 PRE_DISPOSITION_ACTION = "send_erg_003_and_erg_002"
 POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
-ALLOWED_NEXT_ACTIONS = {PRE_DISPOSITION_ACTION, POST_DISPOSITION_ACTION}
+DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
+ALLOWED_NEXT_ACTIONS = {
+    PRE_DISPOSITION_ACTION,
+    POST_DISPOSITION_ACTION,
+    DESCRIPTOR_ONLY_PLANNING_ACTION,
+}
 
 REQUIRED_PHRASES = [
     "Status: checked operator checkpoint",

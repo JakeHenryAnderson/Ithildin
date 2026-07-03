@@ -71,6 +71,15 @@ RUNTIME_GATE_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
 ]
 
+DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
+    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
+]
+
 SEND_ARTIFACTS = [
     {
         "label": "dual_review_outbox",
@@ -240,25 +249,59 @@ RUNTIME_GATE_ARTIFACTS = [
     },
 ]
 
+DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
+    {
+        "label": "live_poc_runtime_gate_readiness_decision_record",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"
+        ),
+        "description": (
+            "internal High proxy decision record for descriptor-only planning"
+        ),
+    },
+    {
+        "label": "live_poc_runtime_descriptor_only_plan",
+        "path": "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md",
+        "description": (
+            "descriptor-only implementation-planning packet for the next runtime checkpoint"
+        ),
+    },
+    {
+        "label": "live_poc_runtime_descriptor_only_implementation_ticket",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md"
+        ),
+        "description": (
+            "descriptor-only implementation ticket for the next runtime checkpoint"
+        ),
+    },
+    {
+        "label": "live_poc_runtime_descriptor_only_ticket_review_bundle",
+        "path": (
+            "var/review-packets/v3/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review"
+        ),
+        "description": (
+            "focused review packet for the descriptor-only implementation ticket"
+        ),
+    },
+]
+
 REQUIRED_DOC_PHRASES = [
     "Status: checked read-only operator next-action summary",
     "Current governed tool count: `24`",
     "make enterprise-operator-next-action",
     "Historical Send Fallback",
     "current route after the recorded dispositions",
-    "If the dual-response disposition record and runtime-ticket internal review are present",
-    "make sandbox-vm-live-poc-runtime-implementation-gate-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "If the dual-response disposition record, runtime-ticket internal review, and runtime",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
@@ -318,11 +361,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     closure_ready_count = response_state["closure_ready_count"]
     disposition_recorded = _dual_response_disposition_recorded(repo_root)
     internal_review_recorded = _runtime_ticket_internal_review_recorded(repo_root)
+    runtime_gate_decision_recorded = _runtime_gate_readiness_decision_recorded(
+        repo_root
+    )
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
         disposition_recorded=disposition_recorded,
         internal_review_recorded=internal_review_recorded,
+        runtime_gate_decision_recorded=runtime_gate_decision_recorded,
     )
     if next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
@@ -337,6 +384,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     elif next_action == "prepare_erg004_runtime_implementation_gate":
         action_commands = RUNTIME_GATE_COMMANDS
         handoff_artifacts = RUNTIME_GATE_ARTIFACTS
+        recommended_send_set = ["ERG-004"]
+        recommended_next_enterprise_review = "ERG-004"
+    elif next_action == "prepare_erg004_descriptor_only_runtime_planning":
+        action_commands = DESCRIPTOR_ONLY_PLANNING_COMMANDS
+        handoff_artifacts = DESCRIPTOR_ONLY_PLANNING_ARTIFACTS
         recommended_send_set = ["ERG-004"]
         recommended_next_enterprise_review = "ERG-004"
     else:
@@ -423,6 +475,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "closure_ready_count": closure_ready_count,
         "dual_response_disposition_recorded": disposition_recorded,
         "runtime_ticket_internal_review_recorded": internal_review_recorded,
+        "runtime_gate_readiness_decision_recorded": runtime_gate_decision_recorded,
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": NEXT_AFTER_SEND_COMMANDS,
@@ -482,11 +535,14 @@ def _next_action(
     *,
     disposition_recorded: bool,
     internal_review_recorded: bool,
+    runtime_gate_decision_recorded: bool,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if runtime_gate_decision_recorded:
+        return "prepare_erg004_descriptor_only_runtime_planning"
     if internal_review_recorded:
         return "prepare_erg004_runtime_implementation_gate"
     if disposition_recorded:
@@ -515,6 +571,22 @@ def _runtime_ticket_internal_review_recorded(repo_root: Path) -> bool:
         and "The next allowed action is to prepare a separate explicit runtime implementation gate."
         in text
         and "make sandbox-vm-live-poc-runtime-ticket-internal-review-check" in text
+    )
+
+
+def _runtime_gate_readiness_decision_recorded(repo_root: Path) -> bool:
+    path = (
+        repo_root
+        / "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"
+    )
+    text = _read(path)
+    return (
+        "Decision ID: `PRD-SANDBOX-LIVE-GATE-001`." in text
+        and "Decision outcome: `approved_for_descriptor_only_runtime_implementation_planning`."
+        in text
+        and "not runtime implementation approval" in text
+        and "not\nexternal validation" in text
+        and "Finding count: `0`" in text
     )
 
 

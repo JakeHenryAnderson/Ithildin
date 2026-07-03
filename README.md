@@ -920,6 +920,11 @@ checked with `make control-mapping-readiness`.
 - `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check` - validate the
   design-only decision-record skeleton for a future favorable `EXT-LIVE-GATE-###` disposition; this
   gives the runtime gate-readiness packet a landing zone without approving runtime implementation.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check` - validate the committed
+  internal High proxy decision record that permits only descriptor-only runtime implementation
+  planning, not runtime implementation, external validation, live VM/container inspection, or
+  `ERG-004` closure; see
+  [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md).
 - `make sandbox-vm-live-poc-runtime-ticket-review-bundle` - generate the focused review packet for
   the draft runtime ticket without approving runtime implementation or any live VM/container,
   Mission Control, local-model, host-write, network, or new-tool authority.
@@ -2133,6 +2138,13 @@ The runtime gate-readiness decision-record skeleton is
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check`;
 it defines the only future record shape for a favorable `EXT-LIVE-GATE-###` disposition while still
 keeping runtime implementation and all live VM/container behavior blocked.
+The runtime gate-readiness decision record is
+[docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md)
+and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check`; it
+records an internal High proxy disposition for descriptor-only implementation planning while still
+blocking runtime implementation, external validation claims, live VM/container inspection, lifecycle
+control, Mission Control runtime authority, local model invocation, host writes, network expansion,
+and new governed tool powers.
 The live sandbox/VM POC response dry run is
 [docs/codex/sandbox-vm-live-poc-response-dry-run.md](docs/codex/sandbox-vm-live-poc-response-dry-run.md)
 and is checked with `make sandbox-vm-live-poc-response-dry-run`; it temporarily exercises favorable

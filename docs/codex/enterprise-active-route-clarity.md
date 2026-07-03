@@ -16,7 +16,7 @@ make enterprise-active-route-clarity
 
 The active post-disposition route is `ERG-004`.
 
-Current expected action: `prepare_erg004_runtime_implementation_gate`.
+Current expected action: `prepare_erg004_descriptor_only_runtime_planning`.
 
 Current active packet: `sandbox-vm-live-poc-runtime-ticket-review`.
 
@@ -25,12 +25,9 @@ Current active send set: `ERG-004`.
 Current runtime gate-readiness packet:
 `var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review`.
 
-Future favorable gate-readiness dispositions must use
-`sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md`,
-`sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run.md`, and the
-`sandbox-vm-live-poc-runtime-gate-readiness-response-application-*.md` records before a later
-`sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md`; those records keep runtime
-implementation blocked until a separate implementation sprint and source-review gate exist.
+The committed `sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md` records an internal
+High proxy disposition for descriptor-only implementation planning. It keeps runtime implementation
+blocked until a separate implementation sprint and source-review gate exist.
 
 The active route is reported by:
 

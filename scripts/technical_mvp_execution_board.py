@@ -21,7 +21,7 @@ SEND_MANIFEST_JSON = Path(
     "var/review-packets/v3/enterprise-review-send-manifest/"
     "enterprise-review-send-manifest.json"
 )
-POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
+POST_DISPOSITION_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
 
 REQUIRED_DOCS = [TECHNICAL_DOC, ENTERPRISE_DOC, BATCH_DOC]
 TECHNICAL_IDS = [f"MVP-{index:03d}" for index in range(1, 11)]
@@ -44,7 +44,7 @@ REQUIRED_PHRASES = {
         "Current selected capability: `not selected`",
         "Latest implemented tool: `sandbox.artifact.write_text`",
         "Technical MVP state: `operator_trial_observed`",
-        "Current enterprise next action: `prepare_erg004_runtime_implementation_gate`",
+        "Current enterprise next action: `prepare_erg004_descriptor_only_runtime_planning`",
         "Active resume checkpoint: `ENT-001`",
         (
             "The paused umbrella goal resumes through the post-`ENT-001` "
