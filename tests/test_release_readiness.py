@@ -305,6 +305,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_check,
     sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_check,
     sandbox_vm_live_poc_runtime_descriptor_only_plan_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run,
     sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle,
     sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle,
     sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
@@ -1346,6 +1347,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2588,6 +2590,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2608,6 +2611,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
+        "live_poc_runtime_descriptor_only_response_dry_run",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
         "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md",
@@ -2619,6 +2623,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review",
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2691,6 +2696,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
+        "live_poc_runtime_descriptor_only_response_dry_run",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -6269,6 +6275,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -6289,6 +6296,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
+        "live_poc_runtime_descriptor_only_response_dry_run",
     ]
     assert any(
         artifact["path"]
@@ -15255,6 +15263,113 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_external_response_intake_is
     )
     assert "sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md" in (
         source_bundle_doc
+    )
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run.run_dry_run(
+        Path.cwd()
+    )
+    doc_path = (
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md"
+    )
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    status_now_text = Path("scripts/status_now.py").read_text(encoding="utf-8")
+    operator_next_text = Path("scripts/enterprise_operator_next_action.py").read_text(
+        encoding="utf-8"
+    )
+    enterprise_status_text = Path("scripts/enterprise_status_export.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["area"] == "sandbox-vm-live-poc-runtime-descriptor-only"
+    assert report["finding_namespace"] == "EXT-LIVE-DESC-###"
+    assert report["normalized_response_path"] == (
+        "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only/"
+        "normalized-response.json"
+    )
+    assert report["response_restored"] is True
+    assert all(report["cases"].values())
+    assert report["committed_findings_mutated"] is False
+    assert report["external_review_recorded"] is False
+    assert report["erg_004_closed"] is False
+    assert report["descriptor_only_closure_recorded"] is False
+    assert report["descriptor_only_source_disposition_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for case in [
+        "absent_response_keeps_intake_valid",
+        "favorable_source_response_normalizes",
+        "packet_only_response_not_disposition_ready",
+        "docs_only_response_not_disposition_ready",
+        "missing_outcome_not_disposition_ready",
+        "critical_high_finding_not_disposition_ready",
+        "bad_hash_rejected",
+        "wrong_namespace_rejected",
+        "wrong_area_rejected",
+        "secret_marker_rejected",
+        "missing_explicit_finding_statement_rejected",
+    ]:
+        assert report["cases"][case] is True
+    for phrase in [
+        "Status: deterministic dry-run",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "EXT-LIVE-DESC-###",
+        "descriptor_only_source_disposition_allowed: false",
+        "Only a later committed triage/disposition update",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "ERG-004 is closed",
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run" in readme
+    assert doc_path in readme
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run:" in makefile
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
+        in release_check_body
+        or "release-check: sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Runtime Descriptor-Only Response Dry Run" in review_index
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run" in status_now_text
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
+        in operator_next_text
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
+        in enterprise_status_text
     )
 
 

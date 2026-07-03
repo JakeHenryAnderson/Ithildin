@@ -925,6 +925,10 @@ checked with `make control-mapping-readiness`.
   live VM/container inspection, lifecycle control, Mission Control runtime authority, trusted-host
   promotion, host writes, network expansion, API/MCP profile loading, and new powers; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run` - exercise descriptor-only
+  source-review response fixtures without recording external review, closing `ERG-004`, or
+  approving runtime behavior; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check` - validate the
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or

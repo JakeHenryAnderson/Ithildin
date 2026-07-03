@@ -317,6 +317,10 @@ def test_default_docs_include_v02_review_packet() -> None:
         in DEFAULT_DOCS
     )
     assert (
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md"
+        in DEFAULT_DOCS
+    )
+    assert (
         "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-inbox.md"
         in DEFAULT_DOCS
     )

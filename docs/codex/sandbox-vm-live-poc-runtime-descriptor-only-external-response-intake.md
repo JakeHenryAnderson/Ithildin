@@ -20,6 +20,9 @@ payload agreed by the reviewer.
 This intake exists so a source reviewer response for the descriptor-only runtime slice can be
 normalized without hand-editing committed findings or closure state. It does not close `ERG-004`,
 does not record external review by itself, and does not approve any live VM/container behavior.
+Use `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run` to exercise favorable,
+packet-only, wrong-namespace, bad-hash, secret-marker, and critical/high-finding response fixtures
+without recording review state.
 
 ## Reviewed Packet
 
@@ -118,4 +121,3 @@ This intake keeps these boundaries blocked:
 - compliance automation
 - new governed tool powers
 - public/security-product positioning
-

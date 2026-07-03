@@ -145,6 +145,7 @@ externally closed.
 - [Sandbox/VM Live POC Runtime Descriptor-Only Ticket Review Bundle](sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only Source Review Bundle](sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only External Response Intake](sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md)
+- [Sandbox/VM Live POC Runtime Descriptor-Only Response Dry Run](sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md)
 - [Sandbox/VM Live POC Runtime Gate Readiness Decision Record Skeleton](sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md)
 - [Sandbox/VM Live POC Runtime Gate Readiness Decision Record](sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md)
 - [Sandbox/VM Live POC Runtime Gate Readiness Response Intake](sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)
