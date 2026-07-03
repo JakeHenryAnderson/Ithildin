@@ -78,4 +78,6 @@ Only a later committed triage/disposition update may move the descriptor-only sl
 ## Related Artifacts
 
 - [Sandbox/VM Live POC Runtime Descriptor-Only External Response Intake](sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md)
+- [Sandbox/VM Live POC Runtime Descriptor-Only Response Application Record](sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md)
+- [Sandbox/VM Live POC Runtime Descriptor-Only Response Application Preflight](sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only Source Review Bundle](sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md)

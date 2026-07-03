@@ -173,6 +173,7 @@ def _recommended_next_commands(
             "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
             "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
             "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+            "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
             "make no-new-powers-guardrail",
             "make tool-surface-invariant-gate",
         ]

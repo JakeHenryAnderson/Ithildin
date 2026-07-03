@@ -23,6 +23,11 @@ does not record external review by itself, and does not approve any live VM/cont
 Use `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run` to exercise favorable,
 packet-only, wrong-namespace, bad-hash, secret-marker, and critical/high-finding response fixtures
 without recording review state.
+Use
+[sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md](sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md)
+and
+[sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md](sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md)
+before applying any real normalized descriptor-only reviewer response.
 
 ## Reviewed Packet
 

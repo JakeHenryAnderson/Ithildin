@@ -305,6 +305,9 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_check,
     sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_check,
     sandbox_vm_live_poc_runtime_descriptor_only_plan_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_response_application_playbook_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_response_application_preflight_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_response_application_record_check,
     sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run,
     sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle,
     sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle,
@@ -1348,6 +1351,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2591,6 +2595,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2612,6 +2617,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
         "live_poc_runtime_descriptor_only_response_dry_run",
+        "live_poc_runtime_descriptor_only_response_application_preflight",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
         "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md",
@@ -2624,6 +2630,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2697,6 +2704,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
         "live_poc_runtime_descriptor_only_response_dry_run",
+        "live_poc_runtime_descriptor_only_response_application_preflight",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -6276,6 +6284,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -6297,6 +6306,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
         "live_poc_runtime_descriptor_only_response_dry_run",
+        "live_poc_runtime_descriptor_only_response_application_preflight",
     ]
     assert any(
         artifact["path"]
@@ -15370,6 +15380,135 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired()
     assert (
         "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
         in enterprise_status_text
+    )
+
+
+def test_descriptor_only_response_application_preflight_is_wired() -> None:
+    record_report = (
+        sandbox_vm_live_poc_runtime_descriptor_only_response_application_record_check.build_report(
+            Path.cwd()
+        )
+    )
+    playbook_report = (
+        sandbox_vm_live_poc_runtime_descriptor_only_response_application_playbook_check.build_report(
+            Path.cwd()
+        )
+    )
+    preflight_report = (
+        sandbox_vm_live_poc_runtime_descriptor_only_response_application_preflight_check.build_report(
+            Path.cwd()
+        )
+    )
+    docs = {
+        "record": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md"
+        ),
+        "playbook": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook.md"
+        ),
+        "preflight": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md"
+        ),
+    }
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    status_now_text = Path("scripts/status_now.py").read_text(encoding="utf-8")
+    operator_next_text = Path("scripts/enterprise_operator_next_action.py").read_text(
+        encoding="utf-8"
+    )
+    enterprise_status_text = Path("scripts/enterprise_status_export.py").read_text(
+        encoding="utf-8"
+    )
+    mission_control_fixtures_text = Path(
+        "scripts/mission_control_enterprise_status_fixtures.py"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    for report in [record_report, playbook_report, preflight_report]:
+        assert report["valid"] is True
+        assert report["tool_count"] == 24
+        assert report["erg_004_status"] == (
+            "descriptor_only_runtime_implemented_source_review_pending"
+        )
+        assert report["allowed_future_status"] == (
+            "descriptor_only_local_preview_disposition_ready"
+        )
+        assert report["requires_real_normalized_response"] is True
+        assert report["descriptor_only_source_disposition_allowed_now"] is False
+        assert report["runtime_implementation_allowed"] is False
+        assert report["live_vm_inspection_allowed"] is False
+        assert report["sandbox_orchestration_allowed"] is False
+        assert report["mission_control_runtime_allowed"] is False
+        assert report["local_model_invocation_allowed"] is False
+        assert report["trusted_host_promotion_allowed"] is False
+        assert report["host_writes_allowed"] is False
+        assert report["network_expansion_allowed"] is False
+        assert report["api_mcp_profile_loading_allowed"] is False
+        assert report["siem_adapter_allowed"] is False
+        assert report["new_power_classes_allowed"] is False
+        assert report["public_security_product_positioning_allowed"] is False
+        assert report["closes_erg_004"] is False
+
+    for key, doc_path in docs.items():
+        doc = Path(doc_path).read_text(encoding="utf-8")
+        assert "Current governed tool count: `24`." in doc
+        assert "descriptor_only_runtime_implemented_source_review_pending" in doc
+        assert (
+            "ERG-004 descriptor-only: source_review_pending -> "
+            "descriptor_only_local_preview_disposition_ready"
+        ) in doc
+        assert "runtime implementation" in doc
+        assert "live VM/container inspection" in doc
+        assert "sandbox orchestration" in doc
+        assert "new governed tool powers" in doc
+        assert "ERG-004 is closed" not in doc
+        assert doc_path in readme
+        assert doc_path in docs_site
+        assert doc_path in review_docs.REVIEW_DOCS
+        assert key in {"record", "playbook", "preflight"}
+
+    targets = [
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check",
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check",
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+    ]
+    for target in targets:
+        assert f"{target}:" in makefile
+        assert target in release_check_body or f"release-check: {target}" in makefile
+        assert target in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+        assert f"make {target}" in readme
+    assert (
+        "Sandbox/VM Live POC Runtime Descriptor-Only Response Application Record"
+        in review_index
+    )
+    assert (
+        "Sandbox/VM Live POC Runtime Descriptor-Only Response Application Playbook"
+        in review_index
+    )
+    assert (
+        "Sandbox/VM Live POC Runtime Descriptor-Only Response Application Preflight"
+        in review_index
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight"
+        in status_now_text
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight"
+        in operator_next_text
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight"
+        in enterprise_status_text
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight"
+        in mission_control_fixtures_text
     )
 
 
