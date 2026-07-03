@@ -76,6 +76,7 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
@@ -287,6 +288,16 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
         "description": (
             "planning-only descriptor-only implementation decision draft for the "
             "next runtime checkpoint"
+        ),
+    },
+    {
+        "label": "live_poc_runtime_descriptor_only_implementation",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-implementation.md"
+        ),
+        "description": (
+            "bounded descriptor-only runtime implementation checkpoint"
         ),
     },
     {

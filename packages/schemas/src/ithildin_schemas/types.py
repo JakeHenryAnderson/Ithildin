@@ -61,5 +61,6 @@ class AuditEventType(StrEnum):
     TOOL_EXECUTION_STARTED = "tool.execution.started"
     TOOL_EXECUTION_COMPLETED = "tool.execution.completed"
     TOOL_EXECUTION_FAILED = "tool.execution.failed"
+    SANDBOX_DESCRIPTOR_SUBMITTED = "sandbox.descriptor.submitted"
     AUDIT_EXPORTED = "audit.exported"
     POLICY_CHANGED = "policy.changed"

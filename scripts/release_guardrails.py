@@ -230,6 +230,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
     "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
     "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
+    "sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
     "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",

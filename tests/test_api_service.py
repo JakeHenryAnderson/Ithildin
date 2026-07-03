@@ -132,6 +132,39 @@ def write_policy(settings: Settings, rules_yaml: str) -> None:
     settings.policy_path.write_text(f"version: test\nrules:\n{rules_yaml}", encoding="utf-8")
 
 
+def sandbox_descriptor_payload(**overrides: Any) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "workspace_id": "default",
+        "principal_id": "agent:local-dev",
+        "run_id": "run_11111111111111111111111111111111",
+        "sandbox_id": "sandbox-demo",
+        "sandbox_profile_id": "profile-demo",
+        "vm_profile_hash": "sha256:" + ("1" * 64),
+        "isolation_label": "operator-attested-vm",
+        "network_posture_label": "host-only",
+        "mount_root_label": "sandbox-workspace",
+        "model_client_label": "local-llm",
+        "descriptor_source": "operator_supplied",
+        "vm_lifecycle_source": "operator_managed",
+        "isolation_claim_source": "operator_attested",
+        "network_posture_source": "operator_attested",
+        "mount_posture_source": "operator_attested",
+        "model_client_source": "operator_attested",
+        "ithildin_live_inspection_performed": False,
+        "ithildin_lifecycle_control_performed": False,
+        "mission_control_runtime_authority_used": False,
+        "trusted_host_promotion_performed": False,
+        "approval_id": "ap_11111111111111111111111111111111",
+        "audit_event_id": "evt_11111111111111111111111111111111",
+        "signed_export_id": "sig_11111111111111111111111111111111",
+        "failure_transcript_hash": "sha256:" + ("2" * 64),
+        "packet_hash": "sha256:" + ("3" * 64),
+        "operator_notes_label": "demo-notes",
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_healthz_returns_service_health(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path))
 
@@ -309,6 +342,21 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "count": 0,
         "status": "read_only_observability",
     }
+    assert payload["sandbox_descriptors"] == {
+        "enabled": True,
+        "mode": "operator_attested_descriptor_only",
+        "count": 0,
+        "statuses": {},
+        "runtime_controls": {
+            "live_vm_inspection": False,
+            "vm_container_lifecycle": False,
+            "sandbox_orchestration": False,
+            "mission_control_runtime_authority": False,
+            "trusted_host_promotion": False,
+            "host_writes": False,
+            "network_expansion": False,
+        },
+    }
     assert payload["redaction"] == {
         "baseline_enabled": True,
         "baseline_key_count": 10,
@@ -376,6 +424,143 @@ def test_workspace_endpoint_requires_auth_and_returns_records(tmp_path: Path) ->
             "metadata": {},
         }
     ]
+
+
+def test_sandbox_descriptor_endpoints_require_auth_and_store_safe_evidence(
+    tmp_path: Path,
+) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        unauthenticated = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(),
+        )
+        created = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(),
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        descriptor_id = created.json()["descriptor_id"]
+        listed = client.get(
+            "/sandbox-descriptors",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        detail = client.get(
+            f"/sandbox-descriptors/{descriptor_id}",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        status_response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        audit_response = client.get(
+            "/audit-events?event_type=sandbox.descriptor.submitted",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert created.status_code == 200
+    created_payload = created.json()
+    assert descriptor_id.startswith("sdesc_")
+    assert created_payload["status"] == "accepted"
+    assert created_payload["payload_hash"].startswith("sha256:")
+    assert created_payload["descriptor_source"] == "operator_supplied"
+    assert created_payload["vm_lifecycle_source"] == "operator_managed"
+    assert created_payload["ithildin_live_inspection_performed"] is False
+    assert created_payload["ithildin_lifecycle_control_performed"] is False
+    assert created_payload["mission_control_runtime_authority_used"] is False
+    assert created_payload["trusted_host_promotion_performed"] is False
+    assert created_payload["correlation"] == {
+        "approval_id": "ap_11111111111111111111111111111111",
+        "audit_event_id": "evt_11111111111111111111111111111111",
+        "signed_export_id": "sig_11111111111111111111111111111111",
+    }
+    assert created_payload["output_policy"]["operator_attested"] is True
+    assert created_payload["output_policy"]["no_live_vm_inspection"] is True
+    assert "raw_paths" in created_payload["output_policy"]["excluded_categories"]
+    assert "safe_payload" in created_payload
+    assert created_payload["safe_payload"]["mount_root_label"] == "sandbox-workspace"
+    assert "secret.txt" not in created.text
+    assert "command line" not in created.text
+    assert "/Users/" not in created.text
+
+    assert listed.status_code == 200
+    listed_payload = listed.json()
+    assert [item["descriptor_id"] for item in listed_payload["sandbox_descriptors"]] == [
+        descriptor_id
+    ]
+    assert listed_payload["summary"]["count"] == 1
+    assert listed_payload["summary"]["runtime_controls"] == {
+        "live_vm_inspection": False,
+        "vm_container_lifecycle": False,
+        "sandbox_orchestration": False,
+        "mission_control_runtime_authority": False,
+        "trusted_host_promotion": False,
+        "host_writes": False,
+        "network_expansion": False,
+    }
+    assert detail.status_code == 200
+    assert detail.json()["descriptor_id"] == descriptor_id
+    assert status_response.status_code == 200
+    assert status_response.json()["sandbox_descriptors"]["count"] == 1
+
+    assert audit_response.status_code == 200
+    audit_events = audit_response.json()["audit_events"]
+    assert len(audit_events) == 1
+    audit_metadata = audit_events[0]["metadata"]
+    assert audit_metadata["descriptor_id"] == descriptor_id
+    assert audit_metadata["descriptor_payload_hash"] == created_payload["payload_hash"]
+    assert audit_metadata["descriptor_source"] == "operator_supplied"
+    assert audit_metadata["ithildin_live_inspection_performed"] is False
+    assert audit_metadata["trusted_host_promotion_performed"] is False
+    assert "mount_root_label" not in audit_metadata
+    assert "raw_paths" in audit_metadata["output_policy"]["excluded_categories"]
+
+
+def test_sandbox_descriptor_denies_unsafe_inputs_safely(tmp_path: Path) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app) as client:
+        unknown_field = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(secret="/Users/jake/secret.txt"),
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        lifecycle_claim = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(ithildin_lifecycle_control_performed=True),
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        raw_path = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(mount_root_label="/Users/jake/workspace"),
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        bad_hash = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(vm_profile_hash="not-a-hash"),
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        bad_query = client.get(
+            "/sandbox-descriptors?format=json",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        bad_id = client.get(
+            "/sandbox-descriptors/not-a-descriptor",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    for response in [unknown_field, lifecycle_claim, raw_path, bad_hash]:
+        assert response.status_code == 400
+        assert response.json()["detail"] == "invalid sandbox descriptor"
+        assert "/Users/jake" not in response.text
+        assert "secret" not in response.text
+        assert "not-a-hash" not in response.text
+    assert bad_query.status_code == 400
+    assert bad_query.json()["detail"] == "unsupported query parameter"
+    assert bad_id.status_code == 400
+    assert bad_id.json()["detail"] == "invalid sandbox descriptor id"
 
 
 def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> None:

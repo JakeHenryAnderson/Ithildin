@@ -25,9 +25,10 @@ from ithildin_schemas import (
     ApprovalStatus,
     AuditEventType,
     JsonObject,
+    JsonValue,
     sha256_digest,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from ithildin_api.agent_runs import AgentRunError, AgentRunFilters, AgentRunStore
 from ithildin_api.approvals import (
@@ -64,6 +65,14 @@ from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry, ToolRegistryError
 from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
+from ithildin_api.sandbox_descriptors import (
+    SandboxDescriptorError,
+    SandboxDescriptorPayload,
+    SandboxDescriptorStore,
+)
+from ithildin_api.sandbox_descriptors import (
+    safe_audit_metadata as sandbox_descriptor_audit_metadata,
+)
 from ithildin_api.security_status import (
     LOCAL_CORS_ORIGINS,
     security_status,
@@ -97,6 +106,9 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             agent_run_store = AgentRunStore(resolved_settings.db_path)
             agent_run_store.initialize()
             app_instance.state.agent_run_store = agent_run_store
+            sandbox_descriptor_store = SandboxDescriptorStore(resolved_settings.db_path)
+            sandbox_descriptor_store.initialize()
+            app_instance.state.sandbox_descriptor_store = sandbox_descriptor_store
             approval_store = ApprovalStore(resolved_settings.db_path)
             approval_store.initialize()
             app_instance.state.approval_service = ApprovalService(
@@ -256,6 +268,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     "count": len(agent_run_store.list_runs(limit=200)),
                     "status": "read_only_observability",
                 },
+                "sandbox_descriptors": cast(
+                    SandboxDescriptorStore,
+                    api.state.sandbox_descriptor_store,
+                ).status(),
                 "audit_signing": audit_signing_status(
                     settings_state.audit_signing_private_key_path,
                     settings_state.audit_signing_public_key_path,
@@ -318,6 +334,58 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 workspace.safe_summary() for workspace in workspace_registry.list_workspaces()
             ]
         }
+
+    @api.post("/sandbox-descriptors", dependencies=[Depends(require_admin_token)])
+    def create_sandbox_descriptor(payload: JsonObject) -> JsonObject:
+        try:
+            descriptor_payload = SandboxDescriptorPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid sandbox descriptor",
+            ) from exc
+        descriptor_store = cast(SandboxDescriptorStore, api.state.sandbox_descriptor_store)
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        record = descriptor_store.create(descriptor_payload)
+        audit_writer.write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.SANDBOX_DESCRIPTOR_SUBMITTED,
+            request_id=f"req_{uuid4().hex}",
+            principal={
+                "id": descriptor_payload.principal_id,
+                "roles": [],
+            },
+            metadata=sandbox_descriptor_audit_metadata(record),
+        )
+        return record.detail()
+
+    @api.get("/sandbox-descriptors", dependencies=[Depends(require_admin_token)])
+    def list_sandbox_descriptors(request: Request) -> JsonObject:
+        unexpected = sorted(set(request.query_params.keys()) - {"limit"})
+        if unexpected:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported query parameter",
+            )
+        limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
+        descriptor_store = cast(SandboxDescriptorStore, api.state.sandbox_descriptor_store)
+        return {
+            "sandbox_descriptors": cast(JsonValue, descriptor_store.list(limit=limit)),
+            "summary": descriptor_store.status(),
+        }
+
+    @api.get("/sandbox-descriptors/{descriptor_id}", dependencies=[Depends(require_admin_token)])
+    def get_sandbox_descriptor(descriptor_id: str) -> JsonObject:
+        if not _valid_sandbox_descriptor_id(descriptor_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid sandbox descriptor id",
+            )
+        descriptor_store = cast(SandboxDescriptorStore, api.state.sandbox_descriptor_store)
+        try:
+            return descriptor_store.get(descriptor_id)
+        except SandboxDescriptorError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @api.get("/runs", dependencies=[Depends(require_admin_token)])
     def list_runs(request: Request) -> JsonObject:
@@ -654,6 +722,12 @@ def _current_manifest_lock_status(settings: Settings) -> JsonObject:
 def _valid_agent_run_id(run_id: str) -> bool:
     return run_id.startswith("run_") and len(run_id) == 36 and all(
         character in "0123456789abcdef" for character in run_id[4:]
+    )
+
+
+def _valid_sandbox_descriptor_id(descriptor_id: str) -> bool:
+    return descriptor_id.startswith("sdesc_") and len(descriptor_id) == 38 and all(
+        character in "0123456789abcdef" for character in descriptor_id[6:]
     )
 
 
