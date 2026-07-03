@@ -888,6 +888,12 @@ checked with `make control-mapping-readiness`.
   Control runtime authority, trusted-host promotion, API/MCP profile loading, host writes, network
   expansion, and new tool powers blocked; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check` - validate the
+  planning-only descriptor-only implementation decision draft for the next ERG-004 runtime
+  checkpoint while keeping runtime implementation, live VM/container inspection, lifecycle control,
+  Mission Control runtime authority, trusted-host promotion, API/MCP profile loading, host writes,
+  network expansion, and new tool powers blocked; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md).
 - `make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle` - generate the focused
   review packet for the ERG-004 descriptor-only implementation ticket using the
   `EXT-LIVE-DESC-###` namespace while keeping runtime implementation, VM/container inspection,
@@ -2116,6 +2122,11 @@ it narrows the future descriptor/correlation implementation sprint while keeping
 this checkpoint, live VM/container inspection, lifecycle control, Mission Control runtime authority,
 trusted-host promotion, API/MCP profile loading, host writes, network expansion, and new tool powers
 blocked.
+The runtime descriptor-only implementation decision draft is
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md)
+and is checked with `make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check`;
+it names the future descriptor-only runtime surfaces under consideration while keeping runtime
+implementation blocked until a later explicit implementation sprint.
 The runtime descriptor-only ticket review bundle is
 [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md)
 and is generated with `make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle`; it

@@ -299,6 +299,7 @@ from scripts import (
     sandbox_vm_live_poc_response_kit,
     sandbox_vm_live_poc_runtime_descriptor_contract_check,
     sandbox_vm_live_poc_runtime_descriptor_contract_internal_review_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_implementation_decision_check,
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_check,
     sandbox_vm_live_poc_runtime_descriptor_only_plan_check,
     sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle,
@@ -1335,6 +1336,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
@@ -2563,6 +2565,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
@@ -2578,12 +2581,14 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "live_poc_runtime_gate_readiness_decision_record",
         "live_poc_runtime_descriptor_only_plan",
         "live_poc_runtime_descriptor_only_implementation_ticket",
+        "live_poc_runtime_descriptor_only_implementation_decision",
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
         "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-plan.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md",
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review",
     }
     assert report["operator_next_action_doc"] == (
@@ -2651,6 +2656,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_gate_readiness_decision_record",
         "live_poc_runtime_descriptor_only_plan",
         "live_poc_runtime_descriptor_only_implementation_ticket",
+        "live_poc_runtime_descriptor_only_implementation_decision",
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
     ]
     assert report["response_present_count"] == 0
@@ -6224,6 +6230,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
@@ -6239,6 +6246,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "live_poc_runtime_gate_readiness_decision_record",
         "live_poc_runtime_descriptor_only_plan",
         "live_poc_runtime_descriptor_only_implementation_ticket",
+        "live_poc_runtime_descriptor_only_implementation_decision",
         "live_poc_runtime_descriptor_only_ticket_review_bundle",
     ]
     assert any(
@@ -6256,6 +6264,14 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         == (
             "docs/codex/"
             "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md"
+        )
+        for artifact in report["handoff_artifacts"]
+    )
+    assert any(
+        artifact["path"]
+        == (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md"
         )
         for artifact in report["handoff_artifacts"]
     )
@@ -14793,6 +14809,101 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_is_wi
     )
     assert (
         "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check"
+        in operator_next
+    )
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_only_implementation_decision_is_wired() -> None:
+    report = (
+        sandbox_vm_live_poc_runtime_descriptor_only_implementation_decision_check.build_report(
+            Path.cwd()
+        )
+    )
+    doc_path = (
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md"
+    )
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    status_now = Path("scripts/status_now.py").read_text(encoding="utf-8")
+    operator_next = Path("scripts/enterprise_operator_next_action.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_004_status"] == (
+        "ready_for_descriptor_only_runtime_implementation_decision"
+    )
+    assert report["decision_outcome"] == (
+        "descriptor_only_runtime_implementation_decision_draft_ready"
+    )
+    assert report["descriptor_only_planning_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["host_writes_allowed"] is False
+    assert report["network_expansion_allowed"] is False
+    assert report["api_mcp_profile_loading_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_004"] is False
+    for phrase in [
+        "Status: planning-only implementation decision draft",
+        "ready_for_descriptor_only_runtime_implementation_decision",
+        "Future Runtime Surfaces Under Consideration",
+        "closed Pydantic descriptor schema",
+        "admin-protected descriptor submission/status API",
+        "source-review handoff packet using `EXT-LIVE-DESC-###`",
+        "runtime implementation in this checkpoint",
+    ]:
+        assert phrase in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "live VM/container inspection is approved",
+        "trusted-host promotion is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert (
+        "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check"
+        in readme
+    )
+    assert doc_path in readme
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check"
+        in release_check_body
+    ) or (
+        "release-check: sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Runtime Descriptor-Only Implementation Decision" in review_index
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check"
+        in status_now
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check"
         in operator_next
     )
 
