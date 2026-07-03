@@ -374,6 +374,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md",
     "docs/codex/sandbox-vm-live-poc-runtime-ticket-review-bundle.md",
     "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md",
+    "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md",
     "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md",
     "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md",
     "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-inbox.md",

@@ -59,6 +59,7 @@ RUNTIME_GATE_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
@@ -182,6 +183,14 @@ RUNTIME_GATE_ARTIFACTS = [
         "label": "live_poc_runtime_gate_readiness_review_bundle",
         "path": "var/review-packets/v3/sandbox-vm-live-poc-runtime-gate-readiness-review",
         "description": "focused packet for runtime gate-readiness review",
+    },
+    {
+        "label": "live_poc_runtime_gate_readiness_internal_review",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md"
+        ),
+        "description": "internal High review record for the runtime gate-readiness checkpoint",
     },
     {
         "label": "live_poc_runtime_gate_readiness_response_intake",

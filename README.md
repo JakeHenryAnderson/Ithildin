@@ -873,6 +873,10 @@ checked with `make control-mapping-readiness`.
   whether a later descriptor-only runtime implementation sprint may be planned while keeping runtime
   behavior, live VM/container inspection, local model invocation, Mission Control runtime authority,
   host writes, network expansion, API/MCP profile loading, and new tool powers blocked.
+- `make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check` - validate the internal
+  High review record for the ERG-004 runtime gate-readiness checkpoint; this supports only the next
+  descriptor-only planning step and does not approve runtime behavior or external closure; see
+  [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md).
 - `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check` - validate the
   response-intake template for future `EXT-LIVE-GATE-###` gate-readiness dispositions while
   confirming intake cannot mutate findings, close `ERG-004`, approve runtime implementation, or
@@ -2072,6 +2076,11 @@ The focused runtime gate-readiness review bundle is
 and is generated with `make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle`; it packages
 the implementation gate draft, descriptor contract, internal review evidence, and command evidence
 for review while still keeping runtime implementation and all live VM/container behavior blocked.
+The runtime gate-readiness internal review is
+[docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md)
+and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check`; it
+supports only a later descriptor-only planning checkpoint and does not approve runtime behavior,
+external closure, or product-readiness claims.
 The runtime gate-readiness response intake is
 [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`; it
