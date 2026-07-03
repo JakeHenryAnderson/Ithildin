@@ -917,22 +917,24 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
                 "upload staging was not generated from a clean tree",
                 "upload staging commit does not match current HEAD",
                 "response inbox commit does not match current HEAD",
+                "ERG-004 descriptor-only response inbox commit does not match current HEAD",
             }
         )
     assert report["tool_count"] == 24
-    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
-    assert report["lane_count"] == 2
-    assert report["batch_count"] == 3
+    assert report["recommended_gaps"] == ["ERG-004"]
+    assert report["current_send_set"] == ["ERG-004"]
+    assert report["lane_count"] == 1
+    assert report["batch_count"] == 1
     assert (
-        "make enterprise-review-send-receipt-copy after the human send step"
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
         in report["next_after_send"]
     )
-    assert "make enterprise-response-now" in report["next_after_send"]
     assert report["records_external_review"] is False
     assert report["normalizes_responses"] is False
     assert report["writes_response_files"] is False
     assert report["closes_erg_003"] is False
     assert report["closes_erg_002"] is False
+    assert report["closes_erg_004"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -943,8 +945,11 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert "enterprise-send-now-artifact-check:" in makefile
     assert "make enterprise-send-now" in readme
     assert "make enterprise-send-now-artifact" in readme
-    assert any(lane["gap"] == "ERG-003" for lane in report["lanes"])
-    assert any(lane["gap"] == "ERG-002" for lane in report["lanes"])
+    assert any(lane["gap"] == "ERG-004" for lane in report["lanes"])
+    assert any(
+        lane["finding_namespace"] == "EXT-LIVE-DESC-###"
+        for lane in report["lanes"]
+    )
     assert artifact_report["artifact_written"] is True
     if artifact_report["valid"] is not True:
         assert set(artifact_report["failures"]).issubset(
@@ -953,6 +958,7 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
                 "upload staging was not generated from a clean tree",
                 "upload staging commit does not match current HEAD",
                 "response inbox commit does not match current HEAD",
+                "ERG-004 descriptor-only response inbox commit does not match current HEAD",
             }
         )
     if check_report["valid"] is not True:
@@ -962,12 +968,14 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
                 "upload staging was not generated from a clean tree",
                 "upload staging commit does not match current HEAD",
                 "response inbox commit does not match current HEAD",
+                "ERG-004 descriptor-only response inbox commit does not match current HEAD",
             }
         )
     assert check_report["artifact_json_exists"] is True
     assert check_report["artifact_markdown_exists"] is True
     assert check_report["records_external_review"] is False
     assert check_report["closes_erg_003"] is False
+    assert check_report["closes_erg_004"] is False
     assert check_report["closes_erg_002"] is False
 
 
