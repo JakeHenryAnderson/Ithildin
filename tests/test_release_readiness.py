@@ -1330,11 +1330,14 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-implementation-gate-check",
         "make sandbox-vm-live-poc-runtime-descriptor-contract-check",
         "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
-        "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
-        "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
-        "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
-        "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
-    ]
+            "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
+            "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
+            "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+            "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
+            "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check",
+            "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check",
+            "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
+        ]
 
 
 def test_agent_workflow_instruction_layer_is_wired() -> None:
@@ -2552,6 +2555,9 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     ]
     assert report["next_after_send_commands"] == [
@@ -6224,6 +6230,9 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check",
+        "make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check",
         "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     ]
     assert report["next_after_send_commands"] == [
