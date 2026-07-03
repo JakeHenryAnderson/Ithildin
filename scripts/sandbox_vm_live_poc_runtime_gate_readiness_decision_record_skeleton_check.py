@@ -113,6 +113,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     active_route = _read(repo_root / "docs/codex/enterprise-active-route-clarity.md")
     current_checkpoint = _read(repo_root / "docs/codex/enterprise-current-checkpoint.md")
     execution_board = _read(repo_root / "docs/codex/technical-mvp-execution-board.md")
+    decision_record = _read(
+        repo_root
+        / "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"
+    )
     gate_doc = _read(repo_root / "docs/codex/sandbox-vm-live-poc-runtime-implementation-gate.md")
     bundle_doc = _read(
         repo_root / "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-review-bundle.md"
@@ -178,13 +182,19 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if "Sandbox/VM Live POC Runtime Gate Readiness Decision Record Skeleton" not in review_index:
         failures.append("review docs index is missing runtime gate-readiness decision skeleton")
 
-    for label, source in [
-        ("active route clarity", active_route),
-        ("enterprise current checkpoint", current_checkpoint),
-        ("technical MVP execution board", execution_board),
+    pointer_sources = [
         ("runtime implementation gate", gate_doc),
         ("runtime gate-readiness review bundle", bundle_doc),
-    ]:
+    ]
+    if not decision_record:
+        pointer_sources.extend(
+            [
+                ("active route clarity", active_route),
+                ("enterprise current checkpoint", current_checkpoint),
+                ("technical MVP execution board", execution_board),
+            ]
+        )
+    for label, source in pointer_sources:
         if DOC_NAME not in source:
             failures.append(f"{label} is missing runtime gate-readiness decision skeleton pointer")
 

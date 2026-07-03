@@ -74,6 +74,7 @@ ALLOWED_ACTION_COMMANDS = {
     "make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check",
+    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
@@ -85,6 +86,8 @@ ALLOWED_ACTION_COMMANDS = {
     "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
     "make sandbox-vm-live-poc-decision-packet-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
 }
 
 SAFE_HANDOFF_ARTIFACT_PATH_PREFIXES = (

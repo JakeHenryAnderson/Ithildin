@@ -118,6 +118,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     checkpoint = _read(repo_root / "docs/codex/enterprise-current-checkpoint.md")
     active_route = _read(repo_root / "docs/codex/enterprise-active-route-clarity.md")
+    decision_record = _read(
+        repo_root
+        / "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"
+    )
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     if not doc_path.exists():
@@ -154,10 +158,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("runtime gate-readiness bundle doc is missing response intake pointer")
     if DOC_NAME not in skeleton_doc:
         failures.append("runtime gate-readiness skeleton is missing response intake pointer")
-    if DOC_NAME not in checkpoint:
-        failures.append("enterprise current checkpoint is missing response intake pointer")
-    if DOC_NAME not in active_route:
-        failures.append("enterprise active route is missing response intake pointer")
+    if not decision_record:
+        if DOC_NAME not in checkpoint:
+            failures.append("enterprise current checkpoint is missing response intake pointer")
+        if DOC_NAME not in active_route:
+            failures.append("enterprise active route is missing response intake pointer")
     if "sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check:" not in makefile:
         failures.append("Make target is missing: runtime gate-readiness response intake")
     if "sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check" not in (

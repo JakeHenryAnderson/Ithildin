@@ -53,19 +53,20 @@ make enterprise-response-intake-drill
 
 ## Active Route Versus Historical Queue
 
-The post-disposition active route is now `ERG-004`: prepare the still-blocked live
-sandbox/VM POC runtime implementation gate. The historical `ERG-003`/`ERG-002` review rows remain
-below for provenance, response-intake fallback, and dependency traceability. They are not the
-current operator next action while `make enterprise-operator-next-action` reports
-`prepare_erg004_runtime_implementation_gate`.
+The post-disposition active route is now `ERG-004`: prepare descriptor-only runtime planning for
+the still-blocked live sandbox/VM POC. The historical `ERG-003`/`ERG-002` review rows remain below
+for provenance, response-intake fallback, and dependency traceability. They are not the current
+operator next action while `make enterprise-operator-next-action` reports
+`prepare_erg004_descriptor_only_runtime_planning`.
 
-Current active route: `ERG-004` runtime implementation gate preparation.
+Current active route: `ERG-004` descriptor-only runtime planning.
 
 Current active route validation:
 
 ```sh
 make enterprise-active-route-clarity
-make sandbox-vm-live-poc-runtime-implementation-gate-check
+make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
+make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
 make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
 ```
 
