@@ -32,6 +32,8 @@ The dry-run validates that:
 - an absent response keeps the intake valid and does not close `ERG-004`;
 - a favorable source-level or packet-and-source response normalizes with `EXT-LIVE-DESC-###`;
 - packet-only and docs-only responses cannot become descriptor-only source disposition evidence;
+- internal proxy reviews from `codex-high` or `codex-xhigh` can be captured as pressure-test
+  evidence, but cannot become descriptor-only source disposition evidence;
 - missing outcome text cannot become disposition-ready evidence;
 - critical/high findings block later descriptor-only closure;
 - malformed packet hashes are rejected;

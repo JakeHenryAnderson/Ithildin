@@ -100,6 +100,10 @@ Expected normalized-response invariants:
 - `can_close_source_rows: true` only when source access is `source-level` or `packet-and-source`
 - critical/high findings block any later descriptor-only closure record
 
+Internal proxy reviews from `codex-high` or `codex-xhigh` may be normalized for pressure-test
+evidence, but they are not external/source disposition. They cannot by themselves move the
+descriptor-only slice to `descriptor_only_local_preview_disposition_ready`.
+
 Only a later committed triage/disposition update may move the descriptor-only slice away from
 `descriptor_only_runtime_implemented_source_review_pending`.
 

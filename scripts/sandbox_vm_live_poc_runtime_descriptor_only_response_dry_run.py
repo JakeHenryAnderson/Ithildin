@@ -107,6 +107,25 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
                 is False
             )
 
+            internal_proxy_text = _response_text(
+                source_access_note="packet-and-source internal proxy review",
+                outcome=EXPECTED_OUTCOME,
+                no_findings=True,
+            )
+            internal_proxy = _normalize_and_write(
+                normalized_path,
+                internal_proxy_text,
+                reviewer_type="codex-high",
+            )
+            cases["internal_proxy_response_not_disposition_ready"] = (
+                internal_proxy["finding_count"] == 0
+                and internal_proxy["can_close_source_rows"] is True
+                and _descriptor_disposition_consideration_ready(
+                    internal_proxy, internal_proxy_text
+                )
+                is False
+            )
+
             missing_outcome_text = _response_text(no_findings=True)
             missing_outcome = _normalize_and_write(
                 normalized_path, missing_outcome_text
@@ -252,13 +271,14 @@ def _normalize_and_write(
     path: Path,
     text: str,
     *,
+    reviewer_type: str = "gpt-5.5-pro",
     source_access: str = "packet-and-source",
     reviewed_packet_hash: str = "sha256:" + "6" * 64,
 ) -> dict[str, Any]:
     result = external_response_normalize.normalize_response(
         text,
         reviewer="dry-run reviewer",
-        reviewer_type="fixture",
+        reviewer_type=reviewer_type,
         source_access=source_access,
         reviewed_commit="abcdef1234567890",
         reviewed_packet_hash=reviewed_packet_hash,
@@ -279,7 +299,7 @@ def _normalization_rejected(
         external_response_normalize.normalize_response(
             text,
             reviewer="dry-run reviewer",
-            reviewer_type="fixture",
+            reviewer_type="gpt-5.5-pro",
             source_access=source_access,
             reviewed_commit="abcdef1234567890",
             reviewed_packet_hash=reviewed_packet_hash,
@@ -295,6 +315,7 @@ def _descriptor_disposition_consideration_ready(
 ) -> bool:
     return (
         response.get("can_close_source_rows") is True
+        and response.get("reviewer_type") in {"human", "gpt-5.5-pro", "external-ai"}
         and not _has_critical_high_findings(response)
         and EXPECTED_OUTCOME in text
     )

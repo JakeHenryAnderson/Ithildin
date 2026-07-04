@@ -15598,6 +15598,7 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired()
         "favorable_source_response_normalizes",
         "packet_only_response_not_disposition_ready",
         "docs_only_response_not_disposition_ready",
+        "internal_proxy_response_not_disposition_ready",
         "missing_outcome_not_disposition_ready",
         "critical_high_finding_not_disposition_ready",
         "bad_hash_rejected",
@@ -15612,6 +15613,7 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired()
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "EXT-LIVE-DESC-###",
         "descriptor_only_source_disposition_allowed: false",
+        "internal proxy reviews",
         "Only a later committed triage/disposition update",
     ]:
         assert phrase in doc
