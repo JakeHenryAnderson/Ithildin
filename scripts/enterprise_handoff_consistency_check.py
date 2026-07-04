@@ -16,7 +16,7 @@ from scripts import review_docs
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-handoff-consistency.md"
 DOC_TITLE = "Enterprise Handoff Consistency"
-ACTIVE_SEND_SET = ["ERG-004"]
+ACTIVE_SEND_SET = ["ERG-005"]
 HISTORICAL_DUAL_SEND_SET = ["ERG-003", "ERG-002"]
 DUAL_INBOX_ROOT = "var/review-runs/enterprise-dual-response-inbox"
 RAW_RESPONSE_PATHS = [
@@ -42,12 +42,13 @@ CURRENT_FLOW_COMMANDS = [
     "make enterprise-response-now",
     "make enterprise-response-paste-preflight",
 ]
-ACTIVE_ERG004_RESPONSE_COMMANDS = [
-    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
+ACTIVE_RESPONSE_COMMANDS = [
+    "make trusted-host-promotion-response-kit-check",
+    "make trusted-host-promotion-response-dry-run",
+    "make trusted-host-promotion-external-response-intake-check",
+    "make trusted-host-promotion-disposition-closure-check",
     "make enterprise-response-waiting-room",
     "make enterprise-response-now",
-    "make enterprise-response-paste-preflight",
 ]
 
 CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
@@ -92,7 +93,7 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
     ],
     "docs/codex/enterprise-operator-next-action.md": [
         *CURRENT_PRE_SEND_COMMANDS,
-        *ACTIVE_ERG004_RESPONSE_COMMANDS,
+        *ACTIVE_RESPONSE_COMMANDS,
         "Historical fallback lanes remain available",
     ],
 }
@@ -212,7 +213,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "dual_response_inbox_root": DUAL_INBOX_ROOT,
         "raw_response_paths": RAW_RESPONSE_PATHS,
         "required_historical_flow_commands": CURRENT_FLOW_COMMANDS,
-        "required_active_response_commands": ACTIVE_ERG004_RESPONSE_COMMANDS,
+        "required_active_response_commands": ACTIVE_RESPONSE_COMMANDS,
         "required_pre_send_commands": CURRENT_PRE_SEND_COMMANDS,
         **BOUNDARY_FLAGS,
     }

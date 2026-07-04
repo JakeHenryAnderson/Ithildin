@@ -43,6 +43,15 @@ NEXT_AFTER_SEND_COMMANDS = [
     "make enterprise-response-paste-preflight",
 ]
 
+ERG005_NEXT_AFTER_SEND_COMMANDS = [
+    "make trusted-host-promotion-response-kit-check",
+    "make trusted-host-promotion-response-dry-run",
+    "make trusted-host-promotion-external-response-intake-check",
+    "make trusted-host-promotion-disposition-closure-check",
+    "make enterprise-response-waiting-room",
+    "make enterprise-response-now",
+]
+
 RESPONSE_COMMANDS = [
     "make enterprise-response-intake-refresh",
 ]
@@ -86,6 +95,22 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
+]
+
+ERG005_TRUSTED_HOST_COMMANDS = [
+    "make trusted-host-promotion-decision-intake-check",
+    "make trusted-host-promotion-state-machine-check",
+    "make trusted-host-promotion-negative-fixtures-check",
+    "make trusted-host-promotion-zone-contract-check",
+    "make trusted-host-promotion-implementation-plan-check",
+    "make trusted-host-promotion-source-review-packet-check",
+    "make trusted-host-promotion-disposition-packet-check",
+    "make trusted-host-promotion-external-review-bundle-check",
+    "make trusted-host-promotion-response-kit-check",
+    "make trusted-host-promotion-response-dry-run",
+    "make trusted-host-promotion-internal-review-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -400,36 +425,83 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
     },
 ]
 
+ERG005_TRUSTED_HOST_ARTIFACTS = [
+    {
+        "label": "trusted_host_decision_intake",
+        "path": "docs/codex/trusted-host-promotion-decision-intake.md",
+        "description": "decision-intake packet for blocked ERG-005 trusted-host promotion",
+    },
+    {
+        "label": "trusted_host_state_machine",
+        "path": "docs/codex/trusted-host-promotion-state-machine.md",
+        "description": "design-only promotion state-machine contract",
+    },
+    {
+        "label": "trusted_host_negative_fixtures",
+        "path": "docs/codex/trusted-host-promotion-negative-fixtures.md",
+        "description": "negative fixture contract for future promotion claims",
+    },
+    {
+        "label": "trusted_host_zone_contract",
+        "path": "docs/codex/trusted-host-promotion-zone-contract.md",
+        "description": "source/destination zone labels for future promotion design",
+    },
+    {
+        "label": "trusted_host_implementation_plan",
+        "path": "docs/codex/trusted-host-promotion-implementation-plan.md",
+        "description": "implementation-planning skeleton that still blocks runtime behavior",
+    },
+    {
+        "label": "trusted_host_source_review_packet",
+        "path": "var/review-packets/v3/trusted-host-promotion-source-review",
+        "description": "focused source-review packet for the trusted-host design lane",
+    },
+    {
+        "label": "trusted_host_disposition_packet",
+        "path": "var/review-packets/v3/trusted-host-promotion-disposition",
+        "description": "disposition packet for the trusted-host design lane",
+    },
+    {
+        "label": "trusted_host_external_review_bundle",
+        "path": "var/review-packets/v3/trusted-host-promotion-external-review",
+        "description": "external-review bundle for trusted-host promotion planning",
+    },
+    {
+        "label": "trusted_host_response_kit",
+        "path": "var/review-packets/v3/trusted-host-promotion-response-kit",
+        "description": "response-intake kit for future trusted-host reviewer feedback",
+    },
+]
+
 REQUIRED_DOC_PHRASES = [
     "Status: checked read-only operator next-action summary",
     "Current governed tool count: `24`",
     "make enterprise-operator-next-action",
     "Historical Send Fallback",
     "current route after the recorded dispositions",
-    "If the dual-response disposition record, runtime-ticket internal review, and runtime",
-    "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+    "If the dual-response disposition record, runtime-ticket internal review, runtime "
+    "gate-readiness",
+    "descriptor_only_local_preview_disposition_ready",
+    "make trusted-host-promotion-decision-intake-check",
+    "make trusted-host-promotion-state-machine-check",
+    "make trusted-host-promotion-negative-fixtures-check",
+    "make trusted-host-promotion-zone-contract-check",
+    "make trusted-host-promotion-implementation-plan-check",
+    "make trusted-host-promotion-source-review-packet-check",
+    "make trusted-host-promotion-disposition-packet-check",
+    "make trusted-host-promotion-external-review-bundle-check",
+    "make trusted-host-promotion-response-kit-check",
+    "make trusted-host-promotion-response-dry-run",
+    "make trusted-host-promotion-internal-review-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
     "handoff_artifacts",
-    "When a real reviewer response is available for the current active `ERG-004` route",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
+    "When a real reviewer response is available for the current active `ERG-005` route",
     "For the current active route, the primary lane is:",
-    "`ERG-004`: use the descriptor-only source-review response inbox",
+    "`ERG-005`: use the trusted-host promotion response kit",
     "Historical fallback lanes remain available only when the operator next-action command reports",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
@@ -488,12 +560,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     runtime_gate_decision_recorded = _runtime_gate_readiness_decision_recorded(
         repo_root
     )
+    descriptor_only_disposition_recorded = _descriptor_only_disposition_recorded(
+        repo_root
+    )
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
         disposition_recorded=disposition_recorded,
         internal_review_recorded=internal_review_recorded,
         runtime_gate_decision_recorded=runtime_gate_decision_recorded,
+        descriptor_only_disposition_recorded=descriptor_only_disposition_recorded,
     )
     if next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
@@ -515,6 +591,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         handoff_artifacts = DESCRIPTOR_ONLY_PLANNING_ARTIFACTS
         recommended_send_set = ["ERG-004"]
         recommended_next_enterprise_review = "ERG-004"
+    elif next_action == "prepare_erg005_trusted_host_promotion_review":
+        action_commands = ERG005_TRUSTED_HOST_COMMANDS
+        handoff_artifacts = ERG005_TRUSTED_HOST_ARTIFACTS
+        recommended_send_set = ["ERG-005"]
+        recommended_next_enterprise_review = "ERG-005"
     else:
         action_commands = RESPONSE_COMMANDS
         handoff_artifacts = RESPONSE_ARTIFACTS
@@ -614,9 +695,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "dual_response_disposition_recorded": disposition_recorded,
         "runtime_ticket_internal_review_recorded": internal_review_recorded,
         "runtime_gate_readiness_decision_recorded": runtime_gate_decision_recorded,
+        "descriptor_only_disposition_recorded": descriptor_only_disposition_recorded,
         "next_action": next_action,
         "action_commands": action_commands,
-        "next_after_send_commands": NEXT_AFTER_SEND_COMMANDS,
+        "next_after_send_commands": (
+            ERG005_NEXT_AFTER_SEND_COMMANDS
+            if next_action == "prepare_erg005_trusted_host_promotion_review"
+            else NEXT_AFTER_SEND_COMMANDS
+        ),
         "handoff_artifacts": handoff_artifacts,
         "normalized_response_paths": response_state["normalized_response_paths"],
         **boundary_flags,
@@ -674,11 +760,14 @@ def _next_action(
     disposition_recorded: bool,
     internal_review_recorded: bool,
     runtime_gate_decision_recorded: bool,
+    descriptor_only_disposition_recorded: bool,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if descriptor_only_disposition_recorded:
+        return "prepare_erg005_trusted_host_promotion_review"
     if runtime_gate_decision_recorded:
         return "prepare_erg004_descriptor_only_runtime_planning"
     if internal_review_recorded:
@@ -725,6 +814,23 @@ def _runtime_gate_readiness_decision_recorded(repo_root: Path) -> bool:
         and "not runtime implementation approval" in text
         and "not\nexternal validation" in text
         and "Finding count: `0`" in text
+    )
+
+
+def _descriptor_only_disposition_recorded(repo_root: Path) -> bool:
+    path = (
+        repo_root
+        / "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md"
+    )
+    text = _read(path)
+    return (
+        "Applied descriptor-only local-development disposition:" in text
+        and "reviewer_type: `codex-high`" in text
+        and "disposition: `approve_descriptor_only_local_preview_disposition`" in text
+        and "resulting_state: `descriptor_only_local_preview_disposition_ready`" in text
+        and "finding_count: `0`" in text
+        and "not external review" in text
+        and "not live VM/container runtime approval" in text
     )
 
 

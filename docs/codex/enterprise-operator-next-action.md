@@ -23,50 +23,51 @@ the heavier validation artifacts.
 
 ## Current Expected Action
 
-If the dual-response disposition record, runtime-ticket internal review, and runtime
-gate-readiness decision record are present, the next allowed operator action is to prepare the
-still-blocked `ERG-004` descriptor-only runtime implementation-planning checkpoint:
+If the dual-response disposition record, runtime-ticket internal review, runtime gate-readiness
+decision record, and descriptor-only local-development disposition are present, the next allowed
+operator action is to prepare the still-blocked `ERG-005` trusted-host artifact-promotion review
+lane:
 
 ```sh
-make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
-make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
-make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
-make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check
-make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check
-make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check
-make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts
-make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
-make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
-make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check
-make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
-make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check
-make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
-make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
+make trusted-host-promotion-decision-intake-check
+make trusted-host-promotion-state-machine-check
+make trusted-host-promotion-negative-fixtures-check
+make trusted-host-promotion-zone-contract-check
+make trusted-host-promotion-implementation-plan-check
+make trusted-host-promotion-source-review-packet-check
+make trusted-host-promotion-disposition-packet-check
+make trusted-host-promotion-external-review-bundle-check
+make trusted-host-promotion-response-kit-check
+make trusted-host-promotion-response-dry-run
+make trusted-host-promotion-internal-review-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
 
-Primary descriptor-only handoff artifacts:
+Primary trusted-host handoff artifacts:
 
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md`
-- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md`
-- `var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review`
+- `docs/codex/trusted-host-promotion-decision-intake.md`
+- `docs/codex/trusted-host-promotion-state-machine.md`
+- `docs/codex/trusted-host-promotion-negative-fixtures.md`
+- `docs/codex/trusted-host-promotion-zone-contract.md`
+- `docs/codex/trusted-host-promotion-implementation-plan.md`
+- `docs/codex/trusted-host-promotion-source-review.md`
+- `docs/codex/trusted-host-promotion-disposition-packet.md`
+- `docs/codex/trusted-host-promotion-external-review-bundle.md`
+- `docs/codex/trusted-host-promotion-response-kit.md`
+- `var/review-packets/v3/trusted-host-promotion-external-review`
 
-The descriptor-only implementation is now a bounded operator-attested descriptor-record slice, and
-the current handoff is source review of that slice. The internal source review now includes a
-high-effort addendum with no blocking findings, but external/source disposition is still required.
-This remains descriptor-only and does not
+The descriptor-only ERG-004 implementation is now a bounded operator-attested descriptor-record
+slice with `descriptor_only_local_preview_disposition_ready` recorded for continued local
+development. That does not close ERG-004 for broader claims. ERG-005 remains blocked and design
+review only. This next action does not
 approve live VM/container inspection, VM/container lifecycle management, local model invocation,
 sandbox orchestration, Mission Control
 runtime behavior, trusted-host promotion, host writes, network expansion, API/MCP profile loading,
 or new governed tool powers.
+
+The previous descriptor-only response intake remains documented for lineage in
+`sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md`.
 
 ## Historical Send Fallback
 
@@ -111,17 +112,17 @@ the current route after the recorded dispositions. In that fallback state, the o
 
 ## If Responses Arrive
 
-When a real reviewer response is available for the current active `ERG-004` route, preserve the
-descriptor-only send receipt, refresh the focused descriptor-only response inbox if needed, paste
-the response only into the descriptor-only raw-response file, and run the paste preflight before any
-normalization:
+When a real reviewer response is available for the current active `ERG-005` route, preserve the
+trusted-host response kit, paste the response only into the trusted-host raw-response file, and run
+the lane-specific dry-run before any committed triage:
 
 ```sh
-make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check
-make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox
+make trusted-host-promotion-response-kit-check
+make trusted-host-promotion-response-dry-run
+make trusted-host-promotion-external-response-intake-check
+make trusted-host-promotion-disposition-closure-check
 make enterprise-response-waiting-room
 make enterprise-response-now
-make enterprise-response-paste-preflight
 ```
 
 After the paste preflight is clean, run:
@@ -133,16 +134,17 @@ make enterprise-response-intake-refresh
 Then follow the lane-specific response kit, dry-run, closure gate, response-application record, and
 playbook. For the current active route, the primary lane is:
 
-- `ERG-004`: use the descriptor-only source-review response inbox, response dry run, application
-  preflight, response-application record, and response-application playbook.
+- `ERG-005`: use the trusted-host promotion response kit, dry run, external response intake, and
+  disposition closure gate.
 
 Historical fallback lanes remain available only when the operator next-action command reports the
 fallback ERG-003/ERG-002 route:
 
 - `ERG-003`: use the sandbox/VM static preflight response kit and closure gate.
 - `ERG-002`: use the Mission Control display response kit and closure gate.
-- Historical fallback response handling may still use `make enterprise-dual-response-inbox`, but
-  that is not the active ERG-004 descriptor-only receive path.
+- Historical fallback response handling may still use `make enterprise-dual-response-inbox` and
+  `make enterprise-response-paste-preflight`, but that is not the active ERG-005 trusted-host
+  receive path.
 
 In this mode, `make enterprise-operator-next-action` is expected to remain valid and report
 `run_response_intake_preflight` or `run_lane_specific_closure_playbook` even though lower-level

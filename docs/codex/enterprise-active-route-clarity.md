@@ -14,25 +14,25 @@ make enterprise-active-route-clarity
 
 ## Active Route
 
-The active post-disposition route is `ERG-004`.
+The completed local-development disposition route is `ERG-004`.
 
-Current expected action: `prepare_erg004_descriptor_only_runtime_planning`.
+Current expected action: `prepare_erg005_trusted_host_promotion_review`.
 
 Current active packet:
-`var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/`.
+`var/review-packets/v3/trusted-host-promotion-external-review/`.
 
-Current active send set: `ERG-004`.
+Current active send set: `ERG-005`.
 
-Current response inbox:
-`var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/`.
+Current response kit:
+`var/review-packets/v3/trusted-host-promotion-response-kit/`.
 
-Current send receipt scaffold:
-`var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt/`.
+Current trusted-host finding namespace: `EXT-TRUSTED-HOST-###`.
 
 The committed `sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md` records an internal
 High proxy disposition for descriptor-only implementation planning. The descriptor-only runtime
-slice now exists as operator-attested descriptor storage only and remains source-review pending
-under the `EXT-LIVE-DESC-###` finding namespace.
+slice now exists as operator-attested descriptor storage only and has
+`descriptor_only_local_preview_disposition_ready` recorded for continued local-development progress
+only under the `EXT-LIVE-DESC-###` finding namespace.
 
 The active route is reported by:
 

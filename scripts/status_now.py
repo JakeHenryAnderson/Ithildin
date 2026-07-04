@@ -39,6 +39,12 @@ ERG004_RAW_RESPONSE = (
     "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
 )
 ENTERPRISE_SEND_NOW_DIR = "var/review-packets/v3/enterprise-send-now"
+TRUSTED_HOST_EXTERNAL_REVIEW_DIR = (
+    "var/review-packets/v3/trusted-host-promotion-external-review"
+)
+TRUSTED_HOST_RESPONSE_KIT_DIR = (
+    "var/review-packets/v3/trusted-host-promotion-response-kit"
+)
 
 
 def main() -> int:
@@ -191,6 +197,22 @@ def _recommended_next_commands(
             "make no-new-powers-guardrail",
             "make tool-surface-invariant-gate",
         ]
+    if enterprise_next.get("next_action") == "prepare_erg005_trusted_host_promotion_review":
+        return [
+            "make trusted-host-promotion-decision-intake-check",
+            "make trusted-host-promotion-state-machine-check",
+            "make trusted-host-promotion-negative-fixtures-check",
+            "make trusted-host-promotion-zone-contract-check",
+            "make trusted-host-promotion-implementation-plan-check",
+            "make trusted-host-promotion-source-review-packet-check",
+            "make trusted-host-promotion-disposition-packet-check",
+            "make trusted-host-promotion-external-review-bundle-check",
+            "make trusted-host-promotion-response-kit-check",
+            "make trusted-host-promotion-response-dry-run",
+            "make trusted-host-promotion-internal-review-check",
+            "make no-new-powers-guardrail",
+            "make tool-surface-invariant-gate",
+        ]
     return ["make dev-check"]
 
 
@@ -232,6 +254,12 @@ def _handoff_paths(repo_root: Path, enterprise_next: dict[str, Any]) -> dict[str
             "erg004_source_review_packet": ERG004_SOURCE_REVIEW_DIR,
             "erg004_response_inbox": ERG004_RESPONSE_INBOX_DIR,
             "erg004_raw_response": ERG004_RAW_RESPONSE,
+        }
+    if enterprise_next.get("recommended_send_set") == ["ERG-005"]:
+        return {
+            "active_send_now": ENTERPRISE_SEND_NOW_DIR,
+            "trusted_host_external_review": TRUSTED_HOST_EXTERNAL_REVIEW_DIR,
+            "trusted_host_response_kit": TRUSTED_HOST_RESPONSE_KIT_DIR,
         }
 
     path = repo_root / SEND_MANIFEST_JSON

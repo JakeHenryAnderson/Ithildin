@@ -21,7 +21,7 @@ SEND_MANIFEST_JSON = Path(
     "var/review-packets/v3/enterprise-review-send-manifest/"
     "enterprise-review-send-manifest.json"
 )
-POST_DISPOSITION_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
+POST_DISPOSITION_ACTION = "prepare_erg005_trusted_host_promotion_review"
 
 REQUIRED_DOCS = [TECHNICAL_DOC, ENTERPRISE_DOC, BATCH_DOC]
 TECHNICAL_IDS = [f"MVP-{index:03d}" for index in range(1, 11)]
@@ -34,7 +34,7 @@ REQUIRED_COMMANDS = [
     "make release-check",
     "make review-candidate",
     "make artifact-freshness-check",
-    "make sandbox-vm-live-poc-runtime-implementation-gate-check",
+    "make trusted-host-promotion-external-review-bundle-check",
     "make enterprise-response-waiting-room",
 ]
 REQUIRED_PHRASES = {
@@ -44,11 +44,11 @@ REQUIRED_PHRASES = {
         "Current selected capability: `not selected`",
         "Latest implemented tool: `sandbox.artifact.write_text`",
         "Technical MVP state: `operator_trial_observed`",
-        "Current enterprise next action: `prepare_erg004_descriptor_only_runtime_planning`",
+        "Current enterprise next action: `prepare_erg005_trusted_host_promotion_review`",
         "Active resume checkpoint: `ENT-001`",
         (
             "The paused umbrella goal resumes through the post-`ENT-001` "
-            "runtime implementation-gate prep slice"
+            "trusted-host promotion review slice"
         ),
         "Development Validation Ladder",
         "Stop Conditions",
@@ -59,11 +59,11 @@ REQUIRED_PHRASES = {
         "Status: checked enterprise roadmap control board for the v1.0 enterprise-grade target.",
         "Current governed tool count: `24`",
         "Current selected capability: `not selected`",
-        "Current send set: `ERG-004`",
+        "Current send set: `ERG-005`",
         "Current response count: `0`",
         "Current closure-ready count: `0`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` runtime implementation-gate prep",
+        "The current resumed goal is limited to post-`ENT-001` trusted-host promotion review",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
         "No new governed power class",
@@ -150,13 +150,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if status.get("technical_mvp_state") != "operator_trial_observed":
         failures.append("technical MVP state is not operator_trial_observed")
     if status.get("enterprise_next_action") != POST_DISPOSITION_ACTION:
-        failures.append("enterprise next action is not ERG-004 runtime implementation gate")
+        failures.append("enterprise next action is not ERG-005 trusted-host promotion review")
     if status.get("response_present_count") != 0:
         failures.append("response evidence is present; response intake flow should take over")
     if status.get("closure_ready_count") != 0:
         failures.append("closure-ready lanes are present; closure flow should take over")
-    if current_send_set != ["ERG-004"]:
-        failures.append("current send set is not ERG-004")
+    if current_send_set != ["ERG-005"]:
+        failures.append("current send set is not ERG-005")
 
     if "technical-mvp-execution-board:" not in makefile:
         failures.append("Make target is missing: technical-mvp-execution-board")

@@ -26,10 +26,12 @@ DOC_TITLE = "Enterprise Current Checkpoint"
 PRE_DISPOSITION_ACTION = "send_erg_003_and_erg_002"
 POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
 DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
+ERG005_TRUSTED_HOST_ACTION = "prepare_erg005_trusted_host_promotion_review"
 ALLOWED_NEXT_ACTIONS = {
     PRE_DISPOSITION_ACTION,
     POST_DISPOSITION_ACTION,
     DESCRIPTOR_ONLY_PLANNING_ACTION,
+    ERG005_TRUSTED_HOST_ACTION,
 }
 
 REQUIRED_PHRASES = [
@@ -42,13 +44,17 @@ REQUIRED_PHRASES = [
     "Runtime changes remain blocked",
     "Public/security-product positioning remains blocked",
     "Enterprise response evidence is not present yet",
-    "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review",
-    "make enterprise-send-now",
-    "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/",
-    "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
-    "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+    "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned",
+    "`ERG-005`: trusted-host artifact promotion review is the next blocked design lane",
+    "make trusted-host-promotion-decision-intake-check",
+    "make trusted-host-promotion-state-machine-check",
+    "make trusted-host-promotion-negative-fixtures-check",
+    "make trusted-host-promotion-zone-contract-check",
+    "make trusted-host-promotion-implementation-plan-check",
+    "make trusted-host-promotion-source-review-packet-check",
+    "make trusted-host-promotion-disposition-packet-check",
+    "make trusted-host-promotion-external-review-bundle-check",
+    "make trusted-host-promotion-response-kit-check",
     "The historical ERG-003/ERG-002 dual-send commands remain available only for "
     "lineage and fallback.",
     "What This Checkpoint Does Not Approve",
@@ -138,13 +144,20 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     next_action = operator_next_action.get("next_action")
     post_disposition_mode = next_action == POST_DISPOSITION_ACTION
     descriptor_only_mode = next_action == DESCRIPTOR_ONLY_PLANNING_ACTION
+    erg005_mode = next_action == ERG005_TRUSTED_HOST_ACTION
     if (
         not post_disposition_mode
         and send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]
     ):
         failures.append("recommended enterprise send set must remain ERG-003 then ERG-002")
-    if descriptor_only_mode and operator_next_action.get("recommended_send_set") != ["ERG-004"]:
+    if descriptor_only_mode and operator_next_action.get("recommended_send_set") != [
+        "ERG-004"
+    ]:
         failures.append("operator next action must recommend ERG-004 in descriptor-only mode")
+    if erg005_mode and operator_next_action.get("recommended_send_set") != ["ERG-005"]:
+        failures.append(
+            "operator next action must recommend ERG-005 after descriptor-only disposition"
+        )
     if next_action not in ALLOWED_NEXT_ACTIONS:
         failures.append("operator next action is not an allowed enterprise flow")
     if response_status.get("response_present_count") != 0:

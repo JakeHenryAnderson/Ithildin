@@ -123,11 +123,15 @@ def _validate_send_now_route(send_now: dict[str, Any]) -> None:
 
 def build_check_report(repo_root: Path, output_dir: Path = DEFAULT_OUTPUT_DIR) -> dict[str, Any]:
     failures: list[str] = []
+    route_mode = "active_erg004"
     try:
         output_path = build_receipt(repo_root, output_dir)
     except DescriptorOnlySendReceiptError as exc:
-        failures.append(str(exc))
         output_path = output_dir if output_dir.is_absolute() else repo_root / output_dir
+        if _descriptor_only_disposition_recorded(repo_root) and output_path.exists():
+            route_mode = "archived_after_descriptor_only_disposition"
+        else:
+            failures.append(str(exc))
 
     makefile = _read(repo_root / "Makefile")
     readme = _read(repo_root / "README.md")
@@ -138,6 +142,11 @@ def build_check_report(repo_root: Path, output_dir: Path = DEFAULT_OUTPUT_DIR) -
     response_inbox_doc = _read(
         repo_root
         / "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md"
+    )
+    application_record_doc = _read(
+        repo_root
+        / "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md"
     )
     receipt_doc = _read(repo_root / DOC_REL)
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
@@ -237,10 +246,6 @@ def build_check_report(repo_root: Path, output_dir: Path = DEFAULT_OUTPUT_DIR) -
             "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
             release_guardrails,
         ),
-        "Current checkpoint pointer": (
-            "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt",
-            send_now_doc,
-        ),
         "Response inbox pointer": (
             "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt",
             response_inbox_doc,
@@ -250,15 +255,41 @@ def build_check_report(repo_root: Path, output_dir: Path = DEFAULT_OUTPUT_DIR) -
         if needle not in haystack:
             failures.append(f"{label} is missing ERG-004 send receipt wiring")
 
+    if route_mode == "active_erg004":
+        if "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt" not in send_now_doc:
+            failures.append("Current checkpoint pointer is missing ERG-004 send receipt wiring")
+    else:
+        _require_phrases(
+            failures,
+            "ERG-004 descriptor-only disposition record",
+            application_record_doc,
+            [
+                "Applied descriptor-only local-development disposition",
+                "descriptor_only_local_preview_disposition_ready",
+                "not close `ERG-004`",
+            ],
+        )
+        _require_phrases(
+            failures,
+            "Current checkpoint lineage pointer",
+            send_now_doc,
+            [
+                "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review "
+                "is locally dispositioned",
+                "`ERG-005`: trusted-host artifact promotion review is the next blocked design lane",
+            ],
+        )
+
     return {
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
         "receipt_doc": DOC_REL,
         "output_dir": _repo_rel(repo_root, output_path),
+        "route_mode": route_mode,
         "tool_count": 24,
         "selected_capability": "not selected",
-        "recommended_gaps": ["ERG-004"],
+        "recommended_gaps": ["ERG-004"] if route_mode == "active_erg004" else ["ERG-005"],
         "artifact_hashes_match_files": _artifact_hashes_match_files(output_path, hash_manifest),
         **BOUNDARY_FLAGS,
     }
@@ -416,6 +447,22 @@ def _validate_repo_root(repo_root: Path) -> None:
         raise DescriptorOnlySendReceiptError(
             "must be run from the Ithildin repo root; missing " + ", ".join(missing)
         )
+
+
+def _descriptor_only_disposition_recorded(repo_root: Path) -> bool:
+    text = _read(
+        repo_root
+        / "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md"
+    )
+    return all(
+        phrase in text
+        for phrase in [
+            "Applied descriptor-only local-development disposition",
+            "reviewer_type: `codex-high`",
+            "resulting_state: `descriptor_only_local_preview_disposition_ready`",
+        ]
+    )
 
 
 def _artifact_hashes(output_dir: Path) -> dict[str, Any]:

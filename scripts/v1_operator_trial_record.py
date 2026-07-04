@@ -65,6 +65,7 @@ ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
     "prepare_erg004_runtime_implementation_gate",
     "prepare_erg004_descriptor_only_runtime_planning",
+    "prepare_erg005_trusted_host_promotion_review",
 }
 BLOCKED_PHRASES = [
     "production deployment readiness",

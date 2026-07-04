@@ -53,21 +53,25 @@ make enterprise-response-intake-drill
 
 ## Active Route Versus Historical Queue
 
-The post-disposition active route is now `ERG-004`: prepare descriptor-only runtime planning for
-the still-blocked live sandbox/VM POC. The historical `ERG-003`/`ERG-002` review rows remain below
-for provenance, response-intake fallback, and dependency traceability. They are not the current
-operator next action while `make enterprise-operator-next-action` reports
-`prepare_erg004_descriptor_only_runtime_planning`.
+The post-disposition active route is now `ERG-005`: prepare trusted-host promotion review for the
+still-blocked sandbox artifact handoff lane. The historical `ERG-004` descriptor-only route is
+locally dispositioned for continued local-development progress only; the broader live sandbox/VM
+POC remains blocked. The historical `ERG-003`/`ERG-002` review rows remain below for provenance,
+response-intake fallback, and dependency traceability. They are not the current operator next
+action while `make enterprise-operator-next-action` reports
+`prepare_erg005_trusted_host_promotion_review`.
 
-Current active route: `ERG-004` descriptor-only runtime planning.
+Current active route: `ERG-005` trusted-host promotion review.
 
 Current active route validation:
 
 ```sh
 make enterprise-active-route-clarity
-make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
-make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
-make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
+make trusted-host-promotion-decision-intake-check
+make trusted-host-promotion-state-machine-check
+make trusted-host-promotion-zone-contract-check
+make trusted-host-promotion-external-review-bundle-check
+make trusted-host-promotion-response-kit-check
 ```
 
 This active route still does not approve runtime implementation, live VM/container inspection,

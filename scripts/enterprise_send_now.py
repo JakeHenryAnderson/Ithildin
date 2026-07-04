@@ -35,6 +35,12 @@ ERG004_RESPONSE_INBOX_JSON = Path(
     "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
     "erg004-runtime-descriptor-only-response-inbox.json"
 )
+TRUSTED_HOST_EXTERNAL_REVIEW_DIR = Path(
+    "var/review-packets/v3/trusted-host-promotion-external-review"
+)
+TRUSTED_HOST_RESPONSE_KIT_DIR = Path(
+    "var/review-packets/v3/trusted-host-promotion-response-kit"
+)
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/enterprise-send-now")
 JSON_NAME = "enterprise-send-now.json"
 MD_NAME = "ENTERPRISE_SEND_NOW.md"
@@ -66,6 +72,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     next_action = enterprise_operator_next_action.build_report(repo_root)
     if next_action.get("recommended_send_set") == ["ERG-004"]:
         return _build_erg004_report(repo_root, freshness, next_action)
+    if next_action.get("recommended_send_set") == ["ERG-005"]:
+        return _build_erg005_report(repo_root, freshness, next_action)
 
     upload = _read_json(repo_root / UPLOAD_STAGING_JSON)
     inbox = _read_json(repo_root / DUAL_RESPONSE_INBOX_JSON)
@@ -338,6 +346,94 @@ def _build_erg004_report(
         "public_security_product_positioning_allowed": False,
         "new_power_classes_allowed": False,
         "enterprise_next_action": next_action.get("next_action"),
+    }
+
+
+def _build_erg005_report(
+    repo_root: Path,
+    freshness: dict[str, Any],
+    next_action: dict[str, Any],
+) -> dict[str, Any]:
+    commit = _git(repo_root, ["rev-parse", "HEAD"])
+    source_dir = repo_root / TRUSTED_HOST_EXTERNAL_REVIEW_DIR
+    response_dir = repo_root / TRUSTED_HOST_RESPONSE_KIT_DIR
+    lanes = [_erg005_lane_report(source_dir, response_dir)]
+    failures: list[str] = []
+    if not source_dir.exists():
+        failures.append("ERG-005 trusted-host external-review bundle is missing")
+    if not response_dir.exists():
+        failures.append("ERG-005 trusted-host response kit is missing")
+    if freshness.get("dirty") is False and not freshness.get("valid"):
+        failures.append("handoff artifacts are stale; run make review-candidate")
+    return {
+        "schema_version": "1",
+        "valid": not failures,
+        "failures": failures,
+        "commit": commit,
+        "dirty": bool(_git(repo_root, ["status", "--short"])),
+        "tool_count": 24,
+        "selected_capability": "not selected",
+        "current_send_set": ["ERG-005"],
+        "recommended_gaps": ["ERG-005"],
+        "upload_staging_path": TRUSTED_HOST_EXTERNAL_REVIEW_DIR.as_posix(),
+        "response_inbox_path": TRUSTED_HOST_RESPONSE_KIT_DIR.as_posix(),
+        "send_now_artifact_path": DEFAULT_OUTPUT_DIR.as_posix(),
+        "lane_count": len(lanes),
+        "batch_count": sum(len(lane["batches"]) for lane in lanes),
+        "lanes": lanes,
+        "next_after_send": [
+            "record reviewer response using "
+            "docs/codex/trusted-host-promotion-external-response-intake.md",
+            "make trusted-host-promotion-response-kit-check",
+            "make trusted-host-promotion-response-dry-run",
+            "make trusted-host-promotion-external-response-intake-check",
+            "make trusted-host-promotion-disposition-closure-check",
+            "make enterprise-response-waiting-room",
+            "make enterprise-response-now",
+        ],
+        "records_external_review": False,
+        "normalizes_responses": False,
+        "writes_response_files": False,
+        "closes_erg_003": False,
+        "closes_erg_002": False,
+        "closes_erg_004": False,
+        "runtime_changes_allowed": False,
+        "mission_control_runtime_allowed": False,
+        "live_vm_inspection_allowed": False,
+        "local_model_invocation_allowed": False,
+        "sandbox_orchestration_allowed": False,
+        "trusted_host_promotion_allowed": False,
+        "siem_adapter_allowed": False,
+        "compliance_automation_allowed": False,
+        "public_security_product_positioning_allowed": False,
+        "new_power_classes_allowed": False,
+        "enterprise_next_action": next_action.get("next_action"),
+    }
+
+
+def _erg005_lane_report(source_dir: Path, response_dir: Path) -> dict[str, Any]:
+    attachment_count = len([path for path in source_dir.glob("*") if path.is_file()])
+    return {
+        "gap": "ERG-005",
+        "name": "Trusted-host artifact promotion review",
+        "prompt": (
+            source_dir / "01_TRUSTED_HOST_PROMOTION_SOURCE_REVIEW_PROMPT.md"
+        ).as_posix(),
+        "finding_namespace": "EXT-TRUSTED-HOST-###",
+        "raw_response_path": (
+            response_dir / "RAW_RESPONSE_TRUSTED_HOST_PROMOTION.md"
+        ).as_posix(),
+        "dry_run": "make trusted-host-promotion-response-dry-run",
+        "closure_gate": "make trusted-host-promotion-disposition-closure-check",
+        "batches": [
+            {
+                "batch_id": "trusted-host-review-bundle",
+                "path": source_dir.as_posix(),
+                "attachment_count": attachment_count,
+            }
+        ],
+        "reviewed_packet_path": source_dir.as_posix(),
+        "reviewed_packet_hash": None,
     }
 
 

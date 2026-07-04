@@ -25,21 +25,22 @@ DOC_REL = "docs/codex/enterprise-active-route-clarity.md"
 DOC_TITLE = "Enterprise Active Route Clarity"
 TARGET = "enterprise-active-route-clarity"
 ACTIVE_SEND_SET = ["ERG-004"]
+NEXT_SEND_SET = ["ERG-005"]
 HISTORICAL_SEND_SET = ["ERG-003", "ERG-002"]
-EXPECTED_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
+EXPECTED_ACTION = "prepare_erg005_trusted_host_promotion_review"
 
 REQUIRED_DOC_PHRASES = [
     "Status: checked active-route clarification for the current enterprise review path.",
     "Current governed tool count: `24`.",
     "Current selected capability: `not selected`.",
     "make enterprise-active-route-clarity",
-    "The active post-disposition route is `ERG-004`.",
-    "Current expected action: `prepare_erg004_descriptor_only_runtime_planning`.",
-    "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/",
-    "Current active send set: `ERG-004`.",
-    "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/",
-    "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt/",
+    "The completed local-development disposition route is `ERG-004`.",
+    "Current expected action: `prepare_erg005_trusted_host_promotion_review`.",
+    "var/review-packets/v3/trusted-host-promotion-external-review/",
+    "Current active send set: `ERG-005`.",
+    "var/review-packets/v3/trusted-host-promotion-response-kit/",
     "EXT-LIVE-DESC-###",
+    "EXT-TRUSTED-HOST-###",
     "Older ERG-003/ERG-002 generated packet surfaces remain in the repository for provenance",
     "Historical dual-send route: `ERG-003`, then `ERG-002`.",
     "What This Does Not Approve",
@@ -86,24 +87,24 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"{label} is not valid")
             failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
 
-    if preflight.get("current_send_set") != ACTIVE_SEND_SET:
-        failures.append("preflight current send set is not ERG-004")
+    if preflight.get("current_send_set") != NEXT_SEND_SET:
+        failures.append("preflight current send set is not ERG-005")
     if preflight.get("expected_action") != EXPECTED_ACTION:
         failures.append("preflight expected action is not ERG-004 implementation planning")
-    if checkpoint.get("recommended_send_set") != ACTIVE_SEND_SET:
-        failures.append("current checkpoint recommended send set is not ERG-004")
-    if checkpoint.get("recommended_next_enterprise_review") != "ERG-004":
-        failures.append("current checkpoint next enterprise review is not ERG-004")
+    if checkpoint.get("recommended_send_set") != NEXT_SEND_SET:
+        failures.append("current checkpoint recommended send set is not ERG-005")
+    if checkpoint.get("recommended_next_enterprise_review") != "ERG-005":
+        failures.append("current checkpoint next enterprise review is not ERG-005")
     if checkpoint.get("next_action") != EXPECTED_ACTION:
         failures.append("current checkpoint next action is not ERG-004 implementation planning")
-    if operator_next.get("recommended_send_set") != ACTIVE_SEND_SET:
-        failures.append("operator next-action send set is not ERG-004")
-    if operator_next.get("recommended_next_enterprise_review") != "ERG-004":
-        failures.append("operator next-action enterprise review is not ERG-004")
+    if operator_next.get("recommended_send_set") != NEXT_SEND_SET:
+        failures.append("operator next-action send set is not ERG-005")
+    if operator_next.get("recommended_next_enterprise_review") != "ERG-005":
+        failures.append("operator next-action enterprise review is not ERG-005")
     if operator_next.get("next_action") != EXPECTED_ACTION:
         failures.append("operator next-action is not ERG-004 implementation planning")
-    if technical_board.get("current_send_set") != ACTIVE_SEND_SET:
-        failures.append("technical MVP execution board current send set is not ERG-004")
+    if technical_board.get("current_send_set") != NEXT_SEND_SET:
+        failures.append("technical MVP execution board current send set is not ERG-005")
     if technical_board.get("enterprise_next_action") != EXPECTED_ACTION:
         failures.append("technical MVP execution board next action is not ERG-004 planning")
     if historical_readiness.get("recommended_now") != HISTORICAL_SEND_SET:
@@ -178,7 +179,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "doc": DOC_REL,
         "tool_count": 24,
         "selected_capability": "not selected",
-        "active_send_set": ACTIVE_SEND_SET,
+        "active_send_set": NEXT_SEND_SET,
+        "completed_local_development_route": ACTIVE_SEND_SET,
         "historical_dual_send_set": HISTORICAL_SEND_SET,
         "expected_action": EXPECTED_ACTION,
         "preflight_mode": preflight.get("preflight_mode"),

@@ -17,8 +17,8 @@ make enterprise-review-send-refresh
 
 This preflight gives the operator one final checked answer before sending the
 current enterprise review packet. In the current post-disposition route, that
-send set is `ERG-004`: the descriptor-only sandbox/VM live POC runtime
-source-review packet. It inspects the generated send artifacts, response
+send set is `ERG-005`: the trusted-host artifact promotion review packet. It
+inspects the generated send artifacts, response
 landing pad, handoff drill, response-readiness state, operator next-action
 state, and handoff consistency gate.
 
@@ -55,25 +55,24 @@ is deferred until the next clean run.
 
 It expects:
 
-- current send set: `ERG-004`;
+- current send set: `ERG-005`;
 - current response-present count: `0`;
 - current closure-ready count: `0`;
 - active source-review packet:
-  `var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review`;
-- active descriptor-only response inbox:
-  `var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox`;
-- raw response paths:
-  `var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md`.
+  `var/review-packets/v3/trusted-host-promotion-external-review`;
+- active trusted-host response kit:
+  `var/review-packets/v3/trusted-host-promotion-response-kit`;
+- active finding namespace: `EXT-TRUSTED-HOST-###`.
 
 ## Operator Use
 
 Run this after refreshing the send artifacts and before manually sending the
-review packet. The active ERG-004 sequence is:
+review packet. The active ERG-005 sequence is:
 
 ```sh
-make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
-make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
-make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check
+make trusted-host-promotion-external-review-bundle-check
+make trusted-host-promotion-response-kit-check
+make trusted-host-promotion-response-dry-run
 make enterprise-send-now
 make enterprise-review-send-preflight
 ```
@@ -85,28 +84,29 @@ make enterprise-review-send-refresh
 ```
 
 Use that historical refresh path only when `make enterprise-operator-next-action` reports the
-fallback ERG-003/ERG-002 route. It is not the active ERG-004 handoff route.
+fallback ERG-003/ERG-002 route. It is not the active ERG-005 handoff route.
 
 If the preflight fails because response evidence is present, stop the send flow
 and switch to the response-intake flow instead.
 
-After a real ERG-004 reviewer response arrives, paste it into the descriptor-only raw response file
-and run:
+After a real ERG-005 reviewer response arrives, run:
 
 ```sh
-make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
-make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
+make trusted-host-promotion-response-dry-run
+make trusted-host-promotion-disposition-closure-check
+make trusted-host-promotion-external-response-intake-check
 ```
 
-Do not record a descriptor-only disposition until the dry run and application preflight accept a real
-reviewer response.
+The ERG-004 descriptor-only local-development disposition remains recorded, but it is not a
+trusted-host promotion approval. Do not record an ERG-005 disposition until the trusted-host dry run
+and closure gate accept a real reviewer response.
 
 ## Boundary
 
 This preflight is read-only orchestration over existing checks. It does not
 send packets, does not record external review, does not normalize responses,
 does not write response files beyond the existing ignored generated artifacts,
-does not close `ERG-003`, `ERG-002`, or `ERG-004`, and does not approve runtime behavior,
+does not close `ERG-005`, and does not approve runtime behavior,
 Mission Control runtime behavior, live VM inspection, sandbox orchestration,
 trusted-host promotion, SIEM adapter behavior, compliance automation,
 public/security-product positioning, or new governed tool powers.

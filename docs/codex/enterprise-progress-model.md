@@ -11,8 +11,8 @@ compliance claim, or permission to add runtime powers.
 
 - Governed tool count: `24`.
 - Current selected capability: `not selected`.
-- Recommended next enterprise review: `ERG-004`.
-- Recommended send set: `ERG-004`.
+- Recommended next enterprise review: `ERG-005`.
+- Recommended send set: `ERG-005`.
 - Technical MVP state: `operator_trial_observed`.
 - Enterprise send package ready: `true`.
 - Enterprise response evidence present: `0`.
@@ -29,7 +29,7 @@ compliance claim, or permission to add runtime powers.
 | v1.0 local-preview RC | `84-90%` | RC handoff machinery is ready to regenerate, the operator trial is observed, and the current enterprise send package is fresh. | Same-commit `make release-check`, `make review-candidate`, packet redaction `findings: 0`, and final local handoff evidence. |
 | Operator workbench and demo path | `78-86%` | Useful local review-console, Agent Run evidence, demo packets, and observed demo-flow evidence exist. | A cleaner guided demo and more real user feedback without new runtime powers. |
 | Mission Control display/import path | `50-65%` | Design/display lane is packaged but not closed. | Favorable `ERG-002` disposition and a later Mission Control-side display-only implementation plan. |
-| Sandbox/VM governed agent workflow | `45-60%` | Static profile/preflight evidence and ERG-004 planning artifacts exist; live VM/container work remains blocked. | Runtime-ticket review closure before any live preflight or local-model/sandbox planning advances. |
+| Sandbox/VM governed agent workflow | `45-60%` | Static profile/preflight evidence and ERG-004 descriptor-only local-development disposition are recorded; live VM/container work remains blocked. | A later explicit live-runtime gate before any live preflight or local-model/sandbox planning advances. |
 | Enterprise control-plane architecture | `35-50%` | Major lanes are explicit but blocked or planning-only. | Separate decisions for identity/storage, SIEM-shaped adapters, compliance mapping support, trusted-host promotion, and public claim wording. |
 | Long-term governed-agent workbench vision | `55-65%` | The shape is coherent, but several hard enterprise lanes remain future work. | Close external/source review loops, keep boundaries separate, and add runtime powers only after lane-specific gates. |
 
@@ -62,8 +62,9 @@ It is now a recorded precondition for the ERG-004 runtime-ticket review lane.
 
 ### Checkpoint D: Live Sandbox/VM Proof Of Concept
 
-This checkpoint remains blocked until the ERG-004 runtime-ticket review lane is dispositioned. It
-would eventually prove a local agent working in an operator-managed sandbox/VM with evidence
+This checkpoint has a descriptor-only local-development disposition recorded. Live runtime work
+remains blocked. A later phase would eventually prove a local agent working in an operator-managed
+sandbox/VM with evidence
 correlation, but it still must not claim OS isolation beyond the actual sandbox layer that is
 inspected and reviewed.
 
@@ -88,23 +89,22 @@ behavior can be added.
 
 ## Current Best Next Action
 
-The best next action is the ERG-004 runtime implementation-gate prep lane:
+The best next action is the ERG-005 trusted-host promotion review lane. The ERG-004
+descriptor-only local-development disposition is recorded, but it does not approve live VM runtime,
+local model invocation, sandbox orchestration, or broader enterprise claims.
 
 ```sh
-make sandbox-vm-live-poc-runtime-ticket-internal-review-check
-make sandbox-vm-live-poc-runtime-implementation-gate-check
-make sandbox-vm-live-poc-runtime-descriptor-contract-check
-make sandbox-vm-live-poc-runtime-descriptor-contract-internal-review-check
-make sandbox-vm-live-poc-runtime-gate-readiness-review-bundle-check
-make sandbox-vm-live-poc-runtime-gate-readiness-internal-review-check
-make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
-make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-dry-run
-make sandbox-vm-live-poc-runtime-gate-readiness-response-application-record-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-application-playbook-check
-make sandbox-vm-live-poc-runtime-gate-readiness-response-application-preflight-check
-make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check
+make trusted-host-promotion-decision-intake-check
+make trusted-host-promotion-state-machine-check
+make trusted-host-promotion-negative-fixtures-check
+make trusted-host-promotion-zone-contract-check
+make trusted-host-promotion-implementation-plan-check
+make trusted-host-promotion-source-review-packet-check
+make trusted-host-promotion-disposition-packet-check
+make trusted-host-promotion-external-review-bundle-check
+make trusted-host-promotion-response-kit-check
+make trusted-host-promotion-response-dry-run
+make trusted-host-promotion-internal-review-check
 ```
 
 This gate draft remains non-runtime work. If a later implementation packet receives a response,

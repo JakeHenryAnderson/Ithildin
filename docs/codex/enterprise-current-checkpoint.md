@@ -24,21 +24,25 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - Runtime changes remain blocked outside already-approved local-preview tool behavior.
 - Public/security-product positioning remains blocked.
 - Enterprise response evidence is not present yet.
-- The active post-disposition route is now `ERG-004`: descriptor-only runtime source review and
-  response handling remain active without approving runtime implementation.
+- `ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned
+  for continued local-development progress only.
+- `ERG-005`: trusted-host artifact promotion review is the next blocked design lane.
 - The descriptor-only runtime slice has both an internal source review and a high-effort internal
-  addendum with no blocking findings; external/source disposition is still required before this
-  lane can be treated as closed.
+  proxy disposition with no findings. That is not external review and does not approve live
+  VM/container runtime behavior.
 
-Validate the active ERG-004 descriptor-only planning surface with:
+Validate the active ERG-005 trusted-host promotion review surface with:
 
 ```sh
-make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
-make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
-make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
-make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts
-make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
-make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check
+make trusted-host-promotion-decision-intake-check
+make trusted-host-promotion-state-machine-check
+make trusted-host-promotion-negative-fixtures-check
+make trusted-host-promotion-zone-contract-check
+make trusted-host-promotion-implementation-plan-check
+make trusted-host-promotion-source-review-packet-check
+make trusted-host-promotion-disposition-packet-check
+make trusted-host-promotion-external-review-bundle-check
+make trusted-host-promotion-response-kit-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
@@ -54,32 +58,33 @@ network expansion, API/MCP profile loading, or new governed tool powers.
 
 The historical dual-send artifacts remain below for lineage and response-intake fallback. They are
 not the active post-disposition route while `make enterprise-operator-next-action` reports
-`prepare_erg004_descriptor_only_runtime_planning`.
+`prepare_erg005_trusted_host_promotion_review`.
 
 The current recommended enterprise handoff set is:
 
-1. `ERG-004`: descriptor-only sandbox/VM live POC runtime source review.
+1. `ERG-005`: trusted-host artifact promotion review.
 
 Generate or refresh the active send-ready operator artifact with:
 
 ```sh
 make enterprise-send-now
-make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt
+make trusted-host-promotion-external-review-bundle
+make trusted-host-promotion-response-kit
 ```
 
-The active ERG-004 source-review packet and response landing pad are:
+The active ERG-005 source-review packet and response kit are:
 
 ```sh
-var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/
-var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md
+var/review-packets/v3/trusted-host-promotion-external-review/
+var/review-packets/v3/trusted-host-promotion-response-kit/
 ```
 
-After a real ERG-004 descriptor-only reviewer response arrives, do not edit status docs directly.
-Paste the raw response only into the ignored descriptor-only raw response file, then run:
+After a real ERG-005 trusted-host reviewer response arrives, do not edit status docs directly.
+Run the lane-specific response checks before any committed disposition update:
 
 ```sh
-make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
-make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
+make trusted-host-promotion-response-dry-run
+make trusted-host-promotion-disposition-closure-check
 ```
 
 Follow the descriptor-only response application playbook before any committed disposition update.

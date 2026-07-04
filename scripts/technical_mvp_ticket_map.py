@@ -22,11 +22,12 @@ from scripts import (
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/technical-mvp-ticket-map.md"
 DOC_TITLE = "Ithildin Technical MVP Ticket Map"
-ALLOWED_NEXT_ENTERPRISE_REVIEWS = {"ERG-003", "ERG-004"}
+ALLOWED_NEXT_ENTERPRISE_REVIEWS = {"ERG-003", "ERG-004", "ERG-005"}
 ALLOWED_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
     "prepare_erg004_runtime_implementation_gate",
     "prepare_erg004_descriptor_only_runtime_planning",
+    "prepare_erg005_trusted_host_promotion_review",
 }
 
 REQUIRED_PHRASES = [

@@ -9,6 +9,23 @@ Current selected capability: `not selected`.
 Current `ERG-004` descriptor-only status before real reviewer disposition:
 `descriptor_only_runtime_implemented_source_review_pending`.
 
+Applied descriptor-only local-development disposition: `2026-07-04`.
+
+- reviewer: `Codex high internal proxy reviewer`.
+- reviewer_type: `codex-high`.
+- source_access: `packet-and-source`.
+- reviewed_commit: `4e415c040f8825ee054191ad73233953b42dc861`.
+- reviewed_packet_hash:
+  `sha256:f348e935e472e3725f5f8320907f96c928195b902afa02e56a641ed476da6ce6`.
+- disposition: `approve_descriptor_only_local_preview_disposition`.
+- resulting_state: `descriptor_only_local_preview_disposition_ready`.
+- finding_count: `0`.
+
+This is not external review, not live VM/container runtime approval, not local model invocation
+approval, not sandbox orchestration approval, and not public/security-product approval. It is only
+the committed local-development disposition marker that lets the operator workflow stop cycling on
+the descriptor-only ERG-004 packet and move to the next blocked enterprise review lane.
+
 Run:
 
 ```sh

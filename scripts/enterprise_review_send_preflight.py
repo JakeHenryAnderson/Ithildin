@@ -28,10 +28,13 @@ EXPECTED_ACTION = "send_erg_003_and_erg_002"
 POST_DISPOSITION_SEND_SET = ["ERG-004"]
 POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
 DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
+ERG005_SEND_SET = ["ERG-005"]
+ERG005_ACTION = "prepare_erg005_trusted_host_promotion_review"
 ALLOWED_ACTIONS = {
     EXPECTED_ACTION,
     POST_DISPOSITION_ACTION,
     DESCRIPTOR_ONLY_PLANNING_ACTION,
+    ERG005_ACTION,
 }
 BOUNDARY_FLAGS = {
     "records_external_review": False,
@@ -89,6 +92,22 @@ DESCRIPTOR_ONLY_DOC_PHRASES = [
     "does not record external review",
     "does not normalize responses",
     "does not close `ERG-003`, `ERG-002`, or `ERG-004`",
+]
+
+ERG005_DOC_PHRASES = [
+    "Status: checked final operator preflight for the current enterprise review send.",
+    "make enterprise-review-send-preflight",
+    "current send set: `ERG-005`",
+    "trusted-host-promotion-external-review",
+    "trusted-host-promotion-response-kit",
+    "EXT-TRUSTED-HOST-###",
+    "make trusted-host-promotion-external-review-bundle-check",
+    "make trusted-host-promotion-response-kit-check",
+    "make trusted-host-promotion-response-dry-run",
+    "The ERG-004 descriptor-only local-development disposition remains recorded",
+    "does not record external review",
+    "does not normalize responses",
+    "does not close `ERG-005`",
 ]
 
 class ArtifactSpec(TypedDict):
@@ -227,6 +246,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     post_disposition_mode = next_action in {
         POST_DISPOSITION_ACTION,
         DESCRIPTOR_ONLY_PLANNING_ACTION,
+        ERG005_ACTION,
     }
 
     state_reports = {
@@ -241,11 +261,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"{name} is not valid")
             failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
 
-    active_send_set = (
-        POST_DISPOSITION_SEND_SET
-        if post_disposition_mode
-        else CURRENT_SEND_SET
-    )
+    if next_action == ERG005_ACTION:
+        active_send_set = ERG005_SEND_SET
+    elif post_disposition_mode:
+        active_send_set = POST_DISPOSITION_SEND_SET
+    else:
+        active_send_set = CURRENT_SEND_SET
     if next_action not in ALLOWED_ACTIONS:
         failures.append("operator next action is not an allowed enterprise review flow")
     if operator_next.get("recommended_send_set") != active_send_set:
@@ -296,9 +317,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "\n\n"
     )[0]
 
-    required_doc_phrases = (
-        DESCRIPTOR_ONLY_DOC_PHRASES if post_disposition_mode else DUAL_SEND_DOC_PHRASES
-    )
+    if next_action == ERG005_ACTION:
+        required_doc_phrases = ERG005_DOC_PHRASES
+    elif post_disposition_mode:
+        required_doc_phrases = DESCRIPTOR_ONLY_DOC_PHRASES
+    else:
+        required_doc_phrases = DUAL_SEND_DOC_PHRASES
     for phrase in required_doc_phrases:
         if phrase not in doc:
             failures.append(f"enterprise review send preflight doc is missing phrase: {phrase}")
