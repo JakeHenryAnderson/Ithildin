@@ -4,9 +4,15 @@ Status: checked read-only enterprise handoff consistency gate.
 
 `make enterprise-handoff-consistency-check` validates that the historical
 dual-send handoff docs describe the same send/receive path for `ERG-003` and
-`ERG-002`. After the recorded dispositions, the active operator route is the
-separate `ERG-004` descriptor-only source-review path; this gate remains as a
-fallback consistency check for older dual-send artifacts.
+`ERG-002`. This is a lineage/fallback gate, not the active next-send route.
+After the recorded dispositions, the active operator route is the separate
+`ERG-004` descriptor-only source-review path; this gate remains as a
+consistency check for older dual-send artifacts.
+
+Historical dual-send set: `ERG-003`, `ERG-002`.
+
+Active route reminder: run `make enterprise-active-route-clarity` or
+`make enterprise-send-now` for the current `ERG-004` send path.
 
 The current response inbox root is:
 

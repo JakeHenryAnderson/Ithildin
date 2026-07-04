@@ -6090,6 +6090,8 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
+    assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
+    # Backward-compatible alias retained for older generated consumers.
     assert report["current_send_set"] == ["ERG-003", "ERG-002"]
     assert report["dual_response_inbox_root"] == (
         "var/review-runs/enterprise-dual-response-inbox"
@@ -6147,6 +6149,9 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
     for phrase in [
         "Status: checked read-only enterprise handoff consistency gate.",
         "make enterprise-handoff-consistency-check",
+        "This is a lineage/fallback gate, not the active next-send route.",
+        "Historical dual-send set: `ERG-003`, `ERG-002`.",
+        "Active route reminder: run `make enterprise-active-route-clarity`",
         "var/review-runs/enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",

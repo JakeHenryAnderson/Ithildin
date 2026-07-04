@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-handoff-consistency.md"
 DOC_TITLE = "Enterprise Handoff Consistency"
 CURRENT_SEND_SET = ["ERG-003", "ERG-002"]
+HISTORICAL_DUAL_SEND_SET = CURRENT_SEND_SET
 DUAL_INBOX_ROOT = "var/review-runs/enterprise-dual-response-inbox"
 RAW_RESPONSE_PATHS = [
     f"{DUAL_INBOX_ROOT}/RAW_RESPONSE_ERG-003.md",
@@ -195,6 +196,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "docs_checked": docs_checked,
         "tool_count": 24,
         "selected_capability": "not selected",
+        "historical_dual_send_set": HISTORICAL_DUAL_SEND_SET,
+        # Backward-compatible alias for existing release/readiness consumers.
         "current_send_set": CURRENT_SEND_SET,
         "dual_response_inbox_root": DUAL_INBOX_ROOT,
         "raw_response_paths": RAW_RESPONSE_PATHS,
@@ -210,7 +213,9 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report['selected_capability']}",
-        "current_send_set: " + ", ".join(report["current_send_set"]),
+        "historical_dual_send_set: "
+        + ", ".join(report["historical_dual_send_set"]),
+        "current_send_set_legacy_alias: " + ", ".join(report["current_send_set"]),
         f"dual_response_inbox_root: {report['dual_response_inbox_root']}",
         "docs_checked:",
         *[f"- {path}" for path in report["docs_checked"]],
