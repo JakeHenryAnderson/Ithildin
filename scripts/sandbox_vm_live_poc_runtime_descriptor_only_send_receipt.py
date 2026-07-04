@@ -62,6 +62,13 @@ def main() -> int:
     try:
         output_dir = build_receipt(ROOT, args.output_dir)
     except DescriptorOnlySendReceiptError as exc:
+        report = build_check_report(ROOT, args.output_dir)
+        if report["valid"] and report["route_mode"] == "archived_after_descriptor_only_disposition":
+            print(
+                "ERG-004 descriptor-only send receipt is archived after local-development "
+                f"disposition at {report['output_dir']}"
+            )
+            return 0
         print(f"ERG-004 descriptor-only send receipt failed: {exc}", file=sys.stderr)
         return 1
     print(f"Built ERG-004 descriptor-only send receipt at {output_dir}")
