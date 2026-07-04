@@ -27,7 +27,7 @@ LANE_COMMANDS = {
             "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md "
             '--reviewer "REVIEWER NAME" '
             '--reviewer-type "ai_external" '
-            "--source-access source-level "
+            "--source-access packet-and-source "
             '--reviewed-commit "$(git rev-parse HEAD)" '
             '--reviewed-packet-hash "sha256:<from generated inbox>" '
             "--area sandbox-vm-live-poc-runtime-descriptor-only "

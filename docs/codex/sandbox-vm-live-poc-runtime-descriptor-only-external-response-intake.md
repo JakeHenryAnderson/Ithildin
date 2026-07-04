@@ -83,15 +83,19 @@ If there are no implementation findings, explicitly state `no findings` or `find
 
 ```sh
 uv run python scripts/external_response_normalize.py \
-  path/to/raw-review-response.md \
+  var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md \
   --reviewer "reviewer name" \
   --reviewer-type "human|gpt-5.5-pro|codex-high|codex-xhigh" \
-  --source-access source-level \
+  --source-access packet-and-source \
   --reviewed-commit "$(git rev-parse HEAD)" \
-  --reviewed-packet-hash "sha256:<reviewed-packet-hash>" \
+  --reviewed-packet-hash "sha256:<from generated ERG-004 inbox>" \
   --area sandbox-vm-live-poc-runtime-descriptor-only \
   --output var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only/normalized-response.json
 ```
+
+Use `make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox` or
+`make enterprise-response-now` to get the exact reviewed packet hash generated from the current
+ERG-004 descriptor-only source-review packet.
 
 Expected normalized-response invariants:
 

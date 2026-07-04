@@ -5779,6 +5779,7 @@ def test_enterprise_response_now_is_wired() -> None:
         assert lane["paste_preflight"]
         assert lane["normalizer"]
         assert "sha256:<from generated inbox>" not in lane["normalizer"]
+        assert "--source-access packet-and-source" in lane["normalizer"]
         assert lane["reviewed_packet_hash"]
         assert lane["reviewed_packet_hash"] in lane["normalizer"]
         assert lane["reviewed_packet_path"]
@@ -15422,10 +15423,20 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_external_response_intake_is
     for phrase in [
         "Status: response-intake template",
         "EXT-LIVE-DESC-###",
+        (
+            "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+            "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+        ),
+        "--source-access packet-and-source",
+        '--reviewed-packet-hash "sha256:<from generated ERG-004 inbox>"',
         "--area sandbox-vm-live-poc-runtime-descriptor-only",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
+        "make enterprise-response-now",
         "Only a later committed triage/disposition update",
     ]:
         assert phrase in doc
+    assert "--source-access source-level \\" not in doc
+    assert '"sha256:<reviewed-packet-hash>"' not in doc
     for forbidden in [
         "ERG-004 is closed",
         "live VM control is approved",
