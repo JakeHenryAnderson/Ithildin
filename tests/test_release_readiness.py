@@ -304,6 +304,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_decision_check,
     sandbox_vm_live_poc_runtime_descriptor_only_implementation_ticket_check,
     sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_check,
+    sandbox_vm_live_poc_runtime_descriptor_only_negative_transcripts,
     sandbox_vm_live_poc_runtime_descriptor_only_plan_check,
     sandbox_vm_live_poc_runtime_descriptor_only_response_application_playbook_check,
     sandbox_vm_live_poc_runtime_descriptor_only_response_application_preflight_check,
@@ -15276,6 +15277,82 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_implementation_is_wired() -
     assert "sandbox-vm-live-poc-runtime-descriptor-only-implementation-check" in operator_next
 
 
+def test_sandbox_vm_live_poc_runtime_descriptor_only_negative_transcripts_are_wired(
+    tmp_path: Path,
+) -> None:
+    transcript = sandbox_vm_live_poc_runtime_descriptor_only_negative_transcripts.build_transcripts(
+        tmp_path / "descriptor-negative"
+    )
+    doc_path = (
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md"
+    )
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    transcript_text = transcript.read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    for phrase in [
+        "Sandbox/VM Live POC Descriptor-Only Negative Transcripts",
+        "Unknown Field",
+        "Lifecycle Control Claim",
+        "Live Inspection Claim",
+        "Mission Control Authority Claim",
+        "Trusted Host Promotion Claim",
+        "Raw Mount Path",
+        "Parent Segment Label",
+        "Control Character Label",
+        "Malformed Profile Hash",
+        "Malformed Packet Hash",
+        "observed local schema-fixture denial transcripts",
+        "does not close `ERG-004`",
+    ]:
+        assert phrase in transcript_text
+    assert (
+        "| Unknown Field | reject descriptor fields outside the closed schema | true | rejected | "
+        "unknown_field |"
+    ) in transcript_text
+    for forbidden in [
+        "redacted-fixture-value",
+        "/Users/demo/workspace",
+        "not-a-sha256-digest",
+        "sha256:abc",
+        "local\nmodel",
+    ]:
+        assert forbidden not in transcript_text
+    for phrase in [
+        "Status: generated local denial-transcript evidence",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts",
+        "unknown descriptor fields",
+        "forbidden lifecycle-control authority claims",
+        "Output Policy",
+        "This artifact does not close `ERG-004`",
+    ]:
+        assert phrase in doc
+    assert (
+        "make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts"
+        in readme
+    )
+    assert doc_path in readme
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts:" in makefile
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts"
+        in release_check_body
+        or "release-check: sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Runtime Descriptor-Only Negative Transcripts" in review_index
+
+
 def test_sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle_is_wired() -> None:
     report = sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle.build_check_report(
         Path.cwd()
@@ -15362,6 +15439,7 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle_is_wir
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
+    assert report["artifact_count"] == 8
     assert report["erg_004_status"] == (
         "descriptor_only_runtime_implemented_source_review_pending"
     )
@@ -15377,6 +15455,7 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle_is_wir
         "Status: checked source-review handoff",
         "Current governed tool count: `24`.",
         "EXT-LIVE-DESC-###",
+        "generated descriptor-only negative transcripts",
         "External/source disposition is still required",
     ]:
         assert phrase in doc

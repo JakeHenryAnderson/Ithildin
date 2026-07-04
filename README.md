@@ -907,6 +907,11 @@ checked with `make control-mapping-readiness`.
   Mission Control runtime authority, trusted-host promotion, host writes, network expansion,
   API/MCP profile loading, and new tool powers; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts` - generate secret-free
+  local denial transcripts for malformed or authority-expanding ERG-004 descriptor payloads without
+  calling governed tools, inspecting VMs/containers, invoking local models, writing host artifacts,
+  recording external review, or closing ERG-004; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md).
 - `make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle` - generate the focused
   review packet for the ERG-004 descriptor-only implementation ticket using the
   `EXT-LIVE-DESC-###` namespace while keeping runtime implementation, VM/container inspection,
@@ -2190,6 +2195,12 @@ The runtime descriptor-only internal source review is
 and is checked with `make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check`;
 it records a local source inspection for continued local-preview development while preserving
 external/source disposition as the required closure step.
+The runtime descriptor-only negative transcripts are
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md)
+and are generated with `make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts`;
+they record safe denial summaries for malformed or authority-expanding descriptor payloads without
+raw descriptor payloads, VM/container inspection, local model invocation, host writes, external
+review recording, or ERG-004 closure.
 The runtime descriptor-only ticket review bundle is
 [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle.md)
 and is generated with `make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle`; it

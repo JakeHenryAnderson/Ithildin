@@ -31,6 +31,7 @@ The packet asks a reviewer to inspect:
 - `/system/status` descriptor evidence;
 - `sandbox.descriptor.submitted` audit metadata;
 - invalid descriptor safe-error behavior;
+- generated descriptor-only negative transcripts for malformed or authority-expanding payloads;
 - tests and gates proving the slice remains descriptor-only.
 
 The packet uses the `EXT-LIVE-DESC-###` finding namespace.

@@ -15,6 +15,8 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from scripts import sandbox_vm_live_poc_runtime_descriptor_only_negative_transcripts
+
 DEFAULT_OUTPUT_DIR = Path(
     "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review"
 )
@@ -37,6 +39,7 @@ ARTIFACTS = [
     "03_ERG004_DESCRIPTOR_ONLY_TESTS_AND_GATES.md",
     "04_ERG004_DESCRIPTOR_ONLY_CONTRACT_AND_BOUNDARY.md",
     "05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md",
+    "06_ERG004_DESCRIPTOR_ONLY_NEGATIVE_TRANSCRIPTS.md",
 ]
 COMMANDS = [
     (
@@ -53,6 +56,10 @@ COMMANDS = [
             "tests/test_api_service.py::test_sandbox_descriptor_denies_unsafe_inputs_safely",
             "-q",
         ],
+    ),
+    (
+        "descriptor-only-negative-transcripts",
+        ["make", "sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts"],
     ),
     (
         "no-new-powers-guardrail",
@@ -139,6 +146,7 @@ def build_bundle(
         "05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md": _command_evidence(
             commit, dirty, command_reports
         ),
+        "06_ERG004_DESCRIPTOR_ONLY_NEGATIVE_TRANSCRIPTS.md": _negative_transcripts_bundle(),
     }
     for name, content in files.items():
         _write(output_dir / name, content)
@@ -205,6 +213,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     tests = contents.get("03_ERG004_DESCRIPTOR_ONLY_TESTS_AND_GATES.md", "")
     boundary = contents.get("04_ERG004_DESCRIPTOR_ONLY_CONTRACT_AND_BOUNDARY.md", "")
     evidence = contents.get("05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md", "")
+    negative = contents.get("06_ERG004_DESCRIPTOR_ONLY_NEGATIVE_TRANSCRIPTS.md", "")
 
     for name, content in [
         ("index", index),
@@ -256,6 +265,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         '"sandbox-vm-live-poc-runtime-descriptor-only-implementation-check"',
         '"focused-api-descriptor-tests"',
+        '"descriptor-only-negative-transcripts"',
         '"no-new-powers-guardrail"',
         '"tool-surface-invariant-gate"',
         '"live_vm_inspection_allowed": false',
@@ -263,6 +273,20 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     ]:
         if phrase not in evidence:
             failures.append(f"descriptor-only source command evidence is missing phrase: {phrase}")
+    for phrase in [
+        "Sandbox/VM Live POC Descriptor-Only Negative Transcripts",
+        "Unknown Field",
+        "Lifecycle Control Claim",
+        "Live Inspection Claim",
+        "Raw Mount Path",
+        "malformed_profile_hash",
+        "does not close `ERG-004`",
+    ]:
+        if phrase not in negative:
+            failures.append(
+                "descriptor-only negative transcript bundle is missing phrase: "
+                f"{phrase}"
+            )
 
     combined = "\n".join(contents.values())
     for phrase in FORBIDDEN_APPROVAL_PHRASES:
@@ -359,6 +383,7 @@ APIs, system status evidence, and safe audit metadata.
 - `03_ERG004_DESCRIPTOR_ONLY_TESTS_AND_GATES.md`
 - `04_ERG004_DESCRIPTOR_ONLY_CONTRACT_AND_BOUNDARY.md`
 - `05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md`
+- `06_ERG004_DESCRIPTOR_ONLY_NEGATIVE_TRANSCRIPTS.md`
 - `{HASH_MANIFEST}`
 
 ## What This Bundle Does Not Prove
@@ -443,6 +468,16 @@ def _command_evidence(
     return "# ERG-004 Descriptor-Only Source Review Command Evidence\n\n```json\n" + json.dumps(
         payload, indent=2, sort_keys=True
     ) + "\n```\n"
+
+
+def _negative_transcripts_bundle() -> str:
+    with tempfile.TemporaryDirectory() as tmp:
+        transcript = (
+            sandbox_vm_live_poc_runtime_descriptor_only_negative_transcripts.build_transcripts(
+                Path(tmp)
+            )
+        )
+        return transcript.read_text(encoding="utf-8")
 
 
 def _build_command_reports(repo_root: Path, *, run_commands: bool) -> list[dict[str, Any]]:
