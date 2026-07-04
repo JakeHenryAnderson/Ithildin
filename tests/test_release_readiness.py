@@ -5867,7 +5867,7 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["supported_lanes"] == ["ERG-002", "ERG-003"]
+    assert report["supported_lanes"] == ["ERG-002", "ERG-003", "ERG-004"]
     assert report["deterministic_docs_only"] is True
     assert report["ready_for_normalization"] is False
     assert report["normalizes_responses"] is False
@@ -5880,21 +5880,27 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
     assert report["sandbox_orchestration_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     for phrase in [
-        "Status: deterministic preflight for pasted `ERG-003` and `ERG-002` reviewer responses.",
+        "Status: deterministic preflight for pasted enterprise reviewer responses.",
         "Current governed tool count: `24`.",
         "make enterprise-response-paste-preflight",
+        "--lane ERG-004",
         "--lane ERG-003",
         "--lane ERG-002",
         "Expected finding namespace",
         "explicit no-findings statement",
+        (
+            "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+            "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+        ),
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
-        "fallback/manual flows",
+        "fallback/manual `ERG-003`/`ERG-002` flows",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
-        "does not close either lane",
+        "does not close any lane",
         "does not approve runtime behavior",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     ]:
         assert phrase in doc
     assert "enterprise-response-paste-preflight:" in makefile
@@ -5921,6 +5927,12 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
 
     specs = enterprise_response_paste_preflight._lane_specs()  # noqa: SLF001
     assert (
+        "var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+        in specs["ERG-004"].accepted_raw_response_paths
+    )
+    assert (
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
         in specs["ERG-003"].accepted_raw_response_paths
     )
@@ -5931,16 +5943,61 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
     raw_path = Path(
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
     )
+    erg004_raw_path = Path(
+        "var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+    )
     fallback_raw_path = Path(
         "var/review-runs/enterprise-response-inbox/RAW_RESPONSE_ERG-003.md"
     )
     original = raw_path.read_bytes() if raw_path.exists() else None
+    erg004_original = erg004_raw_path.read_bytes() if erg004_raw_path.exists() else None
     fallback_original = (
         fallback_raw_path.read_bytes() if fallback_raw_path.exists() else None
     )
     try:
         raw_path.parent.mkdir(parents=True, exist_ok=True)
+        erg004_raw_path.parent.mkdir(parents=True, exist_ok=True)
         fallback_raw_path.parent.mkdir(parents=True, exist_ok=True)
+        erg004_raw_path.write_text(
+            "\n".join(
+                [
+                    "External source review for ERG-004 descriptor-only.",
+                    "No implementation findings were found.",
+                    "The descriptor-only local-preview disposition can proceed.",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        valid_erg004_raw = enterprise_response_paste_preflight.preflight_raw_response(
+            Path.cwd(), specs["ERG-004"], erg004_raw_path
+        )
+        assert valid_erg004_raw["valid"] is True
+        assert valid_erg004_raw["finding_namespace"] == "EXT-LIVE-DESC-###"
+        assert (
+            valid_erg004_raw["normalization_area"]
+            == "sandbox-vm-live-poc-runtime-descriptor-only"
+        )
+        assert (
+            valid_erg004_raw["dry_run_command"]
+            == "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
+        )
+        assert (
+            valid_erg004_raw["closure_gate"]
+            == (
+                "make sandbox-vm-live-poc-runtime-descriptor-only-"
+                "response-application-preflight-check"
+            )
+        )
+        assert valid_erg004_raw["normalizes_responses"] is False
+        assert valid_erg004_raw["external_review_recorded"] is False
+        erg004_build_report = enterprise_response_paste_preflight.build_report(
+            Path.cwd(), lane="ERG-004", raw_response=erg004_raw_path
+        )
+        assert erg004_build_report["valid"] is True
+        assert erg004_build_report["ready_for_normalization"] is True
+
         raw_path.write_text(
             "\n".join(
                 [
@@ -5982,6 +6039,10 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
             raw_path.unlink(missing_ok=True)
         else:
             raw_path.write_bytes(original)
+        if erg004_original is None:
+            erg004_raw_path.unlink(missing_ok=True)
+        else:
+            erg004_raw_path.write_bytes(erg004_original)
         if fallback_original is None:
             fallback_raw_path.unlink(missing_ok=True)
         else:

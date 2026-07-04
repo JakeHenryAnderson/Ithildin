@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-response-paste-preflight.md"
 DOC_TITLE = "Enterprise Response Paste Preflight"
 MAX_RESPONSE_BYTES = 200_000
-SUPPORTED_LANES = {"ERG-003", "ERG-002"}
+SUPPORTED_LANES = {"ERG-004", "ERG-003", "ERG-002"}
 
 BOUNDARY_FLAGS = {
     "normalizes_responses": False,
@@ -80,7 +80,7 @@ def build_report(
 
     lane_specs = _lane_specs()
     if sorted(lane_specs) != sorted(SUPPORTED_LANES):
-        failures.append("paste preflight expected only ERG-003 and ERG-002 lane specs")
+        failures.append("paste preflight expected ERG-004, ERG-003, and ERG-002 lane specs")
 
     raw_report: dict[str, Any] | None = None
     if lane and raw_response:
@@ -111,22 +111,28 @@ def build_report(
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
     required_doc_phrases = [
-        "Status: deterministic preflight for pasted `ERG-003` and `ERG-002` reviewer responses.",
+        "Status: deterministic preflight for pasted enterprise reviewer responses.",
         "Current governed tool count: `24`.",
         "make enterprise-response-paste-preflight",
+        "--lane ERG-004",
         "--lane ERG-003",
         "--lane ERG-002",
+        (
+            "--raw-response var/review-runs/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+            "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+        ),
         "--raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "--raw-response var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
-        "var/review-runs/enterprise-response-inbox/",
-        "fallback/manual flows",
+        "fallback/manual `ERG-003`/`ERG-002` flows",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
-        "does not close either lane",
+        "does not close any lane",
         "does not approve runtime behavior",
         "Expected finding namespace",
         "explicit no-findings statement",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-static-preflight-response-dry-run",
         "make mission-control-display-response-dry-run",
     ]
@@ -277,6 +283,43 @@ def _lane_specs() -> dict[str, LaneSpec]:
     # Keep this preflight cheap: it validates pasted response shape and doc wiring,
     # not the heavyweight enterprise packet/readiness dependency graph.
     return {
+        "ERG-004": LaneSpec(
+            gap="ERG-004",
+            raw_response_path=(
+                "var/review-runs/"
+                "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+                "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+            ),
+            accepted_raw_response_paths=(
+                "var/review-runs/"
+                "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+                "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+            ),
+            finding_namespace="EXT-LIVE-DESC-###",
+            normalization_area="sandbox-vm-live-poc-runtime-descriptor-only",
+            normalizer_command=(
+                "uv run python scripts/external_response_normalize.py "
+                "var/review-runs/"
+                "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+                "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md "
+                '--reviewer "REVIEWER NAME" '
+                '--reviewer-type "ai_external" '
+                '--source-access source-level '
+                '--reviewed-commit "$(git rev-parse HEAD)" '
+                '--reviewed-packet-hash "sha256:<from generated inbox>" '
+                "--area sandbox-vm-live-poc-runtime-descriptor-only "
+                "--output var/review-runs/"
+                "sandbox-vm-live-poc-runtime-descriptor-only/normalized-response.json"
+            ),
+            dry_run_command=(
+                "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
+            ),
+            closure_gate=(
+                "make sandbox-vm-live-poc-runtime-descriptor-only-"
+                "response-application-preflight-check"
+            ),
+            allowed_next_state="descriptor_only_local_preview_disposition_ready",
+        ),
         "ERG-003": _lane_spec(
             gap="ERG-003",
             finding_namespace="EXT-SVP-###",

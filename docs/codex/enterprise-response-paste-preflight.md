@@ -1,6 +1,6 @@
 # Enterprise Response Paste Preflight
 
-Status: deterministic preflight for pasted `ERG-003` and `ERG-002` reviewer responses.
+Status: deterministic preflight for pasted enterprise reviewer responses.
 
 Current governed tool count: `24`.
 
@@ -16,9 +16,34 @@ Use `make enterprise-response-now` when you want the compact lane-specific comma
 running any normalizer.
 
 This preflight does not normalize responses, does not write response files, does not mutate
-findings, does not record external review, does not close either lane, and does not approve runtime behavior.
+findings, does not record external review, does not close any lane, and does not approve runtime behavior.
 It is a small guard between "paste raw reviewer text into the ignored inbox" and "run the existing
 lane normalizer".
+
+## ERG-004 Pasted Response
+
+After pasting a real descriptor-only reviewer response into the generated inbox path, run:
+
+```sh
+uv run python scripts/enterprise_response_paste_preflight.py \
+  --lane ERG-004 \
+  --raw-response var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md
+```
+
+Expected finding namespace: `EXT-LIVE-DESC-###`.
+
+The response must be UTF-8, size-bounded, not the generated placeholder, and must contain either the
+expected finding namespace prefix or an explicit no-findings statement. Passing this preflight only
+means the response is ready for the existing `ERG-004` descriptor-only normalizer and response
+application sequence:
+
+```sh
+uv run python scripts/external_response_normalize.py \
+  --area sandbox-vm-live-poc-runtime-descriptor-only \
+  --raw-response var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md
+make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
+make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
+```
 
 ## ERG-003 Pasted Response
 
@@ -69,8 +94,8 @@ make mission-control-display-disposition-closure-check
 ```
 
 The all-lane inbox paths under `var/review-runs/enterprise-response-inbox/` remain accepted for
-fallback/manual flows, but the current `ERG-003`/`ERG-002` handoff should use the compact
-dual-response inbox and generated cheat sheet.
+fallback/manual `ERG-003`/`ERG-002` flows, but the current active `ERG-004` handoff should use the
+descriptor-only response inbox and generated cheat sheet.
 
 ## What This Proves
 
