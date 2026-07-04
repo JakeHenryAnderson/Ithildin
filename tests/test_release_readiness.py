@@ -1366,6 +1366,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
@@ -2611,6 +2612,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
@@ -2634,6 +2636,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
         "live_poc_runtime_descriptor_only_response_inbox",
+        "live_poc_runtime_descriptor_only_send_receipt",
         "live_poc_runtime_descriptor_only_response_dry_run",
         "live_poc_runtime_descriptor_only_response_application_preflight",
     ]
@@ -2648,6 +2651,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md",
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md",
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight.md",
     }
@@ -2674,6 +2678,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review",
         "make enterprise-send-now",
         "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "The historical ERG-003/ERG-002 dual-send commands remain available only for "
@@ -2724,6 +2729,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
         "live_poc_runtime_descriptor_only_response_inbox",
+        "live_poc_runtime_descriptor_only_send_receipt",
         "live_poc_runtime_descriptor_only_response_dry_run",
         "live_poc_runtime_descriptor_only_response_application_preflight",
     ]
@@ -6121,6 +6127,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
         "make enterprise-send-now",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
@@ -6301,6 +6308,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "make no-new-powers-guardrail",
@@ -6324,6 +6332,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "live_poc_runtime_descriptor_only_source_review_bundle",
         "live_poc_runtime_descriptor_only_external_response_intake",
         "live_poc_runtime_descriptor_only_response_inbox",
+        "live_poc_runtime_descriptor_only_send_receipt",
         "live_poc_runtime_descriptor_only_response_dry_run",
         "live_poc_runtime_descriptor_only_response_application_preflight",
     ]

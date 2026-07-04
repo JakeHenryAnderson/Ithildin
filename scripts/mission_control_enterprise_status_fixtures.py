@@ -84,6 +84,7 @@ ALLOWED_ACTION_COMMANDS = {
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
     "make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check",

@@ -81,6 +81,7 @@ DESCRIPTOR_ONLY_DOC_PHRASES = [
     "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
     "make enterprise-send-now",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",

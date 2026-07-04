@@ -82,6 +82,7 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
     "make no-new-powers-guardrail",
@@ -357,6 +358,16 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
         ),
     },
     {
+        "label": "live_poc_runtime_descriptor_only_send_receipt",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md"
+        ),
+        "description": (
+            "operator send receipt scaffold for descriptor-only runtime source review"
+        ),
+    },
+    {
         "label": "live_poc_runtime_descriptor_only_response_dry_run",
         "path": (
             "docs/codex/"
@@ -393,6 +404,7 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
     "make no-new-powers-guardrail",

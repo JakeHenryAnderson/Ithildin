@@ -46,6 +46,7 @@ REQUIRED_PHRASES = [
     "make enterprise-send-now",
     "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/",
     "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
     "The historical ERG-003/ERG-002 dual-send commands remain available only for "

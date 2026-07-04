@@ -73,6 +73,7 @@ review packet. The active ERG-004 sequence is:
 ```sh
 make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
 make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
+make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check
 make enterprise-send-now
 make enterprise-review-send-preflight
 ```

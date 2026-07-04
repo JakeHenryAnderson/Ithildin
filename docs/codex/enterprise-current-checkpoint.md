@@ -35,6 +35,7 @@ make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-check
 make sandbox-vm-live-poc-runtime-descriptor-only-plan-check
 make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
 make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
+make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
