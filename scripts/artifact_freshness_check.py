@@ -141,7 +141,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "Technical MVP state:",
         )
         or "unknown",
-        "enterprise_next_action": _enterprise_next_action(send_manifest),
+        "enterprise_next_action": _enterprise_next_action(
+            send_manifest, enterprise_send_now
+        ),
         "checks": checks,
         "stale_or_missing": stale,
         "refresh_commands": _refresh_commands(stale),
@@ -281,10 +283,21 @@ def _extract_prefixed_doc_value(text: str, prefix: str) -> str | None:
     return None
 
 
-def _enterprise_next_action(send_manifest: dict[str, Any]) -> str:
+def _enterprise_next_action(
+    send_manifest: dict[str, Any], enterprise_send_now: dict[str, Any] | None = None
+) -> str:
+    send_now = enterprise_send_now or {}
+    send_now_action = send_now.get("enterprise_next_action")
+    if isinstance(send_now_action, str) and send_now_action:
+        return send_now_action
+    gaps = send_now.get("recommended_gaps")
+    if gaps == ["ERG-004"]:
+        return "prepare_erg004_descriptor_only_runtime_planning"
     gaps = send_manifest.get("recommended_gaps")
     if gaps == ["ERG-003", "ERG-002"]:
         return "send_erg_003_and_erg_002"
+    if gaps == ["ERG-004"]:
+        return "prepare_erg004_descriptor_only_runtime_planning"
     return "unknown"
 
 

@@ -1321,6 +1321,9 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert freshness["records_external_review"] is False
     assert freshness["normalizes_responses"] is False
     assert freshness["closes_enterprise_lanes"] is False
+    assert freshness["enterprise_next_action"] == (
+        "prepare_erg004_descriptor_only_runtime_planning"
+    )
     assert set(freshness["checks"]) >= {
         "enterprise_send_artifact_commits_match_current",
         "enterprise_send_artifact_payloads_clean",
@@ -1350,6 +1353,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["enterprise_next_action"] == (
         "prepare_erg004_descriptor_only_runtime_planning"
     )
+    assert freshness["enterprise_next_action"] == status["enterprise_next_action"]
     assert status["recommended_next_commands"]
     assert status["handoff_paths"] == {
         "active_send_now": "var/review-packets/v3/enterprise-send-now",
