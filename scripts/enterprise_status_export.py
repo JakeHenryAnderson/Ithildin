@@ -167,13 +167,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if "enterprise-status-export-check" not in release_guardrails:
         failures.append("release guardrails do not require enterprise status export check")
 
+    active_send_set = set(current.get("recommended_send_set") or [])
     rows = [
         {
             "gap": row["gap"],
             "status": row["status"],
             "packet_path": row["packet_path"],
             "packet_handoff_ready": row["packet_handoff_ready"],
-            "recommended_to_send_now": row["recommended_to_send_now"],
+            "recommended_to_send_now": row["gap"] in active_send_set,
             "closure_ready": row["closure_ready"],
             "normalized_response_present": row["normalized_response_present"],
             "implementation_allowed": row["implementation_allowed"],

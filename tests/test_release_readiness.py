@@ -3017,6 +3017,9 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "ERG-004",
         "ERG-010",
     }
+    assert [
+        row["gap"] for row in report["review_lanes"] if row["recommended_to_send_now"]
+    ] == ["ERG-004"]
     for row in report["review_lanes"]:
         assert row["packet_handoff_ready"] is True
         assert row["implementation_allowed"] is False
