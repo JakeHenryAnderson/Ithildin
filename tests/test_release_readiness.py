@@ -12929,7 +12929,10 @@ def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:
     assert report["erg_002_status"] == "planning_only"
     assert report["erg_003_status"] == "closed_local_preview_static_preflight"
     assert report["erg_003_disposition_recorded"] is True
-    assert report["erg_004_status"] == "ready_for_runtime_proposal_review"
+    assert (
+        report["erg_004_status"]
+        == "descriptor_only_runtime_implemented_source_review_pending"
+    )
     assert report["erg_005_status"] == "blocked"
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -12948,8 +12951,12 @@ def test_enterprise_sandbox_control_plane_readiness_is_wired() -> None:
         "`ERG-004` Live sandbox/VM worker proof of concept",
         "`ERG-005` Trusted-host artifact promotion",
         "sandbox-vm-live-poc-decision-packet.md",
-        "implementation-planning and runtime-proposal review artifacts only",
         "sandbox-vm-live-poc-runtime-proposal.md",
+        "descriptor-only runtime slice that is source-review pending",
+        "sandbox-vm-live-poc-runtime-descriptor-only-implementation.md",
+        "sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md",
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md",
+        "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md",
     ]:
         assert phrase in doc
     for blocked in [
