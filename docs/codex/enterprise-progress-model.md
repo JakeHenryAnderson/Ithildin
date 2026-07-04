@@ -94,6 +94,7 @@ descriptor-only local-development disposition is recorded, but it does not appro
 local model invocation, sandbox orchestration, or broader enterprise claims.
 
 ```sh
+make trusted-host-descriptor-contract-check
 make trusted-host-promotion-decision-intake-check
 make trusted-host-promotion-state-machine-check
 make trusted-host-promotion-negative-fixtures-check

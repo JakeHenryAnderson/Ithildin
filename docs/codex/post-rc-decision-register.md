@@ -226,6 +226,10 @@ Current selected capability: `not selected`.
   `trusted-host-promotion-negative-fixtures.md` defines future denial fixture IDs, transcript shape,
   safe reason labels, and product-boundary overclaim cases while keeping trusted-host promotion
   blocked.
+- Current trusted host descriptor evidence:
+  `trusted-host-descriptor-contract.md` defines operator-reviewed, secret-free host posture
+  evidence while keeping host control, host writes, runtime promotion, and automatic enrollment
+  blocked.
 - Current zone-contract evidence:
   `trusted-host-promotion-zone-contract.md` defines future `sandbox://`, `host-staging://`,
   `approved://`, and `evidence://` labels while keeping those labels as evidence identifiers only.

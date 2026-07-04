@@ -335,6 +335,8 @@ checked with `make control-mapping-readiness`.
   approving runtime importer behavior.
 - `make sandbox-promotion-evidence-contract-check` - validate the future trusted-host promotion
   evidence contract while confirming host promotion remains unimplemented.
+- `make trusted-host-descriptor-contract-check` - validate the design-only trusted host descriptor
+  contract while keeping host control and trusted-host promotion blocked.
 - `make trusted-host-promotion-decision-intake-check` - validate the post-RC decision-intake
   checklist for the trusted-host promotion lane while keeping host promotion blocked.
 - `make trusted-host-promotion-state-machine-check` - validate the design-only promotion state
@@ -2317,6 +2319,10 @@ The design-only trusted-host promotion negative fixture contract is in
 and is checked with `make trusted-host-promotion-negative-fixtures-check`; it defines the future
 denial transcript families for conflict, replay, stale evidence, unsafe labels, sensitive payloads,
 and product-boundary overclaims before any promotion implementation can be considered.
+The design-only trusted host descriptor contract is in
+[docs/codex/trusted-host-descriptor-contract.md](docs/codex/trusted-host-descriptor-contract.md)
+and is checked with `make trusted-host-descriptor-contract-check`; it defines operator-reviewed,
+secret-free host posture evidence without granting host control, host writes, or runtime promotion.
 The design-only trusted-host promotion zone contract is in
 [docs/codex/trusted-host-promotion-zone-contract.md](docs/codex/trusted-host-promotion-zone-contract.md)
 and is checked with `make trusted-host-promotion-zone-contract-check`; it defines future

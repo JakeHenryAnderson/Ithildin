@@ -57,6 +57,7 @@ A future decision record must include at least:
 | Evidence | Required source |
 | --- | --- |
 | Promotion evidence contract | `sandbox-promotion-evidence-contract.md` |
+| Trusted host descriptor contract | `trusted-host-descriptor-contract.md` |
 | Post-RC decision gate | `make post-rc-decision-gate` |
 | Post-RC decision register | `make post-rc-decision-register-check` |
 | No-new-powers evidence | `make no-new-powers-guardrail` and `make tool-surface-invariant-gate` |

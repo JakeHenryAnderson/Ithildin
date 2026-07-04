@@ -100,6 +100,7 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
 ]
 
 ERG005_TRUSTED_HOST_COMMANDS = [
+    "make trusted-host-descriptor-contract-check",
     "make trusted-host-promotion-decision-intake-check",
     "make trusted-host-promotion-state-machine-check",
     "make trusted-host-promotion-negative-fixtures-check",
@@ -427,6 +428,11 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
 
 ERG005_TRUSTED_HOST_ARTIFACTS = [
     {
+        "label": "trusted_host_descriptor_contract",
+        "path": "docs/codex/trusted-host-descriptor-contract.md",
+        "description": "design-only host descriptor contract for blocked ERG-005 planning",
+    },
+    {
         "label": "trusted_host_decision_intake",
         "path": "docs/codex/trusted-host-promotion-decision-intake.md",
         "description": "decision-intake packet for blocked ERG-005 trusted-host promotion",
@@ -482,6 +488,7 @@ REQUIRED_DOC_PHRASES = [
     "If the dual-response disposition record, runtime-ticket internal review, runtime "
     "gate-readiness",
     "descriptor_only_local_preview_disposition_ready",
+    "make trusted-host-descriptor-contract-check",
     "make trusted-host-promotion-decision-intake-check",
     "make trusted-host-promotion-state-machine-check",
     "make trusted-host-promotion-negative-fixtures-check",

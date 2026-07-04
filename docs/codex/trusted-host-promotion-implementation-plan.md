@@ -30,6 +30,7 @@ for runtime approval:
 | Required artifact | Required evidence |
 | --- | --- |
 | Promotion evidence contract | `sandbox-promotion-evidence-contract.md` |
+| Trusted host descriptor contract | `trusted-host-descriptor-contract.md` |
 | Decision intake | `trusted-host-promotion-decision-intake.md` |
 | State machine | `trusted-host-promotion-state-machine.md` |
 | Negative fixture contract | `trusted-host-promotion-negative-fixtures.md` |
@@ -38,8 +39,8 @@ for runtime approval:
 | External/source review | future source-review handoff and favorable disposition |
 | Release readiness | future focused tests, negative transcripts, packet redaction scan, and release-check wiring |
 
-No future implementation plan may skip the decision intake, state machine, negative fixtures, zone
-contract, external/source review, or release readiness evidence.
+No future implementation plan may skip the trusted host descriptor contract, decision intake, state
+machine, negative fixtures, zone contract, external/source review, or release readiness evidence.
 
 ## Future Runtime Shape
 

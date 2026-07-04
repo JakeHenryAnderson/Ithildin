@@ -96,6 +96,7 @@ ALLOWED_ACTION_COMMANDS = {
     "make sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton-check",
     "make sandbox-vm-live-poc-prerequisite-disposition-dry-run",
     "make sandbox-vm-live-poc-decision-packet-check",
+    "make trusted-host-descriptor-contract-check",
     "make trusted-host-promotion-decision-intake-check",
     "make trusted-host-promotion-state-machine-check",
     "make trusted-host-promotion-negative-fixtures-check",

@@ -13,6 +13,7 @@ new governed tool power.
 ## Scope
 
 - Evidence contract: `docs/codex/sandbox-promotion-evidence-contract.md`.
+- Trusted host descriptor contract: `docs/codex/trusted-host-descriptor-contract.md`.
 - Decision intake: `docs/codex/trusted-host-promotion-decision-intake.md`.
 - State machine: `docs/codex/trusted-host-promotion-state-machine.md`.
 - Negative fixture contract: `docs/codex/trusted-host-promotion-negative-fixtures.md`.
@@ -22,6 +23,7 @@ new governed tool power.
 - Packet generator/checker: `scripts/trusted_host_promotion_source_review_packet.py`.
 - Release gates:
   `make sandbox-promotion-evidence-contract-check`,
+  `make trusted-host-descriptor-contract-check`,
   `make trusted-host-promotion-decision-intake-check`,
   `make trusted-host-promotion-state-machine-check`,
   `make trusted-host-promotion-negative-fixtures-check`,

@@ -185,6 +185,10 @@ with `make trusted-host-promotion-state-machine-check`.
 The design-only negative fixture contract is
 [trusted-host-promotion-negative-fixtures.md](trusted-host-promotion-negative-fixtures.md) and is
 validated with `make trusted-host-promotion-negative-fixtures-check`.
+The design-only trusted host descriptor contract is
+[trusted-host-descriptor-contract.md](trusted-host-descriptor-contract.md) and is validated with
+`make trusted-host-descriptor-contract-check`; it defines operator-reviewed, secret-free host
+posture evidence without granting host control, host writes, or runtime promotion.
 The design-only zone contract is
 [trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md) and is validated
 with `make trusted-host-promotion-zone-contract-check`.

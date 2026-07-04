@@ -77,7 +77,8 @@ The valid fixture may display only these checked action commands:
 - `make handoff-dry-run`;
 - `make enterprise-send-quick-check`;
 - `make enterprise-send-now`;
-- `make enterprise-response-intake-refresh`.
+- `make enterprise-response-intake-refresh`;
+- `make trusted-host-descriptor-contract-check`.
 
 The final two fixtures are explicit handoff-safety cases: `MC-STATUS-NEG-011` rejects unsafe
 action commands with `unsupported_action_command`, and `MC-STATUS-NEG-012` rejects unsafe handoff

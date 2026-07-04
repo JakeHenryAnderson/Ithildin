@@ -29,6 +29,7 @@ operator action is to prepare the still-blocked `ERG-005` trusted-host artifact-
 lane:
 
 ```sh
+make trusted-host-descriptor-contract-check
 make trusted-host-promotion-decision-intake-check
 make trusted-host-promotion-state-machine-check
 make trusted-host-promotion-negative-fixtures-check

@@ -22,6 +22,7 @@ from scripts import (
     review_docs,
     sandbox_promotion_evidence_contract_check,
     tool_surface_invariant_gate,
+    trusted_host_descriptor_contract_check,
     trusted_host_promotion_decision_intake_check,
     trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_negative_fixtures_check,
@@ -41,6 +42,7 @@ PROJECT_MARKERS = [
 ]
 CONTRACT_DOCS = [
     Path("docs/codex/sandbox-promotion-evidence-contract.md"),
+    Path("docs/codex/trusted-host-descriptor-contract.md"),
     Path("docs/codex/trusted-host-promotion-decision-intake.md"),
     Path("docs/codex/trusted-host-promotion-state-machine.md"),
     Path("docs/codex/trusted-host-promotion-negative-fixtures.md"),
@@ -55,6 +57,7 @@ CONTRACT_DOCS = [
 ]
 COMMANDS = [
     ["make", "sandbox-promotion-evidence-contract-check"],
+    ["make", "trusted-host-descriptor-contract-check"],
     ["make", "trusted-host-promotion-decision-intake-check"],
     ["make", "trusted-host-promotion-state-machine-check"],
     ["make", "trusted-host-promotion-negative-fixtures-check"],
@@ -248,6 +251,7 @@ def build_packet(
         failure
         for key in [
             "promotion_evidence_contract",
+            "host_descriptor_contract",
             "decision_intake",
             "state_machine",
             "negative_fixtures",
@@ -296,6 +300,9 @@ def _build_context(
         "dirty": dirty,
         "run_commands": run_commands,
         "promotion_evidence_contract": sandbox_promotion_evidence_contract_check.build_report(
+            repo_root
+        ),
+        "host_descriptor_contract": trusted_host_descriptor_contract_check.build_report(
             repo_root
         ),
         "decision_intake": trusted_host_promotion_decision_intake_check.build_report(
@@ -370,6 +377,8 @@ Finding namespace: `EXT-TRUSTED-HOST-###`
 
 Please review:
 
+- whether the trusted host descriptor contract keeps host posture evidence operator-reviewed,
+  secret-free, descriptor-only, and unable to authorize host control;
 - whether the sandbox/staging/approved zone labels are precise and non-authoritative;
 - whether the implementation-plan skeleton requires exact artifact hash binding, approval binding,
   one-time scope evidence, policy/manifest evidence, and source/staging/approved hash matching;
@@ -406,6 +415,7 @@ positioning.
 def _gate_evidence(context: dict[str, Any]) -> dict[str, Any]:
     return {
         "promotion_evidence_contract": context["promotion_evidence_contract"],
+        "host_descriptor_contract": context["host_descriptor_contract"],
         "decision_intake": context["decision_intake"],
         "state_machine": context["state_machine"],
         "negative_fixtures": context["negative_fixtures"],
@@ -438,6 +448,7 @@ Current disposition target: design/source-review only.
 ## Required Checks Before Any Future Runtime Proposal
 
 - `make sandbox-promotion-evidence-contract-check`
+- `make trusted-host-descriptor-contract-check`
 - `make trusted-host-promotion-decision-intake-check`
 - `make trusted-host-promotion-state-machine-check`
 - `make trusted-host-promotion-negative-fixtures-check`

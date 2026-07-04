@@ -34,6 +34,7 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 Validate the active ERG-005 trusted-host promotion review surface with:
 
 ```sh
+make trusted-host-descriptor-contract-check
 make trusted-host-promotion-decision-intake-check
 make trusted-host-promotion-state-machine-check
 make trusted-host-promotion-negative-fixtures-check

@@ -370,6 +370,7 @@ from scripts import (
     technical_mvp_ticket_map,
     test_determinism_gate,
     tool_surface_invariant_gate,
+    trusted_host_descriptor_contract_check,
     trusted_host_promotion_decision_intake_check,
     trusted_host_promotion_disposition_closure_check,
     trusted_host_promotion_disposition_packet,
@@ -2637,6 +2638,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["recommended_next_enterprise_review"] == "ERG-005"
     assert report["next_action"] == "prepare_erg005_trusted_host_promotion_review"
     assert report["action_commands"] == [
+        "make trusted-host-descriptor-contract-check",
         "make trusted-host-promotion-decision-intake-check",
         "make trusted-host-promotion-state-machine-check",
         "make trusted-host-promotion-negative-fixtures-check",
@@ -2660,6 +2662,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make enterprise-response-now",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "trusted_host_descriptor_contract",
         "trusted_host_decision_intake",
         "trusted_host_state_machine",
         "trusted_host_negative_fixtures",
@@ -2671,6 +2674,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "trusted_host_response_kit",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
+        "docs/codex/trusted-host-descriptor-contract.md",
         "docs/codex/trusted-host-promotion-decision-intake.md",
         "docs/codex/trusted-host-promotion-state-machine.md",
         "docs/codex/trusted-host-promotion-negative-fixtures.md",
@@ -2745,6 +2749,7 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["recommended_send_set"] == ["ERG-005"]
     assert report["recommended_next_enterprise_review"] == "ERG-005"
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "trusted_host_descriptor_contract",
         "trusted_host_decision_intake",
         "trusted_host_state_machine",
         "trusted_host_negative_fixtures",
@@ -6451,6 +6456,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["closure_ready_count"] == 0
     assert report["next_action"] == "prepare_erg005_trusted_host_promotion_review"
     assert report["action_commands"] == [
+        "make trusted-host-descriptor-contract-check",
         "make trusted-host-promotion-decision-intake-check",
         "make trusted-host-promotion-state-machine-check",
         "make trusted-host-promotion-negative-fixtures-check",
@@ -6474,6 +6480,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make enterprise-response-now",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "trusted_host_descriptor_contract",
         "trusted_host_decision_intake",
         "trusted_host_state_machine",
         "trusted_host_negative_fixtures",
@@ -31549,6 +31556,97 @@ def test_trusted_host_promotion_decision_intake_is_wired() -> None:
     assert "trusted-host-promotion-decision-intake.md" in decision_register
 
 
+def test_trusted_host_descriptor_contract_is_wired() -> None:
+    report = trusted_host_descriptor_contract_check.build_report(Path.cwd())
+    contract = Path("docs/codex/trusted-host-descriptor-contract.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    zone_contract = Path("docs/codex/trusted-host-promotion-zone-contract.md").read_text(
+        encoding="utf-8"
+    )
+    implementation_plan = Path(
+        "docs/codex/trusted-host-promotion-implementation-plan.md"
+    ).read_text(encoding="utf-8")
+    source_review = Path("docs/codex/trusted-host-promotion-source-review.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "blocked"
+    assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
+    assert report["accepted_fixture_valid"] is True
+    assert report["rejected_fixture_rejected"] is True
+    assert report["decision_record_required"] is True
+    assert report["implementation_approved"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["host_registry_mutation_allowed"] is False
+    assert report["automatic_host_enrollment_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    for phrase in [
+        "Status: design-only descriptor contract for `ERG-005`",
+        "Required Descriptor Fields",
+        "Forbidden Descriptor Fields",
+        "Accepted Descriptor Fixture",
+        "Rejected Descriptor Fixture",
+        "operator-reviewed local evidence record",
+        "planning input for later review packets",
+        "Ithildin may control the host",
+        "Ithildin may write to host-managed locations",
+        "trusted-host promotion allowed: `false`",
+        "host registry mutation allowed: `false`",
+        "automatic host enrollment allowed: `false`",
+        "VM/container lifecycle allowed: `false`",
+    ]:
+        assert phrase in contract
+    for forbidden in [
+        "trusted-host promotion is implemented",
+        "trusted-host promotion is approved",
+        "host writes are approved",
+        "host registry mutation is approved",
+        "automatic host enrollment is approved",
+    ]:
+        assert forbidden not in contract
+    assert "trusted-host-descriptor-contract-check:" in makefile
+    assert "trusted-host-descriptor-contract-check" in release_check_body
+    assert "make trusted-host-descriptor-contract-check" in readme
+    assert (
+        "trusted-host-descriptor-contract-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "docs/codex/trusted-host-descriptor-contract.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/trusted-host-descriptor-contract.md" in docs_site
+    assert "Trusted Host Descriptor Contract" in review_index
+    assert "trusted-host-descriptor-contract.md" in enterprise
+    assert "trusted-host-descriptor-contract.md" in gap_matrix
+    assert "trusted-host-descriptor-contract.md" in decision_register
+    assert "trusted-host-descriptor-contract.md" in zone_contract
+    assert "trusted-host-descriptor-contract.md" in implementation_plan
+    assert "trusted-host-descriptor-contract.md" in source_review
+
+
 def test_trusted_host_promotion_state_machine_is_wired() -> None:
     report = trusted_host_promotion_state_machine_check.build_report(Path.cwd())
     state_machine = Path("docs/codex/trusted-host-promotion-state-machine.md").read_text(
@@ -31851,7 +31949,7 @@ def test_trusted_host_promotion_implementation_plan_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["erg_005_status"] == "blocked"
     assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
-    assert report["required_artifact_count"] == 8
+    assert report["required_artifact_count"] == 9
     assert report["stop_condition_count"] >= 20
     assert report["decision_record_required"] is True
     assert report["implementation_approved"] is False
@@ -31872,6 +31970,7 @@ def test_trusted_host_promotion_implementation_plan_is_wired() -> None:
     for phrase in [
         "Status: implementation-planning skeleton for `ERG-005`",
         "Required Inputs",
+        "trusted-host-descriptor-contract.md",
         "Future Runtime Shape",
         "Required Future Components",
         "Implementation Gate Preconditions",

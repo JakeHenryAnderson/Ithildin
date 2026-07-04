@@ -286,6 +286,7 @@ def build_bundle(
                 repo_root,
                 [
                     "docs/codex/sandbox-promotion-evidence-contract.md",
+                    "docs/codex/trusted-host-descriptor-contract.md",
                     "docs/codex/trusted-host-promotion-decision-intake.md",
                     "docs/codex/trusted-host-promotion-state-machine.md",
                     "docs/codex/trusted-host-promotion-zone-contract.md",
@@ -389,23 +390,26 @@ Finding namespace: `EXT-TRUSTED-HOST-###`
 
 ## Scope
 
-Review the attached source-review packet, disposition packet, promotion contracts, state machine,
-zone contract, implementation-plan skeleton, negative fixtures, observed sandbox evidence pointers,
-external response intake, closure gate, dry-run evidence, queue status, and command evidence.
+Review the attached source-review packet, disposition packet, descriptor contract, promotion
+contracts, state machine, zone contract, implementation-plan skeleton, negative fixtures, observed
+sandbox evidence pointers, external response intake, closure gate, dry-run evidence, queue status,
+and command evidence.
 
 Please answer:
 
 1. Did you inspect the trusted-host promotion source packet and disposition packet?
 2. Are source/staging/approved/evidence zone labels precise enough and non-authoritative?
-3. Does the implementation-plan skeleton require exact artifact hash binding, approval binding,
+3. Does the trusted host descriptor contract keep host posture evidence operator-reviewed,
+   secret-free, descriptor-only, and unable to authorize host control?
+4. Does the implementation-plan skeleton require exact artifact hash binding, approval binding,
    one-time scope evidence, policy/manifest evidence, conflict handling, stale evidence denial,
    replay denial, and path-escape denial before any future implementation could be considered?
-4. Are the negative fixtures strong enough for unsafe labels, path escape, overwrite/delete/move,
+5. Are the negative fixtures strong enough for unsafe labels, path escape, overwrite/delete/move,
    automatic promotion, broad archive extraction, sensitive payloads, and product-boundary
    overclaims?
-5. Does the lane preserve Ithildin as the only policy, approval, execution, and audit authority?
-6. Are there any critical/high findings?
-7. Can `ERG-005` continue design-only planning while runtime implementation remains blocked?
+6. Does the lane preserve Ithildin as the only policy, approval, execution, and audit authority?
+7. Are there any critical/high findings?
+8. Can `ERG-005` continue design-only planning while runtime implementation remains blocked?
 
 Do not approve trusted-host promotion. Do not approve direct host writes. Do not approve
 overwrite/delete/move behavior. Do not approve broad archive extraction. Do not approve automatic

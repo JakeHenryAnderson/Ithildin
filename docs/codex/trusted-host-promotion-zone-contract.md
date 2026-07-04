@@ -23,6 +23,11 @@ Validate this zone contract with:
 make trusted-host-promotion-zone-contract-check
 ```
 
+The trusted host descriptor contract is
+[trusted-host-descriptor-contract.md](trusted-host-descriptor-contract.md), validated with
+`make trusted-host-descriptor-contract-check`. It defines operator-reviewed host posture evidence
+without granting host control, host writes, or runtime promotion.
+
 The matching implementation-plan skeleton is
 [trusted-host-promotion-implementation-plan.md](trusted-host-promotion-implementation-plan.md),
 validated with `make trusted-host-promotion-implementation-plan-check`.

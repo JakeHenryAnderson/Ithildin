@@ -43,6 +43,7 @@ The reviewer should inspect whether the current evidence is coherent enough to c
 future trusted-host promotion implementation decision. The packet includes:
 
 - `sandbox-promotion-evidence-contract.md`;
+- `trusted-host-descriptor-contract.md`;
 - `trusted-host-promotion-decision-intake.md`;
 - `trusted-host-promotion-state-machine.md`;
 - `trusted-host-promotion-negative-fixtures.md`;
@@ -56,13 +57,15 @@ future trusted-host promotion implementation decision. The packet includes:
 
 The focused reviewer should answer:
 
-1. Are the source/staging/approved zone labels precise enough for a future implementation plan?
-2. Does the implementation-plan skeleton require exact artifact hash binding, approval binding,
+1. Is the trusted host descriptor contract strict enough to keep host posture evidence
+   operator-reviewed, secret-free, descriptor-only, and unable to authorize host control?
+2. Are the source/staging/approved zone labels precise enough for a future implementation plan?
+3. Does the implementation-plan skeleton require exact artifact hash binding, approval binding,
    one-time scope evidence, and stale/replay/conflict denials before any runtime path?
-3. Are the stop conditions strict enough to block arbitrary host paths, overwrite/delete/move,
+4. Are the stop conditions strict enough to block arbitrary host paths, overwrite/delete/move,
    automatic promotion, broad archive extraction, Mission Control runtime authority, sandbox
    orchestration, local model invocation, SIEM adapter behavior, and compliance claims?
-4. What source-review artifacts, negative transcripts, or decision records are still missing before
+5. What source-review artifacts, negative transcripts, or decision records are still missing before
    a future implementation proposal may be considered?
 
 ## Required Disposition
