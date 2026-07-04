@@ -78,6 +78,7 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
@@ -318,6 +319,16 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
         ),
     },
     {
+        "label": "live_poc_runtime_descriptor_only_negative_transcripts",
+        "path": (
+            "docs/codex/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md"
+        ),
+        "description": (
+            "secret-free denial transcripts for malformed or authority-expanding descriptors"
+        ),
+    },
+    {
         "label": "live_poc_runtime_descriptor_only_ticket_review_bundle",
         "path": (
             "var/review-packets/v3/"
@@ -400,6 +411,7 @@ REQUIRED_DOC_PHRASES = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-plan-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts",
     "make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",

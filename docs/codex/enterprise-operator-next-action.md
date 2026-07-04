@@ -34,6 +34,7 @@ make sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket-check
 make sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision-check
 make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check
 make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check
+make sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts
 make sandbox-vm-live-poc-runtime-descriptor-only-ticket-review-bundle-check
 make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
 make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check
@@ -49,6 +50,7 @@ Primary descriptor-only handoff artifacts:
 
 - `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation.md`
 - `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md`
+- `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md`
 - `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md`
 - `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md`
 - `docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md`
