@@ -29,7 +29,7 @@ behavior, or approve public/security-product positioning.
 | `erg_003_static_preflight` | `external_review_required` | `ERG-003 source-level or packet-and-source disposition` | `static preflight local-preview closure only` |
 | `erg_002_mission_control_display` | `planning_only` | `ERG-002 display/import planning disposition` | `Mission Control-side design-only decision record` |
 | `erg_004_live_sandbox_vm_poc` | `blocked` | `favorable ERG-003 disposition and separate decision record` | `live POC implementation planning only` |
-| `erg_005_trusted_host_promotion` | `blocked` | `trusted-host promotion disposition and decision record` | `promotion implementation planning only` |
+| `erg_005_trusted_host_promotion` | `ready_for_implementation_planning_only` | `trusted-host promotion decision record` | `promotion implementation-plan refinement only` |
 | `enterprise_architecture_lanes` | `planning_only_or_blocked` | `separate identity/storage/SIEM/compliance/public-positioning dispositions` | `architecture decisions only` |
 
 ## Sequencing Rules
@@ -41,8 +41,9 @@ Mission Control display/import planning remains design-only until `ERG-002` is f
 dispositioned through the Mission Control response kit, closure gate, and a later committed
 decision record.
 
-Trusted-host promotion remains blocked until its own review and decision path is favorably
-dispositioned. It is not unlocked by `ERG-002` or `ERG-003`.
+`ERG-005` is ready for implementation-planning-only refinement under
+`trusted-host-promotion-decision-record.md`. Runtime trusted-host promotion remains blocked. It is
+not unlocked by `ERG-002` or `ERG-003`.
 
 Enterprise architecture lanes remain separate. Production identity, runtime storage, SIEM adapters,
 compliance mapping support, and public positioning do not inherit approval from sandbox or Mission

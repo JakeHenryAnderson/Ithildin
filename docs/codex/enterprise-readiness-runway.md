@@ -236,6 +236,12 @@ The internal design/source-review pass is
 [v3-trusted-host-promotion-internal-review.md](v3-trusted-host-promotion-internal-review.md) and is
 validated with `make trusted-host-promotion-internal-review-check`; it records
 `continue_design_only` posture and keeps runtime implementation blocked.
+The trusted-host promotion decision record is
+[trusted-host-promotion-decision-record.md](trusted-host-promotion-decision-record.md) and is
+validated with `make trusted-host-promotion-decision-record-check`; it moves `ERG-005` only to
+`ready_for_implementation_planning_only` so the next packet may refine implementation planning while
+runtime trusted-host promotion, direct host writes, automatic promotion, and new governed powers
+remain blocked.
 
 Current permitted state:
 

@@ -371,6 +371,9 @@ checked with `make control-mapping-readiness`.
   implementation planning, host writes, and automatic promotion blocked.
 - `make trusted-host-promotion-external-response-intake-check` - validate the external response
   intake template for the trusted-host promotion lane while keeping host promotion blocked.
+- `make trusted-host-promotion-decision-record-check` - validate the committed `ERG-005`
+  decision record that allows implementation-planning-only continuation while keeping runtime host
+  promotion blocked.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
@@ -2369,6 +2372,12 @@ The internal trusted-host promotion source-review pass is in
 and is checked with `make trusted-host-promotion-internal-review-check`; it records
 `continue_design_only` posture and keeps implementation blocked pending future decision/external
 review.
+The trusted-host promotion decision record is in
+[docs/codex/trusted-host-promotion-decision-record.md](docs/codex/trusted-host-promotion-decision-record.md)
+and is checked with `make trusted-host-promotion-decision-record-check`; it records
+`ready_for_implementation_planning_only` for `ERG-005`, allowing only planning refinement while
+runtime trusted-host promotion, direct host writes, automatic promotion, and new governed powers
+remain blocked.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

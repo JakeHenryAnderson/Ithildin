@@ -372,6 +372,7 @@ from scripts import (
     tool_surface_invariant_gate,
     trusted_host_descriptor_contract_check,
     trusted_host_promotion_decision_intake_check,
+    trusted_host_promotion_decision_record_check,
     trusted_host_promotion_disposition_closure_check,
     trusted_host_promotion_disposition_packet,
     trusted_host_promotion_external_response_intake_check,
@@ -2845,6 +2846,12 @@ def test_enterprise_dependency_ladder_is_wired() -> None:
     assert report["public_security_product_positioning_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["closes_enterprise_lanes"] is False
+    assert any(
+        row["checkpoint"] == "erg_005_trusted_host_promotion"
+        and row["status"] == "ready_for_implementation_planning_only"
+        and row["unlocks"] == "promotion implementation-plan refinement only"
+        for row in report["ladder_rows"]
+    )
     for phrase in [
         "Status: checked enterprise dependency ladder",
         "Current governed tool count: `24`",
@@ -2852,6 +2859,7 @@ def test_enterprise_dependency_ladder_is_wired() -> None:
         "Recommended second closure lane: `ERG-002`",
         "`ERG-004` remains blocked until `ERG-003` is favorably dispositioned",
         "Mission Control display/import planning remains design-only",
+        "`ERG-005` is ready for implementation-planning-only refinement",
         "No row in this ladder approves runtime behavior",
         "Do not manually promote a lane",
         "live VM/container inspection",
@@ -2915,8 +2923,15 @@ def test_enterprise_transition_map_is_wired() -> None:
         "closed_local_preview_static_preflight",
         "ready_for_design_only_decision_record",
         "ready_for_decision_record",
+        "implementation_plan_refinement_only",
         "architecture_continuation_only",
     }
+    assert any(
+        row["lane"] == "ERG-005"
+        and row["current_state"] == "ready_for_implementation_planning_only"
+        and row["allowed_next_state"] == "implementation_plan_refinement_only"
+        for row in report["transition_rows"]
+    )
     for phrase in [
         "Status: checked post-review transition map",
         "Current governed tool count: `24`",
@@ -2924,6 +2939,7 @@ def test_enterprise_transition_map_is_wired() -> None:
         "`ERG-003` may move only to `closed_local_preview_static_preflight`.",
         "`ERG-002` may move only to `ready_for_design_only_decision_record`.",
         "`ERG-004` remains blocked until `ERG-003` is favorably dispositioned",
+        "`ERG-005` may continue only to `implementation_plan_refinement_only`.",
         "Architecture continuation states are not runtime approval states.",
         "No transition in this map approves new governed tool powers.",
         "Do not manually promote a lane",
@@ -32931,6 +32947,112 @@ def test_trusted_host_promotion_internal_review_is_wired() -> None:
     assert "Trusted-host promotion planning lane" in matrix
     assert "internal reviewed; implementation blocked pending external/source disposition" in matrix
     assert "make trusted-host-promotion-internal-review-check" in matrix
+
+
+def test_trusted_host_promotion_decision_record_is_wired() -> None:
+    report = trusted_host_promotion_decision_record_check.build_report(Path.cwd())
+    doc = Path("docs/codex/trusted-host-promotion-decision-record.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = Path(
+        "docs/codex/enterprise-sandbox-control-plane-readiness.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["erg_005_status"] == "ready_for_implementation_planning_only"
+    assert report["decision_outcome"] == "approved_for_implementation_planning_only"
+    assert report["implementation_planning_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_005"] is False
+    for phrase in [
+        (
+            "Status: committed decision record for `ERG-005` "
+            "implementation-planning-only continuation."
+        ),
+        "Decision ID: `PRD-TRUSTED-HOST-001`.",
+        "Previous `ERG-005` status: `blocked`.",
+        "Recorded `ERG-005` status: `ready_for_implementation_planning_only`.",
+        "approved_for_implementation_planning_only",
+        "ERG-005: blocked -> ready_for_implementation_planning_only",
+        "Release gates must continue to pass with no live normalized response present.",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "trusted-host promotion",
+        "direct host writes",
+        "overwrite/delete/move behavior",
+        "broad archive extraction",
+        "automatic promotion",
+        "promotion without exact artifact hash binding",
+        "promotion without approval evidence",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "SIEM adapter behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "trusted-host promotion is approved",
+        "direct host writes are approved",
+        "automatic promotion is approved",
+        "sandbox orchestration is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert "trusted-host-promotion-decision-record-check:" in makefile
+    assert "trusted-host-promotion-decision-record-check" in release_check_body
+    assert "make trusted-host-promotion-decision-record-check" in readme
+    assert (
+        "trusted-host-promotion-decision-record-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-decision-record.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-host-promotion-decision-record.md" in docs_site
+    assert "Trusted-Host Promotion Decision Record" in review_index
+    assert "trusted-host-promotion-decision-record.md" in enterprise
+    assert "trusted-host-promotion-decision-record.md" in gap_matrix
+    assert "trusted-host-promotion-decision-record.md" in decision_register
+    assert "trusted-host-promotion-decision-record.md" in readiness
+    assert "ready_for_implementation_planning_only" in gap_matrix
+    assert "ready_for_implementation_planning_only" in readiness
+    assert "runtime trusted-host promotion" in readiness.lower()
+    assert "remain blocked" in readiness.lower()
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

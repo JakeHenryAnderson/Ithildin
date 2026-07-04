@@ -49,7 +49,7 @@ REQUIRED_PHRASES = [
     "PRD-TRUSTED-HOST-001",
     "Trusted-host promotion lane",
     (
-        "Promotion state-machine design, decision-intake, implementation-plan skeleton, "
+        "Promotion state-machine design, decision-intake, implementation-plan refinement, "
         "and evidence contract discussion only"
     ),
     "trusted-host-promotion-decision-intake.md",
@@ -57,6 +57,8 @@ REQUIRED_PHRASES = [
     "trusted-host-promotion-negative-fixtures.md",
     "trusted-host-promotion-zone-contract.md",
     "trusted-host-promotion-implementation-plan.md",
+    "trusted-host-promotion-decision-record.md",
+    "ready_for_implementation_planning_only",
     "state-machine evidence",
     "implementation-plan skeleton",
     "trusted-host promotion remains blocked",

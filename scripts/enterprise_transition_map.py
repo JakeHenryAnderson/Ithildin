@@ -51,9 +51,9 @@ TRANSITION_ROWS: tuple[dict[str, str], ...] = (
     },
     {
         "lane": "ERG-005",
-        "current_state": "blocked",
-        "required_evidence": "favorable trusted-host promotion response kit and closure gate",
-        "allowed_next_state": "ready_for_design_only_decision_record",
+        "current_state": "ready_for_implementation_planning_only",
+        "required_evidence": "trusted-host promotion decision record",
+        "allowed_next_state": "implementation_plan_refinement_only",
     },
     {
         "lane": "ERG-006/ERG-007",
@@ -88,6 +88,7 @@ REQUIRED_DOC_PHRASES = [
     "`ERG-003` may move only to `closed_local_preview_static_preflight`.",
     "`ERG-002` may move only to `ready_for_design_only_decision_record`.",
     "`ERG-004` remains blocked until `ERG-003` is favorably dispositioned",
+    "`ERG-005` may continue only to `implementation_plan_refinement_only`.",
     "Architecture continuation states are not runtime approval states.",
     "No transition in this map approves new governed tool powers.",
     "Do not manually promote a lane",

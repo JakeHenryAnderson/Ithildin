@@ -42,7 +42,7 @@ Current selected capability: `not selected`.
 | `PRD-SANDBOX-PREFLIGHT-001` | Live sandbox/VM preflight | `no_go` | Continue static fixture evidence and source-review disposition only | `false` | Separate live-preflight decision record, implementation plan, and external/source review |
 | `PRD-SANDBOX-LIVE-POC-001` | Live sandbox/VM worker proof of concept | `approved_for_runtime_proposal_review_only` | Prepare VM-first operator-managed planning docs, runtime proposal, descriptor/correlation contract, cleanup/failure transcript plans, and source-review handoff; container profiles remain deferred | `false` | `sandbox-vm-live-poc-decision-record.md`, `sandbox-vm-live-poc-implementation-plan.md`, `sandbox-vm-live-poc-runtime-proposal.md`, cleanup/failure transcripts, explicit implementation gate, and external/source review before runtime |
 | `PRD-CAPABILITY-001` | New governed tool after RC freeze | `no_go` | Candidate selection and design packet only | `false` | Capability proposal, implementation plan, source-review handoff, negative transcripts, and accepted-risk update |
-| `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `no_go` | Promotion state-machine design, decision-intake, implementation-plan skeleton, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, and external/source review |
+| `PRD-TRUSTED-HOST-001` | Trusted-host promotion lane | `ready_for_implementation_planning_only` | Promotion state-machine design, decision-intake, implementation-plan refinement, and evidence contract discussion only | `false` | Artifact hash-binding model, approval model, state-machine evidence, negative transcripts, zone contract, implementation-plan skeleton, decision-intake evidence, `trusted-host-promotion-decision-record.md`, and external/source review |
 | `PRD-SIEM-EXPORT-001` | SIEM-shaped export adapter lane | `no_go` | Stable schema, adapter architecture, compatibility tests, and offline export design only | `false` | The architecture packet in `siem-export-adapter-architecture.md`, the disposition packet in `siem-export-adapter-disposition-packet.md`, the response intake template in `siem-export-adapter-external-response-intake.md`, the fail-closed closure gate in `siem-export-adapter-disposition-closure-gate.md`, delivery model, redaction policy, compatibility tests, signing/verification story, post-RC decision record, and external/source review |
 | `PRD-COMPLIANCE-MAPPING-001` | Compliance mapping support lane | `approved_for_planning` | Mapping-template architecture, operator responsibility language, legal-review boundary, and evidence-field planning only | `false` | The architecture packet in `compliance-mapping-architecture.md`, the disposition packet in `compliance-mapping-disposition-packet.md`, the response intake template in `compliance-mapping-external-response-intake.md`, the fail-closed closure gate in `compliance-mapping-disposition-closure-gate.md`, the response dry-run fixture checker in `compliance-mapping-response-dry-run.md`, exact framework scope, template schema, evidence allowlist/denylist, accepted-risk impact review, post-RC decision record, and external/source review before runtime work |
 | `PRD-PROD-IAM-STORAGE-001` | Production identity and durable storage architecture | `approved_for_planning` | Maintain the architecture packet, threat model questions, migration/retention/backup planning, and external architecture review preparation | `false` | Post-RC decision record, identity provider design, tenant/workspace model, storage/migration plan, backup/restore plan, failure-mode tests, and external architecture review before runtime work |
@@ -211,7 +211,9 @@ Current selected capability: `not selected`.
 - Current forbidden scope: direct host writes, overwrite/delete/move behavior, broad archive
   extraction, automatic promotion, promotion without exact artifact hash binding, and promotion
   without approval evidence.
-- Current implementation posture: trusted-host promotion remains blocked.
+- Current implementation posture: trusted-host promotion remains blocked; `ERG-005` may continue
+  implementation-planning-only refinement under
+  `trusted-host-promotion-decision-record.md`.
 - Current warning language: sandbox outputs may be described as staged evidence only, not promoted
   host artifacts.
 - Current decision-intake evidence:
@@ -257,6 +259,12 @@ Current selected capability: `not selected`.
   `trusted-host-promotion-response-dry-run.md` exercises temporary favorable and unfavorable
   normalized-response fixtures while restoring the ignored response path and without closing
   `ERG-005` or approving implementation planning.
+- Current decision-record evidence:
+  `trusted-host-promotion-decision-record.md` records
+  `ready_for_implementation_planning_only` for `ERG-005` while keeping runtime implementation,
+  trusted-host promotion, direct host writes, automatic promotion, Mission Control runtime behavior,
+  local model invocation, sandbox orchestration, SIEM adapter behavior, public/security-product
+  positioning, and new governed tool powers blocked.
 
 ### PRD-SIEM-EXPORT-001
 

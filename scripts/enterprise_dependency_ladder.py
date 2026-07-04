@@ -50,9 +50,9 @@ LADDER_ROWS: tuple[dict[str, str], ...] = (
     },
     {
         "checkpoint": "erg_005_trusted_host_promotion",
-        "status": "blocked",
-        "depends_on": "trusted-host promotion disposition and decision record",
-        "unlocks": "promotion implementation planning only",
+        "status": "ready_for_implementation_planning_only",
+        "depends_on": "trusted-host promotion decision record",
+        "unlocks": "promotion implementation-plan refinement only",
     },
     {
         "checkpoint": "enterprise_architecture_lanes",
@@ -70,6 +70,7 @@ REQUIRED_DOC_PHRASES = [
     "Recommended second closure lane: `ERG-002`",
     "`ERG-004` remains blocked until `ERG-003` is favorably dispositioned",
     "Mission Control display/import planning remains design-only",
+    "`ERG-005` is ready for implementation-planning-only refinement",
     "No row in this ladder approves runtime behavior",
     "Do not manually promote a lane",
     "make enterprise-review-send-receipt-template",

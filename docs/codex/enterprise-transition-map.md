@@ -24,7 +24,7 @@ planning, approve runtime behavior, or approve public/security-product positioni
 | `ERG-003` static sandbox/VM preflight | `external_review_required` | favorable source-level or packet-and-source response through the ERG-003 response kit and closure gate | `closed_local_preview_static_preflight` | live VM/container inspection, VM/container lifecycle management, local model invocation, sandbox orchestration |
 | `ERG-002` Mission Control display/import planning | `planning_only` | favorable display/import planning response through the ERG-002 response kit and closure gate | `ready_for_design_only_decision_record` | Mission Control runtime importer behavior, execution authority, API callbacks, polling or mutating Ithildin APIs |
 | `ERG-004` live sandbox/VM POC | `blocked` | favorable ERG-003 disposition plus separate ERG-004 decision record | `ready_for_decision_record` | live implementation until decision record and implementation gate explicitly approve it |
-| `ERG-005` trusted-host promotion | `blocked` | favorable trusted-host promotion response kit and closure gate | `ready_for_design_only_decision_record` | direct host writes, overwrite/delete/move behavior, automatic promotion |
+| `ERG-005` trusted-host promotion | `ready_for_implementation_planning_only` | trusted-host promotion decision record | `implementation_plan_refinement_only` | runtime trusted-host promotion, direct host writes, overwrite/delete/move behavior, automatic promotion |
 | `ERG-006/ERG-007` identity and storage | `planning_only` | favorable identity/storage architecture response and closure gate | `architecture_continuation_only` | production identity, enterprise RBAC, runtime Postgres, migrations, retention enforcement |
 | `ERG-008` SIEM export adapter | `planning_only` | favorable SIEM adapter architecture response and closure gate | `architecture_continuation_only` | SIEM adapter runtime behavior, hosted telemetry, remote delivery, custody-grade audit claims |
 | `ERG-009` compliance mapping | `planning_only` | favorable compliance-mapping architecture response and closure gate | `architecture_continuation_only` | compliance automation, legal conclusions, certification claims, regulated-industry compliance claims |
@@ -36,6 +36,7 @@ planning, approve runtime behavior, or approve public/security-product positioni
 - `ERG-002` may move only to `ready_for_design_only_decision_record`.
 - `ERG-004` remains blocked until `ERG-003` is favorably dispositioned and a separate decision
   record exists.
+- `ERG-005` may continue only to `implementation_plan_refinement_only`.
 - Mission Control runtime behavior remains blocked until a separate Mission Control-side
   implementation decision exists.
 - Architecture continuation states are not runtime approval states.
