@@ -128,6 +128,37 @@ Residual risk: external/source disposition remains pending.
 
 No `INT-LIVE-DESC-###` findings were opened in this pass.
 
+## High-Review Addendum
+
+Date: `2026-07-04`.
+
+Reviewer label: `Codex high-effort internal source reviewer`.
+
+Reviewed commit: `fcfa7312c713076a416d6a9d5d8d479fb87cd417`.
+
+Finding namespace reserved for this addendum: `INT-HIGH-LIVE-DESC-###`.
+
+No `INT-HIGH-LIVE-DESC-###` findings were opened in this pass.
+
+The high-review addendum inspected the current descriptor-only runtime source, focused tests, and
+generated source-review packet. It found no source path that performs live VM/container inspection,
+VM/container lifecycle control, sandbox orchestration, local model invocation, Mission Control
+runtime authority, host artifact promotion, network expansion, API/MCP profile loading, or new MCP
+or governed-tool behavior.
+
+Validation reported by the high-review addendum:
+
+```sh
+make sandbox-vm-live-poc-runtime-descriptor-only-implementation-check
+make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
+make sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review-check
+```
+
+All three commands passed for the addendum reviewer. The addendum disposition is internal only: the
+descriptor-only runtime slice is suitable to keep moving through local-preview descriptor-only
+review handling, but this does not close `ERG-004`, does not replace external/source disposition,
+and does not approve live VM/container runtime behavior.
+
 ## Disposition
 
 The descriptor-only runtime slice is internally reviewed for continued local-preview development.

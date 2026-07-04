@@ -15804,6 +15804,8 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_is_w
     assert report["finding_namespace"] == "INT-LIVE-DESC-###"
     assert report["blocking_findings_open"] is False
     assert report["descriptor_only_internal_review_complete"] is True
+    assert report["high_review_addendum_recorded"] is True
+    assert report["high_review_blocking_findings_open"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
     assert report["vm_container_lifecycle_allowed"] is False
@@ -15821,6 +15823,10 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_internal_source_review_is_w
         "Files Inspected",
         "Claims Reviewed",
         "No `INT-LIVE-DESC-###` findings were opened",
+        "High-Review Addendum",
+        "Codex high-effort internal source reviewer",
+        "No `INT-HIGH-LIVE-DESC-###` findings were opened",
+        "does not replace external/source disposition",
         "external/source disposition remains pending",
     ]:
         assert phrase in doc

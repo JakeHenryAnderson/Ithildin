@@ -24,9 +24,11 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - Runtime changes remain blocked outside already-approved local-preview tool behavior.
 - Public/security-product positioning remains blocked.
 - Enterprise response evidence is not present yet.
-- The active post-disposition route is now `ERG-004`: prepare descriptor-only runtime
-  implementation planning from the committed internal High proxy decision record without approving
-  runtime implementation.
+- The active post-disposition route is now `ERG-004`: descriptor-only runtime source review and
+  response handling remain active without approving runtime implementation.
+- The descriptor-only runtime slice has both an internal source review and a high-effort internal
+  addendum with no blocking findings; external/source disposition is still required before this
+  lane can be treated as closed.
 
 Validate the active ERG-004 descriptor-only planning surface with:
 

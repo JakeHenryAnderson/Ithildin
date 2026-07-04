@@ -58,7 +58,9 @@ Primary descriptor-only handoff artifacts:
 - `var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review`
 
 The descriptor-only implementation is now a bounded operator-attested descriptor-record slice, and
-the current handoff is source review of that slice. This remains descriptor-only and does not
+the current handoff is source review of that slice. The internal source review now includes a
+high-effort addendum with no blocking findings, but external/source disposition is still required.
+This remains descriptor-only and does not
 approve live VM/container inspection, VM/container lifecycle management, local model invocation,
 sandbox orchestration, Mission Control
 runtime behavior, trusted-host promotion, host writes, network expansion, API/MCP profile loading,

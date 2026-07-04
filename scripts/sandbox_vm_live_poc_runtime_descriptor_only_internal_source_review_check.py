@@ -34,6 +34,12 @@ REQUIRED_DOC_PHRASES = [
     "test_sandbox_descriptor_denies_unsafe_inputs_safely",
     "Finding namespace: `EXT-LIVE-DESC-###`",
     "No `INT-LIVE-DESC-###` findings were opened in this pass.",
+    "High-Review Addendum",
+    "Reviewer label: `Codex high-effort internal source reviewer`.",
+    "Finding namespace reserved for this addendum: `INT-HIGH-LIVE-DESC-###`.",
+    "No `INT-HIGH-LIVE-DESC-###` findings were opened in this pass.",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
+    "does not replace external/source disposition",
     "internally reviewed for continued local-preview development",
     "external/source disposition remains pending",
 ]
@@ -137,6 +143,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "finding_namespace": "INT-LIVE-DESC-###",
         "blocking_findings_open": False,
         "descriptor_only_internal_review_complete": True,
+        "high_review_addendum_recorded": True,
+        "high_review_blocking_findings_open": False,
         "runtime_changes_allowed": False,
         "live_vm_inspection_allowed": False,
         "vm_container_lifecycle_allowed": False,
@@ -163,6 +171,10 @@ def render_report(report: dict[str, Any]) -> str:
         f"blocking_findings_open: {str(report['blocking_findings_open']).lower()}",
         "descriptor_only_internal_review_complete: "
         f"{str(report['descriptor_only_internal_review_complete']).lower()}",
+        "high_review_addendum_recorded: "
+        f"{str(report['high_review_addendum_recorded']).lower()}",
+        "high_review_blocking_findings_open: "
+        f"{str(report['high_review_blocking_findings_open']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "live_vm_inspection_allowed: "
         f"{str(report['live_vm_inspection_allowed']).lower()}",
