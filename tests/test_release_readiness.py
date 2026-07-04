@@ -1636,7 +1636,7 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
         operator_trial_record_report["enterprise_review_state"]["candidate_response_count"]
         == 0
     )
-    assert operator_trial_record_report["enterprise_review_state"]["placeholder_count"] == 2
+    assert operator_trial_record_report["enterprise_review_state"]["placeholder_count"] == 1
     assert (
         operator_trial_record_report["checks"]["validation_decision"]["valid"]
         is True
@@ -2058,7 +2058,7 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     )
     assert "- recommended_send_set: `ERG-004`" in trial_record
     assert "- candidate_response_count: `0`" in trial_record
-    assert "- placeholder_count: `2`" in trial_record
+    assert "- placeholder_count: `1`" in trial_record
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
     assert "`live_poc_runtime_gate_readiness_decision_record`" in trial_record
     assert "`live_poc_runtime_descriptor_only_plan`" in trial_record

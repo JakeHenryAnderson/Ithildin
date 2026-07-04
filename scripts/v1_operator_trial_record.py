@@ -136,8 +136,10 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
         failures.append("enterprise next action is not an allowed review flow")
     if enterprise_waiting_room.get("candidate_response_count") != 0:
         failures.append("enterprise waiting room has candidate responses")
-    if enterprise_waiting_room.get("placeholder_count") != 2:
-        failures.append("enterprise waiting room does not have two placeholders")
+    if enterprise_waiting_room.get("recommended_gaps") != ["ERG-004"]:
+        failures.append("enterprise waiting room is not on the active ERG-004 lane")
+    if enterprise_waiting_room.get("placeholder_count") != 1:
+        failures.append("enterprise waiting room does not have one active ERG-004 placeholder")
 
     report: dict[str, Any] = {
         "schema_version": "1",
