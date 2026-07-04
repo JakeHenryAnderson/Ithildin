@@ -5925,8 +5925,22 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
         "does not close any lane",
         "does not approve runtime behavior",
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "--source-access packet-and-source",
+        '--reviewed-packet-hash "sha256:<from generated ERG-004 inbox>"',
+        (
+            "For the exact reviewed packet hash, use the command printed by "
+            "`make enterprise-response-now`"
+        ),
     ]:
         assert phrase in doc
+    erg004_section = doc.split("## ERG-004 Pasted Response", 1)[1].split(
+        "## ERG-003 Pasted Response", 1
+    )[0]
+    assert (
+        "uv run python scripts/external_response_normalize.py \\\n"
+        "  --area sandbox-vm-live-poc-runtime-descriptor-only"
+        not in erg004_section
+    )
     assert "enterprise-response-paste-preflight:" in makefile
     assert (
         "enterprise-response-paste-preflight" in release_check_body
@@ -5955,6 +5969,12 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
         "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
         "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
         in specs["ERG-004"].accepted_raw_response_paths
+    )
+    assert "sha256:<from generated inbox>" not in specs["ERG-004"].normalizer_command
+    assert "--source-access packet-and-source" in specs["ERG-004"].normalizer_command
+    assert (
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md --reviewer"
+        in specs["ERG-004"].normalizer_command
     )
     assert (
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
@@ -6013,6 +6033,14 @@ def test_enterprise_response_paste_preflight_is_wired(tmp_path: Path) -> None:
                 "make sandbox-vm-live-poc-runtime-descriptor-only-"
                 "response-application-preflight-check"
             )
+        )
+        assert (
+            "sha256:<from generated inbox>"
+            not in valid_erg004_raw["normalizer_command"]
+        )
+        assert (
+            "--source-access packet-and-source"
+            in valid_erg004_raw["normalizer_command"]
         )
         assert valid_erg004_raw["normalizes_responses"] is False
         assert valid_erg004_raw["external_review_recorded"] is False

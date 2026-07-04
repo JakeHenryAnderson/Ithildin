@@ -39,11 +39,20 @@ application sequence:
 
 ```sh
 uv run python scripts/external_response_normalize.py \
+  var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md \
+  --reviewer "REVIEWER NAME" \
+  --reviewer-type "ai_external" \
+  --source-access packet-and-source \
+  --reviewed-commit "$(git rev-parse HEAD)" \
+  --reviewed-packet-hash "sha256:<from generated ERG-004 inbox>" \
   --area sandbox-vm-live-poc-runtime-descriptor-only \
-  --raw-response var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md
+  --output var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only/normalized-response.json
 make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
 make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
 ```
+
+For the exact reviewed packet hash, use the command printed by `make enterprise-response-now` or
+the generated `ERG004_RUNTIME_DESCRIPTOR_ONLY_CHEATSHEET.md` in the descriptor-only response inbox.
 
 ## ERG-003 Pasted Response
 

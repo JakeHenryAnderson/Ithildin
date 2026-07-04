@@ -21,6 +21,11 @@ DOC_REL = "docs/codex/enterprise-response-paste-preflight.md"
 DOC_TITLE = "Enterprise Response Paste Preflight"
 MAX_RESPONSE_BYTES = 200_000
 SUPPORTED_LANES = {"ERG-004", "ERG-003", "ERG-002"}
+ERG004_INBOX_METADATA = (
+    "var/review-runs/"
+    "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+    "erg004-runtime-descriptor-only-response-inbox.json"
+)
 
 BOUNDARY_FLAGS = {
     "normalizes_responses": False,
@@ -132,6 +137,12 @@ def build_report(
         "does not approve runtime behavior",
         "Expected finding namespace",
         "explicit no-findings statement",
+        "--source-access packet-and-source",
+        '--reviewed-packet-hash "sha256:<from generated ERG-004 inbox>"',
+        (
+            "For the exact reviewed packet hash, use the command printed by "
+            "`make enterprise-response-now`"
+        ),
         "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
         "make sandbox-vm-static-preflight-response-dry-run",
         "make mission-control-display-response-dry-run",
@@ -297,20 +308,7 @@ def _lane_specs() -> dict[str, LaneSpec]:
             ),
             finding_namespace="EXT-LIVE-DESC-###",
             normalization_area="sandbox-vm-live-poc-runtime-descriptor-only",
-            normalizer_command=(
-                "uv run python scripts/external_response_normalize.py "
-                "var/review-runs/"
-                "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
-                "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md "
-                '--reviewer "REVIEWER NAME" '
-                '--reviewer-type "ai_external" '
-                '--source-access source-level '
-                '--reviewed-commit "$(git rev-parse HEAD)" '
-                '--reviewed-packet-hash "sha256:<from generated inbox>" '
-                "--area sandbox-vm-live-poc-runtime-descriptor-only "
-                "--output var/review-runs/"
-                "sandbox-vm-live-poc-runtime-descriptor-only/normalized-response.json"
-            ),
+            normalizer_command=_erg004_normalizer_command(),
             dry_run_command=(
                 "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
             ),
@@ -413,6 +411,32 @@ def _accepted_raw_response_paths(gap: str, default_path: str) -> tuple[str, ...]
             f"var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_{gap}.md",
         )
     return tuple(dict.fromkeys(paths))
+
+
+def _erg004_normalizer_command() -> str:
+    metadata_path = ROOT / ERG004_INBOX_METADATA
+    fallback = (
+        "uv run python scripts/external_response_normalize.py "
+        "var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md "
+        '--reviewer "REVIEWER NAME" '
+        '--reviewer-type "ai_external" '
+        "--source-access packet-and-source "
+        '--reviewed-commit "$(git rev-parse HEAD)" '
+        '--reviewed-packet-hash "sha256:<from generated inbox>" '
+        "--area sandbox-vm-live-poc-runtime-descriptor-only "
+        "--output var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only/normalized-response.json"
+    )
+    try:
+        payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return fallback
+    if not isinstance(payload, dict):
+        return fallback
+    command = payload.get("normalizer_command")
+    return command if isinstance(command, str) and command else fallback
 
 
 if __name__ == "__main__":
