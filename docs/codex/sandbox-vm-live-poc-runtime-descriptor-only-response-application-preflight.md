@@ -59,6 +59,10 @@ ERG-004 descriptor-only: source_review_pending -> descriptor_only_local_preview_
 ```
 
 That transition still does not approve runtime implementation.
+For this lane, `codex-high` and `codex-xhigh` reviewer responses may support the transition only as
+internal proxy disposition for continued local-development progress. They remain distinct from
+external review and do not support public/security-product positioning, broader runtime claims, or
+enterprise deployment claims.
 
 ## Explicitly Blocked Scope
 

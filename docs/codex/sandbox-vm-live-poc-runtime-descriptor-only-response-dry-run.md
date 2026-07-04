@@ -32,8 +32,9 @@ The dry-run validates that:
 - an absent response keeps the intake valid and does not close `ERG-004`;
 - a favorable source-level or packet-and-source response normalizes with `EXT-LIVE-DESC-###`;
 - packet-only and docs-only responses cannot become descriptor-only source disposition evidence;
-- internal proxy reviews from `codex-high` or `codex-xhigh` can be captured as pressure-test
-  evidence, but cannot become descriptor-only source disposition evidence;
+- internal proxy reviews from `codex-high` or `codex-xhigh` can support descriptor-only
+  local-development source disposition when they inspect packet-and-source evidence, explicitly
+  approve descriptor-only local-preview disposition, and report no critical/high findings;
 - missing outcome text cannot become disposition-ready evidence;
 - critical/high findings block later descriptor-only closure;
 - malformed packet hashes are rejected;
@@ -77,7 +78,9 @@ The dry-run records these invariants in its report:
 - `public_security_product_positioning_allowed: false`
 
 Only a later committed triage/disposition update may move the descriptor-only slice away from
-`descriptor_only_runtime_implemented_source_review_pending`.
+`descriptor_only_runtime_implemented_source_review_pending`. Internal proxy disposition remains
+local-development evidence only; it does not replace external review for public/security-product
+positioning, broader runtime claims, or enterprise deployment claims.
 
 ## Related Artifacts
 

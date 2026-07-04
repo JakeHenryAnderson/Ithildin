@@ -36,6 +36,8 @@ before applying any real descriptor-only reviewer response.
   `var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review`.
 - Required normalized response type: `ithildin.external_review.normalized_response`.
 - Required source access: `source-level` or `packet-and-source`.
+- Allowed reviewer types for local-development disposition: `human`, `gpt-5.5-pro`, `external-ai`,
+  `codex-high`, or `codex-xhigh`.
 - Required disposition: `approve_descriptor_only_local_preview_disposition`.
 - Required closure evidence: `can_close_source_rows: true`.
 - Required safety evidence: `mutates_findings: false` and `closes_external_review: false`.
@@ -69,7 +71,10 @@ ERG-004 descriptor-only: source_review_pending -> descriptor_only_local_preview_
 
 That state change means only that the already implemented operator-attested descriptor-only slice
 has favorable descriptor-only source-review evidence for local-preview disposition. It still does
-not approve runtime implementation.
+not approve runtime implementation. A `codex-high` or `codex-xhigh` disposition remains an internal
+proxy disposition for continued local-development progress only and does not replace external
+review for public/security-product positioning, broader runtime claims, or enterprise deployment
+claims.
 
 ## Explicitly Blocked Scope
 

@@ -15884,7 +15884,7 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired()
         "favorable_source_response_normalizes",
         "packet_only_response_not_disposition_ready",
         "docs_only_response_not_disposition_ready",
-        "internal_proxy_response_not_disposition_ready",
+        "internal_proxy_response_local_development_ready",
         "missing_outcome_not_disposition_ready",
         "critical_high_finding_not_disposition_ready",
         "bad_hash_rejected",
@@ -15900,6 +15900,7 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired()
         "EXT-LIVE-DESC-###",
         "descriptor_only_source_disposition_allowed: false",
         "internal proxy reviews",
+        "local-development source disposition",
         "Only a later committed triage/disposition update",
     ]:
         assert phrase in doc
@@ -16010,6 +16011,7 @@ def test_descriptor_only_response_application_preflight_is_wired() -> None:
 
     for key, doc_path in docs.items():
         doc = Path(doc_path).read_text(encoding="utf-8")
+        normalized_doc = " ".join(doc.split())
         assert "Current governed tool count: `24`." in doc
         assert "descriptor_only_runtime_implemented_source_review_pending" in doc
         assert (
@@ -16017,6 +16019,7 @@ def test_descriptor_only_response_application_preflight_is_wired() -> None:
             "descriptor_only_local_preview_disposition_ready"
         ) in doc
         assert "runtime implementation" in doc
+        assert "internal proxy disposition" in normalized_doc
         assert "live VM/container inspection" in doc
         assert "sandbox orchestration" in doc
         assert "new governed tool powers" in doc

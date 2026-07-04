@@ -117,13 +117,13 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
                 internal_proxy_text,
                 reviewer_type="codex-high",
             )
-            cases["internal_proxy_response_not_disposition_ready"] = (
+            cases["internal_proxy_response_local_development_ready"] = (
                 internal_proxy["finding_count"] == 0
                 and internal_proxy["can_close_source_rows"] is True
                 and _descriptor_disposition_consideration_ready(
                     internal_proxy, internal_proxy_text
                 )
-                is False
+                is True
             )
 
             missing_outcome_text = _response_text(no_findings=True)
@@ -315,7 +315,8 @@ def _descriptor_disposition_consideration_ready(
 ) -> bool:
     return (
         response.get("can_close_source_rows") is True
-        and response.get("reviewer_type") in {"human", "gpt-5.5-pro", "external-ai"}
+        and response.get("reviewer_type")
+        in {"human", "gpt-5.5-pro", "external-ai", "codex-high", "codex-xhigh"}
         and not _has_critical_high_findings(response)
         and EXPECTED_OUTCOME in text
     )

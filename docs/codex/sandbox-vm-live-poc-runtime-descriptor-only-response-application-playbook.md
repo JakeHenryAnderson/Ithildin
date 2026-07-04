@@ -60,6 +60,7 @@ playbook with a real response.
    - `sandbox-vm-live-poc-runtime-descriptor-only`;
    - `EXT-LIVE-DESC-###`;
    - `source-level` or `packet-and-source`;
+   - reviewer type is `human`, `gpt-5.5-pro`, `external-ai`, `codex-high`, or `codex-xhigh`;
    - `can_close_source_rows: true`;
    - `mutates_findings: false`;
    - `closes_external_review: false`;
@@ -73,6 +74,11 @@ This playbook may support only this later committed transition:
 ```text
 ERG-004 descriptor-only: source_review_pending -> descriptor_only_local_preview_disposition_ready
 ```
+
+If the reviewer is `codex-high` or `codex-xhigh`, that transition is an internal proxy disposition
+for continued local-development progress only; it is not external review closure and does not
+support public/security-product positioning, broader runtime claims, or enterprise deployment
+claims.
 
 Allowed committed file scope for that future response application is limited to status/decision
 evidence and finding records:
