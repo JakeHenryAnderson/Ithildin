@@ -48,11 +48,13 @@ behavior, approve new governed tool powers, or approve public/security-product p
 ## Use Order
 
 1. Run `make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox`.
-2. Paste a real `EXT-LIVE-DESC-###` reviewer response into the generated raw-response placeholder.
-3. Use the generated cheat sheet's normalizer command so the reviewed packet hash is exact.
-4. Run `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run`.
-5. Run `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check`.
-6. Commit a later manager-owned disposition update only if the normalized response explicitly
+2. Run `make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt` after the review packet is
+   sent so local operator notes can record the send without recording review.
+3. Paste a real `EXT-LIVE-DESC-###` reviewer response into the generated raw-response placeholder.
+4. Use the generated cheat sheet's normalizer command so the reviewed packet hash is exact.
+5. Run `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run`.
+6. Run `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check`.
+7. Commit a later manager-owned disposition update only if the normalized response explicitly
    supports the allowed transition and no critical/high `EXT-LIVE-DESC-###` finding is open.
 
 The only later transition this path can support is:

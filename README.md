@@ -929,6 +929,11 @@ checked with `make control-mapping-readiness`.
   raw-response placeholder, reviewed packet hash, and cheat sheet for an active `EXT-LIVE-DESC-###`
   descriptor-only response; see
   [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md).
+- `make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt` - generate a local ignored
+  operator receipt scaffold for recording the active ERG-004 descriptor-only source-review send
+  without recording review, normalizing responses, closing `ERG-004`, or approving runtime
+  behavior; see
+  [docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md).
 - `make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run` - exercise descriptor-only
   source-review response fixtures without recording external review, closing `ERG-004`, or
   approving runtime behavior; see
@@ -2196,8 +2201,14 @@ loading, or new tool powers. The runtime descriptor-only source review bundle is
 and is generated with `make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle`; it
 packages the implemented descriptor records, admin-only descriptor APIs, `/system/status` evidence,
 safe audit metadata, focused tests, and command evidence for `EXT-LIVE-DESC-###` source review
-without closing `ERG-004`.
-loading, or new governed tool powers.
+without closing `ERG-004`, approving runtime implementation, live VM/container inspection,
+lifecycle control, Mission Control runtime authority, local model invocation, trusted-host
+promotion, host writes, network expansion, API/MCP profile loading, or new governed tool powers.
+The runtime descriptor-only send receipt is
+[docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md](docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md)
+and is generated with `make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt`; it gives the
+operator a local ignored scaffold for recording the active ERG-004 source-review send without
+recording review, normalizing responses, closing `ERG-004`, or approving runtime behavior.
 The runtime gate-readiness response intake is
 [docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md](docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md)
 and is checked with `make sandbox-vm-live-poc-runtime-gate-readiness-response-intake-check`; it

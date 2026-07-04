@@ -146,6 +146,7 @@ externally closed.
 - [Sandbox/VM Live POC Runtime Descriptor-Only Source Review Bundle](sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only External Response Intake](sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only Response Inbox](sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md)
+- [Sandbox/VM Live POC Runtime Descriptor-Only Send Receipt](sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only Response Dry Run](sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only Response Application Record](sandbox-vm-live-poc-runtime-descriptor-only-response-application-record.md)
 - [Sandbox/VM Live POC Runtime Descriptor-Only Response Application Playbook](sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook.md)

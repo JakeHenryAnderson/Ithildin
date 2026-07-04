@@ -310,6 +310,7 @@ from scripts import (
     sandbox_vm_live_poc_runtime_descriptor_only_response_application_record_check,
     sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run,
     sandbox_vm_live_poc_runtime_descriptor_only_response_inbox,
+    sandbox_vm_live_poc_runtime_descriptor_only_send_receipt,
     sandbox_vm_live_poc_runtime_descriptor_only_source_review_bundle,
     sandbox_vm_live_poc_runtime_descriptor_only_ticket_review_bundle,
     sandbox_vm_live_poc_runtime_gate_readiness_decision_record_skeleton_check,
@@ -15385,6 +15386,114 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_response_inbox_is_wired() -
     )
     for source in [matrix_doc, intake_doc, dry_run_doc]:
         assert "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox" in source
+
+
+def test_sandbox_vm_live_poc_runtime_descriptor_only_send_receipt_is_wired() -> None:
+    report = sandbox_vm_live_poc_runtime_descriptor_only_send_receipt.build_check_report(
+        Path.cwd()
+    )
+    doc_path = (
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md"
+    )
+    doc = Path(doc_path).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    response_inbox = Path(
+        "docs/codex/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md"
+    ).read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+    generated_dir = Path(
+        "var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt"
+    )
+    generated_json = generated_dir / "erg004-runtime-descriptor-only-send-receipt.json"
+    generated_hashes = (
+        generated_dir / "erg004-runtime-descriptor-only-send-receipt-artifact-hashes.json"
+    )
+    payload = json.loads(generated_json.read_text(encoding="utf-8"))
+    hashes = json.loads(generated_hashes.read_text(encoding="utf-8"))
+    hashed_paths = {artifact["path"] for artifact in hashes["artifacts"]}
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_capability"] == "not selected"
+    assert report["recommended_gaps"] == ["ERG-004"]
+    assert report["artifact_hashes_match_files"] is True
+    assert report["records_external_review"] is False
+    assert report["normalizes_responses"] is False
+    assert report["writes_response_files"] is False
+    assert report["closes_erg_004"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["live_vm_inspection_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert payload["receipt_type"] == "ithildin.erg004_descriptor_only_send_receipt"
+    assert payload["sent"] is False
+    assert payload["lane"]["gap"] == "ERG-004"
+    assert payload["lane"]["finding_namespace"] == "EXT-LIVE-DESC-###"
+    assert payload["lane"]["raw_response_path"].endswith(
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+    )
+    assert "ERG004_RUNTIME_DESCRIPTOR_ONLY_SEND_RECEIPT.md" in hashed_paths
+    assert "erg004-runtime-descriptor-only-send-receipt.json" in hashed_paths
+    assert "erg004-runtime-descriptor-only-send-receipt-artifact-hashes.json" not in (
+        hashed_paths
+    )
+    for phrase in [
+        "Status: generated operator send receipt template for the active ERG-004 "
+        "descriptor-only review.",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+        "does not record external review",
+        "does not normalize responses",
+        "does not write response files",
+        "does not close `ERG-004`",
+    ]:
+        assert phrase in doc
+    assert "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt" in readme
+    assert doc_path in readme
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt:" in makefile
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check:"
+        in makefile
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check"
+        in release_check_body
+        or (
+            "release-check: "
+            "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check"
+            in makefile
+        )
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-send-receipt" in (
+        review_candidate_body
+    )
+    assert (
+        "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) sandbox-vm-live-poc-runtime-descriptor-only-send-receipt" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+    assert doc_path in docs_site
+    assert doc_path in review_docs.REVIEW_DOCS
+    assert "Sandbox/VM Live POC Runtime Descriptor-Only Send Receipt" in review_index
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt" in (
+        current_checkpoint
+    )
+    assert "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt" in response_inbox
 
 
 def test_sandbox_vm_live_poc_runtime_descriptor_only_response_dry_run_is_wired() -> None:

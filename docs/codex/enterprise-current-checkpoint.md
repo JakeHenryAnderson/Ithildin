@@ -60,6 +60,7 @@ Generate or refresh the active send-ready operator artifact with:
 
 ```sh
 make enterprise-send-now
+make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt
 ```
 
 The active ERG-004 source-review packet and response landing pad are:
