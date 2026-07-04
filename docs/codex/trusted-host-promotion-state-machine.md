@@ -29,7 +29,7 @@ with `make trusted-host-promotion-negative-fixtures-check`.
 The matching zone contract is
 [trusted-host-promotion-zone-contract.md](trusted-host-promotion-zone-contract.md), validated with
 `make trusted-host-promotion-zone-contract-check`.
-The matching implementation-plan skeleton is
+The matching implementation-plan contract is
 [trusted-host-promotion-implementation-plan.md](trusted-host-promotion-implementation-plan.md),
 validated with `make trusted-host-promotion-implementation-plan-check`.
 

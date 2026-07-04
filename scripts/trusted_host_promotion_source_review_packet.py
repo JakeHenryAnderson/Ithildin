@@ -380,7 +380,7 @@ Please review:
 - whether the trusted host descriptor contract keeps host posture evidence operator-reviewed,
   secret-free, descriptor-only, and unable to authorize host control;
 - whether the sandbox/staging/approved zone labels are precise and non-authoritative;
-- whether the implementation-plan skeleton requires exact artifact hash binding, approval binding,
+- whether the implementation-plan contract requires exact artifact hash binding, approval binding,
   one-time scope evidence, policy/manifest evidence, and source/staging/approved hash matching;
 - whether the state machine blocks replay, stale evidence, invalid transitions, conflict cases, and
   recovery ambiguity before any host placement could be completed;

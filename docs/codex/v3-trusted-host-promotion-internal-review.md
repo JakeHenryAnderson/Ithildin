@@ -18,7 +18,7 @@ new governed tool power.
 - State machine: `docs/codex/trusted-host-promotion-state-machine.md`.
 - Negative fixture contract: `docs/codex/trusted-host-promotion-negative-fixtures.md`.
 - Zone contract: `docs/codex/trusted-host-promotion-zone-contract.md`.
-- Implementation-plan skeleton: `docs/codex/trusted-host-promotion-implementation-plan.md`.
+- Implementation-plan contract: `docs/codex/trusted-host-promotion-implementation-plan.md`.
 - Source-review handoff: `docs/codex/trusted-host-promotion-source-review.md`.
 - Packet generator/checker: `scripts/trusted_host_promotion_source_review_packet.py`.
 - Release gates:

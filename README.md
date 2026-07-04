@@ -346,7 +346,7 @@ checked with `make control-mapping-readiness`.
 - `make trusted-host-promotion-zone-contract-check` - validate the design-only promotion
   source/staging/approved zone labels while keeping host promotion blocked.
 - `make trusted-host-promotion-implementation-plan-check` - validate the design-only promotion
-  implementation-plan skeleton while keeping host promotion blocked.
+  implementation-plan contract while keeping host promotion blocked.
 - `make trusted-host-promotion-source-review-packet` - generate the focused design/source-review
   packet for trusted-host promotion while keeping host promotion blocked.
 - `make trusted-host-promotion-source-review-packet-check` - validate the trusted-host promotion
@@ -2331,11 +2331,12 @@ The design-only trusted-host promotion zone contract is in
 and is checked with `make trusted-host-promotion-zone-contract-check`; it defines future
 `sandbox://`, `host-staging://`, `approved://`, and `evidence://` labels without granting
 filesystem authority.
-The design-only trusted-host promotion implementation-plan skeleton is in
+The design-only trusted-host promotion implementation-plan contract is in
 [docs/codex/trusted-host-promotion-implementation-plan.md](docs/codex/trusted-host-promotion-implementation-plan.md)
-and is checked with `make trusted-host-promotion-implementation-plan-check`; it gathers the
-evidence contract, decision intake, state machine, negative fixtures, and zone contract into the
-minimum future runtime-plan checklist while keeping host promotion unapproved.
+and is checked with `make trusted-host-promotion-implementation-plan-check`; it now records the
+Goal B source-review/runtime-boundary packet and Goal C implementation-gate decision as follow-up
+targets, and binds the future request, zone, artifact, approval, attempt, diagnostic, and audit
+evidence model while keeping host promotion unapproved.
 The focused trusted-host promotion source-review handoff is in
 [docs/codex/trusted-host-promotion-source-review.md](docs/codex/trusted-host-promotion-source-review.md)
 and is generated with `make trusted-host-promotion-source-review-packet`; it asks reviewers whether

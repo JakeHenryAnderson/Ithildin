@@ -39,7 +39,7 @@ REQUIRED_PHRASES = [
 REQUIRED_QUESTIONS = [
     "Did the reviewer inspect the trusted-host promotion disposition packet",
     "Are the source/staging/approved/evidence zone labels precise enough",
-    "Does the implementation-plan skeleton require exact artifact hash binding",
+    "Does the implementation-plan contract require exact artifact hash binding",
     "Are the negative fixture and state-machine expectations strong enough",
     "Does the internal review appear sufficient",
     "Are there any critical/high findings",

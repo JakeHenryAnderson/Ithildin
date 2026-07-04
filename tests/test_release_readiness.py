@@ -31963,10 +31963,15 @@ def test_trusted_host_promotion_implementation_plan_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["erg_005_status"] == "blocked"
+    assert report["erg_005_status"] == "ready_for_implementation_planning_only"
     assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
     assert report["required_artifact_count"] == 9
     assert report["stop_condition_count"] >= 20
+    assert report["goal_b_followup_recorded"] is True
+    assert report["goal_c_followup_recorded"] is True
+    assert report["promotion_request_contract_present"] is True
+    assert report["approval_evidence_binding_plan_present"] is True
+    assert report["diagnostics_plan_read_only"] is True
     assert report["decision_record_required"] is True
     assert report["implementation_approved"] is False
     assert report["runtime_changes_allowed"] is False
@@ -31984,10 +31989,26 @@ def test_trusted_host_promotion_implementation_plan_is_wired() -> None:
     assert report["new_power_classes_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
     for phrase in [
-        "Status: implementation-planning skeleton for `ERG-005`",
+        "Status: implementation-planning contract for `ERG-005`",
         "Required Inputs",
+        "Follow-Up Goals",
+        "Goal B: source-review/runtime-boundary packet",
+        "Goal C: runtime implementation gate decision",
         "trusted-host-descriptor-contract.md",
         "Future Runtime Shape",
+        "Promotion Request Contract",
+        "promotion_request_id",
+        "artifact_sha256",
+        "output_policy",
+        "Zone And Artifact Identity Contract",
+        "deterministic normalized label form",
+        "expected_staging_sha256",
+        "Approval And Evidence Binding Plan",
+        "stored-proposal-only semantics",
+        "Approval consumption must be atomic and one-time",
+        "Attempt, Diagnostics, And Audit Plan",
+        "promotion_attempt_id",
+        "Diagnostic behavior must be read-only unless a separate decision record approves mutating",
         "Required Future Components",
         "Implementation Gate Preconditions",
         "Product-Boundary Stop Conditions",

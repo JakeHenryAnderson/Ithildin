@@ -1,4 +1,4 @@
-"""Validate the trusted-host promotion implementation-plan skeleton."""
+"""Validate the trusted-host promotion implementation-plan contract."""
 
 from __future__ import annotations
 
@@ -18,13 +18,30 @@ DOC_REL = "docs/codex/trusted-host-promotion-implementation-plan.md"
 DOC_NAME = "trusted-host-promotion-implementation-plan.md"
 
 REQUIRED_PHRASES = [
-    "Status: implementation-planning skeleton for `ERG-005` and `PRD-TRUSTED-HOST-001`.",
+    "Status: implementation-planning contract for `ERG-005` and `PRD-TRUSTED-HOST-001`.",
     "Current governed tool count: `24`.",
-    "Current `ERG-005` status: `blocked`.",
+    "Current `ERG-005` status: `ready_for_implementation_planning_only`.",
     "Current selected capability: `not selected`.",
     "make trusted-host-promotion-implementation-plan-check",
     "Required Inputs",
+    "Follow-Up Goals",
+    "Goal B: source-review/runtime-boundary packet",
+    "Goal C: runtime implementation gate decision",
     "Future Runtime Shape",
+    "Promotion Request Contract",
+    "promotion_request_id",
+    "artifact_sha256",
+    "output_policy",
+    "Zone And Artifact Identity Contract",
+    "deterministic normalized label form",
+    "expected_staging_sha256",
+    "Approval And Evidence Binding Plan",
+    "stored-proposal-only semantics",
+    "one-time scope hash",
+    "Approval consumption must be atomic and one-time",
+    "Attempt, Diagnostics, And Audit Plan",
+    "promotion_attempt_id",
+    "Diagnostic behavior must be read-only unless a separate decision record approves mutating",
     "Required Future Components",
     "Implementation Gate Preconditions",
     "Product-Boundary Stop Conditions",
@@ -39,7 +56,6 @@ REQUIRED_PHRASES = [
     "one artifact, one approval, one promotion attempt, and one bounded destination label",
     "artifact hash-binding model",
     "approval binding model",
-    "one-time scope hash",
     "attempt store with compare-and-set state transitions",
     "read-only diagnostic model",
     "safe storage resolver",
@@ -155,7 +171,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     if not doc_path.exists():
-        failures.append("trusted-host promotion implementation-plan skeleton doc is missing")
+        failures.append("trusted-host promotion implementation-plan contract doc is missing")
         text = ""
     else:
         text = doc_path.read_text(encoding="utf-8")
@@ -218,10 +234,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "implementation_plan_doc": DOC_REL,
         "tool_count": 24,
-        "erg_005_status": "blocked",
+        "erg_005_status": "ready_for_implementation_planning_only",
         "prd_id": "PRD-TRUSTED-HOST-001",
-    "required_artifact_count": 9,
+        "required_artifact_count": 9,
         "stop_condition_count": len(REQUIRED_STOP_CONDITIONS),
+        "goal_b_followup_recorded": True,
+        "goal_c_followup_recorded": True,
+        "promotion_request_contract_present": True,
+        "approval_evidence_binding_plan_present": True,
+        "diagnostics_plan_read_only": True,
         "decision_record_required": True,
         "implementation_approved": False,
         "runtime_changes_allowed": False,
@@ -243,7 +264,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
 def render_report(report: dict[str, Any]) -> str:
     lines = [
-        "Ithildin trusted-host promotion implementation-plan skeleton check",
+        "Ithildin trusted-host promotion implementation-plan contract check",
         f"valid: {str(report['valid']).lower()}",
         f"implementation_plan_doc: {report['implementation_plan_doc']}",
         f"tool_count: {report['tool_count']}",
@@ -251,6 +272,13 @@ def render_report(report: dict[str, Any]) -> str:
         f"prd_id: {report['prd_id']}",
         f"required_artifact_count: {report['required_artifact_count']}",
         f"stop_condition_count: {report['stop_condition_count']}",
+        f"goal_b_followup_recorded: {str(report['goal_b_followup_recorded']).lower()}",
+        f"goal_c_followup_recorded: {str(report['goal_c_followup_recorded']).lower()}",
+        "promotion_request_contract_present: "
+        f"{str(report['promotion_request_contract_present']).lower()}",
+        "approval_evidence_binding_plan_present: "
+        f"{str(report['approval_evidence_binding_plan_present']).lower()}",
+        f"diagnostics_plan_read_only: {str(report['diagnostics_plan_read_only']).lower()}",
         f"decision_record_required: {str(report['decision_record_required']).lower()}",
         f"implementation_approved: {str(report['implementation_approved']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",

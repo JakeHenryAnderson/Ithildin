@@ -391,7 +391,7 @@ Finding namespace: `EXT-TRUSTED-HOST-###`
 ## Scope
 
 Review the attached source-review packet, disposition packet, descriptor contract, promotion
-contracts, state machine, zone contract, implementation-plan skeleton, negative fixtures, observed
+contracts, state machine, zone contract, implementation-plan contract, negative fixtures, observed
 sandbox evidence pointers, external response intake, closure gate, dry-run evidence, queue status,
 and command evidence.
 
@@ -401,7 +401,7 @@ Please answer:
 2. Are source/staging/approved/evidence zone labels precise enough and non-authoritative?
 3. Does the trusted host descriptor contract keep host posture evidence operator-reviewed,
    secret-free, descriptor-only, and unable to authorize host control?
-4. Does the implementation-plan skeleton require exact artifact hash binding, approval binding,
+4. Does the implementation-plan contract require exact artifact hash binding, approval binding,
    one-time scope evidence, policy/manifest evidence, conflict handling, stale evidence denial,
    replay denial, and path-escape denial before any future implementation could be considered?
 5. Are the negative fixtures strong enough for unsafe labels, path escape, overwrite/delete/move,

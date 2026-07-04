@@ -43,7 +43,7 @@ positioning.
 - State machine: `docs/codex/trusted-host-promotion-state-machine.md`.
 - Negative fixture contract: `docs/codex/trusted-host-promotion-negative-fixtures.md`.
 - Zone contract: `docs/codex/trusted-host-promotion-zone-contract.md`.
-- Implementation-plan skeleton: `docs/codex/trusted-host-promotion-implementation-plan.md`.
+- Implementation-plan contract: `docs/codex/trusted-host-promotion-implementation-plan.md`.
 - Source-review handoff: `docs/codex/trusted-host-promotion-source-review.md`.
 
 No normalized external response is recorded for this decision. The ignored response path

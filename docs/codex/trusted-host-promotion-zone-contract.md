@@ -28,7 +28,7 @@ The trusted host descriptor contract is
 `make trusted-host-descriptor-contract-check`. It defines operator-reviewed host posture evidence
 without granting host control, host writes, or runtime promotion.
 
-The matching implementation-plan skeleton is
+The matching implementation-plan contract is
 [trusted-host-promotion-implementation-plan.md](trusted-host-promotion-implementation-plan.md),
 validated with `make trusted-host-promotion-implementation-plan-check`.
 

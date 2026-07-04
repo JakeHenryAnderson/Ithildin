@@ -44,7 +44,7 @@ Answer every item from
 1. Did the reviewer inspect the trusted-host promotion disposition packet and the referenced
    source-review artifacts?
 2. Are the source/staging/approved/evidence zone labels precise enough and non-authoritative?
-3. Does the implementation-plan skeleton require exact artifact hash binding, approval binding,
+3. Does the implementation-plan contract require exact artifact hash binding, approval binding,
    one-time scope evidence, conflict/replay/stale/path-escape denials, and policy/manifest evidence
    before any future runtime path?
 4. Are the negative fixture and state-machine expectations strong enough for a future

@@ -60,7 +60,7 @@ The focused reviewer should answer:
 1. Is the trusted host descriptor contract strict enough to keep host posture evidence
    operator-reviewed, secret-free, descriptor-only, and unable to authorize host control?
 2. Are the source/staging/approved zone labels precise enough for a future implementation plan?
-3. Does the implementation-plan skeleton require exact artifact hash binding, approval binding,
+3. Does the implementation-plan contract require exact artifact hash binding, approval binding,
    one-time scope evidence, and stale/replay/conflict denials before any runtime path?
 4. Are the stop conditions strict enough to block arbitrary host paths, overwrite/delete/move,
    automatic promotion, broad archive extraction, Mission Control runtime authority, sandbox
