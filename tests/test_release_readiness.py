@@ -937,10 +937,17 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert report["current_send_set"] == ["ERG-004"]
     assert report["lane_count"] == 1
     assert report["batch_count"] == 1
-    assert (
-        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run"
-        in report["next_after_send"]
-    )
+    for command in [
+        "normalize the real reviewer response using "
+        "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check",
+    ]:
+        assert command in report["next_after_send"]
     assert report["records_external_review"] is False
     assert report["normalizes_responses"] is False
     assert report["writes_response_files"] is False
