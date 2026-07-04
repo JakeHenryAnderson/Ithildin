@@ -54,55 +54,42 @@ not the active post-disposition route while `make enterprise-operator-next-actio
 
 The current recommended enterprise handoff set is:
 
-1. `ERG-003`: static sandbox/VM preflight disposition.
-2. `ERG-002`: Mission Control display/import planning review.
+1. `ERG-004`: descriptor-only sandbox/VM live POC runtime source review.
 
-Generate or refresh the send-ready operator artifacts with:
+Generate or refresh the active send-ready operator artifact with:
 
 ```sh
-make enterprise-review-send-refresh
-make enterprise-dual-review-outbox
-make enterprise-review-send-manifest
-make enterprise-review-send-quickstart
-make enterprise-review-submission-prompt
-make enterprise-review-send-receipt-template
-make enterprise-review-send-package
-make enterprise-review-send-session-record
-make enterprise-dual-response-inbox
-make enterprise-response-waiting-room
-make enterprise-response-now
-make enterprise-review-handoff-drill
-make handoff-dry-run
 make enterprise-send-now
 ```
 
-After the human send step, preserve the local send receipt:
+The active ERG-004 source-review packet and response landing pad are:
 
 ```sh
-make enterprise-review-send-receipt-copy
-make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/
+var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md
 ```
 
-Do not fill the copied receipt before sending because it records the actual reviewer thread,
-reviewer label, and response path for the send that already happened.
+After a real ERG-004 descriptor-only reviewer response arrives, do not edit status docs directly.
+Paste the raw response only into the ignored descriptor-only raw response file, then run:
 
-After responses arrive, do not edit status docs directly. For the current `ERG-003` and `ERG-002`
-send set, paste the raw responses under the ignored dual-response inbox at
-`var/review-runs/enterprise-dual-response-inbox/`, then run:
+```sh
+make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
+make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
+```
+
+Follow the descriptor-only response application playbook before any committed disposition update.
+The general enterprise response flow remains documented by:
 
 ```sh
 make enterprise-response-waiting-room
 make enterprise-response-now
 make enterprise-response-paste-preflight
-make enterprise-response-inbox
-make enterprise-response-status-board
-make enterprise-response-intake-drill
+make enterprise-response-intake-quickstart
 make enterprise-response-application-protocol
 make enterprise-response-application-rehearsal
-make enterprise-response-intake-quickstart
 ```
 
-Follow each lane-specific response kit and closure gate before any committed disposition update.
+The historical ERG-003/ERG-002 dual-send commands remain available only for lineage and fallback.
 
 ## Current Packet Paths
 
@@ -110,6 +97,10 @@ Follow each lane-specific response kit and closure gate before any committed dis
 - historical consolidated packet: `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`
 - `ERG-003` packet: `var/review-packets/v3/sandbox-vm-static-preflight-external-review/`
 - `ERG-002` packet: `var/review-packets/v3/mission-control-display-external-review/`
+- `ERG-004` descriptor-only source-review packet:
+  `var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/`
+- `ERG-004` descriptor-only response inbox:
+  `var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/`
 - dual-review outbox: `var/review-packets/v3/enterprise-dual-review-outbox/`
 - send manifest: `var/review-packets/v3/enterprise-review-send-manifest/`
 - send quickstart: `var/review-packets/v3/enterprise-review-send-quickstart/`

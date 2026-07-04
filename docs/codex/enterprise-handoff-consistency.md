@@ -2,9 +2,11 @@
 
 Status: checked read-only enterprise handoff consistency gate.
 
-`make enterprise-handoff-consistency-check` validates that the active enterprise
-review handoff docs describe the same current send/receive path for `ERG-003`
-and `ERG-002`.
+`make enterprise-handoff-consistency-check` validates that the historical
+dual-send handoff docs describe the same send/receive path for `ERG-003` and
+`ERG-002`. After the recorded dispositions, the active operator route is the
+separate `ERG-004` descriptor-only source-review path; this gate remains as a
+fallback consistency check for older dual-send artifacts.
 
 The current response inbox root is:
 
@@ -34,14 +36,13 @@ preflight. They are not all pre-send commands:
 - `make enterprise-response-now`
 - `make enterprise-response-paste-preflight`
 
-The check covers the operator-facing current handoff docs:
+The check covers the operator-facing historical dual-send handoff docs:
 
 - `docs/codex/enterprise-review-send-checklist.md`
 - `docs/codex/enterprise-review-send-quickstart.md`
 - `docs/codex/enterprise-review-submission-prompt.md`
 - `docs/codex/enterprise-review-send-receipt-template.md`
 - `docs/codex/enterprise-review-handoff-drill.md`
-- `docs/codex/enterprise-current-checkpoint.md`
 - `docs/codex/enterprise-north-star-roadmap.md`
 - `docs/codex/enterprise-dependency-ladder.md`
 - `docs/codex/enterprise-transition-map.md`

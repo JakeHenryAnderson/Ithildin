@@ -2670,19 +2670,20 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "Current selected capability: `not selected`",
         "make enterprise-current-checkpoint",
         "v1.0 local-preview RC packet generation is ready through `make review-candidate`",
-        "`ERG-003`: static sandbox/VM preflight disposition",
-        "`ERG-002`: Mission Control display/import planning review",
-        "make enterprise-dual-review-outbox",
-        "make enterprise-review-send-manifest",
-        "make handoff-dry-run",
-        "make enterprise-review-submission-prompt",
-        "make enterprise-response-status-board",
+        "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review",
+        "make enterprise-send-now",
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+        "The historical ERG-003/ERG-002 dual-send commands remain available only for "
+        "lineage and fallback.",
         "What This Checkpoint Does Not Approve",
         "Mission Control runtime behavior",
         "public/security-product positioning",
         "new governed tool powers",
     ]:
         assert phrase in doc
+    assert "The current recommended enterprise handoff set is:\n\n1. `ERG-003`" not in doc
     assert "enterprise-current-checkpoint:" in makefile
     assert "enterprise-current-checkpoint" in release_check_body
     assert "make enterprise-current-checkpoint" in readme
@@ -5983,13 +5984,13 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "docs/codex/enterprise-review-submission-prompt.md",
         "docs/codex/enterprise-review-send-receipt-template.md",
         "docs/codex/enterprise-review-handoff-drill.md",
-        "docs/codex/enterprise-current-checkpoint.md",
         "docs/codex/enterprise-north-star-roadmap.md",
         "docs/codex/enterprise-dependency-ladder.md",
         "docs/codex/enterprise-transition-map.md",
         "docs/codex/enterprise-operator-next-action.md",
     ]:
         assert expected_doc in report["docs_checked"]
+    assert "docs/codex/enterprise-current-checkpoint.md" not in report["docs_checked"]
     for key in [
         "records_external_review",
         "normalizes_responses",
@@ -6074,7 +6075,6 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["closure_ready_count"] == 0
     assert report["component_validity"] == {
         "dual_response_readiness": True,
-        "handoff_consistency": True,
         "operator_next_action": True,
         "response_status_board": True,
     }
@@ -6115,26 +6115,23 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "Status: checked final operator preflight for the current enterprise review send.",
         "make enterprise-review-send-preflight",
         "make enterprise-review-send-refresh",
-        "make enterprise-review-send-checklist",
-        "make enterprise-review-send-quickstart",
-        "make enterprise-review-submission-prompt",
-        "make enterprise-review-send-receipt-template",
-        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
-        "make enterprise-review-send-package",
-        "make enterprise-review-upload-staging",
-        "make enterprise-review-send-session-record",
-        "make enterprise-dual-response-inbox",
-        "make enterprise-handoff-consistency-check",
+        "current send set: `ERG-004`",
+        "sandbox-vm-live-poc-runtime-descriptor-only-source-review",
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+        "make enterprise-send-now",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
         "For speed, the preflight does not recursively rebuild every component.",
         "When the worktree is clean, the preflight also enforces",
         "When the worktree is dirty during development, that freshness check",
-        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
-        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
         "does not record external review",
         "does not normalize responses",
-        "does not close `ERG-003` or `ERG-002`",
+        "does not close `ERG-003`, `ERG-002`, or `ERG-004`",
     ]:
         assert phrase in doc
+    assert "current send set: `ERG-003`, then `ERG-002`" not in doc
     assert "enterprise-review-send-preflight:" in makefile
     assert (
         "enterprise-review-send-preflight" in release_check_body

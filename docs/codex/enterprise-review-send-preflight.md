@@ -16,10 +16,11 @@ make enterprise-review-send-refresh
 ```
 
 This preflight gives the operator one final checked answer before sending the
-current `ERG-003` and `ERG-002` enterprise review packets. It inspects the
-already-generated send artifacts, response landing pad, handoff drill,
-response-readiness state, operator next-action state, and handoff consistency
-gate.
+current enterprise review packet. In the current post-disposition route, that
+send set is `ERG-004`: the descriptor-only sandbox/VM live POC runtime
+source-review packet. It inspects the generated send artifacts, response
+landing pad, handoff drill, response-readiness state, operator next-action
+state, and handoff consistency gate.
 
 ## Covered Components
 
@@ -54,64 +55,57 @@ is deferred until the next clean run.
 
 It expects:
 
-- current send set: `ERG-003`, then `ERG-002`;
+- current send set: `ERG-004`;
 - current response-present count: `0`;
 - current closure-ready count: `0`;
-- dual-response inbox root:
-  `var/review-runs/enterprise-dual-response-inbox`;
+- active source-review packet:
+  `var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review`;
+- active descriptor-only response inbox:
+  `var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox`;
 - raw response paths:
-  `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md`
-  and
-  `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md`.
+  `var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md`.
 
 ## Operator Use
 
 Run this after refreshing the send artifacts and before manually sending the
-review packets. The explicit sequence is:
+review packet. The active ERG-004 sequence is:
 
 ```sh
-make enterprise-dual-review-outbox
-make enterprise-review-send-manifest
-make enterprise-review-send-checklist
-make enterprise-review-send-quickstart
-make enterprise-review-submission-prompt
-make enterprise-review-send-receipt-template
-make enterprise-review-send-receipt-validate
-make enterprise-review-send-package
-make enterprise-review-upload-staging
-make enterprise-review-send-session-record
-make enterprise-dual-response-inbox
-make enterprise-review-handoff-drill
-make enterprise-handoff-consistency-check
+make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check
+make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check
+make enterprise-send-now
 make enterprise-review-send-preflight
 ```
 
-The equivalent one-command refresh path is:
+The historical ERG-003/ERG-002 dual-send refresh path remains:
 
 ```sh
 make enterprise-review-send-refresh
 ```
 
+Use that historical refresh path only when `make enterprise-operator-next-action` reports the
+fallback ERG-003/ERG-002 route. It is not the active ERG-004 handoff route.
+
 If the preflight fails because response evidence is present, stop the send flow
 and switch to the response-intake flow instead.
 
-After the human send step, create and fill the copied operator receipt, then validate that copied
-receipt before response intake:
+After a real ERG-004 reviewer response arrives, paste it into the descriptor-only raw response file
+and run:
 
 ```sh
-make enterprise-review-send-receipt-copy
-make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
+make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run
+make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check
 ```
 
-Do not fill the copied receipt before sending; it records the actual reviewer thread, reviewer
-label, and send evidence.
+Do not record a descriptor-only disposition until the dry run and application preflight accept a real
+reviewer response.
 
 ## Boundary
 
 This preflight is read-only orchestration over existing checks. It does not
 send packets, does not record external review, does not normalize responses,
 does not write response files beyond the existing ignored generated artifacts,
-does not close `ERG-003` or `ERG-002`, and does not approve runtime behavior,
+does not close `ERG-003`, `ERG-002`, or `ERG-004`, and does not approve runtime behavior,
 Mission Control runtime behavior, live VM inspection, sandbox orchestration,
 trusted-host promotion, SIEM adapter behavior, compliance automation,
 public/security-product positioning, or new governed tool powers.

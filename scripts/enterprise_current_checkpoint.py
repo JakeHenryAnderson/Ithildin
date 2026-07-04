@@ -42,20 +42,14 @@ REQUIRED_PHRASES = [
     "Runtime changes remain blocked",
     "Public/security-product positioning remains blocked",
     "Enterprise response evidence is not present yet",
-    "`ERG-003`: static sandbox/VM preflight disposition",
-    "`ERG-002`: Mission Control display/import planning review",
-    "make enterprise-dual-review-outbox",
-    "make enterprise-review-send-manifest",
-    "make handoff-dry-run",
-    "make enterprise-review-submission-prompt",
-    "make enterprise-review-send-receipt-template",
-    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
-    "make enterprise-dual-response-inbox",
-    "make enterprise-review-handoff-drill",
-    "var/review-runs/enterprise-dual-response-inbox/",
-    "make enterprise-response-inbox",
-    "make enterprise-response-status-board",
-    "make enterprise-response-intake-drill",
+    "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review",
+    "make enterprise-send-now",
+    "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/",
+    "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+    "The historical ERG-003/ERG-002 dual-send commands remain available only for "
+    "lineage and fallback.",
     "What This Checkpoint Does Not Approve",
 ]
 
@@ -142,11 +136,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("next capability candidate is selected")
     next_action = operator_next_action.get("next_action")
     post_disposition_mode = next_action == POST_DISPOSITION_ACTION
+    descriptor_only_mode = next_action == DESCRIPTOR_ONLY_PLANNING_ACTION
     if (
         not post_disposition_mode
         and send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]
     ):
         failures.append("recommended enterprise send set must remain ERG-003 then ERG-002")
+    if descriptor_only_mode and operator_next_action.get("recommended_send_set") != ["ERG-004"]:
+        failures.append("operator next action must recommend ERG-004 in descriptor-only mode")
     if next_action not in ALLOWED_NEXT_ACTIONS:
         failures.append("operator next action is not an allowed enterprise flow")
     if response_status.get("response_present_count") != 0:

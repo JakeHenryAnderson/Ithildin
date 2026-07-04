@@ -50,6 +50,46 @@ BOUNDARY_FLAGS = {
     "new_power_classes_allowed": False,
 }
 
+DUAL_SEND_DOC_PHRASES = [
+    "Status: checked final operator preflight for the current enterprise review send.",
+    "make enterprise-review-send-preflight",
+    "ERG-003",
+    "ERG-002",
+    "make enterprise-review-send-checklist",
+    "make enterprise-review-send-quickstart",
+    "make enterprise-review-submission-prompt",
+    "make enterprise-review-send-receipt-template",
+    "make enterprise-review-send-receipt-validate",
+    "After the human send step",
+    "make enterprise-review-send-receipt-copy",
+    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+    "make enterprise-review-send-package",
+    "make enterprise-review-upload-staging",
+    "make enterprise-review-send-session-record",
+    "make enterprise-dual-response-inbox",
+    "make enterprise-handoff-consistency-check",
+    "does not record external review",
+    "does not normalize responses",
+    "does not close `ERG-003` or `ERG-002`",
+]
+
+DESCRIPTOR_ONLY_DOC_PHRASES = [
+    "Status: checked final operator preflight for the current enterprise review send.",
+    "make enterprise-review-send-preflight",
+    "current send set: `ERG-004`",
+    "sandbox-vm-live-poc-runtime-descriptor-only-source-review",
+    "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox-check",
+    "make enterprise-send-now",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
+    "The historical ERG-003/ERG-002 dual-send refresh path remains",
+    "does not record external review",
+    "does not normalize responses",
+    "does not close `ERG-003`, `ERG-002`, or `ERG-004`",
+]
+
 class ArtifactSpec(TypedDict):
     output_dir: str
     hash_file: str
@@ -182,22 +222,24 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     dual_response = enterprise_dual_response_readiness.build_report(repo_root)
     handoff_consistency = enterprise_handoff_consistency_check.build_report(repo_root)
 
-    state_reports = {
-        "operator_next_action": operator_next,
-        "dual_response_readiness": dual_response,
-        "response_status_board": response_status,
-        "handoff_consistency": handoff_consistency,
-    }
-    for name, report in state_reports.items():
-        if report.get("valid") is not True:
-            failures.append(f"{name} is not valid")
-            failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
-
     next_action = operator_next.get("next_action")
     post_disposition_mode = next_action in {
         POST_DISPOSITION_ACTION,
         DESCRIPTOR_ONLY_PLANNING_ACTION,
     }
+
+    state_reports = {
+        "operator_next_action": operator_next,
+        "dual_response_readiness": dual_response,
+        "response_status_board": response_status,
+    }
+    if not post_disposition_mode:
+        state_reports["handoff_consistency"] = handoff_consistency
+    for name, report in state_reports.items():
+        if report.get("valid") is not True:
+            failures.append(f"{name} is not valid")
+            failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
+
     active_send_set = (
         POST_DISPOSITION_SEND_SET
         if post_disposition_mode
@@ -253,28 +295,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "\n\n"
     )[0]
 
-    for phrase in [
-        "Status: checked final operator preflight for the current enterprise review send.",
-        "make enterprise-review-send-preflight",
-        "ERG-003",
-        "ERG-002",
-        "make enterprise-review-send-checklist",
-        "make enterprise-review-send-quickstart",
-        "make enterprise-review-submission-prompt",
-        "make enterprise-review-send-receipt-template",
-        "make enterprise-review-send-receipt-validate",
-        "After the human send step",
-        "make enterprise-review-send-receipt-copy",
-        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
-        "make enterprise-review-send-package",
-        "make enterprise-review-upload-staging",
-        "make enterprise-review-send-session-record",
-        "make enterprise-dual-response-inbox",
-        "make enterprise-handoff-consistency-check",
-        "does not record external review",
-        "does not normalize responses",
-        "does not close `ERG-003` or `ERG-002`",
-    ]:
+    required_doc_phrases = (
+        DESCRIPTOR_ONLY_DOC_PHRASES if post_disposition_mode else DUAL_SEND_DOC_PHRASES
+    )
+    for phrase in required_doc_phrases:
         if phrase not in doc:
             failures.append(f"enterprise review send preflight doc is missing phrase: {phrase}")
 

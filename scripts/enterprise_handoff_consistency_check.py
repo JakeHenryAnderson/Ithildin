@@ -68,11 +68,6 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
         *RAW_RESPONSE_PATHS,
         "make enterprise-response-paste-preflight",
     ],
-    "docs/codex/enterprise-current-checkpoint.md": [
-        DUAL_INBOX_ROOT,
-        *CURRENT_PRE_SEND_COMMANDS,
-        *CURRENT_FLOW_COMMANDS,
-    ],
     "docs/codex/enterprise-north-star-roadmap.md": [
         DUAL_INBOX_ROOT,
         *CURRENT_PRE_SEND_COMMANDS,
