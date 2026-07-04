@@ -32078,6 +32078,9 @@ def test_trusted_host_promotion_source_review_packet_is_wired() -> None:
     assert report["artifact_count"] == 8
     assert report["tool_count"] == 24
     assert report["erg_005_status"] == "blocked"
+    assert report["erg_005_planning_status"] == "ready_for_implementation_planning_only"
+    assert report["goal_b_runtime_boundary_packet_ready"] is True
+    assert report["goal_c_implementation_gate_decision_allowed_now"] is False
     assert report["prd_id"] == "PRD-TRUSTED-HOST-001"
     assert report["finding_namespace"] == "EXT-TRUSTED-HOST-###"
     assert report["runtime_changes_allowed"] is False
@@ -32094,12 +32097,16 @@ def test_trusted_host_promotion_source_review_packet_is_wired() -> None:
     assert report["public_security_product_positioning_allowed"] is False
     for phrase in [
         "Status: design/source-review handoff for `ERG-005`",
+        "Goal B source-review/runtime-boundary packet",
+        "later Goal C implementation-gate decision",
         "Current Output Flags",
         "Required Disposition",
         "continue_design_only",
+        "prepare_goal_c_decision_gate",
         "revise_before_more_planning",
         "block_runtime_implementation",
         "Finding namespace: `EXT-TRUSTED-HOST-###`",
+        "approval consumption, one-time scope, and diagnostics",
         "trusted-host promotion allowed: `false`",
         "direct host writes allowed: `false`",
         "runtime changes allowed: `false`",
@@ -32221,6 +32228,9 @@ def test_trusted_host_promotion_disposition_packet_is_wired(tmp_path: Path) -> N
     assert "does not close `ERG-005`" in index
     assert "Finding namespace: `EXT-TRUSTED-HOST-###`" in prompt
     assert "continue_design_only" in prompt
+    assert "prepare_goal_c_decision_gate" in prompt
+    assert "Goal B runtime-boundary packet" in prompt
+    assert "Goal C implementation-gate decision" in prompt
     assert "revise_before_more_planning" in prompt
     assert "block_runtime_implementation" in prompt
     assert "may the lane continue design-only planning" in prompt
@@ -32368,7 +32378,11 @@ def test_trusted_host_promotion_external_review_bundle_is_wired(
     assert "does not close `ERG-005`" in index
     assert "does not approve trusted-host promotion" in index
     assert "Finding namespace: `EXT-TRUSTED-HOST-###`" in prompt
-    assert "Can `ERG-005` continue design-only planning" in prompt
+    assert (
+        "Can the Goal B runtime-boundary packet prepare a later Goal C implementation-gate decision"
+        in prompt
+    )
+    assert "Runtime implementation remains blocked" in prompt
     assert "Do not approve trusted-host promotion" in prompt
     assert "Do not approve direct host writes" in prompt
     assert "TRUSTED_HOST_PROMOTION_SOURCE_REVIEW_PROMPT" in source_packet

@@ -455,12 +455,12 @@ ERG005_TRUSTED_HOST_ARTIFACTS = [
     {
         "label": "trusted_host_implementation_plan",
         "path": "docs/codex/trusted-host-promotion-implementation-plan.md",
-        "description": "implementation-planning skeleton that still blocks runtime behavior",
+        "description": "Goal A implementation-planning contract that still blocks runtime behavior",
     },
     {
         "label": "trusted_host_source_review_packet",
         "path": "var/review-packets/v3/trusted-host-promotion-source-review",
-        "description": "focused source-review packet for the trusted-host design lane",
+        "description": "Goal B runtime-boundary source-review packet for the trusted-host lane",
     },
     {
         "label": "trusted_host_disposition_packet",

@@ -167,9 +167,12 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Finding namespace: `EXT-TRUSTED-HOST-###`",
         "continue_design_only",
+        "prepare_goal_c_decision_gate",
         "revise_before_more_planning",
         "block_runtime_implementation",
         "may the lane continue design-only planning",
+        "Goal B runtime-boundary packet",
+        "Goal C implementation-gate decision",
     ]:
         if phrase not in prompt:
             failures.append(f"packet prompt is missing phrase: {phrase}")
@@ -324,9 +327,10 @@ def build_packet(
 def _index(context: dict[str, Any]) -> str:
     return f"""# Trusted-Host Promotion Disposition Packet
 
-This packet packages the `ERG-005` external/source-review disposition question set, source-review
-packet pointers, internal review evidence, and command evidence. It is a review handoff for deciding
-whether trusted-host promotion may continue design-only planning.
+This packet packages the `ERG-005` external/source-review disposition question set, Goal B
+runtime-boundary packet pointers, internal review evidence, and command evidence. It is a review
+handoff for deciding whether trusted-host promotion may continue design-only planning or prepare a
+later Goal C implementation-gate decision while runtime behavior remains blocked.
 
 ## Boundary
 
@@ -363,7 +367,8 @@ matrix/status changes before implementation planning can move.
 def _prompt(context: dict[str, Any]) -> str:
     return f"""# Trusted-Host Promotion Disposition Review Prompt
 
-You are reviewing Ithildin's trusted-host promotion planning lane for external/source disposition.
+You are reviewing Ithildin's Goal B trusted-host promotion runtime-boundary packet for
+external/source disposition.
 
 Reviewed commit: `{context["commit"]}`
 Area: `trusted-host-promotion`
@@ -384,13 +389,17 @@ Please answer every question:
 6. Are there any critical/high findings?
 7. If there are no critical/high findings, may the lane continue design-only planning while
    `ERG-005` remains blocked from runtime implementation?
-8. Does the reviewer explicitly avoid approving host promotion, direct host writes, Mission Control
+8. Is the hardened planning contract precise enough to prepare a later Goal C implementation-gate
+   decision, or should runtime-boundary ambiguity keep the lane blocked before Goal C?
+9. Does the reviewer explicitly avoid approving host promotion, direct host writes, Mission Control
    runtime behavior, local model invocation, sandbox orchestration, SIEM adapter behavior, or
    production/security-product claims?
 
 Choose one disposition:
 
 - `continue_design_only`: current evidence is coherent for further design and review packets.
+- `prepare_goal_c_decision_gate`: the Goal B runtime-boundary packet is coherent enough to draft a
+  later Goal C implementation-gate decision while runtime implementation remains blocked.
 - `revise_before_more_planning`: gaps or ambiguous claims must be fixed before more planning.
 - `block_runtime_implementation`: a blocking risk prevents implementation planning until a new
   decision record resolves it.

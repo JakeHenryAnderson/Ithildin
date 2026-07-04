@@ -164,6 +164,15 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     if "Finding namespace: `EXT-TRUSTED-HOST-###`" not in prompt:
         failures.append("packet prompt is missing EXT-TRUSTED-HOST finding namespace")
     for phrase in [
+        "Goal B source-review/runtime-boundary packet",
+        "later Goal C implementation-gate decision",
+        "prepare_goal_c_decision_gate",
+        "approval consumption, one-time scope, and diagnostics",
+        "Runtime implementation remains blocked",
+    ]:
+        if phrase not in prompt and phrase not in index:
+            failures.append(f"packet is missing Goal B runtime-boundary phrase: {phrase}")
+    for phrase in [
         '"trusted_host_promotion_allowed": false',
         '"direct_host_writes_allowed": false',
         '"runtime_changes_allowed": false',
@@ -214,6 +223,9 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "artifact_count": len(expected),
         "tool_count": 24,
         "erg_005_status": "blocked",
+        "erg_005_planning_status": "ready_for_implementation_planning_only",
+        "goal_b_runtime_boundary_packet_ready": True,
+        "goal_c_implementation_gate_decision_allowed_now": False,
         "prd_id": "PRD-TRUSTED-HOST-001",
         "finding_namespace": "EXT-TRUSTED-HOST-###",
         "runtime_changes_allowed": False,
@@ -326,9 +338,9 @@ def _build_context(
 def _index(context: dict[str, Any]) -> str:
     return f"""# Trusted-Host Promotion Source Review Packet
 
-This packet packages Ithildin's trusted-host promotion planning lane for focused review. It is a
-design/source-review packet for deciding whether the lane can continue toward a future
-implementation decision. It is not an implementation approval.
+This packet packages Ithildin's trusted-host promotion planning lane for focused review. It is the
+Goal B source-review/runtime-boundary packet for deciding whether the hardened planning contract can
+support a later Goal C implementation-gate decision. It is not an implementation approval.
 
 ## Boundary
 
@@ -337,11 +349,14 @@ implementation decision. It is not an implementation approval.
 - Command evidence executed: `{str(context["run_commands"]).lower()}`.
 - Tool count remains `{context["tool_surface"]["tool_count"]}`.
 - ERG lane: `ERG-005`.
+- Planning status: `ready_for_implementation_planning_only`.
 - Post-RC decision ID: `PRD-TRUSTED-HOST-001`.
 - Finding namespace: `EXT-TRUSTED-HOST-###`.
 - Current runtime state: `promotion_status: not_promoted` only.
 - Trusted-host promotion: not implemented.
 - Direct host writes: not implemented.
+- Goal B runtime-boundary packet ready: `true`.
+- Goal C implementation-gate decision allowed now: `false`.
 
 ## Artifacts
 
@@ -360,14 +375,18 @@ This packet does not prove runtime implementation safety, host promotion correct
 filesystem write safety, OS isolation, sandbox orchestration, Mission Control runtime correctness,
 local model behavior, SIEM custody, production deployment safety, compliance automation, or activity
 outside Ithildin-mediated actions.
+
+It also does not approve a Goal C implementation-gate decision. Goal C may only be recorded by a
+later committed decision artifact after this packet and any reviewer response are evaluated.
 """
 
 
 def _prompt(context: dict[str, Any]) -> str:
     return f"""# Trusted-Host Promotion Source Review Prompt
 
-You are reviewing Ithildin's trusted-host promotion lane. Treat this as a source-review/design
-handoff for the planning artifacts only, not as approval of a runtime host-promotion integration.
+You are reviewing Ithildin's trusted-host promotion lane. Treat this as the Goal B
+source-review/runtime-boundary packet for the planning artifacts only, not as approval of a runtime
+host-promotion integration.
 
 Reviewed commit: `{context["commit"]}`
 Area: `trusted-host-promotion`
@@ -382,6 +401,8 @@ Please review:
 - whether the sandbox/staging/approved zone labels are precise and non-authoritative;
 - whether the implementation-plan contract requires exact artifact hash binding, approval binding,
   one-time scope evidence, policy/manifest evidence, and source/staging/approved hash matching;
+- whether approval consumption, one-time scope, and diagnostics requirements are precise enough to
+  prevent replay, ambiguous completion, and silent host-write state drift;
 - whether the state machine blocks replay, stale evidence, invalid transitions, conflict cases, and
   recovery ambiguity before any host placement could be completed;
 - whether the negative fixture families cover unsafe labels, path escape, overwrite/delete/move,
@@ -392,13 +413,18 @@ Please review:
   shell/Docker/Kubernetes/browser powers, arbitrary HTTP, broad filesystem writes, and compliance
   positioning out of scope;
 - which source-review, transcript, decision-record, or gate evidence is still missing before a
-  future implementation proposal may be considered.
+  future implementation proposal may be considered;
+- whether a later Goal C implementation-gate decision may be prepared, or whether runtime-boundary
+  ambiguity should keep `ERG-005` blocked before any such decision.
 
 ## Required Disposition
 
 Choose one disposition:
 
 - `continue_design_only`: current evidence is coherent for further design and review packets.
+- `prepare_goal_c_decision_gate`: current evidence is coherent enough to draft a later Goal C
+  implementation-gate decision while runtime implementation remains blocked until that decision
+  exists and passes.
 - `revise_before_more_planning`: gaps or ambiguous claims must be fixed before more planning.
 - `block_runtime_implementation`: a blocking risk prevents implementation planning until a new
   decision record resolves it.
@@ -409,6 +435,9 @@ invocation, VM/container lifecycle control, sandbox orchestration, SIEM adapters
 identity, runtime Postgres, hosted telemetry, remote MCP, shell/Docker/Kubernetes/browser governed
 powers, arbitrary HTTP, broad filesystem writes, compliance automation, or public/security-product
 positioning.
+
+Runtime implementation remains blocked even if the reviewer chooses
+`prepare_goal_c_decision_gate`.
 """
 
 
@@ -421,6 +450,12 @@ def _gate_evidence(context: dict[str, Any]) -> dict[str, Any]:
         "negative_fixtures": context["negative_fixtures"],
         "zone_contract": context["zone_contract"],
         "implementation_plan": context["implementation_plan"],
+        "goal_b_runtime_boundary_packet": {
+            "ready": True,
+            "purpose": "source-review/runtime-boundary review before Goal C",
+            "goal_c_implementation_gate_decision_allowed_now": False,
+            "runtime_implementation_remains_blocked": True,
+        },
         "post_rc_decision_gate": context["post_rc_decision_gate"],
         "post_rc_decision_register": context["post_rc_decision_register"],
         "no_new_powers": context["no_new_powers"],
@@ -467,10 +502,13 @@ Current disposition target: design/source-review only.
 - Direct host writes allowed: `false`.
 - Runtime changes allowed: `false`.
 - Current runtime/demo promotion state: `not_promoted`.
+- Goal B runtime-boundary packet ready: `true`.
+- Goal C implementation-gate decision allowed now: `false`.
 
 ## Required Future Evidence
 
 - favorable external/source-review disposition for `EXT-TRUSTED-HOST-###`;
+- later committed Goal C implementation-gate decision before any runtime path;
 - conflict/replay/stale/path-escape/sensitive-payload/product-overclaim transcripts for the exact
   future runtime surface;
 - exact implementation decision record before any runtime path;
@@ -622,6 +660,11 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"artifact_count: {report['artifact_count']}",
         f"tool_count: {report['tool_count']}",
         f"erg_005_status: {report['erg_005_status']}",
+        f"erg_005_planning_status: {report['erg_005_planning_status']}",
+        "goal_b_runtime_boundary_packet_ready: "
+        f"{str(report['goal_b_runtime_boundary_packet_ready']).lower()}",
+        "goal_c_implementation_gate_decision_allowed_now: "
+        f"{str(report['goal_c_implementation_gate_decision_allowed_now']).lower()}",
         f"prd_id: {report['prd_id']}",
         f"finding_namespace: {report['finding_namespace']}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",

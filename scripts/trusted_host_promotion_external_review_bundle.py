@@ -130,9 +130,13 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
 
     for phrase in [
         "Finding namespace: `EXT-TRUSTED-HOST-###`",
-        "Can `ERG-005` continue design-only planning",
+        (
+            "Can the Goal B runtime-boundary packet prepare a later Goal C "
+            "implementation-gate decision"
+        ),
         "Do not approve trusted-host promotion",
         "Do not approve direct host writes",
+        "Runtime implementation remains blocked",
     ]:
         if phrase not in prompt:
             failures.append(f"external-review prompt is missing phrase: {phrase}")
@@ -390,10 +394,10 @@ Finding namespace: `EXT-TRUSTED-HOST-###`
 
 ## Scope
 
-Review the attached source-review packet, disposition packet, descriptor contract, promotion
-contracts, state machine, zone contract, implementation-plan contract, negative fixtures, observed
-sandbox evidence pointers, external response intake, closure gate, dry-run evidence, queue status,
-and command evidence.
+Review the attached Goal B source-review/runtime-boundary packet, disposition packet, descriptor
+contract, promotion contracts, state machine, zone contract, implementation-plan contract, negative
+fixtures, observed sandbox evidence pointers, external response intake, closure gate, dry-run
+evidence, queue status, and command evidence.
 
 Please answer:
 
@@ -409,13 +413,17 @@ Please answer:
    overclaims?
 6. Does the lane preserve Ithildin as the only policy, approval, execution, and audit authority?
 7. Are there any critical/high findings?
-8. Can `ERG-005` continue design-only planning while runtime implementation remains blocked?
+8. Can the Goal B runtime-boundary packet prepare a later Goal C implementation-gate decision while
+   runtime implementation remains blocked?
 
 Do not approve trusted-host promotion. Do not approve direct host writes. Do not approve
 overwrite/delete/move behavior. Do not approve broad archive extraction. Do not approve automatic
 promotion. Do not approve Mission Control runtime behavior. Do not approve local model invocation.
 Do not approve sandbox orchestration. Do not approve SIEM adapters. Do not approve
 public/security-product positioning.
+
+Runtime implementation remains blocked even if the reviewer supports preparing a later Goal C
+implementation-gate decision.
 
 Use this finding namespace for actionable findings: `EXT-TRUSTED-HOST-###`.
 

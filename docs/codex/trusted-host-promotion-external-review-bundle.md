@@ -40,12 +40,13 @@ The bundle contains exactly these review files plus one hash manifest:
 9. `08_TRUSTED_HOST_PROMOTION_COMMAND_EVIDENCE.md`
 10. `trusted-host-promotion-external-review-artifact-hashes.json`
 
-## Review Question
+## Goal B Review Question
 
-The bundle asks whether `ERG-005` can continue design-only planning while trusted-host promotion,
-direct host writes, overwrite/delete/move behavior, broad archive extraction, automatic promotion,
-Mission Control runtime behavior, local model invocation, sandbox orchestration, SIEM adapters,
-production identity, runtime Postgres, hosted telemetry, remote MCP, compliance automation,
+The bundle asks whether the Goal B source-review/runtime-boundary packet is precise enough to
+prepare a later Goal C implementation-gate decision while trusted-host promotion, direct host
+writes, overwrite/delete/move behavior, broad archive extraction, automatic promotion, Mission
+Control runtime behavior, local model invocation, sandbox orchestration, SIEM adapters, production
+identity, runtime Postgres, hosted telemetry, remote MCP, compliance automation,
 public/security-product positioning, and new governed tool powers remain blocked.
 
 The finding namespace is:
