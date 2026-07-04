@@ -414,6 +414,9 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-send-now",
     "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
     "handoff_artifacts",
+    "For the current active route, the primary lane is:",
+    "`ERG-004`: use the descriptor-only source-review response inbox",
+    "Historical fallback lanes remain available only when the operator next-action command reports",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
     "make enterprise-response-intake-refresh",
@@ -546,6 +549,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(
                 f"enterprise operator next-action doc contains forbidden phrase: {phrase}"
             )
+    if "The current primary lanes are:" in doc:
+        failures.append(
+            "enterprise operator next-action doc still describes historical lanes as current"
+        )
 
     if "enterprise-operator-next-action:" not in makefile:
         failures.append("Make target is missing: enterprise-operator-next-action")

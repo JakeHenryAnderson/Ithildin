@@ -130,7 +130,13 @@ make enterprise-response-intake-refresh
 ```
 
 Then follow the lane-specific response kit, dry-run, closure gate, response-application record, and
-playbook. The current primary lanes are:
+playbook. For the current active route, the primary lane is:
+
+- `ERG-004`: use the descriptor-only source-review response inbox, response dry run, application
+  preflight, response-application record, and response-application playbook.
+
+Historical fallback lanes remain available only when the operator next-action command reports the
+fallback ERG-003/ERG-002 route:
 
 - `ERG-003`: use the sandbox/VM static preflight response kit and closure gate.
 - `ERG-002`: use the Mission Control display response kit and closure gate.

@@ -6560,6 +6560,12 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make handoff-dry-run",
         "handoff_artifacts",
         "var/review-packets/v3/enterprise-review-send-manifest",
+        "For the current active route, the primary lane is:",
+        "`ERG-004`: use the descriptor-only source-review response inbox",
+        (
+            "Historical fallback lanes remain available only when the operator next-action "
+            "command reports"
+        ),
         "`ERG-003`: static sandbox/VM preflight disposition",
         "`ERG-002`: Mission Control display/import planning review",
         "make enterprise-review-send-receipt-template",
@@ -6572,6 +6578,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "new governed tool powers",
     ]:
         assert phrase in doc
+    assert "The current primary lanes are:" not in doc
     assert "enterprise-operator-next-action:" in makefile
     assert (
         "enterprise-operator-next-action" in release_check_body
