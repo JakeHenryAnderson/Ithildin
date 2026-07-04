@@ -5778,6 +5778,10 @@ def test_enterprise_response_now_is_wired() -> None:
         assert lane["closes_external_review"] is False
         assert lane["paste_preflight"]
         assert lane["normalizer"]
+        assert "sha256:<from generated inbox>" not in lane["normalizer"]
+        assert lane["reviewed_packet_hash"]
+        assert lane["reviewed_packet_hash"] in lane["normalizer"]
+        assert lane["reviewed_packet_path"]
         assert lane["dry_run"]
         assert lane["closure_gate"]
     for phrase in [
@@ -5846,6 +5850,8 @@ def test_enterprise_response_now_is_wired() -> None:
         assert erg004["state"] == "candidate_response"
         assert "enterprise_response_paste_preflight.py" in erg004["paste_preflight"]
         assert "external_response_normalize.py" in erg004["normalizer"]
+        assert "sha256:<from generated inbox>" not in erg004["normalizer"]
+        assert erg004["reviewed_packet_hash"] in erg004["normalizer"]
         assert "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run" in erg004[
             "dry_run"
         ]

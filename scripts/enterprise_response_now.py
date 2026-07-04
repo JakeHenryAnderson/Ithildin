@@ -42,6 +42,14 @@ LANE_COMMANDS = {
     },
 }
 
+LANE_METADATA = {
+    "ERG-004": (
+        "var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+        "erg004-runtime-descriptor-only-response-inbox.json"
+    ),
+}
+
 BOUNDARY_FLAGS = {
     "normalizes_responses": False,
     "writes_response_files": False,
@@ -150,6 +158,7 @@ def render_report(report: dict[str, Any]) -> str:
 def _response_row(waiting_row: dict[str, Any]) -> dict[str, Any]:
     gap = str(waiting_row.get("gap", ""))
     commands = LANE_COMMANDS.get(gap, {})
+    metadata = _lane_metadata(gap)
     return {
         "gap": gap,
         "name": commands.get("name", waiting_row.get("area", "unknown")),
@@ -158,7 +167,9 @@ def _response_row(waiting_row: dict[str, Any]) -> dict[str, Any]:
         "finding_namespace": waiting_row.get("finding_namespace"),
         "safe_reason": waiting_row.get("safe_reason"),
         "paste_preflight": waiting_row.get("recommended_next"),
-        "normalizer": commands.get("normalizer"),
+        "normalizer": metadata.get("normalizer_command") or commands.get("normalizer"),
+        "reviewed_packet_hash": metadata.get("reviewed_packet_hash"),
+        "reviewed_packet_path": metadata.get("reviewed_packet_path"),
         "dry_run": commands.get("dry_run"),
         "closure_gate": commands.get("closure_gate"),
         "content_excerpt_included": False,
@@ -167,6 +178,18 @@ def _response_row(waiting_row: dict[str, Any]) -> dict[str, Any]:
         "records_external_review": False,
         "closes_external_review": False,
     }
+
+
+def _lane_metadata(gap: str) -> dict[str, Any]:
+    rel_path = LANE_METADATA.get(gap)
+    if not rel_path:
+        return {}
+    path = ROOT / rel_path
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
