@@ -30017,6 +30017,10 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
 
     for phrase in [
         "The active post-disposition route is `ERG-004`.",
+        "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/",
+        "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/",
+        "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt/",
+        "EXT-LIVE-DESC-###",
         "Historical dual-send route: `ERG-003`, then `ERG-002`.",
         "Older ERG-003/ERG-002 generated packet surfaces remain",
         "What This Does Not Approve",
@@ -30028,6 +30032,7 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
         "sandbox orchestration is approved",
         "Mission Control runtime behavior is approved",
         "new governed tool powers are approved",
+        "Current active packet: `sandbox-vm-live-poc-runtime-ticket-review`",
     ]:
         assert forbidden not in doc
 
