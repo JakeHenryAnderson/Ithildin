@@ -1,6 +1,6 @@
 # Enterprise Response Waiting Room
 
-Status: read-only raw-response waiting-room summary for `ERG-003` and `ERG-002`.
+Status: read-only raw-response waiting-room summary for active `ERG-004`.
 
 Current governed tool count: `24`.
 
@@ -10,10 +10,19 @@ Run:
 make enterprise-response-waiting-room
 ```
 
-This command inspects the ignored raw-response placeholder files under
-`var/review-runs/enterprise-dual-response-inbox/` and reports whether each lane is still waiting,
-looks populated, is missing, or is invalid. It is the small operator check between "I sent the review
-packet" and "I pasted a response and should run `make enterprise-response-paste-preflight`."
+This command inspects the ignored raw-response placeholder file for the active `ERG-004`
+descriptor-only review:
+
+```sh
+var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md
+```
+
+It reports whether the active lane is still waiting, looks populated, is missing, or is invalid. It
+is the small operator check between "I sent the review packet" and "I pasted a response and should
+run `make enterprise-response-paste-preflight`."
+
+The historical `ERG-003`/`ERG-002` fallback response material remains available in older dual-lane
+docs, but this waiting-room helper tracks the current active `ERG-004` receive path.
 
 Possible lane states:
 
@@ -52,7 +61,7 @@ commands without running them.
 ## What This Does Not Prove
 
 This command does not normalize responses, does not write response files, does not record external review,
-does not mutate findings, does not close either lane, and does not approve runtime behavior,
+does not mutate findings, does not close any lane, and does not approve runtime behavior,
 Mission Control runtime importer behavior, live VM/container inspection, local model invocation,
 sandbox orchestration, trusted-host promotion, SIEM adapters, compliance automation,
 public/security-product positioning, or new governed tool powers.

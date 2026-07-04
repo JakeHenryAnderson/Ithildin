@@ -5496,8 +5496,9 @@ def test_enterprise_response_waiting_room_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
-    assert report["placeholder_count"] == 2
+    assert report["recommended_gaps"] == ["ERG-004"]
+    assert report["historical_fallback_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["placeholder_count"] == 1
     assert report["candidate_response_count"] == 0
     assert report["invalid_count"] == 0
     assert report["next_action"] == "wait_for_external_response"
@@ -5507,6 +5508,7 @@ def test_enterprise_response_waiting_room_is_wired() -> None:
     assert report["mutates_findings"] is False
     assert report["closes_erg_003"] is False
     assert report["closes_erg_002"] is False
+    assert report["closes_erg_004"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -5519,16 +5521,18 @@ def test_enterprise_response_waiting_room_is_wired() -> None:
         assert row["records_external_review"] is False
         assert row["closes_external_review"] is False
     for phrase in [
-        "Status: read-only raw-response waiting-room summary for `ERG-003` and `ERG-002`.",
+        "Status: read-only raw-response waiting-room summary for active `ERG-004`.",
         "Current governed tool count: `24`.",
         "make enterprise-response-waiting-room",
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+        "historical `ERG-003`/`ERG-002` fallback",
         "placeholder",
         "candidate_response",
         "make enterprise-response-paste-preflight",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
-        "does not close either lane",
+        "does not close any lane",
     ]:
         assert phrase in doc
     assert "enterprise-response-waiting-room:" in makefile
@@ -5551,7 +5555,9 @@ def test_enterprise_response_waiting_room_is_wired() -> None:
     )
 
     raw_path = Path(
-        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
+        "var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
     )
     original = raw_path.read_bytes() if raw_path.exists() else None
     try:
@@ -5559,9 +5565,9 @@ def test_enterprise_response_waiting_room_is_wired() -> None:
         raw_path.write_text(
             "\n".join(
                 [
-                    "External source review for ERG-003.",
+                    "External source review for ERG-004 descriptor-only.",
                     "No implementation findings were found.",
-                    "The lane can close for the local-preview static preflight boundary.",
+                    "The descriptor-only local-preview disposition can proceed.",
                 ]
             ),
             encoding="utf-8",
@@ -5569,11 +5575,11 @@ def test_enterprise_response_waiting_room_is_wired() -> None:
         populated = enterprise_response_waiting_room.build_report(Path.cwd())
         assert populated["valid"] is True
         assert populated["candidate_response_count"] == 1
-        assert populated["placeholder_count"] == 1
+        assert populated["placeholder_count"] == 0
         assert populated["next_action"] == "run_enterprise_response_paste_preflight"
-        erg003 = next(row for row in populated["rows"] if row["gap"] == "ERG-003")
-        assert erg003["state"] == "candidate_response"
-        assert "enterprise_response_paste_preflight.py" in erg003["recommended_next"]
+        erg004 = next(row for row in populated["rows"] if row["gap"] == "ERG-004")
+        assert erg004["state"] == "candidate_response"
+        assert "enterprise_response_paste_preflight.py" in erg004["recommended_next"]
         assert "No implementation findings" not in enterprise_response_waiting_room.render_report(
             populated
         )
@@ -5746,7 +5752,8 @@ def test_enterprise_response_now_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["recommended_gaps"] == ["ERG-003", "ERG-002"]
+    assert report["recommended_gaps"] == ["ERG-004"]
+    assert report["historical_fallback_gaps"] == ["ERG-003", "ERG-002"]
     assert report["next_action"] == "wait_for_external_response"
     assert report["normalizes_responses"] is False
     assert report["writes_response_files"] is False
@@ -5754,6 +5761,7 @@ def test_enterprise_response_now_is_wired() -> None:
     assert report["mutates_findings"] is False
     assert report["closes_erg_003"] is False
     assert report["closes_erg_002"] is False
+    assert report["closes_erg_004"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -5772,13 +5780,16 @@ def test_enterprise_response_now_is_wired() -> None:
     for phrase in [
         "Status: read-only current response-intake command summary.",
         "Current governed tool count: `24`.",
+        "`ERG-004` descriptor-only raw-response waiting-room state",
+        "historical `ERG-003`/`ERG-002` fallback",
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
         "make enterprise-response-now",
         "make enterprise-response-waiting-room",
         "make enterprise-response-paste-preflight",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
-        "does not close either lane",
+        "does not close any lane",
         "does not approve runtime behavior",
     ]:
         assert phrase in doc
@@ -5804,7 +5815,9 @@ def test_enterprise_response_now_is_wired() -> None:
     )
 
     raw_path = Path(
-        "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md"
+        "var/review-runs/"
+        "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
     )
     original = raw_path.read_bytes() if raw_path.exists() else None
     try:
@@ -5812,9 +5825,9 @@ def test_enterprise_response_now_is_wired() -> None:
         raw_path.write_text(
             "\n".join(
                 [
-                    "External source review for ERG-003.",
+                    "External source review for ERG-004 descriptor-only.",
                     "No implementation findings were found.",
-                    "The lane can close for the local-preview static preflight boundary.",
+                    "The descriptor-only local-preview disposition can proceed.",
                 ]
             ),
             encoding="utf-8",
@@ -5826,14 +5839,16 @@ def test_enterprise_response_now_is_wired() -> None:
             populated["next_action"]
             == "run_lane_paste_preflight_then_normalizer_dry_run_and_closure_gate"
         )
-        erg003 = next(row for row in populated["lanes"] if row["gap"] == "ERG-003")
-        assert erg003["state"] == "candidate_response"
-        assert "enterprise_response_paste_preflight.py" in erg003["paste_preflight"]
-        assert "external_response_normalize.py" in erg003["normalizer"]
-        assert "sandbox-vm-static-preflight-response-dry-run" in erg003["dry_run"]
+        erg004 = next(row for row in populated["lanes"] if row["gap"] == "ERG-004")
+        assert erg004["state"] == "candidate_response"
+        assert "enterprise_response_paste_preflight.py" in erg004["paste_preflight"]
+        assert "external_response_normalize.py" in erg004["normalizer"]
+        assert "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run" in erg004[
+            "dry_run"
+        ]
         assert (
-            "sandbox-vm-static-preflight-disposition-closure-check"
-            in erg003["closure_gate"]
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check"
+            in erg004["closure_gate"]
         )
         assert "No implementation findings" not in enterprise_response_now.render_report(
             populated

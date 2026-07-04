@@ -18,27 +18,27 @@ DOC_REL = "docs/codex/enterprise-response-now.md"
 DOC_TITLE = "Enterprise Response Now"
 
 LANE_COMMANDS = {
-    "ERG-003": {
-        "name": "static sandbox/VM preflight",
+    "ERG-004": {
+        "name": "Sandbox/VM live POC descriptor-only runtime source review",
         "normalizer": (
             "uv run python scripts/external_response_normalize.py "
-            "--area sandbox-vm-static-preflight "
-            "--raw-response var/review-runs/enterprise-dual-response-inbox/"
-            "RAW_RESPONSE_ERG-003.md"
+            "var/review-runs/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+            "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md "
+            '--reviewer "REVIEWER NAME" '
+            '--reviewer-type "ai_external" '
+            "--source-access source-level "
+            '--reviewed-commit "$(git rev-parse HEAD)" '
+            '--reviewed-packet-hash "sha256:<from generated inbox>" '
+            "--area sandbox-vm-live-poc-runtime-descriptor-only "
+            "--output var/review-runs/"
+            "sandbox-vm-live-poc-runtime-descriptor-only/normalized-response.json"
         ),
-        "dry_run": "make sandbox-vm-static-preflight-response-dry-run",
-        "closure_gate": "make sandbox-vm-static-preflight-disposition-closure-check",
-    },
-    "ERG-002": {
-        "name": "Mission Control display/import planning",
-        "normalizer": (
-            "uv run python scripts/external_response_normalize.py "
-            "--area mission-control-display "
-            "--raw-response var/review-runs/enterprise-dual-response-inbox/"
-            "RAW_RESPONSE_ERG-002.md"
+        "dry_run": "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
+        "closure_gate": (
+            "make sandbox-vm-live-poc-runtime-descriptor-only-"
+            "response-application-preflight-check"
         ),
-        "dry_run": "make mission-control-display-response-dry-run",
-        "closure_gate": "make mission-control-display-disposition-closure-check",
     },
 }
 
@@ -49,6 +49,7 @@ BOUNDARY_FLAGS = {
     "mutates_findings": False,
     "closes_erg_003": False,
     "closes_erg_002": False,
+    "closes_erg_004": False,
     "runtime_changes_allowed": False,
     "mission_control_runtime_allowed": False,
     "live_vm_inspection_allowed": False,
@@ -99,7 +100,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "summary_doc": DOC_REL,
         "tool_count": 24,
-        "recommended_gaps": ["ERG-003", "ERG-002"],
+        "recommended_gaps": ["ERG-004"],
+        "historical_fallback_gaps": ["ERG-003", "ERG-002"],
         "candidate_response_count": len(candidate_rows),
         "invalid_response_count": len(invalid_rows),
         "placeholder_count": waiting_room.get("placeholder_count", 0),
@@ -116,6 +118,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"summary_doc: {report['summary_doc']}",
         f"tool_count: {report['tool_count']}",
         "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
+        "historical_fallback_gaps: " + ", ".join(report["historical_fallback_gaps"]),
         f"candidate_response_count: {report['candidate_response_count']}",
         f"invalid_response_count: {report['invalid_response_count']}",
         f"placeholder_count: {report['placeholder_count']}",
@@ -183,13 +186,16 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     required_doc_phrases = [
         "Status: read-only current response-intake command summary.",
         "Current governed tool count: `24`.",
+        "`ERG-004` descriptor-only raw-response waiting-room state",
+        "historical `ERG-003`/`ERG-002` fallback",
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
         "make enterprise-response-now",
         "make enterprise-response-waiting-room",
         "make enterprise-response-paste-preflight",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
-        "does not close either lane",
+        "does not close any lane",
         "does not approve runtime behavior",
     ]
     for phrase in required_doc_phrases:

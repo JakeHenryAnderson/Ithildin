@@ -10,26 +10,28 @@ Run:
 make enterprise-response-now
 ```
 
-This command is the receive-side companion to `make enterprise-send-now`. It reads the current
-`ERG-003` and `ERG-002` raw-response waiting-room state and prints the exact next response-intake
-commands for each lane: paste preflight, normalizer command, lane dry run, and closure gate. It is
-for the operator moment after external responses may have been pasted, when the next question is
+This command is the receive-side companion to `make enterprise-send-now`. It reads the active
+`ERG-004` descriptor-only raw-response waiting-room state and prints the exact next response-intake
+commands for that lane: paste preflight, normalizer command, lane dry run, and closure gate. It is
+for the operator moment after an external response may have been pasted, when the next question is
 "what command do I run now?"
 
 It does not normalize responses, does not write response files, does not record external review,
-does not mutate findings, does not close either lane, and does not approve runtime behavior.
+does not mutate findings, does not close any lane, and does not approve runtime behavior.
+
+The historical `ERG-003`/`ERG-002` fallback response material remains available in older dual-lane
+docs, but this helper now follows the current active `ERG-004` handoff path.
 
 ## Expected Flow
 
-Before responses arrive, the command should report `wait_for_external_response` and show both lanes
-as generated placeholders.
+Before a response arrives, the command should report `wait_for_external_response` and show active
+`ERG-004` as a generated placeholder.
 
-After the human send step and receipt validation, paste real reviewer responses into the ignored
-dual-response inbox paths:
+After the human send step and receipt validation, paste the real reviewer response into the ignored
+descriptor-only response inbox path:
 
 ```sh
-var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md
-var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md
+var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md
 ```
 
 Then run:

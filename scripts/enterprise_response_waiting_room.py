@@ -26,6 +26,7 @@ BOUNDARY_FLAGS = {
     "mutates_findings": False,
     "closes_erg_003": False,
     "closes_erg_002": False,
+    "closes_erg_004": False,
     "runtime_changes_allowed": False,
     "mission_control_runtime_allowed": False,
     "live_vm_inspection_allowed": False,
@@ -83,16 +84,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )[0]
 
     for phrase in [
-        "Status: read-only raw-response waiting-room summary for `ERG-003` and `ERG-002`.",
+        "Status: read-only raw-response waiting-room summary for active `ERG-004`.",
         "Current governed tool count: `24`.",
         "make enterprise-response-waiting-room",
+        "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+        "historical `ERG-003`/`ERG-002` fallback",
         "placeholder",
         "candidate_response",
         "make enterprise-response-paste-preflight",
         "does not normalize responses",
         "does not write response files",
         "does not record external review",
-        "does not close either lane",
+        "does not close any lane",
     ]:
         if phrase not in doc:
             failures.append(f"waiting-room doc is missing phrase: {phrase}")
@@ -140,7 +143,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "summary_doc": DOC_REL,
         "tool_count": 24,
-        "recommended_gaps": ["ERG-003", "ERG-002"],
+        "recommended_gaps": ["ERG-004"],
+        "historical_fallback_gaps": ["ERG-003", "ERG-002"],
         "candidate_response_count": candidate_count,
         "placeholder_count": placeholder_count,
         "missing_count": missing_count,
@@ -158,6 +162,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"summary_doc: {report['summary_doc']}",
         f"tool_count: {report['tool_count']}",
         "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
+        "historical_fallback_gaps: " + ", ".join(report["historical_fallback_gaps"]),
         f"candidate_response_count: {report['candidate_response_count']}",
         f"placeholder_count: {report['placeholder_count']}",
         f"missing_count: {report['missing_count']}",
@@ -250,6 +255,7 @@ def _looks_like_placeholder(text: str) -> bool:
         "paste the unmodified reviewer response",
         "expected finding namespace",
         "finding table shape",
+        "leave this placeholder text intact",
     ]
     return any(marker in lower for marker in markers)
 
@@ -257,33 +263,20 @@ def _looks_like_placeholder(text: str) -> bool:
 def _lane_specs() -> tuple[LaneSpec, ...]:
     return (
         LaneSpec(
-            gap="ERG-003",
-            area="sandbox-vm-static-preflight",
+            gap="ERG-004",
+            area="sandbox-vm-live-poc-runtime-descriptor-only",
             raw_response_path=(
-                "var/review-runs/enterprise-dual-response-inbox/"
-                "RAW_RESPONSE_ERG-003.md"
+                "var/review-runs/"
+                "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+                "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
             ),
-            finding_namespace="EXT-SVP-###",
+            finding_namespace="EXT-LIVE-DESC-###",
             paste_preflight_command=(
                 "uv run python scripts/enterprise_response_paste_preflight.py "
-                "--lane ERG-003 --raw-response "
-                "var/review-runs/enterprise-dual-response-inbox/"
-                "RAW_RESPONSE_ERG-003.md"
-            ),
-        ),
-        LaneSpec(
-            gap="ERG-002",
-            area="mission-control-display",
-            raw_response_path=(
-                "var/review-runs/enterprise-dual-response-inbox/"
-                "RAW_RESPONSE_ERG-002.md"
-            ),
-            finding_namespace="EXT-MC-DISPLAY-###",
-            paste_preflight_command=(
-                "uv run python scripts/enterprise_response_paste_preflight.py "
-                "--lane ERG-002 --raw-response "
-                "var/review-runs/enterprise-dual-response-inbox/"
-                "RAW_RESPONSE_ERG-002.md"
+                "--lane ERG-004 --raw-response "
+                "var/review-runs/"
+                "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+                "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
             ),
         ),
     )
