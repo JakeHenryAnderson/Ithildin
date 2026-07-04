@@ -28,6 +28,17 @@ SEND_RECEIPT_COPY = (
     "var/review-runs/enterprise-review-send-receipts/"
     "enterprise-review-send-receipt-copy.json"
 )
+ERG004_SOURCE_REVIEW_DIR = (
+    "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review"
+)
+ERG004_RESPONSE_INBOX_DIR = (
+    "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox"
+)
+ERG004_RAW_RESPONSE = (
+    "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+    "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+)
+ENTERPRISE_SEND_NOW_DIR = "var/review-packets/v3/enterprise-send-now"
 
 
 def main() -> int:
@@ -69,7 +80,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "artifact_freshness_valid": freshness.get("valid"),
         "artifact_refresh_commands": freshness.get("refresh_commands", []),
         "recommended_next_commands": next_commands,
-        "handoff_paths": _handoff_paths(repo_root),
+        "handoff_paths": _handoff_paths(repo_root, enterprise_next),
         "release_or_handoff_required": validation.get("release_or_handoff_required"),
         "runtime_changes_allowed": False,
         "new_power_classes_allowed": False,
@@ -212,7 +223,15 @@ def _send_manifest_count(repo_root: Path, key: str) -> int:
     return value if isinstance(value, int) else 0
 
 
-def _handoff_paths(repo_root: Path) -> dict[str, str]:
+def _handoff_paths(repo_root: Path, enterprise_next: dict[str, Any]) -> dict[str, str]:
+    if enterprise_next.get("recommended_send_set") == ["ERG-004"]:
+        return {
+            "active_send_now": ENTERPRISE_SEND_NOW_DIR,
+            "erg004_source_review_packet": ERG004_SOURCE_REVIEW_DIR,
+            "erg004_response_inbox": ERG004_RESPONSE_INBOX_DIR,
+            "erg004_raw_response": ERG004_RAW_RESPONSE,
+        }
+
     path = repo_root / SEND_MANIFEST_JSON
     if not path.exists():
         return {}

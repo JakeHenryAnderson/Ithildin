@@ -1321,15 +1321,20 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     )
     assert status["recommended_next_commands"]
     assert status["handoff_paths"] == {
-        "dual_review_outbox": "var/review-packets/v3/enterprise-dual-review-outbox",
-        "submission_prompt": "var/review-packets/v3/enterprise-review-submission-prompt",
-        "send_receipt_template": "var/review-packets/v3/enterprise-review-send-receipt-template",
-        "send_receipt_copy": (
-            "var/review-runs/enterprise-review-send-receipts/"
-            "enterprise-review-send-receipt-copy.json"
+        "active_send_now": "var/review-packets/v3/enterprise-send-now",
+        "erg004_source_review_packet": (
+            "var/review-packets/v3/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-source-review"
         ),
-        "upload_staging": "var/review-packets/v3/enterprise-review-upload-staging",
-        "dual_response_inbox": "var/review-runs/enterprise-dual-response-inbox",
+        "erg004_response_inbox": (
+            "var/review-runs/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox"
+        ),
+        "erg004_raw_response": (
+            "var/review-runs/"
+            "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+            "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
+        ),
     }
     assert status_now._recommended_next_commands(
         {"git_dirty": False},
