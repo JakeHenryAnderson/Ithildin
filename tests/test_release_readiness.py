@@ -15533,6 +15533,35 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_response_inbox_is_wired() -
         assert "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox" in source
 
 
+def test_sandbox_vm_live_poc_runtime_descriptor_only_response_inbox_rejects_incomplete_packet(
+    tmp_path: Path,
+) -> None:
+    packet_dir = tmp_path / "source-review"
+    packet_dir.mkdir()
+
+    with pytest.raises(
+        sandbox_vm_live_poc_runtime_descriptor_only_response_inbox.SandboxVmLivePocRuntimeDescriptorOnlyResponseInboxError,
+        match="review packet path is incomplete",
+    ):
+        sandbox_vm_live_poc_runtime_descriptor_only_response_inbox._packet_hash(
+            packet_dir
+        )
+
+    for name in (
+        sandbox_vm_live_poc_runtime_descriptor_only_response_inbox.REVIEW_PACKET_REQUIRED_FILES
+        - {"05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md"}
+    ):
+        (packet_dir / name).write_text("fixture\n", encoding="utf-8")
+
+    with pytest.raises(
+        sandbox_vm_live_poc_runtime_descriptor_only_response_inbox.SandboxVmLivePocRuntimeDescriptorOnlyResponseInboxError,
+        match="05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md",
+    ):
+        sandbox_vm_live_poc_runtime_descriptor_only_response_inbox._packet_hash(
+            packet_dir
+        )
+
+
 def test_sandbox_vm_live_poc_runtime_descriptor_only_send_receipt_is_wired() -> None:
     report = sandbox_vm_live_poc_runtime_descriptor_only_send_receipt.build_check_report(
         Path.cwd()

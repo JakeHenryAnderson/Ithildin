@@ -38,6 +38,15 @@ NORMALIZED_PATH = (
 REVIEW_PACKET = (
     "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review"
 )
+REVIEW_PACKET_REQUIRED_FILES = {
+    "00_SANDBOX_VM_LIVE_POC_DESCRIPTOR_ONLY_SOURCE_REVIEW_INDEX.md",
+    "01_SANDBOX_VM_LIVE_POC_DESCRIPTOR_ONLY_SOURCE_REVIEW_PROMPT.md",
+    "02_ERG004_DESCRIPTOR_ONLY_RUNTIME_SOURCE.md",
+    "03_ERG004_DESCRIPTOR_ONLY_TESTS_AND_GATES.md",
+    "04_ERG004_DESCRIPTOR_ONLY_CONTRACT_AND_BOUNDARY.md",
+    "05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md",
+    "sandbox-vm-live-poc-runtime-descriptor-only-source-artifact-hashes.json",
+}
 
 
 class SandboxVmLivePocRuntimeDescriptorOnlyResponseInboxError(RuntimeError):
@@ -501,12 +510,23 @@ def _packet_hash(path: Path) -> str:
     if path.is_file():
         digest.update(path.read_bytes())
     else:
-        for child in sorted(path.rglob("*")):
-            if child.is_file():
-                digest.update(child.relative_to(path).as_posix().encode("utf-8"))
-                digest.update(b"\0")
-                digest.update(child.read_bytes())
-                digest.update(b"\0")
+        files = sorted(child for child in path.rglob("*") if child.is_file())
+        present = {child.relative_to(path).as_posix() for child in files}
+        missing = sorted(REVIEW_PACKET_REQUIRED_FILES - present)
+        if missing:
+            raise SandboxVmLivePocRuntimeDescriptorOnlyResponseInboxError(
+                "review packet path is incomplete; missing "
+                + ", ".join(missing)
+            )
+        if not files:
+            raise SandboxVmLivePocRuntimeDescriptorOnlyResponseInboxError(
+                "review packet path has no files"
+            )
+        for child in files:
+            digest.update(child.relative_to(path).as_posix().encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(child.read_bytes())
+            digest.update(b"\0")
     return f"sha256:{digest.hexdigest()}"
 
 
