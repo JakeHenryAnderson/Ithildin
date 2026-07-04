@@ -309,6 +309,9 @@ def _build_erg004_report(
             "paste reviewer response into "
             "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
             "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md",
+            "make enterprise-response-waiting-room",
+            "make enterprise-response-now",
+            "make enterprise-response-paste-preflight",
             "normalize the real reviewer response using "
             "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
             "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",

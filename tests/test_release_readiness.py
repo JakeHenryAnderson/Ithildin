@@ -938,6 +938,9 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert report["lane_count"] == 1
     assert report["batch_count"] == 1
     for command in [
+        "make enterprise-response-waiting-room",
+        "make enterprise-response-now",
+        "make enterprise-response-paste-preflight",
         "normalize the real reviewer response using "
         "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md",
         "make sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake-check",
