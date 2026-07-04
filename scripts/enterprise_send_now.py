@@ -375,7 +375,7 @@ def _erg004_failures(
     lanes: list[dict[str, Any]],
 ) -> list[str]:
     failures: list[str] = []
-    if freshness.get("valid") is not True:
+    if not _fresh_enough_to_write_send_now(freshness):
         failures.append("handoff artifacts are stale; run make review-candidate")
     if inbox.get("commit") != commit:
         failures.append("ERG-004 descriptor-only response inbox commit does not match current HEAD")
@@ -465,7 +465,7 @@ def _failures(
     lanes: list[dict[str, Any]],
 ) -> list[str]:
     failures: list[str] = []
-    if freshness.get("valid") is not True:
+    if not _fresh_enough_to_write_send_now(freshness):
         failures.append("handoff artifacts are stale; run make review-candidate")
     if upload.get("commit") != commit:
         failures.append("upload staging commit does not match current HEAD")
@@ -485,6 +485,17 @@ def _failures(
         if not lane.get("dry_run") or not lane.get("closure_gate"):
             failures.append(f"{lane['gap']} is missing response commands")
     return failures
+
+
+def _fresh_enough_to_write_send_now(freshness: dict[str, Any]) -> bool:
+    """Ignore only the send-now artifact's own freshness while building it."""
+    stale = freshness.get("stale_or_missing", [])
+    if not isinstance(stale, list):
+        return freshness.get("valid") is True
+    return all(
+        isinstance(item, str) and item.startswith("enterprise_send_now_")
+        for item in stale
+    )
 
 
 def _read_json(path: Path) -> dict[str, Any]:

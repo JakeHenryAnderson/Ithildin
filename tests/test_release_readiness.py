@@ -793,6 +793,17 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
         "make enterprise-review-send-refresh",
         "make review-candidate-release-transcript",
     ]
+    assert artifact_freshness_check._refresh_commands(
+        [
+            "erg004_source_review_packet_commit_matches_current",
+            "erg004_response_inbox_commit_matches_current",
+            "enterprise_send_now_artifact_valid",
+        ]
+    ) == [
+        "make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
+        "make enterprise-send-now-artifact",
+    ]
     profile_report = release_check_profile.build_report(Path.cwd())
     assert profile_report["valid"] is True
     assert profile_report["unique_target_count"] > 100
@@ -978,6 +989,18 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert check_report["closes_erg_003"] is False
     assert check_report["closes_erg_004"] is False
     assert check_report["closes_erg_002"] is False
+    assert enterprise_send_now._fresh_enough_to_write_send_now(
+        {"valid": False, "stale_or_missing": ["enterprise_send_now_artifact_valid"]}
+    )
+    assert not enterprise_send_now._fresh_enough_to_write_send_now(
+        {
+            "valid": False,
+            "stale_or_missing": [
+                "enterprise_send_now_artifact_valid",
+                "erg004_source_review_packet_commit_matches_current",
+            ],
+        }
+    )
 
 
 def test_enterprise_review_send_receipt_fill_is_bounded(
@@ -1307,6 +1330,13 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "review_candidate_release_transcript_exists",
         "review_candidate_release_transcript_commit_matches_current",
         "review_candidate_release_transcript_passed",
+        "erg004_source_review_packet_exists",
+        "erg004_source_review_packet_commit_matches_current",
+        "erg004_source_review_artifact_hashes_match_files",
+        "erg004_response_inbox_exists",
+        "erg004_response_inbox_commit_matches_current",
+        "enterprise_send_now_artifact_exists",
+        "enterprise_send_now_artifact_valid",
     }
 
     assert status["valid"] is True

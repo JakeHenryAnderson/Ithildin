@@ -17,6 +17,34 @@ V1_RC_PACKET_INDEX = Path("var/review-packets/v1.0/rc/00_V1_RC_PACKET_INDEX.md")
 REVIEW_CANDIDATE_RELEASE_TRANSCRIPT = Path(
     "var/review-packets/v3/review-candidate-release-check.txt"
 )
+ERG004_SOURCE_REVIEW_DIR = Path(
+    "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review"
+)
+ERG004_SOURCE_REVIEW_HASHES = (
+    ERG004_SOURCE_REVIEW_DIR
+    / "sandbox-vm-live-poc-runtime-descriptor-only-source-artifact-hashes.json"
+)
+ERG004_SOURCE_REVIEW_INDEX = (
+    ERG004_SOURCE_REVIEW_DIR
+    / "00_SANDBOX_VM_LIVE_POC_DESCRIPTOR_ONLY_SOURCE_REVIEW_INDEX.md"
+)
+ERG004_SOURCE_REVIEW_PROMPT = (
+    ERG004_SOURCE_REVIEW_DIR
+    / "01_SANDBOX_VM_LIVE_POC_DESCRIPTOR_ONLY_SOURCE_REVIEW_PROMPT.md"
+)
+ERG004_SOURCE_REVIEW_COMMAND_EVIDENCE = (
+    ERG004_SOURCE_REVIEW_DIR / "05_ERG004_DESCRIPTOR_ONLY_COMMAND_EVIDENCE.md"
+)
+ERG004_RESPONSE_INBOX_JSON = Path(
+    "var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/"
+    "erg004-runtime-descriptor-only-response-inbox.json"
+)
+ENTERPRISE_SEND_NOW_JSON = Path(
+    "var/review-packets/v3/enterprise-send-now/enterprise-send-now.json"
+)
+ENTERPRISE_SEND_NOW_MD = Path(
+    "var/review-packets/v3/enterprise-send-now/ENTERPRISE_SEND_NOW.md"
+)
 
 
 def main() -> int:
@@ -39,10 +67,26 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     hash_manifest = _read_json(repo_root / SEND_HASHES_JSON)
     v1_packet_text = _read(repo_root / V1_RC_PACKET_INDEX)
     transcript_text = _read(repo_root / REVIEW_CANDIDATE_RELEASE_TRANSCRIPT)
+    erg004_source_hashes = _read_json(repo_root / ERG004_SOURCE_REVIEW_HASHES)
+    erg004_source_index = _read(repo_root / ERG004_SOURCE_REVIEW_INDEX)
+    erg004_source_prompt = _read(repo_root / ERG004_SOURCE_REVIEW_PROMPT)
+    erg004_source_evidence = _read(repo_root / ERG004_SOURCE_REVIEW_COMMAND_EVIDENCE)
+    erg004_inbox = _read_json(repo_root / ERG004_RESPONSE_INBOX_JSON)
+    enterprise_send_now = _read_json(repo_root / ENTERPRISE_SEND_NOW_JSON)
+    enterprise_send_now_md = _read(repo_root / ENTERPRISE_SEND_NOW_MD)
     enterprise_hashes_match = _hashes_match(repo_root / SEND_MANIFEST_DIR, hash_manifest)
+    erg004_source_hashes_match = _hashes_match(
+        repo_root / ERG004_SOURCE_REVIEW_DIR, erg004_source_hashes
+    )
     v1_packet_commit = _extract_backtick_value(v1_packet_text, "- Commit:")
     transcript_commit = _extract_prefixed_value(transcript_text, "git_commit=")
     transcript_returncode = _extract_prefixed_value(transcript_text, "returncode=")
+    erg004_source_index_commit = _extract_backtick_value(
+        erg004_source_index, "Reviewed commit:"
+    )
+    erg004_source_prompt_commit = _extract_backtick_value(
+        erg004_source_prompt, "Reviewed commit:"
+    )
     checks = {
         "enterprise_send_manifest_exists": bool(send_manifest),
         "enterprise_send_artifact_commits_match_current": (
@@ -59,6 +103,31 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             transcript_commit == commit
         ),
         "review_candidate_release_transcript_passed": transcript_returncode == "0",
+        "erg004_source_review_packet_exists": (
+            repo_root / ERG004_SOURCE_REVIEW_INDEX
+        ).exists(),
+        "erg004_source_review_packet_commit_matches_current": (
+            erg004_source_index_commit == commit
+            and erg004_source_prompt_commit == commit
+            and f'"commit": "{commit}"' in erg004_source_evidence
+        ),
+        "erg004_source_review_artifact_hashes_match_files": (
+            erg004_source_hashes_match
+        ),
+        "erg004_response_inbox_exists": (repo_root / ERG004_RESPONSE_INBOX_JSON).exists(),
+        "erg004_response_inbox_commit_matches_current": (
+            erg004_inbox.get("commit") == commit
+        ),
+        "enterprise_send_now_artifact_exists": (
+            (repo_root / ENTERPRISE_SEND_NOW_JSON).exists()
+            and (repo_root / ENTERPRISE_SEND_NOW_MD).exists()
+        ),
+        "enterprise_send_now_artifact_valid": (
+            enterprise_send_now.get("valid") is True
+            and enterprise_send_now.get("commit") == commit
+            and "valid: true" in enterprise_send_now_md
+            and f"commit: {commit}" in enterprise_send_now_md
+        ),
     }
     stale = [name for name, value in checks.items() if value is not True]
     return {
@@ -120,8 +189,22 @@ def render_report(report: dict[str, Any]) -> str:
 
 def _refresh_commands(stale: list[str]) -> list[str]:
     commands: list[str] = []
-    if any(name.startswith("enterprise_send_") for name in stale):
+    if any(
+        name.startswith(
+            (
+                "enterprise_send_manifest_",
+                "enterprise_send_artifact_",
+            )
+        )
+        for name in stale
+    ):
         commands.append("make enterprise-review-send-refresh")
+    if any(name.startswith("erg004_source_review_") for name in stale):
+        commands.append("make sandbox-vm-live-poc-runtime-descriptor-only-source-review-bundle")
+    if any(name.startswith("erg004_response_inbox_") for name in stale):
+        commands.append("make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox")
+    if any(name.startswith("enterprise_send_now_") for name in stale):
+        commands.append("make enterprise-send-now-artifact")
     if any(name.startswith("review_candidate_release_transcript_") for name in stale):
         commands.append("make review-candidate-release-transcript")
     if any(name.startswith("v1_rc_packet_") for name in stale):
@@ -164,7 +247,9 @@ def _hashes_match(root: Path, hash_manifest: dict[str, Any]) -> bool:
         if not path.exists() or path.is_dir():
             return False
         data = path.read_bytes()
-        if hashlib.sha256(data).hexdigest() != expected_sha:
+        actual_sha = hashlib.sha256(data).hexdigest()
+        normalized_expected_sha = expected_sha.removeprefix("sha256:")
+        if actual_sha != normalized_expected_sha:
             return False
         if isinstance(expected_bytes, int) and len(data) != expected_bytes:
             return False
