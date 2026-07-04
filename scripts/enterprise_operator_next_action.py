@@ -36,8 +36,8 @@ SEND_COMMANDS = [
 ]
 
 NEXT_AFTER_SEND_COMMANDS = [
-    "make enterprise-review-send-receipt-copy",
-    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
     "make enterprise-response-waiting-room",
     "make enterprise-response-now",
     "make enterprise-response-paste-preflight",
@@ -412,8 +412,10 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
-    "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
     "handoff_artifacts",
+    "When a real reviewer response is available for the current active `ERG-004` route",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
     "For the current active route, the primary lane is:",
     "`ERG-004`: use the descriptor-only source-review response inbox",
     "Historical fallback lanes remain available only when the operator next-action command reports",
@@ -552,6 +554,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if "The current primary lanes are:" in doc:
         failures.append(
             "enterprise operator next-action doc still describes historical lanes as current"
+        )
+    response_section = doc.split("## If Responses Arrive", 1)[-1].split(
+        "## What This Does Not Approve", 1
+    )[0]
+    current_response_block = response_section.split(
+        "Historical fallback lanes remain available", 1
+    )[0]
+    if "make enterprise-dual-response-inbox" in current_response_block:
+        failures.append(
+            "enterprise operator next-action current response flow still uses dual inbox"
         )
 
     if "enterprise-operator-next-action:" not in makefile:

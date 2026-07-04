@@ -16,8 +16,8 @@ from scripts import review_docs
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-handoff-consistency.md"
 DOC_TITLE = "Enterprise Handoff Consistency"
-CURRENT_SEND_SET = ["ERG-003", "ERG-002"]
-HISTORICAL_DUAL_SEND_SET = CURRENT_SEND_SET
+ACTIVE_SEND_SET = ["ERG-004"]
+HISTORICAL_DUAL_SEND_SET = ["ERG-003", "ERG-002"]
 DUAL_INBOX_ROOT = "var/review-runs/enterprise-dual-response-inbox"
 RAW_RESPONSE_PATHS = [
     f"{DUAL_INBOX_ROOT}/RAW_RESPONSE_ERG-003.md",
@@ -38,6 +38,13 @@ CURRENT_FLOW_COMMANDS = [
     "make enterprise-review-send-receipt-copy",
     RECEIPT_VALIDATE_COMMAND,
     "make enterprise-dual-response-inbox",
+    "make enterprise-response-waiting-room",
+    "make enterprise-response-now",
+    "make enterprise-response-paste-preflight",
+]
+ACTIVE_ERG004_RESPONSE_COMMANDS = [
+    "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+    "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
     "make enterprise-response-waiting-room",
     "make enterprise-response-now",
     "make enterprise-response-paste-preflight",
@@ -85,7 +92,8 @@ CURRENT_SEND_DOC_REQUIREMENTS: dict[str, list[str]] = {
     ],
     "docs/codex/enterprise-operator-next-action.md": [
         *CURRENT_PRE_SEND_COMMANDS,
-        *CURRENT_FLOW_COMMANDS,
+        *ACTIVE_ERG004_RESPONSE_COMMANDS,
+        "Historical fallback lanes remain available",
     ],
 }
 
@@ -197,11 +205,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "selected_capability": "not selected",
         "historical_dual_send_set": HISTORICAL_DUAL_SEND_SET,
-        # Backward-compatible alias for existing release/readiness consumers.
-        "current_send_set": CURRENT_SEND_SET,
+        "active_send_set": ACTIVE_SEND_SET,
+        # Backward-compatible alias for existing release/readiness consumers that still display
+        # the historical dual-send package lineage.
+        "current_send_set": HISTORICAL_DUAL_SEND_SET,
         "dual_response_inbox_root": DUAL_INBOX_ROOT,
         "raw_response_paths": RAW_RESPONSE_PATHS,
-        "required_current_flow_commands": CURRENT_FLOW_COMMANDS,
+        "required_historical_flow_commands": CURRENT_FLOW_COMMANDS,
+        "required_active_response_commands": ACTIVE_ERG004_RESPONSE_COMMANDS,
         "required_pre_send_commands": CURRENT_PRE_SEND_COMMANDS,
         **BOUNDARY_FLAGS,
     }
@@ -215,12 +226,15 @@ def render_report(report: dict[str, Any]) -> str:
         f"selected_capability: {report['selected_capability']}",
         "historical_dual_send_set: "
         + ", ".join(report["historical_dual_send_set"]),
+        "active_send_set: " + ", ".join(report["active_send_set"]),
         "current_send_set_legacy_alias: " + ", ".join(report["current_send_set"]),
         f"dual_response_inbox_root: {report['dual_response_inbox_root']}",
         "docs_checked:",
         *[f"- {path}" for path in report["docs_checked"]],
-        "required_current_flow_commands:",
-        *[f"- {command}" for command in report["required_current_flow_commands"]],
+        "required_historical_flow_commands:",
+        *[f"- {command}" for command in report["required_historical_flow_commands"]],
+        "required_active_response_commands:",
+        *[f"- {command}" for command in report["required_active_response_commands"]],
         "required_pre_send_commands:",
         *[f"- {command}" for command in report["required_pre_send_commands"]],
     ]

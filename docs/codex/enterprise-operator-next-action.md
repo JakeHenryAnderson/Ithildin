@@ -109,15 +109,14 @@ the current route after the recorded dispositions. In that fallback state, the o
 
 ## If Responses Arrive
 
-When real reviewer responses are available, preserve the local send receipt, refresh the ignored
-dual-response inbox paths, paste responses only into those ignored raw-response files, and run the
-paste preflight before any normalization:
+When a real reviewer response is available for the current active `ERG-004` route, preserve the
+descriptor-only send receipt, refresh the focused descriptor-only response inbox if needed, paste
+the response only into the descriptor-only raw-response file, and run the paste preflight before any
+normalization:
 
 ```sh
-make enterprise-review-send-receipt-template
-make enterprise-review-send-receipt-copy
-make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
-make enterprise-dual-response-inbox
+make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check
+make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox
 make enterprise-response-waiting-room
 make enterprise-response-now
 make enterprise-response-paste-preflight
@@ -140,6 +139,8 @@ fallback ERG-003/ERG-002 route:
 
 - `ERG-003`: use the sandbox/VM static preflight response kit and closure gate.
 - `ERG-002`: use the Mission Control display response kit and closure gate.
+- Historical fallback response handling may still use `make enterprise-dual-response-inbox`, but
+  that is not the active ERG-004 descriptor-only receive path.
 
 In this mode, `make enterprise-operator-next-action` is expected to remain valid and report
 `run_response_intake_preflight` or `run_lane_specific_closure_playbook` even though lower-level

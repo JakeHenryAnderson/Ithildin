@@ -2663,8 +2663,8 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make tool-surface-invariant-gate",
     ]
     assert report["next_after_send_commands"] == [
-        "make enterprise-review-send-receipt-copy",
-        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
         "make enterprise-response-paste-preflight",
@@ -6120,6 +6120,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["active_send_set"] == ["ERG-004"]
     # Backward-compatible alias retained for older generated consumers.
     assert report["current_send_set"] == ["ERG-003", "ERG-002"]
     assert report["dual_response_inbox_root"] == (
@@ -6129,11 +6130,18 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md",
     ]
-    assert report["required_current_flow_commands"] == [
+    assert report["required_historical_flow_commands"] == [
         "make enterprise-review-send-receipt-template",
         "make enterprise-review-send-receipt-copy",
         "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
         "make enterprise-dual-response-inbox",
+        "make enterprise-response-waiting-room",
+        "make enterprise-response-now",
+        "make enterprise-response-paste-preflight",
+    ]
+    assert report["required_active_response_commands"] == [
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
         "make enterprise-response-paste-preflight",
@@ -6180,6 +6188,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "make enterprise-handoff-consistency-check",
         "This is a lineage/fallback gate, not the active next-send route.",
         "Historical dual-send set: `ERG-003`, `ERG-002`.",
+        "Active send set: `ERG-004`.",
         "Active route reminder: run `make enterprise-active-route-clarity`",
         "var/review-runs/enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
@@ -6195,6 +6204,9 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "make enterprise-dual-response-inbox",
         "make enterprise-response-waiting-room",
         "make enterprise-response-paste-preflight",
+        "The required active `ERG-004` response commands are:",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
         "does not record external review",
         "does not normalize responses",
         "does not close `ERG-003` or `ERG-002`",
@@ -6478,8 +6490,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make tool-surface-invariant-gate",
     ]
     assert report["next_after_send_commands"] == [
-        "make enterprise-review-send-receipt-copy",
-        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
         "make enterprise-response-paste-preflight",
@@ -6560,6 +6572,9 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make handoff-dry-run",
         "handoff_artifacts",
         "var/review-packets/v3/enterprise-review-send-manifest",
+        "When a real reviewer response is available for the current active `ERG-004` route",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
         "For the current active route, the primary lane is:",
         "`ERG-004`: use the descriptor-only source-review response inbox",
         (
@@ -6568,7 +6583,6 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         ),
         "`ERG-003`: static sandbox/VM preflight disposition",
         "`ERG-002`: Mission Control display/import planning review",
-        "make enterprise-review-send-receipt-template",
         "make enterprise-dual-response-inbox",
         "make enterprise-response-paste-preflight",
         "make enterprise-response-intake-refresh",
@@ -6579,6 +6593,13 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     ]:
         assert phrase in doc
     assert "The current primary lanes are:" not in doc
+    response_section = doc.split("## If Responses Arrive", 1)[1].split(
+        "## What This Does Not Approve", 1
+    )[0]
+    current_response_block = response_section.split(
+        "Historical fallback lanes remain available", 1
+    )[0]
+    assert "make enterprise-dual-response-inbox" not in current_response_block
     assert "enterprise-operator-next-action:" in makefile
     assert (
         "enterprise-operator-next-action" in release_check_body
@@ -6637,8 +6658,8 @@ def test_enterprise_operator_next_action_routes_response_present_mode(
     assert report["next_action"] == "run_response_intake_preflight"
     assert report["action_commands"] == ["make enterprise-response-intake-refresh"]
     assert report["next_after_send_commands"] == [
-        "make enterprise-review-send-receipt-copy",
-        "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
+        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
         "make enterprise-response-paste-preflight",

@@ -11,14 +11,16 @@ consistency check for older dual-send artifacts.
 
 Historical dual-send set: `ERG-003`, `ERG-002`.
 
+Active send set: `ERG-004`.
+
 Active route reminder: run `make enterprise-active-route-clarity` or
 `make enterprise-send-now` for the current `ERG-004` send path.
 
-The current response inbox root is:
+The historical dual-response inbox root is:
 
 - `var/review-runs/enterprise-dual-response-inbox`
 
-The current raw response paths are:
+The historical raw response paths are:
 
 - `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md`
 - `var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-002.md`
@@ -31,13 +33,21 @@ The required pre-send commands are the efficient operator path after code or art
 - `make handoff-dry-run`
 - `make enterprise-send-now`
 
-The required current-flow commands span the post-send receipt step and the response intake
-preflight. They are not all pre-send commands:
+The required historical dual-send flow commands span the post-send receipt step and the response
+intake preflight. They are not all pre-send commands:
 
 - `make enterprise-review-send-receipt-template`
 - `make enterprise-review-send-receipt-copy`
 - `make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json`
 - `make enterprise-dual-response-inbox`
+- `make enterprise-response-waiting-room`
+- `make enterprise-response-now`
+- `make enterprise-response-paste-preflight`
+
+The required active `ERG-004` response commands are:
+
+- `make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check`
+- `make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox`
 - `make enterprise-response-waiting-room`
 - `make enterprise-response-now`
 - `make enterprise-response-paste-preflight`
@@ -52,7 +62,7 @@ The check covers the operator-facing historical dual-send handoff docs:
 - `docs/codex/enterprise-north-star-roadmap.md`
 - `docs/codex/enterprise-dependency-ladder.md`
 - `docs/codex/enterprise-transition-map.md`
-- `docs/codex/enterprise-operator-next-action.md`
+- `docs/codex/enterprise-operator-next-action.md` (active `ERG-004` route plus historical fallback)
 
 It also rejects stale current-handoff paths under:
 
