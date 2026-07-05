@@ -388,6 +388,10 @@ checked with `make control-mapping-readiness`.
   keeping runtime code changes out of that checkpoint.
 - `make trusted-host-promotion-negative-transcripts` - generate observed ERG-005 negative
   transcripts for the implemented staging-only trusted-host promotion slice.
+- `make trusted-host-promotion-runtime-source-review-bundle` - build the focused source-review
+  handoff for the implemented staging-only trusted-host promotion runtime slice.
+- `make trusted-host-promotion-runtime-source-review-bundle-check` - validate the runtime
+  source-review handoff wiring without regenerating command transcripts.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
@@ -2420,6 +2424,11 @@ and its observed negative transcripts are generated with
 `make trusted-host-promotion-negative-transcripts`; this remains local-preview staging evidence,
 not final approved-output publishing, broad host writes, Mission Control runtime authority, sandbox
 orchestration, SIEM custody, or compliance automation.
+The runtime internal review and focused source-review handoff are in
+[docs/codex/v3-trusted-host-promotion-runtime-internal-review.md](docs/codex/v3-trusted-host-promotion-runtime-internal-review.md)
+and
+[docs/codex/trusted-host-promotion-runtime-source-review.md](docs/codex/trusted-host-promotion-runtime-source-review.md);
+the packet is built with `make trusted-host-promotion-runtime-source-review-bundle`.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

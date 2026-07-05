@@ -476,6 +476,8 @@ REVIEW_DOCS = [
     "docs/codex/v3-trusted-host-promotion-internal-review.md",
     "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
     "docs/codex/trusted-host-promotion-runtime-implementation.md",
+    "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
+    "docs/codex/trusted-host-promotion-runtime-source-review.md",
     "docs/codex/v3-readiness-debt-register.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",

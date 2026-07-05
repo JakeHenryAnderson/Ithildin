@@ -446,6 +446,8 @@ externally closed.
 - [Trusted-Host Promotion Source Review](trusted-host-promotion-source-review.md)
 - [Trusted-Host Promotion Runtime Implementation Decision](trusted-host-promotion-runtime-implementation-decision.md)
 - [Trusted-Host Promotion Runtime Implementation](trusted-host-promotion-runtime-implementation.md)
+- [Trusted-Host Promotion Runtime Internal Review](v3-trusted-host-promotion-runtime-internal-review.md)
+- [Trusted-Host Promotion Runtime Source Review](trusted-host-promotion-runtime-source-review.md)
 - [Trusted-Host Promotion Disposition Packet](trusted-host-promotion-disposition-packet.md)
 - [Trusted-Host Promotion External Review Bundle](trusted-host-promotion-external-review-bundle.md)
 - [Trusted-Host Promotion Disposition Closure Gate](trusted-host-promotion-disposition-closure-gate.md)

@@ -387,6 +387,7 @@ from scripts import (
     trusted_host_promotion_response_dry_run,
     trusted_host_promotion_response_kit,
     trusted_host_promotion_runtime_implementation_decision_check,
+    trusted_host_promotion_runtime_source_review_bundle,
     trusted_host_promotion_source_review_packet,
     trusted_host_promotion_state_machine_check,
     trusted_host_promotion_zone_contract_check,
@@ -33612,6 +33613,98 @@ def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
     )
     assert "docs/codex/trusted-host-promotion-runtime-implementation.md" in docs_site
     assert "Trusted-Host Promotion Runtime Implementation" in review_index
+
+
+def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
+    tmp_path: Path,
+) -> None:
+    report = trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+        Path.cwd()
+    )
+    output_dir = tmp_path / "trusted-host-runtime-source-review"
+
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["finding_namespace"] == "EXT-TRUSTED-HOST-RUNTIME-###"
+    assert report["tool_count"] == 24
+    assert report["runtime_slice"] == "staging_only_single_artifact"
+    assert report["broad_host_promotion_allowed"] is False
+    assert report["new_governed_tool_allowed"] is False
+
+    expected_files = {
+        "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md",
+        "01_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_PROMPT.md",
+        "02_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_BUNDLE.md",
+        "03_TRUSTED_HOST_PROMOTION_RUNTIME_TESTS_BUNDLE.md",
+        "04_TRUSTED_HOST_PROMOTION_RUNTIME_CONTRACTS_BUNDLE.md",
+        "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json",
+        "06_TRUSTED_HOST_PROMOTION_RUNTIME_EVIDENCE.md",
+        "07_TRUSTED_HOST_PROMOTION_RUNTIME_FOCUSED_TESTS.txt",
+        "08_TRUSTED_HOST_PROMOTION_RUNTIME_INTAKE_COMMANDS.md",
+        "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
+    }
+    assert {path.name for path in output_dir.iterdir()} == expected_files
+
+    prompt = output_dir.joinpath(
+        "01_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_PROMPT.md"
+    ).read_text(encoding="utf-8")
+    source_bundle = output_dir.joinpath(
+        "02_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    tests_bundle = output_dir.joinpath(
+        "03_TRUSTED_HOST_PROMOTION_RUNTIME_TESTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    contracts_bundle = output_dir.joinpath(
+        "04_TRUSTED_HOST_PROMOTION_RUNTIME_CONTRACTS_BUNDLE.md"
+    ).read_text(encoding="utf-8")
+    evidence = output_dir.joinpath(
+        "06_TRUSTED_HOST_PROMOTION_RUNTIME_EVIDENCE.md"
+    ).read_text(encoding="utf-8")
+    hashes = json.loads(
+        output_dir.joinpath(
+            "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert "Finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`" in prompt
+    assert "apps/api/src/ithildin_api/trusted_host_promotions.py" in source_bundle
+    assert "tests/test_api_service.py" in tests_bundle
+    assert "trusted-host-promotion-runtime-implementation.md" in contracts_bundle
+    assert "v3-trusted-host-promotion-runtime-internal-review.md" in contracts_bundle
+    assert "skipped command: make trusted-host-promotion-negative-transcripts" in evidence
+    assert "trusted-host-promotion-runtime-source-review-bundle:" in makefile
+    assert "trusted-host-promotion-runtime-source-review-bundle-check" in (
+        release_check_body
+    )
+    assert "make trusted-host-promotion-runtime-source-review-bundle" in readme
+    assert "trusted-host-promotion-runtime-source-review-bundle-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-runtime-source-review.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-host-promotion-runtime-source-review.md" in docs_site
+    assert "Trusted-Host Promotion Runtime Source Review" in review_index
+    assert all(
+        record["path"] != "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
+        for record in hashes
+    )
+    assert {record["path"] for record in hashes} == expected_files - {
+        "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
+    }
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:
