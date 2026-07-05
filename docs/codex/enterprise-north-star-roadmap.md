@@ -38,7 +38,14 @@ implemented surface is the local governed MCP/tool gateway, local review console
 evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
 RC packet is generated through `make review-candidate`.
 
-The current recommended enterprise handoff set remains:
+Active enterprise route: `ERG-005` trusted-host promotion review.
+
+Historical dual-send route: `ERG-003` then `ERG-002`.
+
+The old dual-send packet flow remains available for provenance and response-intake rehearsal, but
+the active operator checkpoint now points at `ERG-005`.
+
+The historical enterprise handoff set is:
 
 1. `ERG-003`: static sandbox/VM preflight disposition.
 2. `ERG-002`: Mission Control display/import planning review.
@@ -63,17 +70,22 @@ The current recommended enterprise handoff set remains:
    make review-candidate
    ```
 
-2. Refresh the enterprise handoff set:
+2. Refresh the active enterprise handoff status:
 
    ```sh
-   make enterprise-review-send-refresh
-   make handoff-dry-run
-   make enterprise-send-now
+   make enterprise-current-checkpoint
+   make enterprise-operator-next-action
+   make enterprise-active-route-clarity
    ```
 
-3. Send the `ERG-003` and `ERG-002` packets.
+3. Prepare the active `ERG-005` trusted-host promotion review packet set named by
+   `make enterprise-operator-next-action`.
 
-4. After the human send step, copy and fill the ignored operator receipt. Do not fill the copied
+4. If revisiting the historical dual-send path, use `make enterprise-review-send-refresh`,
+   `make handoff-dry-run`, and `make enterprise-send-now` only as the legacy ERG-003/ERG-002 packet
+   workflow.
+
+5. After any human send step, copy and fill the ignored operator receipt. Do not fill the copied
    receipt before sending because it records what was actually sent.
 
    ```sh
@@ -82,7 +94,7 @@ The current recommended enterprise handoff set remains:
    make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
    ```
 
-5. After responses arrive, paste them into the ignored dual-response inbox at
+6. After historical ERG-003/ERG-002 responses arrive, paste them into the ignored dual-response inbox at
    `var/review-runs/enterprise-dual-response-inbox/` and run:
 
    ```sh
@@ -95,7 +107,7 @@ The current recommended enterprise handoff set remains:
    make enterprise-response-intake-quickstart
    ```
 
-6. Use the lane-specific normalizer, dry-run, closure gate, and response application record before
+7. Use the lane-specific normalizer, dry-run, closure gate, and response application record before
    any committed disposition update.
 
 ## Decision Rules

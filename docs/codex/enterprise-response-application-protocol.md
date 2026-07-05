@@ -12,11 +12,15 @@ This protocol starts after a reviewer response has been saved to the ignored res
 does not record external review by itself, does not normalize real responses by itself, does not
 close enterprise lanes, does not approve runtime behavior, and does not approve public/security-
 product positioning.
-For the current `ERG-003` and `ERG-002` receive path, use
+Active enterprise route: `ERG-005` trusted-host promotion review.
+
+Historical dual-response route: `ERG-003` then `ERG-002`.
+
+For the historical `ERG-003` and `ERG-002` receive path, use
 `make enterprise-response-intake-quickstart` as the compact operator sequence that points to the
 raw-response paths, normalizer commands, dry-runs, closure gates, and stop conditions.
-That current-send path uses the generated dual-response inbox cheat sheet for exact reviewed-packet
-hashes and normalization commands:
+That historical dual-send path uses the generated dual-response inbox cheat sheet for exact
+reviewed-packet hashes and normalization commands:
 
 ```sh
 make enterprise-dual-response-inbox
@@ -35,7 +39,8 @@ lanes.
 
 - Current governed tool count: `24`.
 - Current selected capability: `not selected`.
-- Current recommended send set: `ERG-003` then `ERG-002`.
+- Active enterprise route: `ERG-005` trusted-host promotion review.
+- Historical dual-response route: `ERG-003` then `ERG-002`.
 - Enterprise response evidence is not present yet.
 - Enterprise closure-ready count is `0`.
 - Runtime expansion remains blocked until a lane-specific closure gate proves a favorable response
@@ -60,7 +65,7 @@ For any enterprise reviewer response:
 Do not edit status docs directly. Use the response kit, closure gate, and decision-record path for
 the lane being reviewed.
 
-## Current Send-Set Lanes
+## Historical Dual-Response Lanes
 
 ### ERG-003 Static Sandbox/VM Preflight
 

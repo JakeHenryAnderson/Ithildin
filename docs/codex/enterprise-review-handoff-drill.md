@@ -22,7 +22,11 @@ var/review-packets/v3/enterprise-review-handoff-drill/
 
 ## Purpose
 
-This drill gives the operator one checked view of the current enterprise review handoff loop. It
+Active enterprise route: `ERG-005` trusted-host promotion review.
+
+This drill gives the operator one checked view of the historical dual-send enterprise review
+handoff loop. This drill
+remains for ERG-003/ERG-002 provenance, receipt, and response-intake rehearsal. It
 ties together:
 
 - the current `ERG-003` and `ERG-002` send-ready outbox;
@@ -38,7 +42,7 @@ It is intentionally a handoff drill, not a response record. It does not record e
 does not normalize real responses, does not mutate findings, does not close any enterprise lane,
 and does not approve runtime behavior.
 
-## Current Send Set
+## Historical Dual-Send Set
 
 - `ERG-003`: static sandbox/VM preflight disposition.
 - `ERG-002`: Mission Control display/importer planning review.

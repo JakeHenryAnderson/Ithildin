@@ -31,6 +31,8 @@ REQUIRED_DOC_PHRASES = [
     "Current selected capability: `not selected`",
     "make enterprise-north-star-roadmap",
     "v1.0 local-preview RC candidate",
+    "Active enterprise route: `ERG-005` trusted-host promotion review.",
+    "Historical dual-send route: `ERG-003` then `ERG-002`.",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
     "make release-check",
@@ -231,8 +233,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "roadmap_doc": DOC_REL,
         "tool_count": 24,
         "selected_capability": capability.get("next_candidate"),
-        "recommended_send_set": ["ERG-003", "ERG-002"],
-        "recommended_next_enterprise_review": "ERG-003",
+        "recommended_send_set": ["ERG-005"],
+        "recommended_next_enterprise_review": "ERG-005",
+        "historical_dual_send_set": ["ERG-003", "ERG-002"],
+        "historical_next_enterprise_review": "ERG-003",
         "enterprise_gap_count": gap_matrix.get("gap_count"),
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
@@ -252,6 +256,10 @@ def render_report(report: dict[str, Any]) -> str:
         + ", ".join(report.get("recommended_send_set") or []),
         "recommended_next_enterprise_review: "
         f"{report.get('recommended_next_enterprise_review', 'unknown')}",
+        "historical_dual_send_set: "
+        + ", ".join(report.get("historical_dual_send_set") or []),
+        "historical_next_enterprise_review: "
+        f"{report.get('historical_next_enterprise_review', 'unknown')}",
         f"enterprise_gap_count: {report.get('enterprise_gap_count', 'unknown')}",
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
         f"closure_ready_count: {report.get('closure_ready_count', 'unknown')}",

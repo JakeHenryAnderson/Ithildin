@@ -2,6 +2,10 @@
 
 Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer responses.
 
+Route scope: historical `ERG-003`/`ERG-002` dual-response intake.
+
+Active enterprise route: `ERG-005` trusted-host promotion review.
+
 Current governed tool count: `24`.
 
 Current selected capability: `not selected`.
@@ -20,8 +24,8 @@ command, use:
 make enterprise-response-intake-refresh
 ```
 
-This quickstart begins after the current `ERG-003` and `ERG-002` packets have been sent and a real
-reviewer response is available. It does not send packets, does not record external review, does not
+This quickstart begins after the historical `ERG-003` and `ERG-002` packets have been sent and a
+real reviewer response is available. It does not send packets, does not record external review, does not
 normalize real responses, does not write response files, does not mutate findings, does not close
 either lane, and does not approve runtime behavior.
 Boundary shorthand: this quickstart does not normalize real responses.

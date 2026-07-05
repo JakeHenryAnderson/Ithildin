@@ -3574,6 +3574,8 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
+    assert report["route_scope"] == "historical_dual_response_path"
+    assert report["active_send_set"] == ["ERG-005"]
     assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -3590,7 +3592,8 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
     for phrase in [
         "Status: checked operator protocol for applying enterprise external-review responses.",
         "make enterprise-response-application-protocol",
-        "Current recommended send set: `ERG-003` then `ERG-002`",
+        "Active enterprise route: `ERG-005` trusted-host promotion review.",
+        "Historical dual-response route: `ERG-003` then `ERG-002`.",
         "make enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
         "`ERG-003` may move only to `closed_local_preview_static_preflight`.",
@@ -4940,6 +4943,7 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
     assert report["closes_enterprise_lanes"] is False
     for phrase in [
         "Status: generated operator drill for enterprise review send/receive readiness.",
+        "Active enterprise route: `ERG-005` trusted-host promotion review.",
         "make enterprise-review-handoff-drill",
         "make enterprise-review-handoff-drill-check",
         "make enterprise-review-submission-prompt",
@@ -4956,7 +4960,8 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
         assert phrase in doc
     for phrase in [
         "Enterprise Review Handoff Drill",
-        "Current send set",
+        "Historical Dual-Send Set",
+        "Active enterprise route: `ERG-005` trusted-host promotion review.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -6399,8 +6404,10 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["recommended_next_enterprise_review"] == "ERG-003"
+    assert report["recommended_send_set"] == ["ERG-005"]
+    assert report["recommended_next_enterprise_review"] == "ERG-005"
+    assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
+    assert report["historical_next_enterprise_review"] == "ERG-003"
     assert report["enterprise_gap_count"] == 10
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0

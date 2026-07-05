@@ -34,6 +34,7 @@ MARKDOWN_NAME = "ENTERPRISE_REVIEW_HANDOFF_DRILL.md"
 JSON_NAME = "enterprise-review-handoff-drill.json"
 HASH_NAME = "enterprise-review-handoff-drill-artifact-hashes.json"
 RECOMMENDED_GAPS = ["ERG-003", "ERG-002"]
+ACTIVE_SEND_SET = ["ERG-005"]
 BOUNDARY_FLAGS = {
     "runtime_changes_allowed": False,
     "mission_control_runtime_allowed": False,
@@ -178,7 +179,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"enterprise review handoff drill doc missing phrase: {phrase}")
     for phrase in [
         "Enterprise Review Handoff Drill",
-        "Current send set",
+        "Historical Dual-Send Set",
+        "Active enterprise route: `ERG-005` trusted-host promotion review.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -258,6 +260,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "drill_doc": DOC_REL,
         "output_dir": output_dir.as_posix(),
         "recommended_gaps": RECOMMENDED_GAPS,
+        "active_send_set": ACTIVE_SEND_SET,
+        "route_scope": "historical_dual_send_handoff_drill",
         "tool_count": 24,
         "artifact_hashes_match_files": _artifact_hashes_match_files(
             output_dir, hash_manifest
@@ -272,6 +276,8 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"drill_doc: {report['drill_doc']}",
         f"output_dir: {report['output_dir']}",
+        f"route_scope: {report['route_scope']}",
+        "active_send_set: " + ", ".join(report["active_send_set"]),
         "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
         f"tool_count: {report['tool_count']}",
         f"artifact_hashes_match_files: {str(report['artifact_hashes_match_files']).lower()}",
@@ -327,6 +333,8 @@ def _drill_payload(
         "dirty": bool(_git(repo_root, ["status", "--short"])),
         "tool_count": 24,
         "selected_capability": "not selected",
+        "route_scope": "historical_dual_send_handoff_drill",
+        "active_send_set": ACTIVE_SEND_SET,
         "recommended_gaps": RECOMMENDED_GAPS,
         "send_ready": send_readiness.get("valid") is True
         and send_readiness.get("recommended_now") == RECOMMENDED_GAPS,
@@ -401,11 +409,15 @@ Tool count remains `24`.
 
 Current selected capability: `not selected`.
 
-This drill ties together the current send-ready outbox, send manifest, submission prompt, send
+Route scope: historical `ERG-003`/`ERG-002` dual-send handoff drill.
+
+Active enterprise route: `ERG-005` trusted-host promotion review.
+
+This drill ties together the historical send-ready outbox, send manifest, submission prompt, send
 receipt template, response inbox, response status board, and fixture-only intake drill. It does not
 record external review, does not normalize real responses, and does not close any enterprise lane.
 
-## Current send set
+## Historical Dual-Send Set
 
 | Gap | Review lane | Prompt | Attachment count | Finding namespace |
 | --- | --- | --- | ---: | --- |

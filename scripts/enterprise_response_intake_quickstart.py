@@ -1,4 +1,4 @@
-"""Validate the operator quickstart for ERG-003/ERG-002 response intake."""
+"""Validate the historical operator quickstart for ERG-003/ERG-002 response intake."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("enterprise response application protocol is not valid")
 
     if readiness.get("recommended_gaps") != ["ERG-003", "ERG-002"]:
-        failures.append("quickstart expected ERG-003/ERG-002 as the active dual response lanes")
+        failures.append("quickstart expected ERG-003/ERG-002 as historical dual response lanes")
     if readiness.get("response_present_count") != 0:
         failures.append("real response evidence is already present; use lane-specific closure flow")
     if readiness.get("closure_ready_count") != 0:
@@ -96,6 +96,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     required_doc_phrases = [
         "Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer responses.",
+        "Route scope: historical `ERG-003`/`ERG-002` dual-response intake.",
+        "Active enterprise route: `ERG-005` trusted-host promotion review.",
         "Current governed tool count: `24`.",
         "make enterprise-response-intake-quickstart",
         "make enterprise-dual-response-inbox",
@@ -182,6 +184,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "quickstart_doc": DOC_REL,
         "tool_count": 24,
+        "route_scope": "historical_dual_response_path",
+        "active_send_set": ["ERG-005"],
         "recommended_gaps": ["ERG-003", "ERG-002"],
         "response_present_count": readiness.get("response_present_count"),
         "closure_ready_count": readiness.get("closure_ready_count"),
@@ -199,6 +203,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"quickstart_doc: {report['quickstart_doc']}",
         f"tool_count: {report['tool_count']}",
+        f"route_scope: {report['route_scope']}",
+        "active_send_set: " + ", ".join(report["active_send_set"]),
         "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
