@@ -563,6 +563,221 @@ def test_sandbox_descriptor_denies_unsafe_inputs_safely(tmp_path: Path) -> None:
     assert bad_id.json()["detail"] == "invalid sandbox descriptor id"
 
 
+def test_trusted_host_promotion_stages_single_artifact_after_approval(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.workspace_root.joinpath("summary.txt").write_text("Hello World\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-demo"),
+            headers={"Authorization": "Bearer correct-token"},
+        ).json()
+        unauthenticated = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://summary-output",
+            },
+        )
+        proposal_response = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://summary-output",
+                "principal": {"id": "agent:local-dev", "roles": ["AgentDeveloper"]},
+            },
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        proposal_payload = proposal_response.json()
+        approval_id = proposal_payload["approval_id"]
+        approve_response = client.post(
+            f"/approvals/{approval_id}/approve",
+            json={"decision": "approve", "decided_by": "admin:local"},
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        apply_response = client.post(
+            f"/trusted-host-promotions/proposals/{proposal_payload['promotion_proposal_id']}/apply",
+            json={"approval_id": approval_id},
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        replay_response = client.post(
+            f"/trusted-host-promotions/proposals/{proposal_payload['promotion_proposal_id']}/apply",
+            json={"approval_id": approval_id},
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        diagnostics_response = client.get(
+            "/trusted-host-promotions/diagnostics",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        list_response = client.get(
+            "/trusted-host-promotions/proposals",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        status_response = client.get(
+            "/system/status",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        audit_response = client.get(
+            "/audit-events?tool_name=trusted_host.promotion.stage",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert unauthenticated.status_code == 401
+    assert proposal_response.status_code == 200
+    assert proposal_payload["promotion_proposal_id"].startswith("thp_")
+    assert proposal_payload["status"] == "approval_required"
+    assert proposal_payload["source_artifact_label"] == "sandbox://sandbox-demo/summary.txt"
+    assert proposal_payload["host_staging_label"] == "host-staging://summary-output"
+    assert proposal_payload["artifact_sha256"].startswith("sha256:")
+    assert proposal_payload["artifact_size_bytes"] == len(b"Hello World\n")
+    assert proposal_payload["output_policy"]["file_contents_included"] is False
+    assert "Hello World" not in proposal_response.text
+    assert settings.workspace_root.as_posix() not in proposal_response.text
+
+    assert approve_response.status_code == 200
+    assert apply_response.status_code == 200
+    applied = apply_response.json()
+    assert applied["status"] == "completed"
+    assert applied["staged_sha256"] == proposal_payload["artifact_sha256"]
+    assert applied["host_staging_label"] == "host-staging://summary-output"
+    assert applied["output_policy"]["raw_host_paths_included"] is False
+    assert "Hello World" not in apply_response.text
+    assert settings.trusted_host_staging_root.as_posix() not in apply_response.text
+
+    staged_files = list(settings.trusted_host_staging_root.rglob("*.artifact"))
+    assert len(staged_files) == 1
+    assert staged_files[0].read_text(encoding="utf-8") == "Hello World\n"
+
+    assert replay_response.status_code == 409
+    assert "approval is not approved" in replay_response.json()["detail"]
+    assert diagnostics_response.status_code == 200
+    assert diagnostics_response.json()["status"] == "clean"
+    assert list_response.status_code == 200
+    assert list_response.json()["promotion_proposals"][0]["status"] == "completed"
+    assert status_response.status_code == 200
+    assert status_response.json()["trusted_host_promotions"] == "clean"
+    assert audit_response.status_code == 200
+    audit_payload = audit_response.text
+    assert "Hello World" not in audit_payload
+    assert settings.trusted_host_staging_root.as_posix() not in audit_payload
+    audit_events = audit_response.json()["audit_events"]
+    event_types = {event["event_type"] for event in audit_events}
+    assert "approval.created" in event_types
+    assert "approval.approved" in event_types
+    assert "tool.execution.started" in event_types
+    assert "tool.execution.completed" in event_types
+    completed_metadata = [
+        event["metadata"]
+        for event in audit_events
+        if event["event_type"] == "tool.execution.completed"
+    ][0]
+    assert completed_metadata["staging_only"] is True
+    assert completed_metadata["artifact_sha256"] == proposal_payload["artifact_sha256"]
+    assert completed_metadata["staged_sha256"] == proposal_payload["artifact_sha256"]
+    assert completed_metadata["output_policy"]["file_contents_included"] is False
+
+
+def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    artifact = settings.workspace_root / "summary.txt"
+    artifact.write_text("original\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-demo"),
+            headers={"Authorization": "Bearer correct-token"},
+        ).json()
+        hidden = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": ".env",
+                "host_staging_label": "host-staging://summary-output",
+            },
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        raw_path_label = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://bad/path",
+            },
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://summary-output",
+            },
+            headers={"Authorization": "Bearer correct-token"},
+        ).json()
+        approval_id = proposal["approval_id"]
+        approve = client.post(
+            f"/approvals/{approval_id}/approve",
+            json={"decision": "approve", "decided_by": "admin:local"},
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        unsupported_apply_field = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": approval_id, "extra": True},
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        artifact.write_text("changed\n", encoding="utf-8")
+        stale_apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": approval_id},
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        diagnostics = client.get(
+            "/trusted-host-promotions/diagnostics",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert hidden.status_code == 400
+    assert hidden.json()["detail"] == "invalid trusted-host promotion proposal"
+    assert raw_path_label.status_code == 400
+    assert raw_path_label.json()["detail"] == "invalid trusted-host promotion proposal"
+    assert approve.status_code == 200
+    assert unsupported_apply_field.status_code == 400
+    assert unsupported_apply_field.json()["detail"] == (
+        "unsupported trusted-host promotion apply field"
+    )
+    assert stale_apply.status_code == 409
+    assert stale_apply.json()["detail"] == "source artifact hash mismatch"
+    assert "original" not in stale_apply.text
+    assert "changed" not in stale_apply.text
+    assert settings.trusted_host_staging_root.exists() is False
+    assert diagnostics.status_code == 200
+    assert diagnostics.json()["status"] == "clean"
+
+
 def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path, token="correct-token"))
 

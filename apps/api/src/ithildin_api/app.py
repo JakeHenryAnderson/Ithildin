@@ -80,6 +80,13 @@ from ithildin_api.security_status import (
 )
 from ithildin_api.storage import storage_status, validate_storage_settings
 from ithildin_api.telemetry import Telemetry, configure_telemetry, safe_span_attributes
+from ithildin_api.trusted_host_promotions import (
+    TRUSTED_HOST_PROMOTION_TOOL,
+    TrustedHostPromotionError,
+    TrustedHostPromotionProposalInput,
+    TrustedHostPromotionService,
+    TrustedHostPromotionStore,
+)
 from ithildin_api.workspaces import WorkspaceRegistry
 
 SERVICE_NAME = "ithildin-api"
@@ -109,6 +116,9 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             sandbox_descriptor_store = SandboxDescriptorStore(resolved_settings.db_path)
             sandbox_descriptor_store.initialize()
             app_instance.state.sandbox_descriptor_store = sandbox_descriptor_store
+            trusted_host_promotion_store = TrustedHostPromotionStore(resolved_settings.db_path)
+            trusted_host_promotion_store.initialize()
+            app_instance.state.trusted_host_promotion_store = trusted_host_promotion_store
             approval_store = ApprovalStore(resolved_settings.db_path)
             approval_store.initialize()
             app_instance.state.approval_service = ApprovalService(
@@ -173,6 +183,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 read_tool_executor
             )
             app_instance.state.sandbox_artifact_service = sandbox_artifact_service
+            app_instance.state.trusted_host_promotion_service = TrustedHostPromotionService(
+                store=trusted_host_promotion_store,
+                read_executor=read_tool_executor,
+                descriptor_store=sandbox_descriptor_store,
+                staging_root=resolved_settings.trusted_host_staging_root,
+            )
             app_instance.state.policy_preview_service = PolicyPreviewService(
                 registry,
                 policy_evaluator,
@@ -272,6 +288,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     SandboxDescriptorStore,
                     api.state.sandbox_descriptor_store,
                 ).status(),
+                "trusted_host_promotions": cast(
+                    TrustedHostPromotionService,
+                    api.state.trusted_host_promotion_service,
+                ).diagnostics(cast(ApprovalService, api.state.approval_service))["status"],
                 "audit_signing": audit_signing_status(
                     settings_state.audit_signing_private_key_path,
                     settings_state.audit_signing_public_key_path,
@@ -386,6 +406,170 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             return descriptor_store.get(descriptor_id)
         except SandboxDescriptorError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @api.post("/trusted-host-promotions/proposals", dependencies=[Depends(require_admin_token)])
+    def create_trusted_host_promotion_proposal(payload: JsonObject) -> JsonObject:
+        try:
+            proposal_payload = TrustedHostPromotionProposalInput.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid trusted-host promotion proposal",
+            ) from exc
+        promotion_service = cast(
+            TrustedHostPromotionService,
+            api.state.trusted_host_promotion_service,
+        )
+        approval_service = cast(ApprovalService, api.state.approval_service)
+        try:
+            return promotion_service.create_proposal(
+                proposal_payload,
+                approval_service=approval_service,
+            )
+        except (TrustedHostPromotionError, SandboxDescriptorError) as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @api.get("/trusted-host-promotions/proposals", dependencies=[Depends(require_admin_token)])
+    def list_trusted_host_promotion_proposals() -> JsonObject:
+        promotion_store = cast(
+            TrustedHostPromotionStore,
+            api.state.trusted_host_promotion_store,
+        )
+        return {
+            "promotion_proposals": [
+                proposal.summary() for proposal in promotion_store.list_proposals()
+            ],
+            "output_policy": {
+                "file_contents_included": False,
+                "raw_host_paths_included": False,
+            },
+        }
+
+    @api.get(
+        "/trusted-host-promotions/proposals/{proposal_id}",
+        dependencies=[Depends(require_admin_token)],
+    )
+    def get_trusted_host_promotion_proposal(proposal_id: str) -> JsonObject:
+        if not _valid_trusted_host_promotion_id(proposal_id, "thp_"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid trusted-host promotion proposal id",
+            )
+        promotion_store = cast(
+            TrustedHostPromotionStore,
+            api.state.trusted_host_promotion_store,
+        )
+        try:
+            return promotion_store.get_proposal(proposal_id).summary()
+        except TrustedHostPromotionError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @api.post(
+        "/trusted-host-promotions/proposals/{proposal_id}/apply",
+        dependencies=[Depends(require_admin_token)],
+    )
+    def apply_trusted_host_promotion(proposal_id: str, payload: JsonObject) -> JsonObject:
+        if not _valid_trusted_host_promotion_id(proposal_id, "thp_"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid trusted-host promotion proposal id",
+            )
+        if sorted(payload.keys()) != ["approval_id"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported trusted-host promotion apply field",
+            )
+        approval_id = payload.get("approval_id")
+        if not isinstance(approval_id, str) or not _valid_approval_id(approval_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid approval id",
+            )
+        promotion_service = cast(
+            TrustedHostPromotionService,
+            api.state.trusted_host_promotion_service,
+        )
+        approval_service = cast(ApprovalService, api.state.approval_service)
+        audit_writer = cast(AuditWriter, api.state.audit_writer)
+        input_hash = sha256_digest({"proposal_id": proposal_id, "approval_id": approval_id})
+        audit_writer.write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.TOOL_EXECUTION_STARTED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": "admin:local-api", "roles": ["Admin"]},
+            tool_name=TRUSTED_HOST_PROMOTION_TOOL,
+            resource={
+                "type": "trusted_host_promotion",
+                "promotion_proposal_id": proposal_id,
+            },
+            input_hash=input_hash,
+            metadata={
+                "executor": "trusted_host_promotion_stage",
+                "approval_id": approval_id,
+                "promotion_proposal_id": proposal_id,
+                "staging_only": True,
+            },
+        )
+        try:
+            result = promotion_service.apply_approved(
+                proposal_id=proposal_id,
+                approval_id=approval_id,
+                approval_service=approval_service,
+            )
+        except (ApprovalError, TrustedHostPromotionError) as exc:
+            audit_writer.write_event(
+                event_id=f"evt_{uuid4().hex}",
+                event_type=AuditEventType.TOOL_EXECUTION_FAILED,
+                request_id=f"req_{uuid4().hex}",
+                principal={"id": "admin:local-api", "roles": ["Admin"]},
+                tool_name=TRUSTED_HOST_PROMOTION_TOOL,
+                resource={
+                    "type": "trusted_host_promotion",
+                    "promotion_proposal_id": proposal_id,
+                },
+                input_hash=input_hash,
+                metadata={
+                    "executor": "trusted_host_promotion_stage",
+                    "approval_id": approval_id,
+                    "promotion_proposal_id": proposal_id,
+                    "reason": str(exc),
+                    "staging_only": True,
+                },
+            )
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        audit_writer.write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": "admin:local-api", "roles": ["Admin"]},
+            tool_name=TRUSTED_HOST_PROMOTION_TOOL,
+            resource={
+                "type": "trusted_host_promotion",
+                "promotion_proposal_id": proposal_id,
+            },
+            input_hash=input_hash,
+            metadata={
+                "executor": "trusted_host_promotion_stage",
+                "approval_id": approval_id,
+                "promotion_proposal_id": proposal_id,
+                "promotion_attempt_id": result.get("promotion_attempt_id"),
+                "host_staging_label": result.get("host_staging_label"),
+                "artifact_sha256": result.get("artifact_sha256"),
+                "staged_sha256": result.get("staged_sha256"),
+                "staging_only": True,
+                "output_policy": result.get("output_policy"),
+            },
+        )
+        return result
+
+    @api.get("/trusted-host-promotions/diagnostics", dependencies=[Depends(require_admin_token)])
+    def trusted_host_promotion_diagnostics() -> JsonObject:
+        promotion_service = cast(
+            TrustedHostPromotionService,
+            api.state.trusted_host_promotion_service,
+        )
+        approval_service = cast(ApprovalService, api.state.approval_service)
+        return promotion_service.diagnostics(approval_service)
 
     @api.get("/runs", dependencies=[Depends(require_admin_token)])
     def list_runs(request: Request) -> JsonObject:
@@ -546,6 +730,17 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     ) from exc
                 if review.get("valid") is not True:
                     raise ApprovalError("patch apply approval binding review failed")
+            if approval.tool_name == TRUSTED_HOST_PROMOTION_TOOL:
+                try:
+                    review = _trusted_host_promotion_approval_review(api, approval)
+                except TrustedHostPromotionError as exc:
+                    raise ApprovalError(
+                        "trusted-host promotion approval binding review failed"
+                    ) from exc
+                if review.get("valid") is not True:
+                    raise ApprovalError(
+                        "trusted-host promotion approval binding review failed"
+                    )
             return approval_service.approve(
                 approval_id,
                 decided_by=payload.decided_by,
@@ -694,6 +889,17 @@ def _patch_apply_approval_review(api: FastAPI, approval: ApprovalRequest) -> Jso
     )
 
 
+def _trusted_host_promotion_approval_review(
+    api: FastAPI,
+    approval: ApprovalRequest,
+) -> JsonObject:
+    promotion_service = cast(
+        TrustedHostPromotionService,
+        api.state.trusted_host_promotion_service,
+    )
+    return promotion_service.approval_review(approval)
+
+
 def _current_manifest_lock_status(settings: Settings) -> JsonObject:
     if not settings.require_manifest_lock:
         return {"verified": False, "required": False, "error": None}
@@ -728,6 +934,18 @@ def _valid_agent_run_id(run_id: str) -> bool:
 def _valid_sandbox_descriptor_id(descriptor_id: str) -> bool:
     return descriptor_id.startswith("sdesc_") and len(descriptor_id) == 38 and all(
         character in "0123456789abcdef" for character in descriptor_id[6:]
+    )
+
+
+def _valid_trusted_host_promotion_id(value: str, prefix: str) -> bool:
+    return value.startswith(prefix) and len(value) == len(prefix) + 32 and all(
+        character in "0123456789abcdef" for character in value[len(prefix) :]
+    )
+
+
+def _valid_approval_id(value: str) -> bool:
+    return value.startswith("appr_") and len(value) == 37 and all(
+        character in "0123456789abcdef" for character in value[5:]
     )
 
 
