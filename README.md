@@ -380,6 +380,9 @@ checked with `make control-mapping-readiness`.
 - `make trusted-host-promotion-limited-runtime-plan-check` - validate the ERG-005 limited runtime
   implementation-plan checkpoint, including stop/pivot guardrails, while keeping runtime promotion,
   host writes, and new powers blocked.
+- `make trusted-host-promotion-limited-runtime-ticket-check` - validate the ERG-005 limited runtime
+  implementation-ticket skeleton for the first staging-only future slice while keeping runtime
+  promotion, host writes, and new powers blocked.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
@@ -2396,6 +2399,11 @@ The ERG-005 limited runtime plan is in
 and is checked with `make trusted-host-promotion-limited-runtime-plan-check`; it defines the first
 staging-only future runtime slice and strict stop/pivot rules while keeping runtime implementation,
 trusted-host promotion, host writes, automatic promotion, and new governed powers blocked.
+The ERG-005 limited runtime ticket skeleton is in
+[docs/codex/trusted-host-promotion-limited-runtime-ticket.md](docs/codex/trusted-host-promotion-limited-runtime-ticket.md)
+and is checked with `make trusted-host-promotion-limited-runtime-ticket-check`; it converts that
+plan into a concrete future implementation-sprint boundary while still forbidding runtime behavior,
+host promotion, direct host writes, automatic promotion, and new governed powers.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

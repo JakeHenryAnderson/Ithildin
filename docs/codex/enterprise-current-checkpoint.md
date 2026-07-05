@@ -41,6 +41,7 @@ make trusted-host-promotion-negative-fixtures-check
 make trusted-host-promotion-zone-contract-check
 make trusted-host-promotion-implementation-plan-check
 make trusted-host-promotion-limited-runtime-plan-check
+make trusted-host-promotion-limited-runtime-ticket-check
 make trusted-host-promotion-source-review-packet-check
 make trusted-host-promotion-disposition-packet-check
 make trusted-host-promotion-external-review-bundle-check
@@ -51,10 +52,12 @@ make tool-surface-invariant-gate
 
 The committed `sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md` allows only
 descriptor-only implementation planning. The descriptor-only plan and implementation ticket record
-the next non-runtime checkpoints before any future descriptor slice is considered. Those records
-still do not approve runtime implementation, live VM/container inspection, sandbox orchestration,
-Mission Control runtime behavior, local model invocation, host writes, trusted-host promotion,
-network expansion, API/MCP profile loading, or new governed tool powers.
+the next non-runtime checkpoints before any future descriptor slice is considered. The ERG-005
+limited runtime plan and ticket skeleton record the next non-runtime checkpoints before any future
+staging-only artifact promotion slice is considered. Those records still do not approve runtime
+implementation, live VM/container inspection, sandbox orchestration, Mission Control runtime
+behavior, local model invocation, host writes, trusted-host promotion, network expansion, API/MCP
+profile loading, or new governed tool powers.
 
 ## Recommended Next Actions
 
@@ -85,11 +88,13 @@ The bounded implementation-planning checkpoint for the next ERG-005 slice is:
 
 ```sh
 docs/codex/trusted-host-promotion-limited-runtime-plan.md
+docs/codex/trusted-host-promotion-limited-runtime-ticket.md
 ```
 
 It is checked with `make trusted-host-promotion-limited-runtime-plan-check` and still does not
-approve runtime trusted-host promotion, direct host writes, automatic promotion, Mission Control
-runtime behavior, sandbox orchestration, or new governed tool powers.
+`make trusted-host-promotion-limited-runtime-ticket-check` and still does not approve runtime
+trusted-host promotion, direct host writes, automatic promotion, Mission Control runtime behavior,
+sandbox orchestration, or new governed tool powers.
 
 After a real ERG-005 trusted-host reviewer response arrives, do not edit status docs directly.
 Run the lane-specific response checks before any committed disposition update:

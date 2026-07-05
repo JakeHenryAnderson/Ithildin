@@ -463,6 +463,7 @@ REVIEW_DOCS = [
     "docs/codex/trusted-host-promotion-zone-contract.md",
     "docs/codex/trusted-host-promotion-implementation-plan.md",
     "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
+    "docs/codex/trusted-host-promotion-limited-runtime-ticket.md",
     "docs/codex/trusted-host-promotion-source-review.md",
     "docs/codex/trusted-host-promotion-disposition-packet.md",
     "docs/codex/trusted-host-promotion-external-review-bundle.md",

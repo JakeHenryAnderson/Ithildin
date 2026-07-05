@@ -381,6 +381,7 @@ from scripts import (
     trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_internal_review_check,
     trusted_host_promotion_limited_runtime_plan_check,
+    trusted_host_promotion_limited_runtime_ticket_check,
     trusted_host_promotion_negative_fixtures_check,
     trusted_host_promotion_response_dry_run,
     trusted_host_promotion_response_kit,
@@ -1410,6 +1411,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make trusted-host-promotion-internal-review-check",
         "make trusted-host-promotion-implementation-gate-decision-check",
         "make trusted-host-promotion-limited-runtime-plan-check",
+        "make trusted-host-promotion-limited-runtime-ticket-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2657,6 +2659,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make trusted-host-promotion-internal-review-check",
         "make trusted-host-promotion-implementation-gate-decision-check",
         "make trusted-host-promotion-limited-runtime-plan-check",
+        "make trusted-host-promotion-limited-runtime-ticket-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2681,6 +2684,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "trusted_host_response_kit",
         "trusted_host_goal_c_decision",
         "trusted_host_limited_runtime_plan",
+        "trusted_host_limited_runtime_ticket",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
         "docs/codex/trusted-host-descriptor-contract.md",
@@ -2695,6 +2699,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "var/review-packets/v3/trusted-host-promotion-response-kit",
         "docs/codex/trusted-host-promotion-implementation-gate-decision.md",
         "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
+        "docs/codex/trusted-host-promotion-limited-runtime-ticket.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2772,6 +2777,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "trusted_host_response_kit",
         "trusted_host_goal_c_decision",
         "trusted_host_limited_runtime_plan",
+        "trusted_host_limited_runtime_ticket",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -6505,6 +6511,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make trusted-host-promotion-internal-review-check",
         "make trusted-host-promotion-implementation-gate-decision-check",
         "make trusted-host-promotion-limited-runtime-plan-check",
+        "make trusted-host-promotion-limited-runtime-ticket-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -6529,6 +6536,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "trusted_host_response_kit",
         "trusted_host_goal_c_decision",
         "trusted_host_limited_runtime_plan",
+        "trusted_host_limited_runtime_ticket",
     ]
     assert any(
         artifact["path"]
@@ -33336,6 +33344,108 @@ def test_trusted_host_promotion_limited_runtime_plan_is_wired() -> None:
     assert "Trusted-Host Promotion Limited Runtime Plan" in review_index
     assert "trusted-host-promotion-limited-runtime-plan.md" in operator_next
     assert "trusted-host-promotion-limited-runtime-plan.md" in current_checkpoint
+
+
+def test_trusted_host_promotion_limited_runtime_ticket_is_wired() -> None:
+    report = trusted_host_promotion_limited_runtime_ticket_check.build_report(Path.cwd())
+    doc = Path("docs/codex/trusted-host-promotion-limited-runtime-ticket.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    operator_next = Path("docs/codex/enterprise-operator-next-action.md").read_text(
+        encoding="utf-8"
+    )
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["decision_id"] == "PRD-TRUSTED-HOST-LIMITED-RUNTIME-TICKET-001"
+    assert report["erg_005_status"] == "ready_for_limited_runtime_ticket_skeleton"
+    assert report["goal_c_outcome"] == "ready_for_limited_runtime_implementation_plan"
+    assert report["limited_runtime_plan_valid"] is True
+    assert report["limited_runtime_ticket_ready"] is True
+    assert (
+        report["next_allowed_step"]
+        == "focused_runtime_source_review_or_implementation_gate_skeleton"
+    )
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["stop_and_reassess_required_on_ambiguity"] is True
+    assert report["closes_erg_005"] is False
+
+    for phrase in [
+        "Status: limited-runtime implementation-ticket skeleton for `ERG-005`.",
+        "one stored sandbox artifact -> one operator-approved host staging placement",
+        "Future Implementation Boundary",
+        "Required Future Runtime Surfaces",
+        "Required Evidence Binding",
+        "Required Future Negative Tests",
+        "Do not keep adding documentation, gates, or packet polish",
+        "EXT-TRUSTED-HOST-RUNTIME-###",
+        "This ticket does not choose the final API, UI, storage table",
+    ]:
+        assert phrase in doc
+
+    ticket_doc_lower = doc.lower()
+    for blocked in [
+        "runtime trusted-host promotion",
+        "direct host writes",
+        "overwrite/delete/move behavior",
+        "automatic promotion",
+        "arbitrary host paths",
+        "Mission Control runtime behavior",
+        "local model invocation by Ithildin",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "SIEM adapter runtime behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked.lower() in ticket_doc_lower
+
+    for forbidden in [
+        "runtime implementation is approved",
+        "trusted-host promotion is approved",
+        "direct host writes are approved",
+        "automatic promotion is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+
+    assert "trusted-host-promotion-limited-runtime-ticket-check:" in makefile
+    assert "trusted-host-promotion-limited-runtime-ticket-check" in release_check_body
+    assert "make trusted-host-promotion-limited-runtime-ticket-check" in readme
+    assert "make trusted-host-promotion-limited-runtime-ticket-check" in operator_next
+    assert "make trusted-host-promotion-limited-runtime-ticket-check" in current_checkpoint
+    assert (
+        "trusted-host-promotion-limited-runtime-ticket-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-limited-runtime-ticket.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-host-promotion-limited-runtime-ticket.md" in docs_site
+    assert "Trusted-Host Promotion Limited Runtime Ticket" in review_index
+    assert "trusted-host-promotion-limited-runtime-ticket.md" in operator_next
+    assert "trusted-host-promotion-limited-runtime-ticket.md" in current_checkpoint
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

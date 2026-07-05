@@ -114,6 +114,7 @@ ERG005_TRUSTED_HOST_COMMANDS = [
     "make trusted-host-promotion-internal-review-check",
     "make trusted-host-promotion-implementation-gate-decision-check",
     "make trusted-host-promotion-limited-runtime-plan-check",
+    "make trusted-host-promotion-limited-runtime-ticket-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -489,6 +490,11 @@ ERG005_TRUSTED_HOST_ARTIFACTS = [
         "path": "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
         "description": "strict limited-runtime planning checkpoint with stop/pivot guardrails",
     },
+    {
+        "label": "trusted_host_limited_runtime_ticket",
+        "path": "docs/codex/trusted-host-promotion-limited-runtime-ticket.md",
+        "description": "future implementation-ticket skeleton for the staging-only slice",
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -514,6 +520,7 @@ REQUIRED_DOC_PHRASES = [
     "make trusted-host-promotion-internal-review-check",
     "make trusted-host-promotion-implementation-gate-decision-check",
     "make trusted-host-promotion-limited-runtime-plan-check",
+    "make trusted-host-promotion-limited-runtime-ticket-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
