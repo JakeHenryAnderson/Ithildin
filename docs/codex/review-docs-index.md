@@ -449,6 +449,7 @@ externally closed.
 - [Trusted-Host Promotion Response Dry Run](trusted-host-promotion-response-dry-run.md)
 - [Trusted-Host Promotion Response Kit](trusted-host-promotion-response-kit.md)
 - [Trusted-Host Promotion Decision Record](trusted-host-promotion-decision-record.md)
+- [Trusted-Host Promotion Implementation-Gate Decision](trusted-host-promotion-implementation-gate-decision.md)
 - [Trusted-Host Promotion Internal Source Review](v3-trusted-host-promotion-internal-review.md)
 - [v3 Readiness Debt Register](v3-readiness-debt-register.md)
 - [v0.6 Internal Subagent Review Wave](v0.6-internal-subagent-review-wave.md)

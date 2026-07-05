@@ -243,6 +243,12 @@ validated with `make trusted-host-promotion-decision-record-check`; it moves `ER
 `ready_for_implementation_planning_only` so the next packet may refine implementation planning while
 runtime trusted-host promotion, direct host writes, automatic promotion, and new governed powers
 remain blocked.
+The Goal C implementation-gate decision is
+[trusted-host-promotion-implementation-gate-decision.md](trusted-host-promotion-implementation-gate-decision.md)
+and is validated with `make trusted-host-promotion-implementation-gate-decision-check`; it records
+`ready_for_limited_runtime_implementation_plan` so a future sprint may draft an exact limited
+runtime plan while runtime implementation, trusted-host promotion, direct host writes, automatic
+promotion, and new governed powers remain blocked.
 
 Current permitted state:
 

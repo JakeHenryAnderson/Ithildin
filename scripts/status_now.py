@@ -210,6 +210,7 @@ def _recommended_next_commands(
             "make trusted-host-promotion-response-kit-check",
             "make trusted-host-promotion-response-dry-run",
             "make trusted-host-promotion-internal-review-check",
+            "make trusted-host-promotion-implementation-gate-decision-check",
             "make no-new-powers-guardrail",
             "make tool-surface-invariant-gate",
         ]

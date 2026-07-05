@@ -297,6 +297,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "trusted-host-promotion-source-review-packet-check",
     "trusted-host-promotion-internal-review-check",
     "trusted-host-promotion-decision-record-check",
+    "trusted-host-promotion-implementation-gate-decision-check",
     "trusted-host-promotion-external-review-bundle-check",
     "sandbox-artifact-observed-demo-check",
     "sandbox-artifact-write-text-implementation-gate",

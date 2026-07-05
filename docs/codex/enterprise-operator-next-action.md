@@ -41,6 +41,7 @@ make trusted-host-promotion-external-review-bundle-check
 make trusted-host-promotion-response-kit-check
 make trusted-host-promotion-response-dry-run
 make trusted-host-promotion-internal-review-check
+make trusted-host-promotion-implementation-gate-decision-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
@@ -56,12 +57,14 @@ Primary trusted-host handoff artifacts:
 - `docs/codex/trusted-host-promotion-disposition-packet.md`
 - `docs/codex/trusted-host-promotion-external-review-bundle.md`
 - `docs/codex/trusted-host-promotion-response-kit.md`
+- `docs/codex/trusted-host-promotion-implementation-gate-decision.md`
 - `var/review-packets/v3/trusted-host-promotion-external-review`
 
 The descriptor-only ERG-004 implementation is now a bounded operator-attested descriptor-record
 slice with `descriptor_only_local_preview_disposition_ready` recorded for continued local
-development. That does not close ERG-004 for broader claims. ERG-005 remains blocked and design
-review only. This next action does not
+development. That does not close ERG-004 for broader claims. ERG-005 now has a Goal C decision that
+allows only a future limited runtime implementation-plan sprint. Runtime trusted-host promotion
+remains blocked. This next action does not
 approve live VM/container inspection, VM/container lifecycle management, local model invocation,
 sandbox orchestration, Mission Control
 runtime behavior, trusted-host promotion, host writes, network expansion, API/MCP profile loading,

@@ -377,6 +377,7 @@ from scripts import (
     trusted_host_promotion_disposition_packet,
     trusted_host_promotion_external_response_intake_check,
     trusted_host_promotion_external_review_bundle,
+    trusted_host_promotion_implementation_gate_decision_check,
     trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_internal_review_check,
     trusted_host_promotion_negative_fixtures_check,
@@ -1406,6 +1407,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make trusted-host-promotion-response-kit-check",
         "make trusted-host-promotion-response-dry-run",
         "make trusted-host-promotion-internal-review-check",
+        "make trusted-host-promotion-implementation-gate-decision-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2651,6 +2653,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make trusted-host-promotion-response-kit-check",
         "make trusted-host-promotion-response-dry-run",
         "make trusted-host-promotion-internal-review-check",
+        "make trusted-host-promotion-implementation-gate-decision-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2673,6 +2676,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "trusted_host_disposition_packet",
         "trusted_host_external_review_bundle",
         "trusted_host_response_kit",
+        "trusted_host_goal_c_decision",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
         "docs/codex/trusted-host-descriptor-contract.md",
@@ -2685,6 +2689,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "var/review-packets/v3/trusted-host-promotion-disposition",
         "var/review-packets/v3/trusted-host-promotion-external-review",
         "var/review-packets/v3/trusted-host-promotion-response-kit",
+        "docs/codex/trusted-host-promotion-implementation-gate-decision.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2760,6 +2765,7 @@ def test_enterprise_progress_model_is_wired() -> None:
         "trusted_host_disposition_packet",
         "trusted_host_external_review_bundle",
         "trusted_host_response_kit",
+        "trusted_host_goal_c_decision",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -6484,6 +6490,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make trusted-host-promotion-response-kit-check",
         "make trusted-host-promotion-response-dry-run",
         "make trusted-host-promotion-internal-review-check",
+        "make trusted-host-promotion-implementation-gate-decision-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -6506,6 +6513,7 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "trusted_host_disposition_packet",
         "trusted_host_external_review_bundle",
         "trusted_host_response_kit",
+        "trusted_host_goal_c_decision",
     ]
     assert any(
         artifact["path"]
@@ -33086,6 +33094,126 @@ def test_trusted_host_promotion_decision_record_is_wired() -> None:
     assert "trusted-host-promotion-decision-record.md" in readiness
     assert "ready_for_implementation_planning_only" in gap_matrix
     assert "ready_for_implementation_planning_only" in readiness
+    assert "runtime trusted-host promotion" in readiness.lower()
+    assert "remain blocked" in readiness.lower()
+
+
+def test_trusted_host_promotion_implementation_gate_decision_is_wired() -> None:
+    report = trusted_host_promotion_implementation_gate_decision_check.build_report(
+        Path.cwd()
+    )
+    doc = Path(
+        "docs/codex/trusted-host-promotion-implementation-gate-decision.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    enterprise = Path("docs/codex/enterprise-readiness-runway.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    decision_register = Path("docs/codex/post-rc-decision-register.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = Path(
+        "docs/codex/enterprise-sandbox-control-plane-readiness.md"
+    ).read_text(encoding="utf-8")
+    operator_next = Path("docs/codex/enterprise-operator-next-action.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["decision_id"] == "PRD-TRUSTED-HOST-GATE-001"
+    assert report["previous_erg_005_status"] == "ready_for_implementation_planning_only"
+    assert report["goal_c_outcome"] == "ready_for_limited_runtime_implementation_plan"
+    assert report["next_allowed_step"] == "limited_runtime_implementation_plan"
+    assert report["implementation_planning_allowed"] is True
+    assert report["runtime_changes_allowed"] is False
+    assert report["runtime_implementation_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["direct_host_writes_allowed"] is False
+    assert report["overwrite_delete_move_allowed"] is False
+    assert report["broad_archive_extraction_allowed"] is False
+    assert report["automatic_promotion_allowed"] is False
+    assert report["mission_control_runtime_allowed"] is False
+    assert report["local_model_invocation_allowed"] is False
+    assert report["vm_container_lifecycle_allowed"] is False
+    assert report["sandbox_orchestration_allowed"] is False
+    assert report["siem_adapter_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["closes_erg_005"] is False
+    for phrase in [
+        "Status: committed Goal C implementation-gate decision for `ERG-005`.",
+        "Decision ID: `PRD-TRUSTED-HOST-GATE-001`.",
+        "Previous `ERG-005` status: `ready_for_implementation_planning_only`.",
+        "Recorded Goal C outcome: `ready_for_limited_runtime_implementation_plan`.",
+        "The allowed Goal C outcomes were:",
+        "ready_for_limited_runtime_implementation_plan",
+        (
+            "ERG-005: ready_for_implementation_planning_only -> "
+            "ready_for_limited_runtime_implementation_plan"
+        ),
+        "The next allowed step is a separate limited runtime implementation-plan sprint.",
+        "Release gates must continue to pass with no live normalized response present.",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "runtime implementation",
+        "trusted-host promotion",
+        "direct host writes",
+        "overwrite/delete/move behavior",
+        "broad archive extraction",
+        "automatic promotion",
+        "promotion without exact artifact hash binding",
+        "promotion without approval evidence",
+        "Mission Control runtime behavior",
+        "local model invocation",
+        "VM/container lifecycle management",
+        "sandbox orchestration",
+        "SIEM adapter behavior",
+        "new governed tool powers",
+        "public/security-product positioning",
+    ]:
+        assert blocked in doc
+    for forbidden in [
+        "runtime implementation is approved",
+        "trusted-host promotion is approved",
+        "direct host writes are approved",
+        "automatic promotion is approved",
+        "sandbox orchestration is approved",
+        "new governed tool powers are approved",
+    ]:
+        assert forbidden not in doc
+    assert "trusted-host-promotion-implementation-gate-decision-check:" in makefile
+    assert "trusted-host-promotion-implementation-gate-decision-check" in release_check_body
+    assert "make trusted-host-promotion-implementation-gate-decision-check" in readme
+    assert (
+        "trusted-host-promotion-implementation-gate-decision-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-implementation-gate-decision.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-implementation-gate-decision.md"
+        in docs_site
+    )
+    assert "Trusted-Host Promotion Implementation-Gate Decision" in review_index
+    assert "trusted-host-promotion-implementation-gate-decision.md" in enterprise
+    assert "trusted-host-promotion-implementation-gate-decision.md" in gap_matrix
+    assert "trusted-host-promotion-implementation-gate-decision.md" in decision_register
+    assert "trusted-host-promotion-implementation-gate-decision.md" in readiness
+    assert "trusted-host-promotion-implementation-gate-decision.md" in operator_next
+    assert "ready_for_limited_runtime_implementation_plan" in gap_matrix
+    assert "ready_for_limited_runtime_implementation_plan" in readiness
+    assert "future limited runtime implementation-plan sprint" in operator_next
     assert "runtime trusted-host promotion" in readiness.lower()
     assert "remain blocked" in readiness.lower()
 
