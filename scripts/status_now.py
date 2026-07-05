@@ -213,6 +213,7 @@ def _recommended_next_commands(
             "make trusted-host-promotion-implementation-gate-decision-check",
             "make trusted-host-promotion-limited-runtime-plan-check",
             "make trusted-host-promotion-limited-runtime-ticket-check",
+            "make trusted-host-promotion-runtime-implementation-decision-check",
             "make no-new-powers-guardrail",
             "make tool-surface-invariant-gate",
         ]

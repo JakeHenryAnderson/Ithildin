@@ -42,6 +42,7 @@ make trusted-host-promotion-zone-contract-check
 make trusted-host-promotion-implementation-plan-check
 make trusted-host-promotion-limited-runtime-plan-check
 make trusted-host-promotion-limited-runtime-ticket-check
+make trusted-host-promotion-runtime-implementation-decision-check
 make trusted-host-promotion-source-review-packet-check
 make trusted-host-promotion-disposition-packet-check
 make trusted-host-promotion-external-review-bundle-check
@@ -89,12 +90,14 @@ The bounded implementation-planning checkpoint for the next ERG-005 slice is:
 ```sh
 docs/codex/trusted-host-promotion-limited-runtime-plan.md
 docs/codex/trusted-host-promotion-limited-runtime-ticket.md
+docs/codex/trusted-host-promotion-runtime-implementation-decision.md
 ```
 
 It is checked with `make trusted-host-promotion-limited-runtime-plan-check` and
-`make trusted-host-promotion-limited-runtime-ticket-check`. These checkpoints still do not approve
-runtime trusted-host promotion, direct host writes, automatic promotion, Mission Control runtime
-behavior, sandbox orchestration, or new governed tool powers.
+`make trusted-host-promotion-limited-runtime-ticket-check`. The implementation decision draft is
+checked with `make trusted-host-promotion-runtime-implementation-decision-check`. These checkpoints
+still do not approve broad trusted-host promotion, direct host writes, automatic promotion, Mission
+Control runtime behavior, sandbox orchestration, or new governed tool powers.
 
 After a real ERG-005 trusted-host reviewer response arrives, do not edit status docs directly.
 Run the lane-specific response checks before any committed disposition update:

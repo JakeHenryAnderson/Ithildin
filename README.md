@@ -383,6 +383,9 @@ checked with `make control-mapping-readiness`.
 - `make trusted-host-promotion-limited-runtime-ticket-check` - validate the ERG-005 limited runtime
   implementation-ticket skeleton for the first staging-only future slice while keeping runtime
   promotion, host writes, and new powers blocked.
+- `make trusted-host-promotion-runtime-implementation-decision-check` - validate the ERG-005
+  runtime implementation-gate decision draft for the staging-only single-artifact slice while
+  keeping runtime code changes out of that checkpoint.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
@@ -2404,6 +2407,11 @@ The ERG-005 limited runtime ticket skeleton is in
 and is checked with `make trusted-host-promotion-limited-runtime-ticket-check`; it converts that
 plan into a concrete future implementation-sprint boundary while still forbidding runtime behavior,
 host promotion, direct host writes, automatic promotion, and new governed powers.
+The ERG-005 runtime implementation decision draft is in
+[docs/codex/trusted-host-promotion-runtime-implementation-decision.md](docs/codex/trusted-host-promotion-runtime-implementation-decision.md)
+and is checked with `make trusted-host-promotion-runtime-implementation-decision-check`; it names
+the exact staging-only single-artifact slice that a later runtime sprint may implement while
+blocking broader host promotion, arbitrary host writes, automatic promotion, and new powers.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

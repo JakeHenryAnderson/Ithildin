@@ -437,6 +437,7 @@ DEFAULT_DOCS = [
     "docs/codex/trusted-host-promotion-decision-record.md",
     "docs/codex/trusted-host-promotion-implementation-gate-decision.md",
     "docs/codex/v3-trusted-host-promotion-internal-review.md",
+    "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
     "docs/codex/v3-readiness-debt-register.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",

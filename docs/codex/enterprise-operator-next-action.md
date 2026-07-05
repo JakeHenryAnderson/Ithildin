@@ -44,6 +44,7 @@ make trusted-host-promotion-internal-review-check
 make trusted-host-promotion-implementation-gate-decision-check
 make trusted-host-promotion-limited-runtime-plan-check
 make trusted-host-promotion-limited-runtime-ticket-check
+make trusted-host-promotion-runtime-implementation-decision-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
@@ -62,6 +63,7 @@ Primary trusted-host handoff artifacts:
 - `docs/codex/trusted-host-promotion-implementation-gate-decision.md`
 - `docs/codex/trusted-host-promotion-limited-runtime-plan.md`
 - `docs/codex/trusted-host-promotion-limited-runtime-ticket.md`
+- `docs/codex/trusted-host-promotion-runtime-implementation-decision.md`
 - `var/review-packets/v3/trusted-host-promotion-external-review`
 
 The descriptor-only ERG-004 implementation is now a bounded operator-attested descriptor-record
