@@ -91,10 +91,10 @@ docs/codex/trusted-host-promotion-limited-runtime-plan.md
 docs/codex/trusted-host-promotion-limited-runtime-ticket.md
 ```
 
-It is checked with `make trusted-host-promotion-limited-runtime-plan-check` and still does not
-`make trusted-host-promotion-limited-runtime-ticket-check` and still does not approve runtime
-trusted-host promotion, direct host writes, automatic promotion, Mission Control runtime behavior,
-sandbox orchestration, or new governed tool powers.
+It is checked with `make trusted-host-promotion-limited-runtime-plan-check` and
+`make trusted-host-promotion-limited-runtime-ticket-check`. These checkpoints still do not approve
+runtime trusted-host promotion, direct host writes, automatic promotion, Mission Control runtime
+behavior, sandbox orchestration, or new governed tool powers.
 
 After a real ERG-005 trusted-host reviewer response arrives, do not edit status docs directly.
 Run the lane-specific response checks before any committed disposition update:
