@@ -116,6 +116,8 @@ ERG005_TRUSTED_HOST_COMMANDS = [
     "make trusted-host-promotion-limited-runtime-plan-check",
     "make trusted-host-promotion-limited-runtime-ticket-check",
     "make trusted-host-promotion-runtime-implementation-decision-check",
+    "make trusted-host-promotion-negative-transcripts",
+    "make trusted-host-promotion-runtime-source-review-bundle-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -501,6 +503,23 @@ ERG005_TRUSTED_HOST_ARTIFACTS = [
         "path": "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
         "description": "implementation-gate decision draft for the staging-only slice",
     },
+    {
+        "label": "trusted_host_runtime_implementation",
+        "path": "docs/codex/trusted-host-promotion-runtime-implementation.md",
+        "description": "implemented staging-only runtime slice documentation",
+    },
+    {
+        "label": "trusted_host_runtime_internal_review",
+        "path": "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
+        "description": "internal source review for the staging-only runtime slice",
+    },
+    {
+        "label": "trusted_host_runtime_source_review_bundle",
+        "path": "var/review-packets/v3/trusted-host-promotion-runtime-source-review",
+        "description": (
+            "focused source-review packet for the implemented staging-only runtime slice"
+        ),
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -512,6 +531,7 @@ REQUIRED_DOC_PHRASES = [
     "If the dual-response disposition record, runtime-ticket internal review, runtime "
     "gate-readiness",
     "descriptor_only_local_preview_disposition_ready",
+    "implemented staging-only `ERG-005` trusted-host promotion runtime",
     "make trusted-host-descriptor-contract-check",
     "make trusted-host-promotion-decision-intake-check",
     "make trusted-host-promotion-state-machine-check",
@@ -528,6 +548,8 @@ REQUIRED_DOC_PHRASES = [
     "make trusted-host-promotion-limited-runtime-plan-check",
     "make trusted-host-promotion-limited-runtime-ticket-check",
     "make trusted-host-promotion-runtime-implementation-decision-check",
+    "make trusted-host-promotion-negative-transcripts",
+    "make trusted-host-promotion-runtime-source-review-bundle-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",

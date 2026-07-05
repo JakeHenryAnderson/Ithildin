@@ -25,8 +25,8 @@ the heavier validation artifacts.
 
 If the dual-response disposition record, runtime-ticket internal review, runtime gate-readiness
 decision record, and descriptor-only local-development disposition are present, the next allowed
-operator action is to prepare the still-blocked `ERG-005` trusted-host artifact-promotion review
-lane:
+operator action is to prepare the implemented staging-only `ERG-005` trusted-host promotion runtime
+source-review lane:
 
 ```sh
 make trusted-host-descriptor-contract-check
@@ -45,6 +45,8 @@ make trusted-host-promotion-implementation-gate-decision-check
 make trusted-host-promotion-limited-runtime-plan-check
 make trusted-host-promotion-limited-runtime-ticket-check
 make trusted-host-promotion-runtime-implementation-decision-check
+make trusted-host-promotion-negative-transcripts
+make trusted-host-promotion-runtime-source-review-bundle-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
@@ -64,19 +66,22 @@ Primary trusted-host handoff artifacts:
 - `docs/codex/trusted-host-promotion-limited-runtime-plan.md`
 - `docs/codex/trusted-host-promotion-limited-runtime-ticket.md`
 - `docs/codex/trusted-host-promotion-runtime-implementation-decision.md`
+- `docs/codex/trusted-host-promotion-runtime-implementation.md`
+- `docs/codex/v3-trusted-host-promotion-runtime-internal-review.md`
+- `docs/codex/trusted-host-promotion-runtime-source-review.md`
+- `var/review-packets/v3/trusted-host-promotion-runtime-source-review`
 - `var/review-packets/v3/trusted-host-promotion-external-review`
 
 The descriptor-only ERG-004 implementation is now a bounded operator-attested descriptor-record
 slice with `descriptor_only_local_preview_disposition_ready` recorded for continued local
-development. That does not close ERG-004 for broader claims. ERG-005 now has a limited runtime
-implementation-plan checkpoint and limited runtime ticket skeleton for a staging-only future slice.
-Runtime trusted-host promotion remains blocked, and unclear implementation questions should stop for reassessment instead of
-creating more low-value packet polish. It supersedes the earlier phrase "future limited runtime
-implementation-plan sprint" with a stricter staging-only plan checkpoint. This next action does not
-approve live VM/container inspection, VM/container lifecycle management, local model invocation,
-sandbox orchestration, Mission Control
-runtime behavior, trusted-host promotion, host writes, network expansion, API/MCP profile loading,
-or new governed tool powers.
+development. That does not close ERG-004 for broader claims. ERG-005 now has an implemented
+staging-only, single-artifact runtime slice with negative transcripts, internal source review, and a
+focused runtime source-review bundle. Broad trusted-host promotion remains blocked, and unclear
+implementation questions should stop for reassessment instead of creating more low-value packet
+polish. This next action does not approve live VM/container inspection, VM/container lifecycle
+management, local model invocation, sandbox orchestration, Mission Control runtime behavior, broad
+trusted-host promotion, arbitrary host writes, network expansion, API/MCP profile loading, or new
+governed tool powers.
 
 The previous descriptor-only response intake remains documented for lineage in
 `sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md`.

@@ -26,7 +26,7 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - Enterprise response evidence is not present yet.
 - `ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned
   for continued local-development progress only.
-- `ERG-005`: trusted-host artifact promotion review is the next blocked design lane.
+- `ERG-005`: staging-only trusted-host promotion runtime source review is ready.
 - The descriptor-only runtime slice has both an internal source review and a high-effort internal
   proxy disposition with no findings. That is not external review and does not approve live
   VM/container runtime behavior.
@@ -43,6 +43,8 @@ make trusted-host-promotion-implementation-plan-check
 make trusted-host-promotion-limited-runtime-plan-check
 make trusted-host-promotion-limited-runtime-ticket-check
 make trusted-host-promotion-runtime-implementation-decision-check
+make trusted-host-promotion-negative-transcripts
+make trusted-host-promotion-runtime-source-review-bundle-check
 make trusted-host-promotion-source-review-packet-check
 make trusted-host-promotion-disposition-packet-check
 make trusted-host-promotion-external-review-bundle-check
@@ -54,11 +56,12 @@ make tool-surface-invariant-gate
 The committed `sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md` allows only
 descriptor-only implementation planning. The descriptor-only plan and implementation ticket record
 the next non-runtime checkpoints before any future descriptor slice is considered. The ERG-005
-limited runtime plan and ticket skeleton record the next non-runtime checkpoints before any future
-staging-only artifact promotion slice is considered. Those records still do not approve runtime
-implementation, live VM/container inspection, sandbox orchestration, Mission Control runtime
-behavior, local model invocation, host writes, trusted-host promotion, network expansion, API/MCP
-profile loading, or new governed tool powers.
+limited runtime plan, ticket skeleton, runtime decision, implementation record, negative
+transcripts, internal review, and source-review bundle now cover the implemented staging-only
+single-artifact slice. Those records still do not approve broad trusted-host promotion, approved
+output publishing, live VM/container inspection, sandbox orchestration, Mission Control runtime
+behavior, local model invocation, arbitrary host writes, network expansion, API/MCP profile
+loading, or new governed tool powers.
 
 ## Recommended Next Actions
 
@@ -70,18 +73,18 @@ The current recommended enterprise handoff set is:
 
 1. `ERG-005`: trusted-host artifact promotion review.
 
-Generate or refresh the active send-ready operator artifact with:
+Generate or refresh the active source-review artifact with:
 
 ```sh
 make enterprise-send-now
-make trusted-host-promotion-external-review-bundle
+make trusted-host-promotion-runtime-source-review-bundle
 make trusted-host-promotion-response-kit
 ```
 
-The active ERG-005 source-review packet and response kit are:
+The active ERG-005 runtime source-review packet and response kit are:
 
 ```sh
-var/review-packets/v3/trusted-host-promotion-external-review/
+var/review-packets/v3/trusted-host-promotion-runtime-source-review/
 var/review-packets/v3/trusted-host-promotion-response-kit/
 ```
 
@@ -91,12 +94,17 @@ The bounded implementation-planning checkpoint for the next ERG-005 slice is:
 docs/codex/trusted-host-promotion-limited-runtime-plan.md
 docs/codex/trusted-host-promotion-limited-runtime-ticket.md
 docs/codex/trusted-host-promotion-runtime-implementation-decision.md
+docs/codex/trusted-host-promotion-runtime-implementation.md
+docs/codex/v3-trusted-host-promotion-runtime-internal-review.md
+docs/codex/trusted-host-promotion-runtime-source-review.md
 ```
 
 It is checked with `make trusted-host-promotion-limited-runtime-plan-check` and
 `make trusted-host-promotion-limited-runtime-ticket-check`. The implementation decision draft is
-checked with `make trusted-host-promotion-runtime-implementation-decision-check`. These checkpoints
-still do not approve broad trusted-host promotion, direct host writes, automatic promotion, Mission
+checked with `make trusted-host-promotion-runtime-implementation-decision-check`. The implemented
+slice is checked with `make trusted-host-promotion-negative-transcripts` and
+`make trusted-host-promotion-runtime-source-review-bundle-check`. These checkpoints still do not
+approve broad trusted-host promotion, direct arbitrary host writes, automatic promotion, Mission
 Control runtime behavior, sandbox orchestration, or new governed tool powers.
 
 After a real ERG-005 trusted-host reviewer response arrives, do not edit status docs directly.
@@ -131,6 +139,8 @@ The historical ERG-003/ERG-002 dual-send commands remain available only for line
   `var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review/`
 - `ERG-004` descriptor-only response inbox:
   `var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/`
+- `ERG-005` runtime source-review packet:
+  `var/review-packets/v3/trusted-host-promotion-runtime-source-review/`
 - dual-review outbox: `var/review-packets/v3/enterprise-dual-review-outbox/`
 - send manifest: `var/review-packets/v3/enterprise-review-send-manifest/`
 - send quickstart: `var/review-packets/v3/enterprise-review-send-quickstart/`

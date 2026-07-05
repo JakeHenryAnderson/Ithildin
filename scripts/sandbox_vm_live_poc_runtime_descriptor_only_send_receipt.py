@@ -283,7 +283,7 @@ def build_check_report(repo_root: Path, output_dir: Path = DEFAULT_OUTPUT_DIR) -
             [
                 "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review "
                 "is locally dispositioned",
-                "`ERG-005`: trusted-host artifact promotion review is the next blocked design lane",
+                "`ERG-005`: staging-only trusted-host promotion runtime source review is ready",
             ],
         )
 

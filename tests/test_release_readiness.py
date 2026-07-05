@@ -1413,12 +1413,14 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "make trusted-host-promotion-response-dry-run",
         "make trusted-host-promotion-internal-review-check",
         "make trusted-host-promotion-implementation-gate-decision-check",
-        "make trusted-host-promotion-limited-runtime-plan-check",
-        "make trusted-host-promotion-limited-runtime-ticket-check",
-        "make trusted-host-promotion-runtime-implementation-decision-check",
-        "make no-new-powers-guardrail",
-        "make tool-surface-invariant-gate",
-    ]
+            "make trusted-host-promotion-limited-runtime-plan-check",
+            "make trusted-host-promotion-limited-runtime-ticket-check",
+            "make trusted-host-promotion-runtime-implementation-decision-check",
+            "make trusted-host-promotion-negative-transcripts",
+            "make trusted-host-promotion-runtime-source-review-bundle-check",
+            "make no-new-powers-guardrail",
+            "make tool-surface-invariant-gate",
+        ]
 
 
 def test_agent_workflow_instruction_layer_is_wired() -> None:
@@ -2665,6 +2667,8 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "make trusted-host-promotion-limited-runtime-plan-check",
         "make trusted-host-promotion-limited-runtime-ticket-check",
         "make trusted-host-promotion-runtime-implementation-decision-check",
+        "make trusted-host-promotion-negative-transcripts",
+        "make trusted-host-promotion-runtime-source-review-bundle-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -2688,10 +2692,13 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "trusted_host_external_review_bundle",
         "trusted_host_response_kit",
         "trusted_host_goal_c_decision",
-        "trusted_host_limited_runtime_plan",
-        "trusted_host_limited_runtime_ticket",
-        "trusted_host_runtime_implementation_decision",
-    ]
+            "trusted_host_limited_runtime_plan",
+            "trusted_host_limited_runtime_ticket",
+            "trusted_host_runtime_implementation_decision",
+            "trusted_host_runtime_implementation",
+            "trusted_host_runtime_internal_review",
+            "trusted_host_runtime_source_review_bundle",
+        ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
         "docs/codex/trusted-host-descriptor-contract.md",
         "docs/codex/trusted-host-promotion-decision-intake.md",
@@ -2707,6 +2714,9 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
         "docs/codex/trusted-host-promotion-limited-runtime-ticket.md",
         "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
+        "docs/codex/trusted-host-promotion-runtime-implementation.md",
+        "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
+        "var/review-packets/v3/trusted-host-promotion-runtime-source-review",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2730,8 +2740,9 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "v1.0 local-preview RC packet generation is ready through `make review-candidate`",
         "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review "
         "is locally dispositioned",
-        "`ERG-005`: trusted-host artifact promotion review is the next blocked design lane",
+        "`ERG-005`: staging-only trusted-host promotion runtime source review is ready",
         "make trusted-host-promotion-decision-intake-check",
+        "make trusted-host-promotion-runtime-source-review-bundle-check",
         "make trusted-host-promotion-response-kit-check",
         "make trusted-host-promotion-disposition-closure-check",
         "The historical ERG-003/ERG-002 dual-send commands remain available only for "
@@ -15829,7 +15840,7 @@ def test_sandbox_vm_live_poc_runtime_descriptor_only_send_receipt_is_wired() -> 
         in current_checkpoint
     )
     assert (
-        "`ERG-005`: trusted-host artifact promotion review is the next blocked design lane"
+        "`ERG-005`: staging-only trusted-host promotion runtime source review is ready"
         in current_checkpoint
     )
     assert "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt" in response_inbox
@@ -33247,11 +33258,12 @@ def test_trusted_host_promotion_implementation_gate_decision_is_wired() -> None:
     assert "trusted-host-promotion-implementation-gate-decision.md" in decision_register
     assert "trusted-host-promotion-implementation-gate-decision.md" in readiness
     assert "trusted-host-promotion-implementation-gate-decision.md" in operator_next
-    assert "ready_for_limited_runtime_implementation_plan" in gap_matrix
-    assert "ready_for_limited_runtime_implementation_plan" in readiness
-    assert "staging-only future slice" in operator_next
-    assert "creating more low-value packet polish" in operator_next
-    assert "runtime trusted-host promotion" in readiness.lower()
+    assert "staging_only_runtime_source_review_ready" in gap_matrix
+    assert "staging_only_runtime_source_review_ready" in readiness
+    assert "implemented staging-only `ERG-005` trusted-host promotion runtime" in operator_next
+    assert "low-value packet" in operator_next
+    assert "polish" in operator_next
+    assert "broad trusted-host promotion" in readiness.lower()
     assert "remain blocked" in readiness.lower()
 
 
