@@ -2797,6 +2797,9 @@ def test_enterprise_progress_model_is_wired() -> None:
         "trusted_host_limited_runtime_plan",
         "trusted_host_limited_runtime_ticket",
         "trusted_host_runtime_implementation_decision",
+        "trusted_host_runtime_implementation",
+        "trusted_host_runtime_internal_review",
+        "trusted_host_runtime_source_review_bundle",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -6532,6 +6535,8 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make trusted-host-promotion-limited-runtime-plan-check",
         "make trusted-host-promotion-limited-runtime-ticket-check",
         "make trusted-host-promotion-runtime-implementation-decision-check",
+        "make trusted-host-promotion-negative-transcripts",
+        "make trusted-host-promotion-runtime-source-review-bundle-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -6558,6 +6563,9 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "trusted_host_limited_runtime_plan",
         "trusted_host_limited_runtime_ticket",
         "trusted_host_runtime_implementation_decision",
+        "trusted_host_runtime_implementation",
+        "trusted_host_runtime_internal_review",
+        "trusted_host_runtime_source_review_bundle",
     ]
     assert any(
         artifact["path"]
@@ -33139,9 +33147,9 @@ def test_trusted_host_promotion_decision_record_is_wired() -> None:
     assert "trusted-host-promotion-decision-record.md" in gap_matrix
     assert "trusted-host-promotion-decision-record.md" in decision_register
     assert "trusted-host-promotion-decision-record.md" in readiness
-    assert "ready_for_implementation_planning_only" in gap_matrix
-    assert "ready_for_implementation_planning_only" in readiness
-    assert "runtime trusted-host promotion" in readiness.lower()
+    assert "staging_only_runtime_source_review_ready" in gap_matrix
+    assert "staging_only_runtime_source_review_ready" in readiness
+    assert "staging-only single-artifact runtime slice" in readiness.lower()
     assert "remain blocked" in readiness.lower()
 
 

@@ -112,6 +112,8 @@ ALLOWED_ACTION_COMMANDS = {
     "make trusted-host-promotion-limited-runtime-plan-check",
     "make trusted-host-promotion-limited-runtime-ticket-check",
     "make trusted-host-promotion-runtime-implementation-decision-check",
+    "make trusted-host-promotion-negative-transcripts",
+    "make trusted-host-promotion-runtime-source-review-bundle-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 }
