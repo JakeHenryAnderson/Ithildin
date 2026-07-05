@@ -27,7 +27,8 @@ staging-only slice.
 
 The lane is locally reviewed for continued local-preview development and ready for focused external
 or human source review. This does not approve broad trusted-host promotion, arbitrary host writes,
-approved-output publishing, Mission Control runtime authority, sandbox orchestration, SIEM custody,
+approved-output publishing, Mission Control runtime authority (historical name for the current
+Ithildin Command Center runtime-authority boundary), sandbox orchestration, SIEM custody,
 compliance automation, production positioning, or public/security-product claims.
 
 ## Claims Tested
@@ -59,8 +60,9 @@ No actionable findings were recorded in this pass.
 
 ## Follow-Up Queue
 
-- Generate and send the focused runtime source-review bundle before treating `ERG-005` as externally
-  dispositioned.
+- Use the closure addendum in
+  [`v3-trusted-host-promotion-runtime-review-closure.md`](v3-trusted-host-promotion-runtime-review-closure.md)
+  and the focused runtime source-review bundle before treating `ERG-005` as externally dispositioned.
 - Keep capability expansion blocked unless the source-review bundle returns no blocking findings.
 - Defer approved-output publishing, Mission Control runtime integration, sandbox orchestration,
   SIEM adapter behavior, and compliance mapping runtime to separate milestones.

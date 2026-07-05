@@ -60,8 +60,9 @@ limited runtime plan, ticket skeleton, runtime decision, implementation record, 
 transcripts, internal review, and source-review bundle now cover the implemented staging-only
 single-artifact slice. Those records still do not approve broad trusted-host promotion, approved
 output publishing, live VM/container inspection, sandbox orchestration, Mission Control runtime
-behavior, local model invocation, arbitrary host writes, network expansion, API/MCP profile
-loading, or new governed tool powers.
+behavior (historical name for the current Ithildin Command Center runtime-authority boundary),
+local model invocation, arbitrary host writes, network expansion, API/MCP profile loading, or new
+governed tool powers.
 
 ## Recommended Next Actions
 
@@ -96,6 +97,7 @@ docs/codex/trusted-host-promotion-limited-runtime-ticket.md
 docs/codex/trusted-host-promotion-runtime-implementation-decision.md
 docs/codex/trusted-host-promotion-runtime-implementation.md
 docs/codex/v3-trusted-host-promotion-runtime-internal-review.md
+docs/codex/v3-trusted-host-promotion-runtime-review-closure.md
 docs/codex/trusted-host-promotion-runtime-source-review.md
 ```
 
@@ -105,7 +107,8 @@ checked with `make trusted-host-promotion-runtime-implementation-decision-check`
 slice is checked with `make trusted-host-promotion-negative-transcripts` and
 `make trusted-host-promotion-runtime-source-review-bundle-check`. These checkpoints still do not
 approve broad trusted-host promotion, direct arbitrary host writes, automatic promotion, Mission
-Control runtime behavior, sandbox orchestration, or new governed tool powers.
+Control runtime behavior (historical name for the current Ithildin Command Center
+runtime-authority boundary), sandbox orchestration, or new governed tool powers.
 
 After a real ERG-005 trusted-host reviewer response arrives, do not edit status docs directly.
 Run the lane-specific response checks before any committed disposition update:
@@ -160,7 +163,8 @@ This checkpoint does not approve:
 - live VM/container inspection;
 - VM/container lifecycle management;
 - sandbox orchestration;
-- Mission Control runtime behavior;
+- Mission Control runtime behavior, now described in current-facing docs as Ithildin Command Center
+  runtime authority;
 - local model invocation;
 - trusted-host promotion;
 - SIEM adapter runtime behavior;

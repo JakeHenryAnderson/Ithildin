@@ -33703,6 +33703,7 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert "tests/test_api_service.py" in tests_bundle
     assert "trusted-host-promotion-runtime-implementation.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-internal-review.md" in contracts_bundle
+    assert "v3-trusted-host-promotion-runtime-review-closure.md" in contracts_bundle
     assert "skipped command: make trusted-host-promotion-negative-transcripts" in evidence
     assert "trusted-host-promotion-runtime-source-review-bundle:" in makefile
     assert "trusted-host-promotion-runtime-source-review-bundle-check" in (
@@ -33725,6 +33726,68 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert {record["path"] for record in hashes} == expected_files - {
         "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
     }
+
+
+def test_command_center_boundary_and_trusted_host_runtime_closure_are_wired() -> None:
+    command_center = Path("docs/codex/ithildin-command-center-boundary.md").read_text(
+        encoding="utf-8"
+    )
+    closure = Path(
+        "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md"
+    ).read_text(encoding="utf-8")
+    source_review = Path(
+        "docs/codex/trusted-host-promotion-runtime-source-review.md"
+    ).read_text(encoding="utf-8")
+    current_checkpoint = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
+        encoding="utf-8"
+    )
+    gap_matrix = Path("docs/codex/enterprise-readiness-gap-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    closure_matrix = Path("docs/codex/source-review-closure-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+
+    for phrase in [
+        "Ithildin Command Center",
+        "Historical filenames",
+        "does not become a second enforcement point",
+        "not the promotion engine",
+    ]:
+        assert phrase in command_center
+    for forbidden in [
+        "execute governed tools outside the gateway",
+        "bypass policy",
+        "start VMs, containers",
+    ]:
+        assert forbidden in command_center
+
+    for phrase in [
+        "Disposition: `local_reviewed_external_pending`",
+        "No critical, high, medium, low, or informational findings",
+        "Ithildin Command Center runtime authority",
+        "This is not external closure",
+    ]:
+        assert phrase in closure
+    assert "v3-trusted-host-promotion-runtime-review-closure.md" in source_review
+    assert "Ithildin Command Center runtime-authority boundary" in current_checkpoint
+    assert "v3-trusted-host-promotion-runtime-review-closure.md" in current_checkpoint
+    assert "Ithildin Command Center runtime authority" in gap_matrix
+    assert "v3-trusted-host-promotion-runtime-review-closure.md" in closure_matrix
+    assert "Ithildin Command Center Boundary" in review_index
+    assert "Trusted-Host Promotion Runtime Review Closure" in review_index
+    assert "docs/codex/ithildin-command-center-boundary.md" in review_docs.REVIEW_DOCS
+    assert (
+        "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/ithildin-command-center-boundary.md" in docs_site
+    assert "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md" in docs_site
+    assert "docs/codex/ithildin-command-center-boundary.md" in readme
+    assert "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md" in readme
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

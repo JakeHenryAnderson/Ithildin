@@ -41,6 +41,7 @@ CONTRACT_DOCS = [
     "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
     "docs/codex/trusted-host-promotion-runtime-implementation.md",
     "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
+    "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
     "docs/codex/trusted-host-promotion-runtime-source-review.md",
     "docs/codex/trusted-host-promotion-limited-runtime-ticket.md",
     "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
@@ -154,8 +155,18 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             docs_site,
         ),
         (
+            "docs site closure review doc",
+            "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
+            docs_site,
+        ),
+        (
             "review docs internal review doc",
             "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
+            review_docs,
+        ),
+        (
+            "review docs closure review doc",
+            "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
             review_docs,
         ),
         (
@@ -166,6 +177,11 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         (
             "review index internal runtime review",
             "Trusted-Host Promotion Runtime Internal Review",
+            review_index,
+        ),
+        (
+            "review index runtime closure",
+            "Trusted-Host Promotion Runtime Review Closure",
             review_index,
         ),
         (
@@ -184,14 +200,20 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     internal_review = (
         repo_root / "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md"
     ).read_text(encoding="utf-8")
+    closure_review = (
+        repo_root / "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md"
+    ).read_text(encoding="utf-8")
     for text_label, text in [
         ("runtime review", runtime_review),
         ("internal review", internal_review),
+        ("closure review", closure_review),
     ]:
         if FINDING_NAMESPACE not in text:
             failures.append(f"{text_label} missing finding namespace {FINDING_NAMESPACE}")
     if "No critical or high implementation findings" not in internal_review:
         failures.append("internal review does not record no critical/high findings")
+    if "Disposition: `local_reviewed_external_pending`" not in closure_review:
+        failures.append("closure review does not record local_reviewed_external_pending")
     if tool_surface.get("tool_count") != 24:
         failures.append(f"tool count changed: {tool_surface.get('tool_count')!r}")
     if decision.get("runtime_implementation_allowed_next") is not True:

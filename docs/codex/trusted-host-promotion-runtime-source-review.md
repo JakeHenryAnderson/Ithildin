@@ -15,7 +15,8 @@ This source-review lane covers only the local-preview staging runtime:
 - one read-only diagnostic/evidence surface.
 
 It does not approve broad trusted-host promotion, arbitrary host paths, overwrite/delete/move
-behavior, approved-output publishing, Mission Control runtime authority, sandbox orchestration,
+behavior, approved-output publishing, Mission Control runtime authority (historical name for the
+current Ithildin Command Center runtime-authority boundary), sandbox orchestration,
 SIEM adapter behavior, compliance automation, production identity, runtime Postgres, hosted
 telemetry, remote MCP, shell, Docker, Kubernetes, browser automation, arbitrary HTTP, plugin SDK
 behavior, or public/security-product positioning.
@@ -64,3 +65,8 @@ Review focus:
 The internal source review result is recorded in
 [`v3-trusted-host-promotion-runtime-internal-review.md`](v3-trusted-host-promotion-runtime-internal-review.md).
 It found no critical/high implementation findings, but it is not an external closure decision.
+
+The current internal closure addendum is recorded in
+[`v3-trusted-host-promotion-runtime-review-closure.md`](v3-trusted-host-promotion-runtime-review-closure.md).
+It preserves the same staging-only local-preview boundary and marks the lane
+`local_reviewed_external_pending`.

@@ -394,6 +394,10 @@ checked with `make control-mapping-readiness`.
   source-review handoff wiring without regenerating command transcripts.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
+- `docs/codex/ithildin-command-center-boundary.md` - current naming and authority boundary for the
+  operator UI/control-plane concept historically called Mission Control.
+- `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
+  addendum for the staging-only trusted-host promotion runtime slice.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
