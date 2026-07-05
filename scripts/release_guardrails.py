@@ -294,6 +294,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "trusted-host-promotion-negative-fixtures-check",
     "trusted-host-promotion-zone-contract-check",
     "trusted-host-promotion-implementation-plan-check",
+    "trusted-host-promotion-limited-runtime-plan-check",
     "trusted-host-promotion-source-review-packet-check",
     "trusted-host-promotion-internal-review-check",
     "trusted-host-promotion-decision-record-check",

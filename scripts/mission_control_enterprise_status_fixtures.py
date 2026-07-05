@@ -109,6 +109,7 @@ ALLOWED_ACTION_COMMANDS = {
     "make trusted-host-promotion-response-dry-run",
     "make trusted-host-promotion-internal-review-check",
     "make trusted-host-promotion-implementation-gate-decision-check",
+    "make trusted-host-promotion-limited-runtime-plan-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 }

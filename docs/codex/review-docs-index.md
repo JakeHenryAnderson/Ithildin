@@ -441,6 +441,7 @@ externally closed.
 - [Trusted-Host Promotion Negative Fixtures](trusted-host-promotion-negative-fixtures.md)
 - [Trusted-Host Promotion Zone Contract](trusted-host-promotion-zone-contract.md)
 - [Trusted-Host Promotion Implementation Plan](trusted-host-promotion-implementation-plan.md)
+- [Trusted-Host Promotion Limited Runtime Plan](trusted-host-promotion-limited-runtime-plan.md)
 - [Trusted-Host Promotion Source Review](trusted-host-promotion-source-review.md)
 - [Trusted-Host Promotion Disposition Packet](trusted-host-promotion-disposition-packet.md)
 - [Trusted-Host Promotion External Review Bundle](trusted-host-promotion-external-review-bundle.md)

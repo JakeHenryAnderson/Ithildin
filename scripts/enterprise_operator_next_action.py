@@ -113,6 +113,7 @@ ERG005_TRUSTED_HOST_COMMANDS = [
     "make trusted-host-promotion-response-dry-run",
     "make trusted-host-promotion-internal-review-check",
     "make trusted-host-promotion-implementation-gate-decision-check",
+    "make trusted-host-promotion-limited-runtime-plan-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -483,6 +484,11 @@ ERG005_TRUSTED_HOST_ARTIFACTS = [
         "path": "docs/codex/trusted-host-promotion-implementation-gate-decision.md",
         "description": "Goal C decision allowing only a future limited runtime plan",
     },
+    {
+        "label": "trusted_host_limited_runtime_plan",
+        "path": "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
+        "description": "strict limited-runtime planning checkpoint with stop/pivot guardrails",
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -507,6 +513,7 @@ REQUIRED_DOC_PHRASES = [
     "make trusted-host-promotion-response-dry-run",
     "make trusted-host-promotion-internal-review-check",
     "make trusted-host-promotion-implementation-gate-decision-check",
+    "make trusted-host-promotion-limited-runtime-plan-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",

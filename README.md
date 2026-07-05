@@ -377,6 +377,9 @@ checked with `make control-mapping-readiness`.
 - `make trusted-host-promotion-implementation-gate-decision-check` - validate the Goal C
   implementation-gate decision that allows a future limited runtime implementation-plan sprint
   while keeping runtime host promotion and host writes blocked.
+- `make trusted-host-promotion-limited-runtime-plan-check` - validate the ERG-005 limited runtime
+  implementation-plan checkpoint, including stop/pivot guardrails, while keeping runtime promotion,
+  host writes, and new powers blocked.
 - `make trusted-host-promotion-internal-review-check` - validate the internal design/source-review
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
@@ -2388,6 +2391,11 @@ and is checked with `make trusted-host-promotion-implementation-gate-decision-ch
 `ready_for_limited_runtime_implementation_plan` so a future sprint may draft an exact limited
 runtime plan, while runtime implementation, trusted-host promotion, direct host writes, automatic
 promotion, and new governed powers remain blocked.
+The ERG-005 limited runtime plan is in
+[docs/codex/trusted-host-promotion-limited-runtime-plan.md](docs/codex/trusted-host-promotion-limited-runtime-plan.md)
+and is checked with `make trusted-host-promotion-limited-runtime-plan-check`; it defines the first
+staging-only future runtime slice and strict stop/pivot rules while keeping runtime implementation,
+trusted-host promotion, host writes, automatic promotion, and new governed powers blocked.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in
