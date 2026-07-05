@@ -383,6 +383,7 @@ from scripts import (
     trusted_host_promotion_limited_runtime_plan_check,
     trusted_host_promotion_limited_runtime_ticket_check,
     trusted_host_promotion_negative_fixtures_check,
+    trusted_host_promotion_negative_transcripts,
     trusted_host_promotion_response_dry_run,
     trusted_host_promotion_response_kit,
     trusted_host_promotion_runtime_implementation_decision_check,
@@ -33549,6 +33550,68 @@ def test_trusted_host_promotion_runtime_implementation_decision_is_wired() -> No
     assert "Trusted-Host Promotion Runtime Implementation Decision" in review_index
     assert "trusted-host-promotion-runtime-implementation-decision.md" in operator_next
     assert "trusted-host-promotion-runtime-implementation-decision.md" in current_checkpoint
+
+
+def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
+    tmp_path: Path,
+) -> None:
+    transcript = trusted_host_promotion_negative_transcripts.build_transcripts(
+        tmp_path / "trusted-host-negatives"
+    )
+    transcript_text = transcript.read_text(encoding="utf-8")
+    doc = Path("docs/codex/trusted-host-promotion-runtime-implementation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert transcript.name == "TRUSTED_HOST_PROMOTION_NEGATIVE_TRANSCRIPTS.md"
+    for phrase in [
+        "Unauthenticated Proposal Denial",
+        "Hidden Source Denial",
+        "Unsafe Staging Label Denial",
+        "Stale Artifact Hash Denial",
+        "Replayed Approval Denial",
+        "Unsupported Apply Field Denial",
+    ]:
+        assert phrase in transcript_text
+    for leaked in ["original\n", "changed\n", "/Users/", "correct-token"]:
+        assert leaked not in transcript_text
+
+    for phrase in [
+        "Status: staging-only local-preview runtime slice implemented for `ERG-005`.",
+        "one stored sandbox artifact -> one operator-approved host staging placement",
+        "Admin-only `POST /trusted-host-promotions/proposals`",
+        "trusted_host.promotion.stage",
+        "not accept raw host paths.",
+        "roll back, complete approvals, delete files",
+    ]:
+        assert phrase in doc
+    for blocked in [
+        "does not add an MCP tool",
+        "Mission Control runtime authority",
+        "sandbox orchestration",
+        "SIEM adapter",
+        "compliance automation",
+        "public/security-product claims",
+    ]:
+        assert blocked in doc
+
+    assert "trusted-host-promotion-negative-transcripts:" in makefile
+    assert "trusted-host-promotion-negative-transcripts" in release_check_body
+    assert "make trusted-host-promotion-negative-transcripts" in readme
+    assert "trusted-host-promotion-negative-transcripts" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert (
+        "docs/codex/trusted-host-promotion-runtime-implementation.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-host-promotion-runtime-implementation.md" in docs_site
+    assert "Trusted-Host Promotion Runtime Implementation" in review_index
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

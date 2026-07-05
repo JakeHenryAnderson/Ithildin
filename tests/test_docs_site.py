@@ -374,6 +374,7 @@ def test_default_docs_include_v02_review_packet() -> None:
     assert "docs/codex/trusted-host-promotion-external-response-intake.md" in DEFAULT_DOCS
     assert "docs/codex/trusted-host-promotion-response-dry-run.md" in DEFAULT_DOCS
     assert "docs/codex/v3-trusted-host-promotion-internal-review.md" in DEFAULT_DOCS
+    assert "docs/codex/trusted-host-promotion-runtime-implementation.md" in DEFAULT_DOCS
     assert "docs/codex/v3-readiness-debt-register.md" in DEFAULT_DOCS
     assert "docs/codex/local-prompt-triage.md" in DEFAULT_DOCS
     assert "docs/codex/reviewer-reproduction-map.md" in DEFAULT_DOCS
