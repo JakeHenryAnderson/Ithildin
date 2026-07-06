@@ -33,6 +33,9 @@ The walkthrough is a human-facing checkpoint, not a hard stop for every other de
 Bounded documentation, evidence packaging, review-packet cleanup, planning, and non-runtime
 readiness work may continue while the operator walkthrough waits.
 
+The bounded parallel queue is recorded in
+`docs/codex/post-erg005-parallel-work-queue.md`.
+
 Work that should still pause for explicit review includes:
 
 - new governed tool powers;

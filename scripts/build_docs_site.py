@@ -115,6 +115,7 @@ DEFAULT_DOCS = [
     "docs/codex/operator-workbench-readiness.md",
     "docs/codex/operator-demo-walkthrough.md",
     "docs/codex/erg005-walkthrough-ready-note.md",
+    "docs/codex/post-erg005-parallel-work-queue.md",
     "docs/codex/guided-demo-readiness.md",
     "docs/codex/demo-flow-readiness.md",
     "docs/codex/demo-evidence-closure.md",
