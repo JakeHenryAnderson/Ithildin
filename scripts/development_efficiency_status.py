@@ -36,6 +36,10 @@ REQUIRED_DOC_PHRASES = [
     "make technical-mvp-operator-trial-readiness",
     "make enterprise-current-checkpoint",
     "make enterprise-review-send-preflight",
+    "current ERG-005 trusted-host review artifact",
+    "freshness",
+    "current ERG-005 trusted-host review action",
+    "historical ERG-003/ERG-002 handoff artifacts only as lineage",
     "make progress-check",
     "make progress-check ARGS=--refresh-stale",
     "make handoff-dry-run",
@@ -286,6 +290,15 @@ def _wiring_failures(repo_root: Path) -> list[str]:
             if phrase.lower() in lowered:
                 failures.append(
                     f"development efficiency status doc contains forbidden phrase: {phrase}"
+                )
+        for stale_phrase in [
+            "current ERG-003/ERG-002 handoff artifact freshness",
+            "current ERG-003/ERG-002 send action",
+        ]:
+            if stale_phrase in doc:
+                failures.append(
+                    "development efficiency status doc contains stale active-route phrase: "
+                    f"{stale_phrase}"
                 )
 
     if "development-efficiency-status:" not in makefile:

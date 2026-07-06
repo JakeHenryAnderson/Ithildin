@@ -260,8 +260,10 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "drill_doc": DOC_REL,
         "output_dir": output_dir.as_posix(),
         "recommended_gaps": RECOMMENDED_GAPS,
+        "legacy_recommended_gaps": RECOMMENDED_GAPS,
         "active_send_set": ACTIVE_SEND_SET,
         "route_scope": "historical_dual_send_handoff_drill",
+        "legacy_route_scope": "historical_dual_send_handoff_drill",
         "tool_count": 24,
         "artifact_hashes_match_files": _artifact_hashes_match_files(
             output_dir, hash_manifest
@@ -276,9 +278,9 @@ def render_check_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"drill_doc: {report['drill_doc']}",
         f"output_dir: {report['output_dir']}",
-        f"route_scope: {report['route_scope']}",
+        f"legacy_route_scope: {report['legacy_route_scope']}",
         "active_send_set: " + ", ".join(report["active_send_set"]),
-        "recommended_gaps: " + ", ".join(report["recommended_gaps"]),
+        "legacy_recommended_gaps: " + ", ".join(report["legacy_recommended_gaps"]),
         f"tool_count: {report['tool_count']}",
         f"artifact_hashes_match_files: {str(report['artifact_hashes_match_files']).lower()}",
     ]

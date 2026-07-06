@@ -180,9 +180,9 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-status-quick` - run the no-refresh enterprise status/send-guidance contract
   hints after small docs or bookkeeping edits; this is focused development evidence, not release,
   handoff, export, or Mission Control import proof.
-- `make enterprise-status-slice` - refresh the current ERG-003/ERG-002 send artifacts, then run
+- `make enterprise-status-slice` - refresh the current ERG-005 send/status artifacts, then run
   `make enterprise-status-quick` plus export/import contract checks; use it when send-package
-  evidence may be stale.
+  evidence may be stale. Historical ERG-003/ERG-002 send artifacts remain lineage only.
 - `make development-efficiency-status` - print the compact current-state view that combines
   validation choice, release-check shape, technical MVP operator-trial readiness, and enterprise
   handoff action.
