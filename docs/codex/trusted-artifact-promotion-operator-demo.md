@@ -49,6 +49,10 @@ The first story is deliberately small:
 7. `06_BOUNDARY_FLAGS.md`
 8. `trusted-artifact-promotion-operator-demo-artifact-hashes.json`
 
+Use `05_LIVE_WALKTHROUGH_PREP.md` as the front door for a human walkthrough. That file should make
+the operator confirm each evidence surface before approval, then separate what the walkthrough
+proves from what remains outside the current boundary.
+
 ## Walkthrough Commands
 
 Prepare the packet and known-good evidence:
@@ -69,6 +73,22 @@ var/review-packets/v3/trusted-artifact-promotion-operator-demo/
 
 The packet tells the operator what to run next and what evidence should exist before attempting
 any live/manual walkthrough.
+
+## Walkthrough Observation Checklist
+
+During a guided pass, the operator should be able to answer:
+
+- Which artifact label is being promoted?
+- Which SHA-256 digest is bound to the proposal?
+- Which destination label is approved?
+- Which one-time approval authorizes the create-exclusive placement?
+- Does the staged artifact digest match the approved digest?
+- Which audit/proposal/approval evidence records the result?
+- Which negative cases remain denied?
+
+If any answer requires raw file contents, raw sensitive host paths, prompts, secrets, package
+scripts, broad filesystem listings, or Command Center-only state, stop the walkthrough and treat the
+evidence surface as incomplete.
 
 ## Acceptance Boundary
 

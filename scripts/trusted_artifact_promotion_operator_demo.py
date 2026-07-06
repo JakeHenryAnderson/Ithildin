@@ -418,6 +418,18 @@ Before the live/manual walkthrough:
 4. Confirm `git status --short` is clean except ignored generated packet artifacts.
 5. Open this packet and keep the boundary flags visible.
 
+Operator inspection checklist:
+
+- artifact label is visible as safe metadata;
+- source zone/workspace label is visible;
+- SHA-256 digest is visible before approval;
+- destination label is visible and is not a broad host folder;
+- one-time approval binding is visible;
+- proposal/request/approval IDs are visible as IDs, not raw contents;
+- staged artifact digest can be compared with the approved digest;
+- denial evidence exists for replay, stale, traversal, overwrite, unapproved, and wrong-digest
+  cases.
+
 During the walkthrough:
 
 - do not approve a proposal unless the expected artifact digest and destination label are visible;
@@ -432,6 +444,21 @@ After the walkthrough:
 - compare it with the approved digest;
 - export or record audit/proposal/approval evidence;
 - run the relevant focused check before claiming the demo succeeded.
+
+What this walkthrough can prove:
+
+- Ithildin can present and verify a digest-bound, approval-bound, create-exclusive staging story for
+  one artifact;
+- Command Center can be framed as display/review only;
+- the operator can follow the evidence trail without raw file contents or broad host state.
+
+What this walkthrough does not prove:
+
+- broad trusted-host promotion;
+- production custody, SIEM retention, compliance automation, or public/security-product readiness;
+- sandbox/VM orchestration;
+- host-wide protection from activity outside Ithildin;
+- Command Center enforcement authority.
 """
 
 
