@@ -408,6 +408,8 @@ checked with `make control-mapping-readiness`.
 - `docs/codex/trusted-artifact-promotion-operator-demo.md` - walkthrough-ready operator demo
   contract for reviewing one digest-bound artifact promotion path through Ithildin Command Center
   without granting Command Center runtime authority or broad host promotion.
+- `docs/codex/erg005-walkthrough-ready-note.md` - records that the ERG-005 operator walkthrough
+  packet is ready for a guided human pass while bounded planning/evidence work may continue.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview
