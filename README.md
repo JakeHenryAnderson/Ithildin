@@ -335,6 +335,10 @@ checked with `make control-mapping-readiness`.
   approving runtime importer behavior.
 - `make sandbox-promotion-evidence-contract-check` - validate the future trusted-host promotion
   evidence contract while confirming host promotion remains unimplemented.
+- `make trusted-artifact-promotion-operator-demo` - generate the walkthrough-ready `ERG-005`
+  operator packet for one digest-bound sandbox/workspace artifact moving into trusted-host staging.
+- `make trusted-artifact-promotion-operator-demo-check` - validate that packet, docs wiring,
+  artifact hashes, Command Center display-only framing, and no-new-powers boundary.
 - `make trusted-host-descriptor-contract-check` - validate the design-only trusted host descriptor
   contract while keeping host control and trusted-host promotion blocked.
 - `make trusted-host-promotion-decision-intake-check` - validate the post-RC decision-intake
@@ -401,6 +405,9 @@ checked with `make control-mapping-readiness`.
 - `docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md` - local proxy disposition
   for the ERG-005 staging-only trusted-host promotion runtime slice; external/human source review
   remains pending for broader claims.
+- `docs/codex/trusted-artifact-promotion-operator-demo.md` - walkthrough-ready operator demo
+  contract for reviewing one digest-bound artifact promotion path through Ithildin Command Center
+  without granting Command Center runtime authority or broad host promotion.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview

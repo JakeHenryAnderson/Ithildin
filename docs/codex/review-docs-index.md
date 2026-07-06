@@ -436,6 +436,7 @@ externally closed.
 - [sandbox.artifact.write_text Implementation Decision](sandbox-artifact-write-text-implementation-decision.md)
 - [sandbox.artifact.write_text Internal Source Review](v3-sandbox-artifact-write-text-internal-review.md)
 - [Sandbox Promotion Evidence Contract](sandbox-promotion-evidence-contract.md)
+- [Trusted Artifact Promotion Operator Demo](trusted-artifact-promotion-operator-demo.md)
 - [Trusted Host Descriptor Contract](trusted-host-descriptor-contract.md)
 - [Trusted-Host Promotion Decision Intake](trusted-host-promotion-decision-intake.md)
 - [Trusted-Host Promotion State Machine](trusted-host-promotion-state-machine.md)

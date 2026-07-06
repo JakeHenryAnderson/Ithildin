@@ -370,6 +370,7 @@ from scripts import (
     technical_mvp_ticket_map,
     test_determinism_gate,
     tool_surface_invariant_gate,
+    trusted_artifact_promotion_operator_demo,
     trusted_host_descriptor_contract_check,
     trusted_host_promotion_decision_intake_check,
     trusted_host_promotion_decision_record_check,
@@ -33727,6 +33728,56 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert {record["path"] for record in hashes} == expected_files - {
         "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
     }
+
+
+def test_trusted_artifact_promotion_operator_demo_is_wired(tmp_path: Path) -> None:
+    report = trusted_artifact_promotion_operator_demo.build_check_report(Path.cwd())
+    output_dir = tmp_path / "trusted-artifact-promotion-operator-demo"
+    trusted_artifact_promotion_operator_demo.build_packet(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+    )
+
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    packet_text = "\n".join(
+        path.read_text(encoding="utf-8") for path in output_dir.glob("*.md")
+    )
+    hashes = json.loads(
+        output_dir.joinpath(
+            "trusted-artifact-promotion-operator-demo-artifact-hashes.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["command_center_runtime_authority_allowed"] is False
+    assert report["broad_host_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert "trusted-artifact-promotion-operator-demo:" in makefile
+    assert "trusted-artifact-promotion-operator-demo-check" in release_check_body
+    assert "make trusted-artifact-promotion-operator-demo" in readme
+    assert (
+        "docs/codex/trusted-artifact-promotion-operator-demo.md"
+        in review_docs.REVIEW_DOCS
+    )
+    assert "docs/codex/trusted-artifact-promotion-operator-demo.md" in docs_site
+    assert "Trusted Artifact Promotion Operator Demo" in review_index
+    assert "Ithildin Command Center" in packet_text
+    assert "not the promotion engine" in packet_text
+    assert "create-exclusive placement" in packet_text
+    assert "stop and ask Codex to guide the walkthrough" in packet_text
+    assert "broad host writes allowed" not in packet_text
+    assert all(
+        record["path"]
+        != "trusted-artifact-promotion-operator-demo-artifact-hashes.json"
+        for record in hashes
+    )
 
 
 def test_command_center_boundary_and_trusted_host_runtime_closure_are_wired() -> None:

@@ -420,6 +420,7 @@ DEFAULT_DOCS = [
     "docs/codex/sandbox-artifact-write-text-implementation-decision.md",
     "docs/codex/v3-sandbox-artifact-write-text-internal-review.md",
     "docs/codex/sandbox-promotion-evidence-contract.md",
+    "docs/codex/trusted-artifact-promotion-operator-demo.md",
     "docs/codex/trusted-host-descriptor-contract.md",
     "docs/codex/trusted-host-promotion-decision-intake.md",
     "docs/codex/trusted-host-promotion-state-machine.md",
