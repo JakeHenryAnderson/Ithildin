@@ -52,7 +52,8 @@ Historical dual-send route: `ERG-003`, then `ERG-002`.
 The distinction is intentional:
 
 - historical dual-send artifacts preserve evidence for prior review packets;
-- active operator checkpoint artifacts point to `ERG-004`;
+- completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane;
+- active operator checkpoint artifacts now point to `ERG-005`;
 - current implementation planning remains external-review-gated before runtime.
 
 ## What This Does Not Approve
