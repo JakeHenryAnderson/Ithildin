@@ -184,6 +184,7 @@ from scripts import (
     packet_redaction_scan,
     patch_apply_external_review_packet,
     policy_registry_source_review_bundle,
+    post_erg005_parallel_work_queue_check,
     post_rc_decision_gate,
     post_rc_decision_record_examples_check,
     post_rc_decision_record_template_check,
@@ -30407,6 +30408,48 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     assert doc_path in docs_site
     assert doc_path in review_docs.REVIEW_DOCS
     assert "Enterprise Active Route Clarity" in review_index
+
+
+def test_post_erg005_parallel_work_queue_is_wired() -> None:
+    report = post_erg005_parallel_work_queue_check.build_report(Path.cwd())
+    doc = Path("docs/codex/post-erg005-parallel-work-queue.md").read_text(
+        encoding="utf-8"
+    )
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_changes_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["command_center_runtime_authority_allowed"] is False
+    assert report["trusted_host_promotion_expansion_allowed"] is False
+    assert report["walkthrough_required_for_promotion_claims"] is True
+    for phrase in [
+        "Operator Walkthrough Polish",
+        "Command Center Integration Prep",
+        "Enterprise Evidence Clarity",
+        "Next-ERG Planning",
+        "Dev-Speed Optimization",
+        "Stop Conditions",
+        "not replace it",
+    ]:
+        assert phrase in doc
+    assert "post-erg005-parallel-work-queue-check:" in makefile
+    assert (
+        "post-erg005-parallel-work-queue-check" in release_check_body
+        or "release-check: post-erg005-parallel-work-queue-check" in makefile
+    )
+    assert "make post-erg005-parallel-work-queue-check" in readme
+    assert "docs/codex/post-erg005-parallel-work-queue.md" in docs_site
+    assert "docs/codex/post-erg005-parallel-work-queue.md" in review_docs.REVIEW_DOCS
+    assert "Post-ERG-005 Parallel Work Queue" in review_index
+    assert "post-erg005-parallel-work-queue-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
 
 
 def test_mission_control_display_response_dry_run_is_wired() -> None:

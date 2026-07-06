@@ -412,6 +412,8 @@ checked with `make control-mapping-readiness`.
   packet is ready for a guided human pass while bounded planning/evidence work may continue.
 - `docs/codex/post-erg005-parallel-work-queue.md` - records the bounded adjacent workstreams that
   can continue while the ERG-005 walkthrough waits, without adding runtime authority or new powers.
+- `make post-erg005-parallel-work-queue-check` - validate that the post-ERG-005 parallel work queue
+  remains docs/evidence/planning-only and is wired into review docs and release readiness.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview

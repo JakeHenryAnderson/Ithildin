@@ -289,6 +289,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "hello-world-mission-control-handoff-check",
     "sandbox-promotion-evidence-contract-check",
     "trusted-artifact-promotion-operator-demo-check",
+    "post-erg005-parallel-work-queue-check",
     "trusted-host-descriptor-contract-check",
     "trusted-host-promotion-decision-intake-check",
     "trusted-host-promotion-state-machine-check",

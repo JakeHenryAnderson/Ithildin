@@ -20,6 +20,7 @@ CATEGORY_PREFIXES: tuple[tuple[str, str], ...] = (
     ("siem-", "siem"),
     ("compliance-", "compliance"),
     ("public-", "public_positioning"),
+    ("post-erg005-", "status_efficiency"),
     ("post-rc-", "post_rc_decision"),
     ("project-", "project_metadata"),
     ("git-", "git_metadata"),
