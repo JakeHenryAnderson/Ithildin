@@ -26,7 +26,10 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - Enterprise response evidence is not present yet.
 - `ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned
   for continued local-development progress only.
-- `ERG-005`: staging-only trusted-host promotion runtime source review is ready.
+- `ERG-005`: staging-only trusted-host promotion runtime is locally dispositioned for continued
+  local-preview development and focused source-review handoff; external/human source review remains
+  pending for broader claims.
+- Handoff readiness marker: `ERG-005`: staging-only trusted-host promotion runtime source review is ready.
 - The descriptor-only runtime slice has both an internal source review and a high-effort internal
   proxy disposition with no findings. That is not external review and does not approve live
   VM/container runtime behavior.
@@ -98,6 +101,7 @@ docs/codex/trusted-host-promotion-runtime-implementation-decision.md
 docs/codex/trusted-host-promotion-runtime-implementation.md
 docs/codex/v3-trusted-host-promotion-runtime-internal-review.md
 docs/codex/v3-trusted-host-promotion-runtime-review-closure.md
+docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md
 docs/codex/trusted-host-promotion-runtime-source-review.md
 ```
 

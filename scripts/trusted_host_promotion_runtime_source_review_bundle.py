@@ -42,6 +42,7 @@ CONTRACT_DOCS = [
     "docs/codex/trusted-host-promotion-runtime-implementation.md",
     "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
     "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
+    "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md",
     "docs/codex/trusted-host-promotion-runtime-source-review.md",
     "docs/codex/trusted-host-promotion-limited-runtime-ticket.md",
     "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
@@ -160,6 +161,11 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             docs_site,
         ),
         (
+            "docs site local disposition doc",
+            "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md",
+            docs_site,
+        ),
+        (
             "review docs internal review doc",
             "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
             review_docs,
@@ -167,6 +173,11 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         (
             "review docs closure review doc",
             "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
+            review_docs,
+        ),
+        (
+            "review docs local disposition doc",
+            "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md",
             review_docs,
         ),
         (
@@ -182,6 +193,11 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         (
             "review index runtime closure",
             "Trusted-Host Promotion Runtime Review Closure",
+            review_index,
+        ),
+        (
+            "review index local disposition",
+            "Trusted-Host Promotion Runtime Local Disposition",
             review_index,
         ),
         (
@@ -203,10 +219,14 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     closure_review = (
         repo_root / "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md"
     ).read_text(encoding="utf-8")
+    local_disposition = (
+        repo_root / "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md"
+    ).read_text(encoding="utf-8")
     for text_label, text in [
         ("runtime review", runtime_review),
         ("internal review", internal_review),
         ("closure review", closure_review),
+        ("local disposition", local_disposition),
     ]:
         if FINDING_NAMESPACE not in text:
             failures.append(f"{text_label} missing finding namespace {FINDING_NAMESPACE}")
@@ -214,6 +234,10 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         failures.append("internal review does not record no critical/high findings")
     if "Disposition: `local_reviewed_external_pending`" not in closure_review:
         failures.append("closure review does not record local_reviewed_external_pending")
+    if "Disposition: `local_disposition_ready_external_pending`" not in local_disposition:
+        failures.append(
+            "local disposition does not record local_disposition_ready_external_pending"
+        )
     if tool_surface.get("tool_count") != 24:
         failures.append(f"tool count changed: {tool_surface.get('tool_count')!r}")
     if decision.get("runtime_implementation_allowed_next") is not True:

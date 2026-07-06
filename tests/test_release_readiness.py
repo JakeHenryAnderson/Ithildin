@@ -33704,6 +33704,7 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert "trusted-host-promotion-runtime-implementation.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-internal-review.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in contracts_bundle
+    assert "v3-trusted-host-promotion-runtime-local-disposition.md" in contracts_bundle
     assert "skipped command: make trusted-host-promotion-negative-transcripts" in evidence
     assert "trusted-host-promotion-runtime-source-review-bundle:" in makefile
     assert "trusted-host-promotion-runtime-source-review-bundle-check" in (
@@ -33734,6 +33735,9 @@ def test_command_center_boundary_and_trusted_host_runtime_closure_are_wired() ->
     )
     closure = Path(
         "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md"
+    ).read_text(encoding="utf-8")
+    local_disposition = Path(
+        "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md"
     ).read_text(encoding="utf-8")
     source_review = Path(
         "docs/codex/trusted-host-promotion-runtime-source-review.md"
@@ -33772,22 +33776,42 @@ def test_command_center_boundary_and_trusted_host_runtime_closure_are_wired() ->
         "This is not external closure",
     ]:
         assert phrase in closure
+    for phrase in [
+        "Disposition: `local_disposition_ready_external_pending`",
+        "No critical, high, medium, low, or informational findings",
+        "Command Center has no runtime authority",
+        "This is not external closure",
+    ]:
+        assert phrase in local_disposition
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in source_review
+    assert "v3-trusted-host-promotion-runtime-local-disposition.md" in source_review
     assert "Ithildin Command Center runtime-authority boundary" in current_checkpoint
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in current_checkpoint
+    assert "v3-trusted-host-promotion-runtime-local-disposition.md" in current_checkpoint
     assert "Ithildin Command Center runtime authority" in gap_matrix
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in closure_matrix
+    assert "v3-trusted-host-promotion-runtime-local-disposition.md" in closure_matrix
     assert "Ithildin Command Center Boundary" in review_index
     assert "Trusted-Host Promotion Runtime Review Closure" in review_index
+    assert "Trusted-Host Promotion Runtime Local Disposition" in review_index
     assert "docs/codex/ithildin-command-center-boundary.md" in review_docs.REVIEW_DOCS
     assert (
         "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md"
         in review_docs.REVIEW_DOCS
     )
+    assert (
+        "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md"
+        in review_docs.REVIEW_DOCS
+    )
     assert "docs/codex/ithildin-command-center-boundary.md" in docs_site
     assert "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md" in docs_site
+    assert (
+        "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md"
+        in docs_site
+    )
     assert "docs/codex/ithildin-command-center-boundary.md" in readme
     assert "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md" in readme
+    assert "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md" in readme
 
 
 def test_hello_world_sandbox_demo_packet_check_is_wired() -> None:

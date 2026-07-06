@@ -75,8 +75,9 @@ Primary trusted-host handoff artifacts:
 The descriptor-only ERG-004 implementation is now a bounded operator-attested descriptor-record
 slice with `descriptor_only_local_preview_disposition_ready` recorded for continued local
 development. That does not close ERG-004 for broader claims. ERG-005 now has an implemented
-staging-only, single-artifact runtime slice with negative transcripts, internal source review, and a
-focused runtime source-review bundle. Broad trusted-host promotion remains blocked, and unclear
+staging-only, single-artifact runtime slice with negative transcripts, internal source review, a
+local proxy disposition, and a focused runtime source-review bundle. Broad trusted-host promotion
+remains blocked, and unclear
 implementation questions should stop for reassessment instead of creating more low-value packet
 polish. This next action does not approve live VM/container inspection, VM/container lifecycle
 management, local model invocation, sandbox orchestration, Mission Control runtime behavior, broad

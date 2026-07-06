@@ -398,6 +398,9 @@ checked with `make control-mapping-readiness`.
   operator UI/control-plane concept historically called Mission Control.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
   addendum for the staging-only trusted-host promotion runtime slice.
+- `docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md` - local proxy disposition
+  for the ERG-005 staging-only trusted-host promotion runtime slice; external/human source review
+  remains pending for broader claims.
 - `make sandbox-artifact-write-text-preimplementation-check` - historical preimplementation
   boundary check retained for lineage; active release readiness now uses the implementation gate.
 - `make sandbox-artifact-write-text-implementation-gate` - validate the bounded local-preview

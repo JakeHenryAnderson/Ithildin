@@ -70,3 +70,9 @@ The current internal closure addendum is recorded in
 [`v3-trusted-host-promotion-runtime-review-closure.md`](v3-trusted-host-promotion-runtime-review-closure.md).
 It preserves the same staging-only local-preview boundary and marks the lane
 `local_reviewed_external_pending`.
+
+The current local proxy disposition is recorded in
+[`v3-trusted-host-promotion-runtime-local-disposition.md`](v3-trusted-host-promotion-runtime-local-disposition.md).
+It marks the staging-only runtime slice `local_disposition_ready_external_pending` for continued
+local-preview development and focused source-review handoff. It is not external closure and does
+not approve broader trusted-host promotion.
