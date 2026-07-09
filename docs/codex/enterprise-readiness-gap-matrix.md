@@ -63,14 +63,24 @@ Blocked current claims, written without product-marketing claim phrases:
 
 ## Next Enterprise Action
 
-The next enterprise-readiness action is to choose one matrix row and create or update a post-RC
-decision record before implementation begins. The review sequence is tracked in
-`enterprise-external-review-queue.md`, which currently recommends `ERG-003` static sandbox/VM
-preflight disposition as the next external/source review because it gates later live sandbox/VM
-worker planning. Mission Control display/importer planning (`ERG-002`) remains the most
-conservative usability lane because it can improve operator visibility while keeping Mission
-Control outside execution, policy, approval, audit authority, local-model invocation, sandbox
-orchestration, and trusted-host promotion. Compliance mapping support (`ERG-009`) now has the
+Current active route: `ERG-005` trusted-host promotion review.
+
+Current expected action: `prepare_erg005_trusted_host_promotion_review`.
+
+The operator should prepare the existing staging-only trusted-host promotion runtime source-review
+slice for independent review. That readiness does not approve trusted-host promotion, broad host
+writes, response evidence, disposition, closure, or runtime expansion.
+
+Historical/fallback route: `ERG-003` static sandbox/VM preflight and `ERG-002` Mission Control
+display/import review. Their packet and response machinery remains for provenance and fallback, but
+they are not the current operator next action after the recorded local-preview dispositions.
+
+The broader enterprise roadmap still requires selecting a matrix row and creating or updating a
+post-RC decision record before new implementation begins. The review sequence is tracked in
+`enterprise-external-review-queue.md`. Mission Control display/importer planning (`ERG-002`) remains
+the most conservative usability lane because it can improve operator visibility while keeping
+Mission Control outside execution, policy, approval, audit authority, local-model invocation,
+sandbox orchestration, and trusted-host promotion. Compliance mapping support (`ERG-009`) now has the
 planning-only architecture packet in
 `compliance-mapping-architecture.md` and the focused disposition packet in
 `compliance-mapping-disposition-packet.md`; it may support future operator control mapping only and

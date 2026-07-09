@@ -14,10 +14,12 @@ if __package__ in {None, ""}:
 from scripts import (  # noqa: E402
     enterprise_current_checkpoint,
     enterprise_operator_next_action,
+    enterprise_readiness_gap_matrix_check,
     enterprise_review_send_preflight,
     enterprise_review_send_readiness,
     review_docs,
     technical_mvp_execution_board,
+    v1_progress_assessment,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,6 +79,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     operator_next = enterprise_operator_next_action.build_report(repo_root)
     technical_board = technical_mvp_execution_board.build_report(repo_root)
     historical_readiness = enterprise_review_send_readiness.build_report(repo_root)
+    progress_assessment = v1_progress_assessment.build_report(repo_root)
+    gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
 
     for label, report in [
         ("enterprise-review-send-preflight", preflight),
@@ -84,6 +88,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ("enterprise-operator-next-action", operator_next),
         ("technical-mvp-execution-board", technical_board),
         ("enterprise-review-send-readiness", historical_readiness),
+        ("v1-progress-assessment", progress_assessment),
+        ("enterprise-readiness-gap-matrix", gap_matrix),
     ]:
         if report.get("valid") is not True:
             failures.append(f"{label} is not valid")
@@ -113,6 +119,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         )
     if historical_readiness.get("recommended_now") != HISTORICAL_SEND_SET:
         failures.append("historical dual-send readiness no longer records ERG-003/ERG-002 lineage")
+    if progress_assessment.get("recommended_send_set") != NEXT_SEND_SET:
+        failures.append("v1 progress assessment active send set is not ERG-005")
+    if progress_assessment.get("recommended_next_enterprise_review") != "ERG-005":
+        failures.append("v1 progress assessment next review is not ERG-005")
+    if gap_matrix.get("active_send_set") != NEXT_SEND_SET:
+        failures.append("enterprise gap matrix active send set is not ERG-005")
+    if gap_matrix.get("recommended_next_enterprise_review") != "ERG-005":
+        failures.append("enterprise gap matrix next review is not ERG-005")
 
     boundary_flags = {
         "runtime_changes_allowed": False,
@@ -189,10 +203,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "expected_action": EXPECTED_ACTION,
         "preflight_mode": preflight.get("preflight_mode"),
         "active_route_sources": [
+            "enterprise-operator-next-action (canonical state reader)",
             "enterprise-review-send-preflight",
             "enterprise-current-checkpoint",
-            "enterprise-operator-next-action",
             "technical-mvp-execution-board",
+            "v1-progress-assessment",
+            "enterprise-readiness-gap-matrix",
         ],
         **boundary_flags,
     }

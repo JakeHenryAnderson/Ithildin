@@ -12,6 +12,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    enterprise_operator_next_action,
     enterprise_readiness_gap_matrix_check,
     enterprise_review_send_preflight,
     next_capability_readiness,
@@ -33,7 +34,8 @@ REQUIRED_PHRASES = [
     "Runtime changes: blocked",
     "Public/security-product positioning: blocked",
     "Enterprise readiness gap count: `10`",
-    "Recommended next enterprise review: `ERG-003`",
+    "Recommended next enterprise review: `ERG-005`",
+    "Historical/fallback review route: `ERG-003` and `ERG-002`",
     "Core governed local tool gateway | `92-96%`",
     "v1.0 local-preview RC foundation | `84-90%`",
     "Operator workbench and local demo experience | `78-86%`",
@@ -44,7 +46,7 @@ REQUIRED_PHRASES = [
     "Technical MVP state: `operator_trial_observed`",
     "Enterprise send package ready: `true`",
     "same-commit `make release-check` and `make review-candidate`",
-    "favorable external/source disposition for `ERG-003`",
+    "independent source-review disposition for the `ERG-005` staging-only slice",
     "Mission Control remains a display/import layer",
     "Blocked Claims",
 ]
@@ -98,6 +100,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         write_artifacts=False,
     )
     enterprise_send = enterprise_review_send_preflight.build_report(repo_root)
+    operator_next = enterprise_operator_next_action.build_report(repo_root)
 
     failures.extend(f"v1-rc-status: {failure}" for failure in status["failures"])
     failures.extend(f"enterprise-gap-matrix: {failure}" for failure in gap_matrix["failures"])
@@ -109,6 +112,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(
         f"enterprise-review-send-preflight: {failure}"
         for failure in enterprise_send["failures"]
+    )
+    failures.extend(
+        f"enterprise-operator-next-action: {failure}"
+        for failure in operator_next["failures"]
     )
 
     doc_rel = DOC_PATH.relative_to(ROOT).as_posix()
@@ -145,6 +152,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     post_disposition_mode = enterprise_send.get("preflight_mode") == POST_DISPOSITION_MODE
     if enterprise_send.get("valid") is not True:
         failures.append("enterprise send preflight is not valid")
+    if operator_next.get("recommended_send_set") != ["ERG-005"]:
+        failures.append("operator next action does not identify ERG-005 as the active send set")
+    if operator_next.get("recommended_next_enterprise_review") != "ERG-005":
+        failures.append("operator next action does not identify ERG-005 as the next review")
+    if operator_next.get("next_action") != "prepare_erg005_trusted_host_promotion_review":
+        failures.append("operator next action is not the ERG-005 trusted-host review path")
     if (
         not post_disposition_mode
         and enterprise_send.get("artifact_commits_match_current") is not True
@@ -217,10 +230,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "artifact_hashes_match_files"
         ),
         "enterprise_gap_count": gap_matrix.get("gap_count"),
-        "recommended_next_enterprise_review": enterprise_send.get(
-            "current_send_set",
-            ["ERG-003"],
-        )[0],
+        "recommended_send_set": operator_next.get("recommended_send_set", []),
+        "recommended_next_enterprise_review": operator_next.get(
+            "recommended_next_enterprise_review"
+        ),
+        "enterprise_next_action": operator_next.get("next_action"),
+        "historical_fallback_review_route": ["ERG-003", "ERG-002"],
         "capability_expansion_allowed": False,
         "runtime_changes_allowed": False,
         "public_security_product_positioning_allowed": False,
@@ -258,6 +273,10 @@ def render_report(report: dict[str, Any]) -> str:
         f"{str(report['enterprise_send_artifact_hashes_match_files']).lower()}",
         f"enterprise_gap_count: {report.get('enterprise_gap_count', 'unknown')}",
         f"recommended_next_enterprise_review: {report['recommended_next_enterprise_review']}",
+        "recommended_send_set: " + ", ".join(report["recommended_send_set"]),
+        f"enterprise_next_action: {report['enterprise_next_action']}",
+        "historical_fallback_review_route: "
+        + ", ".join(report["historical_fallback_review_route"]),
         "capability_expansion_allowed: "
         f"{str(report['capability_expansion_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",

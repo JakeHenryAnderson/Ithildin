@@ -11,7 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import review_docs
+from scripts import enterprise_operator_next_action, review_docs
 
 ROOT = Path(__file__).resolve().parents[1]
 MATRIX_DOC = ROOT / "docs/codex/enterprise-readiness-gap-matrix.md"
@@ -57,6 +57,9 @@ REQUIRED_PHRASES = [
     "Blocked current claims",
     "post-RC decision record",
     "Mission Control outside execution, policy, approval, audit authority",
+    "Current active route: `ERG-005` trusted-host promotion review.",
+    "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
+    "prepare_erg005_trusted_host_promotion_review",
 ]
 
 REQUIRED_BLOCKED_PHRASES = [
@@ -97,6 +100,7 @@ def main() -> int:
 
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
+    operator_next = enterprise_operator_next_action.build_report(repo_root)
     doc_rel = MATRIX_DOC.relative_to(ROOT).as_posix()
     doc_path = repo_root / doc_rel
     makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
@@ -135,6 +139,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                     f"{phrase}"
                 )
 
+    failures.extend(_active_route_failures(operator_next))
+
     if doc_rel not in review_docs.REVIEW_DOCS:
         failures.append("enterprise-readiness gap matrix doc is missing from review docs")
     if doc_rel not in docs_site:
@@ -160,6 +166,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "gap_count": sum(1 for gap_id in REQUIRED_GAPS if f"`{gap_id}`" in text),
         "tool_count": 24,
         "selected_capability": "not selected",
+        "active_route_source": "enterprise-operator-next-action",
+        "active_send_set": operator_next.get("recommended_send_set", []),
+        "recommended_next_enterprise_review": operator_next.get(
+            "recommended_next_enterprise_review"
+        ),
+        "next_action": operator_next.get("next_action"),
+        "historical_fallback_route": ["ERG-003", "ERG-002"],
         "runtime_changes_allowed": False,
         "mission_control_runtime_allowed": False,
         "sandbox_orchestration_allowed": False,
@@ -178,6 +191,13 @@ def render_report(report: dict[str, Any]) -> str:
         f"gap_count: {report['gap_count']}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report['selected_capability']}",
+        f"active_route_source: {report['active_route_source']}",
+        "active_send_set: " + ", ".join(report["active_send_set"]),
+        "recommended_next_enterprise_review: "
+        f"{report['recommended_next_enterprise_review']}",
+        f"next_action: {report['next_action']}",
+        "historical_fallback_route: "
+        + ", ".join(report["historical_fallback_route"]),
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "mission_control_runtime_allowed: "
         f"{str(report['mission_control_runtime_allowed']).lower()}",
@@ -191,6 +211,22 @@ def render_report(report: dict[str, Any]) -> str:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])
     return "\n".join(lines)
+
+
+def _active_route_failures(operator_next: dict[str, Any]) -> list[str]:
+    failures = [
+        f"enterprise-operator-next-action: {failure}"
+        for failure in operator_next.get("failures", [])
+    ]
+    if operator_next.get("valid") is not True:
+        failures.append("enterprise operator next action is not valid")
+    if operator_next.get("recommended_send_set") != ["ERG-005"]:
+        failures.append("active enterprise send set is not ERG-005")
+    if operator_next.get("recommended_next_enterprise_review") != "ERG-005":
+        failures.append("active enterprise review is not ERG-005")
+    if operator_next.get("next_action") != "prepare_erg005_trusted_host_promotion_review":
+        failures.append("active enterprise action is not ERG-005 trusted-host review")
+    return failures
 
 
 if __name__ == "__main__":

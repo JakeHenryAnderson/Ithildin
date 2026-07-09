@@ -36,10 +36,12 @@ only under the `EXT-LIVE-DESC-###` finding namespace.
 
 The active route is reported by:
 
+- `make enterprise-operator-next-action` as the canonical state reader;
 - `make enterprise-review-send-preflight`;
 - `make enterprise-current-checkpoint`;
-- `make enterprise-operator-next-action`;
-- `make technical-mvp-execution-board`.
+- `make technical-mvp-execution-board`;
+- `make v1-progress-assessment`;
+- `make enterprise-readiness-gap-matrix-check`.
 
 ## Historical Dual-Send Lineage
 

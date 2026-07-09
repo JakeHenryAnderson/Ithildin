@@ -2286,6 +2286,11 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
     assert report["gap_count"] == 10
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
+    assert report["active_route_source"] == "enterprise-operator-next-action"
+    assert report["active_send_set"] == ["ERG-005"]
+    assert report["recommended_next_enterprise_review"] == "ERG-005"
+    assert report["next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["historical_fallback_route"] == ["ERG-003", "ERG-002"]
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["sandbox_orchestration_allowed"] is False
@@ -2322,6 +2327,9 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
         "Allowed current claims",
         "Blocked current claims",
         "Mission Control outside execution, policy, approval, audit authority",
+        "Current active route: `ERG-005` trusted-host promotion review.",
+        "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
+        "prepare_erg005_trusted_host_promotion_review",
     ]:
         assert phrase in doc
     for phrase in [
@@ -30374,6 +30382,11 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     assert report["active_send_set"] == ["ERG-005"]
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
     assert report["expected_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["active_route_sources"][0] == (
+        "enterprise-operator-next-action (canonical state reader)"
+    )
+    assert "v1-progress-assessment" in report["active_route_sources"]
+    assert "enterprise-readiness-gap-matrix" in report["active_route_sources"]
     assert report["runtime_changes_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
     assert report["sandbox_orchestration_allowed"] is False
@@ -30419,6 +30432,21 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     assert doc_path in docs_site
     assert doc_path in review_docs.REVIEW_DOCS
     assert "Enterprise Active Route Clarity" in review_index
+
+
+def test_enterprise_gap_matrix_fails_closed_on_stale_active_route() -> None:
+    stale_route = {
+        "valid": True,
+        "failures": [],
+        "recommended_send_set": ["ERG-003", "ERG-002"],
+        "recommended_next_enterprise_review": "ERG-003",
+        "next_action": "send_erg_003_and_erg_002",
+    }
+    failures = enterprise_readiness_gap_matrix_check._active_route_failures(stale_route)
+
+    assert "active enterprise send set is not ERG-005" in failures
+    assert "active enterprise review is not ERG-005" in failures
+    assert "active enterprise action is not ERG-005 trusted-host review" in failures
 
 
 def test_post_erg005_parallel_work_queue_is_wired() -> None:
