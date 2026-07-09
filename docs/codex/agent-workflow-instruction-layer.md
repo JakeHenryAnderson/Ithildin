@@ -1,8 +1,9 @@
 # Agent Workflow Instruction Layer
 
-This document records the repository-level planner-implementer workflow encoded in
-[`AGENTS.md`](../../AGENTS.md). The goal is to reduce repeated prompt overhead while preserving
-Ithildin's local-preview safety model.
+This document records the repository-level planner-implementer workflow encoded in the root
+[`AGENTS.md`](../../AGENTS.md) and the narrower `docs/AGENTS.md` and `scripts/AGENTS.md` instruction
+layers. The goal is to reduce repeated prompt overhead while preserving Ithildin's local-preview
+safety model.
 
 `AGENTS.md` is always-on agent guidance. It is not a policy engine, sandbox, approval workflow, or security boundary. The enforceable controls remain the committed gates, tests, source-review
 workflow, and human/user review.
@@ -12,10 +13,10 @@ workflow, and human/user review.
 | Role | Allowed Work | Must Not Do |
 | --- | --- | --- |
 | Main Codex manager | Scope work, choose gates, review diffs, decide safety, commit. | Delegate final safety judgment. |
-| Low Codex implementer | Preferred `gpt-5.4-mini` low-reasoning report-first path for docs links, stale wording scans, repetitive test wiring suggestions, packet inventories, and boilerplate from an existing pattern. Use one at a time by default. | Edit manifests, executors, policy semantics, approval/audit logic, MCP/API behavior, storage/auth boundaries, or trust claims. |
+| Low Codex implementer | Preferred GPT-5.6 Terra medium-reasoning report-first path for bounded discovery and GPT-5.6 Luna low/medium path for objectively verifiable mechanical work. Use one at a time by default. | Edit manifests, executors, policy semantics, approval/audit logic, MCP/API behavior, storage/auth boundaries, or trust claims. |
 | Gemma/local-model suggester | Optional offline advisory pass for broad but shallow scans when latency is acceptable. | Directly edit files, act as the default implementer, or make safety/product judgments. |
-| High implementer/reviewer | Bounded runtime/test work under an explicit plan and manager review. | Approve new product boundaries alone. |
-| XHigh reviewer | Milestone risk review, ambiguous boundary review, break-glass consultation. | Replace external review for public/security-product positioning. |
+| Sol implementer/reviewer | Daily-driver work at medium reasoning; bounded runtime/test work under an explicit plan and manager review. | Approve new product boundaries alone. |
+| High/XHigh Sol reviewer | Milestone risk review, ambiguous boundary review, and break-glass consultation. | Replace external review for public/security-product positioning. |
 
 ## Delegation Packet Shape
 
@@ -71,5 +72,6 @@ Run:
 make agent-workflow-check
 ```
 
-The check verifies that `AGENTS.md`, this role contract, README command references, docs-site inputs,
+The check verifies the root, docs, and scripts instruction hierarchy; reports each instruction
+file's byte size; and verifies that this role contract, README command references, docs-site inputs,
 and review-doc metadata preserve the workflow and boundary language.

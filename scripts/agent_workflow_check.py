@@ -9,14 +9,19 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 AGENTS_PATH = Path("AGENTS.md")
+DOCS_AGENTS_PATH = Path("docs/AGENTS.md")
+SCRIPTS_AGENTS_PATH = Path("scripts/AGENTS.md")
 WORKFLOW_DOC = Path("docs/codex/agent-workflow-instruction-layer.md")
+INSTRUCTION_PATHS = [AGENTS_PATH, DOCS_AGENTS_PATH, SCRIPTS_AGENTS_PATH]
 
 REQUIRED_AGENTS_PHRASES = [
     "coordination guidance, not a security boundary",
     "local-preview governed MCP/tool gateway",
     "Current governed tool count is 24",
+    "GPT-5.6 Sol with medium reasoning as the daily driver",
     "Low Codex implementers are the preferred mechanical delegation path",
-    "Use `gpt-5.4-mini` with low",
+    "GPT-5.6 Terra with",
+    "GPT-5.6 Luna with low or medium reasoning",
     "Use one Low Codex implementer at a time by default",
     "should remain disabled until several read-only trials",
     "Gemma/local-model output is advisory only",
@@ -32,6 +37,7 @@ REQUIRED_AGENTS_PHRASES = [
     "hosted telemetry",
     "remote MCP hosting",
     "plugin SDK behavior",
+    "Tests and generated evidence do not authorize promotion",
     "make agent-workflow-check",
     "Stop and report status",
 ]
@@ -40,6 +46,8 @@ REQUIRED_WORKFLOW_PHRASES = [
     "planner-implementer workflow",
     "not a policy engine, sandbox, approval workflow, or security boundary",
     "Low Codex implementer",
+    "GPT-5.6 Terra",
+    "GPT-5.6 Luna",
     "report-first",
     "Use one at a time by default",
     "Direct edits should remain disabled",
@@ -48,6 +56,19 @@ REQUIRED_WORKFLOW_PHRASES = [
     "Forbidden changes",
     "The current governed tool count is 24",
     "make agent-workflow-check",
+]
+
+REQUIRED_DOCS_AGENTS_PHRASES = [
+    "planning, implementation, execution, approval",
+    "closure, and release",
+    "Historical ERG artifacts remain lineage",
+    "Do not edit generated files under `var/` directly",
+]
+
+REQUIRED_SCRIPTS_AGENTS_PHRASES = [
+    "Checks must fail closed",
+    "Keep generators deterministic",
+    "Preserve path confinement",
 ]
 
 
@@ -67,6 +88,8 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     agents = _read_required(repo_root / AGENTS_PATH, failures)
+    docs_agents = _read_required(repo_root / DOCS_AGENTS_PATH, failures)
+    scripts_agents = _read_required(repo_root / SCRIPTS_AGENTS_PATH, failures)
     workflow = _read_required(repo_root / WORKFLOW_DOC, failures)
     readme = _read_required(repo_root / "README.md", failures)
     makefile = _read_required(repo_root / "Makefile", failures)
@@ -74,6 +97,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     docs_site = _read_required(repo_root / "scripts/build_docs_site.py", failures)
 
     failures.extend(_missing_phrases(AGENTS_PATH.as_posix(), agents, REQUIRED_AGENTS_PHRASES))
+    failures.extend(
+        _missing_phrases(
+            DOCS_AGENTS_PATH.as_posix(), docs_agents, REQUIRED_DOCS_AGENTS_PHRASES
+        )
+    )
+    failures.extend(
+        _missing_phrases(
+            SCRIPTS_AGENTS_PATH.as_posix(),
+            scripts_agents,
+            REQUIRED_SCRIPTS_AGENTS_PHRASES,
+        )
+    )
     failures.extend(_missing_phrases(WORKFLOW_DOC.as_posix(), workflow, REQUIRED_WORKFLOW_PHRASES))
     if "agent-workflow-check:" not in makefile:
         failures.append("Makefile is missing agent-workflow-check target")
@@ -81,10 +116,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("README.md does not document make agent-workflow-check")
     if AGENTS_PATH.as_posix() not in review_docs:
         failures.append("AGENTS.md is missing from review docs")
+    if DOCS_AGENTS_PATH.as_posix() not in review_docs:
+        failures.append("docs/AGENTS.md is missing from review docs")
+    if SCRIPTS_AGENTS_PATH.as_posix() not in review_docs:
+        failures.append("scripts/AGENTS.md is missing from review docs")
     if WORKFLOW_DOC.as_posix() not in review_docs:
         failures.append("agent workflow doc is missing from review docs")
     if AGENTS_PATH.as_posix() not in docs_site:
         failures.append("AGENTS.md is missing from docs-site inputs")
+    if DOCS_AGENTS_PATH.as_posix() not in docs_site:
+        failures.append("docs/AGENTS.md is missing from docs-site inputs")
+    if SCRIPTS_AGENTS_PATH.as_posix() not in docs_site:
+        failures.append("scripts/AGENTS.md is missing from docs-site inputs")
     if WORKFLOW_DOC.as_posix() not in docs_site:
         failures.append("agent workflow doc is missing from docs-site inputs")
 
@@ -93,6 +136,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "agents_path": AGENTS_PATH.as_posix(),
+        "instruction_hierarchy": [path.as_posix() for path in INSTRUCTION_PATHS],
+        "instruction_bytes": {
+            AGENTS_PATH.as_posix(): len(agents.encode("utf-8")),
+            DOCS_AGENTS_PATH.as_posix(): len(docs_agents.encode("utf-8")),
+            SCRIPTS_AGENTS_PATH.as_posix(): len(scripts_agents.encode("utf-8")),
+        },
         "workflow_doc": WORKFLOW_DOC.as_posix(),
         "tool_count": 24,
         "low_implementer_runtime_changes_allowed": False,
@@ -107,6 +156,11 @@ def render_report(report: dict[str, Any]) -> str:
         "Ithildin agent workflow instruction check",
         f"valid: {str(report['valid']).lower()}",
         f"agents_path: {report['agents_path']}",
+        "instruction_hierarchy:",
+        *(
+            f"- {path}: {report['instruction_bytes'][path]} bytes"
+            for path in report["instruction_hierarchy"]
+        ),
         f"workflow_doc: {report['workflow_doc']}",
         f"tool_count: {report['tool_count']}",
         "low_implementer_runtime_changes_allowed: false",

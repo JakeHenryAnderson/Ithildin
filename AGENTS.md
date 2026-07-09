@@ -21,13 +21,16 @@ handoff, and release/readiness updates.
 
 - The main Codex agent owns scope, safety judgment, implementation review, gates, staging, and
   commits.
-- Low Codex implementers are the preferred mechanical delegation path. Use `gpt-5.4-mini` with low
-  reasoning as the default cheap worker for narrow report-first tasks: docs links, stale wording
-  scans, repetitive test wiring suggestions, packet inventory checks, and boilerplate following an
-  existing pattern.
-- Use one Low Codex implementer at a time by default. Direct file edits by Low Codex implementers
-  should remain disabled until several read-only trials have produced useful suggestions with low
-  cleanup cost and no boundary drift.
+- Use GPT-5.6 Sol with medium reasoning as the daily driver. Keep Sol involved when work touches
+  trust boundaries, policy, authorization, audit, redaction, promotion state, or security claims;
+  escalate to high or xhigh when risk or persistent ambiguity warrants it.
+- Low Codex implementers are the preferred mechanical delegation path. Use GPT-5.6 Terra with
+  medium reasoning for bounded report-first discovery and GPT-5.6 Luna with low or medium reasoning
+  for high-volume mechanical work whose correctness is recoverable through tests or comparison.
+- Use one Low Codex implementer at a time by default. Let one agent own implementation and use
+  parallel agents primarily for independent read-only investigation or review. Direct file edits by
+  Low Codex implementers should remain disabled until several read-only trials have produced useful
+  suggestions with low cleanup cost and no boundary drift.
 - Gemma/local-model output is advisory only and should be used only for offline suggestions when a
   task is large but shallow; it is not the default implementation path for Ithildin.
 - Low Codex and Gemma/local-model implementers must not decide safety boundaries, design executors,
@@ -77,6 +80,20 @@ make agent-workflow-check
 uv run pytest tests/test_release_readiness.py tests/test_docs_site.py -q
 make lint
 ```
+
+## Completion Contract
+
+- Inspect the relevant implementation and instruction hierarchy before editing.
+- Plan briefly when work crosses components; make the smallest complete change.
+- Run focused checks first, then the authoritative broader gate when shared behavior, release
+  evidence, or a handoff claim is affected.
+- Review the final diff for unrelated changes, trust-boundary regressions, and sensitive metadata.
+- Implementation is done only when requested behavior and proportional checks pass. Review is done
+  only when findings are recorded or explicitly cleared. Documentation is done only when commands,
+  links, and status wording match current behavior. Evidence work is done only when artifacts are
+  reproducible and labeled with what they do not prove.
+- Tests and generated evidence do not authorize promotion, execution, closure, release, approval,
+  or expansion of scope.
 
 ## Stop Conditions
 

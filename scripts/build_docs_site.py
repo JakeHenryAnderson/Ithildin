@@ -11,6 +11,8 @@ from pathlib import Path
 
 DEFAULT_DOCS = [
     "AGENTS.md",
+    "docs/AGENTS.md",
+    "scripts/AGENTS.md",
     "README.md",
     "docs/codex/v0.2-review-response-and-rc-cleanup.md",
     "docs/codex/v0.2-review-packet.md",
@@ -506,6 +508,7 @@ DEFAULT_DOCS = [
     "docs/codex/internal-ai-review-workflow.md",
     "docs/codex/autonomous-sprint-guardrails.md",
     "docs/codex/agent-workflow-instruction-layer.md",
+    "docs/codex/gpt-56-codex-readiness.md",
     "docs/codex/low-implementer-delegation-pilot.md",
     "docs/codex/low-implementer-ticket-catalog.md",
     "docs/codex/low-implementer-trial-log.md",

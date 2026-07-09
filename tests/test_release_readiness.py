@@ -1439,6 +1439,12 @@ def test_agent_workflow_instruction_layer_is_wired() -> None:
     assert report["low_codex_preferred_mechanical_path"] is True
     assert report["gemma_output_advisory_only"] is True
     assert report["guidance_is_security_boundary"] is False
+    assert report["instruction_hierarchy"] == [
+        "AGENTS.md",
+        "docs/AGENTS.md",
+        "scripts/AGENTS.md",
+    ]
+    assert all(size > 0 for size in report["instruction_bytes"].values())
     assert "agent-workflow-check:" in makefile
     assert "make agent-workflow-check" in readme
     assert "Low Codex mechanical implementers" in reproduction_map
@@ -1446,13 +1452,18 @@ def test_agent_workflow_instruction_layer_is_wired() -> None:
     workflow = Path("docs/codex/agent-workflow-instruction-layer.md").read_text(
         encoding="utf-8"
     )
-    assert "gpt-5.4-mini" in agents
+    assert "GPT-5.6 Sol with medium reasoning as the daily driver" in agents
+    assert "GPT-5.6 Terra" in agents
+    assert "GPT-5.6 Luna" in agents
     assert "Use one Low Codex implementer at a time by default" in agents
     assert "should remain disabled until several read-only trials" in agents
     assert "report-first" in workflow
     assert "Direct edits should remain disabled" in workflow
     assert "AGENTS.md" in review_docs.REVIEW_DOCS
+    assert "docs/AGENTS.md" in review_docs.REVIEW_DOCS
+    assert "scripts/AGENTS.md" in review_docs.REVIEW_DOCS
     assert "docs/codex/agent-workflow-instruction-layer.md" in review_docs.REVIEW_DOCS
+    assert "docs/codex/gpt-56-codex-readiness.md" in review_docs.REVIEW_DOCS
 
 
 def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
