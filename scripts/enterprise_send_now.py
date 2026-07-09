@@ -363,7 +363,7 @@ def _build_erg005_report(
         failures.append("ERG-005 trusted-host external-review bundle is missing")
     if not response_dir.exists():
         failures.append("ERG-005 trusted-host response kit is missing")
-    if freshness.get("dirty") is False and not freshness.get("valid"):
+    if not _fresh_enough_to_write_send_now(freshness):
         failures.append("handoff artifacts are stale; run make review-candidate")
     return {
         "schema_version": "1",
