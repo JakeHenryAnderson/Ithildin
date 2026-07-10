@@ -410,6 +410,9 @@ checked with `make control-mapping-readiness`.
   without granting Command Center runtime authority or broad host promotion.
 - `docs/codex/erg005-walkthrough-ready-note.md` - records that the ERG-005 operator walkthrough
   packet is ready for a guided human pass while bounded planning/evidence work may continue.
+- `docs/codex/operator-uat-chat-handoff.md` - paste-ready fresh-task prompt for a
+  one-checkpoint-at-a-time live UI usability walkthrough with explicit observation, pause, cleanup,
+  and no-approval rules.
 - `docs/codex/post-erg005-parallel-work-queue.md` - records the bounded adjacent workstreams that
   can continue while the ERG-005 walkthrough waits, without adding runtime authority or new powers.
 - `make post-erg005-parallel-work-queue-check` - validate that the post-ERG-005 parallel work queue

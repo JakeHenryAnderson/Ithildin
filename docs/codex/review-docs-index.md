@@ -34,6 +34,7 @@ externally closed.
 - [Resource Limit Sanity](resource-limit-sanity.md)
 - [Demo Scenario Pack v2](demo-scenario-pack-v2.md)
 - [Live Demo Runbook](live-demo-runbook.md)
+- [Guided Operator UAT Chat Handoff](operator-uat-chat-handoff.md)
 - [ERG-005 Walkthrough Ready Note](erg005-walkthrough-ready-note.md)
 - [Post-ERG-005 Parallel Work Queue](post-erg005-parallel-work-queue.md)
 

@@ -155,6 +155,7 @@ REVIEW_DOCS = [
     "docs/codex/agent-run-operations-readiness-gate.md",
     "docs/codex/operator-workbench-readiness.md",
     "docs/codex/operator-demo-walkthrough.md",
+    "docs/codex/operator-uat-chat-handoff.md",
     "docs/codex/erg005-walkthrough-ready-note.md",
     "docs/codex/post-erg005-parallel-work-queue.md",
     "docs/codex/guided-demo-readiness.md",
