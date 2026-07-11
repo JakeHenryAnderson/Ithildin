@@ -1079,6 +1079,38 @@ describe("Review console interactions", () => {
     expect(within(attention).getByText(/6\/3\/26/)).toBeInTheDocument();
   });
 
+  it("uses stuck-approval expiry in recovery attention without an apply attempt", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input).replace(API_BASE, "");
+      if (path === "/approvals/review?status=pending" || path === "/approvals") {
+        return jsonResponse({ approvals: [] });
+      }
+      if (path === "/patch-proposals") {
+        return jsonResponse({ patch_proposals: [] });
+      }
+      if (path === "/patch-apply-diagnostics") {
+        return jsonResponse({
+          status: "ambiguous",
+          attempts: [],
+          stuck_approvals: [{
+            approval_id: "appr_stuck",
+            has_apply_attempt: false,
+            expires_at: "2026-06-04T12:05:00Z",
+          }],
+          recommendations: [],
+        });
+      }
+      return initialImplementation(input, init);
+    });
+    await saveToken();
+
+    const attention = screen.getByRole("region", { name: "Attention" });
+    expect(within(attention).getByText("Patch recovery review required")).toBeInTheDocument();
+    expect(within(attention).getByText(/6\/4\/26/)).toBeInTheDocument();
+  });
+
   it("fails closed when a replacement token is rejected", async () => {
     const fetchMock = installFetchMock();
     const user = await saveToken();
@@ -1345,6 +1377,28 @@ describe("Review console interactions", () => {
       expect.objectContaining({ method: "POST" }),
     );
     delayed.resolve(jsonResponse(approvalReview.approval));
+  });
+
+  it("reconciles a successful approval decision after a concurrent dashboard refresh", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayed = deferredResponse();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/approvals/appr_123456789/deny")) {
+        return delayed.promise;
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+    const systemStatusCalls = () =>
+      fetchMock.mock.calls.filter(([input]) => String(input).endsWith("/system/status")).length;
+
+    await user.click(screen.getByRole("button", { name: /^Deny$/i }));
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => expect(systemStatusCalls()).toBeGreaterThanOrEqual(2));
+    delayed.resolve(jsonResponse(approvalReview.approval));
+
+    await waitFor(() => expect(systemStatusCalls()).toBeGreaterThanOrEqual(3));
   });
 
   it("does not restore delayed detail after signing out", async () => {

@@ -3447,6 +3447,7 @@ def test_patch_apply_diagnostics_reports_executing_approval_without_attempt_as_a
     assert diagnostics["attempts"] == []
     assert stuck_approvals[0]["approval_id"] == approval.approval_id
     assert stuck_approvals[0]["has_apply_attempt"] is False
+    assert stuck_approvals[0]["expires_at"] == approval.expires_at.isoformat()
 
 
 def test_patch_apply_rejects_hardlinked_target_without_partial_write(tmp_path: Path) -> None:

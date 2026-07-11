@@ -751,6 +751,7 @@ class PatchProposalService:
                     "approval_id": approval.approval_id,
                     "request_id": approval.request_id,
                     "tool_name": approval.tool_name,
+                    "expires_at": approval.expires_at.isoformat(),
                     "has_apply_attempt": approval.approval_id in attempt_approval_ids,
                     "proposal_id": _optional_scope_string(
                         approval.one_time_scope,

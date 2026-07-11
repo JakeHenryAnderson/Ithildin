@@ -505,6 +505,7 @@ export function App() {
   const runEvidenceRequest = useRef(0);
   const decidingApprovalIds = useRef(new Set<string>());
   const authGeneration = useRef(0);
+  const operationGeneration = useRef(0);
 
   const pendingCount = data.approvals.length;
   const proposedPatchCount = data.patches.filter((patch) => patch.status === "proposed").length;
@@ -561,7 +562,7 @@ export function App() {
 
   async function loadDashboard(activeToken = token, activeRunFilters = appliedRunFilters) {
     const requestId = ++dashboardRequest.current;
-    authGeneration.current += 1;
+    operationGeneration.current += 1;
     setPreviewResult(null);
     setPreviewError(null);
     setPreviewLoading(false);
@@ -761,6 +762,7 @@ export function App() {
     event.preventDefault();
     const nextToken = draftToken.trim();
     authGeneration.current += 1;
+    operationGeneration.current += 1;
     setPreviewResult(null);
     setPreviewError(null);
     setPreviewLoading(false);
@@ -855,7 +857,7 @@ export function App() {
       return;
     }
 
-    const operationAuthGeneration = authGeneration.current;
+    const operationAuthGeneration = operationGeneration.current;
     const activeToken = token;
     setPreviewLoading(true);
     setPreviewError(null);
@@ -871,15 +873,15 @@ export function App() {
           principal: parsedPrincipal,
         }),
       });
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setPreviewResult(result);
       }
     } catch (caught) {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setPreviewError(errorMessage(caught));
       }
     } finally {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setPreviewLoading(false);
       }
     }
@@ -891,7 +893,7 @@ export function App() {
       return;
     }
 
-    const operationAuthGeneration = authGeneration.current;
+    const operationAuthGeneration = operationGeneration.current;
     const activeToken = token;
     setImpactLoading(true);
     setImpactError(null);
@@ -901,15 +903,15 @@ export function App() {
         method: "POST",
         body: JSON.stringify({ candidate_policy_yaml: candidatePolicyYaml }),
       });
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setImpactResult(result);
       }
     } catch (caught) {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setImpactError(errorMessage(caught));
       }
     } finally {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setImpactLoading(false);
       }
     }
@@ -919,7 +921,7 @@ export function App() {
     if (!token) {
       return;
     }
-    const operationAuthGeneration = authGeneration.current;
+    const operationAuthGeneration = operationGeneration.current;
     const activeToken = token;
     setExportLoading(true);
     setError(null);
@@ -930,11 +932,11 @@ export function App() {
       if (!response.ok) {
         throw await apiErrorFromResponse(response);
       }
-      if (operationAuthGeneration !== authGeneration.current) {
+      if (operationAuthGeneration !== operationGeneration.current) {
         return;
       }
       const bundle = await response.blob();
-      if (operationAuthGeneration !== authGeneration.current) {
+      if (operationAuthGeneration !== operationGeneration.current) {
         return;
       }
       const objectUrl = URL.createObjectURL(bundle);
@@ -955,7 +957,7 @@ export function App() {
           : "Audit export response prepared and browser download initiated; save location and custody are not verified.",
       });
     } catch (caught) {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setError(errorMessage(caught));
         setExportNotice({
           scope: signed ? "signed-audit" : "audit",
@@ -964,7 +966,7 @@ export function App() {
         });
       }
     } finally {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setExportLoading(false);
       }
     }
@@ -974,7 +976,7 @@ export function App() {
     if (!token) {
       return;
     }
-    const operationAuthGeneration = authGeneration.current;
+    const operationAuthGeneration = operationGeneration.current;
     const activeToken = token;
     setExportLoading(true);
     setError(null);
@@ -988,11 +990,11 @@ export function App() {
       if (!response.ok) {
         throw await apiErrorFromResponse(response);
       }
-      if (operationAuthGeneration !== authGeneration.current) {
+      if (operationAuthGeneration !== operationGeneration.current) {
         return;
       }
       const bundle = await response.blob();
-      if (operationAuthGeneration !== authGeneration.current) {
+      if (operationAuthGeneration !== operationGeneration.current) {
         return;
       }
       const objectUrl = URL.createObjectURL(bundle);
@@ -1011,13 +1013,13 @@ export function App() {
           "Run evidence response prepared and browser download initiated; save location, custody, receipt, and later integrity are not verified.",
       });
     } catch (caught) {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         const message = `Run ${shortId(runId)} export failed: ${errorMessage(caught)}`;
         setError(message);
         setExportNotice({ scope: "run", runId, state: "failed", message });
       }
     } finally {
-      if (operationAuthGeneration === authGeneration.current) {
+      if (operationAuthGeneration === operationGeneration.current) {
         setExportLoading(false);
       }
     }

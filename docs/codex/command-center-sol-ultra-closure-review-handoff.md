@@ -20,6 +20,10 @@ Record all of the following before sending this packet:
 - `make review-candidate`: `PENDING ON EXACT COMMIT`; and
 - addition-aware whitespace check for all candidate documents: `PENDING ON EXACT COMMIT`.
 
+The dispatch record must cite the immutable `release-check.txt` inside the exact candidate packet.
+Do not use `var/review-packets/v3/review-candidate-release-check.txt` as the reviewer locator: that
+path is a mutable build input and advances when a later candidate is generated.
+
 Do not replace `PENDING` with an intended result. Use only observed output from the exact candidate.
 
 ## Reviewer Prompt

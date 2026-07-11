@@ -21291,6 +21291,15 @@ def test_review_candidate_target_sequences_handoff_commands() -> None:
     assert "Review candidate ready: var/review-packets/v0.2/GPT-5.5-Pro-consolidated" not in body
 
 
+def test_command_center_closure_handoff_requires_packet_local_release_transcript() -> None:
+    handoff = Path(
+        "docs/codex/command-center-sol-ultra-closure-review-handoff.md"
+    ).read_text(encoding="utf-8")
+
+    assert "immutable `release-check.txt` inside the exact candidate packet" in handoff
+    assert "mutable build input" in handoff
+
+
 def test_consolidated_review_packet_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
