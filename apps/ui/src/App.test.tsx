@@ -1138,6 +1138,8 @@ describe("Review console interactions", () => {
 
     expect(await screen.findByText("tool inventory unavailable")).toBeInTheDocument();
     expect(screen.queryByText("read allowed")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Tool request")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Test decision$/i })).toBeDisabled();
   });
 
   it("does not repopulate selected detail during a partial replacement-token load", async () => {

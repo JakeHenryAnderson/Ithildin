@@ -570,6 +570,7 @@ export function App() {
     setImpactLoading(false);
     setExportNotice(null);
     setExportLoading(false);
+    setSelectedToolName("");
     if (!activeToken) {
       proposalRequest.current += 1;
       runDetailRequest.current += 1;
@@ -642,9 +643,10 @@ export function App() {
         auditEvents: auditResponse.audit_events,
         verification: verificationResponse,
       });
-      if (!selectedToolName && toolsResponse.tools[0]) {
-        setSelectedToolName(toolsResponse.tools[0].name);
-      }
+      const nextToolName = toolsResponse.tools.some((tool) => tool.name === selectedToolName)
+        ? selectedToolName
+        : toolsResponse.tools[0]?.name ?? "";
+      setSelectedToolName(nextToolName);
       const nextProposalId = patchesResponse.patch_proposals.some(
         (proposal) => proposal.proposal_id === selectedProposalId,
       )
@@ -849,7 +851,7 @@ export function App() {
 
   async function runPolicyPreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token || !selectedToolName) {
+    if (!token || !selectedTool) {
       return;
     }
 
@@ -864,7 +866,7 @@ export function App() {
       const result = await apiRequest<PolicyPreviewResult>("/policy/preview", activeToken, {
         method: "POST",
         body: JSON.stringify({
-          tool_name: selectedToolName,
+          tool_name: selectedTool.name,
           arguments: parsedArguments,
           principal: parsedPrincipal,
         }),
@@ -1569,7 +1571,7 @@ export function App() {
               <button
                 className="primary-action"
                 type="submit"
-                disabled={!token || !selectedToolName || previewLoading}
+                disabled={!token || !selectedTool || previewLoading}
               >
                 <ShieldCheck aria-hidden="true" size={16} />
                 {previewLoading ? "Evaluating" : "Test decision"}
