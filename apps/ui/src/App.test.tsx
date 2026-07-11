@@ -1120,6 +1120,48 @@ describe("Review console interactions", () => {
     expect(screen.getAllByText("Apply demo patch").length).toBeGreaterThan(0);
   });
 
+  it("clears policy authority results when a dashboard refresh is partial", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("button", { name: "Policy administration" }));
+    await user.click(screen.getByRole("button", { name: /^Test decision$/i }));
+    expect(await screen.findByText("read allowed")).toBeInTheDocument();
+
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/tools")) {
+        return jsonResponse({ detail: "tool inventory unavailable" }, { status: 503 });
+      }
+      return initialImplementation(input, init);
+    });
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+
+    expect(await screen.findByText("tool inventory unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("read allowed")).not.toBeInTheDocument();
+  });
+
+  it("does not repopulate selected detail during a partial replacement-token load", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/tools")) {
+        return jsonResponse({ detail: "replacement dashboard unavailable" }, { status: 503 });
+      }
+      return initialImplementation(input, init);
+    });
+
+    const tokenInput = screen.getByLabelText("Admin token");
+    await user.clear(tokenInput);
+    await user.type(tokenInput, "replacement-token");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByText("replacement dashboard unavailable")).toBeInTheDocument();
+    const detail = screen.getByRole("region", { name: "Selected artifact detail" });
+    expect(within(detail).getByText("Select a proposal.")).toBeInTheDocument();
+    expect(within(detail).queryByRole("heading", { name: "demo.txt" })).not.toBeInTheDocument();
+  });
+
   it("ignores an out-of-order proposal detail response after selection changes", async () => {
     const fetchMock = installFetchMock();
     const initialImplementation = fetchMock.getMockImplementation()!;

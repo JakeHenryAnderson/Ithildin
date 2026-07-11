@@ -561,6 +561,15 @@ export function App() {
 
   async function loadDashboard(activeToken = token, activeRunFilters = appliedRunFilters) {
     const requestId = ++dashboardRequest.current;
+    authGeneration.current += 1;
+    setPreviewResult(null);
+    setPreviewError(null);
+    setPreviewLoading(false);
+    setImpactResult(null);
+    setImpactError(null);
+    setImpactLoading(false);
+    setExportNotice(null);
+    setExportLoading(false);
     if (!activeToken) {
       proposalRequest.current += 1;
       runDetailRequest.current += 1;
@@ -584,7 +593,9 @@ export function App() {
     setError(null);
     setDashboardError(null);
     setData(emptyDashboardData());
+    setSelectedProposalId(null);
     setSelectedProposal(null);
+    setSelectedRunId(null);
     setSelectedRun(null);
     setSelectedRunEvidence(null);
     setRunEvidenceError(null);
