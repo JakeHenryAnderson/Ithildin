@@ -22,7 +22,7 @@ UI_TESTS = Path("apps/ui/src/App.test.tsx")
 REQUIRED_UI_PHRASES = [
     "Agent Runs",
     "Export Run Evidence",
-    "System Trust",
+    "Local System Posture",
     "run-filter-bar",
     "timeline-view",
 ]
@@ -79,7 +79,8 @@ Generated at: `{datetime.now(UTC).isoformat()}`.
 
 ## Panels To Inspect During Live Demo
 
-- System Trust: local-preview warnings, tool count, manifest/policy/audit/storage/telemetry status.
+- Local System Posture: local-preview warnings, tool count,
+  manifest/policy/audit/storage/telemetry status.
 - Agent Runs: principal/workspace/status/tool filters and summary chips.
 - Selected run timeline: category/status grouping, warning chips, short IDs, and safe metadata.
 - Export Run Evidence: read-only `/runs/{{run_id}}/evidence-export` download action.
@@ -88,8 +89,8 @@ Generated at: `{datetime.now(UTC).isoformat()}`.
 
 ## Static Source/Test Evidence
 
-- `apps/ui/src/App.tsx` contains the Agent Runs panel, System Trust panel, timeline view, bounded
-  run filters, and Export Run Evidence action.
+- `apps/ui/src/App.tsx` contains the Agent Runs panel, Local System Posture panel, timeline view,
+  bounded run filters, and Export Run Evidence action.
 - `apps/ui/src/App.test.tsx` covers authenticated run filter requests, summary rendering, trust
   warning rendering, approval evidence display, approve/deny actions, and run evidence export.
 

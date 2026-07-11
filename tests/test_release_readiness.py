@@ -31141,7 +31141,7 @@ def test_operator_sandbox_demo_smoke_and_dashboard_artifacts_are_secret_free(
     assert "make demo-flow" in smoke
     assert "operator-managed workspace or sandbox" in smoke
     assert "does not prove OS isolation" in smoke
-    assert "System Trust" in checklist
+    assert "Local System Posture" in checklist
     assert "Agent Runs" in checklist
     assert "Export Run Evidence" in checklist
     for forbidden in [
