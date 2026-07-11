@@ -13,6 +13,33 @@ externally closed.
 - [v0.4 Milestone Manifest](v0.4-milestone-manifest.md) - task status, waves, gates, and stop
   conditions.
 
+## Command Center Pilot Design
+
+- [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
+- [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
+- [Command Center Information Architecture](command-center-information-architecture.md)
+- [Command Center Golden Pilot Scenario](command-center-golden-pilot-scenario.md)
+- [Command Center Initial Operator UAT Evidence](command-center-initial-operator-uat-evidence.md)
+- [Command Center Terminology and Operator-State Contract](command-center-terminology-and-state-contract.md)
+- [Command Center Pilot Epic and Ordered Backlog](command-center-pilot-epic-and-backlog.md)
+- [CC-PILOT-101 Authoritative Data Feasibility Map](command-center-cc-pilot-101-data-feasibility.md)
+- [CC-PILOT-101 Implementation Handoff](command-center-cc-pilot-101-implementation-handoff.md)
+- [CC-PILOT-102 Authoritative Data Feasibility Map](command-center-cc-pilot-102-data-feasibility.md)
+- [CC-PILOT-102 Implementation Handoff](command-center-cc-pilot-102-implementation-handoff.md)
+- [CC-PILOT-103 Authoritative Data Feasibility Map](command-center-cc-pilot-103-data-feasibility.md)
+- [CC-PILOT-103 Implementation Handoff](command-center-cc-pilot-103-implementation-handoff.md)
+- [CC-PILOT-104 Authoritative Data Feasibility Map](command-center-cc-pilot-104-data-feasibility.md)
+- [CC-PILOT-104 Implementation Handoff](command-center-cc-pilot-104-implementation-handoff.md)
+- [CC-PILOT-105 Authoritative Data Feasibility Map](command-center-cc-pilot-105-data-feasibility.md)
+- [CC-PILOT-105 Implementation Handoff](command-center-cc-pilot-105-implementation-handoff.md)
+- [CC-PILOT-106 Authoritative Data Feasibility Map](command-center-cc-pilot-106-data-feasibility.md)
+- [CC-PILOT-106 Implementation Handoff](command-center-cc-pilot-106-implementation-handoff.md)
+- [CC-PILOT-107 Fresh-Operator UAT Handoff](command-center-cc-pilot-107-uat-handoff.md)
+- [Command Center Pre-UAT Accessibility, Authority, and UI Review](command-center-pre-uat-accessibility-authority-ui-review.md)
+- [Command Center Independent Sol Ultra Pre-UAT Findings Register](command-center-sol-ultra-pre-uat-review.md)
+- [Command Center Sol Ultra Closure Review Handoff](command-center-sol-ultra-closure-review-handoff.md)
+- [Ithildin Command Center Boundary](ithildin-command-center-boundary.md)
+
 ## Threat and Boundary
 
 - [Threat Model and Non-Goals](threat-model-and-non-goals.md)

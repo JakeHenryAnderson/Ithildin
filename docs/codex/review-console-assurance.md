@@ -64,7 +64,7 @@ harness uses mocked local API responses and covers:
 - system trust warning rendering for dev-token and weak-token states;
 - approval binding evidence visibility and approve/deny actions;
 - signed audit export button behavior;
-- policy preview JSON error handling.
+- request decision preflight JSON error handling.
 
 Run `make ui-test` or `npm run test --prefix apps/ui` to execute the harness. It is frontend
 interaction assurance for the local admin console only; it does not add browser automation,

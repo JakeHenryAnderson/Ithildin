@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -21879,7 +21880,7 @@ def test_review_console_assurance_is_documented() -> None:
         "failed export responses are parsed",
         "does not add repair",
         "review_summary",
-        "policy preview JSON error handling",
+        "request decision preflight JSON error handling",
     ]:
         assert required in doc
     for ui_marker in [
@@ -21908,7 +21909,7 @@ def test_review_console_assurance_is_documented() -> None:
         "Authorization: \"Bearer local-token\"",
         "Binding Evidence",
         "Export Signed",
-        "Policy Preview",
+        "Request Decision Preflight",
     ]:
         assert required in ui_test
     assert "099 - Review-console approval evidence clarity | Done" in backlog
@@ -26326,13 +26327,14 @@ def test_review_run_manifest_validator_accepts_valid_run(
     monkeypatch.setattr(
         review_run_manifest,
         "_git",
-        lambda repo_root, args: commit if args == ["rev-parse", "HEAD"] else "",
+        lambda repo_root, args: "",
     )
 
     summaries = review_run_manifest.validate_review_runs(runs_dir, tmp_path)
 
     assert summaries[0]["review_id"] == "review-1"
     assert summaries[0]["finding_count"] == 2
+    assert summaries[0]["binding"] == "historical"
 
 
 def test_review_run_manifest_validator_rejects_missing_and_mismatched_fields(
@@ -26350,7 +26352,9 @@ def test_review_run_manifest_validator_rejects_missing_and_mismatched_fields(
                 "reviewer_name": "fixture",
                 "date": "2026-05-31",
                 "commit": "abc1234",
+                "binding": "current_candidate",
                 "dirty": True,
+                "tree_fingerprint": "sha256:" + ("a" * 64),
                 "files_inspected": [],
                 "tests_run": [],
                 "output_file": "missing-output.md",
@@ -26372,12 +26376,268 @@ def test_review_run_manifest_validator_rejects_missing_and_mismatched_fields(
         "_git",
         lambda repo_root, args: "abc1234" if args == ["rev-parse", "HEAD"] else "",
     )
+    monkeypatch.setattr(
+        review_run_manifest,
+        "current_tree_fingerprint",
+        lambda repo_root: "sha256:" + ("a" * 64),
+    )
 
-    with pytest.raises(review_run_manifest.ReviewRunManifestError, match="dirty state"):
+    with pytest.raises(
+        review_run_manifest.ReviewRunManifestError,
+        match="current-candidate dirty state",
+    ):
         review_run_manifest.validate_review_runs(runs_dir, tmp_path)
 
 
-def test_review_run_manifest_refresh_updates_commit_and_dirty(
+def test_review_run_tree_fingerprint_binds_tracked_and_untracked_bytes(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Ithildin Test"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ithildin-test@example.invalid"],
+        cwd=tmp_path,
+        check=True,
+    )
+    tracked = tmp_path / "tracked.txt"
+    tracked.write_text("baseline\n", encoding="utf-8")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "baseline"], cwd=tmp_path, check=True)
+
+    clean_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    assert review_run_manifest.current_tree_dirty(tmp_path) is False
+
+    tracked.write_text("changed\n", encoding="utf-8")
+    tracked_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    assert tracked_fingerprint != clean_fingerprint
+    assert review_run_manifest.current_tree_dirty(tmp_path) is True
+
+    subprocess.run(["git", "add", "tracked.txt"], cwd=tmp_path, check=True)
+    staged_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    assert staged_fingerprint != tracked_fingerprint
+
+    tracked.chmod(0o755)
+    mode_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    assert mode_fingerprint != staged_fingerprint
+
+    untracked = tmp_path / "untracked.txt"
+    untracked.write_text("first\n", encoding="utf-8")
+    untracked_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    assert untracked_fingerprint != mode_fingerprint
+
+    untracked.write_text("second\n", encoding="utf-8")
+    second_untracked_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    assert second_untracked_fingerprint != untracked_fingerprint
+
+    untracked.chmod(0o744)
+    untracked_mode_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    assert untracked_mode_fingerprint != second_untracked_fingerprint
+
+    symlink = tmp_path / "untracked-link"
+    symlink.symlink_to("first-target")
+    symlink_fingerprint = review_run_manifest.current_tree_fingerprint(tmp_path)
+    symlink.unlink()
+    symlink.symlink_to("second-target")
+    assert review_run_manifest.current_tree_fingerprint(tmp_path) != symlink_fingerprint
+
+
+def test_review_run_tree_fingerprint_rejects_regular_file_replaced_by_symlink(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Ithildin Test"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ithildin-test@example.invalid"],
+        cwd=tmp_path,
+        check=True,
+    )
+    tracked = tmp_path / "tracked.txt"
+    tracked.write_text("baseline\n", encoding="utf-8")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "baseline"], cwd=tmp_path, check=True)
+    untracked = tmp_path / "untracked.txt"
+    untracked.write_text("local bytes\n", encoding="utf-8")
+    outside = tmp_path.parent / f"{tmp_path.name}-outside.txt"
+    outside.write_text("outside bytes must not be read\n", encoding="utf-8")
+    original_open = os.open
+    replaced = False
+
+    def replace_before_open(path: Any, flags: int) -> int:
+        nonlocal replaced
+        if Path(path) == untracked and not replaced:
+            replaced = True
+            untracked.unlink()
+            untracked.symlink_to(outside)
+        return original_open(path, flags)
+
+    monkeypatch.setattr(os, "open", replace_before_open)
+
+    with pytest.raises(
+        review_run_manifest.ReviewRunManifestError,
+        match="cannot safely fingerprint untracked file",
+    ):
+        review_run_manifest.current_tree_fingerprint(tmp_path)
+
+    assert replaced is True
+
+
+def test_review_run_manifest_validator_accepts_exact_current_candidate(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Ithildin Test"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ithildin-test@example.invalid"],
+        cwd=tmp_path,
+        check=True,
+    )
+    (tmp_path / ".gitignore").write_text("var/review-runs/*\n", encoding="utf-8")
+    (tmp_path / "prompt.md").write_text("prompt\n", encoding="utf-8")
+    (tmp_path / "output.md").write_text("output\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "candidate"], cwd=tmp_path, check=True)
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    runs_dir = tmp_path / "var" / "review-runs"
+    runs_dir.mkdir(parents=True)
+    runs_dir.joinpath("review-run-candidate.json").write_text(
+        json.dumps(
+            {
+                "binding": "current_candidate",
+                "closure_matrix_rows_touched": [],
+                "commit": commit,
+                "date": "2026-07-10",
+                "dirty": False,
+                "files_inspected": ["prompt.md"],
+                "finding_count": 0,
+                "output_file": "output.md",
+                "prompt_file": "prompt.md",
+                "review_id": "current-candidate-review",
+                "reviewer_name": "fixture",
+                "reviewer_type": "internal_ai",
+                "severity_counts": {
+                    "critical": 0,
+                    "high": 0,
+                    "informational": 0,
+                    "low": 0,
+                    "medium": 0,
+                },
+                "tests_run": ["make release-check"],
+                "tree_fingerprint": review_run_manifest.current_tree_fingerprint(tmp_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    summaries = review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+    assert summaries == [
+        {
+            "binding": "current_candidate",
+            "critical": 0,
+            "finding_count": 0,
+            "high": 0,
+            "path": "var/review-runs/review-run-candidate.json",
+            "review_id": "current-candidate-review",
+            "reviewer_type": "internal_ai",
+        }
+    ]
+
+    (tmp_path / "output.md").write_text("new output\n", encoding="utf-8")
+    subprocess.run(["git", "add", "output.md"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "next candidate"], cwd=tmp_path, check=True)
+    with pytest.raises(
+        review_run_manifest.ReviewRunManifestError,
+        match="does not exactly match current HEAD",
+    ):
+        review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+    manifest_path = runs_dir / "review-run-candidate.json"
+    stale_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    stale_manifest["commit"] = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    manifest_path.write_text(json.dumps(stale_manifest), encoding="utf-8")
+    with pytest.raises(
+        review_run_manifest.ReviewRunManifestError,
+        match="tree fingerprint does not match",
+    ):
+        review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+    stale_manifest["tree_fingerprint"] = "not-a-fingerprint"
+    manifest_path.write_text(json.dumps(stale_manifest), encoding="utf-8")
+    with pytest.raises(
+        review_run_manifest.ReviewRunManifestError,
+        match="tree_fingerprint is invalid",
+    ):
+        review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+
+def test_review_run_manifest_rejects_missing_historical_commit_and_manifest_symlink(
+    tmp_path: Path,
+) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Ithildin Test"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ithildin-test@example.invalid"],
+        cwd=tmp_path,
+        check=True,
+    )
+    (tmp_path / "prompt.md").write_text("prompt\n", encoding="utf-8")
+    (tmp_path / "output.md").write_text("output\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "baseline"], cwd=tmp_path, check=True)
+    payload = {
+        "binding": "historical",
+        "closure_matrix_rows_touched": [],
+        "commit": "deadbeef",
+        "date": "2026-07-10",
+        "dirty": False,
+        "files_inspected": ["prompt.md"],
+        "finding_count": 0,
+        "output_file": "output.md",
+        "prompt_file": "prompt.md",
+        "review_id": "historical-review",
+        "reviewer_name": "fixture",
+        "reviewer_type": "internal_ai",
+        "severity_counts": {
+            "critical": 0,
+            "high": 0,
+            "informational": 0,
+            "low": 0,
+            "medium": 0,
+        },
+        "tests_run": ["make release-check"],
+    }
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir()
+    manifest = runs_dir / "review-run-historical.json"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(
+        review_run_manifest.ReviewRunManifestError,
+        match="recorded commit does not exist",
+    ):
+        review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+    outside = tmp_path / "outside-review.json"
+    outside.write_text(json.dumps(payload), encoding="utf-8")
+    manifest.unlink()
+    manifest.symlink_to(outside)
+    with pytest.raises(
+        review_run_manifest.ReviewRunManifestError,
+        match="must not be a symlink",
+    ):
+        review_run_manifest.validate_review_runs(runs_dir, tmp_path)
+
+
+def test_review_run_manifest_refresh_reports_stale_candidate_without_rewriting(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -26394,6 +26654,7 @@ def test_review_run_manifest_refresh_updates_commit_and_dirty(
         json.dumps(
             {
                 "closure_matrix_rows_touched": ["http.fetch"],
+                "binding": "current_candidate",
                 "commit": "deadbeef",
                 "date": "2026-05-31",
                 "dirty": False,
@@ -26412,10 +26673,24 @@ def test_review_run_manifest_refresh_updates_commit_and_dirty(
                     "medium": 0,
                 },
                 "tests_run": ["uv run pytest tests/test_release_readiness.py -q"],
+                "tree_fingerprint": "sha256:" + ("0" * 64),
             }
         ),
         encoding="utf-8",
     )
+    historical_manifest = runs_dir / "review-run-historical.json"
+    historical_payload = json.loads(manifest.read_text(encoding="utf-8"))
+    historical_payload.update(
+        {
+            "commit": "feedface",
+            "dirty": False,
+            "review_id": "review-historical",
+        }
+    )
+    historical_payload.pop("binding")
+    historical_payload.pop("tree_fingerprint")
+    historical_manifest.write_text(json.dumps(historical_payload), encoding="utf-8")
+    historical_before = historical_manifest.read_text(encoding="utf-8")
     monkeypatch.setattr(review_run_manifest_refresh, "ROOT", repo_root)
     monkeypatch.setattr(
         review_run_manifest_refresh,
@@ -26425,7 +26700,13 @@ def test_review_run_manifest_refresh_updates_commit_and_dirty(
     monkeypatch.setattr(
         review_run_manifest_refresh,
         "_git",
-        lambda repo_root_arg, args: "cafebabe" if args == ["rev-parse", "HEAD"] else " M prompt.md",
+        lambda repo_root_arg, args: "cafebabe",
+    )
+    monkeypatch.setattr(review_run_manifest_refresh, "current_tree_dirty", lambda repo_root: True)
+    monkeypatch.setattr(
+        review_run_manifest_refresh,
+        "current_tree_fingerprint",
+        lambda repo_root: "sha256:" + ("b" * 64),
     )
     monkeypatch.setattr(
         sys,
@@ -26436,7 +26717,7 @@ def test_review_run_manifest_refresh_updates_commit_and_dirty(
     result = review_run_manifest_refresh.main()
 
     assert result == 1
-    assert "would refresh" in capsys.readouterr().out
+    assert "checked for staleness" in capsys.readouterr().out
     refreshed = json.loads(manifest.read_text(encoding="utf-8"))
     assert refreshed["commit"] == "deadbeef"
     assert refreshed["dirty"] is False
@@ -26445,10 +26726,12 @@ def test_review_run_manifest_refresh_updates_commit_and_dirty(
 
     result = review_run_manifest_refresh.main()
 
-    assert result == 0
+    assert result == 1
     rewritten = json.loads(manifest.read_text(encoding="utf-8"))
-    assert rewritten["commit"] == "cafebabe"
-    assert rewritten["dirty"] is True
+    assert rewritten["commit"] == "deadbeef"
+    assert rewritten["dirty"] is False
+    assert rewritten["tree_fingerprint"] == "sha256:" + ("0" * 64)
+    assert historical_manifest.read_text(encoding="utf-8") == historical_before
 
 
 @pytest.mark.parametrize(
@@ -26512,6 +26795,8 @@ def test_review_run_manifest_doc_and_release_check_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     schema = Path("docs/codex/review-run-manifest-schema.md").read_text(encoding="utf-8")
+    normalized_schema = " ".join(schema.split())
+    normalized_readme = " ".join(readme.split())
     release_check_line = next(
         line for line in makefile.splitlines() if line.startswith("release-check:")
     )
@@ -26523,6 +26808,11 @@ def test_review_run_manifest_doc_and_release_check_are_wired() -> None:
     assert "make review-run-manifest-check" in readme
     assert "make review-run-manifest-refresh" in readme
     assert "V03-INT-PATCH-001" in schema
+    assert "`historical` preserves the commit" in schema
+    assert "`current_candidate` binds a review to exact current `HEAD`" in schema
+    assert "does not modify historical manifests" in normalized_schema
+    assert "rebinds historical reviews" in normalized_readme
+    assert "stale candidates require a fresh review" in normalized_readme
     assert "docs/codex/review-run-manifest-schema.md" in review_docs.REVIEW_DOCS
 
 
@@ -34835,6 +35125,61 @@ def test_observability_readiness_gate_is_wired() -> None:
         "no new powerful tool classes",
     ]:
         assert phrase in gate
+
+
+def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
+    handoff_path = "docs/codex/command-center-cc-pilot-107-uat-handoff.md"
+    review_path = "docs/codex/command-center-sol-ultra-pre-uat-review.md"
+    closure_path = "docs/codex/command-center-sol-ultra-closure-review-handoff.md"
+    initial_uat_path = "docs/codex/command-center-initial-operator-uat-evidence.md"
+    handoff = Path(handoff_path).read_text(encoding="utf-8")
+    findings = Path(review_path).read_text(encoding="utf-8")
+    initial_uat = Path(initial_uat_path).read_text(encoding="utf-8")
+    closure = Path(closure_path).read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    normalized_handoff = " ".join(handoff.split())
+    normalized_closure = " ".join(closure.split())
+
+    for path in [handoff_path, review_path, closure_path, initial_uat_path]:
+        assert path in review_docs.REVIEW_DOCS
+        assert path in docs_site
+    for phrase in [
+        "blocked pending exact-candidate validation",
+        "did not participate in the first UAT",
+        "has not read the Command Center design artifacts",
+        "12 minutes or less",
+        "at least 7 of 8 comprehension questions",
+        "all six scenario stages",
+        "UAT-OBS-063` through `UAT-OBS-070",
+        "accepted_for_bounded_pilot",
+        "every pass-gate item is satisfied",
+    ]:
+        assert phrase in normalized_handoff
+    for finding_id in [
+        "ULTRA-H-01",
+        "ULTRA-H-02",
+        "ULTRA-H-03",
+        "ULTRA-H-04",
+        "ULTRA-M-01",
+        "ULTRA-M-02",
+        "ULTRA-M-03",
+        "ULTRA-M-04",
+        "ULTRA-M-05",
+        "ULTRA-M-06",
+    ]:
+        assert finding_id in findings
+    assert "UAT-OBS-001" in initial_uat
+    assert "UAT-OBS-070" in initial_uat
+    assert "not approval, promotion, source" in initial_uat
+    for phrase in [
+        "pre-dispatch draft",
+        "ready_for_cc_pilot_107_uat",
+        "not_ready_for_cc_pilot_107_uat",
+        "ULTRA-H-01` through `ULTRA-H-04",
+        "ULTRA-M-01` through `ULTRA-M-06",
+        "does not constitute operator UAT",
+    ]:
+        assert phrase in normalized_closure
 
 
 def _write_project_markers(root: Path) -> None:

@@ -196,18 +196,24 @@ class ApprovalStore:
         expected_status: ApprovalStatus,
         next_status: ApprovalStatus,
         expires_after: Optional[datetime] = None,
+        decided_by: Optional[str] = None,
+        reason: Optional[str] = None,
     ) -> ApprovalRequest:
         transition_time = datetime.now(UTC)
         query = """
             UPDATE approvals
             SET status = ?,
-                updated_at = ?
+                updated_at = ?,
+                decided_by = COALESCE(?, decided_by),
+                decision_reason = COALESCE(?, decision_reason)
             WHERE approval_id = ?
               AND status = ?
         """
-        parameters: list[str] = [
+        parameters: list[str | None] = [
             next_status.value,
             transition_time.isoformat(),
+            decided_by,
+            reason,
             approval_id,
             expected_status.value,
         ]
@@ -278,12 +284,18 @@ class ApprovalService:
         approval = self.get(approval_id)
         if approval.status != ApprovalStatus.PENDING:
             raise ApprovalError(f"approval is not pending: {approval.status.value}")
-        approval = self.store.set_status(
-            approval_id,
-            ApprovalStatus.APPROVED,
-            decided_by=decided_by,
-            reason=reason,
-        )
+        try:
+            approval = self.store.compare_and_set_status(
+                approval_id,
+                expected_status=ApprovalStatus.PENDING,
+                next_status=ApprovalStatus.APPROVED,
+                expires_after=datetime.now(UTC),
+                decided_by=decided_by,
+                reason=reason,
+            )
+        except ApprovalError:
+            current = self.get(approval_id)
+            raise ApprovalError(f"approval is not pending: {current.status.value}") from None
         self._audit(AuditEventType.APPROVAL_APPROVED, approval)
         return approval
 
@@ -293,12 +305,18 @@ class ApprovalService:
         approval = self.get(approval_id)
         if approval.status != ApprovalStatus.PENDING:
             raise ApprovalError(f"approval is not pending: {approval.status.value}")
-        approval = self.store.set_status(
-            approval_id,
-            ApprovalStatus.DENIED,
-            decided_by=decided_by,
-            reason=reason,
-        )
+        try:
+            approval = self.store.compare_and_set_status(
+                approval_id,
+                expected_status=ApprovalStatus.PENDING,
+                next_status=ApprovalStatus.DENIED,
+                expires_after=datetime.now(UTC),
+                decided_by=decided_by,
+                reason=reason,
+            )
+        except ApprovalError:
+            current = self.get(approval_id)
+            raise ApprovalError(f"approval is not pending: {current.status.value}") from None
         self._audit(AuditEventType.APPROVAL_DENIED, approval)
         return approval
 

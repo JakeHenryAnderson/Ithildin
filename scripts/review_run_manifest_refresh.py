@@ -1,4 +1,4 @@
-"""Refresh ignored review-run manifest commit pointers and dirty flags."""
+"""Detect stale current-candidate reviews without rewriting executed review provenance."""
 
 from __future__ import annotations
 
@@ -8,6 +8,14 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, TypedDict
+
+if __package__:
+    from scripts import review_run_manifest as _review_run_manifest
+else:  # Direct execution places scripts/ rather than repo root on sys.path.
+    import review_run_manifest as _review_run_manifest  # type: ignore[import-not-found,no-redef]
+
+current_tree_dirty = _review_run_manifest.current_tree_dirty
+current_tree_fingerprint = _review_run_manifest.current_tree_fingerprint
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNS_DIR = ROOT / "var/review-runs"
@@ -40,6 +48,7 @@ class ReviewRunManifestRefreshRecord(TypedDict):
     dirty_before: bool
     dirty_after: bool
     changed: bool
+    binding: str
 
 
 class ReviewRunManifestRefreshSummary(TypedDict):
@@ -68,9 +77,11 @@ def main() -> int:
     if args.json:
         print(json.dumps(summary, indent=2, sort_keys=True))
     else:
-        _print_summary(summary, write=args.write)
+        if args.write:
+            print("--write is compatibility-only; executed review manifests are immutable.")
+        _print_summary(summary)
 
-    if summary["needs_refresh"] and not args.write:
+    if summary["needs_refresh"]:
         return 1
     return 0
 
@@ -81,12 +92,14 @@ def refresh_review_run_manifests(
     *,
     write: bool,
 ) -> ReviewRunManifestRefreshSummary:
+    _ = write  # Compatibility flag only; executed review evidence is immutable.
     allowed_root = (repo_root / "var/review-runs").resolve()
     resolved_runs_dir = runs_dir.resolve()
     _ensure_within(resolved_runs_dir, allowed_root, "runs-dir")
 
-    current_commit = _git(repo_root, ["rev-parse", "HEAD"])
-    current_dirty = _tracked_dirty(repo_root)
+    current_commit: str | None = None
+    current_dirty: bool | None = None
+    current_fingerprint: str | None = None
 
     records: list[ReviewRunManifestRefreshRecord] = []
     scanned = 0
@@ -99,33 +112,52 @@ def refresh_review_run_manifests(
         sorted(resolved_runs_dir.rglob("review-run-*.json")) if resolved_runs_dir.exists() else []
     )
     for path in candidate_paths:
+        if path.is_symlink():
+            raise ReviewRunManifestRefreshError(
+                f"review-run manifest must not be a symlink: {path}"
+            )
         _ensure_within(path.resolve(), allowed_root, "review-run manifest")
         scanned += 1
         manifest = _read_manifest(path)
         review_id = _required_string(manifest.get("review_id"), "review_id", path)
         _validate_required_fields(manifest, path, review_id)
+        binding = _binding(manifest.get("binding", "historical"), review_id, path)
 
         commit_before = _required_string(manifest.get("commit"), "commit", path)
         dirty_before = _required_bool(manifest.get("dirty"), "dirty", path, review_id)
-        updated_manifest = dict(manifest)
-        updated_manifest["commit"] = current_commit
-        updated_manifest["dirty"] = current_dirty
-        rendered = _render_manifest(updated_manifest)
-        changed_here = rendered != path.read_text(encoding="utf-8")
+        commit_after = commit_before
+        dirty_after = dirty_before
+        if binding == "current_candidate":
+            if current_commit is None:
+                current_commit = _git(repo_root, ["rev-parse", "HEAD"])
+                current_dirty = current_tree_dirty(repo_root)
+                current_fingerprint = current_tree_fingerprint(repo_root)
+            assert current_dirty is not None
+            assert current_fingerprint is not None
+            commit_after = current_commit
+            dirty_after = current_dirty
+            changed_here = any(
+                [
+                    commit_before != current_commit,
+                    dirty_before != current_dirty,
+                    manifest.get("tree_fingerprint") != current_fingerprint,
+                ]
+            )
+        else:
+            changed_here = False
         if changed_here:
             changed += 1
-            if write:
-                path.write_text(rendered, encoding="utf-8")
 
         records.append(
             {
                 "path": _display(path, repo_root),
                 "review_id": review_id,
                 "commit_before": commit_before,
-                "commit_after": current_commit,
+                "commit_after": commit_after,
                 "dirty_before": dirty_before,
-                "dirty_after": current_dirty,
+                "dirty_after": dirty_after,
                 "changed": changed_here,
+                "binding": binding,
             }
         )
 
@@ -134,7 +166,7 @@ def refresh_review_run_manifests(
         "repo_root": repo_root.resolve().as_posix(),
         "scanned": scanned,
         "changed": changed,
-        "refreshed": changed if write else 0,
+        "refreshed": 0,
         "needs_refresh": changed > 0,
         "records": records,
     }
@@ -156,10 +188,6 @@ def _read_manifest(path: Path) -> dict[str, Any]:
     return raw
 
 
-def _render_manifest(manifest: dict[str, Any]) -> str:
-    return json.dumps(manifest, indent=2, sort_keys=True) + "\n"
-
-
 def _required_string(value: object, field: str, path: Path) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ReviewRunManifestRefreshError(f"{path} field {field} must be a non-empty string")
@@ -172,9 +200,12 @@ def _required_bool(value: object, field: str, path: Path, review_id: str) -> boo
     return value
 
 
-def _tracked_dirty(repo_root: Path) -> bool:
-    output = _git(repo_root, ["status", "--short", "--untracked-files=no"])
-    return bool(output.strip())
+def _binding(value: object, review_id: str, path: Path) -> str:
+    if not isinstance(value, str) or value not in {"historical", "current_candidate"}:
+        raise ReviewRunManifestRefreshError(
+            f"{review_id} has invalid binding in {path}: {value}"
+        )
+    return value
 
 
 def _ensure_within(path: Path, root: Path, label: str) -> None:
@@ -202,17 +233,16 @@ def _display(path: Path, repo_root: Path) -> str:
         return path.as_posix()
 
 
-def _print_summary(summary: ReviewRunManifestRefreshSummary, *, write: bool) -> None:
-    mode = "refreshed" if write else "would refresh"
+def _print_summary(summary: ReviewRunManifestRefreshSummary) -> None:
     print(
-        f"Review-run manifest {mode}: {summary['scanned']} scanned, "
-        f"{summary['changed']} needing refresh."
+        f"Review-run manifest checked for staleness: {summary['scanned']} scanned, "
+        f"{summary['changed']} stale current-candidate review(s)."
     )
     for record in summary["records"]:
         if record["changed"]:
-            action = "updated" if write else "needs refresh"
+            action = "stale; create a fresh review record"
             print(
-                f"- {record['path']}: {action} "
+                f"- {record['path']}: {action} [{record['binding']}] "
                 f"(commit {record['commit_before']} -> {record['commit_after']}, "
                 f"dirty {record['dirty_before']} -> {record['dirty_after']})"
             )

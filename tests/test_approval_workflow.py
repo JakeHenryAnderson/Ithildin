@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import Barrier
 
 import pytest
 from ithildin_api.approvals import (
@@ -143,6 +145,106 @@ def test_denied_approval_cannot_execute(tmp_path: Path) -> None:
     assert denied.status == ApprovalStatus.DENIED
     with pytest.raises(ApprovalError):
         service.begin_execution(denied.approval_id, denied.request_hash)
+
+
+def test_terminal_decision_is_atomic_and_preserves_first_decision_metadata(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    approval = service.create_pending(create_input())
+
+    denied = service.deny(
+        approval.approval_id,
+        decided_by="user:alice",
+        reason="scope is not authorized",
+    )
+
+    with pytest.raises(ApprovalError, match="not pending"):
+        service.approve(approval.approval_id, decided_by="user:bob")
+
+    with sqlite3.connect(service.store.db_path) as connection:
+        stored = connection.execute(
+            "SELECT status, decided_by, decision_reason FROM approvals WHERE approval_id = ?",
+            (approval.approval_id,),
+        ).fetchone()
+    events = [
+        json.loads(line)["event_type"]
+        for line in (tmp_path / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+
+    assert denied.status == ApprovalStatus.DENIED
+    assert stored == ("denied", "user:alice", "scope is not authorized")
+    assert events.count("approval.denied") == 1
+    assert "approval.approved" not in events
+
+
+def test_conflicting_terminal_decisions_have_one_atomic_winner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = make_service(tmp_path)
+    approval = service.create_pending(create_input())
+    original_compare_and_set = service.store.compare_and_set_status
+    both_ready = Barrier(2)
+
+    def coordinated_transition(*args: object, **kwargs: object) -> object:
+        if kwargs.get("next_status") in {ApprovalStatus.APPROVED, ApprovalStatus.DENIED}:
+            both_ready.wait(timeout=5)
+        return original_compare_and_set(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(service.store, "compare_and_set_status", coordinated_transition)
+
+    def decide(action: str) -> str:
+        try:
+            if action == "approve":
+                approved = service.approve(approval.approval_id, decided_by="user:approver")
+                return approved.status.value
+            return service.deny(approval.approval_id, decided_by="user:denier").status.value
+        except ApprovalError as error:
+            return str(error)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(decide, ["approve", "deny"]))
+
+    current = service.store.get(approval.approval_id)
+    events = [
+        json.loads(line)["event_type"]
+        for line in (tmp_path / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    terminal_events = [
+        event for event in events if event in {"approval.approved", "approval.denied"}
+    ]
+
+    assert current.status in {ApprovalStatus.APPROVED, ApprovalStatus.DENIED}
+    assert sum(outcome in {"approved", "denied"} for outcome in outcomes) == 1
+    assert sum("approval is not pending" in outcome for outcome in outcomes) == 1
+    assert len(terminal_events) == 1
+
+
+def test_terminal_decision_rejects_expiry_during_atomic_transition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = make_service(tmp_path)
+    approval = service.create_pending(create_input())
+    original_compare_and_set = service.store.compare_and_set_status
+
+    def expire_before_decision(*args: object, **kwargs: object) -> object:
+        with sqlite3.connect(service.store.db_path) as connection:
+            connection.execute(
+                "UPDATE approvals SET expires_at = ? WHERE approval_id = ?",
+                (
+                    (datetime.now(UTC) - timedelta(seconds=1)).isoformat(),
+                    approval.approval_id,
+                ),
+            )
+            connection.commit()
+        return original_compare_and_set(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(service.store, "compare_and_set_status", expire_before_decision)
+
+    with pytest.raises(ApprovalError, match="expired"):
+        service.approve(approval.approval_id, decided_by="user:alice")
+
+    assert service.store.get(approval.approval_id).status == ApprovalStatus.EXPIRED
 
 
 def test_expired_approval_cannot_be_approved_or_executed(tmp_path: Path) -> None:

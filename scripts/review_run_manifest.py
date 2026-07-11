@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -29,6 +32,7 @@ REQUIRED_FIELDS = {
     "closure_matrix_rows_touched",
 }
 VALID_REVIEWER_TYPES = {"codex_internal", "internal_ai", "external_ai", "human"}
+VALID_BINDINGS = {"historical", "current_candidate"}
 VALID_SEVERITIES = ("critical", "high", "medium", "low", "informational")
 FINDING_ID_PATTERN = re.compile(
     r"^(V03-(INT|EXT|DOCS)-[A-Z0-9]+-\d{3}|"
@@ -48,6 +52,7 @@ class ReviewRunSummary(TypedDict):
     finding_count: int
     critical: int
     high: int
+    binding: str
 
 
 def main() -> int:
@@ -90,6 +95,8 @@ def validate_review_runs(runs_dir: Path, repo_root: Path) -> list[ReviewRunSumma
 
 
 def _read_manifest(path: Path) -> dict[str, Any]:
+    if path.is_symlink():
+        raise ReviewRunManifestError(f"review-run manifest must not be a symlink: {path}")
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -118,16 +125,35 @@ def _validate_manifest(
     commit = _required_string(manifest["commit"], "commit", path)
     if not re.fullmatch(r"[0-9a-f]{7,40}", commit):
         raise ReviewRunManifestError(f"{review_id} has invalid commit")
-    current_commit = _git(repo_root, ["rev-parse", "HEAD"])
-    if commit != current_commit and commit != current_commit[: len(commit)]:
-        raise ReviewRunManifestError(f"{review_id} commit does not match current HEAD")
+    binding = _binding(manifest.get("binding", "historical"), review_id)
+    _require_commit_exists(repo_root, commit, review_id)
 
     dirty = manifest["dirty"]
     if not isinstance(dirty, bool):
         raise ReviewRunManifestError(f"{review_id} dirty must be boolean")
-    current_dirty = bool(_git(repo_root, ["status", "--short"]))
-    if dirty != current_dirty:
-        raise ReviewRunManifestError(f"{review_id} dirty state does not match current tree")
+    if binding == "current_candidate":
+        current_commit = _git(repo_root, ["rev-parse", "HEAD"])
+        if commit != current_commit:
+            raise ReviewRunManifestError(
+                f"{review_id} current-candidate commit does not exactly match current HEAD"
+            )
+        current_dirty = current_tree_dirty(repo_root)
+        if dirty != current_dirty:
+            raise ReviewRunManifestError(
+                f"{review_id} current-candidate dirty state does not match current tree"
+            )
+        expected_fingerprint = _required_string(
+            manifest.get("tree_fingerprint"), "tree_fingerprint", path
+        )
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_fingerprint):
+            raise ReviewRunManifestError(
+                f"{review_id} current-candidate tree_fingerprint is invalid"
+            )
+        observed_fingerprint = current_tree_fingerprint(repo_root)
+        if expected_fingerprint != observed_fingerprint:
+            raise ReviewRunManifestError(
+                f"{review_id} current-candidate tree fingerprint does not match current tree"
+            )
 
     _existing_path(repo_root, _required_string(manifest["prompt_file"], "prompt_file", path))
     _existing_path(repo_root, _required_string(manifest["output_file"], "output_file", path))
@@ -181,7 +207,117 @@ def _validate_manifest(
         "finding_count": finding_count,
         "critical": severity_counts["critical"],
         "high": severity_counts["high"],
+        "binding": binding,
     }
+
+
+def _binding(value: object, review_id: str) -> str:
+    if not isinstance(value, str) or value not in VALID_BINDINGS:
+        raise ReviewRunManifestError(f"{review_id} has invalid binding: {value}")
+    return value
+
+
+def _require_commit_exists(repo_root: Path, commit: str, review_id: str) -> None:
+    try:
+        _git(repo_root, ["cat-file", "-e", f"{commit}^{{commit}}"])
+    except subprocess.CalledProcessError as exc:
+        raise ReviewRunManifestError(
+            f"{review_id} recorded commit does not exist in repository history"
+        ) from exc
+
+
+def current_tree_dirty(repo_root: Path) -> bool:
+    return bool(_git(repo_root, ["status", "--short", "--untracked-files=all"]))
+
+
+def current_tree_fingerprint(repo_root: Path) -> str:
+    """Bind HEAD plus staged, unstaged, and untracked bytes without emitting their contents."""
+    hasher = hashlib.sha256()
+    hasher.update(b"ithildin-review-tree-v1\0")
+    head = _git_bytes(repo_root, ["rev-parse", "HEAD"]).strip()
+    index_diff = _git_bytes(
+        repo_root,
+        ["diff", "--cached", "--binary", "--no-ext-diff", "HEAD", "--"],
+    )
+    worktree_diff = _git_bytes(
+        repo_root,
+        ["diff", "--binary", "--no-ext-diff", "--"],
+    )
+    hasher.update(len(head).to_bytes(8, "big"))
+    hasher.update(head)
+    hasher.update(b"index\0")
+    hasher.update(len(index_diff).to_bytes(8, "big"))
+    hasher.update(index_diff)
+    hasher.update(b"worktree\0")
+    hasher.update(len(worktree_diff).to_bytes(8, "big"))
+    hasher.update(worktree_diff)
+
+    untracked = _git_bytes(
+        repo_root,
+        ["ls-files", "--others", "--exclude-standard", "-z"],
+    ).split(b"\0")
+    for raw_path in sorted(item for item in untracked if item):
+        relative_path = os.fsdecode(raw_path)
+        candidate = repo_root / relative_path
+        try:
+            candidate.parent.resolve().relative_to(repo_root.resolve())
+        except ValueError as exc:
+            raise ReviewRunManifestError(
+                f"untracked path escapes repository while fingerprinting: {relative_path}"
+            ) from exc
+        metadata = candidate.lstat()
+        hasher.update(b"path\0")
+        hasher.update(len(raw_path).to_bytes(8, "big"))
+        hasher.update(raw_path)
+        if stat.S_ISLNK(metadata.st_mode):
+            link_target = os.fsencode(os.readlink(candidate))
+            confirmed = candidate.lstat()
+            if (confirmed.st_dev, confirmed.st_ino, confirmed.st_mode) != (
+                metadata.st_dev,
+                metadata.st_ino,
+                metadata.st_mode,
+            ):
+                raise ReviewRunManifestError(
+                    f"untracked symlink changed while fingerprinting: {relative_path}"
+                )
+            hasher.update(stat.S_IFMT(metadata.st_mode).to_bytes(8, "big"))
+            hasher.update(stat.S_IMODE(metadata.st_mode).to_bytes(8, "big"))
+            hasher.update(len(link_target).to_bytes(8, "big"))
+            hasher.update(link_target)
+        elif stat.S_ISREG(metadata.st_mode):
+            descriptor = -1
+            try:
+                descriptor = os.open(
+                    candidate,
+                    os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
+                )
+                confirmed = os.fstat(descriptor)
+                if not stat.S_ISREG(confirmed.st_mode) or (
+                    confirmed.st_dev,
+                    confirmed.st_ino,
+                ) != (metadata.st_dev, metadata.st_ino):
+                    raise ReviewRunManifestError(
+                        f"untracked file changed while fingerprinting: {relative_path}"
+                    )
+                hasher.update(stat.S_IFMT(confirmed.st_mode).to_bytes(8, "big"))
+                hasher.update(stat.S_IMODE(confirmed.st_mode).to_bytes(8, "big"))
+                hasher.update(confirmed.st_size.to_bytes(8, "big"))
+                with os.fdopen(descriptor, "rb", closefd=True) as stream:
+                    descriptor = -1
+                    while chunk := stream.read(1024 * 1024):
+                        hasher.update(chunk)
+            except OSError as exc:
+                raise ReviewRunManifestError(
+                    f"cannot safely fingerprint untracked file: {relative_path}"
+                ) from exc
+            finally:
+                if descriptor >= 0:
+                    os.close(descriptor)
+        else:
+            raise ReviewRunManifestError(
+                f"unsupported untracked file type while fingerprinting: {relative_path}"
+            )
+    return "sha256:" + hasher.hexdigest()
 
 
 def _severity_counts(value: object, review_id: str) -> dict[str, int]:
@@ -250,6 +386,16 @@ def _git(repo_root: Path, args: list[str]) -> str:
         text=True,
     )
     return completed.stdout.strip()
+
+
+def _git_bytes(repo_root: Path, args: list[str]) -> bytes:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+    return completed.stdout
 
 
 def _display(path: Path, repo_root: Path) -> str:

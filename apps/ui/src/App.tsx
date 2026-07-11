@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import "./styles.css";
 
@@ -172,6 +172,59 @@ type AgentRunDetail = {
   run: AgentRun;
   timeline: AgentRunTimelineEvent[];
 };
+
+type RunEvidenceExport = {
+  schema_version: string;
+  export_id: string;
+  exported_at: string;
+  run: JsonObject;
+  summary: {
+    principal_id: string;
+    workspace_id: string;
+    session_id: string;
+    status: string;
+    tool_call_count: number;
+    tools_used: string[];
+    decision_counts: Record<string, number>;
+    approval_count: number;
+    patch_diagnostic_count: number;
+    audit_event_count: number;
+    warning_count: number;
+    latest_policy_hash: string | null;
+    manifest_lock_hash: string | null;
+  };
+  timeline: JsonObject[];
+  approvals: JsonObject[];
+  patch_diagnostics: JsonObject[];
+  signed_export_references: JsonObject[];
+  evidence_hashes: JsonObject;
+  redaction_summary: { excluded_categories: string[] };
+  warnings: JsonObject[];
+};
+
+type ExportNotice = {
+  scope: "audit" | "run" | "signed-audit";
+  runId?: string;
+  state: "download-initiated" | "failed";
+  message: string;
+};
+
+type RunFilters = {
+  principal_id: string;
+  workspace_id: string;
+  status: string;
+  tool_name: string;
+};
+
+type InvestigationFilters = {
+  time_range: string;
+  mission: string;
+  decision: string;
+  outcome: string;
+  attention: string;
+};
+
+type WorkspaceLens = "routine" | "investigator" | "policy" | "technical";
 
 type AuditVerificationFailure = {
   row_number: number;
@@ -344,6 +397,7 @@ type DashboardData = {
   systemStatus: SystemStatus | null;
   tools: ToolSummary[];
   approvals: ApprovalReview[];
+  approvalHistory: Approval[];
   patches: PatchProposal[];
   patchDiagnostics: PatchApplyDiagnostics | null;
   runs: AgentRun[];
@@ -351,6 +405,40 @@ type DashboardData = {
   auditEvents: AuditEvent[];
   verification: AuditVerification | null;
 };
+
+type AttentionItem = {
+  source: "approval" | "failure" | "recovery" | "proposal";
+  title: string;
+  status: string;
+  bindingStatus: string | null;
+  consequence: string;
+  missionLabel: string;
+  workspaceId: string;
+  requestingIdentity: string;
+  toolName: string;
+  requestId: string;
+  policyReason: string;
+  runId: string | null;
+  proposalId: string | null;
+  targetId: "missions" | "approvals" | "artifacts" | "evidence";
+  actionLabel: string;
+  occurredAt: string | null;
+};
+
+function emptyDashboardData(): DashboardData {
+  return {
+    systemStatus: null,
+    tools: [],
+    approvals: [],
+    approvalHistory: [],
+    patches: [],
+    patchDiagnostics: null,
+    runs: [],
+    runSummary: null,
+    auditEvents: [],
+    verification: null,
+  };
+}
 
 class ApiError extends Error {
   status: number;
@@ -364,27 +452,32 @@ class ApiError extends Error {
 export function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "");
   const [draftToken, setDraftToken] = useState(token);
-  const [data, setData] = useState<DashboardData>({
-    systemStatus: null,
-    tools: [],
-    approvals: [],
-    patches: [],
-    patchDiagnostics: null,
-    runs: [],
-    runSummary: null,
-    auditEvents: [],
-    verification: null,
-  });
-  const [runFilters, setRunFilters] = useState({
+  const [workspaceLens, setWorkspaceLens] = useState<WorkspaceLens>("routine");
+  const [data, setData] = useState<DashboardData>(emptyDashboardData);
+  const [runFilters, setRunFilters] = useState<RunFilters>({
     principal_id: "",
     workspace_id: "",
     status: "",
     tool_name: "",
   });
+  const [appliedRunFilters, setAppliedRunFilters] = useState<RunFilters>(runFilters);
+  const [investigationFilters, setInvestigationFilters] = useState<InvestigationFilters>({
+    time_range: "all",
+    mission: "",
+    decision: "all",
+    outcome: "all",
+    attention: "all",
+  });
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<PatchProposal | null>(null);
+  const [artifactQuery, setArtifactQuery] = useState("");
+  const [artifactStatus, setArtifactStatus] = useState("all");
+  const [artifactSort, setArtifactSort] = useState("updated-desc");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
+  const [selectedRunEvidence, setSelectedRunEvidence] = useState<RunEvidenceExport | null>(null);
+  const [runEvidenceError, setRunEvidenceError] = useState<string | null>(null);
+  const [exportNotice, setExportNotice] = useState<ExportNotice | null>(null);
   const [selectedToolName, setSelectedToolName] = useState("");
   const [argumentsJson, setArgumentsJson] = useState("{}");
   const [principalJson, setPrincipalJson] = useState(
@@ -400,58 +493,110 @@ export function App() {
   const [impactLoading, setImpactLoading] = useState(false);
   const [impactError, setImpactError] = useState<string | null>(null);
   const [denyReasons, setDenyReasons] = useState<Record<string, string>>({});
+  const [decidingApprovals, setDecidingApprovals] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const dashboardRequest = useRef(0);
+  const proposalRequest = useRef(0);
+  const runDetailRequest = useRef(0);
+  const runEvidenceRequest = useRef(0);
+  const decidingApprovalIds = useRef(new Set<string>());
+  const authGeneration = useRef(0);
 
   const pendingCount = data.approvals.length;
   const proposedPatchCount = data.patches.filter((patch) => patch.status === "proposed").length;
   const recentFailures = data.auditEvents.filter((event) => event.event_type.endsWith(".failed"));
-  const authRejected = error === "Admin token rejected.";
-  const dashboardUnavailable = Boolean(token && !loading && !error && !data.systemStatus);
+  const authRejected = dashboardError === "Admin token rejected.";
+  const dashboardUnavailable = Boolean(
+    token && !loading && !dashboardError && !data.systemStatus,
+  );
   const trustWarnings = useMemo(
     () => trustStateWarnings(data.systemStatus, data.verification, data.patchDiagnostics),
     [data.systemStatus, data.verification, data.patchDiagnostics],
+  );
+  const primaryAttention = useMemo(() => primaryAttentionItem(data), [data]);
+  const investigationRuns = useMemo(
+    () =>
+      filterInvestigationRuns(
+        data.runs,
+        data.auditEvents,
+        investigationFilters,
+      ),
+    [data.runs, data.auditEvents, investigationFilters],
   );
 
   const selectedPatchFromList = useMemo(
     () => data.patches.find((patch) => patch.proposal_id === selectedProposalId) ?? null,
     [data.patches, selectedProposalId],
   );
+  const visiblePatches = useMemo(
+    () => filterAndSortPatches(data.patches, artifactQuery, artifactStatus, artifactSort),
+    [data.patches, artifactQuery, artifactStatus, artifactSort],
+  );
+  const groupedPatches = useMemo(() => groupPatchesByWorkspace(visiblePatches), [visiblePatches]);
+  const selectedProposalApprovals = useMemo(
+    () =>
+      data.approvalHistory.filter(
+        (approval) =>
+          scopeString(approval.one_time_scope, "proposal_id") === selectedProposal?.proposal_id,
+      ),
+    [data.approvalHistory, selectedProposal?.proposal_id],
+  );
+  const selectedPendingProposalApproval = useMemo(
+    () =>
+      data.approvals.find(
+        (review) =>
+          scopeString(review.approval.one_time_scope, "proposal_id") ===
+          selectedProposal?.proposal_id,
+      ),
+    [data.approvals, selectedProposal?.proposal_id],
+  );
   const selectedTool = useMemo(
     () => data.tools.find((tool) => tool.name === selectedToolName) ?? null,
     [data.tools, selectedToolName],
   );
 
-  async function loadDashboard(activeToken = token, activeRunFilters = runFilters) {
+  async function loadDashboard(activeToken = token, activeRunFilters = appliedRunFilters) {
+    const requestId = ++dashboardRequest.current;
     if (!activeToken) {
-      setData({
-        systemStatus: null,
-        tools: [],
-        approvals: [],
-        patches: [],
-        patchDiagnostics: null,
-        runs: [],
-        runSummary: null,
-        auditEvents: [],
-        verification: null,
-      });
+      proposalRequest.current += 1;
+      runDetailRequest.current += 1;
+      runEvidenceRequest.current += 1;
+      setData(emptyDashboardData());
+      setSelectedProposalId(null);
       setSelectedProposal(null);
+      setSelectedRunId(null);
       setSelectedRun(null);
+      setSelectedRunEvidence(null);
+      setRunEvidenceError(null);
+      setDetailLoading(false);
       setPreviewResult(null);
       setImpactResult(null);
       setError(null);
+      setDashboardError(null);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setDashboardError(null);
+    setData(emptyDashboardData());
+    setSelectedProposal(null);
+    setSelectedRun(null);
+    setSelectedRunEvidence(null);
+    setRunEvidenceError(null);
+    proposalRequest.current += 1;
+    runDetailRequest.current += 1;
+    runEvidenceRequest.current += 1;
     try {
       const [
         systemStatus,
         toolsResponse,
-        approvalsResponse,
+        pendingApprovalsResponse,
+        approvalHistoryResponse,
         patchesResponse,
         patchDiagnostics,
         runsResponse,
@@ -461,6 +606,7 @@ export function App() {
         apiRequest<SystemStatus>("/system/status", activeToken),
         apiRequest<{ tools: ToolSummary[] }>("/tools", activeToken),
         apiRequest<{ approvals: ApprovalReview[] }>("/approvals/review?status=pending", activeToken),
+        apiRequest<{ approvals: Approval[] }>("/approvals", activeToken),
         apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
         apiRequest<PatchApplyDiagnostics>("/patch-apply-diagnostics", activeToken),
         apiRequest<{ runs: AgentRun[]; summary: AgentRunSummary }>(
@@ -470,10 +616,14 @@ export function App() {
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
         apiRequest<AuditVerification>("/audit-events/verify", activeToken),
       ]);
+      if (requestId !== dashboardRequest.current) {
+        return;
+      }
       setData({
         systemStatus,
         tools: toolsResponse.tools,
-        approvals: approvalsResponse.approvals,
+        approvals: pendingApprovalsResponse.approvals,
+        approvalHistory: approvalHistoryResponse.approvals,
         patches: patchesResponse.patch_proposals,
         patchDiagnostics,
         runs: runsResponse.runs,
@@ -484,16 +634,39 @@ export function App() {
       if (!selectedToolName && toolsResponse.tools[0]) {
         setSelectedToolName(toolsResponse.tools[0].name);
       }
-      if (!selectedProposalId && patchesResponse.patch_proposals[0]) {
-        setSelectedProposalId(patchesResponse.patch_proposals[0].proposal_id);
+      const nextProposalId = patchesResponse.patch_proposals.some(
+        (proposal) => proposal.proposal_id === selectedProposalId,
+      )
+        ? selectedProposalId
+        : filterAndSortPatches(
+            patchesResponse.patch_proposals,
+            "",
+            "all",
+            "updated-desc",
+          )[0]?.proposal_id ?? null;
+      setSelectedProposalId(nextProposalId);
+      if (nextProposalId) {
+        void loadProposalDetail(nextProposalId, activeToken);
       }
-      if (!selectedRunId && runsResponse.runs[0]) {
-        setSelectedRunId(runsResponse.runs[0].run_id);
+      const nextRunId = runsResponse.runs.some((run) => run.run_id === selectedRunId)
+        ? selectedRunId
+        : runsResponse.runs[0]?.run_id ?? null;
+      setSelectedRunId(nextRunId);
+      if (nextRunId) {
+        void loadRunDetail(nextRunId, activeToken);
+        void loadRunEvidence(nextRunId, activeToken);
       }
     } catch (caught) {
-      setError(errorMessage(caught));
+      if (requestId === dashboardRequest.current) {
+        setData(emptyDashboardData());
+        const message = errorMessage(caught);
+        setError(message);
+        setDashboardError(message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === dashboardRequest.current) {
+        setLoading(false);
+      }
     }
   }
 
@@ -501,6 +674,8 @@ export function App() {
     if (!activeToken) {
       return;
     }
+    const requestId = ++proposalRequest.current;
+    setSelectedProposal(null);
     setDetailLoading(true);
     setError(null);
     try {
@@ -508,11 +683,17 @@ export function App() {
         `/patch-proposals/${encodeURIComponent(proposalId)}`,
         activeToken,
       );
-      setSelectedProposal(proposal);
+      if (requestId === proposalRequest.current && proposal.proposal_id === proposalId) {
+        setSelectedProposal(proposal);
+      }
     } catch (caught) {
-      setError(errorMessage(caught));
+      if (requestId === proposalRequest.current) {
+        setError(errorMessage(caught));
+      }
     } finally {
-      setDetailLoading(false);
+      if (requestId === proposalRequest.current) {
+        setDetailLoading(false);
+      }
     }
   }
 
@@ -520,40 +701,73 @@ export function App() {
     if (!activeToken) {
       return;
     }
+    const requestId = ++runDetailRequest.current;
+    setSelectedRun(null);
     setError(null);
     try {
       const run = await apiRequest<AgentRunDetail>(
         `/runs/${encodeURIComponent(runId)}`,
         activeToken,
       );
-      setSelectedRun(run);
+      if (requestId === runDetailRequest.current && run.run.run_id === runId) {
+        setSelectedRun(run);
+      }
     } catch (caught) {
-      setError(errorMessage(caught));
+      if (requestId === runDetailRequest.current) {
+        setError(errorMessage(caught));
+      }
+    }
+  }
+
+  async function loadRunEvidence(runId: string, activeToken = token) {
+    if (!activeToken) {
+      return;
+    }
+    const requestId = ++runEvidenceRequest.current;
+    setSelectedRunEvidence(null);
+    setRunEvidenceError(null);
+    try {
+      const evidence = await apiRequest<RunEvidenceExport>(
+        `/runs/${encodeURIComponent(runId)}/evidence-export`,
+        activeToken,
+      );
+      if (
+        requestId === runEvidenceRequest.current &&
+        scopeString(evidence.run, "run_id") === runId
+      ) {
+        setSelectedRunEvidence(evidence);
+      }
+    } catch (caught) {
+      if (requestId === runEvidenceRequest.current) {
+        setRunEvidenceError(errorMessage(caught));
+      }
     }
   }
 
   function saveToken(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextToken = draftToken.trim();
+    authGeneration.current += 1;
     setToken(nextToken);
     if (nextToken) {
       sessionStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
       void loadDashboard(nextToken);
     } else {
+      dashboardRequest.current += 1;
+      proposalRequest.current += 1;
+      runDetailRequest.current += 1;
+      runEvidenceRequest.current += 1;
       sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-      setData({
-        systemStatus: null,
-        tools: [],
-        approvals: [],
-        patches: [],
-        patchDiagnostics: null,
-        runs: [],
-        runSummary: null,
-        auditEvents: [],
-        verification: null,
-      });
+      setData(emptyDashboardData());
+      setSelectedProposalId(null);
       setSelectedProposal(null);
+      setSelectedRunId(null);
       setSelectedRun(null);
+      setSelectedRunEvidence(null);
+      setRunEvidenceError(null);
+      setLoading(false);
+      setDetailLoading(false);
+      setDashboardError(null);
       setPreviewResult(null);
       setImpactResult(null);
     }
@@ -565,13 +779,54 @@ export function App() {
 
   function applyRunFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void loadDashboard();
+    setAppliedRunFilters(runFilters);
+    void loadDashboard(token, runFilters);
   }
 
   function clearRunFilters() {
     const emptyFilters = { principal_id: "", workspace_id: "", status: "", tool_name: "" };
     setRunFilters(emptyFilters);
+    setAppliedRunFilters(emptyFilters);
+    setInvestigationFilters({
+      time_range: "all",
+      mission: "",
+      decision: "all",
+      outcome: "all",
+      attention: "all",
+    });
     void loadDashboard(token, emptyFilters);
+  }
+
+  function clearInvestigationFilter(name: keyof InvestigationFilters) {
+    setInvestigationFilters((current) => ({
+      ...current,
+      [name]: name === "mission" ? "" : "all",
+    }));
+  }
+
+  function clearAppliedRunFilter(name: keyof RunFilters) {
+    const nextFilters = { ...appliedRunFilters, [name]: "" };
+    setRunFilters(nextFilters);
+    setAppliedRunFilters(nextFilters);
+    void loadDashboard(token, nextFilters);
+  }
+
+  function openAttentionItem(item: AttentionItem) {
+    if (item.targetId === "evidence") {
+      setWorkspaceLens("technical");
+    }
+    if (item.runId) {
+      setSelectedRunId(item.runId);
+    }
+    if (item.proposalId) {
+      setSelectedProposalId(item.proposalId);
+    }
+    window.setTimeout(() => scrollAndFocusElement(item.targetId), 0);
+  }
+
+  function openWorkspaceLens(lens: WorkspaceLens, targetId: string) {
+    setWorkspaceLens(lens);
+    window.setTimeout(() => scrollAndFocusElement(targetId), 0);
   }
 
   async function runPolicyPreview(event: FormEvent<HTMLFormElement>) {
@@ -584,8 +839,8 @@ export function App() {
     setPreviewError(null);
     setPreviewResult(null);
     try {
-      const parsedArguments = parseJsonObject(argumentsJson, "Arguments");
-      const parsedPrincipal = parseJsonObject(principalJson, "Principal");
+      const parsedArguments = parseJsonObject(argumentsJson, "Request details");
+      const parsedPrincipal = parseJsonObject(principalJson, "Requesting identity");
       const result = await apiRequest<PolicyPreviewResult>("/policy/preview", token, {
         method: "POST",
         body: JSON.stringify({
@@ -645,8 +900,20 @@ export function App() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(objectUrl);
+      setExportNotice({
+        scope: signed ? "signed-audit" : "audit",
+        state: "download-initiated",
+        message: signed
+          ? "Signed audit export response prepared and browser download initiated; Command Center did not verify the downloaded signature or custody."
+          : "Audit export response prepared and browser download initiated; save location and custody are not verified.",
+      });
     } catch (caught) {
       setError(errorMessage(caught));
+      setExportNotice({
+        scope: signed ? "signed-audit" : "audit",
+        state: "failed",
+        message: errorMessage(caught),
+      });
     } finally {
       setExportLoading(false);
     }
@@ -677,14 +944,28 @@ export function App() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(objectUrl);
+      setExportNotice({
+        scope: "run",
+        runId,
+        state: "download-initiated",
+        message:
+          "Run evidence response prepared and browser download initiated; save location, custody, receipt, and later integrity are not verified.",
+      });
     } catch (caught) {
       setError(errorMessage(caught));
+      setExportNotice({ scope: "run", state: "failed", message: errorMessage(caught) });
     } finally {
       setExportLoading(false);
     }
   }
 
   async function decideApproval(approvalId: string, action: "approve" | "deny") {
+    if (decidingApprovalIds.current.has(approvalId)) {
+      return;
+    }
+    decidingApprovalIds.current.add(approvalId);
+    const decisionAuthGeneration = authGeneration.current;
+    setDecidingApprovals((current) => ({ ...current, [approvalId]: true }));
     setError(null);
     try {
       await apiRequest<Approval>(`/approvals/${approvalId}/${action}`, token, {
@@ -695,14 +976,26 @@ export function App() {
           reason: action === "deny" ? denyReasons[approvalId] || undefined : undefined,
         }),
       });
+      if (decisionAuthGeneration !== authGeneration.current) {
+        return;
+      }
       setDenyReasons((current) => {
         const next = { ...current };
         delete next[approvalId];
         return next;
       });
-      await loadDashboard();
+      await loadDashboard(token, appliedRunFilters);
     } catch (caught) {
-      setError(errorMessage(caught));
+      if (decisionAuthGeneration === authGeneration.current) {
+        setError(errorMessage(caught));
+      }
+    } finally {
+      decidingApprovalIds.current.delete(approvalId);
+      setDecidingApprovals((current) => {
+        const next = { ...current };
+        delete next[approvalId];
+        return next;
+      });
     }
   }
 
@@ -721,17 +1014,34 @@ export function App() {
   useEffect(() => {
     if (selectedRunId) {
       void loadRunDetail(selectedRunId);
+      void loadRunEvidence(selectedRunId);
     } else {
       setSelectedRun(null);
+      setSelectedRunEvidence(null);
+      setRunEvidenceError(null);
     }
   }, [selectedRunId, token]);
 
   return (
     <main className="console-shell">
+      <a
+        className="skip-link"
+        href="#attention"
+        onClick={(event) => {
+          event.preventDefault();
+          scrollAndFocusElement("attention");
+        }}
+      >
+        Skip to operator attention
+      </a>
       <header className="topbar">
-        <div>
+        <div className="product-heading">
           <p className="eyebrow">Ithildin</p>
-          <h1>Review Console</h1>
+          <h1>Ithildin Command Center</h1>
+          <p className="product-summary">
+            Review Ithildin-mediated agent tool use, operator decisions, and evidence. Gateway
+            remains the enforcement and audit authority.
+          </p>
         </div>
         <form className="token-form" onSubmit={saveToken}>
           <label htmlFor="admin-token">Admin token</label>
@@ -751,6 +1061,75 @@ export function App() {
           </div>
         </form>
       </header>
+
+      <nav className="command-nav" aria-label="Command Center sections">
+        <a href="#attention">Attention</a>
+        <a href="#missions">Missions / Agent Runs</a>
+        <a href="#artifacts">Artifacts</a>
+        <a href="#approvals">Approvals</a>
+        <a
+          href="#evidence"
+          onClick={(event) => {
+            event.preventDefault();
+            openWorkspaceLens("technical", "evidence");
+          }}
+        >
+          Evidence
+        </a>
+        <a
+          href="#administration"
+          onClick={(event) => {
+            event.preventDefault();
+            openWorkspaceLens("policy", "administration");
+          }}
+        >
+          Administration
+        </a>
+        <a href="#operator-help">Help</a>
+        <span
+          className={
+            token && data.systemStatus ? "auth-state authenticated" : "auth-state"
+          }
+        >
+          {token && data.systemStatus ? "Authenticated local preview" : "Sign-in required"}
+        </span>
+      </nav>
+      <div
+        className="workspace-lenses"
+        aria-label="Command Center presentation lens"
+        role="group"
+      >
+        <strong>Presentation lens</strong>
+        {([
+          ["routine", "Routine operations"],
+          ["investigator", "Investigation"],
+          ["policy", "Policy administration"],
+          ["technical", "Technical review"],
+        ] as [WorkspaceLens, string][]).map(([lens, label]) => (
+          <button
+            aria-pressed={workspaceLens === lens}
+            className={workspaceLens === lens ? "active" : ""}
+            key={lens}
+            type="button"
+            onClick={() => setWorkspaceLens(lens)}
+          >
+            {label}
+          </button>
+        ))}
+        <span>
+          Presentation only · lenses do not grant roles, permissions, or Gateway authority.
+        </span>
+      </div>
+
+      <details className="operator-help" id="operator-help">
+        <summary>What Ithildin governs</summary>
+        <p>
+          Ithildin Gateway mediates requests made through its registered governed tools and records
+          policy, approval, execution, and audit evidence. Command Center reviews those records. It
+          does not start or control the external agent, and a registered tool is not automatically
+          permitted for every request.
+        </p>
+      </details>
 
       {error ? (
         <section className="notice error" role="alert">
@@ -794,6 +1173,90 @@ export function App() {
         </section>
       ) : null}
 
+      <section
+        className="attention-section"
+        id="attention"
+        aria-labelledby="attention-heading"
+        tabIndex={-1}
+      >
+        <header className="attention-heading">
+          <div>
+            <p className="eyebrow">Exception-first operator view</p>
+            <h2 id="attention-heading">Attention</h2>
+            <p>Start with the action and consequence; open technical evidence only when needed.</p>
+          </div>
+          <span className="local-preview-label">
+            {data.systemStatus?.security.preview_label ?? "Local preview"}
+          </span>
+        </header>
+        {!token ? (
+          <EmptyState text="Sign in with the local admin token to load operator attention records." />
+        ) : loading && !data.systemStatus ? (
+          <EmptyState text="Loading operator attention records." />
+        ) : dashboardError ? (
+          <EmptyState text="Operator attention records are unavailable. No empty-state conclusion is available." />
+        ) : primaryAttention ? (
+          <article className="attention-item">
+            <div className="attention-title-row">
+              <div>
+                <p className="attention-mission">{primaryAttention.missionLabel}</p>
+                <h3>{primaryAttention.title}</h3>
+              </div>
+              <div className="approval-state-pills">
+                <StatusPill status={primaryAttention.status} />
+                {primaryAttention.bindingStatus ? (
+                  <StatusPill status={primaryAttention.bindingStatus} />
+                ) : null}
+              </div>
+            </div>
+            <p className="attention-consequence">{primaryAttention.consequence}</p>
+            <dl className="meta-list attention-meta">
+              <div>
+                <dt>Required action</dt>
+                <dd>{primaryAttention.actionLabel}</dd>
+              </div>
+              <div>
+                <dt>Workspace</dt>
+                <dd>{primaryAttention.workspaceId}</dd>
+              </div>
+              <div>
+                <dt>Requesting identity</dt>
+                <dd>{primaryAttention.requestingIdentity}</dd>
+              </div>
+              <div>
+                <dt>Tool</dt>
+                <dd>{primaryAttention.toolName}</dd>
+              </div>
+              <div>
+                <dt>Request</dt>
+                <dd>{primaryAttention.requestId ? shortId(primaryAttention.requestId) : "Unavailable"}</dd>
+              </div>
+              <div>
+                <dt>Policy reason</dt>
+                <dd>{primaryAttention.policyReason}</dd>
+              </div>
+              <div>
+                <dt>{primaryAttention.source === "approval" ? "Expires" : "Recorded"}</dt>
+                <dd>
+                  {primaryAttention.occurredAt
+                    ? formatDate(primaryAttention.occurredAt)
+                    : "Unavailable"}
+                </dd>
+              </div>
+            </dl>
+            <button
+              className="primary-action attention-action"
+              type="button"
+              onClick={() => openAttentionItem(primaryAttention)}
+            >
+              {primaryAttention.runId ? "Open mission Workbench" : "Open source record"}
+            </button>
+          </article>
+        ) : (
+          <EmptyState text="No action identified in the currently loaded local records. This is not a global safety claim." />
+        )}
+      </section>
+
       <section className="summary-strip" aria-label="Review summary">
         <Metric icon={<ClipboardList size={20} />} label="Pending" value={pendingCount} />
         <Metric icon={<FileDiff size={20} />} label="Proposed patches" value={proposedPatchCount} />
@@ -810,7 +1273,8 @@ export function App() {
         </button>
       </section>
 
-      <section className="trust-grid">
+      {workspaceLens === "policy" || workspaceLens === "technical" ? (
+      <section className="trust-grid" id="administration" aria-label="Policy administration" tabIndex={-1}>
         <Panel title="System Trust" icon={<ShieldCheck size={18} />}>
           {data.systemStatus ? (
             <div className="trust-panel">
@@ -1001,13 +1465,27 @@ export function App() {
           )}
         </Panel>
       </section>
+      ) : null}
 
+      {workspaceLens === "policy" ? (
       <section className="policy-section">
-        <Panel title="Policy Preview" icon={<ShieldCheck size={18} />}>
+        <Panel title="Request Decision Preflight" icon={<ShieldCheck size={18} />}>
+          <div className="preflight-boundary">
+            <strong>Administration · policy troubleshooting</strong>
+            <p>
+              Evaluate a new hypothetical tool request against current policy. This does not
+              execute a tool, create an approval, replay the selected request, or change policy.
+            </p>
+            {selectedRun ? (
+              <p>
+                Selected Workbench context: {shortId(selectedRun.run.run_id)} · {selectedRun.run.principal_id} · {selectedRun.run.workspace_id}. Raw request arguments are intentionally not reconstructed.
+              </p>
+            ) : null}
+          </div>
           <form className="policy-preview-form" onSubmit={runPolicyPreview}>
             <div className="policy-controls">
               <label>
-                <span>Tool</span>
+                <span>Tool request</span>
                 <select
                   value={selectedToolName}
                   disabled={!token || data.tools.length === 0}
@@ -1019,7 +1497,7 @@ export function App() {
                 >
                   {data.tools.map((tool) => (
                     <option key={tool.name} value={tool.name}>
-                      {tool.name} · {tool.risk} · {tool.category}
+                      {tool.title} · {tool.name} · {tool.risk}
                     </option>
                   ))}
                 </select>
@@ -1030,12 +1508,12 @@ export function App() {
                 disabled={!token || !selectedToolName || previewLoading}
               >
                 <ShieldCheck aria-hidden="true" size={16} />
-                {previewLoading ? "Previewing" : "Preview"}
+                {previewLoading ? "Evaluating" : "Test decision"}
               </button>
             </div>
             <div className="json-editors">
               <label>
-                <span>Arguments</span>
+                <span>Request details (JSON)</span>
                 <textarea
                   value={argumentsJson}
                   onChange={(event) => setArgumentsJson(event.target.value)}
@@ -1043,7 +1521,7 @@ export function App() {
                 />
               </label>
               <label>
-                <span>Principal</span>
+                <span>Requesting identity (JSON)</span>
                 <textarea
                   value={principalJson}
                   onChange={(event) => setPrincipalJson(event.target.value)}
@@ -1064,18 +1542,18 @@ export function App() {
             <div className="preview-result">
               <div className="preview-heading">
                 <div>
-                  <h3>{previewResult.tool_name}</h3>
-                  <p>{selectedTool?.title ?? previewResult.manifest_version ?? ""}</p>
+                  <h3>{selectedTool?.title ?? previewResult.tool_name}</h3>
+                  <p>{previewResult.tool_name}</p>
                 </div>
                 <StatusPill status={previewResult.decision} />
               </div>
               <dl className="meta-list preview-meta">
                 <div>
-                  <dt>Arguments</dt>
+                  <dt>Request details</dt>
                   <dd>{previewResult.valid_arguments ? "valid" : "invalid"}</dd>
                 </div>
                 <div>
-                  <dt>Risk</dt>
+                  <dt>Capability class</dt>
                   <dd>{previewResult.manifest_risk ?? "unknown"}</dd>
                 </div>
                 <div>
@@ -1105,7 +1583,14 @@ export function App() {
           ) : null}
         </Panel>
 
-        <Panel title="Policy Impact" icon={<FileDiff size={18} />}>
+        <Panel title="Candidate Policy Impact" icon={<FileDiff size={18} />}>
+          <div className="preflight-boundary">
+            <strong>Policy administrator tool</strong>
+            <p>
+              Compare candidate YAML against reviewed test cases. This does not apply the candidate
+              policy or authorize implementation.
+            </p>
+          </div>
           <form className="policy-preview-form" onSubmit={runPolicyImpact}>
             <div className="policy-controls">
               <label>
@@ -1190,8 +1675,10 @@ export function App() {
           ) : null}
         </Panel>
       </section>
+      ) : null}
 
-      <section className="integrity-section">
+      {workspaceLens === "technical" ? (
+      <section className="integrity-section" id="evidence" aria-label="Technical evidence" tabIndex={-1}>
         <Panel title="Audit Integrity" icon={<ShieldCheck size={18} />}>
           <div className="integrity-grid">
             <div className="integrity-status">
@@ -1260,28 +1747,54 @@ export function App() {
               </button>
             </div>
           </div>
+          {exportNotice && exportNotice.scope !== "run" ? (
+            <div className="export-scope-notice" role="status" aria-live="polite">
+              <strong>
+                {exportNotice.scope === "signed-audit" ? "Signed audit export" : "Audit export"}: {" "}
+                {exportNotice.state === "failed" ? "failed" : "download initiated"}
+              </strong>
+              <span>{exportNotice.message}</span>
+            </div>
+          ) : null}
           {data.patchDiagnostics ? (
             <PatchDiagnosticsSummary diagnostics={data.patchDiagnostics} />
           ) : null}
         </Panel>
       </section>
+      ) : null}
 
-      <section className="review-grid">
-        <Panel title="Pending Approvals" icon={<ClipboardList size={18} />}>
+      <section className="review-grid artifact-review-grid">
+        <Panel id="approvals" title="Pending Approvals" icon={<ClipboardList size={18} />}>
           {data.approvals.length === 0 ? (
-            <EmptyState text={token ? "No pending approvals." : "Locked."} />
+            <EmptyState
+              text={
+                dashboardError
+                  ? "Pending approval data is unavailable."
+                  : token
+                    ? "No pending approvals."
+                    : "Locked."
+              }
+            />
           ) : (
             <div className="approval-list">
               {data.approvals.map((approvalReview) => {
                 const approval = approvalReview.approval;
                 return (
-                <article className="approval-item" key={approval.approval_id}>
+                <article
+                  className="approval-item"
+                  id={`approval-${approval.approval_id}`}
+                  key={approval.approval_id}
+                  tabIndex={-1}
+                >
                   <div className="item-heading">
                     <div>
                       <h3>{approval.summary}</h3>
                       <p>{approval.tool_name}</p>
                     </div>
-                    <StatusPill status={approvalReview.review.valid ? approval.status : "stale"} />
+                    <div className="approval-state-pills">
+                      <StatusPill status={approval.status} />
+                      {!approvalReview.review.valid ? <StatusPill status="stale binding" /> : null}
+                    </div>
                   </div>
                   <dl className="meta-list">
                     <div>
@@ -1315,14 +1828,20 @@ export function App() {
                         }))
                       }
                     />
-                    <button type="button" onClick={() => void decideApproval(approval.approval_id, "deny")}>
+                    <button
+                      type="button"
+                      disabled={!approvalReview.review.valid || decidingApprovals[approval.approval_id]}
+                      onClick={() => void decideApproval(approval.approval_id, "deny")}
+                    >
                       <X aria-hidden="true" size={16} />
                       Deny
                     </button>
                     <button
                       className="primary-action"
                       type="button"
-                      disabled={!approvalReview.review.valid}
+                      disabled={
+                        !approvalReview.review.valid || decidingApprovals[approval.approval_id]
+                      }
                       onClick={() => void decideApproval(approval.approval_id, "approve")}
                     >
                       <Check aria-hidden="true" size={16} />
@@ -1336,27 +1855,107 @@ export function App() {
           )}
         </Panel>
 
-        <Panel title="Patch Proposals" icon={<FileDiff size={18} />}>
+        <Panel id="artifacts" title="Patch Proposals" icon={<FileDiff size={18} />}>
+          <div className="artifact-controls" aria-label="Artifact proposal filters">
+            <label>
+              <span>Search artifacts</span>
+              <input
+                value={artifactQuery}
+                placeholder="Path, workspace, request"
+                onChange={(event) => setArtifactQuery(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Proposal state</span>
+              <select
+                value={artifactStatus}
+                onChange={(event) => setArtifactStatus(event.target.value)}
+              >
+                <option value="all">All states</option>
+                {Array.from(new Set(data.patches.map((patch) => patch.status)))
+                  .sort()
+                  .map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              <span>Sort</span>
+              <select value={artifactSort} onChange={(event) => setArtifactSort(event.target.value)}>
+                <option value="updated-desc">Recently updated</option>
+                <option value="updated-asc">Oldest updated</option>
+                <option value="path-asc">Artifact path</option>
+              </select>
+            </label>
+            <span className="artifact-result-count">{visiblePatches.length} shown</span>
+          </div>
           <div className="patch-layout">
-            <div className="patch-list">
+            <div className="patch-list" aria-label="Artifact proposal list">
               {data.patches.length === 0 ? (
-                <EmptyState text={token ? "No patch proposals." : "Locked."} />
+                <EmptyState
+                  text={
+                    dashboardError
+                      ? "Patch proposal data is unavailable."
+                      : token
+                        ? "No patch proposals."
+                        : "Locked."
+                  }
+                />
+              ) : visiblePatches.length === 0 ? (
+                <EmptyState text="No proposals match the current artifact filters." />
               ) : (
-                data.patches.map((patch) => (
-                  <button
-                    className={patch.proposal_id === selectedProposalId ? "patch-row selected" : "patch-row"}
-                    key={patch.proposal_id}
-                    type="button"
-                    onClick={() => setSelectedProposalId(patch.proposal_id)}
-                  >
-                    <span>{patch.path}</span>
-                    <small>{patch.workspace_id}</small>
-                    <StatusPill status={patch.status} />
-                  </button>
-                ))
+                <>
+                  <div className="patch-column-headings">
+                    <span>Artifact</span>
+                    <span>Requester</span>
+                    <span>Lifecycle</span>
+                    <span>Updated</span>
+                    <span>Next</span>
+                  </div>
+                  {groupedPatches.map(([workspaceId, patches]) => (
+                    <section className="patch-workspace-group" key={workspaceId}>
+                      <h4>{workspaceId} workspace</h4>
+                      {patches.map((patch) => {
+                        const history = approvalsForProposal(data.approvalHistory, patch.proposal_id);
+                        const pendingReview = pendingReviewForProposal(
+                          data.approvals,
+                          patch.proposal_id,
+                        );
+                        return (
+                          <button
+                            className={
+                              patch.proposal_id === selectedProposalId
+                                ? "patch-row selected"
+                                : "patch-row"
+                            }
+                            key={patch.proposal_id}
+                            type="button"
+                            aria-pressed={patch.proposal_id === selectedProposalId}
+                            onClick={() => setSelectedProposalId(patch.proposal_id)}
+                          >
+                            <span className="patch-artifact-cell" aria-label={`Artifact: ${patch.path}`}>
+                              <strong>{patch.path}</strong>
+                              <small>{shortId(patch.request_id)}</small>
+                            </span>
+                            <span aria-label={`Requester: ${proposalRequester(history)}`}>{proposalRequester(history)}</span>
+                            <span aria-label={`Lifecycle: ${proposalLifecycleStatus(patch, history)}`}>
+                              <StatusPill
+                                status={proposalLifecycleStatus(patch, history)}
+                              />
+                            </span>
+                            <span aria-label={`Updated: ${formatDate(patch.updated_at)}`}>{formatDate(patch.updated_at)}</span>
+                            <span aria-label={`Next action: ${proposalNextAction(patch, history, pendingReview)}`}>{proposalNextAction(patch, history, pendingReview)}</span>
+                          </button>
+                        );
+                      })}
+                    </section>
+                  ))}
+                </>
               )}
             </div>
-            <div className="diff-view">
+            <div className="diff-view" role="region" aria-label="Selected artifact detail" aria-live="polite">
               {detailLoading ? (
                 <EmptyState text="Loading diff." />
               ) : selectedProposal ? (
@@ -1370,16 +1969,60 @@ export function App() {
                     </div>
                     <StatusPill
                       status={
+                        selectedProposal.status === "proposed" &&
                         selectedProposal.review?.stale === true
                           ? "stale"
                           : selectedProposal.status
                       }
                     />
                   </div>
-                  {selectedProposal.review ? (
+                  {selectedProposal.review && selectedProposal.status === "proposed" ? (
                     <BindingReviewSummary review={selectedProposal.review as BindingReview} />
                   ) : null}
-                  <pre>{selectedProposal.unified_diff ?? ""}</pre>
+                  <ArtifactLifecycleSummary
+                    approvals={selectedProposalApprovals}
+                    pendingApprovalReview={selectedPendingProposalApproval}
+                    proposal={selectedProposal}
+                    onOpenApproval={() =>
+                      scrollAndFocusElement(
+                        selectedPendingProposalApproval
+                          ? `approval-${selectedPendingProposalApproval.approval.approval_id}`
+                          : "approvals",
+                      )
+                    }
+                  />
+                  <details className="artifact-technical-evidence">
+                    <summary>Technical change evidence</summary>
+                    <dl className="meta-list artifact-digests">
+                      <div>
+                        <dt>Proposal</dt>
+                        <dd>{shortId(selectedProposal.proposal_id)}</dd>
+                      </div>
+                      <div>
+                        <dt>Request</dt>
+                        <dd>{shortId(selectedProposal.request_id)}</dd>
+                      </div>
+                      <div>
+                        <dt>Proposal digest</dt>
+                        <dd>{shortHash(selectedProposal.proposal_hash)}</dd>
+                      </div>
+                      <div>
+                        <dt>Base artifact digest</dt>
+                        <dd>{shortHash(selectedProposal.base_file_hash)}</dd>
+                      </div>
+                      <div>
+                        <dt>Current artifact digest</dt>
+                        <dd>
+                          {selectedProposal.review
+                            ? shortHash(
+                                scopeString(selectedProposal.review, "current_base_file_hash"),
+                              ) || "Unavailable"
+                            : "Unavailable"}
+                        </dd>
+                      </div>
+                    </dl>
+                    <pre>{selectedProposal.unified_diff ?? ""}</pre>
+                  </details>
                 </>
               ) : selectedPatchFromList ? (
                 <EmptyState text={selectedPatchFromList.path} />
@@ -1391,9 +2034,10 @@ export function App() {
         </Panel>
       </section>
 
-      <section className="run-section">
+      <section className="run-section" id="missions" aria-label="Agent runs" tabIndex={-1}>
         <Panel title="Agent Runs" icon={<Activity size={18} />}>
           <OperatorWorkbenchGuide />
+          {workspaceLens === "investigator" ? (
           <form className="run-filter-bar" onSubmit={applyRunFilters}>
             <label>
               <span>Principal</span>
@@ -1435,23 +2079,130 @@ export function App() {
               Clear
             </button>
           </form>
+          ) : null}
+          {workspaceLens === "investigator" ? (
+          <div className="investigation-filter-bar" aria-label="Observed investigation filters">
+            <label>
+              <span>Last recorded update</span>
+              <select
+                value={investigationFilters.time_range}
+                onChange={(event) =>
+                  setInvestigationFilters((current) => ({
+                    ...current,
+                    time_range: event.target.value,
+                  }))
+                }
+              >
+                <option value="all">Any loaded time</option>
+                <option value="24h">Last 24 hours</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+              </select>
+            </label>
+            <label>
+              <span>Mission context</span>
+              <input
+                value={investigationFilters.mission}
+                placeholder="Guided demo or workspace"
+                onChange={(event) =>
+                  setInvestigationFilters((current) => ({
+                    ...current,
+                    mission: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label>
+              <span>Observed decision</span>
+              <select
+                value={investigationFilters.decision}
+                onChange={(event) =>
+                  setInvestigationFilters((current) => ({
+                    ...current,
+                    decision: event.target.value,
+                  }))
+                }
+              >
+                <option value="all">Any observed decision</option>
+                <option value="allow">Allow</option>
+                <option value="deny">Deny</option>
+                <option value="require_approval">Approval required</option>
+              </select>
+            </label>
+            <label>
+              <span>Observed outcome</span>
+              <select
+                value={investigationFilters.outcome}
+                onChange={(event) =>
+                  setInvestigationFilters((current) => ({
+                    ...current,
+                    outcome: event.target.value,
+                  }))
+                }
+              >
+                <option value="all">Any observed outcome</option>
+                <option value="completed">Completed execution</option>
+                <option value="failed">Failed execution</option>
+                <option value="started">Started execution</option>
+                <option value="unavailable">No outcome in recent window</option>
+              </select>
+            </label>
+            <label>
+              <span>Observed attention</span>
+              <select
+                value={investigationFilters.attention}
+                onChange={(event) =>
+                  setInvestigationFilters((current) => ({
+                    ...current,
+                    attention: event.target.value,
+                  }))
+                }
+              >
+                <option value="all">Any attention state</option>
+                <option value="attention">Needs observed attention</option>
+                <option value="none">No attention observed</option>
+              </select>
+            </label>
+          </div>
+          ) : null}
+          {workspaceLens === "investigator" ? (
+          <RunFilterChips
+            investigationFilters={investigationFilters}
+            onClearAll={clearRunFilters}
+            onClearInvestigation={clearInvestigationFilter}
+            onClearServer={clearAppliedRunFilter}
+            runFilters={appliedRunFilters}
+          />
+          ) : null}
           {data.runSummary ? <RunSummary summary={data.runSummary} /> : null}
+          {workspaceLens === "investigator" ? (
+          <InvestigationSummary
+            auditEvents={data.auditEvents}
+            loadedCount={data.runs.length}
+            runs={investigationRuns}
+          />
+          ) : null}
           <div className="run-layout">
             <div className="run-list">
-              {data.runs.length === 0 ? (
+              {(workspaceLens === "investigator" ? investigationRuns : data.runs).length === 0 ? (
                 <EmptyState
                   text={
-                    token
-                      ? "No recorded agent runs. Run make demo-seed, start the local stack, then run make demo-flow to create a mediated demo run."
+                    dashboardError
+                      ? "Agent run data is unavailable."
+                      : token
+                      ? data.runs.length === 0
+                        ? "No recorded agent runs. Run make demo-seed, start the local stack, then run make demo-flow to create a mediated demo run."
+                        : "No loaded runs match the current bounded investigation filters. Decision, outcome, and attention filters use only the 100 recent loaded audit events."
                       : "Locked."
                   }
                 />
               ) : (
-                data.runs.map((run) => (
+                (workspaceLens === "investigator" ? investigationRuns : data.runs).map((run) => (
                   <button
                     className={run.run_id === selectedRunId ? "run-row selected" : "run-row"}
                     key={run.run_id}
                     type="button"
+                    aria-pressed={run.run_id === selectedRunId}
                     onClick={() => setSelectedRunId(run.run_id)}
                   >
                     <span>
@@ -1459,14 +2210,14 @@ export function App() {
                       <DemoLabel run={run} />
                     </span>
                     <small>
-                      {run.workspace_id} · {run.last_tool_name ?? "no tool"}
+                      {missionFacingLabel(run, run.workspace_id)} · {run.last_tool_name ?? "no tool"}
                     </small>
                     <StatusPill status={run.status} />
                   </button>
                 ))
               )}
             </div>
-            <div className="timeline-view">
+            <div className="timeline-view" role="region" aria-label="Selected run detail" aria-live="polite">
               {selectedRun ? (
                 <>
                   <div className="diff-heading">
@@ -1491,6 +2242,25 @@ export function App() {
                       </button>
                     </div>
                   </div>
+                  <EvidenceCloseout
+                    evidence={selectedRunEvidence}
+                    evidenceError={runEvidenceError}
+                    exportNotice={exportNotice}
+                    signingAvailable={
+                      data.systemStatus?.audit_signing.signed_export_available ?? false
+                    }
+                    verification={data.verification}
+                  />
+                  <RunDecisionExplanation
+                    approvals={data.approvals}
+                    preferredRequestId={
+                      primaryAttention?.runId === selectedRun.run.run_id
+                        ? primaryAttention.requestId
+                        : selectedRun.run.last_request_id ?? ""
+                    }
+                    runDetail={selectedRun}
+                    tools={data.tools}
+                  />
                   {selectedRun.timeline.length === 0 ? (
                     <>
                       <RunEvidenceSummary run={selectedRun.run} eventCount={0} />
@@ -1550,10 +2320,19 @@ export function App() {
         </Panel>
       </section>
 
+      {workspaceLens === "technical" ? (
       <section className="audit-section">
         <Panel title="Recent Audit Events" icon={<Activity size={18} />}>
           {data.auditEvents.length === 0 ? (
-            <EmptyState text={token ? "No recent audit events." : "Locked."} />
+            <EmptyState
+              text={
+                dashboardError
+                  ? "Recent audit data is unavailable."
+                  : token
+                    ? "No recent audit events."
+                    : "Locked."
+              }
+            />
           ) : (
             <div className="table-wrap">
               <table>
@@ -1586,8 +2365,130 @@ export function App() {
           )}
         </Panel>
       </section>
+      ) : null}
     </main>
   );
+}
+
+function primaryAttentionItem(data: DashboardData): AttentionItem | null {
+  const approvalReview = data.approvals[0];
+  if (approvalReview) {
+    const approval = approvalReview.approval;
+    const workspaceId =
+      scopeString(approval.one_time_scope, "workspace_id") || "Unavailable";
+    const requestingPrincipal =
+      scopeObject(approval.one_time_scope, "requesting_principal") ?? approval.principal;
+    const requestingIdentity = scopeString(requestingPrincipal, "id") || "Unavailable";
+    const run = data.runs.find((candidate) => candidate.last_request_id === approval.request_id);
+    const validBinding = approvalReview.review.valid;
+    return {
+      source: "approval",
+      title: approval.summary || "Review pending approval",
+      status: approval.status,
+      bindingStatus: validBinding ? null : "stale binding",
+      consequence: validBinding
+        ? "The governed request is held until an operator approves or denies its exact one-time scope."
+        : "The approval binding evidence is stale or invalid. Review the source record before taking action.",
+      missionLabel: missionFacingLabel(run, workspaceId),
+      workspaceId,
+      requestingIdentity,
+      toolName: approval.tool_name || "Unavailable",
+      requestId: approval.request_id,
+      policyReason: scopeString(approval.metadata, "policy_reason") || "Policy reason unavailable",
+      runId: run?.run_id ?? null,
+      proposalId: scopeString(approval.one_time_scope, "proposal_id") || null,
+      targetId: run ? "missions" : "approvals",
+      actionLabel: validBinding ? "Review decision" : "Review binding evidence",
+      occurredAt: approval.expires_at,
+    };
+  }
+
+  const failure = data.auditEvents.find((event) => event.event_type.endsWith(".failed"));
+  if (failure) {
+    const metadataRunId = scopeString(failure.metadata, "run_id");
+    const run = data.runs.find(
+      (candidate) =>
+        candidate.run_id === metadataRunId || candidate.last_request_id === failure.request_id,
+    );
+    const workspaceId = run?.workspace_id ?? "Unavailable";
+    return {
+      source: "failure",
+      title: `${failure.tool_name ?? "Mediated action"} failed`,
+      status: "failed",
+      bindingStatus: null,
+      consequence:
+        "Ithildin recorded a failed mediated action. Review the correlated run and evidence before retrying elsewhere.",
+      missionLabel: missionFacingLabel(run, workspaceId),
+      workspaceId,
+      requestingIdentity: run?.principal_id ?? "Unavailable",
+      toolName: failure.tool_name ?? "Unavailable",
+      requestId: failure.request_id,
+      policyReason: "Not applicable to the recorded execution failure",
+      runId: run?.run_id ?? null,
+      proposalId: null,
+      targetId: run ? "missions" : "evidence",
+      actionLabel: "Investigate failure",
+      occurredAt: failure.timestamp,
+    };
+  }
+
+  if (data.patchDiagnostics && data.patchDiagnostics.status !== "clean") {
+    return {
+      source: "recovery",
+      title: "Patch recovery review required",
+      status: data.patchDiagnostics.status,
+      bindingStatus: null,
+      consequence:
+        "Patch diagnostics require technical review before the affected change path continues.",
+      missionLabel: "Patch application diagnostics",
+      workspaceId: "Unavailable",
+      requestingIdentity: "Unavailable",
+      toolName: "Patch application",
+      requestId: "",
+      policyReason: "Not applicable to recovery diagnostics",
+      runId: null,
+      proposalId: null,
+      targetId: "evidence",
+      actionLabel: "Review recovery evidence",
+      occurredAt: null,
+    };
+  }
+
+  const proposal = data.patches.find((candidate) => candidate.status === "proposed");
+  if (proposal) {
+    const run = data.runs.find((candidate) => candidate.last_request_id === proposal.request_id);
+    return {
+      source: "proposal",
+      title: `Review proposed change to ${proposal.path}`,
+      status: proposal.status,
+      bindingStatus: null,
+      consequence:
+        "A bounded change has been proposed. It has not been approved or applied by this proposal state.",
+      missionLabel: missionFacingLabel(run, proposal.workspace_id),
+      workspaceId: proposal.workspace_id,
+      requestingIdentity: run?.principal_id ?? "Unavailable",
+      toolName: run?.last_tool_name ?? "Unavailable",
+      requestId: proposal.request_id,
+      policyReason: "No pending approval reason is loaded for this proposal",
+      runId: run?.run_id ?? null,
+      proposalId: proposal.proposal_id,
+      targetId: run ? "missions" : "artifacts",
+      actionLabel: "Review proposal",
+      occurredAt: proposal.updated_at,
+    };
+  }
+
+  return null;
+}
+
+function missionFacingLabel(run: AgentRun | undefined, workspaceId: string) {
+  if (run && isDemoRun(run)) {
+    return "Guided local demo mission";
+  }
+  if (run) {
+    return `${workspaceId} mediated run`;
+  }
+  return `${workspaceId} workspace`;
 }
 
 function Metric({
@@ -1609,16 +2510,18 @@ function Metric({
 }
 
 function Panel({
+  id,
   title,
   icon,
   children,
 }: {
+  id?: string;
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="panel">
+    <section className="panel" id={id} aria-label={`${title} panel`} tabIndex={id ? -1 : undefined}>
       <header className="panel-header">
         {icon}
         <h2>{title}</h2>
@@ -1676,6 +2579,238 @@ function RunSummary({ summary }: { summary: AgentRunSummary }) {
   );
 }
 
+function RunFilterChips({
+  investigationFilters,
+  onClearAll,
+  onClearInvestigation,
+  onClearServer,
+  runFilters,
+}: {
+  investigationFilters: InvestigationFilters;
+  onClearAll: () => void;
+  onClearInvestigation: (name: keyof InvestigationFilters) => void;
+  onClearServer: (name: keyof RunFilters) => void;
+  runFilters: RunFilters;
+}) {
+  const serverChips = Object.entries(runFilters).filter((entry) => entry[1].trim());
+  const investigationChips = Object.entries(investigationFilters).filter(
+    ([name, value]) => value && value !== "all" && !(name === "mission" && !value.trim()),
+  );
+  if (serverChips.length === 0 && investigationChips.length === 0) {
+    return null;
+  }
+  return (
+    <div className="run-filter-chips" aria-label="Active run filters">
+      <strong>Active filters</strong>
+      {serverChips.map(([name, value]) => (
+        <button key={name} type="button" onClick={() => onClearServer(name as keyof RunFilters)}>
+          {runFilterLabel(name)}: {value} ×
+        </button>
+      ))}
+      {investigationChips.map(([name, value]) => (
+        <button
+          key={name}
+          type="button"
+          onClick={() => onClearInvestigation(name as keyof InvestigationFilters)}
+        >
+          {runFilterLabel(name)}: {value.replace(/_/g, " ")} ×
+        </button>
+      ))}
+      <button className="clear-all-filters" type="button" onClick={onClearAll}>
+        Clear all
+      </button>
+    </div>
+  );
+}
+
+function InvestigationSummary({
+  auditEvents,
+  loadedCount,
+  runs,
+}: {
+  auditEvents: AuditEvent[];
+  loadedCount: number;
+  runs: AgentRun[];
+}) {
+  const observedAttention = runs.filter((run) => runObservedAttention(run, auditEvents)).length;
+  const missions = new Set(runs.map((run) => missionFacingLabel(run, run.workspace_id))).size;
+  return (
+    <div className="investigation-summary" aria-label="Bounded investigation summary">
+      <span>{runs.length} of {loadedCount} loaded runs shown</span>
+      <span>{missions} presentation mission groups</span>
+      <span>{observedAttention} with observed attention</span>
+      <span>decision/outcome scope: 100 recent audit events</span>
+      <small>
+        Mission labels are presentation context. Counts describe loaded Ithildin records, not
+        external agent or process activity, anomaly detection, or incident state.
+      </small>
+    </div>
+  );
+}
+
+function runFilterLabel(name: string) {
+  const labels: Record<string, string> = {
+    principal_id: "Identity",
+    workspace_id: "Workspace",
+    status: "Run status",
+    tool_name: "Tool",
+    time_range: "Last update",
+    mission: "Mission context",
+    decision: "Observed decision",
+    outcome: "Observed outcome",
+    attention: "Observed attention",
+  };
+  return labels[name] ?? name;
+}
+
+function EvidenceCloseout({
+  evidence,
+  evidenceError,
+  exportNotice,
+  signingAvailable,
+  verification,
+}: {
+  evidence: RunEvidenceExport | null;
+  evidenceError: string | null;
+  exportNotice: ExportNotice | null;
+  signingAvailable: boolean;
+  verification: AuditVerification | null;
+}) {
+  if (!evidence) {
+    return (
+      <section className="evidence-closeout" aria-label="Run evidence closeout">
+        <div className="evidence-closeout-heading">
+          <div>
+            <p className="eyebrow">Evidence · selected run closeout</p>
+            <h4>Evidence closeout</h4>
+          </div>
+          <StatusPill status={evidenceError ? "unavailable" : "preparing"} />
+        </div>
+        <p>{evidenceError || "Preparing the existing redacted run evidence snapshot."}</p>
+      </section>
+    );
+  }
+
+  const applicationCount = evidence.timeline.filter(
+    (event) =>
+      scopeString(event, "category") === "tool.execution.completed" &&
+      scopeString(event, "tool_name") === "fs.patch.apply",
+  ).length;
+  const signedReferenceCount = evidence.signed_export_references.length;
+  const runExportNotice =
+    exportNotice?.scope === "run" &&
+    exportNotice.runId === scopeString(evidence.run, "run_id")
+      ? exportNotice
+      : null;
+  const verificationLabel = verification
+    ? verification.valid
+      ? `Verified for ${verification.event_count} currently loaded local audit events`
+      : "Verification failed"
+    : "Verification unavailable";
+
+  return (
+    <section className="evidence-closeout" aria-label="Run evidence closeout">
+      <div className="evidence-closeout-heading">
+        <div>
+          <p className="eyebrow">Evidence · selected run closeout</p>
+          <h4>Evidence closeout</h4>
+        </div>
+        <StatusPill status={evidence.summary.warning_count === 0 ? "snapshot ready" : "warnings"} />
+      </div>
+      <p className="evidence-scope">
+        Generated redacted snapshot for {evidence.summary.principal_id} in {evidence.summary.workspace_id}.
+        It covers recorded Ithildin-mediated activity for this run only.
+      </p>
+      <div className="evidence-closeout-grid">
+        <article>
+          <span>Recorded run evidence</span>
+          <strong>{evidence.summary.audit_event_count} events in snapshot</strong>
+          <small>
+            {evidence.summary.tool_call_count} tool calls · {evidence.summary.approval_count} correlated approvals · {applicationCount} recorded patch applications
+          </small>
+        </article>
+        <article>
+          <span>Evidence completeness</span>
+          <strong>
+            {evidence.summary.warning_count === 0
+              ? "No reported bundle warnings"
+              : `${evidence.summary.warning_count} bundle warnings`}
+          </strong>
+          <small>Zero warnings would not prove off-platform activity is represented.</small>
+        </article>
+        <article>
+          <span>Local audit-chain verification</span>
+          <strong>{verificationLabel}</strong>
+          <small>Not host-compromise resistance, immutable custody, or independent attestation.</small>
+        </article>
+        <article>
+          <span>Signing state</span>
+          <strong>
+            {signedReferenceCount > 0
+              ? `${signedReferenceCount} signed evidence references included`
+              : "Run snapshot has no signed evidence reference"}
+          </strong>
+          <small>
+            {signingAvailable
+              ? "Signed audit export is available separately; this snapshot is not thereby signed."
+              : "Signing key/export is unavailable in the current local configuration."}
+          </small>
+        </article>
+        <article role="status" aria-live="polite">
+          <span>Browser export response</span>
+          <strong>
+            {runExportNotice
+              ? runExportNotice.state === "failed"
+                ? "Export failed"
+                : "Download initiated"
+              : "Not exported in this browser session"}
+          </strong>
+          <small>{runExportNotice?.message ?? "No custody or receipt claim is available."}</small>
+        </article>
+        <article>
+          <span>Excluded from run snapshot</span>
+          <strong>{evidence.redaction_summary.excluded_categories.length} sensitive categories</strong>
+          <small>{evidence.redaction_summary.excluded_categories.join(", ")}</small>
+        </article>
+      </div>
+      {evidence.warnings.length > 0 ? (
+        <div className="evidence-warning-summary">
+          <strong>Snapshot limitations</strong>
+          <ul>
+            {evidence.warnings.map((warning, index) => (
+              <li key={`${scopeString(warning, "type")}-${index}`}>
+                {scopeString(warning, "type") || "unspecified warning"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <details className="evidence-closeout-technical">
+        <summary>Technical closeout evidence</summary>
+        <dl className="meta-list evidence-closeout-meta">
+          <div>
+            <dt>Snapshot</dt>
+            <dd>{shortId(evidence.export_id)}</dd>
+          </div>
+          <div>
+            <dt>Generated</dt>
+            <dd>{formatDate(evidence.exported_at)}</dd>
+          </div>
+          <div>
+            <dt>Schema</dt>
+            <dd>{evidence.schema_version}</dd>
+          </div>
+          <div>
+            <dt>Evidence hashes</dt>
+            <dd>{Object.keys(evidence.evidence_hashes).length}</dd>
+          </div>
+        </dl>
+        <pre>{JSON.stringify(evidence, null, 2)}</pre>
+      </details>
+    </section>
+  );
+}
+
 function RunEvidenceSummary({ run, eventCount }: { run: AgentRun; eventCount: number }) {
   return (
     <div className="run-summary" aria-label="Run evidence summary">
@@ -1690,6 +2825,447 @@ function RunEvidenceSummary({ run, eventCount }: { run: AgentRun; eventCount: nu
   );
 }
 
+function RunDecisionExplanation({
+  approvals,
+  preferredRequestId,
+  runDetail,
+  tools,
+}: {
+  approvals: ApprovalReview[];
+  preferredRequestId: string;
+  runDetail: AgentRunDetail;
+  tools: ToolSummary[];
+}) {
+  const decisionEvent = findDecisionEvent(runDetail.timeline, preferredRequestId);
+  const requestId = decisionEvent?.request_id ?? preferredRequestId;
+  const approvalReview = approvals.find(
+    (candidate) => candidate.approval.request_id === requestId,
+  );
+  const tool = tools.find((candidate) => candidate.name === decisionEvent?.tool_name);
+
+  if (!decisionEvent) {
+    return (
+      <section className="decision-explanation" aria-label="Governed request decision">
+        <div className="decision-explanation-heading">
+          <div>
+            <p className="eyebrow">Workbench · recorded policy evidence</p>
+            <h4>Governed request decision</h4>
+          </div>
+          <StatusPill status="unavailable" />
+        </div>
+        <p>
+          No correlated policy decision is present for the selected request. Ithildin does not infer
+          an allow, denial, or approval requirement from the tool or run status.
+        </p>
+        <dl className="meta-list decision-context">
+          <div>
+            <dt>Requesting identity</dt>
+            <dd>{runDetail.run.principal_id}</dd>
+          </div>
+          <div>
+            <dt>Governed workspace</dt>
+            <dd>{runDetail.run.workspace_id}</dd>
+          </div>
+          <div>
+            <dt>Request</dt>
+            <dd>{requestId ? shortId(requestId) : "Unavailable"}</dd>
+          </div>
+        </dl>
+      </section>
+    );
+  }
+
+  const decision = decisionEvent.decision ?? "unavailable";
+  const policyReason =
+    (approvalReview && scopeString(approvalReview.approval.metadata, "policy_reason")) ||
+    scopeString(decisionEvent.metadata, "policy_reason") ||
+    scopeString(decisionEvent.metadata, "reason");
+  const approvalRules = approvalReview
+    ? scopeList(approvalReview.approval.one_time_scope, "matched_rules")
+    : [];
+  const matchedRules =
+    approvalRules.length > 0
+      ? approvalRules
+      : scopeList(decisionEvent.metadata, "matched_rules");
+  const executionState = correlatedExecutionState(runDetail.timeline, decisionEvent.request_id);
+  const resourceLabel = decisionEvent.resource
+    ? scopeString(decisionEvent.resource, "path") ||
+      scopeString(decisionEvent.resource, "url") ||
+      "Safe resource metadata available"
+    : "Resource summary unavailable";
+
+  return (
+    <section className="decision-explanation" aria-label="Governed request decision">
+      <div className="decision-explanation-heading">
+        <div>
+          <p className="eyebrow">Workbench · recorded policy evidence</p>
+          <h4>Governed request decision</h4>
+        </div>
+        <StatusPill status={decision} />
+      </div>
+      <ol className="decision-questions">
+        <li>
+          <span>What did the agent request?</span>
+          <p>
+            {tool?.title ?? decisionEvent.tool_name ?? "Mediated tool request"}
+            {decisionEvent.tool_name ? ` (${decisionEvent.tool_name})` : ""} for {resourceLabel}.
+          </p>
+        </li>
+        <li>
+          <span>What did Ithildin decide?</span>
+          <p>{operatorDecisionLabel(decision)}.</p>
+        </li>
+        <li>
+          <span>Why?</span>
+          <p>{policyReason || "Reason not present in the correlated policy evidence."}</p>
+        </li>
+        <li>
+          <span>What was the operational consequence?</span>
+          <p>{decisionConsequence(decision, executionState)}</p>
+        </li>
+        <li>
+          <span>Is human action required?</span>
+          <p>{decisionAction(decision, approvalReview)}</p>
+        </li>
+        <li>
+          <span>What evidence is available?</span>
+          <p>
+            Recorded request, policy decision, event hash, and run correlation
+            {approvalReview ? ", plus pending approval binding evidence" : ""}.
+          </p>
+        </li>
+      </ol>
+      <p className="registration-boundary">
+        {tool
+          ? `${tool.title} is registered as ${tool.name}. Registration identifies the reviewed tool definition; it does not grant permission. This request received the recorded decision above.`
+          : "A matching registered-tool summary is not loaded. The recorded policy decision remains authoritative for this request."}
+      </p>
+      <details className="technical-decision-evidence">
+        <summary>Technical decision evidence</summary>
+        <dl className="meta-list decision-context">
+          <div>
+            <dt>Requesting identity</dt>
+            <dd>{runDetail.run.principal_id}</dd>
+          </div>
+          <div>
+            <dt>Governed workspace</dt>
+            <dd>{runDetail.run.workspace_id}</dd>
+          </div>
+          <div>
+            <dt>Request</dt>
+            <dd>{shortId(decisionEvent.request_id)}</dd>
+          </div>
+          <div>
+            <dt>Policy fingerprint</dt>
+            <dd>
+              {scopeString(decisionEvent.metadata, "policy_hash")
+                ? shortHash(scopeString(decisionEvent.metadata, "policy_hash"))
+                : "Unavailable for this request"}
+            </dd>
+          </div>
+          <div>
+            <dt>Tool definition fingerprint</dt>
+            <dd>
+              {scopeString(decisionEvent.metadata, "manifest_hash")
+                ? shortHash(scopeString(decisionEvent.metadata, "manifest_hash"))
+                : "Unavailable for this request"}
+            </dd>
+          </div>
+          <div>
+            <dt>Matched rules</dt>
+            <dd>{matchedRules.length > 0 ? matchedRules.join(", ") : "Unavailable"}</dd>
+          </div>
+          <div>
+            <dt>Decision event</dt>
+            <dd>{shortId(decisionEvent.event_id)}</dd>
+          </div>
+          <div>
+            <dt>Event hash</dt>
+            <dd>{shortHash(decisionEvent.event_hash)}</dd>
+          </div>
+          <div>
+            <dt>Recorded execution state</dt>
+            <dd>{executionState}</dd>
+          </div>
+        </dl>
+      </details>
+    </section>
+  );
+}
+
+function findDecisionEvent(timeline: AgentRunTimelineEvent[], preferredRequestId: string) {
+  if (preferredRequestId) {
+    return timeline.find(
+      (event) => event.request_id === preferredRequestId && Boolean(event.decision),
+    );
+  }
+  for (let index = timeline.length - 1; index >= 0; index -= 1) {
+    if (timeline[index].decision) {
+      return timeline[index];
+    }
+  }
+  return undefined;
+}
+
+function correlatedExecutionState(timeline: AgentRunTimelineEvent[], requestId: string) {
+  const correlated = timeline.filter((event) => event.request_id === requestId);
+  if (correlated.some((event) => event.event_type.endsWith(".failed"))) {
+    return "failed";
+  }
+  if (correlated.some((event) => event.event_type === "tool.execution.completed")) {
+    return "completed";
+  }
+  if (correlated.some((event) => event.event_type === "tool.execution.started")) {
+    return "started";
+  }
+  return "not recorded";
+}
+
+function operatorDecisionLabel(decision: string) {
+  if (decision === "allow") {
+    return "Allowed";
+  }
+  if (decision === "deny") {
+    return "Denied";
+  }
+  if (decision === "require_approval") {
+    return "Approval required";
+  }
+  return `Recorded as ${decision}`;
+}
+
+function decisionConsequence(decision: string, executionState: string) {
+  if (decision === "deny") {
+    return "Gateway blocked the governed request. No governed execution should follow this decision.";
+  }
+  if (decision === "require_approval") {
+    return executionState === "not recorded"
+      ? "The request is held until the exact approval requirement is satisfied. No execution is recorded."
+      : `Policy required approval. The separately recorded execution state is ${executionState}.`;
+  }
+  if (decision === "allow") {
+    return executionState === "not recorded"
+      ? "Policy allowed the request, but no execution result is present in the correlated evidence."
+      : `Policy allowed the request. The separately recorded execution state is ${executionState}.`;
+  }
+  return `The correlated execution state is ${executionState}; no additional consequence is inferred.`;
+}
+
+function decisionAction(decision: string, approvalReview: ApprovalReview | undefined) {
+  if (decision === "require_approval") {
+    if (!approvalReview) {
+      return "Approval was required, but no matching pending approval is loaded. Review the timeline and approval history.";
+    }
+    return approvalReview.review.valid
+      ? "Review the matching pending approval and its exact one-time scope."
+      : "Do not decide the request until the stale or invalid approval binding is reviewed.";
+  }
+  if (decision === "deny") {
+    return "No approval action is available for this denied request. Investigate or change the request through an authorized workflow.";
+  }
+  if (decision === "allow") {
+    return "No policy decision is required. Review the separate execution outcome if the mission depends on it.";
+  }
+  return "Review technical evidence before taking action.";
+}
+
+function ArtifactLifecycleSummary({
+  approvals,
+  pendingApprovalReview,
+  proposal,
+  onOpenApproval,
+}: {
+  approvals: Approval[];
+  pendingApprovalReview: ApprovalReview | undefined;
+  proposal: PatchProposal;
+  onOpenApproval: () => void;
+}) {
+  const currentApproval = preferredProposalApproval(approvals);
+  const pendingApproval = approvals.find((approval) => approval.status === "pending");
+  const { additions, removals } = diffLineCounts(proposal.unified_diff ?? "");
+  const applied = proposal.status === "applied";
+
+  return (
+    <section className="artifact-lifecycle" aria-label="Selected artifact lifecycle">
+      <div className="artifact-summary-heading">
+        <div>
+          <p className="eyebrow">Artifact review · recorded lifecycle</p>
+          <h4>{applied ? "Applied change ready for operator review" : "Proposed change"}</h4>
+        </div>
+        <StatusPill
+          status={proposalLifecycleStatus(proposal, approvals)}
+        />
+      </div>
+      <p className="artifact-change-summary">
+        {applied ? "Recorded application changed" : "Proposal would change"} {proposal.path} with {additions} addition
+        {additions === 1 ? "" : "s"} and {removals} removal{removals === 1 ? "" : "s"}. This
+        summary is generated from the diff and is not semantic or security review.
+      </p>
+      <div className="artifact-lifecycle-steps">
+        <article>
+          <span>1 · Proposal</span>
+          <strong>{proposal.status}</strong>
+          <small>Recorded {formatDate(proposal.created_at)}</small>
+        </article>
+        <article>
+          <span>2 · Approval</span>
+          <strong>{currentApproval?.status ?? "not recorded"}</strong>
+          <small>
+            {currentApproval
+              ? `${proposalRequester(approvals)} · expires ${formatDate(currentApproval.expires_at)}`
+              : "Requesting identity unavailable without a correlated approval"}
+          </small>
+        </article>
+        <article>
+          <span>3 · Application</span>
+          <strong>{applied ? "recorded applied" : "not applied"}</strong>
+          <small>Proposal updated {formatDate(proposal.updated_at)}; no application time is inferred</small>
+        </article>
+        <article>
+          <span>4 · Operator review</span>
+          <strong>not recorded</strong>
+          <small>Ithildin has no review-complete or promotion mutation for this artifact</small>
+        </article>
+      </div>
+      <div className="artifact-next-action">
+        <strong>Next action</strong>
+        <p>{proposalNextAction(proposal, approvals, pendingApprovalReview)}</p>
+        {pendingApproval ? (
+          <button
+            type="button"
+            disabled={!pendingApprovalReview?.review.valid}
+            onClick={onOpenApproval}
+          >
+            Open matching pending approval
+          </button>
+        ) : null}
+      </div>
+      <p className="artifact-state-boundary">
+        {applied
+          ? "Applied means the governed patch operation was recorded. It does not mean reviewed, promoted, published, release-ready, or externally deployed."
+          : "Proposed means a bounded change record exists. It does not mean approved, applied, reviewed, or ready for release."}
+      </p>
+    </section>
+  );
+}
+
+function approvalsForProposal(history: Approval[], proposalId: string) {
+  return history.filter(
+    (approval) => scopeString(approval.one_time_scope, "proposal_id") === proposalId,
+  );
+}
+
+function pendingReviewForProposal(history: ApprovalReview[], proposalId: string) {
+  return history.find(
+    (review) => scopeString(review.approval.one_time_scope, "proposal_id") === proposalId,
+  );
+}
+
+function preferredProposalApproval(approvals: Approval[]) {
+  return (
+    approvals.find((approval) => approval.status === "pending") ??
+    [...approvals].sort((left, right) =>
+      right.expires_at.localeCompare(left.expires_at),
+    )[0]
+  );
+}
+
+function proposalRequester(approvals: Approval[]) {
+  const approval = preferredProposalApproval(approvals);
+  if (!approval) {
+    return "Unavailable";
+  }
+  const scopedPrincipal = scopeObject(approval.one_time_scope, "requesting_principal");
+  return scopeString(scopedPrincipal ?? approval.principal, "id") || "Unavailable";
+}
+
+function proposalLifecycleStatus(
+  proposal: PatchProposal,
+  approvals: Approval[],
+) {
+  if (proposal.status === "applied") {
+    return "applied";
+  }
+  const approval = preferredProposalApproval(approvals);
+  if (approval?.status === "pending") {
+    return "approval required";
+  }
+  return approval?.status ?? proposal.status;
+}
+
+function proposalNextAction(
+  proposal: PatchProposal,
+  approvals: Approval[],
+  pendingApprovalReview?: ApprovalReview,
+) {
+  if (proposal.status === "applied") {
+    return "Review the applied artifact and evidence; no review-complete or promotion action exists.";
+  }
+  const approval = preferredProposalApproval(approvals);
+  if (approval?.status === "pending") {
+    return pendingApprovalReview?.review.valid
+      ? "Review the exact pending approval scope before approving or denying."
+      : "Review the stale or invalid approval binding; approval is disabled.";
+  }
+  if (approval?.status === "denied") {
+    return "No approval action remains. Revise the change through an authorized workflow if needed.";
+  }
+  if (approval?.status === "expired" || approval?.status === "superseded") {
+    return "The prior approval is no longer actionable. Review history before requesting new work.";
+  }
+  return "Inspect the proposal and evidence; no matching pending approval is recorded.";
+}
+
+function diffLineCounts(unifiedDiff: string) {
+  return unifiedDiff.split("\n").reduce(
+    (counts, line) => {
+      if (line.startsWith("+") && !line.startsWith("+++")) {
+        counts.additions += 1;
+      } else if (line.startsWith("-") && !line.startsWith("---")) {
+        counts.removals += 1;
+      }
+      return counts;
+    },
+    { additions: 0, removals: 0 },
+  );
+}
+
+function filterAndSortPatches(
+  patches: PatchProposal[],
+  query: string,
+  status: string,
+  sort: string,
+) {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  return patches
+    .filter(
+      (patch) =>
+        status === "all" || patch.status === status,
+    )
+    .filter((patch) =>
+      normalizedQuery
+        ? [patch.path, patch.workspace_id, patch.request_id, patch.proposal_id].some((value) =>
+            value.toLocaleLowerCase().includes(normalizedQuery),
+          )
+        : true,
+    )
+    .sort((left, right) => {
+      if (sort === "path-asc") {
+        return left.path.localeCompare(right.path) || left.proposal_id.localeCompare(right.proposal_id);
+      }
+      const direction = sort === "updated-asc" ? 1 : -1;
+      return direction * left.updated_at.localeCompare(right.updated_at) || left.proposal_id.localeCompare(right.proposal_id);
+    });
+}
+
+function groupPatchesByWorkspace(patches: PatchProposal[]) {
+  const groups = new Map<string, PatchProposal[]>();
+  for (const patch of patches) {
+    groups.set(patch.workspace_id, [...(groups.get(patch.workspace_id) ?? []), patch]);
+  }
+  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right));
+}
+
 function DemoLabel({ run }: { run: AgentRun }) {
   return isDemoRun(run) ? (
     <span className="demo-label" title="Guided local demo evidence">
@@ -1702,8 +3278,7 @@ function isDemoRun(run: AgentRun) {
   return (
     run.metadata.scenario === "guided_local_demo" ||
     run.metadata.demo_step === "mediated_patch_flow" ||
-    run.metadata.model_client_label === "guided_local_demo" ||
-    run.session_id.includes("demo")
+    run.metadata.model_client_label === "guided_local_demo"
   );
 }
 
@@ -1783,7 +3358,7 @@ function EvidenceGroup({
 }
 
 function StatusPill({ status }: { status: string }) {
-  return <span className={`status-pill status-${status}`}>{status}</span>;
+  return <span className={`status-pill status-${status.replace(/\s+/g, "-")}`}>{status}</span>;
 }
 
 function ApprovalEvidence({
@@ -2054,6 +3629,80 @@ function runListPath(filters: {
   return `/runs?${query.toString()}`;
 }
 
+function filterInvestigationRuns(
+  runs: AgentRun[],
+  auditEvents: AuditEvent[],
+  filters: InvestigationFilters,
+) {
+  const now = Date.now();
+  const rangeMilliseconds: Record<string, number> = {
+    "24h": 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "30d": 30 * 24 * 60 * 60 * 1000,
+  };
+  const missionQuery = filters.mission.trim().toLocaleLowerCase();
+  return runs.filter((run) => {
+    const events = observedAuditEventsForRun(run, auditEvents);
+    const range = rangeMilliseconds[filters.time_range];
+    if (range && now - new Date(run.updated_at).getTime() > range) {
+      return false;
+    }
+    if (
+      missionQuery &&
+      !missionFacingLabel(run, run.workspace_id).toLocaleLowerCase().includes(missionQuery)
+    ) {
+      return false;
+    }
+    if (
+      filters.decision !== "all" &&
+      !events.some((event) => event.decision === filters.decision)
+    ) {
+      return false;
+    }
+    if (filters.outcome !== "all" && runObservedOutcome(events) !== filters.outcome) {
+      return false;
+    }
+    const attention = runObservedAttention(run, auditEvents);
+    if (filters.attention === "attention" && !attention) {
+      return false;
+    }
+    if (filters.attention === "none" && attention) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function observedAuditEventsForRun(run: AgentRun, auditEvents: AuditEvent[]) {
+  return auditEvents.filter(
+    (event) =>
+      scopeString(event.metadata, "run_id") === run.run_id ||
+      (Boolean(run.last_request_id) && event.request_id === run.last_request_id),
+  );
+}
+
+function runObservedOutcome(events: AuditEvent[]) {
+  if (events.some((event) => event.event_type.endsWith(".failed"))) {
+    return "failed";
+  }
+  if (events.some((event) => event.event_type === "tool.execution.completed")) {
+    return "completed";
+  }
+  if (events.some((event) => event.event_type === "tool.execution.started")) {
+    return "started";
+  }
+  return "unavailable";
+}
+
+function runObservedAttention(run: AgentRun, auditEvents: AuditEvent[]) {
+  return observedAuditEventsForRun(run, auditEvents).some(
+    (event) =>
+      event.event_type.endsWith(".failed") ||
+      event.decision === "deny" ||
+      event.decision === "require_approval",
+  );
+}
+
 function countSummary(counts: Record<string, number>) {
   const [first] = Object.entries(counts).sort((left, right) => right[1] - left[1]);
   return first ? `${first[0]} (${first[1]})` : "";
@@ -2284,6 +3933,16 @@ function formatDate(value: string) {
     dateStyle: "short",
     timeStyle: "medium",
   }).format(new Date(value));
+}
+
+function scrollAndFocusElement(id: string) {
+  const target = document.getElementById(id);
+  if (!target) {
+    return;
+  }
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  target.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  target.focus({ preventScroll: true });
 }
 
 function shortId(value: string) {

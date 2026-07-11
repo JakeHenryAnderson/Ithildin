@@ -171,12 +171,40 @@ function jsonResponse(payload: unknown, init: ResponseInit = {}) {
   });
 }
 
+function deferredResponse() {
+  let resolve!: (response: Response) => void;
+  const promise = new Promise<Response>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
 type FetchMockOptions = {
+  approvalStatus?: "executed" | "pending";
+  auditExportFailure?: boolean;
+  decision?: "deny" | "require_approval";
   emptyRuns?: boolean;
   emptyTimeline?: boolean;
+  invalidBinding?: boolean;
+  noApprovals?: boolean;
+  proposalStatus?: "applied" | "proposed";
 };
 
 function installFetchMock(status = systemStatus(), options: FetchMockOptions = {}) {
+  const approvalForScenario = {
+    ...approvalReview,
+    approval: {
+      ...approvalReview.approval,
+      status: options.approvalStatus ?? approvalReview.approval.status,
+    },
+    review: {
+      ...approvalReview.review,
+      valid:
+        options.proposalStatus === "applied" || options.invalidBinding
+          ? false
+          : approvalReview.review.valid,
+    },
+  };
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = url.replace(API_BASE, "");
@@ -193,11 +221,25 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             manifest_hash: "sha256:toolhash",
             mcp: { exposed: true },
           },
+          {
+            name: "fs.patch.apply",
+            version: "1",
+            title: "Apply patch proposal",
+            risk: "write",
+            category: "filesystem",
+            manifest_hash: "sha256:manifesthash",
+            mcp: { exposed: true },
+          },
         ],
       });
     }
     if (path === "/approvals/review?status=pending") {
-      return jsonResponse({ approvals: [approvalReview] });
+      return jsonResponse({ approvals: options.noApprovals ? [] : [approvalForScenario] });
+    }
+    if (path === "/approvals") {
+      return jsonResponse({
+        approvals: options.noApprovals ? [] : [approvalForScenario.approval],
+      });
     }
     if (path === "/patch-proposals") {
       return jsonResponse({
@@ -209,7 +251,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             path: "demo.txt",
             base_file_hash: "sha256:basehash",
             proposal_hash: "sha256:proposalhash",
-            status: "proposed",
+            status: options.proposalStatus ?? "proposed",
             created_at: "2026-06-03T12:00:00Z",
             updated_at: "2026-06-03T12:00:00Z",
             metadata: {},
@@ -225,7 +267,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
         path: "demo.txt",
         base_file_hash: "sha256:basehash",
         proposal_hash: "sha256:proposalhash",
-        status: "proposed",
+        status: options.proposalStatus ?? "proposed",
         created_at: "2026-06-03T12:00:00Z",
         updated_at: "2026-06-03T12:00:00Z",
         metadata: {},
@@ -310,12 +352,34 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
                 event_id: "evt_run_1",
                 timestamp: "2026-06-03T12:00:00Z",
                 event_type: "policy.evaluated",
-                request_id: "req_123456789",
+                request_id: "req_read_123456789",
                 tool_name: "fs.read",
                 decision: "allow",
                 event_hash: "sha256:runeventhash",
                 resource: { path: "README.md" },
                 metadata: { run_id: "run_123456789" },
+              },
+              {
+                event_id: "evt_run_2",
+                timestamp: "2026-06-03T12:01:00Z",
+                event_type: "policy.evaluated",
+                request_id: "req_123456789",
+                tool_name: "fs.patch.apply",
+                decision: options.decision ?? "require_approval",
+                event_hash: "sha256:approvaleventhash",
+                resource: { path: "demo.txt" },
+                metadata: {
+                  run_id: "run_123456789",
+                  policy_reason:
+                    options.decision === "deny"
+                      ? "request is outside the permitted write policy"
+                      : "write tools require approval",
+                  matched_rules: [
+                    options.decision === "deny"
+                      ? "deny_unapproved_write_path"
+                      : "require_approval_for_write",
+                  ],
+                },
               },
             ],
       });
@@ -361,7 +425,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             tool_name: "fs.read",
             decision: "allow",
             event_hash: "sha256:eventhash",
-            metadata: { redaction_count: 0 },
+            metadata: { redaction_count: 0, run_id: "run_123456789" },
           },
         ],
       });
@@ -400,6 +464,12 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
       return jsonResponse(approvalReview.approval);
     }
     if (path === "/audit-events/export" || path === "/audit-events/export/signed") {
+      if (options.auditExportFailure) {
+        return jsonResponse(
+          { detail: "signed export unavailable" },
+          { status: 409, statusText: "Conflict" },
+        );
+      }
       return new Response("export", { status: 200 });
     }
     return jsonResponse({ detail: `Unhandled ${path}` }, { status: 404, statusText: "Not Found" });
@@ -412,13 +482,17 @@ async function saveToken(user = userEvent.setup()) {
   render(<App />);
   await user.type(screen.getByLabelText("Admin token"), "local-token");
   await user.click(screen.getByRole("button", { name: /save/i }));
-  await screen.findByText("System Trust");
+  await screen.findByText("Authenticated local preview");
   return user;
 }
 
 describe("Review console interactions", () => {
   beforeEach(() => {
     sessionStorage.clear();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn(),
+    });
     vi.stubGlobal("URL", {
       createObjectURL: vi.fn(() => "blob:ithildin"),
       revokeObjectURL: vi.fn(),
@@ -448,6 +522,88 @@ describe("Review console interactions", () => {
         }),
       );
     });
+  });
+
+  it("orients a first-time operator and opens authoritative attention in Workbench", async () => {
+    installFetchMock();
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { name: "Ithildin Command Center" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Gateway remains the enforcement and audit authority/i),
+    ).toBeInTheDocument();
+    await user.tab();
+    const skipLink = screen.getByRole("link", { name: "Skip to operator attention" });
+    expect(skipLink).toHaveFocus();
+    await user.click(skipLink);
+    expect(document.getElementById("attention")).toHaveFocus();
+
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+    for (const label of [
+      "Attention",
+      "Missions / Agent Runs",
+      "Artifacts",
+      "Approvals",
+      "Evidence",
+      "Administration",
+      "Help",
+    ]) {
+      expect(within(navigation).getByRole("link", { name: label })).toBeInTheDocument();
+    }
+    expect(within(navigation).getByText("Sign-in required")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sign in with the local admin token to load operator attention records/i),
+    ).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Admin token"), "local-token");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    const attention = await screen.findByRole("region", { name: "Attention" });
+    expect(within(navigation).getByText("Authenticated local preview")).toBeInTheDocument();
+    expect(within(attention).getByText("Guided local demo mission")).toBeInTheDocument();
+    expect(within(attention).getByText("Apply demo patch")).toBeInTheDocument();
+    expect(within(attention).getByText("Review decision")).toBeInTheDocument();
+    expect(within(attention).getByText("demo")).toBeInTheDocument();
+    expect(within(attention).getByText("agent:mcp-local")).toBeInTheDocument();
+    expect(within(attention).getByText("write tools require approval")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Routine operations" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.queryByText("System Trust")).not.toBeInTheDocument();
+    expect(screen.queryByText("Observed investigation filters")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Policy administration" }));
+    expect(screen.getByText("System Trust")).toBeInTheDocument();
+    expect(screen.getByText("Request Decision Preflight")).toBeInTheDocument();
+    expect(screen.queryByText("Recent Audit Events")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Technical review" }));
+    expect(screen.getByText("Audit Integrity")).toBeInTheDocument();
+    expect(screen.getByText("Recent Audit Events")).toBeInTheDocument();
+    expect(screen.queryByText("Request Decision Preflight")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Routine operations" }));
+
+    await user.click(within(navigation).getByRole("link", { name: "Administration" }));
+    await waitFor(() => {
+      expect(document.getElementById("administration")).toHaveFocus();
+    });
+    expect(screen.getByText("Request Decision Preflight")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Routine operations" }));
+
+    await user.click(
+      within(attention).getByRole("button", { name: "Open mission Workbench" }),
+    );
+    await waitFor(() => {
+      expect(document.getElementById("missions")).toHaveFocus();
+    });
+    expect(document.getElementById("missions")).not.toBeNull();
   });
 
   it("shows locked and empty Agent Run states without run controls", async () => {
@@ -498,10 +654,19 @@ describe("Review console interactions", () => {
     expect(screen.getByText("1 runs")).toBeInTheDocument();
     expect(screen.getByText("demo (1)")).toBeInTheDocument();
     expect(screen.getByText("Run Evidence")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Run evidence closeout")).toBeInTheDocument();
+    expect(screen.getByText("Evidence closeout")).toBeInTheDocument();
+    expect(screen.getByText("1 bundle warnings")).toBeInTheDocument();
+    expect(
+      screen.getByText("Verified for 1 currently loaded local audit events"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Run snapshot has no signed evidence reference")).toBeInTheDocument();
+    expect(screen.getByText("Not exported in this browser session")).toBeInTheDocument();
+    expect(screen.getByText(/Not host-compromise resistance/)).toBeInTheDocument();
     expect(screen.getAllByText("demo").length).toBeGreaterThan(0);
     expect(document.querySelector(".demo-label")).not.toBeNull();
     expect(screen.getByText("Evidence Types")).toBeInTheDocument();
-    expect(screen.getByText("policy (1)")).toBeInTheDocument();
+    expect(screen.getByText("policy (2)")).toBeInTheDocument();
     expect(screen.getByText("Statuses")).toBeInTheDocument();
     expect(screen.getByText("Decisions")).toBeInTheDocument();
     expect(screen.getByText("Correlation")).toBeInTheDocument();
@@ -509,21 +674,38 @@ describe("Review console interactions", () => {
     expect(screen.getByText("Tool Call")).toBeInTheDocument();
     expect(screen.getAllByText("Policy Decision").length).toBeGreaterThan(0);
     expect(screen.getByText("Audit/Export")).toBeInTheDocument();
-    expect(screen.getByText("1 requests")).toBeInTheDocument();
+    expect(screen.getByText("2 requests")).toBeInTheDocument();
     expect(screen.getByText("2 tool calls")).toBeInTheDocument();
-    expect(screen.getByText("1 audit events")).toBeInTheDocument();
-    expect(screen.getByText("policy.evaluated")).toBeInTheDocument();
+    expect(screen.getByText("2 audit events")).toBeInTheDocument();
+    expect(screen.getAllByText("policy.evaluated")).toHaveLength(2);
     expect(screen.getAllByText("allow").length).toBeGreaterThan(0);
+    expect(screen.getByText("Governed request decision")).toBeInTheDocument();
+    expect(screen.getByText("Approval required.")).toBeInTheDocument();
+    expect(screen.getAllByText("write tools require approval").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText("Review the matching pending approval and its exact one-time scope."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Registration identifies the reviewed tool definition/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));
-    expect(screen.getByText("Apply demo patch")).toBeInTheDocument();
+    expect(await screen.findByText("Download initiated")).toBeInTheDocument();
+    expect(screen.getByText(/save location, custody, receipt/)).toBeInTheDocument();
+    expect(screen.getAllByText("Apply demo patch").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Binding Evidence")).toBeInTheDocument();
     expect(screen.getByText("Patch Artifact")).toBeInTheDocument();
     expect(screen.getAllByText("Policy Decision").length).toBeGreaterThan(0);
-    expect(screen.getByText("basehash")).toBeInTheDocument();
+    expect(screen.getAllByText("basehash").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Artifact proposal filters")).toBeInTheDocument();
+    expect(screen.getByText("demo workspace")).toBeInTheDocument();
+    expect(screen.getByLabelText("Selected artifact lifecycle")).toBeInTheDocument();
+    expect(screen.getByText("Proposed change")).toBeInTheDocument();
+    expect(screen.getByText("1 · Proposal")).toBeInTheDocument();
+    expect(screen.getByText("2 · Approval")).toBeInTheDocument();
+    expect(screen.getByText("3 · Application")).toBeInTheDocument();
+    expect(screen.getByText("4 · Operator review")).toBeInTheDocument();
+    expect(screen.getByText(/does not mean approved, applied, reviewed/)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Deny reason for appr_123456789"), "not today");
     await user.click(screen.getByRole("button", { name: /^Deny$/i }));
-    await user.click(screen.getByRole("button", { name: /^Approve$/i }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE}/runs/run_123456789/evidence-export`,
@@ -535,7 +717,7 @@ describe("Review console interactions", () => {
       `${API_BASE}/approvals/appr_123456789/deny`,
       expect.objectContaining({ method: "POST" }),
     );
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(fetchMock).not.toHaveBeenCalledWith(
       `${API_BASE}/approvals/appr_123456789/approve`,
       expect.objectContaining({ method: "POST" }),
     );
@@ -553,9 +735,56 @@ describe("Review console interactions", () => {
     expect(screen.queryByText("Evidence Types")).not.toBeInTheDocument();
   });
 
+  it("distinguishes a recorded denial from an approval requirement", async () => {
+    installFetchMock(systemStatus(), { decision: "deny", noApprovals: true });
+    await saveToken();
+
+    expect(screen.getByText("Denied.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Gateway blocked the governed request. No governed execution should follow this decision."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "No approval action is available for this denied request. Investigate or change the request through an authorized workflow.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Approval required.")).not.toBeInTheDocument();
+  });
+
+  it("keeps applied artifact state separate from operator review and promotion", async () => {
+    installFetchMock(systemStatus(), {
+      approvalStatus: "executed",
+      proposalStatus: "applied",
+    });
+    const user = await saveToken();
+
+    expect(screen.getByText("Applied change ready for operator review")).toBeInTheDocument();
+    expect(screen.getByText("recorded applied")).toBeInTheDocument();
+    expect(screen.getAllByText("not recorded").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/does not mean reviewed, promoted, published, release-ready/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open matching pending approval" })).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Search artifacts"), "missing-artifact");
+    expect(screen.getByText("No proposals match the current artifact filters.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Selected artifact lifecycle")).toBeInTheDocument();
+  });
+
+  it("keeps approval lifecycle separate from invalid binding evidence", async () => {
+    installFetchMock(systemStatus(), { invalidBinding: true });
+    await saveToken();
+
+    expect(screen.getAllByText("pending").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("stale binding").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /^Approve$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Deny$/i })).toBeDisabled();
+  });
+
   it("filters agent runs with a bounded authenticated query", async () => {
     const fetchMock = installFetchMock();
     const user = await saveToken();
+    await user.click(screen.getByRole("button", { name: "Investigation" }));
     const runSection = screen.getByText("Agent Runs").closest("section")!;
 
     await user.type(within(runSection).getByLabelText("Principal"), "agent:mcp-local");
@@ -572,11 +801,57 @@ describe("Review console interactions", () => {
       );
     });
     expect(screen.getByText(/principal_id=agent:mcp-local/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Identity: agent:mcp-local ×" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Identity: agent:mcp-local ×" }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/runs?limit=25&workspace_id=demo&tool_name=fs.read`,
+        expect.anything(),
+      );
+    });
+    expect(within(runSection).getByLabelText("Principal")).toHaveValue("");
+    expect(screen.getByLabelText("Bounded investigation summary")).toBeInTheDocument();
+    expect(screen.getByText("1 of 1 loaded runs shown")).toBeInTheDocument();
+
+    fetchMock.mockClear();
+    await user.type(within(runSection).getByLabelText("Status"), "active");
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/runs?limit=25&workspace_id=demo&tool_name=fs.read`,
+        expect.anything(),
+      );
+    });
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("status=active"),
+      expect.anything(),
+    );
+
+    await user.selectOptions(within(runSection).getByLabelText("Observed decision"), "allow");
+    expect(
+      screen.getByRole("button", { name: "Observed decision: allow ×" }),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(
+      within(runSection).getByLabelText("Observed attention"),
+      "attention",
+    );
+    expect(
+      screen.getByText(/No loaded runs match the current bounded investigation filters/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("0 of 1 loaded runs shown")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Clear all" }));
+    expect(await screen.findByText("1 of 1 loaded runs shown")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Active run filters")).not.toBeInTheDocument();
   });
 
   it("handles signed export and invalid policy-preview JSON", async () => {
     const user = await saveToken();
 
+    await user.click(screen.getByRole("button", { name: "Technical review" }));
     await user.click(screen.getByRole("button", { name: /Export Signed/i }));
     expect(fetch).toHaveBeenCalledWith(
       `${API_BASE}/audit-events/export/signed`,
@@ -585,12 +860,287 @@ describe("Review console interactions", () => {
       }),
     );
 
-    const argumentsEditor = within(screen.getByText("Policy Preview").closest("section")!).getByText(
-      "Arguments",
-    ).parentElement!.querySelector("textarea")!;
+    await user.click(screen.getByRole("button", { name: "Policy administration" }));
+    const argumentsEditor = within(
+      screen.getByText("Request Decision Preflight").closest("section")!,
+    )
+      .getByText("Request details (JSON)")
+      .parentElement!.querySelector("textarea")!;
     fireEvent.change(argumentsEditor, { target: { value: "[not-object]" } });
-    await user.click(screen.getByRole("button", { name: /^Preview$/i }));
+    await user.click(screen.getByRole("button", { name: /^Test decision$/i }));
 
     expect(await screen.findByText(/Unexpected token/)).toBeInTheDocument();
+  });
+
+  it("keeps export failure distinct from evidence and signing availability", async () => {
+    installFetchMock(systemStatus(), { auditExportFailure: true });
+    const user = await saveToken();
+
+    await user.click(screen.getByRole("button", { name: "Technical review" }));
+    await user.click(screen.getByRole("button", { name: /Export Signed/i }));
+
+    expect(await screen.findByText(/Signed audit export: failed/)).toBeInTheDocument();
+    expect(screen.getByText("Not exported in this browser session")).toBeInTheDocument();
+    expect(screen.getAllByText("signed export unavailable").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Apply demo patch").length).toBeGreaterThan(0);
+    expect(screen.getByText("Run snapshot has no signed evidence reference")).toBeInTheDocument();
+  });
+
+  it("fails closed when a replacement token is rejected", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+
+    fetchMock.mockImplementation(async () =>
+      jsonResponse({ detail: "Admin token rejected." }, { status: 401 }),
+    );
+    const tokenInput = screen.getByLabelText("Admin token");
+    await user.clear(tokenInput);
+    await user.type(tokenInput, "rejected-token");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByText("Dashboard data is locked until a valid local admin token is saved.")).toBeInTheDocument();
+    expect(screen.queryByText("Authenticated local preview")).not.toBeInTheDocument();
+    expect(screen.queryByText("Apply demo patch")).not.toBeInTheDocument();
+    expect(screen.getByText("Pending approval data is unavailable.")).toBeInTheDocument();
+  });
+
+  it("does not retain authority records after a partial refresh failure", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/tools")) {
+        return jsonResponse({ detail: "tool inventory unavailable" }, { status: 503 });
+      }
+      return initialImplementation(input, init);
+    });
+
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+
+    expect(await screen.findByText("tool inventory unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("Apply demo patch")).not.toBeInTheDocument();
+    expect(screen.getByText("Operator attention records are unavailable. No empty-state conclusion is available.")).toBeInTheDocument();
+
+    fetchMock.mockImplementation(initialImplementation);
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(await screen.findByText("Authenticated local preview")).toBeInTheDocument();
+    expect(screen.getAllByText("Apply demo patch").length).toBeGreaterThan(0);
+  });
+
+  it("ignores an out-of-order proposal detail response after selection changes", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayed = deferredResponse();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input).replace(API_BASE, "");
+      if (path === "/patch-proposals") {
+        return jsonResponse({
+          patch_proposals: [
+            {
+              proposal_id: "patch_123456789",
+              request_id: "req_123456789",
+              workspace_id: "demo",
+              path: "demo.txt",
+              base_file_hash: "sha256:basehash",
+              proposal_hash: "sha256:proposalhash",
+              status: "proposed",
+              created_at: "2026-06-03T12:00:00Z",
+              updated_at: "2026-06-03T12:02:00Z",
+              metadata: {},
+            },
+            {
+              proposal_id: "patch_987654321",
+              request_id: "req_987654321",
+              workspace_id: "demo",
+              path: "other.txt",
+              base_file_hash: "sha256:otherbase",
+              proposal_hash: "sha256:otherproposal",
+              status: "proposed",
+              created_at: "2026-06-03T12:00:00Z",
+              updated_at: "2026-06-03T12:01:00Z",
+              metadata: {},
+            },
+          ],
+        });
+      }
+      if (path === "/patch-proposals/patch_987654321") {
+        return delayed.promise;
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+
+    await user.click(screen.getByRole("button", { name: /other\.txt/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/patch-proposals/patch_987654321`,
+      expect.anything(),
+    ));
+    await user.click(screen.getByRole("button", { name: /demo\.txt/i }));
+    delayed.resolve(jsonResponse({
+      proposal_id: "patch_987654321",
+      request_id: "req_987654321",
+      workspace_id: "demo",
+      path: "other.txt",
+      base_file_hash: "sha256:otherbase",
+      proposal_hash: "sha256:otherproposal",
+      status: "proposed",
+      created_at: "2026-06-03T12:00:00Z",
+      updated_at: "2026-06-03T12:01:00Z",
+      metadata: {},
+    }));
+
+    const detail = screen.getByRole("region", { name: "Selected artifact detail" });
+    expect(await within(detail).findByRole("heading", { name: "demo.txt" })).toBeInTheDocument();
+  });
+
+  it("keeps delayed run detail and evidence bound to the current run", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayedDetail = deferredResponse();
+    const delayedEvidence = deferredResponse();
+    const secondRun = {
+      run_id: "run_987654321",
+      principal_id: "agent:other",
+      principal_type: "agent",
+      principal_roles: ["AgentDeveloper"],
+      workspace_id: "other",
+      session_id: "mcp-stdio",
+      status: "active",
+      tool_call_count: 1,
+      created_at: "2026-06-03T11:00:00Z",
+      updated_at: "2026-06-03T11:01:00Z",
+      last_request_id: "req_987654321",
+      policy_hash: "sha256:otherpolicy",
+      last_tool_name: "fs.read",
+      last_tool_manifest_hash: "sha256:othertool",
+      metadata: {},
+    };
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input).replace(API_BASE, "");
+      if (path.startsWith("/runs?")) {
+        return jsonResponse({
+          runs: [
+            {
+              ...secondRun,
+              run_id: "run_123456789",
+              principal_id: "agent:mcp-local",
+              workspace_id: "demo",
+              updated_at: "2026-06-03T12:01:00Z",
+              last_request_id: "req_123456789",
+              metadata: { scenario: "guided_local_demo" },
+            },
+            secondRun,
+          ],
+          summary: {
+            returned: 2,
+            filters: {},
+            workspaces: { demo: 1, other: 1 },
+            principals: { "agent:mcp-local": 1, "agent:other": 1 },
+            statuses: { active: 2 },
+            tools: { "fs.read": 2 },
+            latest_updated_at: "2026-06-03T12:01:00Z",
+          },
+        });
+      }
+      if (path === "/runs/run_987654321") return delayedDetail.promise;
+      if (path === "/runs/run_987654321/evidence-export") return delayedEvidence.promise;
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+    const runSection = screen.getByText("Agent Runs").closest("section")!;
+
+    await user.click(within(runSection).getByRole("button", { name: /agent:other/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/runs/run_987654321`,
+      expect.anything(),
+    ));
+    await user.click(within(runSection).getByRole("button", { name: /agent:mcp-local/i }));
+    delayedDetail.resolve(jsonResponse({ run: secondRun, timeline: [] }));
+    delayedEvidence.resolve(jsonResponse({
+      schema_version: "1",
+      export_id: "runev_987654321",
+      exported_at: "2026-06-03T11:02:00Z",
+      run: { run_id: "run_987654321" },
+      summary: {
+        principal_id: "agent:other",
+        workspace_id: "other",
+        session_id: "mcp-stdio",
+        status: "active",
+        tool_call_count: 1,
+        tools_used: ["fs.read"],
+        decision_counts: {},
+        approval_count: 0,
+        patch_diagnostic_count: 0,
+        audit_event_count: 0,
+        warning_count: 0,
+        latest_policy_hash: null,
+        manifest_lock_hash: null,
+      },
+      timeline: [], approvals: [], patch_diagnostics: [], signed_export_references: [],
+      evidence_hashes: {}, redaction_summary: { excluded_categories: [] }, warnings: [],
+    }));
+
+    const detail = screen.getByRole("region", { name: "Selected run detail" });
+    expect(await within(detail).findByRole("heading", { name: "agent:mcp-local" })).toBeInTheDocument();
+    expect(within(detail).queryByRole("heading", { name: "agent:other" })).not.toBeInTheDocument();
+  });
+
+  it("suppresses an opposite approval action while a decision is in flight", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayed = deferredResponse();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/approvals/appr_123456789/deny")) {
+        return delayed.promise;
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+    const deny = screen.getByRole("button", { name: /^Deny$/i });
+    const approve = screen.getByRole("button", { name: /^Approve$/i });
+
+    await user.click(deny);
+    expect(deny).toBeDisabled();
+    expect(approve).toBeDisabled();
+    fireEvent.click(approve);
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      `${API_BASE}/approvals/appr_123456789/approve`,
+      expect.objectContaining({ method: "POST" }),
+    );
+    delayed.resolve(jsonResponse(approvalReview.approval));
+  });
+
+  it("does not restore delayed detail after signing out", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayed = deferredResponse();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/patch-proposals/patch_123456789")) {
+        return delayed.promise;
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+    const tokenInput = screen.getByLabelText("Admin token");
+
+    await user.clear(tokenInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    delayed.resolve(jsonResponse({
+      proposal_id: "patch_123456789",
+      request_id: "req_123456789",
+      workspace_id: "demo",
+      path: "demo.txt",
+      base_file_hash: "sha256:basehash",
+      proposal_hash: "sha256:proposalhash",
+      status: "proposed",
+      created_at: "2026-06-03T12:00:00Z",
+      updated_at: "2026-06-03T12:00:00Z",
+      metadata: {},
+    }));
+
+    expect(await screen.findByText("Admin token required.")).toBeInTheDocument();
+    const detail = screen.getByRole("region", { name: "Selected artifact detail" });
+    expect(within(detail).getByText("Locked.")).toBeInTheDocument();
+    expect(within(detail).queryByRole("heading", { name: "demo.txt" })).not.toBeInTheDocument();
   });
 });
