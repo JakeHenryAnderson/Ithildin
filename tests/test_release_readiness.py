@@ -27142,7 +27142,7 @@ def test_review_packet_bundle_layout_and_exclusions(
     negative_transcripts.write_text("# Negative Review Transcripts\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(review_packet_bundle, "REVIEW_DOCS", docs)
-    monkeypatch.setattr(review_packet_bundle, "BUNDLE_DOCS", docs)
+    monkeypatch.setattr(review_packet_bundle, "BUNDLE_DOCS", [*docs, docs[0]])
 
     def fake_git(args: list[str]) -> str:
         if args == ["status", "--short"]:
@@ -27204,6 +27204,7 @@ def test_review_packet_bundle_layout_and_exclusions(
         result.path.joinpath("artifact-hashes.json").read_text(encoding="utf-8")
     )
     artifact_paths = {artifact["path"] for artifact in artifact_hashes}
+    assert len(artifact_hashes) == len(artifact_paths)
     assert "INDEX.md" in artifact_paths
     assert "release-check.txt" in artifact_paths
     assert "filesystem-contract-check.txt" in artifact_paths

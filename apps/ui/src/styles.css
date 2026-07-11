@@ -497,6 +497,16 @@ h3 {
   color: #23634c;
 }
 
+.capability-label {
+  border: 1px solid #cbd7d1;
+  color: #34453d;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  text-transform: uppercase;
+}
+
 .integrity-indicator.invalid {
   border-color: #e1aaa5;
   background: #fff0ef;
@@ -1725,6 +1735,17 @@ th {
 
   .patch-row {
     grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr);
+  }
+
+  .patch-row > span::before {
+    color: #5d6e65;
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 3px;
+    text-transform: uppercase;
   }
 
   .artifact-result-count {

@@ -748,6 +748,15 @@ export function App() {
     event.preventDefault();
     const nextToken = draftToken.trim();
     authGeneration.current += 1;
+    setPreviewResult(null);
+    setPreviewError(null);
+    setPreviewLoading(false);
+    setImpactResult(null);
+    setImpactError(null);
+    setImpactLoading(false);
+    setExportNotice(null);
+    setExportLoading(false);
+    setError(null);
     setToken(nextToken);
     if (nextToken) {
       sessionStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
@@ -768,8 +777,6 @@ export function App() {
       setLoading(false);
       setDetailLoading(false);
       setDashboardError(null);
-      setPreviewResult(null);
-      setImpactResult(null);
     }
   }
 
@@ -835,13 +842,15 @@ export function App() {
       return;
     }
 
+    const operationAuthGeneration = authGeneration.current;
+    const activeToken = token;
     setPreviewLoading(true);
     setPreviewError(null);
     setPreviewResult(null);
     try {
       const parsedArguments = parseJsonObject(argumentsJson, "Request details");
       const parsedPrincipal = parseJsonObject(principalJson, "Requesting identity");
-      const result = await apiRequest<PolicyPreviewResult>("/policy/preview", token, {
+      const result = await apiRequest<PolicyPreviewResult>("/policy/preview", activeToken, {
         method: "POST",
         body: JSON.stringify({
           tool_name: selectedToolName,
@@ -849,11 +858,17 @@ export function App() {
           principal: parsedPrincipal,
         }),
       });
-      setPreviewResult(result);
+      if (operationAuthGeneration === authGeneration.current) {
+        setPreviewResult(result);
+      }
     } catch (caught) {
-      setPreviewError(errorMessage(caught));
+      if (operationAuthGeneration === authGeneration.current) {
+        setPreviewError(errorMessage(caught));
+      }
     } finally {
-      setPreviewLoading(false);
+      if (operationAuthGeneration === authGeneration.current) {
+        setPreviewLoading(false);
+      }
     }
   }
 
@@ -863,33 +878,52 @@ export function App() {
       return;
     }
 
+    const operationAuthGeneration = authGeneration.current;
+    const activeToken = token;
     setImpactLoading(true);
     setImpactError(null);
     setImpactResult(null);
     try {
-      const result = await apiRequest<PolicyImpactResult>("/policy/impact-preview", token, {
+      const result = await apiRequest<PolicyImpactResult>("/policy/impact-preview", activeToken, {
         method: "POST",
         body: JSON.stringify({ candidate_policy_yaml: candidatePolicyYaml }),
       });
-      setImpactResult(result);
+      if (operationAuthGeneration === authGeneration.current) {
+        setImpactResult(result);
+      }
     } catch (caught) {
-      setImpactError(errorMessage(caught));
+      if (operationAuthGeneration === authGeneration.current) {
+        setImpactError(errorMessage(caught));
+      }
     } finally {
-      setImpactLoading(false);
+      if (operationAuthGeneration === authGeneration.current) {
+        setImpactLoading(false);
+      }
     }
   }
 
   async function exportAuditBundle(signed = false) {
+    if (!token) {
+      return;
+    }
+    const operationAuthGeneration = authGeneration.current;
+    const activeToken = token;
     setExportLoading(true);
     setError(null);
     try {
       const response = await fetch(`${API_BASE}/audit-events/export${signed ? "/signed" : ""}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${activeToken}` },
       });
       if (!response.ok) {
         throw await apiErrorFromResponse(response);
       }
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
       const bundle = await response.blob();
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
       const objectUrl = URL.createObjectURL(bundle);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
@@ -908,14 +942,18 @@ export function App() {
           : "Audit export response prepared and browser download initiated; save location and custody are not verified.",
       });
     } catch (caught) {
-      setError(errorMessage(caught));
-      setExportNotice({
-        scope: signed ? "signed-audit" : "audit",
-        state: "failed",
-        message: errorMessage(caught),
-      });
+      if (operationAuthGeneration === authGeneration.current) {
+        setError(errorMessage(caught));
+        setExportNotice({
+          scope: signed ? "signed-audit" : "audit",
+          state: "failed",
+          message: errorMessage(caught),
+        });
+      }
     } finally {
-      setExportLoading(false);
+      if (operationAuthGeneration === authGeneration.current) {
+        setExportLoading(false);
+      }
     }
   }
 
@@ -923,19 +961,27 @@ export function App() {
     if (!token) {
       return;
     }
+    const operationAuthGeneration = authGeneration.current;
+    const activeToken = token;
     setExportLoading(true);
     setError(null);
     try {
       const response = await fetch(
         `${API_BASE}/runs/${encodeURIComponent(runId)}/evidence-export`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${activeToken}` },
         },
       );
       if (!response.ok) {
         throw await apiErrorFromResponse(response);
       }
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
       const bundle = await response.blob();
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
       const objectUrl = URL.createObjectURL(bundle);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
@@ -952,10 +998,15 @@ export function App() {
           "Run evidence response prepared and browser download initiated; save location, custody, receipt, and later integrity are not verified.",
       });
     } catch (caught) {
-      setError(errorMessage(caught));
-      setExportNotice({ scope: "run", state: "failed", message: errorMessage(caught) });
+      if (operationAuthGeneration === authGeneration.current) {
+        const message = `Run ${shortId(runId)} export failed: ${errorMessage(caught)}`;
+        setError(message);
+        setExportNotice({ scope: "run", runId, state: "failed", message });
+      }
     } finally {
-      setExportLoading(false);
+      if (operationAuthGeneration === authGeneration.current) {
+        setExportLoading(false);
+      }
     }
   }
 
@@ -1275,18 +1326,20 @@ export function App() {
 
       {workspaceLens === "policy" || workspaceLens === "technical" ? (
       <section className="trust-grid" id="administration" aria-label="Policy administration" tabIndex={-1}>
-        <Panel title="System Trust" icon={<ShieldCheck size={18} />}>
+        <Panel title="Local System Posture" icon={<ShieldCheck size={18} />}>
           {data.systemStatus ? (
             <div className="trust-panel">
               <div className="trust-heading">
                 <span
                   className={
                     data.systemStatus.audit.valid
-                      ? "integrity-indicator valid"
+                      ? "integrity-indicator"
                       : "integrity-indicator invalid"
                   }
                 >
-                  {data.systemStatus.audit.valid ? "Audit chain OK" : "Attention required"}
+                  {data.systemStatus.audit.valid
+                    ? "Local audit chain valid"
+                    : "Local audit chain needs attention"}
                 </span>
                 <span className="trust-service">{data.systemStatus.service}</span>
               </div>
@@ -1439,7 +1492,7 @@ export function App() {
                 <thead>
                   <tr>
                     <th>Tool</th>
-                    <th>Risk</th>
+                    <th>Capability</th>
                     <th>Category</th>
                     <th>Version</th>
                     <th>Manifest</th>
@@ -1451,7 +1504,7 @@ export function App() {
                     <tr key={tool.name}>
                       <td>{tool.name}</td>
                       <td>
-                        <StatusPill status={tool.risk} />
+                        <span className="capability-label">{tool.risk}</span>
                       </td>
                       <td>{tool.category}</td>
                       <td>{tool.version}</td>
@@ -1785,6 +1838,7 @@ export function App() {
                   id={`approval-${approval.approval_id}`}
                   key={approval.approval_id}
                   tabIndex={-1}
+                  aria-label={`Approval ${shortId(approval.approval_id)} for ${approval.summary}`}
                 >
                   <div className="item-heading">
                     <div>
@@ -1935,18 +1989,18 @@ export function App() {
                             aria-pressed={patch.proposal_id === selectedProposalId}
                             onClick={() => setSelectedProposalId(patch.proposal_id)}
                           >
-                            <span className="patch-artifact-cell" aria-label={`Artifact: ${patch.path}`}>
+                            <span className="patch-artifact-cell" data-label="Artifact" aria-label={`Artifact: ${patch.path}`}>
                               <strong>{patch.path}</strong>
                               <small>{shortId(patch.request_id)}</small>
                             </span>
-                            <span aria-label={`Requester: ${proposalRequester(history)}`}>{proposalRequester(history)}</span>
-                            <span aria-label={`Lifecycle: ${proposalLifecycleStatus(patch, history)}`}>
+                            <span data-label="Requester" aria-label={`Requester: ${proposalRequester(history)}`}>{proposalRequester(history)}</span>
+                            <span data-label="Lifecycle" aria-label={`Lifecycle: ${proposalLifecycleStatus(patch, history)}`}>
                               <StatusPill
                                 status={proposalLifecycleStatus(patch, history)}
                               />
                             </span>
-                            <span aria-label={`Updated: ${formatDate(patch.updated_at)}`}>{formatDate(patch.updated_at)}</span>
-                            <span aria-label={`Next action: ${proposalNextAction(patch, history, pendingReview)}`}>{proposalNextAction(patch, history, pendingReview)}</span>
+                            <span data-label="Updated" aria-label={`Updated: ${formatDate(patch.updated_at)}`}>{formatDate(patch.updated_at)}</span>
+                            <span data-label="Next" aria-label={`Next action: ${proposalNextAction(patch, history, pendingReview)}`}>{proposalNextAction(patch, history, pendingReview)}</span>
                           </button>
                         );
                       })}
@@ -2450,7 +2504,7 @@ function primaryAttentionItem(data: DashboardData): AttentionItem | null {
       proposalId: null,
       targetId: "evidence",
       actionLabel: "Review recovery evidence",
-      occurredAt: null,
+      occurredAt: latestPatchDiagnosticTimestamp(data.patchDiagnostics),
     };
   }
 
@@ -3164,10 +3218,21 @@ function pendingReviewForProposal(history: ApprovalReview[], proposalId: string)
 function preferredProposalApproval(approvals: Approval[]) {
   return (
     approvals.find((approval) => approval.status === "pending") ??
-    [...approvals].sort((left, right) =>
-      right.expires_at.localeCompare(left.expires_at),
-    )[0]
+    approvals[0]
   );
+}
+
+function latestPatchDiagnosticTimestamp(diagnostics: PatchApplyDiagnostics) {
+  const candidates = [...diagnostics.attempts, ...diagnostics.stuck_approvals]
+    .map(
+      (record) =>
+        scopeString(record, "updated_at") ||
+        scopeString(record, "created_at") ||
+        scopeString(record, "expires_at"),
+    )
+    .filter(Boolean)
+    .sort((left, right) => right.localeCompare(left));
+  return candidates[0] ?? null;
 }
 
 function proposalRequester(approvals: Approval[]) {

@@ -406,6 +406,8 @@ def _collect_artifact_hashes(
     if negative_transcripts_included:
         paths.append(Path("negative-review-transcripts/NEGATIVE_REVIEW_TRANSCRIPTS.md"))
 
+    paths = list(dict.fromkeys(paths))
+
     artifacts: list[dict[str, Any]] = []
     for relative_path in paths:
         artifact_path = bundle_dir / relative_path

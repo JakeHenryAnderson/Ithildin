@@ -5,7 +5,7 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from threading import Barrier
+from threading import Barrier, Event, Thread, current_thread
 
 import pytest
 from ithildin_api.approvals import (
@@ -15,7 +15,7 @@ from ithildin_api.approvals import (
     CreateApprovalInput,
 )
 from ithildin_audit_core import AuditWriter
-from ithildin_schemas import ApprovalStatus
+from ithildin_schemas import ApprovalRequest, ApprovalStatus
 
 
 def make_service(tmp_path: Path, expiry: timedelta = timedelta(minutes=15)) -> ApprovalService:
@@ -245,6 +245,51 @@ def test_terminal_decision_rejects_expiry_during_atomic_transition(
         service.approve(approval.approval_id, decided_by="user:alice")
 
     assert service.store.get(approval.approval_id).status == ApprovalStatus.EXPIRED
+
+
+def test_stale_expiry_reader_cannot_overwrite_terminal_decision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = make_service(tmp_path)
+    approval = service.create_pending(create_input())
+    original_get = service.store.get
+    stale_snapshot_read = Event()
+    terminal_decision_won = Event()
+    stale_result: list[ApprovalRequest] = []
+
+    def coordinated_get(approval_id: str) -> ApprovalRequest:
+        snapshot = original_get(approval_id)
+        if current_thread().name == "stale-expiry-reader" and not stale_snapshot_read.is_set():
+            stale_snapshot_read.set()
+            assert terminal_decision_won.wait(timeout=5)
+            return snapshot.model_copy(
+                update={"expires_at": datetime.now(UTC) - timedelta(seconds=1)}
+            )
+        return snapshot
+
+    monkeypatch.setattr(service.store, "get", coordinated_get)
+
+    reader = Thread(
+        target=lambda: stale_result.append(service.get(approval.approval_id)),
+        name="stale-expiry-reader",
+    )
+    reader.start()
+    assert stale_snapshot_read.wait(timeout=5)
+
+    decided = service.approve(approval.approval_id, decided_by="user:alice")
+    terminal_decision_won.set()
+    reader.join(timeout=5)
+
+    assert not reader.is_alive()
+    assert decided.status == ApprovalStatus.APPROVED
+    assert stale_result[0].status == ApprovalStatus.APPROVED
+    assert original_get(approval.approval_id).status == ApprovalStatus.APPROVED
+    events = [
+        json.loads(line)["event_type"]
+        for line in (tmp_path / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert events.count("approval.approved") == 1
 
 
 def test_expired_approval_cannot_be_approved_or_executed(tmp_path: Path) -> None:

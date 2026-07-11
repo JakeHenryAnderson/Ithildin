@@ -271,7 +271,16 @@ class ApprovalService:
     def get(self, approval_id: str) -> ApprovalRequest:
         approval = self.store.get(approval_id)
         if approval.status == ApprovalStatus.PENDING and _is_expired(approval):
-            approval = self.store.set_status(approval_id, ApprovalStatus.EXPIRED)
+            try:
+                approval = self.store.compare_and_set_status(
+                    approval_id,
+                    expected_status=ApprovalStatus.PENDING,
+                    next_status=ApprovalStatus.EXPIRED,
+                )
+            except ApprovalError:
+                # Another terminal or execution transition won after the stale
+                # pending read. Expiry must never overwrite that newer state.
+                approval = self.store.get(approval_id)
         return approval
 
     def list(self, status: Optional[ApprovalStatus] = None) -> list[ApprovalRequest]:

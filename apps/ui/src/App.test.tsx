@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -579,7 +579,7 @@ describe("Review console interactions", () => {
     expect(screen.queryByText("Observed investigation filters")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Policy administration" }));
-    expect(screen.getByText("System Trust")).toBeInTheDocument();
+    expect(screen.getByText("Local System Posture")).toBeInTheDocument();
     expect(screen.getByText("Request Decision Preflight")).toBeInTheDocument();
     expect(screen.queryByText("Recent Audit Events")).not.toBeInTheDocument();
 
@@ -686,6 +686,21 @@ describe("Review console interactions", () => {
       screen.getByText("Review the matching pending approval and its exact one-time scope."),
     ).toBeInTheDocument();
     expect(screen.getByText(/Registration identifies the reviewed tool definition/)).toBeInTheDocument();
+    const approvalArticle = screen.getByRole("article", {
+      name: "Approval appr_123456789 for Apply demo patch",
+    });
+    expect(approvalArticle).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open matching pending approval" }));
+    await waitFor(() => expect(approvalArticle).toHaveFocus());
+    const artifactRow = screen.getByRole("button", { name: /Artifact: demo\.txt/i });
+    expect(within(artifactRow).getByLabelText("Artifact: demo.txt")).toHaveAttribute(
+      "data-label",
+      "Artifact",
+    );
+    expect(within(artifactRow).getByLabelText(/Requester:/)).toHaveAttribute(
+      "data-label",
+      "Requester",
+    );
     await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));
     expect(await screen.findByText("Download initiated")).toBeInTheDocument();
     expect(screen.getByText(/save location, custody, receipt/)).toBeInTheDocument();
@@ -884,6 +899,184 @@ describe("Review console interactions", () => {
     expect(screen.getAllByText("signed export unavailable").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Apply demo patch").length).toBeGreaterThan(0);
     expect(screen.getByText("Run snapshot has no signed evidence reference")).toBeInTheDocument();
+  });
+
+  it("does not restore a delayed policy preview after the authentication context changes", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayed = deferredResponse();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/policy/preview")) {
+        return delayed.promise;
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+    await user.click(screen.getByRole("button", { name: "Policy administration" }));
+    await user.click(screen.getByRole("button", { name: /^Test decision$/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/policy/preview`,
+      expect.anything(),
+    ));
+
+    const tokenInput = screen.getByLabelText("Admin token");
+    await user.clear(tokenInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await act(async () => {
+      delayed.resolve(jsonResponse({
+        tool_name: "fs.read",
+        manifest_hash: "sha256:toolhash",
+        manifest_risk: "read",
+        manifest_version: "1",
+        valid_arguments: true,
+        argument_error: null,
+        policy_input: {},
+        resource: { path: "demo.txt" },
+        decision: "allow",
+        reason: "delayed result must not reappear",
+        policy_version: "default-v1",
+        matched_rules: ["allow_read"],
+        obligations: {},
+      }));
+      await delayed.promise;
+    });
+
+    expect(screen.getByText("Admin token required.")).toBeInTheDocument();
+    expect(screen.queryByText("delayed result must not reappear")).not.toBeInTheDocument();
+  });
+
+  it("does not restore delayed policy-impact results after the authentication context changes", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayed = deferredResponse();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/policy/impact-preview")) {
+        return delayed.promise;
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+    await user.click(screen.getByRole("button", { name: "Policy administration" }));
+    await user.click(screen.getByRole("button", { name: /^Compare$/i }));
+    const tokenInput = screen.getByLabelText("Admin token");
+    await user.clear(tokenInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await act(async () => {
+      delayed.resolve(jsonResponse({
+        current: { passed: 1, failed: 0, case_count: 1 },
+        candidate: { policy_hash: "sha256:delayed", passed: 1, failed: 0, case_count: 1 },
+        changed_cases: [{ id: "delayed-case", changes: ["decision"], current: {}, candidate: {} }],
+      }));
+      await delayed.promise;
+    });
+
+    expect(screen.getByText("Admin token required.")).toBeInTheDocument();
+    expect(screen.queryByText("delayed-case")).not.toBeInTheDocument();
+  });
+
+  it("does not download a delayed run export after signing out", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    const delayed = deferredResponse();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/runs/run_123456789/evidence-export")) {
+        return delayed.promise;
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+    await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));
+    const tokenInput = screen.getByLabelText("Admin token");
+    await user.clear(tokenInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await act(async () => {
+      delayed.resolve(jsonResponse({ schema_version: "1" }));
+      await delayed.promise;
+    });
+
+    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+    expect(screen.queryByText("Download initiated")).not.toBeInTheDocument();
+  });
+
+  it("attributes run export failures to the selected run", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/runs/run_123456789/evidence-export")) {
+        return jsonResponse(
+          { detail: "evidence unavailable" },
+          { status: 503, statusText: "Unavailable" },
+        );
+      }
+      return initialImplementation(input, init);
+    });
+    const user = await saveToken();
+
+    await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));
+    expect(
+      (await screen.findAllByText(/Run run_123456789 export failed: evidence unavailable/)).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("uses API history order for the latest non-pending proposal lifecycle", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input).replace(API_BASE, "");
+      if (path === "/approvals/review?status=pending") {
+        return jsonResponse({ approvals: [] });
+      }
+      if (path === "/approvals") {
+        return jsonResponse({ approvals: [
+          {
+            ...approvalReview.approval,
+            status: "denied",
+            updated_at: "2026-06-03T12:05:00Z",
+            expires_at: "2026-06-03T12:06:00Z",
+          },
+          {
+            ...approvalReview.approval,
+            approval_id: "appr_older123",
+            status: "executed",
+            updated_at: "2026-06-03T12:04:00Z",
+            expires_at: "2026-06-04T12:00:00Z",
+          },
+        ] });
+      }
+      return initialImplementation(input, init);
+    });
+    await saveToken();
+
+    expect(screen.getAllByText("No approval action remains. Revise the change through an authorized workflow if needed.")).toHaveLength(2);
+    expect(screen.getAllByText("denied").length).toBeGreaterThan(0);
+  });
+
+  it("uses recorded recovery evidence time in operator attention", async () => {
+    const fetchMock = installFetchMock();
+    const initialImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input).replace(API_BASE, "");
+      if (path === "/approvals/review?status=pending" || path === "/approvals") {
+        return jsonResponse({ approvals: [] });
+      }
+      if (path === "/patch-proposals") {
+        return jsonResponse({ patch_proposals: [] });
+      }
+      if (path === "/patch-apply-diagnostics") {
+        return jsonResponse({
+          status: "recovery_required",
+          attempts: [{ updated_at: "2026-06-03T12:05:00Z" }],
+          stuck_approvals: [],
+          recommendations: [],
+        });
+      }
+      return initialImplementation(input, init);
+    });
+    await saveToken();
+
+    const attention = screen.getByRole("region", { name: "Attention" });
+    expect(within(attention).getByText("Patch recovery review required")).toBeInTheDocument();
+    expect(within(attention).getByText(/6\/3\/26/)).toBeInTheDocument();
   });
 
   it("fails closed when a replacement token is rejected", async () => {
