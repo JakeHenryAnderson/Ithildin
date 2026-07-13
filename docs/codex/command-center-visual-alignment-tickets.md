@@ -1,9 +1,22 @@
 # Command Center Visual Alignment Tickets
 
-Status: implementation backlog derived from the selected visual north star.
+Status: implemented visual-alignment ticket set; closure is established only by an exact-candidate
+`make review-candidate` packet.
 
 These tickets change presentation and information architecture only. They do not authorize schema,
 API, policy, approval, audit, manifest, governed-tool, model-runtime, or sandbox-runtime changes.
+
+## Implementation Disposition
+
+| Ticket | Disposition | Evidence |
+| --- | --- | --- |
+| `CC-VIS-201` | implemented | `f7ec3c5` persistent purpose-led shell and responsive navigation |
+| `CC-VIS-202` | implemented | `f7ec3c5` shared purpose headers and visual grammar, extended by later slices |
+| `CC-VIS-203` | implemented | `4ae2185` deterministic Attention collection/detail workspace |
+| `CC-VIS-204` | implemented | `3fc2184` mission list, Workbench context, lifecycle/evidence hierarchy, and authority copy |
+| `CC-VIS-205` | implemented | `8223105` approval queue/detail and artifact lifecycle alignment |
+| `CC-VIS-206` | implemented | `3635064` evidence limitations and progressive Administration disclosure |
+| `CC-VIS-207` | implemented; exact-candidate gate required | live desktop/390px browser checks, UI accessibility/behavior suite, and `make review-candidate` |
 
 ## CC-VIS-201 — Application Shell And Navigation
 
