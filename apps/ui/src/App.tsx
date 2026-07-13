@@ -1191,83 +1191,44 @@ export function App() {
       <main className="console-shell">
       <header className="topbar">
         <div className="product-heading">
-          <p className="eyebrow">Ithildin</p>
+          <p className="eyebrow">Operator console</p>
           <h1>Ithildin Command Center</h1>
-          <p className="product-summary">
-            Review Ithildin-mediated agent tool use, operator decisions, and evidence. Gateway
-            remains the enforcement and audit authority.
-          </p>
         </div>
-        <form className="token-form" onSubmit={saveToken}>
-          <label htmlFor="admin-token">Admin token</label>
-          <div className="token-row">
-            <KeyRound aria-hidden="true" size={18} />
-            <input
-              id="admin-token"
-              type="password"
-              value={draftToken}
-              onChange={(event) => setDraftToken(event.target.value)}
-              autoComplete="off"
-            />
-            <button type="submit">
-              <ShieldCheck aria-hidden="true" size={18} />
-              Save
-            </button>
-          </div>
-        </form>
-      </header>
-
-      <div className="runtime-strip">
-        <span className="local-preview-label">
-          {data.systemStatus?.security.preview_label ?? "Local preview"}
-        </span>
-        <span className={token && data.systemStatus ? "gateway-state reachable" : "gateway-state"}>
-          <span aria-hidden="true" className="gateway-state-dot" />
-          {token && data.systemStatus ? "Local Gateway reachable" : "Gateway status unavailable"}
-        </span>
-        <span
-          className={token && data.systemStatus ? "auth-state authenticated" : "auth-state"}
-        >
-          {token && data.systemStatus ? "Authenticated local preview" : "Sign-in required"}
-        </span>
-      </div>
-      <div
-        className="workspace-lenses"
-        aria-label="Command Center presentation lens"
-        role="group"
-      >
-        <strong>Presentation lens</strong>
-        {([
-          ["routine", "Routine operations"],
-          ["investigator", "Investigation"],
-          ["policy", "Policy administration"],
-          ["technical", "Technical review"],
-        ] as [WorkspaceLens, string][]).map(([lens, label]) => (
-          <button
-            aria-pressed={workspaceLens === lens}
-            className={workspaceLens === lens ? "active" : ""}
-            key={lens}
-            type="button"
-            onClick={() => setWorkspaceLens(lens)}
-          >
-            {label}
-          </button>
-        ))}
-        <span>
-          Presentation only · lenses do not grant roles, permissions, or Gateway authority.
-        </span>
-      </div>
-
-      <details className="operator-help" id="operator-help">
-        <summary>What Ithildin governs</summary>
-        <p>
-          Ithildin Gateway mediates requests made through its registered governed tools and records
-          policy, approval, execution, and audit evidence. Command Center reviews those records. It
-          does not start or control the external agent, and a registered tool is not automatically
-          permitted for every request.
+        <p className="product-summary">
+          Command Center presents governed activity. Gateway remains the enforcement and audit authority.
         </p>
-      </details>
-
+        <div className="topbar-actions">
+          <div className="runtime-status" aria-label="Local runtime status">
+            <span className="local-preview-label">
+              {data.systemStatus?.security.preview_label ?? "Local preview"}
+            </span>
+            <span className={token && data.systemStatus ? "gateway-state reachable" : "gateway-state"}>
+              <span aria-hidden="true" className="gateway-state-dot" />
+              {token && data.systemStatus ? "Local Gateway reachable" : "Gateway status unavailable"}
+            </span>
+            <span className={token && data.systemStatus ? "auth-state authenticated" : "auth-state"}>
+              {token && data.systemStatus ? "Authenticated local preview" : "Sign-in required"}
+            </span>
+          </div>
+          <form className="token-form" onSubmit={saveToken}>
+            <label htmlFor="admin-token">Admin token</label>
+            <div className="token-row">
+              <KeyRound aria-hidden="true" size={16} />
+              <input
+                id="admin-token"
+                type="password"
+                value={draftToken}
+                onChange={(event) => setDraftToken(event.target.value)}
+                autoComplete="off"
+              />
+              <button type="submit">
+                <ShieldCheck aria-hidden="true" size={16} />
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </header>
       {error ? (
         <section className="notice error" role="alert">
           <AlertTriangle aria-hidden="true" size={18} />
@@ -1313,29 +1274,28 @@ export function App() {
       <section
         className="attention-section"
         id="attention"
-        aria-labelledby="attention-heading"
+        aria-label="Attention"
         tabIndex={-1}
       >
-        <header className="attention-heading">
-          <div>
-            <p className="eyebrow">Exception-first operator view</p>
-            <h2 id="attention-heading">Attention</h2>
-            <p>Start with the action and consequence; open technical evidence only when needed.</p>
-          </div>
-          <span className="local-preview-label">
-            {data.systemStatus?.security.preview_label ?? "Local preview"}
-          </span>
-        </header>
         {!token ? (
-          <EmptyState text="Sign in with the local admin token to load operator attention records." />
+          <>
+            <AttentionHeading count={0} />
+            <EmptyState text="Sign in with the local admin token to load operator attention records." />
+          </>
         ) : loading && !data.systemStatus ? (
-          <EmptyState text="Loading operator attention records." />
+          <>
+            <AttentionHeading count={0} />
+            <EmptyState text="Loading operator attention records." />
+          </>
         ) : dashboardError ? (
-          <EmptyState text="Operator attention records are unavailable. No empty-state conclusion is available." />
+          <>
+            <AttentionHeading count={0} />
+            <EmptyState text="Operator attention records are unavailable. No empty-state conclusion is available." />
+          </>
         ) : primaryAttention ? (
           <div className="attention-workspace">
             <div className="attention-queue" aria-label="Prioritized operator attention">
-              <p>{attentionItems.length} {attentionItems.length === 1 ? "item" : "items"} in loaded local records</p>
+              <AttentionHeading count={attentionItems.length} />
               {attentionItems.slice(0, 5).map((item) => {
                 const key = attentionItemKey(item);
                 const selected = attentionItemKey(primaryAttention) === key;
@@ -1363,66 +1323,147 @@ export function App() {
               })}
             </div>
             <article className="attention-item">
-            <div className="attention-title-row">
-              <div>
-                <p className="attention-mission">{primaryAttention.missionLabel}</p>
-                <h3>{primaryAttention.title}</h3>
+              <div className="attention-title-row">
+                <span className="attention-detail-icon" aria-hidden="true">
+                  <ClipboardList size={28} />
+                </span>
+                <div>
+                  <p className="attention-mission">{primaryAttention.missionLabel}</p>
+                  <h3>{primaryAttention.title}</h3>
+                  <p className="attention-consequence">{primaryAttention.consequence}</p>
+                </div>
+                <div className="approval-state-pills">
+                  <StatusPill status={primaryAttention.status} />
+                  {primaryAttention.bindingStatus ? (
+                    <StatusPill status={primaryAttention.bindingStatus} />
+                  ) : null}
+                </div>
               </div>
-              <div className="approval-state-pills">
-                <StatusPill status={primaryAttention.status} />
-                {primaryAttention.bindingStatus ? (
-                  <StatusPill status={primaryAttention.bindingStatus} />
+              <dl className="attention-context-grid">
+                <div>
+                  <dt>Requesting identity <small>reported context</small></dt>
+                  <dd>{primaryAttention.requestingIdentity}</dd>
+                </div>
+                <div>
+                  <dt>Policy result</dt>
+                  <dd>{primaryAttention.status}</dd>
+                </div>
+                <div>
+                  <dt>Workspace <small>operator-managed</small></dt>
+                  <dd>{primaryAttention.workspaceId}</dd>
+                </div>
+                <div>
+                  <dt>Governed tool</dt>
+                  <dd>{primaryAttention.toolName}</dd>
+                </div>
+              </dl>
+              <div className="attention-actions" aria-label="Bounded next action">
+                <button
+                  aria-label={primaryAttention.actionLabel}
+                  className="primary-action attention-action"
+                  type="button"
+                  onClick={() => openAttentionItem(primaryAttention)}
+                >
+                  <ClipboardList aria-hidden="true" size={20} />
+                  <span>
+                    <strong>{primaryAttention.actionLabel}</strong>
+                    <small>Review the source record and decide the next bounded step.</small>
+                  </span>
+                </button>
+                {primaryAttention.runId ? (
+                  <button
+                    aria-label="Open mission Workbench"
+                    className="secondary-action attention-action"
+                    type="button"
+                    onClick={() => openAttentionItem(primaryAttention)}
+                  >
+                    <FolderKanban aria-hidden="true" size={20} />
+                    <span>
+                      <strong>Open mission Workbench</strong>
+                      <small>Explore the correlated mission activity and evidence.</small>
+                    </span>
+                  </button>
                 ) : null}
               </div>
-            </div>
-            <p className="attention-consequence">{primaryAttention.consequence}</p>
-            <dl className="meta-list attention-meta">
-              <div>
-                <dt>Required action</dt>
-                <dd>{primaryAttention.actionLabel}</dd>
-              </div>
-              <div>
-                <dt>Workspace</dt>
-                <dd>{primaryAttention.workspaceId}</dd>
-              </div>
-              <div>
-                <dt>Requesting identity</dt>
-                <dd>{primaryAttention.requestingIdentity}</dd>
-              </div>
-              <div>
-                <dt>Tool</dt>
-                <dd>{primaryAttention.toolName}</dd>
-              </div>
-              <div>
-                <dt>Request</dt>
-                <dd>{primaryAttention.requestId ? shortId(primaryAttention.requestId) : "Unavailable"}</dd>
-              </div>
-              <div>
-                <dt>Policy reason</dt>
-                <dd>{primaryAttention.policyReason}</dd>
-              </div>
-              <div>
-                <dt>{primaryAttention.source === "approval" ? "Expires" : "Recorded"}</dt>
-                <dd>
-                  {primaryAttention.occurredAt
-                    ? formatDate(primaryAttention.occurredAt)
-                    : "Unavailable"}
-                </dd>
-              </div>
-            </dl>
-            <button
-              className="primary-action attention-action"
-              type="button"
-              onClick={() => openAttentionItem(primaryAttention)}
-            >
-              {primaryAttention.runId ? "Open mission Workbench" : "Open source record"}
-            </button>
+              <section className="attention-lifecycle" aria-label="Selected attention lifecycle">
+                <header>
+                  <h4>Recorded context</h4>
+                  <span>Observed facts and operator action remain distinct.</span>
+                </header>
+                <ol>
+                  <li className="observed">
+                    <span aria-hidden="true"><Check size={15} /></span>
+                    <div><strong>Request recorded</strong><small>Gateway evidence identifies the reported requester and governed tool.</small></div>
+                  </li>
+                  <li className="operator-step">
+                    <span aria-hidden="true">!</span>
+                    <div><strong>Operator action pending</strong><small>{primaryAttention.actionLabel}. No mutation is implied until the bounded source workflow records it.</small></div>
+                  </li>
+                </ol>
+              </section>
+              <details className="attention-technical">
+                <summary>Technical details <span>IDs, policy reason, and timing</span></summary>
+                <dl className="meta-list attention-meta">
+                  <div>
+                    <dt>Request</dt>
+                    <dd>{primaryAttention.requestId ? shortId(primaryAttention.requestId) : "Unavailable"}</dd>
+                  </div>
+                  <div>
+                    <dt>Policy reason</dt>
+                    <dd>{primaryAttention.policyReason}</dd>
+                  </div>
+                  <div>
+                    <dt>{primaryAttention.source === "approval" ? "Expires" : "Recorded"}</dt>
+                    <dd>{primaryAttention.occurredAt ? formatDate(primaryAttention.occurredAt) : "Unavailable"}</dd>
+                  </div>
+                </dl>
+              </details>
             </article>
           </div>
         ) : (
-          <EmptyState text="No action identified in the currently loaded local records. This is not a global safety claim." />
+          <>
+            <AttentionHeading count={0} />
+            <EmptyState text="No action identified in the currently loaded local records. This is not a global safety claim." />
+          </>
         )}
       </section>
+
+      <div
+        className="workspace-lenses"
+        aria-label="Command Center presentation lens"
+        role="group"
+      >
+        <strong>Presentation lens</strong>
+        {([
+          ["routine", "Routine operations"],
+          ["investigator", "Investigation"],
+          ["policy", "Policy administration"],
+          ["technical", "Technical review"],
+        ] as [WorkspaceLens, string][]).map(([lens, label]) => (
+          <button
+            aria-pressed={workspaceLens === lens}
+            className={workspaceLens === lens ? "active" : ""}
+            key={lens}
+            type="button"
+            onClick={() => setWorkspaceLens(lens)}
+          >
+            {label}
+          </button>
+        ))}
+        <span>
+          Presentation only · lenses do not grant roles, permissions, or Gateway authority.
+        </span>
+      </div>
+
+      <details className="operator-help" id="operator-help">
+        <summary>What Ithildin governs</summary>
+        <p>
+          Ithildin Gateway mediates requests made through its registered governed tools and records
+          policy, approval, execution, and audit evidence. Command Center reviews those records. It
+          does not start or control the external agent, and a registered tool is not automatically
+          permitted for every request.
+        </p>
+      </details>
 
       <section className="summary-strip" aria-label="Review summary">
         <Metric icon={<ClipboardList size={20} />} label="Pending" value={pendingCount} />
@@ -2824,6 +2865,20 @@ function missionFacingLabel(run: AgentRun | undefined, workspaceId: string) {
     return `${workspaceId} mediated run`;
   }
   return `${workspaceId} workspace`;
+}
+
+function AttentionHeading({ count }: { count: number }) {
+  return (
+    <header className="attention-heading">
+      <div>
+        <p className="eyebrow">Priority queue</p>
+        <h2 id="attention-heading">Your attention</h2>
+        <p>
+          {count} {count === 1 ? "item" : "items"} sorted by deterministic workflow priority
+        </p>
+      </div>
+    </header>
+  );
 }
 
 function Metric({
