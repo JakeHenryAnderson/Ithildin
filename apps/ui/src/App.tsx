@@ -1,13 +1,20 @@
 import {
   Activity,
   AlertTriangle,
+  BellRing,
+  Boxes,
   Check,
+  CircleHelp,
   ClipboardList,
   Copy,
   Download,
   FileDiff,
+  FolderKanban,
   KeyRound,
+  ListChecks,
   RefreshCcw,
+  ScrollText,
+  Settings,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -452,6 +459,7 @@ class ApiError extends Error {
 export function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "");
   const [draftToken, setDraftToken] = useState(token);
+  const [activeSection, setActiveSection] = useState("attention");
   const [workspaceLens, setWorkspaceLens] = useState<WorkspaceLens>("routine");
   const [data, setData] = useState<DashboardData>(emptyDashboardData);
   const [runFilters, setRunFilters] = useState<RunFilters>({
@@ -834,6 +842,7 @@ export function App() {
   }
 
   function openAttentionItem(item: AttentionItem) {
+    setActiveSection(item.targetId);
     if (item.targetId === "evidence") {
       setWorkspaceLens("technical");
     }
@@ -847,6 +856,7 @@ export function App() {
   }
 
   function openWorkspaceLens(lens: WorkspaceLens, targetId: string) {
+    setActiveSection(targetId);
     setWorkspaceLens(lens);
     window.setTimeout(() => scrollAndFocusElement(targetId), 0);
   }
@@ -1089,17 +1099,80 @@ export function App() {
   }, [selectedRunId, token]);
 
   return (
-    <main className="console-shell">
+    <div className="app-frame">
       <a
         className="skip-link"
         href="#attention"
         onClick={(event) => {
           event.preventDefault();
+          setActiveSection("attention");
           scrollAndFocusElement("attention");
         }}
       >
         Skip to operator attention
       </a>
+      <aside className="command-sidebar">
+        <div className="sidebar-brand" aria-label="Ithildin Command Center">
+          <span className="sidebar-mark" aria-hidden="true">
+            <ShieldCheck size={24} />
+          </span>
+          <span>
+            <strong>Ithildin</strong>
+            <small>Command Center</small>
+          </span>
+        </div>
+        <nav className="command-nav" aria-label="Command Center sections">
+          {([
+            ["attention", "Attention", "What needs a decision now", <BellRing size={20} />],
+            ["missions", "Missions", "Follow agent work end to end", <FolderKanban size={20} />],
+            ["artifacts", "Artifacts", "Review outputs and movement", <Boxes size={20} />],
+            ["approvals", "Approvals", "Authorize bounded actions", <ListChecks size={20} />],
+            ["evidence", "Evidence", "Reconstruct what happened", <ScrollText size={20} />],
+            ["administration", "Administration", "Configure policy and trust", <Settings size={20} />],
+          ] as [string, string, string, React.ReactNode][]).map(([target, title, purpose, icon]) => (
+            <a
+              aria-label={title}
+              aria-current={activeSection === target ? "page" : undefined}
+              className={activeSection === target ? "active" : ""}
+              href={`#${target}`}
+              key={target}
+              onClick={(event) => {
+                event.preventDefault();
+                setActiveSection(target);
+                if (target === "evidence") {
+                  openWorkspaceLens("technical", target);
+                } else if (target === "administration") {
+                  openWorkspaceLens("policy", target);
+                } else {
+                  scrollAndFocusElement(target);
+                }
+              }}
+            >
+              <span className="nav-icon" aria-hidden="true">{icon}</span>
+              <span>
+                <strong>{title}</strong>
+                <small>{purpose}</small>
+              </span>
+            </a>
+          ))}
+          <a
+            aria-label="Help"
+            className="sidebar-help"
+            href="#operator-help"
+            onClick={(event) => {
+              event.preventDefault();
+              scrollAndFocusElement("operator-help");
+            }}
+          >
+            <CircleHelp aria-hidden="true" size={20} />
+            <span>
+              <strong>Help</strong>
+              <small>Guidance and boundaries</small>
+            </span>
+          </a>
+        </nav>
+      </aside>
+      <main className="console-shell">
       <header className="topbar">
         <div className="product-heading">
           <p className="eyebrow">Ithildin</p>
@@ -1128,38 +1201,20 @@ export function App() {
         </form>
       </header>
 
-      <nav className="command-nav" aria-label="Command Center sections">
-        <a href="#attention">Attention</a>
-        <a href="#missions">Missions / Agent Runs</a>
-        <a href="#artifacts">Artifacts</a>
-        <a href="#approvals">Approvals</a>
-        <a
-          href="#evidence"
-          onClick={(event) => {
-            event.preventDefault();
-            openWorkspaceLens("technical", "evidence");
-          }}
-        >
-          Evidence
-        </a>
-        <a
-          href="#administration"
-          onClick={(event) => {
-            event.preventDefault();
-            openWorkspaceLens("policy", "administration");
-          }}
-        >
-          Administration
-        </a>
-        <a href="#operator-help">Help</a>
+      <div className="runtime-strip">
+        <span className="local-preview-label">
+          {data.systemStatus?.security.preview_label ?? "Local preview"}
+        </span>
+        <span className={token && data.systemStatus ? "gateway-state reachable" : "gateway-state"}>
+          <span aria-hidden="true" className="gateway-state-dot" />
+          {token && data.systemStatus ? "Local Gateway reachable" : "Gateway status unavailable"}
+        </span>
         <span
-          className={
-            token && data.systemStatus ? "auth-state authenticated" : "auth-state"
-          }
+          className={token && data.systemStatus ? "auth-state authenticated" : "auth-state"}
         >
           {token && data.systemStatus ? "Authenticated local preview" : "Sign-in required"}
         </span>
-      </nav>
+      </div>
       <div
         className="workspace-lenses"
         aria-label="Command Center presentation lens"
@@ -1341,7 +1396,11 @@ export function App() {
 
       {workspaceLens === "policy" || workspaceLens === "technical" ? (
       <section className="trust-grid" id="administration" aria-label="Policy administration" tabIndex={-1}>
-        <Panel title="Local System Posture" icon={<ShieldCheck size={18} />}>
+        <Panel
+          title="Local System Posture"
+          purpose="Understand local trust configuration before using specialist controls."
+          icon={<ShieldCheck size={18} />}
+        >
           {data.systemStatus ? (
             <div className="trust-panel">
               <div className="trust-heading">
@@ -1498,7 +1557,11 @@ export function App() {
           )}
         </Panel>
 
-        <Panel title="Registered Tools" icon={<ClipboardList size={18} />}>
+        <Panel
+          title="Registered Tools"
+          purpose="Review available governed capabilities; registration does not grant request permission."
+          icon={<ClipboardList size={18} />}
+        >
           {data.tools.length === 0 ? (
             <EmptyState text={token ? "No registered tools." : "Locked."} />
           ) : (
@@ -1747,7 +1810,11 @@ export function App() {
 
       {workspaceLens === "technical" ? (
       <section className="integrity-section" id="evidence" aria-label="Technical evidence" tabIndex={-1}>
-        <Panel title="Audit Integrity" icon={<ShieldCheck size={18} />}>
+        <Panel
+          title="Audit Integrity"
+          purpose="Reconstruct locally mediated activity and understand the limits of its evidence."
+          icon={<ShieldCheck size={18} />}
+        >
           <div className="integrity-grid">
             <div className="integrity-status">
               {data.verification ? (
@@ -1832,7 +1899,12 @@ export function App() {
       ) : null}
 
       <section className="review-grid artifact-review-grid">
-        <Panel id="approvals" title="Pending Approvals" icon={<ClipboardList size={18} />}>
+        <Panel
+          id="approvals"
+          title="Pending Approvals"
+          purpose="Authorize or deny an exact bounded action after reviewing its binding evidence."
+          icon={<ClipboardList size={18} />}
+        >
           {data.approvals.length === 0 ? (
             <EmptyState
               text={
@@ -1924,7 +1996,12 @@ export function App() {
           )}
         </Panel>
 
-        <Panel id="artifacts" title="Patch Proposals" icon={<FileDiff size={18} />}>
+        <Panel
+          id="artifacts"
+          title="Artifacts"
+          purpose="Review proposed and applied outputs without confusing review readiness with promotion."
+          icon={<FileDiff size={18} />}
+        >
           <div className="artifact-controls" aria-label="Artifact proposal filters">
             <label>
               <span>Search artifacts</span>
@@ -2104,7 +2181,11 @@ export function App() {
       </section>
 
       <section className="run-section" id="missions" aria-label="Agent runs" tabIndex={-1}>
-        <Panel title="Agent Runs" icon={<Activity size={18} />}>
+        <Panel
+          title="Agent Runs"
+          purpose="Follow Ithildin-mediated agent work from observed request through evidence closeout."
+          icon={<Activity size={18} />}
+        >
           <OperatorWorkbenchGuide />
           {workspaceLens === "investigator" ? (
           <form className="run-filter-bar" onSubmit={applyRunFilters}>
@@ -2435,7 +2516,8 @@ export function App() {
         </Panel>
       </section>
       ) : null}
-    </main>
+      </main>
+    </div>
   );
 }
 
@@ -2581,11 +2663,13 @@ function Metric({
 function Panel({
   id,
   title,
+  purpose,
   icon,
   children,
 }: {
   id?: string;
   title: string;
+  purpose?: string;
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -2593,7 +2677,10 @@ function Panel({
     <section className="panel" id={id} aria-label={`${title} panel`} tabIndex={id ? -1 : undefined}>
       <header className="panel-header">
         {icon}
-        <h2>{title}</h2>
+        <div>
+          <h2>{title}</h2>
+          {purpose ? <p>{purpose}</p> : null}
+        </div>
       </header>
       {children}
     </section>

@@ -546,7 +546,7 @@ describe("Review console interactions", () => {
     });
     for (const label of [
       "Attention",
-      "Missions / Agent Runs",
+      "Missions",
       "Artifacts",
       "Approvals",
       "Evidence",
@@ -555,7 +555,7 @@ describe("Review console interactions", () => {
     ]) {
       expect(within(navigation).getByRole("link", { name: label })).toBeInTheDocument();
     }
-    expect(within(navigation).getByText("Sign-in required")).toBeInTheDocument();
+    expect(screen.getByText("Sign-in required")).toBeInTheDocument();
     expect(
       screen.getByText(/Sign in with the local admin token to load operator attention records/i),
     ).toBeInTheDocument();
@@ -564,7 +564,7 @@ describe("Review console interactions", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     const attention = await screen.findByRole("region", { name: "Attention" });
-    expect(within(navigation).getByText("Authenticated local preview")).toBeInTheDocument();
+    expect(screen.getByText("Authenticated local preview")).toBeInTheDocument();
     expect(within(attention).getByText("Guided local demo mission")).toBeInTheDocument();
     expect(within(attention).getByText("Apply demo patch")).toBeInTheDocument();
     expect(within(attention).getByText("Review decision")).toBeInTheDocument();
@@ -595,6 +595,9 @@ describe("Review console interactions", () => {
       expect(document.getElementById("administration")).toHaveFocus();
     });
     expect(screen.getByText("Request Decision Preflight")).toBeInTheDocument();
+    expect(
+      within(navigation).getByRole("link", { name: "Administration" }),
+    ).toHaveAttribute("aria-current", "page");
     await user.click(screen.getByRole("button", { name: "Routine operations" }));
 
     await user.click(
@@ -603,6 +606,10 @@ describe("Review console interactions", () => {
     await waitFor(() => {
       expect(document.getElementById("missions")).toHaveFocus();
     });
+    expect(within(navigation).getByRole("link", { name: "Missions" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(document.getElementById("missions")).not.toBeNull();
   });
 
