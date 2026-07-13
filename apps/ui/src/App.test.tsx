@@ -620,6 +620,35 @@ describe("Review console interactions", () => {
     expect(document.getElementById("missions")).not.toBeNull();
   });
 
+  it("switches the command rail between complete destination screens", async () => {
+    installFetchMock();
+    const user = userEvent.setup();
+    render(<App />);
+
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+    const main = screen.getByRole("main");
+
+    expect(main).toHaveAttribute("data-active-section", "attention");
+    for (const [label, destination] of [
+      ["Missions", "missions"],
+      ["Artifacts", "artifacts"],
+      ["Approvals", "approvals"],
+      ["Evidence", "evidence"],
+      ["Administration", "administration"],
+      ["Help", "help"],
+    ]) {
+      const link = within(navigation).getByRole("link", { name: label });
+      await user.click(link);
+      expect(main).toHaveAttribute("data-active-section", destination);
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+
+    expect(screen.getByRole("heading", { name: "How to read Command Center" })).toBeInTheDocument();
+    expect(screen.getByText("Gateway is authoritative")).toBeInTheDocument();
+  });
+
   it("shows locked and empty Agent Run states without run controls", async () => {
     const user = userEvent.setup();
     const fetchMock = installFetchMock(systemStatus(), { emptyRuns: true });

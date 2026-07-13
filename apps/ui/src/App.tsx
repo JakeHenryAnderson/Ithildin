@@ -1173,10 +1173,12 @@ export function App() {
           ))}
           <a
             aria-label="Help"
-            className="sidebar-help"
+            aria-current={activeSection === "help" ? "page" : undefined}
+            className={activeSection === "help" ? "sidebar-help active" : "sidebar-help"}
             href="#operator-help"
             onClick={(event) => {
               event.preventDefault();
+              setActiveSection("help");
               scrollAndFocusElement("operator-help");
             }}
           >
@@ -1188,7 +1190,7 @@ export function App() {
           </a>
         </nav>
       </aside>
-      <main className="console-shell">
+      <main className="console-shell" data-active-section={activeSection}>
       <header className="topbar">
         <div className="product-heading">
           <p className="eyebrow">Operator console</p>
@@ -1272,7 +1274,8 @@ export function App() {
       ) : null}
 
       <section
-        className="attention-section"
+        className="attention-section destination-screen"
+        data-screen="attention"
         id="attention"
         aria-label="Attention"
         tabIndex={-1}
@@ -1445,7 +1448,19 @@ export function App() {
             className={workspaceLens === lens ? "active" : ""}
             key={lens}
             type="button"
-            onClick={() => setWorkspaceLens(lens)}
+            onClick={() => {
+              const target =
+                lens === "policy"
+                  ? "administration"
+                  : lens === "technical"
+                    ? "evidence"
+                    : lens === "investigator"
+                      ? "missions"
+                      : "attention";
+              setWorkspaceLens(lens);
+              setActiveSection(target);
+              window.setTimeout(() => scrollAndFocusElement(target), 0);
+            }}
           >
             {label}
           </button>
@@ -1455,17 +1470,40 @@ export function App() {
         </span>
       </div>
 
-      <details className="operator-help" id="operator-help">
-        <summary>What Ithildin governs</summary>
-        <p>
-          Ithildin Gateway mediates requests made through its registered governed tools and records
-          policy, approval, execution, and audit evidence. Command Center reviews those records. It
-          does not start or control the external agent, and a registered tool is not automatically
-          permitted for every request.
-        </p>
+      <details className="operator-help destination-screen" data-screen="help" id="operator-help" open>
+        <summary>Guidance and boundaries</summary>
+        <div className="help-intro">
+          <CircleHelp aria-hidden="true" size={28} />
+          <div>
+            <p className="eyebrow">Operator guidance</p>
+            <h2>How to read Command Center</h2>
+            <p>
+              Ithildin Gateway mediates requests made through its registered governed tools and records
+              policy, approval, execution, and audit evidence. Command Center reviews those records.
+            </p>
+          </div>
+        </div>
+        <div className="help-boundary-grid">
+          <article>
+            <strong>Gateway is authoritative</strong>
+            <p>Command Center presents recorded state; it does not replace policy, approval, or audit authority.</p>
+          </article>
+          <article>
+            <strong>External agents remain external</strong>
+            <p>Ithildin does not start or control the agent, and it cannot prove activity that bypassed the Gateway.</p>
+          </article>
+          <article>
+            <strong>Registration is not permission</strong>
+            <p>A registered tool is evaluated against the requesting identity, workspace, resource, and current policy.</p>
+          </article>
+          <article>
+            <strong>Evidence is bounded</strong>
+            <p>Local verification detects record-chain changes; it is not immutable custody or host-compromise resistance.</p>
+          </article>
+        </div>
       </details>
 
-      <section className="summary-strip" aria-label="Review summary">
+      <section className="summary-strip destination-screen" data-screen="attention" aria-label="Review summary">
         <Metric icon={<ClipboardList size={20} />} label="Pending" value={pendingCount} />
         <Metric icon={<FileDiff size={20} />} label="Proposed patches" value={proposedPatchCount} />
         <Metric icon={<Activity size={20} />} label="Agent runs" value={data.runs.length} />
@@ -1482,7 +1520,13 @@ export function App() {
       </section>
 
       {workspaceLens === "policy" || workspaceLens === "technical" ? (
-      <section className="trust-grid" id="administration" aria-label="Policy administration" tabIndex={-1}>
+      <section className="trust-grid destination-screen" data-screen="administration" id="administration" aria-label="Policy administration" tabIndex={-1}>
+        <DestinationHeading
+          eyebrow="Governance administration"
+          title="Policy and trust posture"
+          description="Inspect the local enforcement posture, registered capabilities, and non-mutating policy controls."
+          icon={<Settings size={24} />}
+        />
         <Panel
           title="Local System Posture"
           purpose="Understand local trust configuration before using specialist controls."
@@ -1711,7 +1755,7 @@ export function App() {
       ) : null}
 
       {workspaceLens === "policy" ? (
-      <section className="policy-section">
+      <section className="policy-section destination-screen" data-screen="administration">
         <Panel
           title="Request Decision Preflight"
           purpose="Troubleshoot a hypothetical governed request without executing it or creating authority."
@@ -1929,7 +1973,13 @@ export function App() {
       ) : null}
 
       {workspaceLens === "technical" ? (
-      <section className="integrity-section" id="evidence" aria-label="Technical evidence" tabIndex={-1}>
+      <section className="integrity-section destination-screen" data-screen="evidence" id="evidence" aria-label="Technical evidence" tabIndex={-1}>
+        <DestinationHeading
+          eyebrow="Evidence reconstruction"
+          title="Recorded activity and integrity"
+          description="Verify the local audit chain, export bounded evidence, and inspect recovery diagnostics."
+          icon={<ScrollText size={24} />}
+        />
         <Panel
           title="Audit Integrity"
           purpose="Reconstruct locally mediated activity and understand the limits of its evidence."
@@ -2026,7 +2076,13 @@ export function App() {
       </section>
       ) : null}
 
-      <section className="review-grid artifact-review-grid">
+      <section className="review-grid destination-screen" data-screen="approvals">
+        <DestinationHeading
+          eyebrow="Decision queue"
+          title="Bounded approvals"
+          description="Review binding evidence before authorizing or denying an exact one-time action."
+          icon={<ListChecks size={24} />}
+        />
         <Panel
           id="approvals"
           title="Pending Approvals"
@@ -2151,6 +2207,15 @@ export function App() {
           )}
         </Panel>
 
+      </section>
+
+      <section className="review-grid artifact-review-grid destination-screen" data-screen="artifacts">
+        <DestinationHeading
+          eyebrow="Artifact governance"
+          title="Outputs and movement"
+          description="Follow proposed and applied changes without confusing review, promotion, or release state."
+          icon={<Boxes size={24} />}
+        />
         <Panel
           id="artifacts"
           title="Artifacts"
@@ -2340,7 +2405,13 @@ export function App() {
         </Panel>
       </section>
 
-      <section className="run-section" id="missions" aria-label="Agent runs" tabIndex={-1}>
+      <section className="run-section destination-screen" data-screen="missions" id="missions" aria-label="Agent runs" tabIndex={-1}>
+        <DestinationHeading
+          eyebrow="Mission workbench"
+          title="Observed agent runs"
+          description="Reconstruct Ithildin-mediated activity from request through recorded evidence closeout."
+          icon={<FolderKanban size={24} />}
+        />
         <Panel
           title="Agent Runs"
           purpose="Follow Ithildin-mediated agent work from observed request through evidence closeout."
@@ -2645,7 +2716,7 @@ export function App() {
       </section>
 
       {workspaceLens === "technical" ? (
-      <section className="audit-section">
+      <section className="audit-section destination-screen" data-screen="evidence">
         <Panel
           title="Recent Audit Events"
           purpose="Technical records for reconstruction after the evidence posture and limitations are understood."
@@ -2865,6 +2936,32 @@ function missionFacingLabel(run: AgentRun | undefined, workspaceId: string) {
     return `${workspaceId} mediated run`;
   }
   return `${workspaceId} workspace`;
+}
+
+function DestinationHeading({
+  eyebrow,
+  title,
+  description,
+  icon,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <header className="destination-heading">
+      <span className="destination-heading-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      <span className="destination-mode">Local governed view</span>
+    </header>
+  );
 }
 
 function AttentionHeading({ count }: { count: number }) {
