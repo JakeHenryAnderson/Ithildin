@@ -349,6 +349,76 @@ h3 {
   padding: 16px;
 }
 
+.attention-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1.45fr);
+}
+
+.attention-queue {
+  border-right: 1px solid #2b4050;
+  display: grid;
+  align-content: start;
+}
+
+.attention-queue > p {
+  color: #91a5b5;
+  font-size: 0.72rem;
+  font-weight: 750;
+  padding: 12px;
+  text-transform: uppercase;
+}
+
+.attention-queue-item {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  border-top: 1px solid #243746;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  justify-content: stretch;
+  min-height: 76px;
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.attention-queue-item > span:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.attention-queue-item strong,
+.attention-queue-item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attention-queue-item strong {
+  color: #e4edf2;
+  font-size: 0.8rem;
+}
+
+.attention-queue-item small,
+.attention-queue-item em {
+  color: #91a5b5;
+  font-size: 0.74rem;
+}
+
+.attention-queue-item em {
+  color: #738997;
+  font-size: 0.66rem;
+  font-style: normal;
+}
+
+.attention-queue-item.selected {
+  background: #142c3c;
+  border-left-color: #e6ad2f;
+}
+
 .attention-title-row {
   align-items: start;
   display: flex;
@@ -1739,6 +1809,15 @@ th {
   .attention-title-row {
     align-items: stretch;
     display: grid;
+  }
+
+  .attention-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .attention-queue {
+    border-bottom: 1px solid #2b4050;
+    border-right: 0;
   }
 
   .patch-list,

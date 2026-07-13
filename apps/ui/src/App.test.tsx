@@ -565,12 +565,17 @@ describe("Review console interactions", () => {
 
     const attention = await screen.findByRole("region", { name: "Attention" });
     expect(screen.getByText("Authenticated local preview")).toBeInTheDocument();
-    expect(within(attention).getByText("Guided local demo mission")).toBeInTheDocument();
-    expect(within(attention).getByText("Apply demo patch")).toBeInTheDocument();
+    expect(within(attention).getAllByText("Guided local demo mission").length).toBeGreaterThan(0);
+    expect(within(attention).getAllByText("Apply demo patch").length).toBeGreaterThan(0);
     expect(within(attention).getByText("Review decision")).toBeInTheDocument();
     expect(within(attention).getByText("demo")).toBeInTheDocument();
     expect(within(attention).getByText("agent:mcp-local")).toBeInTheDocument();
     expect(within(attention).getByText("write tools require approval")).toBeInTheDocument();
+    const attentionQueue = within(attention).getByLabelText("Prioritized operator attention");
+    const [selectedAttention, secondaryAttention] = within(attentionQueue).getAllByRole("button");
+    expect(selectedAttention).toHaveAttribute("aria-pressed", "true");
+    expect(selectedAttention).toHaveTextContent("Apply demo patch");
+    expect(secondaryAttention).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "Routine operations" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -1082,8 +1087,8 @@ describe("Review console interactions", () => {
     await saveToken();
 
     const attention = screen.getByRole("region", { name: "Attention" });
-    expect(within(attention).getByText("Patch recovery review required")).toBeInTheDocument();
-    expect(within(attention).getByText(/6\/3\/26/)).toBeInTheDocument();
+    expect(within(attention).getAllByText("Patch recovery review required").length).toBe(2);
+    expect(within(attention).getAllByText(/6\/3\/26/).length).toBe(2);
   });
 
   it("uses stuck-approval expiry in recovery attention without an apply attempt", async () => {
@@ -1114,8 +1119,8 @@ describe("Review console interactions", () => {
     await saveToken();
 
     const attention = screen.getByRole("region", { name: "Attention" });
-    expect(within(attention).getByText("Patch recovery review required")).toBeInTheDocument();
-    expect(within(attention).getByText(/6\/4\/26/)).toBeInTheDocument();
+    expect(within(attention).getAllByText("Patch recovery review required").length).toBe(2);
+    expect(within(attention).getAllByText(/6\/4\/26/).length).toBe(2);
   });
 
   it("fails closed when a replacement token is rejected", async () => {
@@ -1246,12 +1251,13 @@ describe("Review console interactions", () => {
     });
     const user = await saveToken();
 
-    await user.click(screen.getByRole("button", { name: /other\.txt/i }));
+    const proposalList = screen.getByLabelText("Artifact proposal list");
+    await user.click(within(proposalList).getByRole("button", { name: /other\.txt/i }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE}/patch-proposals/patch_987654321`,
       expect.anything(),
     ));
-    await user.click(screen.getByRole("button", { name: /demo\.txt/i }));
+    await user.click(within(proposalList).getByRole("button", { name: /demo\.txt/i }));
     delayed.resolve(jsonResponse({
       proposal_id: "patch_987654321",
       request_id: "req_987654321",

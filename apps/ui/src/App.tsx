@@ -460,6 +460,7 @@ export function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "");
   const [draftToken, setDraftToken] = useState(token);
   const [activeSection, setActiveSection] = useState("attention");
+  const [selectedAttentionKey, setSelectedAttentionKey] = useState<string | null>(null);
   const [workspaceLens, setWorkspaceLens] = useState<WorkspaceLens>("routine");
   const [data, setData] = useState<DashboardData>(emptyDashboardData);
   const [runFilters, setRunFilters] = useState<RunFilters>({
@@ -526,7 +527,14 @@ export function App() {
     () => trustStateWarnings(data.systemStatus, data.verification, data.patchDiagnostics),
     [data.systemStatus, data.verification, data.patchDiagnostics],
   );
-  const primaryAttention = useMemo(() => primaryAttentionItem(data), [data]);
+  const attentionItems = useMemo(() => operatorAttentionItems(data), [data]);
+  const primaryAttention = useMemo(
+    () =>
+      attentionItems.find((item) => attentionItemKey(item) === selectedAttentionKey) ??
+      attentionItems[0] ??
+      null,
+    [attentionItems, selectedAttentionKey],
+  );
   const investigationRuns = useMemo(
     () =>
       filterInvestigationRuns(
@@ -1317,7 +1325,36 @@ export function App() {
         ) : dashboardError ? (
           <EmptyState text="Operator attention records are unavailable. No empty-state conclusion is available." />
         ) : primaryAttention ? (
-          <article className="attention-item">
+          <div className="attention-workspace">
+            <div className="attention-queue" aria-label="Prioritized operator attention">
+              <p>{attentionItems.length} {attentionItems.length === 1 ? "item" : "items"} in loaded local records</p>
+              {attentionItems.slice(0, 5).map((item) => {
+                const key = attentionItemKey(item);
+                const selected = attentionItemKey(primaryAttention) === key;
+                return (
+                  <button
+                    aria-pressed={selected}
+                    className={selected ? "attention-queue-item selected" : "attention-queue-item"}
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedAttentionKey(key)}
+                  >
+                    <span>
+                      <strong>{item.missionLabel}</strong>
+                      <small>{item.title}</small>
+                      <em>
+                        {item.occurredAt ? formatDate(item.occurredAt) : "Time unavailable"}
+                        {item.requestingIdentity !== "Unavailable"
+                          ? ` · ${item.requestingIdentity}`
+                          : ""}
+                      </em>
+                    </span>
+                    <StatusPill status={item.status} />
+                  </button>
+                );
+              })}
+            </div>
+            <article className="attention-item">
             <div className="attention-title-row">
               <div>
                 <p className="attention-mission">{primaryAttention.missionLabel}</p>
@@ -1372,7 +1409,8 @@ export function App() {
             >
               {primaryAttention.runId ? "Open mission Workbench" : "Open source record"}
             </button>
-          </article>
+            </article>
+          </div>
         ) : (
           <EmptyState text="No action identified in the currently loaded local records. This is not a global safety claim." />
         )}
@@ -2521,7 +2559,54 @@ export function App() {
   );
 }
 
-function primaryAttentionItem(data: DashboardData): AttentionItem | null {
+function operatorAttentionItems(data: DashboardData) {
+  const items: AttentionItem[] = [];
+  let remaining = {
+    ...data,
+    approvals: [...data.approvals],
+    auditEvents: [...data.auditEvents],
+    patches: [...data.patches],
+  };
+
+  while (items.length < 8) {
+    const item = firstOperatorAttentionItem(remaining);
+    if (!item) {
+      break;
+    }
+    items.push(item);
+    if (item.source === "approval") {
+      remaining = {
+        ...remaining,
+        approvals: remaining.approvals.filter(
+          (candidate) => candidate.approval.request_id !== item.requestId,
+        ),
+      };
+    } else if (item.source === "failure") {
+      remaining = {
+        ...remaining,
+        auditEvents: remaining.auditEvents.filter(
+          (candidate) => candidate.request_id !== item.requestId,
+        ),
+      };
+    } else if (item.source === "recovery") {
+      remaining = { ...remaining, patchDiagnostics: null };
+    } else {
+      remaining = {
+        ...remaining,
+        patches: remaining.patches.filter(
+          (candidate) => candidate.proposal_id !== item.proposalId,
+        ),
+      };
+    }
+  }
+  return items;
+}
+
+function attentionItemKey(item: AttentionItem) {
+  return `${item.source}:${item.requestId || item.proposalId || item.title}`;
+}
+
+function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
   const approvalReview = data.approvals[0];
   if (approvalReview) {
     const approval = approvalReview.approval;
