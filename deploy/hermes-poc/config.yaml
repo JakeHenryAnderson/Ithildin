@@ -1,0 +1,74 @@
+model:
+  default: gemma4:e4b
+  provider: custom
+  base_url: http://host.docker.internal:11434/v1
+  context_length: 65536
+
+# The pinned stdio server currently takes about two seconds to start in Docker.
+# Wait for discovery so the first one-shot turn receives the MCP schemas instead
+# of racing ahead with an empty tool snapshot.
+mcp_discovery_timeout: 10
+
+terminal:
+  backend: local
+  cwd: /opt/data/scratch
+  timeout: 30
+
+agent:
+  max_turns: 20
+  verbose: false
+  reasoning_effort: medium
+  verify_on_stop: false
+
+platform_toolsets:
+  cli: []
+
+plugins:
+  enabled: []
+
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+
+skills:
+  creation_nudge_interval: 0
+
+mcp_servers:
+  ithildin-local:
+    command: /opt/ithildin/.venv/bin/python
+    args:
+      - -m
+      - ithildin_mcp_server
+    env:
+      ITHILDIN_ADMIN_TOKEN: hermes-poc-unused-setting-not-an-api-credential
+      ITHILDIN_ALLOW_DEV_ADMIN_TOKEN: "false"
+      ITHILDIN_DB_PATH: /opt/ithildin/var/hermes-poc/db/ithildin.sqlite3
+      ITHILDIN_AUDIT_LOG_PATH: /opt/ithildin/var/hermes-poc/logs/audit.jsonl
+      ITHILDIN_MANIFEST_DIR: /opt/ithildin/tool-manifests
+      ITHILDIN_MANIFEST_LOCK_PATH: /opt/ithildin/tool-manifests.lock.json
+      ITHILDIN_POLICY_PATH: /opt/ithildin/policies/default.yaml
+      ITHILDIN_PRINCIPAL_REGISTRY_PATH: /opt/ithildin/principals/local.yaml
+      ITHILDIN_WORKSPACE_ROOT: /opt/ithildin/deploy/hermes-poc/workspace
+      ITHILDIN_WORKSPACE_REGISTRY_PATH: /opt/ithildin/deploy/hermes-poc/workspaces.yaml
+      ITHILDIN_DEFAULT_WORKSPACE_ID: hermes-poc
+      ITHILDIN_HTTP_ALLOWLIST: ""
+      ITHILDIN_OTEL_ENABLED: "false"
+    tools:
+      include:
+        - fs.list
+        - fs.stat
+        - fs.read
+        - fs.search
+        - fs.patch.propose
+        - fs.patch.apply
+        - http.fetch
+        - sandbox.artifact.write_text
+      prompts: false
+      resources: false
+
+display:
+  show_reasoning: false
+  streaming: false
+  tool_progress: all
+
+_config_version: 33

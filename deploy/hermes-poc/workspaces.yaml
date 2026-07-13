@@ -1,0 +1,11 @@
+version: hermes-poc-workspaces-v1
+default_workspace_id: hermes-poc
+workspaces:
+  - id: hermes-poc
+    root: /opt/ithildin/deploy/hermes-poc/workspace
+    display_name: Hermes synthetic POC workspace
+    enabled: true
+    metadata:
+      purpose: governed-external-agent-poc
+      data_class: synthetic-only
+      shared_filesystem_with_runner: true

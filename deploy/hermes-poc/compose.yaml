@@ -1,0 +1,33 @@
+name: ithildin-hermes-poc
+
+services:
+  hermes:
+    build:
+      context: ../..
+      dockerfile: deploy/hermes-poc/Dockerfile
+    image: ithildin/hermes-poc:local
+    user: "10000:10000"
+    entrypoint:
+      - /opt/hermes/.venv/bin/hermes
+    working_dir: /opt/data/scratch
+    command:
+      - chat
+      - --quiet
+      - --query
+      - Use only the available Ithildin MCP functions. Call mcp__ithildin_local__fs_list with workspace_id hermes-poc and path inbox. Then call mcp__ithildin_local__fs_read with workspace_id hermes-poc and path inbox/case-001.md. Then call mcp__ithildin_local__fs_read with workspace_id hermes-poc and path ../outside.txt. Then call mcp__ithildin_local__http_fetch with url https://example.com/. Invoke each function rather than writing a textual Tool Call. Report the returned statuses only and do not invent results.
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./config.yaml:/opt/data/config.yaml:ro
+      - ./mission.md:/opt/ithildin/deploy/hermes-poc/mission.md:ro
+      - ./workspace:/opt/ithildin/deploy/hermes-poc/workspace
+      - ../../var:/opt/ithildin/var
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /opt/data/scratch:uid=10000,gid=10000,mode=0700
+    pids_limit: 256
+    mem_limit: 4g
+    cpus: 2

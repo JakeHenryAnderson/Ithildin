@@ -2418,6 +2418,7 @@ export function App() {
           icon={<Activity size={18} />}
         >
           <OperatorWorkbenchGuide />
+          <RunnerGovernancePosture run={selectedRun?.run ?? null} />
           {workspaceLens === "investigator" ? (
           <form className="run-filter-bar" onSubmit={applyRunFilters}>
             <label>
@@ -2591,7 +2592,7 @@ export function App() {
                       <small>Reported identity: {run.principal_id}</small>
                     </span>
                     <small>
-                      Operator-managed workspace: {run.workspace_id} · {run.last_tool_name ?? "no tool"}
+                      Configured governed workspace: {run.workspace_id} · {run.last_tool_name ?? "no tool"}
                     </small>
                     <StatusPill status={run.status} />
                   </button>
@@ -2611,7 +2612,7 @@ export function App() {
                           <dd>{selectedRun.run.principal_id}</dd>
                         </div>
                         <div>
-                          <dt>Operator-managed workspace</dt>
+                          <dt>Configured governed workspace</dt>
                           <dd>{selectedRun.run.workspace_id}</dd>
                         </div>
                         <div>
@@ -2625,6 +2626,7 @@ export function App() {
                       </p>
                     </div>
                     <div className="run-actions">
+                      <small>Recorded run state · not runner health</small>
                       <StatusPill status={selectedRun.run.status} />
                       <button
                         className="secondary-action"
@@ -2936,6 +2938,47 @@ function missionFacingLabel(run: AgentRun | undefined, workspaceId: string) {
     return `${workspaceId} mediated run`;
   }
   return `${workspaceId} workspace`;
+}
+
+function RunnerGovernancePosture({ run }: { run: AgentRun | null }) {
+  const fixedStdioIdentity =
+    run?.principal_id === "agent:mcp-local" && run.session_id === "mcp-stdio";
+  const hermesTrackA = fixedStdioIdentity && run?.workspace_id === "hermes-poc";
+
+  return (
+    <section className="runner-governance-posture" aria-label="External runner governance posture">
+      <div className="runner-posture-heading">
+        <div>
+          <p className="eyebrow">External runner posture</p>
+          <h3>{hermesTrackA ? "Hermes Track A compatibility fixture" : "Recorded ingress posture"}</h3>
+        </div>
+        <span className="posture-claim">Governed calls only</span>
+      </div>
+      <dl>
+        <div>
+          <dt>Runner</dt>
+          <dd>{hermesTrackA ? "Operator-started Hermes" : "Not identified by Gateway"}</dd>
+        </div>
+        <div>
+          <dt>Connection</dt>
+          <dd>{fixedStdioIdentity ? "Local stdio MCP" : "Recorded ingress only"}</dd>
+        </div>
+        <div>
+          <dt>Reported identity</dt>
+          <dd>{run?.principal_id ?? "No run selected"}</dd>
+        </div>
+        <div>
+          <dt>Lifecycle authority</dt>
+          <dd>Unmanaged · no launch or health control</dd>
+        </div>
+      </dl>
+      <p>
+        {hermesTrackA
+          ? "Track A shares its synthetic workspace with the runner. Ithildin proves policy and execution outcomes for recorded MCP calls, not filesystem isolation or all runner activity."
+          : "Ithildin reconstructs recorded mediated activity. It does not infer the runner process, model inference, health, or isolation from run state."}
+      </p>
+    </section>
+  );
 }
 
 function DestinationHeading({

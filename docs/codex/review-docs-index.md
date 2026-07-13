@@ -15,6 +15,13 @@ externally closed.
 
 ## Command Center Pilot Design
 
+### Governed External Agent POC
+
+- [Hermes POC Architecture](governed-external-agent-hermes-poc-architecture.md)
+- [Hermes POC Capability Proposal](governed-external-agent-hermes-poc-capability-proposal.md)
+- [Hermes POC Implementation Plan](governed-external-agent-hermes-poc-implementation-plan.md)
+- [Hermes POC Observed Results](governed-external-agent-hermes-poc-observed-results.md)
+
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
 - [Command Center Information Architecture](command-center-information-architecture.md)

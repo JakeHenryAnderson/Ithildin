@@ -689,6 +689,11 @@ describe("Review console interactions", () => {
 
     expect(await screen.findByText(/sample admin token is active/)).toBeInTheDocument();
     expect(screen.getByText("Agent Runs")).toBeInTheDocument();
+    expect(screen.getByLabelText("External runner governance posture")).toBeInTheDocument();
+    expect(screen.getByText("Recorded ingress posture")).toBeInTheDocument();
+    expect(screen.getByText("Governed calls only")).toBeInTheDocument();
+    expect(screen.getByText("Unmanaged · no launch or health control")).toBeInTheDocument();
+    expect(screen.getByText("Recorded run state · not runner health")).toBeInTheDocument();
     expect(screen.getByText("Demo Path")).toBeInTheDocument();
     expect(screen.getByText("Preflight")).toBeInTheDocument();
     expect(screen.getByText("Seed/run")).toBeInTheDocument();

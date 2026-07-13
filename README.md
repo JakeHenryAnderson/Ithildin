@@ -400,6 +400,12 @@ checked with `make control-mapping-readiness`.
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `docs/codex/ithildin-command-center-boundary.md` - current naming and authority boundary for the
   operator UI/control-plane concept historically called Mission Control.
+- [docs/codex/governed-external-agent-hermes-poc-architecture.md](docs/codex/governed-external-agent-hermes-poc-architecture.md) - trust zones, pinned Hermes image, claim ladder, and current 24-tool topology.
+- [docs/codex/governed-external-agent-hermes-poc-capability-proposal.md](docs/codex/governed-external-agent-hermes-poc-capability-proposal.md) - allowed compatibility evidence versus blocked runtime expansion.
+- [docs/codex/governed-external-agent-hermes-poc-implementation-plan.md](docs/codex/governed-external-agent-hermes-poc-implementation-plan.md) - ordered fixture, MCP, negative-case, soak, and Command Center milestones.
+- [docs/codex/governed-external-agent-hermes-poc-observed-results.md](docs/codex/governed-external-agent-hermes-poc-observed-results.md) - accepted Track A evidence, rejected model claims, and explicit non-claims.
+- `make hermes-governance-poc-plan-check` - validate the POC packet, image digest, 24-tool boundary,
+  and explicit non-approvals.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
   addendum for the staging-only trusted-host promotion runtime slice.
 - `docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md` - local proxy disposition

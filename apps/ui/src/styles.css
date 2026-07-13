@@ -1311,6 +1311,79 @@ caption {
   padding-left: 9px;
 }
 
+.runner-governance-posture {
+  background: linear-gradient(135deg, #0d2231, #0a1a28);
+  border: 1px solid #31546a;
+  border-left: 3px solid #4bb5b7;
+  display: grid;
+  gap: 13px;
+  margin-bottom: 14px;
+  padding: 15px 17px;
+}
+
+.runner-posture-heading {
+  align-items: start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.runner-posture-heading h3 {
+  color: #edf5f7;
+  font-size: 1rem;
+  margin-top: 2px;
+}
+
+.runner-governance-posture dl {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.runner-governance-posture dt {
+  color: #7fa2b2;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.runner-governance-posture dd {
+  color: #d8e6eb;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin: 4px 0 0;
+}
+
+.runner-governance-posture > p {
+  border-top: 1px solid #294657;
+  color: #9fb4be;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0;
+  padding-top: 11px;
+}
+
+.posture-claim {
+  background: #132f3b;
+  border: 1px solid #3e7478;
+  color: #89d2d1;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 5px 7px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.run-actions > small {
+  color: #66776e;
+  font-size: 0.67rem;
+  max-width: 150px;
+  text-align: right;
+}
+
 .patch-column-headings,
 .patch-row {
   align-items: center;
@@ -2531,6 +2604,10 @@ td,
     grid-template-columns: 1fr;
   }
 
+  .runner-governance-posture dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .command-sidebar {
     height: auto;
     min-height: 0;
@@ -3128,6 +3205,10 @@ td,
     grid-template-columns: 1fr;
     padding-bottom: 10px;
     position: static;
+  }
+
+  .runner-governance-posture dl {
+    grid-template-columns: 1fr;
   }
 
   .topbar-actions {
