@@ -1064,17 +1064,82 @@ caption {
   border: 0;
   border-bottom: 1px solid #edf2ef;
   border-radius: 0;
-  display: flex;
-  justify-content: space-between;
-  min-height: 52px;
+  display: grid;
+  gap: 5px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  justify-content: stretch;
+  min-height: 76px;
   padding: 10px 12px;
   text-align: left;
 }
 
 .run-row span:first-child {
+  display: grid;
+  gap: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.run-row > small {
+  color: #66776e;
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-workbench-heading {
+  align-items: start;
+  border-bottom: 1px solid #dce5e0;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  padding-bottom: 14px;
+}
+
+.mission-workbench-heading > div:first-child {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mission-workbench-heading h3 {
+  font-size: 1.2rem;
+}
+
+.mission-context-facts {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 4px 0 0;
+}
+
+.mission-context-facts div {
+  min-width: 0;
+}
+
+.mission-context-facts dt {
+  color: #66776e;
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mission-context-facts dd {
+  font-size: 0.8rem;
+  margin: 4px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-authority-boundary {
+  border-left: 3px solid #79b39b;
+  color: #506057;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  padding-left: 9px;
 }
 
 .patch-column-headings,
@@ -1815,6 +1880,14 @@ th {
     grid-template-columns: 1fr;
   }
 
+  .mission-workbench-heading {
+    display: grid;
+  }
+
+  .mission-context-facts {
+    grid-template-columns: 1fr;
+  }
+
   .attention-queue {
     border-bottom: 1px solid #2b4050;
     border-right: 0;
@@ -2181,6 +2254,24 @@ td,
 
 .attention-mission {
   color: #f0b83d;
+}
+
+.mission-workbench-heading {
+  border-color: #2b4050;
+}
+
+.mission-context-facts dt,
+.run-row > small {
+  color: #91a5b5;
+}
+
+.mission-context-facts dd {
+  color: #dbe6ec;
+}
+
+.mission-authority-boundary {
+  border-color: #4aa79f;
+  color: #9fb0bb;
 }
 
 .metric-icon {

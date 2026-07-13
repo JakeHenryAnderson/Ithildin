@@ -1363,8 +1363,11 @@ describe("Review console interactions", () => {
     }));
 
     const detail = screen.getByRole("region", { name: "Selected run detail" });
-    expect(await within(detail).findByRole("heading", { name: "agent:mcp-local" })).toBeInTheDocument();
-    expect(within(detail).queryByRole("heading", { name: "agent:other" })).not.toBeInTheDocument();
+    expect(
+      await within(detail).findByRole("heading", { name: "Guided local demo mission" }),
+    ).toBeInTheDocument();
+    expect(within(detail).getAllByText("agent:mcp-local").length).toBeGreaterThan(0);
+    expect(within(detail).queryByText("agent:other")).not.toBeInTheDocument();
   });
 
   it("suppresses an opposite approval action while a decision is in flight", async () => {

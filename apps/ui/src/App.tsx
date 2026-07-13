@@ -2394,11 +2394,11 @@ export function App() {
                     onClick={() => setSelectedRunId(run.run_id)}
                   >
                     <span>
-                      {run.principal_id}
-                      <DemoLabel run={run} />
+                      <strong>{missionFacingLabel(run, run.workspace_id)}</strong>
+                      <small>Reported identity: {run.principal_id}</small>
                     </span>
                     <small>
-                      {missionFacingLabel(run, run.workspace_id)} · {run.last_tool_name ?? "no tool"}
+                      Operator-managed workspace: {run.workspace_id} · {run.last_tool_name ?? "no tool"}
                     </small>
                     <StatusPill status={run.status} />
                   </button>
@@ -2408,13 +2408,27 @@ export function App() {
             <div className="timeline-view" role="region" aria-label="Selected run detail" aria-live="polite">
               {selectedRun ? (
                 <>
-                  <div className="diff-heading">
+                  <div className="mission-workbench-heading">
                     <div>
-                      <h3>{selectedRun.run.principal_id}</h3>
-                      <p>
-                        {shortId(selectedRun.run.run_id)} · {selectedRun.run.workspace_id} ·{" "}
-                        {selectedRun.run.tool_call_count} calls
-                        <DemoLabel run={selectedRun.run} />
+                      <p className="eyebrow">Selected mission Workbench</p>
+                      <h3>{missionFacingLabel(selectedRun.run, selectedRun.run.workspace_id)}</h3>
+                      <dl className="mission-context-facts">
+                        <div>
+                          <dt>Reported requesting identity</dt>
+                          <dd>{selectedRun.run.principal_id}</dd>
+                        </div>
+                        <div>
+                          <dt>Operator-managed workspace</dt>
+                          <dd>{selectedRun.run.workspace_id}</dd>
+                        </div>
+                        <div>
+                          <dt>Observed governed calls</dt>
+                          <dd>{selectedRun.run.tool_call_count}</dd>
+                        </div>
+                      </dl>
+                      <p className="mission-authority-boundary">
+                        Ithildin reconstructs mediated activity. It does not start the external
+                        agent or verify workspace isolation.
                       </p>
                     </div>
                     <div className="run-actions">
@@ -3100,11 +3114,11 @@ function RunDecisionExplanation({
         </p>
         <dl className="meta-list decision-context">
           <div>
-            <dt>Requesting identity</dt>
+            <dt>Reported requesting identity</dt>
             <dd>{runDetail.run.principal_id}</dd>
           </div>
           <div>
-            <dt>Governed workspace</dt>
+            <dt>Operator-managed workspace</dt>
             <dd>{runDetail.run.workspace_id}</dd>
           </div>
           <div>
@@ -3185,11 +3199,11 @@ function RunDecisionExplanation({
         <summary>Technical decision evidence</summary>
         <dl className="meta-list decision-context">
           <div>
-            <dt>Requesting identity</dt>
+            <dt>Reported requesting identity</dt>
             <dd>{runDetail.run.principal_id}</dd>
           </div>
           <div>
-            <dt>Governed workspace</dt>
+            <dt>Operator-managed workspace</dt>
             <dd>{runDetail.run.workspace_id}</dd>
           </div>
           <div>
