@@ -439,6 +439,24 @@ h3 {
   color: #b3c1ca;
 }
 
+.administration-posture-summary div,
+.administration-technical,
+.evidence-boundary {
+  border-color: #2b4050;
+}
+
+.administration-posture-summary dt,
+.administration-posture-summary small,
+.evidence-boundary p {
+  color: #91a5b5;
+}
+
+.administration-posture-summary dd,
+.administration-technical summary,
+.evidence-boundary strong {
+  color: #dbe6ec;
+}
+
 .attention-title-row {
   align-items: start;
   display: flex;
@@ -549,6 +567,74 @@ h3 {
 
 .trust-list {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.administration-posture-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.administration-posture-summary div {
+  border: 1px solid #dbe8e2;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.administration-posture-summary dt {
+  color: #66776e;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.administration-posture-summary dd {
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.administration-posture-summary small {
+  color: #66776e;
+  line-height: 1.35;
+}
+
+.administration-technical {
+  border: 1px solid #dbe8e2;
+  padding: 10px;
+}
+
+.administration-technical summary {
+  color: #26483b;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.administration-technical .trust-list {
+  margin-top: 12px;
+}
+
+.evidence-boundary {
+  border-bottom: 1px solid #dce5e0;
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+}
+
+.evidence-boundary strong {
+  color: #314239;
+  font-size: 0.8rem;
+}
+
+.evidence-boundary p {
+  color: #506057;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  max-width: 900px;
 }
 
 .integrity-section {
@@ -1977,6 +2063,10 @@ th {
   }
 
   .mission-context-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .administration-posture-summary {
     grid-template-columns: 1fr;
   }
 

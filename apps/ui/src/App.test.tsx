@@ -590,6 +590,8 @@ describe("Review console interactions", () => {
 
     await user.click(screen.getByRole("button", { name: "Technical review" }));
     expect(screen.getByText("Audit Integrity")).toBeInTheDocument();
+    expect(screen.getByText("Local mediated evidence")).toBeInTheDocument();
+    expect(screen.getByText(/does not establish immutable custody/i)).toBeInTheDocument();
     expect(screen.getByText("Recent Audit Events")).toBeInTheDocument();
     expect(screen.queryByText("Request Decision Preflight")).not.toBeInTheDocument();
 

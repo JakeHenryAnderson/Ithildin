@@ -1463,7 +1463,31 @@ export function App() {
                 </span>
                 <span className="trust-service">{data.systemStatus.service}</span>
               </div>
-              <dl className="meta-list trust-list">
+              <dl className="administration-posture-summary">
+                <div>
+                  <dt>Governed tools</dt>
+                  <dd>{data.systemStatus.tool_count}</dd>
+                  <small>Registration does not grant request permission.</small>
+                </div>
+                <div>
+                  <dt>Policy engine</dt>
+                  <dd>{data.systemStatus.policy.engine}</dd>
+                  <small>Current local policy evaluation posture.</small>
+                </div>
+                <div>
+                  <dt>Signed export</dt>
+                  <dd>{data.systemStatus.audit_signing.signed_export_available ? "Available" : "Not configured"}</dd>
+                  <small>Availability is not an export receipt or custody claim.</small>
+                </div>
+                <div>
+                  <dt>Environment</dt>
+                  <dd>{data.systemStatus.security.preview_label}</dd>
+                  <small>Local preview, not production readiness.</small>
+                </div>
+              </dl>
+              <details className="administration-technical">
+                <summary>Technical trust configuration</summary>
+                <dl className="meta-list trust-list">
                 <div>
                   <dt>Manifest Lock</dt>
                   <dd>{data.systemStatus.manifest_lock.required ? "enforced" : "optional"}</dd>
@@ -1596,7 +1620,8 @@ export function App() {
                   <dt>Patch Apply</dt>
                   <dd>{data.patchDiagnostics?.status ?? "unknown"}</dd>
                 </div>
-              </dl>
+                </dl>
+              </details>
             </div>
           ) : (
             <EmptyState text={token ? "System status unavailable." : "Locked."} />
@@ -1646,7 +1671,11 @@ export function App() {
 
       {workspaceLens === "policy" ? (
       <section className="policy-section">
-        <Panel title="Request Decision Preflight" icon={<ShieldCheck size={18} />}>
+        <Panel
+          title="Request Decision Preflight"
+          purpose="Troubleshoot a hypothetical governed request without executing it or creating authority."
+          icon={<ShieldCheck size={18} />}
+        >
           <div className="preflight-boundary">
             <strong>Administration · policy troubleshooting</strong>
             <p>
@@ -1760,7 +1789,11 @@ export function App() {
           ) : null}
         </Panel>
 
-        <Panel title="Candidate Policy Impact" icon={<FileDiff size={18} />}>
+        <Panel
+          title="Candidate Policy Impact"
+          purpose="Compare reviewed fixtures without applying or authorizing a candidate policy."
+          icon={<FileDiff size={18} />}
+        >
           <div className="preflight-boundary">
             <strong>Policy administrator tool</strong>
             <p>
@@ -1861,6 +1894,14 @@ export function App() {
           purpose="Reconstruct locally mediated activity and understand the limits of its evidence."
           icon={<ShieldCheck size={18} />}
         >
+          <div className="evidence-boundary">
+            <strong>Local mediated evidence</strong>
+            <p>
+              This view covers activity recorded through Ithildin. Chain verification detects
+              local record tampering; it does not establish immutable custody, host-compromise
+              resistance, or activity outside the Gateway.
+            </p>
+          </div>
           <div className="integrity-grid">
             <div className="integrity-status">
               {data.verification ? (
@@ -2564,7 +2605,11 @@ export function App() {
 
       {workspaceLens === "technical" ? (
       <section className="audit-section">
-        <Panel title="Recent Audit Events" icon={<Activity size={18} />}>
+        <Panel
+          title="Recent Audit Events"
+          purpose="Technical records for reconstruction after the evidence posture and limitations are understood."
+          icon={<Activity size={18} />}
+        >
           {data.auditEvents.length === 0 ? (
             <EmptyState
               text={
