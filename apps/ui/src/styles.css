@@ -419,6 +419,26 @@ h3 {
   border-left-color: #e6ad2f;
 }
 
+.approval-list,
+.approval-queue-item {
+  border-color: #2b4050;
+}
+
+.approval-queue-item small,
+.approval-queue-item em {
+  color: #91a5b5;
+}
+
+.approval-queue-item.selected {
+  background: #142c3c;
+  border-left-color: #e6ad2f;
+}
+
+.approval-consequence {
+  border-color: #e6ad2f;
+  color: #b3c1ca;
+}
+
 .attention-title-row {
   align-items: start;
   display: flex;
@@ -634,6 +654,69 @@ h3 {
 
 .approval-list {
   display: grid;
+}
+
+.approval-workspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.6fr) minmax(0, 1.4fr);
+}
+
+.approval-list {
+  align-content: start;
+  border-right: 1px solid #edf2ef;
+}
+
+.approval-queue-item {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #edf2ef;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  justify-content: stretch;
+  min-height: 82px;
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.approval-queue-item > span:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.approval-queue-item strong,
+.approval-queue-item small,
+.approval-queue-item em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.approval-queue-item small,
+.approval-queue-item em {
+  color: #66776e;
+  font-size: 0.7rem;
+}
+
+.approval-queue-item em {
+  font-style: normal;
+}
+
+.approval-queue-item.selected {
+  background: #f3f8f5;
+  border-left-color: #d0a128;
+}
+
+.approval-consequence {
+  border-left: 3px solid #d0a128;
+  color: #42554c;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  padding-left: 9px;
 }
 
 .approval-item {
@@ -1878,6 +1961,15 @@ th {
 
   .attention-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .approval-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .approval-list {
+    border-bottom: 1px solid #edf2ef;
+    border-right: 0;
   }
 
   .mission-workbench-heading {

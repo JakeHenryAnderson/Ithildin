@@ -461,6 +461,7 @@ export function App() {
   const [draftToken, setDraftToken] = useState(token);
   const [activeSection, setActiveSection] = useState("attention");
   const [selectedAttentionKey, setSelectedAttentionKey] = useState<string | null>(null);
+  const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null);
   const [workspaceLens, setWorkspaceLens] = useState<WorkspaceLens>("routine");
   const [data, setData] = useState<DashboardData>(emptyDashboardData);
   const [runFilters, setRunFilters] = useState<RunFilters>({
@@ -534,6 +535,13 @@ export function App() {
       attentionItems[0] ??
       null,
     [attentionItems, selectedAttentionKey],
+  );
+  const selectedApprovalReview = useMemo(
+    () =>
+      data.approvals.find(
+        (candidate) => candidate.approval.approval_id === selectedApprovalId,
+      ) ?? data.approvals[0] ?? null,
+    [data.approvals, selectedApprovalId],
   );
   const investigationRuns = useMemo(
     () =>
@@ -1954,9 +1962,32 @@ export function App() {
               }
             />
           ) : (
-            <div className="approval-list">
-              {data.approvals.map((approvalReview) => {
-                const approval = approvalReview.approval;
+            <div className="approval-workspace">
+              <div className="approval-list" aria-label="Pending approval queue">
+                {data.approvals.map((candidate) => {
+                  const approval = candidate.approval;
+                  const selected =
+                    approval.approval_id === selectedApprovalReview?.approval.approval_id;
+                  return (
+                    <button
+                      aria-pressed={selected}
+                      className={selected ? "approval-queue-item selected" : "approval-queue-item"}
+                      key={approval.approval_id}
+                      type="button"
+                      onClick={() => setSelectedApprovalId(approval.approval_id)}
+                    >
+                      <span>
+                        <strong>{approval.summary}</strong>
+                        <small>{approval.tool_name}</small>
+                        <em>Expires {formatDate(approval.expires_at)}</em>
+                      </span>
+                      <StatusPill status={candidate.review.valid ? approval.status : "stale binding"} />
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedApprovalReview ? (() => {
+                const approval = selectedApprovalReview.approval;
                 return (
                 <article
                   className="approval-item"
@@ -1972,7 +2003,7 @@ export function App() {
                     </div>
                     <div className="approval-state-pills">
                       <StatusPill status={approval.status} />
-                      {!approvalReview.review.valid ? <StatusPill status="stale binding" /> : null}
+                      {!selectedApprovalReview.review.valid ? <StatusPill status="stale binding" /> : null}
                     </div>
                   </div>
                   <dl className="meta-list">
@@ -1993,8 +2024,12 @@ export function App() {
                       <dd>{scopeString(approval.one_time_scope, "workspace_id") || "default"}</dd>
                     </div>
                   </dl>
-                  <BindingReviewSummary review={approvalReview.review} />
-                  <ApprovalEvidence approval={approval} review={approvalReview.review} />
+                  <p className="approval-consequence">
+                    Approval authorizes only the exact one-time scope shown below. It does not
+                    promote, release, or trust the resulting artifact.
+                  </p>
+                  <BindingReviewSummary review={selectedApprovalReview.review} />
+                  <ApprovalEvidence approval={approval} review={selectedApprovalReview.review} />
                   <div className="decision-row">
                     <input
                       aria-label={`Deny reason for ${approval.approval_id}`}
@@ -2009,7 +2044,7 @@ export function App() {
                     />
                     <button
                       type="button"
-                      disabled={!approvalReview.review.valid || decidingApprovals[approval.approval_id]}
+                      disabled={!selectedApprovalReview.review.valid || decidingApprovals[approval.approval_id]}
                       onClick={() => void decideApproval(approval.approval_id, "deny")}
                     >
                       <X aria-hidden="true" size={16} />
@@ -2019,7 +2054,7 @@ export function App() {
                       className="primary-action"
                       type="button"
                       disabled={
-                        !approvalReview.review.valid || decidingApprovals[approval.approval_id]
+                        !selectedApprovalReview.review.valid || decidingApprovals[approval.approval_id]
                       }
                       onClick={() => void decideApproval(approval.approval_id, "approve")}
                     >
@@ -2029,7 +2064,7 @@ export function App() {
                   </div>
                 </article>
                 );
-              })}
+              })() : null}
             </div>
           )}
         </Panel>
@@ -2167,13 +2202,18 @@ export function App() {
                     approvals={selectedProposalApprovals}
                     pendingApprovalReview={selectedPendingProposalApproval}
                     proposal={selectedProposal}
-                    onOpenApproval={() =>
-                      scrollAndFocusElement(
-                        selectedPendingProposalApproval
-                          ? `approval-${selectedPendingProposalApproval.approval.approval_id}`
-                          : "approvals",
-                      )
-                    }
+                    onOpenApproval={() => {
+                      const approvalId =
+                        selectedPendingProposalApproval?.approval.approval_id ?? null;
+                      setActiveSection("approvals");
+                      if (approvalId) {
+                        setSelectedApprovalId(approvalId);
+                      }
+                      window.setTimeout(
+                        () => scrollAndFocusElement(approvalId ? `approval-${approvalId}` : "approvals"),
+                        0,
+                      );
+                    }}
                   />
                   <details className="artifact-technical-evidence">
                     <summary>Technical change evidence</summary>

@@ -702,6 +702,11 @@ describe("Review console interactions", () => {
       name: "Approval appr_123456789 for Apply demo patch",
     });
     expect(approvalArticle).toBeInTheDocument();
+    const approvalQueue = screen.getByLabelText("Pending approval queue");
+    expect(within(approvalQueue).getByRole("button")).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(approvalArticle).getByText(/does not promote, release, or trust the resulting artifact/i),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Open matching pending approval" }));
     await waitFor(() => expect(approvalArticle).toHaveFocus());
     const artifactRow = screen.getByRole("button", { name: /Artifact: demo\.txt/i });
