@@ -13,7 +13,7 @@ from ithildin_api.node_configuration import NodeConfigurationSigner
 from ithildin_audit_core import AuditWriter
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_EVIDENCE_ROOT = Path("var/node-config-poc-20260716")
+DEFAULT_EVIDENCE_ROOT = Path("var/node-config-rollback-poc-20260716")
 
 
 def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -> dict[str, Any]:
@@ -32,6 +32,12 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
         "restart_ack": root / "evidence/post-restart-generation-2-acknowledgment.json",
         "restart_heartbeat": root / "evidence/post-restart-heartbeat.json",
         "current": root / "evidence/post-restart-current-inventory.json",
+        "history": root / "evidence/pre-rollback-history.json",
+        "rollback": root / "evidence/rollback-generation-3.json",
+        "rollback_drift": root / "evidence/rollback-drift-inventory.json",
+        "stale_rollback": root / "evidence/stale-rollback-result.json",
+        "rollback_ack": root / "evidence/rollback-generation-3-acknowledgment.json",
+        "rollback_current": root / "evidence/rollback-current-inventory.json",
         "revocation": root / "evidence/revocation.json",
         "post_revocation": root / "evidence/post-revocation-result.json",
         "config_private": root / "keys/config-private.pem",
@@ -55,7 +61,8 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
         signer = NodeConfigurationSigner.load(paths["config_private"], paths["config_public"])
         with sqlite3.connect(paths["database"]) as connection:
             configuration_rows = connection.execute(
-                "SELECT generation, configuration_digest, evidence_status "
+                "SELECT generation, configuration_digest, evidence_status, assignment_kind, "
+                "rollback_source_generation "
                 "FROM node_configurations ORDER BY generation"
             ).fetchall()
             node_row = connection.execute(
@@ -85,7 +92,7 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
             "dedicated_configuration_trust_pinned": state.get("gateway_configuration_key_id")
             == signer.trust.key_id
             and state.get("gateway_configuration_public_key") == signer.trust.public_key,
-            "immutable_generations_persisted": [row[0] for row in configuration_rows] == [1, 2]
+            "immutable_generations_persisted": [row[0] for row in configuration_rows] == [1, 2, 3]
             and len({row[1] for row in configuration_rows}) == 2,
             "assignment_evidence_complete": all(row[2] == "complete" for row in configuration_rows),
             "generation_one_stored_not_enforced": documents["first_ack"].get(
@@ -104,9 +111,31 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
             == "stored_current_not_enforced"
             and documents["current"].get("desired_configuration_generation") == 2
             and documents["current"].get("acknowledged_configuration_generation") == 2,
-            "stored_bundle_matches_gateway_ack": configuration.get("generation") == 2
+            "manual_rollback_fresh_generation": documents["rollback"].get("generation") == 3
+            and documents["rollback"].get("assignment_kind") == "manual_rollback"
+            and documents["rollback"].get("rollback_source_generation") == 1
+            and configuration_rows[2][3] == "manual_rollback"
+            and configuration_rows[2][4] == 1
+            and configuration_rows[0][1] == configuration_rows[2][1],
+            "rollback_drift_observed": documents["rollback_drift"].get("configuration_state")
+            == "configuration_drift"
+            and documents["rollback_drift"].get("desired_configuration_generation") == 3
+            and documents["rollback_drift"].get("acknowledged_configuration_generation") == 2,
+            "stale_rollback_precondition_denied": documents["stale_rollback"].get(
+                "stale_expected_generation_status"
+            )
+            == 409,
+            "rollback_stored_not_enforced": documents["rollback_current"].get(
+                "configuration_state"
+            )
+            == "stored_current_not_enforced"
+            and documents["rollback_current"].get("desired_configuration_generation") == 3
+            and documents["rollback_current"].get("acknowledged_configuration_generation") == 3
+            and documents["rollback_ack"].get("configuration_acknowledgment_status")
+            == "stored_not_enforced",
+            "stored_bundle_matches_gateway_ack": configuration.get("generation") == 3
             and configuration.get("configuration_digest")
-            == documents["current"].get("acknowledged_configuration_digest"),
+            == documents["rollback_current"].get("acknowledged_configuration_digest"),
             "revocation_persisted": bool(node_row)
             and node_row[0] == "revoked"
             and documents["revocation"].get("status") == "revoked",
@@ -122,14 +151,15 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
             and private_key not in safe_outputs
             and private_key not in audit_text,
             "configuration_audit_events_present": all(
-                event_types.count(event_type) == 2
+                event_types.count(event_type) == 3
                 for event_type in (
-                    "node.configuration.assigned",
                     "node.configuration.retrieved",
                     "node.configuration.acknowledged",
                     "node.heartbeat.accepted",
                 )
-            ),
+            )
+            and event_types.count("node.configuration.assigned") == 2
+            and event_types.count("node.configuration.rollback_assigned") == 1,
             "audit_chain_valid": verification.valid,
         }
     lock = json.loads((repo_root / "tool-manifests.lock.json").read_text(encoding="utf-8"))
@@ -143,7 +173,9 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
         "schema_version": "1",
         "valid": not failures,
         "failures": failures,
-        "claim_level": "signed_configuration_distribution_and_stored_acknowledgment",
+        "claim_level": (
+            "signed_configuration_distribution_manual_rollback_and_stored_acknowledgment"
+        ),
         "non_claims": [
             "configuration_enforcement",
             "runner_health",

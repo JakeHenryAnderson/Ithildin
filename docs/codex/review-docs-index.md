@@ -36,6 +36,13 @@ externally closed.
 - [Configuration Implementation Plan](track-b-node-configuration-implementation-plan.md)
 - [Configuration Observed Results](track-b-node-configuration-observed-results.md)
 
+## Track B Node Manual Rollback
+
+- [Manual Rollback Capability Decision](track-b-node-manual-rollback-capability-decision.md)
+- [Manual Rollback Architecture](track-b-node-manual-rollback-architecture.md)
+- [Manual Rollback Implementation Plan](track-b-node-manual-rollback-implementation-plan.md)
+- [Manual Rollback Observed Results](track-b-node-manual-rollback-observed-results.md)
+
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
 - [Command Center Information Architecture](command-center-information-architecture.md)

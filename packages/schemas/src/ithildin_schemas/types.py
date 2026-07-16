@@ -57,6 +57,7 @@ class AuditEventType(StrEnum):
     NODE_HEARTBEAT_ACCEPTED = "node.heartbeat.accepted"
     NODE_REVOKED = "node.revoked"
     NODE_CONFIGURATION_ASSIGNED = "node.configuration.assigned"
+    NODE_CONFIGURATION_ROLLBACK_ASSIGNED = "node.configuration.rollback_assigned"
     NODE_CONFIGURATION_RETRIEVED = "node.configuration.retrieved"
     NODE_CONFIGURATION_ACKNOWLEDGED = "node.configuration.acknowledged"
     TOOL_LIST_REQUESTED = "tool.list.requested"

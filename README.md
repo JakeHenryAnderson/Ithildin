@@ -418,6 +418,11 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-configuration-observed-results.md](docs/codex/track-b-node-configuration-observed-results.md) - live assignment, drift, restart, storage acknowledgment, tamper denial, revocation, and audit evidence with explicit non-claims.
 - `make track-b-node-configuration-decision-check` - validate the signed-configuration slice and its enforcement/production non-claims.
 - `make track-b-node-configuration-evidence-check` - validate the ignored live configuration POC without printing enrollment or private-key material.
+- [docs/codex/track-b-node-manual-rollback-capability-decision.md](docs/codex/track-b-node-manual-rollback-capability-decision.md) - authorization and non-approvals for one-Node manual rollback as a fresh signed generation.
+- [docs/codex/track-b-node-manual-rollback-architecture.md](docs/codex/track-b-node-manual-rollback-architecture.md) - compare-and-set, immutable history, audit lineage, and fail-closed recovery semantics.
+- [docs/codex/track-b-node-manual-rollback-implementation-plan.md](docs/codex/track-b-node-manual-rollback-implementation-plan.md) - ordered backend, negative-test, Command Center, evidence, and exact-candidate work.
+- [docs/codex/track-b-node-manual-rollback-observed-results.md](docs/codex/track-b-node-manual-rollback-observed-results.md) - live restart, fresh generation 3 rollback, drift, stale-precondition denial, storage acknowledgment, revocation, and audit evidence.
+- `make track-b-node-manual-rollback-decision-check` - validate manual single-Node rollback and reject automatic/group/enforcement expansion.
 - `make node-configuration-keygen` - create the dedicated local Ed25519 Node-configuration signing keypair; private material remains mode `0600` under `var/keys/`.
 - `make node-configuration-signing-status` - report configuration trust-root availability and key ID without printing key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review

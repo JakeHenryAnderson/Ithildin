@@ -122,6 +122,43 @@ def _after_restart(api_url: str, token: str, root: Path) -> None:
     _write(root / "evidence/post-restart-heartbeat.json", heartbeat)
     inventory = _inventory(api_url, token, state.node_id)
     _write(root / "evidence/post-restart-current-inventory.json", inventory)
+
+    history = _request(api_url, f"/nodes/{state.node_id}/configurations?limit=50", token)
+    _write(root / "evidence/pre-rollback-history.json", history)
+    rollback = _request(
+        api_url,
+        f"/nodes/{state.node_id}/configurations/rollback",
+        token,
+        {"source_generation": 1, "expected_current_generation": 2},
+    )
+    _write(root / "evidence/rollback-generation-3.json", rollback)
+    drift = _inventory(api_url, token, state.node_id)
+    _write(root / "evidence/rollback-drift-inventory.json", drift)
+    stale_status = _request_error_status(
+        api_url,
+        f"/nodes/{state.node_id}/configurations/rollback",
+        token,
+        {"source_generation": 1, "expected_current_generation": 2},
+    )
+    _write(
+        root / "evidence/stale-rollback-result.json",
+        {"stale_expected_generation_status": stale_status},
+    )
+    rollback_stored = client.pull_configuration(state, known_generation=stored.generation)
+    rollback_stored.write_atomic(root / "client/current-configuration.json")
+    rollback_ack = client.acknowledge_configuration(state, rollback_stored)
+    _write(root / "evidence/rollback-generation-3-acknowledgment.json", rollback_ack)
+    rollback_heartbeat = client.heartbeat(
+        state,
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+        configuration_digest=rollback_stored.configuration_digest,
+        mission_id="mission-node-config-rollback-poc",
+    )
+    _write(root / "evidence/rollback-generation-3-heartbeat.json", rollback_heartbeat)
+    rollback_current = _inventory(api_url, token, state.node_id)
+    _write(root / "evidence/rollback-current-inventory.json", rollback_current)
     revoked = _request(api_url, f"/nodes/{state.node_id}/revoke", token, {})
     _write(root / "evidence/revocation.json", revoked)
     try:
@@ -189,6 +226,28 @@ def _required(document: JsonObject, key: str) -> str:
     if not isinstance(value, str) or not value:
         raise RuntimeError(f"Gateway response is missing {key}")
     return value
+
+
+def _request_error_status(
+    api_url: str,
+    path: str,
+    token: str,
+    payload: JsonObject,
+) -> int:
+    request = urllib.request.Request(
+        f"{api_url}{path}",
+        data=json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(request, timeout=10)
+    except urllib.error.HTTPError as exc:
+        return exc.code
+    raise RuntimeError("Gateway unexpectedly accepted stale rollback precondition")
 
 
 def _write(path: Path, document: JsonObject) -> None:

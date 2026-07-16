@@ -278,6 +278,46 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
     if (path === "/patch-apply-diagnostics") {
       return jsonResponse({ status: "clean", attempts: [], stuck_approvals: [], recommendations: [] });
     }
+    if (
+      path === "/nodes/node_11111111111111111111111111111111/configurations"
+      && init?.method === "POST"
+    ) {
+      return jsonResponse({
+        configuration_id: "ncfg_22222222222222222222222222222222",
+        generation: 2,
+        configuration_digest: "sha256:newconfiguration",
+        issued_at: "2026-07-16T12:02:00Z",
+        expires_at: "2026-07-16T13:02:00Z",
+        evidence_status: "complete",
+        assignment_kind: "direct",
+        rollback_source_generation: null,
+      });
+    }
+    if (path === "/nodes/node_11111111111111111111111111111111/configurations?limit=50") {
+      return jsonResponse({
+        node_id: "node_11111111111111111111111111111111",
+        count: 1,
+        rollback_semantics: "fresh_signed_generation",
+        enforcement_proven: false,
+        configurations: [
+          {
+            configuration_id: "ncfg_11111111111111111111111111111111",
+            generation: 1,
+            configuration_digest: "sha256:desiredconfiguration",
+            issued_at: "2026-07-16T12:00:00Z",
+            expires_at: "2026-07-16T13:00:00Z",
+            evidence_status: "complete",
+            assignment_kind: "direct",
+            rollback_source_generation: null,
+            configuration: {
+              minimum_node_version: "0.1.0",
+              heartbeat_interval_seconds: 30,
+            },
+            is_desired: true,
+          },
+        ],
+      });
+    }
     if (path === "/nodes") {
       return jsonResponse({
         nodes: [
@@ -693,7 +733,7 @@ describe("Review console interactions", () => {
   });
 
   it("presents Gateway-derived Node identity without claiming runner health", async () => {
-    installFetchMock();
+    const fetchMock = installFetchMock();
     const user = await saveToken();
     const navigation = screen.getByRole("navigation", {
       name: "Command Center sections",
@@ -713,6 +753,20 @@ describe("Review console interactions", () => {
     expect(within(nodes).getByText(/Node attests that the signed configuration is stored/i)).toBeInTheDocument();
     expect(within(nodes).getAllByText("Generation 1")).toHaveLength(2);
     expect(within(nodes).getByText("Identity source · Gateway derived")).toBeInTheDocument();
+
+    await user.click(within(nodes).getByText("Manage signed desired state"));
+    expect(await within(nodes).findByText("1 generations")).toBeInTheDocument();
+    const confirmation = within(nodes).getByRole("checkbox", {
+      name: /changes Gateway desired state for this Node only/i,
+    });
+    await user.click(confirmation);
+    await user.click(within(nodes).getByRole("button", { name: "Assign signed generation" }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/nodes/node_11111111111111111111111111111111/configurations`,
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
   });
 
   it("shows locked and empty Agent Run states without run controls", async () => {

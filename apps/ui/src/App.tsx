@@ -185,6 +185,19 @@ type IthildinNode = {
   model_health_known: false;
 };
 
+type NodeConfigurationHistoryItem = {
+  configuration_id: string;
+  generation: number;
+  configuration_digest: string;
+  issued_at: string;
+  expires_at: string;
+  evidence_status: string;
+  assignment_kind: string;
+  rollback_source_generation: number | null;
+  configuration: JsonObject;
+  is_desired: boolean;
+};
+
 type AgentRunSummary = {
   returned: number;
   filters: JsonObject;
@@ -2575,6 +2588,11 @@ export function App() {
                       <dd>{node.last_configuration_digest ? shortHash(node.last_configuration_digest) : "Unavailable"}</dd>
                     </div>
                   </dl>
+                  <NodeConfigurationControl
+                    node={node}
+                    token={token}
+                    onChanged={() => loadDashboard()}
+                  />
                   <footer>
                     <span>Identity source · Gateway derived</span>
                     <span>Config signer · {node.configuration_signing_key_id
@@ -2954,6 +2972,265 @@ export function App() {
       ) : null}
       </main>
     </div>
+  );
+}
+
+function NodeConfigurationControl({
+  node,
+  token,
+  onChanged,
+}: {
+  node: IthildinNode;
+  token: string;
+  onChanged: () => Promise<void>;
+}) {
+  const [history, setHistory] = useState<NodeConfigurationHistoryItem[] | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [minimumVersion, setMinimumVersion] = useState(
+    scopeString(node.descriptor, "node_version") || "0.1.0",
+  );
+  const [heartbeatSeconds, setHeartbeatSeconds] = useState("30");
+  const [bufferEvents, setBufferEvents] = useState("1000");
+  const [validitySeconds, setValiditySeconds] = useState("3600");
+  const [assignmentConfirmed, setAssignmentConfirmed] = useState(false);
+  const [rollbackSource, setRollbackSource] = useState("");
+  const [rollbackConfirmed, setRollbackConfirmed] = useState(false);
+
+  async function loadHistory() {
+    if (!token || loadingHistory) return;
+    setLoadingHistory(true);
+    setActionError(null);
+    try {
+      const response = await apiRequest<{ configurations: NodeConfigurationHistoryItem[] }>(
+        `/nodes/${encodeURIComponent(node.node_id)}/configurations?limit=50`,
+        token,
+      );
+      setHistory(response.configurations);
+    } catch (caught) {
+      setActionError(errorMessage(caught));
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  async function assignConfiguration(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!assignmentConfirmed) return;
+    setActionLoading(true);
+    setNotice(null);
+    setActionError(null);
+    try {
+      await apiRequest<NodeConfigurationHistoryItem>(
+        `/nodes/${encodeURIComponent(node.node_id)}/configurations`,
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            minimum_node_version: minimumVersion,
+            heartbeat_interval_seconds: Number(heartbeatSeconds),
+            offline_posture: "deny_governed_actions",
+            evidence_buffer_max_events: Number(bufferEvents),
+            validity_seconds: Number(validitySeconds),
+          }),
+        },
+      );
+      setAssignmentConfirmed(false);
+      setNotice("Fresh signed desired generation assigned to this Node only.");
+      await loadHistory();
+      await onChanged();
+    } catch (caught) {
+      setActionError(errorMessage(caught));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function rollbackConfiguration(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!rollbackConfirmed || !rollbackSource || node.desired_configuration_generation === null) {
+      return;
+    }
+    setActionLoading(true);
+    setNotice(null);
+    setActionError(null);
+    try {
+      const result = await apiRequest<NodeConfigurationHistoryItem>(
+        `/nodes/${encodeURIComponent(node.node_id)}/configurations/rollback`,
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            source_generation: Number(rollbackSource),
+            expected_current_generation: node.desired_configuration_generation,
+            validity_seconds: Number(validitySeconds),
+          }),
+        },
+      );
+      setRollbackConfirmed(false);
+      setRollbackSource("");
+      setNotice(
+        `Generation ${result.generation} assigned from generation ${result.rollback_source_generation}. Enforcement remains unknown.`,
+      );
+      await loadHistory();
+      await onChanged();
+    } catch (caught) {
+      setActionError(errorMessage(caught));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  const rollbackCandidates = (history ?? []).filter(
+    (item) =>
+      item.evidence_status === "complete"
+      && node.desired_configuration_generation !== null
+      && item.generation < node.desired_configuration_generation,
+  );
+  const actionDisabled = node.status !== "enrolled" || node.evidence_status !== "complete";
+
+  return (
+    <details
+      className="node-config-control"
+      onToggle={(event) => {
+        if (event.currentTarget.open && history === null) void loadHistory();
+      }}
+    >
+      <summary>Manage signed desired state</summary>
+      <div className="node-config-control-body">
+        <div className="node-config-control-warning">
+          <ShieldCheck aria-hidden="true" size={18} />
+          <p>
+            Actions target only this Node. A new desired generation creates drift until the Node
+            stores it. Ithildin does not know whether the runner enforces it.
+          </p>
+        </div>
+        <form onSubmit={assignConfiguration}>
+          <div className="node-config-control-heading">
+            <div>
+              <strong>Assign one-Node canary</strong>
+              <span>Fresh signed generation; no automatic rollout.</span>
+            </div>
+          </div>
+          <div className="node-config-fields">
+            <label>
+              <span>Minimum Node version</span>
+              <input
+                value={minimumVersion}
+                onChange={(event) => setMinimumVersion(event.target.value)}
+                disabled={actionDisabled || actionLoading}
+              />
+            </label>
+            <label>
+              <span>Heartbeat seconds</span>
+              <input
+                type="number"
+                min="15"
+                max="300"
+                value={heartbeatSeconds}
+                onChange={(event) => setHeartbeatSeconds(event.target.value)}
+                disabled={actionDisabled || actionLoading}
+              />
+            </label>
+            <label>
+              <span>Evidence buffer events</span>
+              <input
+                type="number"
+                min="100"
+                max="10000"
+                value={bufferEvents}
+                onChange={(event) => setBufferEvents(event.target.value)}
+                disabled={actionDisabled || actionLoading}
+              />
+            </label>
+            <label>
+              <span>Validity seconds</span>
+              <input
+                type="number"
+                min="300"
+                max="86400"
+                value={validitySeconds}
+                onChange={(event) => setValiditySeconds(event.target.value)}
+                disabled={actionDisabled || actionLoading}
+              />
+            </label>
+          </div>
+          <label className="node-config-confirmation">
+            <input
+              type="checkbox"
+              checked={assignmentConfirmed}
+              onChange={(event) => setAssignmentConfirmed(event.target.checked)}
+              disabled={actionDisabled || actionLoading}
+            />
+            <span>I confirm this changes Gateway desired state for this Node only.</span>
+          </label>
+          <button
+            className="secondary-button"
+            type="submit"
+            disabled={actionDisabled || actionLoading || !assignmentConfirmed}
+          >
+            Assign signed generation
+          </button>
+        </form>
+        <form onSubmit={rollbackConfiguration}>
+          <div className="node-config-control-heading">
+            <div>
+              <strong>Manual rollback</strong>
+              <span>Copies an earlier payload into a new signed generation.</span>
+            </div>
+            <span>{loadingHistory ? "Loading history…" : `${history?.length ?? 0} generations`}</span>
+          </div>
+          {rollbackCandidates.length > 0 ? (
+            <>
+              <label>
+                <span>Verified source generation</span>
+                <select
+                  value={rollbackSource}
+                  onChange={(event) => setRollbackSource(event.target.value)}
+                  disabled={actionDisabled || actionLoading}
+                >
+                  <option value="">Select earlier generation</option>
+                  {rollbackCandidates.map((item) => (
+                    <option key={item.configuration_id} value={item.generation}>
+                      Generation {item.generation} · {shortHash(item.configuration_digest)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="node-config-confirmation">
+                <input
+                  type="checkbox"
+                  checked={rollbackConfirmed}
+                  onChange={(event) => setRollbackConfirmed(event.target.checked)}
+                  disabled={actionDisabled || actionLoading}
+                />
+                <span>
+                  I confirm the current desired generation is {node.desired_configuration_generation}{" "}
+                  and accept the resulting storage drift.
+                </span>
+              </label>
+              <button
+                className="secondary-button"
+                type="submit"
+                disabled={actionDisabled || actionLoading || !rollbackSource || !rollbackConfirmed}
+              >
+                Create rollback generation
+              </button>
+            </>
+          ) : (
+            <p className="node-config-empty">
+              {loadingHistory
+                ? "Loading immutable history…"
+                : "No earlier evidence-complete generation is available for rollback."}
+            </p>
+          )}
+        </form>
+        {notice ? <p className="node-config-notice" role="status">{notice}</p> : null}
+        {actionError ? <p className="node-config-error" role="alert">{actionError}</p> : null}
+      </div>
+    </details>
   );
 }
 

@@ -14,6 +14,7 @@ from ithildin_api.node_configuration import (
     NodeConfigurationAcknowledgmentPayload,
     NodeConfigurationAssignmentPayload,
     NodeConfigurationConflictError,
+    NodeConfigurationRollbackPayload,
     NodeConfigurationSigner,
     NodeConfigurationSigningError,
     NodeConfigurationStore,
@@ -26,7 +27,7 @@ from ithildin_api.nodes import (
     NodeEnrollmentPayload,
     NodeStore,
 )
-from ithildin_schemas import JsonObject
+from ithildin_schemas import JsonObject, sha256_digest
 
 
 def test_configuration_signing_keypair_is_distinct_private_and_loadable(
@@ -162,6 +163,115 @@ def test_configuration_verification_rejects_target_tamper_expiry_and_manifest_dr
         )
     with pytest.raises(NodeConfigurationVerificationError, match="expired"):
         _verify(record.bundle, signer, node_id, now + timedelta(hours=2))
+    unsigned = {key: value for key, value in record.bundle.items() if key != "signature"}
+    signed_configuration = unsigned["configuration"]
+    assert isinstance(signed_configuration, dict)
+    signed_configuration["unexpected_power"] = True
+    unsigned["configuration_digest"] = sha256_digest(signed_configuration)
+    with pytest.raises(NodeConfigurationVerificationError, match="payload is invalid"):
+        _verify(signer.sign(unsigned), signer, node_id, now)
+
+
+def test_manual_rollback_creates_fresh_signed_generation_and_checks_current_state(
+    tmp_path: Path,
+) -> None:
+    node_store, configuration_store, signer, node_id = _stores(tmp_path)
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+    first = configuration_store.assign(
+        node_id=node_id,
+        payload=NodeConfigurationAssignmentPayload(minimum_node_version="0.1.0"),
+        signer=signer,
+        policy_version="test-policy-v1",
+        policy_digest="sha256:" + ("1" * 64),
+        manifest_lock_digest="sha256:" + ("2" * 64),
+        now=now,
+    )
+    configuration_store.mark_assignment_evidence_complete(node_id, first.generation)
+    second = configuration_store.assign(
+        node_id=node_id,
+        payload=NodeConfigurationAssignmentPayload(minimum_node_version="0.2.0"),
+        signer=signer,
+        policy_version="test-policy-v2",
+        policy_digest="sha256:" + ("3" * 64),
+        manifest_lock_digest="sha256:" + ("2" * 64),
+        now=now + timedelta(seconds=1),
+    )
+    configuration_store.mark_assignment_evidence_complete(node_id, second.generation)
+
+    rollback = configuration_store.rollback(
+        node_id=node_id,
+        payload=NodeConfigurationRollbackPayload(
+            source_generation=1,
+            expected_current_generation=2,
+        ),
+        signer=signer,
+        now=now + timedelta(seconds=2),
+    )
+
+    assert rollback.generation == 3
+    assert rollback.assignment_kind == "manual_rollback"
+    assert rollback.rollback_source_generation == 1
+    assert rollback.configuration_id != first.configuration_id
+    assert rollback.bundle["signature"] != first.bundle["signature"]
+    assert rollback.configuration_digest == first.configuration_digest
+    assert rollback.bundle["configuration"] == first.bundle["configuration"]
+    with pytest.raises(NodeConfigurationConflictError, match="evidence is incomplete"):
+        configuration_store.desired(node_id, now=now + timedelta(seconds=2))
+    configuration_store.mark_assignment_evidence_complete(node_id, rollback.generation)
+    assert node_store.get(node_id).summary()["configuration_state"] == "awaiting_node_storage"
+    history = configuration_store.list(node_id)
+    assert [record.generation for record in history] == [3, 2, 1]
+    verify_configuration_bundle(
+        rollback.bundle,
+        trust=signer.trust,
+        node_id=node_id,
+        principal_id=f"agent:node.{node_id}",
+        workspace_id="default",
+        minimum_generation=3,
+        expected_manifest_lock_digest="sha256:" + ("2" * 64),
+        now=now + timedelta(seconds=2),
+    )
+    with pytest.raises(NodeConfigurationVerificationError, match="generation regressed"):
+        verify_configuration_bundle(
+            first.bundle,
+            trust=signer.trust,
+            node_id=node_id,
+            principal_id=f"agent:node.{node_id}",
+            workspace_id="default",
+            minimum_generation=3,
+            expected_manifest_lock_digest="sha256:" + ("2" * 64),
+            now=now + timedelta(seconds=2),
+        )
+
+    restarted_store = NodeConfigurationStore(configuration_store.db_path)
+    restarted_store.initialize()
+    restarted = restarted_store.desired(node_id, now=now + timedelta(seconds=2))
+    assert restarted.generation == 3
+    assert restarted.rollback_source_generation == 1
+
+    with pytest.raises(NodeConfigurationConflictError, match="desired configuration changed"):
+        configuration_store.rollback(
+            node_id=node_id,
+            payload=NodeConfigurationRollbackPayload(
+                source_generation=1,
+                expected_current_generation=2,
+            ),
+            signer=signer,
+            now=now + timedelta(seconds=3),
+        )
+
+    node_store.revoke(node_id, now=now + timedelta(seconds=4))
+    node_store.mark_node_evidence_complete(node_id)
+    with pytest.raises(NodeConfigurationConflictError, match="Node is revoked"):
+        restarted_store.rollback(
+            node_id=node_id,
+            payload=NodeConfigurationRollbackPayload(
+                source_generation=1,
+                expected_current_generation=3,
+            ),
+            signer=signer,
+            now=now + timedelta(seconds=5),
+        )
 
 
 def _stores(

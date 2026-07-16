@@ -57,6 +57,7 @@ from ithildin_api.node_configuration import (
     NodeConfigurationConflictError,
     NodeConfigurationNotFoundError,
     NodeConfigurationRequestPayload,
+    NodeConfigurationRollbackPayload,
     NodeConfigurationSigner,
     NodeConfigurationSigningError,
     NodeConfigurationStore,
@@ -608,6 +609,81 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         record = cast(
             NodeConfigurationStore, api.state.node_configuration_store
         ).mark_assignment_evidence_complete(node_id, record.generation)
+        return record.summary()
+
+    @api.get(
+        "/nodes/{node_id}/configurations",
+        dependencies=[Depends(require_admin_token)],
+    )
+    def list_node_configurations(node_id: str, request: Request) -> JsonObject:
+        unexpected = sorted(set(request.query_params.keys()) - {"limit"})
+        if unexpected:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported query parameter",
+            )
+        limit = _bounded_query_limit(request.query_params.get("limit"), default=20, maximum=100)
+        try:
+            node = cast(NodeStore, api.state.node_store).get(node_id)
+        except NodeNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        records = cast(NodeConfigurationStore, api.state.node_configuration_store).list(
+            node_id, limit=limit
+        )
+        configurations: list[JsonValue] = []
+        for record in records:
+            summary = record.summary()
+            configuration = record.bundle.get("configuration")
+            summary["configuration"] = configuration if isinstance(configuration, dict) else {}
+            summary["is_desired"] = record.generation == node.desired_configuration_generation
+            configurations.append(summary)
+        return {
+            "node_id": node_id,
+            "configurations": configurations,
+            "count": len(configurations),
+            "rollback_semantics": "fresh_signed_generation",
+            "enforcement_proven": False,
+        }
+
+    @api.post(
+        "/nodes/{node_id}/configurations/rollback",
+        dependencies=[Depends(require_admin_token)],
+    )
+    def rollback_node_configuration(node_id: str, payload: JsonObject) -> JsonObject:
+        try:
+            rollback = NodeConfigurationRollbackPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node configuration rollback",
+            ) from exc
+        signer = _require_node_configuration_signer(api)
+        store = cast(NodeConfigurationStore, api.state.node_configuration_store)
+        try:
+            record = store.rollback(node_id=node_id, payload=rollback, signer=signer)
+        except NodeConfigurationNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConfigurationConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_CONFIGURATION_ROLLBACK_ASSIGNED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": "admin:local", "roles": ["Admin"]},
+            input_hash=record.configuration_digest,
+            metadata={
+                "node_id": node_id,
+                "configuration_id": record.configuration_id,
+                "generation": record.generation,
+                "configuration_digest": record.configuration_digest,
+                "rollback_source_generation": rollback.source_generation,
+                "replaced_desired_generation": rollback.expected_current_generation,
+                "evidence_status": record.evidence_status,
+                "enforcement_status": "stored_not_enforced",
+                "automatic": False,
+            },
+        )
+        record = store.mark_assignment_evidence_complete(node_id, record.generation)
         return record.summary()
 
     @api.post("/nodes/{node_id}/configuration")

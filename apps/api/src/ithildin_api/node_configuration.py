@@ -73,17 +73,41 @@ class NodeConfigurationAssignmentPayload(StrictBaseModel):
         policy_digest: str,
         manifest_lock_digest: str,
     ) -> JsonObject:
-        return {
-            "schema_version": "1",
-            "policy_version": policy_version,
-            "policy_digest": policy_digest,
-            "manifest_lock_digest": manifest_lock_digest,
-            "minimum_node_version": self.minimum_node_version,
-            "heartbeat_interval_seconds": self.heartbeat_interval_seconds,
-            "offline_posture": self.offline_posture,
-            "evidence_buffer_max_events": self.evidence_buffer_max_events,
-            "enforcement_status": CONFIGURATION_ACK_STATUS,
-        }
+        configuration = NodeDesiredConfigurationPayload(
+            policy_version=policy_version,
+            policy_digest=policy_digest,
+            manifest_lock_digest=manifest_lock_digest,
+            minimum_node_version=self.minimum_node_version,
+            heartbeat_interval_seconds=self.heartbeat_interval_seconds,
+            offline_posture=self.offline_posture,
+            evidence_buffer_max_events=self.evidence_buffer_max_events,
+        )
+        return cast(JsonObject, configuration.model_dump(mode="json"))
+
+
+class NodeDesiredConfigurationPayload(StrictBaseModel):
+    schema_version: Literal["1"] = "1"
+    policy_version: str = Field(min_length=1, max_length=128)
+    policy_digest: str = Field(pattern=SHA256_PATTERN)
+    manifest_lock_digest: str = Field(pattern=SHA256_PATTERN)
+    minimum_node_version: str = Field(min_length=1, max_length=128)
+    heartbeat_interval_seconds: int = Field(ge=15, le=300)
+    offline_posture: Literal["deny_governed_actions"]
+    evidence_buffer_max_events: int = Field(ge=100, le=10_000)
+    enforcement_status: Literal["stored_not_enforced"] = "stored_not_enforced"
+
+    @field_validator("minimum_node_version")
+    @classmethod
+    def _safe_version(cls, value: str) -> str:
+        if not _SAFE_LABEL.fullmatch(value) or ".." in value:
+            raise ValueError("unsafe Node version")
+        return value
+
+
+class NodeConfigurationRollbackPayload(StrictBaseModel):
+    source_generation: int = Field(ge=1)
+    expected_current_generation: int = Field(ge=1)
+    validity_seconds: int = Field(default=3600, ge=300, le=86_400)
 
 
 class NodeConfigurationRequestPayload(StrictBaseModel):
@@ -154,6 +178,8 @@ class NodeConfigurationRecord:
     issued_at: str
     expires_at: str
     evidence_status: str
+    assignment_kind: str
+    rollback_source_generation: int | None
 
     def summary(self, *, include_bundle: bool = False) -> JsonObject:
         result: JsonObject = {
@@ -164,6 +190,8 @@ class NodeConfigurationRecord:
             "issued_at": self.issued_at,
             "expires_at": self.expires_at,
             "evidence_status": self.evidence_status,
+            "assignment_kind": self.assignment_kind,
+            "rollback_source_generation": self.rollback_source_generation,
         }
         if include_bundle:
             result["bundle"] = self.bundle
@@ -187,6 +215,8 @@ class NodeConfigurationStore:
                     issued_at TEXT NOT NULL,
                     expires_at TEXT NOT NULL,
                     evidence_status TEXT NOT NULL,
+                    assignment_kind TEXT NOT NULL DEFAULT 'direct',
+                    rollback_source_generation INTEGER,
                     UNIQUE (node_id, generation)
                 );
                 CREATE INDEX IF NOT EXISTS idx_node_configurations_node_generation
@@ -202,6 +232,11 @@ class NodeConfigurationStore:
                 ("configuration_acknowledgment_status", "TEXT"),
             ):
                 _ensure_column(connection, "nodes", column, definition)
+            for column, definition in (
+                ("assignment_kind", "TEXT NOT NULL DEFAULT 'direct'"),
+                ("rollback_source_generation", "INTEGER"),
+            ):
+                _ensure_column(connection, "node_configurations", column, definition)
             connection.commit()
 
     def assign(
@@ -264,8 +299,9 @@ class NodeConfigurationStore:
                 """
                 INSERT INTO node_configurations (
                     configuration_id, node_id, generation, configuration_digest, bundle_json,
-                    issued_at, expires_at, evidence_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    issued_at, expires_at, evidence_status, assignment_kind,
+                    rollback_source_generation
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     configuration_id,
@@ -276,6 +312,131 @@ class NodeConfigurationStore:
                     issued_at,
                     expires_at,
                     _EVIDENCE_PENDING,
+                    "direct",
+                    None,
+                ),
+            )
+            connection.execute(
+                """
+                UPDATE nodes
+                SET desired_configuration_generation = ?, desired_configuration_digest = ?,
+                    updated_at = ?
+                WHERE node_id = ?
+                """,
+                (generation, configuration_digest, issued_at, node_id),
+            )
+            connection.commit()
+        return self.get(node_id, generation)
+
+    def rollback(
+        self,
+        *,
+        node_id: str,
+        payload: NodeConfigurationRollbackPayload,
+        signer: NodeConfigurationSigner,
+        now: datetime | None = None,
+    ) -> NodeConfigurationRecord:
+        """Clone an earlier payload into a fresh signed generation.
+
+        The old signature is never reactivated. The expected-current precondition keeps an
+        operator from rolling back over a concurrent assignment.
+        """
+        effective_now = now or datetime.now(UTC)
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            node = connection.execute(
+                """
+                SELECT principal_id, workspace_id, status, evidence_status,
+                       desired_configuration_generation
+                FROM nodes WHERE node_id = ?
+                """,
+                (node_id,),
+            ).fetchone()
+            if node is None:
+                raise NodeConfigurationNotFoundError("unknown Node")
+            if str(node[2]) != "enrolled":
+                raise NodeConfigurationConflictError("Node is revoked")
+            if str(node[3]) != _EVIDENCE_COMPLETE:
+                raise NodeConfigurationConflictError("Node evidence is incomplete")
+            current_generation = int(str(node[4])) if node[4] is not None else None
+            if current_generation != payload.expected_current_generation:
+                raise NodeConfigurationConflictError("desired configuration changed")
+            if payload.source_generation >= payload.expected_current_generation:
+                raise NodeConfigurationConflictError(
+                    "rollback source must precede the current desired generation"
+                )
+            source_row = connection.execute(
+                """
+                SELECT bundle_json, evidence_status
+                FROM node_configurations
+                WHERE node_id = ? AND generation = ?
+                """,
+                (node_id, payload.source_generation),
+            ).fetchone()
+            if source_row is None:
+                raise NodeConfigurationNotFoundError("unknown rollback source configuration")
+            if str(source_row[1]) != _EVIDENCE_COMPLETE:
+                raise NodeConfigurationConflictError("rollback source evidence is incomplete")
+            source_bundle = json.loads(str(source_row[0]))
+            if not isinstance(source_bundle, dict):
+                raise NodeConfigurationConflictError("rollback source configuration is invalid")
+            source_configuration = source_bundle.get("configuration")
+            if not isinstance(source_configuration, dict):
+                raise NodeConfigurationConflictError("rollback source configuration is invalid")
+            try:
+                configuration = NodeDesiredConfigurationPayload.model_validate(
+                    source_configuration
+                )
+            except ValueError as exc:
+                raise NodeConfigurationConflictError(
+                    "rollback source configuration is invalid"
+                ) from exc
+            previous = connection.execute(
+                "SELECT COALESCE(MAX(generation), 0) FROM node_configurations WHERE node_id = ?",
+                (node_id,),
+            ).fetchone()
+            generation = int(previous[0]) + 1
+            configuration_id = f"ncfg_{uuid4().hex}"
+            issued_at = effective_now.isoformat()
+            expires_at = (effective_now + timedelta(seconds=payload.validity_seconds)).isoformat()
+            configuration_object = cast(JsonObject, configuration.model_dump(mode="json"))
+            configuration_digest = sha256_digest(configuration_object)
+            envelope: JsonObject = {
+                "signature_type": CONFIGURATION_SIGNATURE_TYPE,
+                "format_version": CONFIGURATION_FORMAT_VERSION,
+                "configuration_id": configuration_id,
+                "generation": generation,
+                "node_id": node_id,
+                "principal_id": str(node[0]),
+                "workspace_id": str(node[1]),
+                "issued_at": issued_at,
+                "not_before": issued_at,
+                "expires_at": expires_at,
+                "configuration_digest": configuration_digest,
+                "configuration": configuration_object,
+                "assignment_kind": "manual_rollback",
+                "rollback_source_generation": payload.source_generation,
+            }
+            bundle = signer.sign(envelope)
+            connection.execute(
+                """
+                INSERT INTO node_configurations (
+                    configuration_id, node_id, generation, configuration_digest, bundle_json,
+                    issued_at, expires_at, evidence_status, assignment_kind,
+                    rollback_source_generation
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    configuration_id,
+                    node_id,
+                    generation,
+                    configuration_digest,
+                    canonical_json(bundle),
+                    issued_at,
+                    expires_at,
+                    _EVIDENCE_PENDING,
+                    "manual_rollback",
+                    payload.source_generation,
                 ),
             )
             connection.execute(
@@ -311,7 +472,8 @@ class NodeConfigurationStore:
             row = connection.execute(
                 """
                 SELECT c.configuration_id, c.node_id, c.generation, c.configuration_digest,
-                       c.bundle_json, c.issued_at, c.expires_at, c.evidence_status
+                       c.bundle_json, c.issued_at, c.expires_at, c.evidence_status,
+                       c.assignment_kind, c.rollback_source_generation
                 FROM node_configurations c
                 JOIN nodes n ON n.node_id = c.node_id
                 WHERE c.node_id = ? AND c.generation = n.desired_configuration_generation
@@ -332,7 +494,8 @@ class NodeConfigurationStore:
             row = connection.execute(
                 """
                 SELECT configuration_id, node_id, generation, configuration_digest, bundle_json,
-                       issued_at, expires_at, evidence_status
+                       issued_at, expires_at, evidence_status, assignment_kind,
+                       rollback_source_generation
                 FROM node_configurations WHERE node_id = ? AND generation = ?
                 """,
                 (node_id, generation),
@@ -340,6 +503,20 @@ class NodeConfigurationStore:
         if row is None:
             raise NodeConfigurationNotFoundError("unknown Node configuration")
         return _record(row)
+
+    def list(self, node_id: str, *, limit: int = 50) -> list[NodeConfigurationRecord]:
+        with sqlite3.connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT configuration_id, node_id, generation, configuration_digest, bundle_json,
+                       issued_at, expires_at, evidence_status, assignment_kind,
+                       rollback_source_generation
+                FROM node_configurations WHERE node_id = ?
+                ORDER BY generation DESC LIMIT ?
+                """,
+                (node_id, limit),
+            ).fetchall()
+        return [_record(row) for row in rows]
 
     def acknowledge_pending(
         self,
@@ -472,10 +649,12 @@ def verify_configuration_bundle(
     digest = _string(bundle.get("configuration_digest"), "configuration_digest")
     if sha256_digest(configuration) != digest:
         raise NodeConfigurationVerificationError("configuration digest mismatch")
-    if configuration.get("enforcement_status") != CONFIGURATION_ACK_STATUS:
-        raise NodeConfigurationVerificationError("configuration enforcement status is invalid")
+    try:
+        closed_configuration = NodeDesiredConfigurationPayload.model_validate(configuration)
+    except ValueError as exc:
+        raise NodeConfigurationVerificationError("configuration payload is invalid") from exc
     if expected_manifest_lock_digest is not None:
-        if configuration.get("manifest_lock_digest") != expected_manifest_lock_digest:
+        if closed_configuration.manifest_lock_digest != expected_manifest_lock_digest:
             raise NodeConfigurationVerificationError("manifest-lock digest mismatch")
     return bundle
 
@@ -519,6 +698,8 @@ def _record(row: tuple[object, ...]) -> NodeConfigurationRecord:
         issued_at=str(row[5]),
         expires_at=str(row[6]),
         evidence_status=str(row[7]),
+        assignment_kind=str(row[8]),
+        rollback_source_generation=int(str(row[9])) if row[9] is not None else None,
     )
 
 

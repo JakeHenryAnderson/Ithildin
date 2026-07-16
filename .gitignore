@@ -27,6 +27,7 @@ var/agent-delegation/*
 var/hermes-poc/*
 var/node-poc-*/
 var/node-config-poc-*/
+var/node-config-rollback-poc-*/
 var/review-packets/*
 var/review-runs/*
 var/signatures/*

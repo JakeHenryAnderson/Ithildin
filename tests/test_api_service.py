@@ -23,7 +23,11 @@ from ithildin_api.manifest_lock import (
     write_manifest_lock,
     write_manifest_lock_signature,
 )
-from ithildin_api.node_configuration import generate_node_configuration_signing_keypair
+from ithildin_api.node_configuration import (
+    NodeConfigurationConflictError,
+    NodeConfigurationStore,
+    generate_node_configuration_signing_keypair,
+)
 from ithildin_api.nodes import NodeHeartbeatPayload, canonical_signature_message
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
 from ithildin_api.registry import ToolRegistry
@@ -2917,7 +2921,8 @@ def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
             format=serialization.PublicFormat.Raw,
         )
     ).decode()
-    with TestClient(create_app(settings)) as client:
+    api = create_app(settings)
+    with TestClient(api) as client:
         issued = client.post(
             "/nodes/enrollment-codes",
             headers=admin_headers,
@@ -3000,6 +3005,28 @@ def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
         inventory = client.get(f"/nodes/{node_id}", headers=admin_headers)
         assert inventory.json()["configuration_state"] == "configuration_drift"
 
+        history = client.get(f"/nodes/{node_id}/configurations", headers=admin_headers)
+        assert history.status_code == 200
+        assert [item["generation"] for item in history.json()["configurations"]] == [2, 1]
+        assert history.json()["configurations"][0]["is_desired"] is True
+        assert history.json()["rollback_semantics"] == "fresh_signed_generation"
+        rollback = client.post(
+            f"/nodes/{node_id}/configurations/rollback",
+            headers=admin_headers,
+            json={"source_generation": 1, "expected_current_generation": 2},
+        )
+        assert rollback.status_code == 200
+        assert rollback.json()["generation"] == 3
+        assert rollback.json()["assignment_kind"] == "manual_rollback"
+        assert rollback.json()["rollback_source_generation"] == 1
+        concurrent_rollback = client.post(
+            f"/nodes/{node_id}/configurations/rollback",
+            headers=admin_headers,
+            json={"source_generation": 1, "expected_current_generation": 2},
+        )
+        assert concurrent_rollback.status_code == 409
+        assert concurrent_rollback.json()["detail"] == "desired configuration changed"
+
         stale_ack = client.post(
             acknowledgment_path,
             headers=_signed_node_headers(
@@ -3014,10 +3041,29 @@ def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
         assert stale_ack.status_code == 409
         assert stale_ack.json()["detail"] == "configuration acknowledgment is not current"
 
+        class FailingAuditWriter:
+            def write_event(self, **_: object) -> None:
+                raise RuntimeError("simulated rollback audit failure")
+
+        api.state.audit_writer = FailingAuditWriter()
+        with pytest.raises(RuntimeError, match="simulated rollback audit failure"):
+            client.post(
+                f"/nodes/{node_id}/configurations/rollback",
+                headers=admin_headers,
+                json={"source_generation": 2, "expected_current_generation": 3},
+            )
+        configuration_store = NodeConfigurationStore(settings.db_path)
+        failed_history = configuration_store.list(node_id)
+        assert failed_history[0].generation == 4
+        assert failed_history[0].evidence_status == "pending"
+        with pytest.raises(NodeConfigurationConflictError, match="evidence is incomplete"):
+            configuration_store.desired(node_id)
+
     audit_text = settings.audit_log_path.read_text(encoding="utf-8")
     assert "node.configuration.assigned" in audit_text
     assert "node.configuration.retrieved" in audit_text
     assert "node.configuration.acknowledged" in audit_text
+    assert "node.configuration.rollback_assigned" in audit_text
     assert "stored_not_enforced" in audit_text
 
 
