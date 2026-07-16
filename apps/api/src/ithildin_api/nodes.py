@@ -21,6 +21,8 @@ from ithildin_schemas import JsonObject, canonical_json, sha256_digest
 from ithildin_schemas.models import SHA256_PATTERN, StrictBaseModel
 from pydantic import Field, field_validator
 
+from ithildin_api.node_configuration import configuration_state
+
 NODE_PROTOCOL_VERSION = "1"
 NODE_SIGNATURE_CONTEXT = "ITHILDIN-NODE-V1"
 NODE_PRINCIPAL_PREFIX = "agent:node."
@@ -153,6 +155,12 @@ class NodeRecord:
     last_heartbeat_hash: str | None
     last_configuration_digest: str | None
     last_mission_id: str | None
+    desired_configuration_generation: int | None
+    desired_configuration_digest: str | None
+    acknowledged_configuration_generation: int | None
+    acknowledged_configuration_digest: str | None
+    configuration_acknowledged_at: str | None
+    configuration_acknowledgment_status: str | None
 
     def summary(
         self,
@@ -184,6 +192,21 @@ class NodeRecord:
             "last_heartbeat_hash": self.last_heartbeat_hash,
             "last_configuration_digest": self.last_configuration_digest,
             "last_mission_id": self.last_mission_id,
+            "desired_configuration_generation": self.desired_configuration_generation,
+            "desired_configuration_digest": self.desired_configuration_digest,
+            "acknowledged_configuration_generation": self.acknowledged_configuration_generation,
+            "acknowledged_configuration_digest": self.acknowledged_configuration_digest,
+            "configuration_acknowledged_at": self.configuration_acknowledged_at,
+            "configuration_acknowledgment_status": self.configuration_acknowledgment_status,
+            "configuration_state": configuration_state(
+                node_status=self.status,
+                node_evidence_status=self.evidence_status,
+                desired_generation=self.desired_configuration_generation,
+                desired_digest=self.desired_configuration_digest,
+                acknowledged_generation=self.acknowledged_configuration_generation,
+                acknowledged_digest=self.acknowledged_configuration_digest,
+                acknowledgment_status=self.configuration_acknowledgment_status,
+            ),
             "identity_source": "gateway_derived",
             "connectivity_source": "gateway_accepted_heartbeat",
             "runner_health_known": False,
@@ -227,7 +250,13 @@ class NodeStore:
                     revoked_at TEXT,
                     last_heartbeat_hash TEXT,
                     last_configuration_digest TEXT,
-                    last_mission_id TEXT
+                    last_mission_id TEXT,
+                    desired_configuration_generation INTEGER,
+                    desired_configuration_digest TEXT,
+                    acknowledged_configuration_generation INTEGER,
+                    acknowledged_configuration_digest TEXT,
+                    configuration_acknowledged_at TEXT,
+                    configuration_acknowledgment_status TEXT
                 );
                 CREATE INDEX IF NOT EXISTS idx_nodes_updated_at ON nodes(updated_at);
                 CREATE TABLE IF NOT EXISTS node_nonces (
@@ -246,6 +275,20 @@ class NodeStore:
                 column="evidence_status",
                 definition="TEXT NOT NULL DEFAULT 'complete'",
             )
+            for column, definition in (
+                ("desired_configuration_generation", "INTEGER"),
+                ("desired_configuration_digest", "TEXT"),
+                ("acknowledged_configuration_generation", "INTEGER"),
+                ("acknowledged_configuration_digest", "TEXT"),
+                ("configuration_acknowledged_at", "TEXT"),
+                ("configuration_acknowledgment_status", "TEXT"),
+            ):
+                _ensure_column(
+                    connection,
+                    table="nodes",
+                    column=column,
+                    definition=definition,
+                )
             _ensure_column(
                 connection,
                 table="nodes",
@@ -398,6 +441,9 @@ class NodeStore:
                        public_key,
                        descriptor_hash, descriptor_json, enrolled_at, updated_at, last_seen_at,
                        revoked_at, last_heartbeat_hash, last_configuration_digest, last_mission_id
+                       , desired_configuration_generation, desired_configuration_digest,
+                       acknowledged_configuration_generation, acknowledged_configuration_digest,
+                       configuration_acknowledged_at, configuration_acknowledgment_status
                 FROM nodes WHERE node_id = ?
                 """,
                 (node_id,),
@@ -415,6 +461,9 @@ class NodeStore:
                        public_key,
                        descriptor_hash, descriptor_json, enrolled_at, updated_at, last_seen_at,
                        revoked_at, last_heartbeat_hash, last_configuration_digest, last_mission_id
+                       , desired_configuration_generation, desired_configuration_digest,
+                       acknowledged_configuration_generation, acknowledged_configuration_digest,
+                       configuration_acknowledged_at, configuration_acknowledgment_status
                 FROM nodes ORDER BY updated_at DESC LIMIT ?
                 """,
                 (bounded_limit,),
@@ -529,6 +578,65 @@ class NodeStore:
             connection.commit()
         return self.get(node_id)
 
+    def authenticate_request(
+        self,
+        *,
+        node_id: str,
+        timestamp: str,
+        nonce: str,
+        signature: str,
+        body: JsonObject,
+        path: str,
+        max_clock_skew_seconds: int,
+        now: datetime | None = None,
+    ) -> NodeRecord:
+        """Authenticate a non-heartbeat Node request and consume its replay nonce."""
+        effective_now = now or datetime.now(UTC)
+        if not _NONCE_PATTERN.fullmatch(nonce):
+            raise NodeAuthenticationError("invalid Node nonce")
+        try:
+            timestamp_value = int(timestamp)
+        except ValueError as exc:
+            raise NodeAuthenticationError("invalid Node timestamp") from exc
+        if abs(int(effective_now.timestamp()) - timestamp_value) > max_clock_skew_seconds:
+            raise NodeAuthenticationError("stale Node timestamp")
+        record = self.get(node_id)
+        if record.status != _ACTIVE_STATUS:
+            raise NodeAuthenticationError("Node is revoked")
+        if record.evidence_status != _EVIDENCE_COMPLETE:
+            raise NodeAuthenticationError("Node evidence is incomplete")
+        message = canonical_signature_message(
+            method="POST",
+            path=path,
+            timestamp=timestamp,
+            nonce=nonce,
+            body_hash=sha256_digest(body),
+        )
+        _verify_signature(record.public_key, signature, message)
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT status, evidence_status, public_key FROM nodes WHERE node_id = ?",
+                (node_id,),
+            ).fetchone()
+            if current is None:
+                raise NodeAuthenticationError("unknown Node")
+            if (
+                str(current[0]) != _ACTIVE_STATUS
+                or str(current[1]) != _EVIDENCE_COMPLETE
+                or str(current[2]) != record.public_key
+            ):
+                raise NodeAuthenticationError("Node is not active")
+            try:
+                connection.execute(
+                    "INSERT INTO node_nonces (node_id, nonce, accepted_at) VALUES (?, ?, ?)",
+                    (node_id, nonce, effective_now.isoformat()),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise NodeAuthenticationError("replayed Node nonce") from exc
+            connection.commit()
+        return record
+
 
 def canonical_signature_message(
     *, method: str, path: str, timestamp: str, nonce: str, body_hash: str
@@ -581,6 +689,14 @@ def _record(row: tuple[object, ...]) -> NodeRecord:
         last_heartbeat_hash=str(row[13]) if row[13] is not None else None,
         last_configuration_digest=str(row[14]) if row[14] is not None else None,
         last_mission_id=str(row[15]) if row[15] is not None else None,
+        desired_configuration_generation=int(str(row[16])) if row[16] is not None else None,
+        desired_configuration_digest=str(row[17]) if row[17] is not None else None,
+        acknowledged_configuration_generation=(
+            int(str(row[18])) if row[18] is not None else None
+        ),
+        acknowledged_configuration_digest=str(row[19]) if row[19] is not None else None,
+        configuration_acknowledged_at=str(row[20]) if row[20] is not None else None,
+        configuration_acknowledgment_status=str(row[21]) if row[21] is not None else None,
     )
 
 

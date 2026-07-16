@@ -23,12 +23,13 @@ from ithildin_api.manifest_lock import (
     write_manifest_lock,
     write_manifest_lock_signature,
 )
+from ithildin_api.node_configuration import generate_node_configuration_signing_keypair
 from ithildin_api.nodes import NodeHeartbeatPayload, canonical_signature_message
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
-from ithildin_schemas import AuditEventType, sha256_digest
+from ithildin_schemas import AuditEventType, JsonObject, sha256_digest
 from pydantic import ValidationError
 
 
@@ -85,6 +86,28 @@ workspaces:
 """,
         encoding="utf-8",
     )
+    manifest_lock_path = tmp_path / "tool-manifests.lock.json"
+    if not manifest_lock_path.exists():
+        manifest_lock_path.write_text(
+            json.dumps(
+                {
+                    "lockfile_version": 1,
+                    "manifest_dir": "tool-manifests",
+                    "manifests": [],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    node_configuration_private_key = tmp_path / "keys" / "node-config-private.pem"
+    node_configuration_public_key = tmp_path / "keys" / "node-config-public.pem"
+    if not node_configuration_private_key.exists():
+        generate_node_configuration_signing_keypair(
+            node_configuration_private_key,
+            node_configuration_public_key,
+        )
     return Settings(
         admin_token=token,
         audit_log_path=tmp_path / "audit.jsonl",
@@ -93,9 +116,12 @@ workspaces:
         db_path=tmp_path / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
         require_manifest_lock=False,
+        manifest_lock_path=manifest_lock_path,
         manifest_lock_signing_private_key_path=tmp_path / "keys" / "manifest-private.pem",
         manifest_lock_signing_public_key_path=tmp_path / "keys" / "manifest-public.pem",
         manifest_lock_signature_path=tmp_path / "signatures" / "tool-manifests.lock.sig.json",
+        node_configuration_signing_private_key_path=node_configuration_private_key,
+        node_configuration_signing_public_key_path=node_configuration_public_key,
         policy_path=policy_path,
         policy_tests_path=policy_tests_path,
         workspace_root=workspace_root,
@@ -2879,9 +2905,149 @@ def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Pat
     assert "node.revoked" in audit_text
 
 
+def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    public_key = base64.b64encode(
+        private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+    ).decode()
+    with TestClient(create_app(settings)) as client:
+        issued = client.post(
+            "/nodes/enrollment-codes",
+            headers=admin_headers,
+            json={"workspace_id": "default", "display_name": "Configuration Node"},
+        )
+        enrollment = client.post(
+            "/nodes/enroll",
+            json={
+                "enrollment_code": issued.json()["enrollment_code"],
+                "public_key": public_key,
+                "protocol_version": "1",
+                "node_version": "0.1.0",
+                "runner_adapter": "hermes",
+                "deployment_topology": "docker_sidecar",
+            },
+        )
+        assert enrollment.status_code == 200
+        node_id = enrollment.json()["node_id"]
+        assert enrollment.json()["configuration_trust"]["key_id"].startswith("sha256:")
+
+        assigned = client.post(
+            f"/nodes/{node_id}/configurations",
+            headers=admin_headers,
+            json={
+                "minimum_node_version": "0.1.0",
+                "heartbeat_interval_seconds": 30,
+                "offline_posture": "deny_governed_actions",
+                "evidence_buffer_max_events": 1000,
+                "validity_seconds": 3600,
+            },
+        )
+        assert assigned.status_code == 200
+        assert assigned.json()["generation"] == 1
+        request_payload: JsonObject = {"protocol_version": "1", "known_generation": 0}
+        request_path = f"/nodes/{node_id}/configuration"
+        request_headers = _signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=request_path,
+            payload=request_payload,
+            nonce="7" * 32,
+        )
+        retrieved = client.post(request_path, headers=request_headers, json=request_payload)
+        assert retrieved.status_code == 200
+        assert retrieved.json()["node_id"] == node_id
+        assert retrieved.json()["configuration"]["enforcement_status"] == "stored_not_enforced"
+        replay = client.post(request_path, headers=request_headers, json=request_payload)
+        assert replay.status_code == 401
+        assert replay.json()["detail"] == "replayed Node nonce"
+
+        acknowledgment_payload = {
+            "protocol_version": "1",
+            "generation": 1,
+            "configuration_digest": retrieved.json()["configuration_digest"],
+            "status": "stored_not_enforced",
+        }
+        acknowledgment_path = f"/nodes/{node_id}/configuration/acknowledgments"
+        acknowledged = client.post(
+            acknowledgment_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=acknowledgment_path,
+                payload=acknowledgment_payload,
+                nonce="8" * 32,
+            ),
+            json=acknowledgment_payload,
+        )
+        assert acknowledged.status_code == 200
+        assert acknowledged.json()["configuration_state"] == "stored_current_not_enforced"
+        assert acknowledged.json()["configuration_acknowledgment_status"] == "stored_not_enforced"
+
+        second = client.post(
+            f"/nodes/{node_id}/configurations",
+            headers=admin_headers,
+            json={"minimum_node_version": "0.2.0"},
+        )
+        assert second.status_code == 200
+        assert second.json()["generation"] == 2
+        inventory = client.get(f"/nodes/{node_id}", headers=admin_headers)
+        assert inventory.json()["configuration_state"] == "configuration_drift"
+
+        stale_ack = client.post(
+            acknowledgment_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=acknowledgment_path,
+                payload=acknowledgment_payload,
+                nonce="9" * 32,
+            ),
+            json=acknowledgment_payload,
+        )
+        assert stale_ack.status_code == 409
+        assert stale_ack.json()["detail"] == "configuration acknowledgment is not current"
+
+    audit_text = settings.audit_log_path.read_text(encoding="utf-8")
+    assert "node.configuration.assigned" in audit_text
+    assert "node.configuration.retrieved" in audit_text
+    assert "node.configuration.acknowledged" in audit_text
+    assert "stored_not_enforced" in audit_text
+
+
 def _row_count(db_path: Path, table_name: str) -> int:
     with sqlite3.connect(db_path) as connection:
         return int(connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0])
+
+
+def _signed_node_headers(
+    private_key: Ed25519PrivateKey,
+    *,
+    node_id: str,
+    path: str,
+    payload: JsonObject,
+    nonce: str,
+) -> dict[str, str]:
+    timestamp = str(int(datetime.now(UTC).timestamp()))
+    message = canonical_signature_message(
+        method="POST",
+        path=path,
+        timestamp=timestamp,
+        nonce=nonce,
+        body_hash=sha256_digest(payload),
+    )
+    return {
+        "X-Ithildin-Node": node_id,
+        "X-Ithildin-Timestamp": timestamp,
+        "X-Ithildin-Nonce": nonce,
+        "X-Ithildin-Signature": base64.b64encode(private_key.sign(message)).decode(),
+    }
 
 
 def write_opa_bundle(tmp_path: Path) -> Path:

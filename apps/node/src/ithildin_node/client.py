@@ -17,7 +17,16 @@ from pathlib import Path
 from typing import cast
 
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
+from ithildin_api.node_configuration import (
+    CONFIGURATION_ACK_STATUS,
+    NodeConfigurationTrust,
+    NodeConfigurationVerificationError,
+    verify_configuration_bundle,
+)
 from ithildin_api.nodes import NODE_PROTOCOL_VERSION, canonical_signature_message
 from ithildin_schemas import JsonObject, canonical_json, sha256_digest
 
@@ -43,6 +52,9 @@ class NodeState:
     private_key: str
     public_key: str
     enrolled_at: str
+    gateway_configuration_key_id: str
+    gateway_configuration_public_key: str
+    gateway_manifest_lock_digest: str
 
     def safe_summary(self) -> JsonObject:
         return {
@@ -52,6 +64,8 @@ class NodeState:
             "workspace_id": self.workspace_id,
             "enrolled_at": self.enrolled_at,
             "private_key_present": True,
+            "configuration_trust_key_id": self.gateway_configuration_key_id,
+            "manifest_lock_digest": self.gateway_manifest_lock_digest,
         }
 
     def _document(self) -> JsonObject:
@@ -59,6 +73,9 @@ class NodeState:
             **self.safe_summary(),
             "private_key": self.private_key,
             "public_key": self.public_key,
+            "gateway_configuration_key_id": self.gateway_configuration_key_id,
+            "gateway_configuration_public_key": self.gateway_configuration_public_key,
+            "gateway_manifest_lock_digest": self.gateway_manifest_lock_digest,
         }
 
     def write_new(self, path: Path) -> None:
@@ -107,6 +124,11 @@ class NodeState:
                 private_key=str(document["private_key"]),
                 public_key=str(document["public_key"]),
                 enrolled_at=str(document["enrolled_at"]),
+                gateway_configuration_key_id=str(document["gateway_configuration_key_id"]),
+                gateway_configuration_public_key=str(
+                    document["gateway_configuration_public_key"]
+                ),
+                gateway_manifest_lock_digest=str(document["gateway_manifest_lock_digest"]),
             )
         except NodeClientError:
             raise
@@ -119,7 +141,60 @@ class NodeState:
         if state.principal_id != f"agent:node.{state.node_id}":
             raise NodeClientError("Node state identity binding is invalid")
         _private_key(state.private_key)
+        _configuration_trust(state)
         return state
+
+
+@dataclass(frozen=True)
+class StoredNodeConfiguration:
+    bundle: JsonObject
+
+    @property
+    def generation(self) -> int:
+        value = self.bundle.get("generation")
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise NodeClientError("stored configuration generation is invalid")
+        return value
+
+    @property
+    def configuration_digest(self) -> str:
+        return _required_string(self.bundle, "configuration_digest")
+
+    def safe_summary(self) -> JsonObject:
+        return {
+            "configuration_id": _required_string(self.bundle, "configuration_id"),
+            "generation": self.generation,
+            "configuration_digest": self.configuration_digest,
+            "expires_at": _required_string(self.bundle, "expires_at"),
+            "status": CONFIGURATION_ACK_STATUS,
+            "enforcement_proven": False,
+        }
+
+    def write_atomic(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(f".{path.name}.{secrets.token_hex(16)}.tmp")
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        try:
+            descriptor = os.open(temporary, flags, 0o600)
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(canonical_json(self.bundle).encode())
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, path)
+            directory_descriptor = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory_descriptor)
+            finally:
+                os.close(directory_descriptor)
+        except OSError as exc:
+            raise NodeClientError("failed to store verified Node configuration") from exc
+
+    @classmethod
+    def load(cls, path: Path) -> StoredNodeConfiguration:
+        document = _read_private_json(path, label="Node configuration")
+        return cls(bundle=document)
 
 
 class NodeClient:
@@ -160,6 +235,9 @@ class NodeClient:
                 "deployment_topology": deployment_topology,
             },
         )
+        trust = response.get("configuration_trust")
+        if not isinstance(trust, dict):
+            raise NodeClientError("Gateway enrollment response is incomplete")
         return NodeState(
             api_url=self.api_url,
             node_id=_required_string(response, "node_id"),
@@ -168,6 +246,13 @@ class NodeClient:
             private_key=private_key_text,
             public_key=public_key_text,
             enrolled_at=_required_string(response, "enrolled_at"),
+            gateway_configuration_key_id=_required_string(trust, "key_id"),
+            gateway_configuration_public_key=_required_string(
+                trust, "public_key"
+            ),
+            gateway_manifest_lock_digest=_required_string(
+                response, "manifest_lock_digest"
+            ),
         )
 
     def heartbeat(
@@ -182,10 +267,6 @@ class NodeClient:
         now: datetime | None = None,
         nonce: str | None = None,
     ) -> JsonObject:
-        if state.api_url != self.api_url:
-            raise NodeClientError("Node state API binding mismatch")
-        timestamp = str(int((now or datetime.now(UTC)).timestamp()))
-        effective_nonce = nonce or secrets.token_hex(16)
         payload: JsonObject = {
             "protocol_version": NODE_PROTOCOL_VERSION,
             "node_version": node_version,
@@ -195,7 +276,81 @@ class NodeClient:
         }
         if mission_id is not None:
             payload["mission_id"] = mission_id
-        path = f"/nodes/{state.node_id}/heartbeat"
+        return self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/heartbeat",
+            payload,
+            now=now,
+            nonce=nonce,
+        )
+
+    def pull_configuration(
+        self,
+        state: NodeState,
+        *,
+        known_generation: int | None = None,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> StoredNodeConfiguration:
+        payload: JsonObject = {"protocol_version": NODE_PROTOCOL_VERSION}
+        if known_generation is not None:
+            payload["known_generation"] = known_generation
+        bundle = self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/configuration",
+            payload,
+            now=now,
+            nonce=nonce,
+        )
+        try:
+            verified = verify_configuration_bundle(
+                bundle,
+                trust=_configuration_trust(state),
+                node_id=state.node_id,
+                principal_id=state.principal_id,
+                workspace_id=state.workspace_id,
+                minimum_generation=known_generation or 0,
+                expected_manifest_lock_digest=state.gateway_manifest_lock_digest,
+                now=now,
+            )
+        except NodeConfigurationVerificationError as exc:
+            raise NodeClientError(str(exc)) from exc
+        return StoredNodeConfiguration(bundle=verified)
+
+    def acknowledge_configuration(
+        self,
+        state: NodeState,
+        configuration: StoredNodeConfiguration,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject:
+        return self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/configuration/acknowledgments",
+            {
+                "protocol_version": NODE_PROTOCOL_VERSION,
+                "generation": configuration.generation,
+                "configuration_digest": configuration.configuration_digest,
+                "status": CONFIGURATION_ACK_STATUS,
+            },
+            now=now,
+            nonce=nonce,
+        )
+
+    def _signed_post(
+        self,
+        state: NodeState,
+        path: str,
+        payload: JsonObject,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject:
+        if state.api_url != self.api_url:
+            raise NodeClientError("Node state API binding mismatch")
+        timestamp = str(int((now or datetime.now(UTC)).timestamp()))
+        effective_nonce = nonce or secrets.token_hex(16)
         message = canonical_signature_message(
             method="POST",
             path=path,
@@ -261,6 +416,49 @@ def _private_key(value: str) -> Ed25519PrivateKey:
         return Ed25519PrivateKey.from_private_bytes(decoded)
     except (binascii.Error, ValueError, TypeError) as exc:
         raise NodeClientError("Node private key is invalid") from exc
+
+
+def _configuration_trust(state: NodeState) -> NodeConfigurationTrust:
+    try:
+        public_key = base64.b64decode(
+            state.gateway_configuration_public_key, validate=True
+        )
+        if len(public_key) != 32:
+            raise ValueError
+        Ed25519PublicKey.from_public_bytes(public_key)
+    except (binascii.Error, ValueError) as exc:
+        raise NodeClientError("Gateway configuration trust is invalid") from exc
+    return NodeConfigurationTrust(
+        key_id=state.gateway_configuration_key_id,
+        public_key=state.gateway_configuration_public_key,
+    )
+
+
+def _read_private_json(path: Path, *, label: str) -> JsonObject:
+    flags = os.O_RDONLY | (os.O_NOFOLLOW if hasattr(os, "O_NOFOLLOW") else 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as exc:
+        raise NodeClientError(f"{label} is unavailable") from exc
+    try:
+        status = os.fstat(descriptor)
+        if not stat.S_ISREG(status.st_mode):
+            raise NodeClientError(f"{label} must be a regular file")
+        if stat.S_IMODE(status.st_mode) & 0o077:
+            raise NodeClientError(f"{label} permissions must be 0600")
+        with os.fdopen(descriptor, "r", encoding="utf-8") as handle:
+            descriptor = -1
+            document = json.load(handle)
+    except NodeClientError:
+        raise
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise NodeClientError(f"{label} is invalid") from exc
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    if not isinstance(document, dict):
+        raise NodeClientError(f"{label} is invalid")
+    return cast(JsonObject, document)
 
 
 def _required_string(document: JsonObject, key: str) -> str:

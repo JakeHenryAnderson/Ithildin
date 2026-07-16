@@ -3324,7 +3324,7 @@ td,
 .node-metrics {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0 0 16px;
 }
 
@@ -3404,6 +3404,42 @@ td,
   gap: 1px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 14px 0;
+}
+
+.node-configuration-posture {
+  align-items: center;
+  background: #102b39;
+  border: 1px solid #315565;
+  border-left: 3px solid #58aeb2;
+  display: grid;
+  gap: 6px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 14px;
+  padding: 10px 12px;
+}
+
+.node-configuration-posture span:first-child {
+  color: #829dab;
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.node-configuration-posture strong {
+  color: #e0eff1;
+  display: block;
+  font-size: 0.85rem;
+  margin-top: 2px;
+  text-transform: capitalize;
+}
+
+.node-configuration-posture p {
+  color: #91aab6;
+  font-size: 0.72rem;
+  grid-column: 1 / -1;
+  margin: 0;
 }
 
 .node-card dl div {

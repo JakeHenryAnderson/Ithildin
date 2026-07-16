@@ -7,9 +7,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
+from ithildin_api.node_configuration import (
+    NodeConfigurationSigner,
+    NodeConfigurationTrust,
+)
 from ithildin_api.nodes import canonical_signature_message
-from ithildin_node.client import NodeClient, NodeClientError, NodeState
+from ithildin_node.client import (
+    NodeClient,
+    NodeClientError,
+    NodeState,
+    StoredNodeConfiguration,
+)
 from ithildin_schemas import JsonObject, sha256_digest
 
 
@@ -17,6 +29,17 @@ class RecordingNodeClient(NodeClient):
     def __init__(self) -> None:
         super().__init__("http://127.0.0.1:8000")
         self.requests: list[tuple[str, JsonObject, dict[str, str]]] = []
+        self.configuration_private_key = Ed25519PrivateKey.generate()
+        self.configuration_public_key = base64.b64encode(
+            self.configuration_private_key.public_key().public_bytes_raw()
+        ).decode()
+        self.configuration_signer = NodeConfigurationSigner(
+            private_key=self.configuration_private_key,
+            trust=NodeConfigurationTrust(
+                key_id=sha256_digest(self.configuration_public_key),
+                public_key=self.configuration_public_key,
+            ),
+        )
 
     def _post(
         self,
@@ -32,6 +55,43 @@ class RecordingNodeClient(NodeClient):
                 "principal_id": "agent:node.node_" + ("1" * 32),
                 "workspace_id": "default",
                 "enrolled_at": "2026-07-16T12:00:00+00:00",
+                "configuration_trust": {
+                    "key_id": sha256_digest(self.configuration_public_key),
+                    "public_key": self.configuration_public_key,
+                },
+                "manifest_lock_digest": "sha256:" + ("a" * 64),
+            }
+        if path.endswith("/configuration"):
+            configuration: JsonObject = {
+                "schema_version": "1",
+                "policy_version": "test-policy-v1",
+                "policy_digest": "sha256:" + ("b" * 64),
+                "manifest_lock_digest": "sha256:" + ("a" * 64),
+                "minimum_node_version": "0.1.0",
+                "heartbeat_interval_seconds": 30,
+                "offline_posture": "deny_governed_actions",
+                "evidence_buffer_max_events": 1000,
+                "enforcement_status": "stored_not_enforced",
+            }
+            envelope: JsonObject = {
+                "signature_type": "ithildin.node_configuration",
+                "format_version": "1",
+                "configuration_id": "ncfg_" + ("2" * 32),
+                "generation": 1,
+                "node_id": "node_" + ("1" * 32),
+                "principal_id": "agent:node.node_" + ("1" * 32),
+                "workspace_id": "default",
+                "issued_at": "2026-07-16T12:00:00+00:00",
+                "not_before": "2026-07-16T12:00:00+00:00",
+                "expires_at": "2026-07-16T13:00:00+00:00",
+                "configuration_digest": sha256_digest(configuration),
+                "configuration": configuration,
+            }
+            return self.configuration_signer.sign(envelope)
+        if path.endswith("/configuration/acknowledgments"):
+            return {
+                "configuration_state": "stored_current_not_enforced",
+                "configuration_acknowledgment_status": "stored_not_enforced",
             }
         return {"status": "enrolled", "observed_state": "observed_connected"}
 
@@ -101,6 +161,30 @@ def test_client_heartbeat_signature_binds_path_timestamp_nonce_and_body() -> Non
     assert headers["X-Ithildin-Node"] == state.node_id
     assert headers["X-Ithildin-Timestamp"] == timestamp
     assert headers["X-Ithildin-Nonce"] == nonce
+
+
+def test_client_verifies_stores_and_acknowledges_configuration(tmp_path: Path) -> None:
+    client = RecordingNodeClient()
+    state = client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    now = datetime(2026, 7, 16, 12, 5, tzinfo=UTC)
+
+    configuration = client.pull_configuration(state, known_generation=0, now=now)
+    output = tmp_path / "configuration" / "current.json"
+    configuration.write_atomic(output)
+    acknowledged = client.acknowledge_configuration(state, configuration, now=now)
+
+    assert stat.S_IMODE(output.stat().st_mode) == 0o600
+    assert StoredNodeConfiguration.load(output) == configuration
+    assert configuration.safe_summary()["status"] == "stored_not_enforced"
+    assert configuration.safe_summary()["enforcement_proven"] is False
+    assert acknowledged["configuration_state"] == "stored_current_not_enforced"
+    assert client.requests[-2][0].endswith("/configuration")
+    assert client.requests[-1][0].endswith("/configuration/acknowledgments")
 
 
 @pytest.mark.parametrize(

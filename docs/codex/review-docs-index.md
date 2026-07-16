@@ -29,6 +29,13 @@ externally closed.
 - [Node Implementation Plan](track-b-node-implementation-plan.md)
 - [Node Observed Results](track-b-node-observed-results.md)
 
+## Track B Node Signed Configuration
+
+- [Configuration Capability Decision](track-b-node-configuration-capability-decision.md)
+- [Signed Configuration Architecture](track-b-node-configuration-architecture.md)
+- [Configuration Implementation Plan](track-b-node-configuration-implementation-plan.md)
+- [Configuration Observed Results](track-b-node-configuration-observed-results.md)
+
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
 - [Command Center Information Architecture](command-center-information-architecture.md)

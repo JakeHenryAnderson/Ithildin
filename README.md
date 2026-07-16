@@ -412,6 +412,14 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-observed-results.md](docs/codex/track-b-node-observed-results.md) - accepted live enrollment, replay, restart, revocation, and audit evidence with explicit non-claims.
 - `make track-b-node-decision-check` - validate the approved first slice and its explicit non-approvals.
 - `make track-b-node-evidence-check` - validate the local ignored Node POC without printing enrollment or private-key material.
+- [docs/codex/track-b-node-configuration-capability-decision.md](docs/codex/track-b-node-configuration-capability-decision.md) - authorization and explicit non-approvals for signed per-Node configuration distribution.
+- [docs/codex/track-b-node-configuration-architecture.md](docs/codex/track-b-node-configuration-architecture.md) - dedicated signing trust root, immutable generations, verification, and desired-versus-stored state.
+- [docs/codex/track-b-node-configuration-implementation-plan.md](docs/codex/track-b-node-configuration-implementation-plan.md) - ordered signing, assignment, retrieval, acknowledgment, UI, and observed-evidence milestones.
+- [docs/codex/track-b-node-configuration-observed-results.md](docs/codex/track-b-node-configuration-observed-results.md) - live assignment, drift, restart, storage acknowledgment, tamper denial, revocation, and audit evidence with explicit non-claims.
+- `make track-b-node-configuration-decision-check` - validate the signed-configuration slice and its enforcement/production non-claims.
+- `make track-b-node-configuration-evidence-check` - validate the ignored live configuration POC without printing enrollment or private-key material.
+- `make node-configuration-keygen` - create the dedicated local Ed25519 Node-configuration signing keypair; private material remains mode `0600` under `var/keys/`.
+- `make node-configuration-signing-status` - report configuration trust-root availability and key ID without printing key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
   addendum for the staging-only trusted-host promotion runtime slice.
 - `docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md` - local proxy disposition

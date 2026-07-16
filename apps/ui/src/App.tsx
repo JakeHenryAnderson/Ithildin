@@ -171,6 +171,14 @@ type IthildinNode = {
   last_heartbeat_hash: string | null;
   last_configuration_digest: string | null;
   last_mission_id: string | null;
+  configuration_state: string;
+  desired_configuration_generation: number | null;
+  desired_configuration_digest: string | null;
+  acknowledged_configuration_generation: number | null;
+  acknowledged_configuration_digest: string | null;
+  configuration_acknowledged_at: string | null;
+  configuration_acknowledgment_status: string | null;
+  configuration_signing_key_id: string | null;
   identity_source: "gateway_derived";
   connectivity_source: "gateway_accepted_heartbeat";
   runner_health_known: false;
@@ -2475,7 +2483,14 @@ export function App() {
             </div>
             <div>
               <dt>Needs attention</dt>
-              <dd>{data.nodes.filter((node) => ["stale", "never_observed", "evidence_incomplete"].includes(node.observed_state)).length}</dd>
+              <dd>{data.nodes.filter((node) =>
+                ["stale", "never_observed", "evidence_incomplete"].includes(node.observed_state)
+                || ["configuration_drift", "evidence_incomplete"].includes(node.configuration_state)
+              ).length}</dd>
+            </div>
+            <div>
+              <dt>Config drift</dt>
+              <dd>{data.nodes.filter((node) => node.configuration_state === "configuration_drift").length}</dd>
             </div>
             <div>
               <dt>Revoked</dt>
@@ -2502,6 +2517,18 @@ export function App() {
                     </div>
                     <StatusPill status={node.observed_state} />
                   </header>
+                  <div className="node-configuration-posture">
+                    <div>
+                      <span>Configuration posture</span>
+                      <strong>{node.configuration_state.replace(/_/g, " ")}</strong>
+                    </div>
+                    <StatusPill status={node.configuration_state} />
+                    <p>
+                      {node.configuration_acknowledgment_status === "stored_not_enforced"
+                        ? "Node attests that the signed configuration is stored. Enforcement is not proven."
+                        : "No current Node storage acknowledgment. Enforcement is not proven."}
+                    </p>
+                  </div>
                   <dl>
                     <div>
                       <dt>Administrative state</dt>
@@ -2528,13 +2555,33 @@ export function App() {
                       <dd>{node.last_seen_at ? formatDate(node.last_seen_at) : "Never observed"}</dd>
                     </div>
                     <div>
-                      <dt>Configuration digest</dt>
+                      <dt>Desired configuration</dt>
+                      <dd>{node.desired_configuration_generation === null
+                        ? "Unassigned"
+                        : `Generation ${node.desired_configuration_generation}`}</dd>
+                    </div>
+                    <div>
+                      <dt>Stored configuration <small>Node-attested, not enforced</small></dt>
+                      <dd>{node.acknowledged_configuration_generation === null
+                        ? "Not acknowledged"
+                        : `Generation ${node.acknowledged_configuration_generation}`}</dd>
+                    </div>
+                    <div>
+                      <dt>Desired digest</dt>
+                      <dd>{node.desired_configuration_digest ? shortHash(node.desired_configuration_digest) : "Unavailable"}</dd>
+                    </div>
+                    <div>
+                      <dt>Last reported digest <small>heartbeat posture</small></dt>
                       <dd>{node.last_configuration_digest ? shortHash(node.last_configuration_digest) : "Unavailable"}</dd>
                     </div>
                   </dl>
                   <footer>
                     <span>Identity source · Gateway derived</span>
+                    <span>Config signer · {node.configuration_signing_key_id
+                      ? shortHash(node.configuration_signing_key_id)
+                      : "unavailable"}</span>
                     <span>Runner health · unknown</span>
+                    <span>Policy enforcement · unknown</span>
                   </footer>
                 </article>
               ))}

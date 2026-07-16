@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     node_enrollment_expiry_seconds: int = Field(default=600, gt=0, le=3600)
     node_max_clock_skew_seconds: int = Field(default=120, gt=0, le=600)
     node_stale_after_seconds: int = Field(default=90, gt=0, le=3600)
+    node_configuration_signing_private_key_path: Path = Path(
+        "var/keys/node-configuration-ed25519-private.pem"
+    )
+    node_configuration_signing_public_key_path: Path = Path(
+        "var/keys/node-configuration-ed25519-public.pem"
+    )
     workspace_root: Path = Path("workspaces")
     workspace_registry_path: Path = Path("workspaces/local.yaml")
     require_known_workspaces: bool = True

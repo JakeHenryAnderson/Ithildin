@@ -303,6 +303,14 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             last_heartbeat_hash: "sha256:heartbeat",
             last_configuration_digest: "sha256:configuration",
             last_mission_id: "mission-synthetic-001",
+            configuration_state: "stored_current_not_enforced",
+            desired_configuration_generation: 1,
+            desired_configuration_digest: "sha256:desiredconfiguration",
+            acknowledged_configuration_generation: 1,
+            acknowledged_configuration_digest: "sha256:desiredconfiguration",
+            configuration_acknowledged_at: "2026-07-16T12:01:00Z",
+            configuration_acknowledgment_status: "stored_not_enforced",
+            configuration_signing_key_id: "sha256:configsigner",
             identity_source: "gateway_derived",
             connectivity_source: "gateway_accepted_heartbeat",
             runner_health_known: false,
@@ -701,6 +709,9 @@ describe("Review console interactions", () => {
       within(nodes).getByText(/correctly signed heartbeat was recently accepted/i),
     ).toBeInTheDocument();
     expect(within(nodes).getByText("Runner health · unknown")).toBeInTheDocument();
+    expect(within(nodes).getByText("Policy enforcement · unknown")).toBeInTheDocument();
+    expect(within(nodes).getByText(/Node attests that the signed configuration is stored/i)).toBeInTheDocument();
+    expect(within(nodes).getAllByText("Generation 1")).toHaveLength(2);
     expect(within(nodes).getByText("Identity source · Gateway derived")).toBeInTheDocument();
   });
 

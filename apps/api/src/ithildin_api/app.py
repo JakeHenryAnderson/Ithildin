@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional, cast
 from uuid import uuid4
 
@@ -49,6 +51,16 @@ from ithildin_api.identity import (
 )
 from ithildin_api.logging import configure_logging
 from ithildin_api.manifest_lock import ManifestLockError, manifest_lock_signature_status
+from ithildin_api.node_configuration import (
+    NodeConfigurationAcknowledgmentPayload,
+    NodeConfigurationAssignmentPayload,
+    NodeConfigurationConflictError,
+    NodeConfigurationNotFoundError,
+    NodeConfigurationRequestPayload,
+    NodeConfigurationSigner,
+    NodeConfigurationSigningError,
+    NodeConfigurationStore,
+)
 from ithildin_api.nodes import (
     EnrollmentCodeIssuePayload,
     NodeAuthenticationError,
@@ -127,6 +139,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             node_store = NodeStore(resolved_settings.db_path)
             node_store.initialize()
             app_instance.state.node_store = node_store
+            node_configuration_store = NodeConfigurationStore(resolved_settings.db_path)
+            node_configuration_store.initialize()
+            app_instance.state.node_configuration_store = node_configuration_store
+            app_instance.state.node_configuration_signer = _load_node_configuration_signer(
+                resolved_settings
+            )
             sandbox_descriptor_store = SandboxDescriptorStore(resolved_settings.db_path)
             sandbox_descriptor_store.initialize()
             app_instance.state.sandbox_descriptor_store = sandbox_descriptor_store
@@ -411,6 +429,15 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="invalid Node enrollment request",
             ) from exc
+        signer = _require_node_configuration_signer(api)
+        settings_state = cast(Settings, api.state.settings)
+        try:
+            manifest_lock_digest = _manifest_lock_digest(settings_state.manifest_lock_path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="manifest lock is unavailable for Node enrollment",
+            ) from exc
         node_store = cast(NodeStore, api.state.node_store)
         try:
             record = node_store.enroll(request_payload)
@@ -426,7 +453,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             metadata=node_audit_metadata(record),
         )
         record = node_store.mark_node_evidence_complete(record.node_id)
-        return record.summary()
+        response = record.summary()
+        response["configuration_trust"] = signer.trust.summary()
+        response["manifest_lock_digest"] = manifest_lock_digest
+        return response
 
     @api.post("/nodes/{node_id}/heartbeat")
     def accept_node_heartbeat(node_id: str, request: Request, payload: JsonObject) -> JsonObject:
@@ -482,6 +512,9 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             limit=limit,
             stale_after_seconds=settings_state.node_stale_after_seconds,
         )
+        signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
+        for record in records:
+            record["configuration_signing_key_id"] = signer.trust.key_id if signer else None
         return {
             "nodes": cast(JsonValue, records),
             "count": len(records),
@@ -497,7 +530,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             record = cast(NodeStore, api.state.node_store).get(node_id)
         except NodeNotFoundError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-        return record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+        summary = record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+        signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
+        summary["configuration_signing_key_id"] = signer.trust.key_id if signer else None
+        return summary
 
     @api.post("/nodes/{node_id}/revoke", dependencies=[Depends(require_admin_token)])
     def revoke_node(node_id: str) -> JsonObject:
@@ -517,6 +553,162 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         )
         record = node_store.mark_node_evidence_complete(record.node_id)
         return record.summary()
+
+    @api.post(
+        "/nodes/{node_id}/configurations",
+        dependencies=[Depends(require_admin_token)],
+    )
+    def assign_node_configuration(node_id: str, payload: JsonObject) -> JsonObject:
+        try:
+            assignment = NodeConfigurationAssignmentPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node configuration assignment",
+            ) from exc
+        signer = _require_node_configuration_signer(api)
+        settings_state = cast(Settings, api.state.settings)
+        policy_engine = cast(PolicyEngine, api.state.policy_evaluator)
+        try:
+            manifest_lock_digest = _manifest_lock_digest(settings_state.manifest_lock_path)
+            record = cast(
+                NodeConfigurationStore, api.state.node_configuration_store
+            ).assign(
+                node_id=node_id,
+                payload=assignment,
+                signer=signer,
+                policy_version=policy_engine.document_version,
+                policy_digest=policy_engine.policy_hash,
+                manifest_lock_digest=manifest_lock_digest,
+            )
+        except NodeConfigurationNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConfigurationConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="manifest lock is unavailable for Node configuration",
+            ) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_CONFIGURATION_ASSIGNED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": "admin:local", "roles": ["Admin"]},
+            input_hash=record.configuration_digest,
+            metadata={
+                "node_id": node_id,
+                "configuration_id": record.configuration_id,
+                "generation": record.generation,
+                "configuration_digest": record.configuration_digest,
+                "evidence_status": record.evidence_status,
+                "enforcement_status": "stored_not_enforced",
+            },
+        )
+        record = cast(
+            NodeConfigurationStore, api.state.node_configuration_store
+        ).mark_assignment_evidence_complete(node_id, record.generation)
+        return record.summary()
+
+    @api.post("/nodes/{node_id}/configuration")
+    def retrieve_node_configuration(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            configuration_request = NodeConfigurationRequestPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node configuration request",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        try:
+            node = cast(NodeStore, api.state.node_store).authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=configuration_request.safe_payload(),
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            record = cast(
+                NodeConfigurationStore, api.state.node_configuration_store
+            ).desired(node_id)
+        except NodeAuthenticationError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except NodeConfigurationNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConfigurationConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_CONFIGURATION_RETRIEVED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": node.principal_id, "roles": []},
+            input_hash=record.configuration_digest,
+            metadata={
+                "node_id": node_id,
+                "configuration_id": record.configuration_id,
+                "generation": record.generation,
+                "configuration_digest": record.configuration_digest,
+                "known_generation": configuration_request.known_generation,
+                "enforcement_status": "stored_not_enforced",
+            },
+        )
+        return record.bundle
+
+    @api.post("/nodes/{node_id}/configuration/acknowledgments")
+    def acknowledge_node_configuration(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            acknowledgment = NodeConfigurationAcknowledgmentPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node configuration acknowledgment",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        try:
+            node = node_store.authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=acknowledgment.safe_payload(),
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            cast(NodeConfigurationStore, api.state.node_configuration_store).acknowledge_pending(
+                node_id=node_id,
+                payload=acknowledgment,
+            )
+        except NodeAuthenticationError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except NodeConfigurationNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConfigurationConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_CONFIGURATION_ACKNOWLEDGED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": node.principal_id, "roles": []},
+            input_hash=acknowledgment.configuration_digest,
+            metadata={
+                "node_id": node_id,
+                "generation": acknowledgment.generation,
+                "configuration_digest": acknowledgment.configuration_digest,
+                "status": acknowledgment.status,
+                "enforcement_proven": False,
+            },
+        )
+        node = node_store.mark_node_evidence_complete(node_id)
+        return node.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
 
     @api.post("/sandbox-descriptors", dependencies=[Depends(require_admin_token)])
     def create_sandbox_descriptor(payload: JsonObject) -> JsonObject:
@@ -996,6 +1188,41 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     return api
+
+
+def _load_node_configuration_signer(settings: Settings) -> NodeConfigurationSigner | None:
+    private_path = settings.node_configuration_signing_private_key_path
+    public_path = settings.node_configuration_signing_public_key_path
+    if not private_path.exists() and not public_path.exists():
+        return None
+    if not private_path.exists() or not public_path.exists():
+        raise NodeConfigurationSigningError("Node configuration signing keypair is incomplete")
+    return NodeConfigurationSigner.load(private_path, public_path)
+
+
+def _require_node_configuration_signer(api: FastAPI) -> NodeConfigurationSigner:
+    signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
+    if signer is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node configuration signing trust root is unavailable",
+        )
+    return signer
+
+
+def _manifest_lock_digest(path: Path) -> str:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise ValueError("manifest lock must be an object")
+    return sha256_digest(cast(JsonObject, document))
+
+
+def _require_header_node(request: Request, node_id: str) -> None:
+    if request.headers.get("X-Ithildin-Node", "") != node_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Node identity header mismatch",
+        )
 
 
 def _write_audit_export_event(audit_writer: AuditWriter, *, signed: bool) -> None:

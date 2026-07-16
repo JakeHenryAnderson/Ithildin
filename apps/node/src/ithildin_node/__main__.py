@@ -7,7 +7,12 @@ import getpass
 import json
 from pathlib import Path
 
-from ithildin_node.client import NodeClient, NodeClientError, NodeState
+from ithildin_node.client import (
+    NodeClient,
+    NodeClientError,
+    NodeState,
+    StoredNodeConfiguration,
+)
 
 
 def main() -> int:
@@ -19,8 +24,13 @@ def main() -> int:
     heartbeat = subparsers.add_parser("heartbeat")
     _common(heartbeat)
     heartbeat.add_argument("--state", type=Path, required=True)
-    heartbeat.add_argument("--configuration-digest", required=True)
+    heartbeat.add_argument("--configuration-digest")
+    heartbeat.add_argument("--configuration", type=Path)
     heartbeat.add_argument("--mission-id")
+    configuration_pull = subparsers.add_parser("configuration-pull")
+    configuration_pull.add_argument("--api-url", default="http://127.0.0.1:8000")
+    configuration_pull.add_argument("--state", type=Path, required=True)
+    configuration_pull.add_argument("--output", type=Path, required=True)
     status = subparsers.add_parser("status")
     status.add_argument("--state", type=Path, required=True)
     args = parser.parse_args()
@@ -41,12 +51,43 @@ def main() -> int:
             print(json.dumps(state.safe_summary(), indent=2, sort_keys=True))
             return 0
         state = NodeState.load(args.state)
+        if args.command == "configuration-pull":
+            known_generation = None
+            if args.output.exists():
+                known_generation = StoredNodeConfiguration.load(args.output).generation
+            configuration = client.pull_configuration(
+                state,
+                known_generation=known_generation,
+            )
+            configuration.write_atomic(args.output)
+            acknowledgment = client.acknowledge_configuration(state, configuration)
+            print(
+                json.dumps(
+                    {
+                        **configuration.safe_summary(),
+                        "gateway_configuration_state": acknowledgment.get(
+                            "configuration_state"
+                        ),
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
+        configuration_digest = args.configuration_digest
+        if args.configuration is not None:
+            stored = StoredNodeConfiguration.load(args.configuration)
+            if configuration_digest is not None:
+                parser.error("use only one of --configuration or --configuration-digest")
+            configuration_digest = stored.configuration_digest
+        if configuration_digest is None:
+            parser.error("heartbeat requires --configuration or --configuration-digest")
         result = client.heartbeat(
             state,
             node_version=args.node_version,
             runner_adapter=args.runner_adapter,
             deployment_topology=args.deployment_topology,
-            configuration_digest=args.configuration_digest,
+            configuration_digest=configuration_digest,
             mission_id=args.mission_id,
         )
         print(json.dumps(result, indent=2, sort_keys=True))
