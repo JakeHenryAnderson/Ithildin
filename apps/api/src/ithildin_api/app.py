@@ -49,6 +49,17 @@ from ithildin_api.identity import (
 )
 from ithildin_api.logging import configure_logging
 from ithildin_api.manifest_lock import ManifestLockError, manifest_lock_signature_status
+from ithildin_api.nodes import (
+    EnrollmentCodeIssuePayload,
+    NodeAuthenticationError,
+    NodeConflictError,
+    NodeEnrollmentPayload,
+    NodeHeartbeatPayload,
+    NodeNotFoundError,
+    NodeStore,
+    enrollment_audit_metadata,
+    node_audit_metadata,
+)
 from ithildin_api.patches import (
     PATCH_APPLY_TOOL,
     PatchProposalError,
@@ -87,7 +98,7 @@ from ithildin_api.trusted_host_promotions import (
     TrustedHostPromotionService,
     TrustedHostPromotionStore,
 )
-from ithildin_api.workspaces import WorkspaceRegistry
+from ithildin_api.workspaces import WorkspaceRegistry, WorkspaceRegistryError
 
 SERVICE_NAME = "ithildin-api"
 
@@ -113,6 +124,9 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             agent_run_store = AgentRunStore(resolved_settings.db_path)
             agent_run_store.initialize()
             app_instance.state.agent_run_store = agent_run_store
+            node_store = NodeStore(resolved_settings.db_path)
+            node_store.initialize()
+            app_instance.state.node_store = node_store
             sandbox_descriptor_store = SandboxDescriptorStore(resolved_settings.db_path)
             sandbox_descriptor_store.initialize()
             app_instance.state.sandbox_descriptor_store = sandbox_descriptor_store
@@ -354,6 +368,155 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 workspace.safe_summary() for workspace in workspace_registry.list_workspaces()
             ]
         }
+
+    @api.post("/nodes/enrollment-codes", dependencies=[Depends(require_admin_token)])
+    def issue_node_enrollment_code(payload: JsonObject) -> JsonObject:
+        try:
+            request_payload = EnrollmentCodeIssuePayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node enrollment-code request",
+            ) from exc
+        workspace_registry = cast(WorkspaceRegistry, api.state.workspace_registry)
+        try:
+            workspace_registry.resolve_active(request_payload.workspace_id)
+        except WorkspaceRegistryError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unknown or disabled workspace",
+            ) from exc
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        issued = node_store.issue_enrollment_code(
+            request_payload,
+            expires_in_seconds=settings_state.node_enrollment_expiry_seconds,
+        )
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_ENROLLMENT_CODE_ISSUED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": "admin:local", "roles": ["Admin"]},
+            metadata=enrollment_audit_metadata(issued),
+        )
+        node_store.mark_enrollment_code_evidence_complete(issued.code_id)
+        return issued.response()
+
+    @api.post("/nodes/enroll")
+    def enroll_node(payload: JsonObject) -> JsonObject:
+        try:
+            request_payload = NodeEnrollmentPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node enrollment request",
+            ) from exc
+        node_store = cast(NodeStore, api.state.node_store)
+        try:
+            record = node_store.enroll(request_payload)
+        except NodeAuthenticationError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except NodeConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_ENROLLED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": record.principal_id, "roles": []},
+            metadata=node_audit_metadata(record),
+        )
+        record = node_store.mark_node_evidence_complete(record.node_id)
+        return record.summary()
+
+    @api.post("/nodes/{node_id}/heartbeat")
+    def accept_node_heartbeat(node_id: str, request: Request, payload: JsonObject) -> JsonObject:
+        try:
+            heartbeat = NodeHeartbeatPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node heartbeat",
+            ) from exc
+        header_node_id = request.headers.get("X-Ithildin-Node", "")
+        if header_node_id != node_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Node identity header mismatch",
+            )
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        try:
+            record = node_store.accept_heartbeat(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                payload=heartbeat,
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_HEARTBEAT_ACCEPTED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": record.principal_id, "roles": []},
+            input_hash=record.last_heartbeat_hash,
+            metadata=node_audit_metadata(record),
+        )
+        record = node_store.mark_node_evidence_complete(record.node_id)
+        return record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+
+    @api.get("/nodes", dependencies=[Depends(require_admin_token)])
+    def list_nodes(request: Request) -> JsonObject:
+        unexpected = sorted(set(request.query_params.keys()) - {"limit"})
+        if unexpected:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported query parameter",
+            )
+        limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
+        settings_state = cast(Settings, api.state.settings)
+        records = cast(NodeStore, api.state.node_store).list(
+            limit=limit,
+            stale_after_seconds=settings_state.node_stale_after_seconds,
+        )
+        return {
+            "nodes": cast(JsonValue, records),
+            "count": len(records),
+            "connectivity_source": "gateway_accepted_heartbeat",
+            "stale_after_seconds": settings_state.node_stale_after_seconds,
+            "runner_health_known": False,
+        }
+
+    @api.get("/nodes/{node_id}", dependencies=[Depends(require_admin_token)])
+    def get_node(node_id: str) -> JsonObject:
+        settings_state = cast(Settings, api.state.settings)
+        try:
+            record = cast(NodeStore, api.state.node_store).get(node_id)
+        except NodeNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        return record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+
+    @api.post("/nodes/{node_id}/revoke", dependencies=[Depends(require_admin_token)])
+    def revoke_node(node_id: str) -> JsonObject:
+        node_store = cast(NodeStore, api.state.node_store)
+        try:
+            record = node_store.revoke(node_id)
+        except NodeNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_REVOKED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": "admin:local", "roles": ["Admin"]},
+            metadata=node_audit_metadata(record),
+        )
+        record = node_store.mark_node_evidence_complete(record.node_id)
+        return record.summary()
 
     @api.post("/sandbox-descriptors", dependencies=[Depends(require_admin_token)])
     def create_sandbox_descriptor(payload: JsonObject) -> JsonObject:

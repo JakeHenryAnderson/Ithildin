@@ -52,6 +52,10 @@ class ApprovalDecisionValue(StrEnum):
 
 class AuditEventType(StrEnum):
     AGENT_SESSION_STARTED = "agent.session.started"
+    NODE_ENROLLMENT_CODE_ISSUED = "node.enrollment_code.issued"
+    NODE_ENROLLED = "node.enrolled"
+    NODE_HEARTBEAT_ACCEPTED = "node.heartbeat.accepted"
+    NODE_REVOKED = "node.revoked"
     TOOL_LIST_REQUESTED = "tool.list.requested"
     TOOL_CALL_PROPOSED = "tool.call.proposed"
     POLICY_EVALUATED = "policy.evaluated"

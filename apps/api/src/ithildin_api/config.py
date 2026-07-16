@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     opa_decision_path: str = "/v1/data/ithildin/decision"
     opa_bundle_manifest_path: Path = Path("policies/opa/bundle.lock.json")
     approval_expiry_seconds: int = Field(default=900, gt=0)
+    node_enrollment_expiry_seconds: int = Field(default=600, gt=0, le=3600)
+    node_max_clock_skew_seconds: int = Field(default=120, gt=0, le=600)
+    node_stale_after_seconds: int = Field(default=90, gt=0, le=3600)
     workspace_root: Path = Path("workspaces")
     workspace_registry_path: Path = Path("workspaces/local.yaml")
     require_known_workspaces: bool = True

@@ -278,6 +278,39 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
     if (path === "/patch-apply-diagnostics") {
       return jsonResponse({ status: "clean", attempts: [], stuck_approvals: [], recommendations: [] });
     }
+    if (path === "/nodes") {
+      return jsonResponse({
+        nodes: [
+          {
+            node_id: "node_11111111111111111111111111111111",
+            principal_id: "agent:node.node_11111111111111111111111111111111",
+            workspace_id: "demo",
+            display_name: "Hermes Node",
+            status: "enrolled",
+            evidence_status: "complete",
+            observed_state: "observed_connected",
+            descriptor_hash: "sha256:nodedescriptor",
+            descriptor: {
+              protocol_version: "1",
+              node_version: "0.1.0",
+              runner_adapter: "hermes",
+              deployment_topology: "docker_sidecar",
+            },
+            enrolled_at: "2026-07-16T12:00:00Z",
+            updated_at: "2026-07-16T12:01:00Z",
+            last_seen_at: "2026-07-16T12:01:00Z",
+            revoked_at: null,
+            last_heartbeat_hash: "sha256:heartbeat",
+            last_configuration_digest: "sha256:configuration",
+            last_mission_id: "mission-synthetic-001",
+            identity_source: "gateway_derived",
+            connectivity_source: "gateway_accepted_heartbeat",
+            runner_health_known: false,
+            model_health_known: false,
+          },
+        ],
+      });
+    }
     if (path === "/runs?limit=25" || path.startsWith("/runs?limit=25&")) {
       if (options.emptyRuns) {
         return jsonResponse({
@@ -547,6 +580,7 @@ describe("Review console interactions", () => {
     for (const label of [
       "Attention",
       "Missions",
+      "Nodes",
       "Artifacts",
       "Approvals",
       "Evidence",
@@ -633,6 +667,7 @@ describe("Review console interactions", () => {
     expect(main).toHaveAttribute("data-active-section", "attention");
     for (const [label, destination] of [
       ["Missions", "missions"],
+      ["Nodes", "nodes"],
       ["Artifacts", "artifacts"],
       ["Approvals", "approvals"],
       ["Evidence", "evidence"],
@@ -647,6 +682,26 @@ describe("Review console interactions", () => {
 
     expect(screen.getByRole("heading", { name: "How to read Command Center" })).toBeInTheDocument();
     expect(screen.getByText("Gateway is authoritative")).toBeInTheDocument();
+  });
+
+  it("presents Gateway-derived Node identity without claiming runner health", async () => {
+    installFetchMock();
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    expect(within(nodes).getByRole("heading", { name: "Enforcement nodes" })).toBeInTheDocument();
+    expect(within(nodes).getByText("Hermes Node")).toBeInTheDocument();
+    expect(within(nodes).getAllByText("observed connected").length).toBeGreaterThan(0);
+    expect(
+      within(nodes).getByText(/correctly signed heartbeat was recently accepted/i),
+    ).toBeInTheDocument();
+    expect(within(nodes).getByText("Runner health · unknown")).toBeInTheDocument();
+    expect(within(nodes).getByText("Identity source · Gateway derived")).toBeInTheDocument();
   });
 
   it("shows locked and empty Agent Run states without run controls", async () => {

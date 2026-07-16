@@ -25,6 +25,7 @@ var/locks/*
 var/logs/*
 var/agent-delegation/*
 var/hermes-poc/*
+var/node-poc-*/
 var/review-packets/*
 var/review-runs/*
 var/signatures/*

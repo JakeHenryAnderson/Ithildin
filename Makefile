@@ -12,7 +12,7 @@ RECEIPT ?= var/review-packets/v3/enterprise-review-send-receipt-template/enterpr
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-execution-board roadmap-status technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
-.PHONY: hermes-governance-poc-plan-check
+.PHONY: hermes-governance-poc-plan-check track-b-node-decision-check track-b-node-evidence-check
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 
 test:
@@ -33,6 +33,9 @@ runtime-check:
 
 hermes-governance-poc-plan-check:
 	uv run python scripts/hermes_governance_poc_plan_check.py
+
+track-b-node-decision-check:
+	uv run python scripts/track_b_node_decision_check.py
 
 hermes-poc-image:
 	docker build -f deploy/hermes-poc/Dockerfile -t ithildin/hermes-poc:local .
@@ -100,6 +103,9 @@ evidence-check:
 	$(MAKE) review-run-manifest-check
 	$(MAKE) packet-check-recursion-guard
 	$(MAKE) docs-check
+
+track-b-node-evidence-check:
+	uv run python scripts/node_poc_evidence_check.py
 
 validation-plan:
 	uv run python scripts/validation_plan.py $(ARGS)
@@ -1910,6 +1916,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 	npm run build --prefix apps/ui
 
 release-check: hermes-governance-poc-plan-check
+release-check: track-b-node-decision-check
 release-check: compliance-mapping-external-review-bundle-check
 release-check: packet-check-recursion-guard
 release-check: technical-mvp-operator-trial-readiness

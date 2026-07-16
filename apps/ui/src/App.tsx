@@ -14,6 +14,7 @@ import {
   ListChecks,
   RefreshCcw,
   ScrollText,
+  Server,
   Settings,
   ShieldCheck,
   X,
@@ -151,6 +152,29 @@ type AgentRun = {
   last_tool_name: string | null;
   last_tool_manifest_hash: string | null;
   metadata: JsonObject;
+};
+
+type IthildinNode = {
+  node_id: string;
+  principal_id: string;
+  workspace_id: string;
+  display_name: string;
+  status: string;
+  evidence_status: string;
+  observed_state: string;
+  descriptor_hash: string;
+  descriptor: JsonObject;
+  enrolled_at: string;
+  updated_at: string;
+  last_seen_at: string | null;
+  revoked_at: string | null;
+  last_heartbeat_hash: string | null;
+  last_configuration_digest: string | null;
+  last_mission_id: string | null;
+  identity_source: "gateway_derived";
+  connectivity_source: "gateway_accepted_heartbeat";
+  runner_health_known: false;
+  model_health_known: false;
 };
 
 type AgentRunSummary = {
@@ -408,6 +432,7 @@ type DashboardData = {
   patches: PatchProposal[];
   patchDiagnostics: PatchApplyDiagnostics | null;
   runs: AgentRun[];
+  nodes: IthildinNode[];
   runSummary: AgentRunSummary | null;
   auditEvents: AuditEvent[];
   verification: AuditVerification | null;
@@ -441,6 +466,7 @@ function emptyDashboardData(): DashboardData {
     patches: [],
     patchDiagnostics: null,
     runs: [],
+    nodes: [],
     runSummary: null,
     auditEvents: [],
     verification: null,
@@ -637,6 +663,7 @@ export function App() {
         patchesResponse,
         patchDiagnostics,
         runsResponse,
+        nodesResponse,
         auditResponse,
         verificationResponse,
       ] = await Promise.all([
@@ -650,6 +677,7 @@ export function App() {
           runListPath(activeRunFilters),
           activeToken,
         ),
+        apiRequest<{ nodes: IthildinNode[] }>("/nodes", activeToken),
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
         apiRequest<AuditVerification>("/audit-events/verify", activeToken),
       ]);
@@ -664,6 +692,7 @@ export function App() {
         patches: patchesResponse.patch_proposals,
         patchDiagnostics,
         runs: runsResponse.runs,
+        nodes: nodesResponse.nodes,
         runSummary: runsResponse.summary,
         auditEvents: auditResponse.audit_events,
         verification: verificationResponse,
@@ -1141,6 +1170,7 @@ export function App() {
           {([
             ["attention", "Attention", "What needs a decision now", <BellRing size={20} />],
             ["missions", "Missions", "Follow agent work end to end", <FolderKanban size={20} />],
+            ["nodes", "Nodes", "Enroll and observe enforcement points", <Server size={20} />],
             ["artifacts", "Artifacts", "Review outputs and movement", <Boxes size={20} />],
             ["approvals", "Approvals", "Authorize bounded actions", <ListChecks size={20} />],
             ["evidence", "Evidence", "Reconstruct what happened", <ScrollText size={20} />],
@@ -2402,6 +2432,114 @@ export function App() {
               )}
             </div>
           </div>
+        </Panel>
+      </section>
+
+      <section
+        className="node-section destination-screen"
+        data-screen="nodes"
+        id="nodes"
+        aria-label="Ithildin Nodes"
+        tabIndex={-1}
+      >
+        <DestinationHeading
+          eyebrow="Deployment foundation"
+          title="Enforcement nodes"
+          description="Review Gateway-enrolled enforcement identities and the connectivity Ithildin has actually observed."
+          icon={<Server size={24} />}
+        />
+        <Panel
+          title="Node inventory"
+          purpose="Separate durable enrollment state from recently accepted heartbeats and unobserved runner health."
+          icon={<Server size={18} />}
+        >
+          <div className="node-boundary-callout">
+            <ShieldCheck aria-hidden="true" size={22} />
+            <div>
+              <strong>Gateway-derived identity</strong>
+              <p>
+                Enrollment and revocation are authoritative Gateway records. Connectivity means only
+                that a correctly signed heartbeat was recently accepted; it is not runner or model health.
+              </p>
+            </div>
+            <span>Local-preview Track B slice</span>
+          </div>
+          <dl className="node-metrics" aria-label="Node fleet summary">
+            <div>
+              <dt>Enrolled identities</dt>
+              <dd>{data.nodes.filter((node) => node.status === "enrolled").length}</dd>
+            </div>
+            <div>
+              <dt>Recently observed</dt>
+              <dd>{data.nodes.filter((node) => node.observed_state === "observed_connected").length}</dd>
+            </div>
+            <div>
+              <dt>Needs attention</dt>
+              <dd>{data.nodes.filter((node) => ["stale", "never_observed", "evidence_incomplete"].includes(node.observed_state)).length}</dd>
+            </div>
+            <div>
+              <dt>Revoked</dt>
+              <dd>{data.nodes.filter((node) => node.status === "revoked").length}</dd>
+            </div>
+          </dl>
+          {data.nodes.length === 0 ? (
+            <EmptyState
+              text={
+                token
+                  ? "No Node identities are enrolled in the loaded local Gateway."
+                  : "Sign in to load Node inventory."
+              }
+            />
+          ) : (
+            <div className="node-card-grid">
+              {data.nodes.map((node) => (
+                <article className="node-card" key={node.node_id}>
+                  <header>
+                    <span className="node-card-icon" aria-hidden="true"><Server size={20} /></span>
+                    <div>
+                      <h3>{node.display_name}</h3>
+                      <p>{node.node_id}</p>
+                    </div>
+                    <StatusPill status={node.observed_state} />
+                  </header>
+                  <dl>
+                    <div>
+                      <dt>Administrative state</dt>
+                      <dd>{node.status}</dd>
+                    </div>
+                    <div>
+                      <dt>Audit evidence</dt>
+                      <dd>{node.evidence_status}</dd>
+                    </div>
+                    <div>
+                      <dt>Assigned workspace</dt>
+                      <dd>{node.workspace_id}</dd>
+                    </div>
+                    <div>
+                      <dt>Runner adapter <small>reported posture</small></dt>
+                      <dd>{scopeString(node.descriptor, "runner_adapter") || "Unavailable"}</dd>
+                    </div>
+                    <div>
+                      <dt>Topology <small>reported posture</small></dt>
+                      <dd>{scopeString(node.descriptor, "deployment_topology") || "Unavailable"}</dd>
+                    </div>
+                    <div>
+                      <dt>Last accepted heartbeat</dt>
+                      <dd>{node.last_seen_at ? formatDate(node.last_seen_at) : "Never observed"}</dd>
+                    </div>
+                    <div>
+                      <dt>Configuration digest</dt>
+                      <dd>{node.last_configuration_digest ? shortHash(node.last_configuration_digest) : "Unavailable"}</dd>
+                    </div>
+                  </dl>
+                  <footer>
+                    <span>Identity source · Gateway derived</span>
+                    <span>Runner health · unknown</span>
+                  </footer>
+                </article>
+              ))}
+            </div>
+          )}
         </Panel>
       </section>
 
@@ -3904,7 +4042,11 @@ function EvidenceGroup({
 }
 
 function StatusPill({ status }: { status: string }) {
-  return <span className={`status-pill status-${status.replace(/\s+/g, "-")}`}>{status}</span>;
+  return (
+    <span className={`status-pill status-${status.replace(/[\s_]+/g, "-")}`}>
+      {status.replace(/_/g, " ")}
+    </span>
+  );
 }
 
 function ApprovalEvidence({

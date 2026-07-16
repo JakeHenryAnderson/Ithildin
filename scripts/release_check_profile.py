@@ -11,6 +11,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 CATEGORY_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("track-b-node-", "external_agent_node"),
     ("hermes-", "external_agent_poc"),
     ("enterprise-", "enterprise"),
     ("mission-control-", "mission_control"),

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import sqlite3
@@ -8,6 +9,8 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 from ithildin_api.agent_runs import AgentRunStore
 from ithildin_api.app import create_app
@@ -20,6 +23,7 @@ from ithildin_api.manifest_lock import (
     write_manifest_lock,
     write_manifest_lock_signature,
 )
+from ithildin_api.nodes import NodeHeartbeatPayload, canonical_signature_message
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
@@ -2778,6 +2782,101 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
         ).fetchall()
 
     assert rows == [("schema_version", "1")]
+
+
+def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    admin_headers = {"Authorization": "Bearer test-admin-token"}
+    private_key = Ed25519PrivateKey.generate()
+    public_key = base64.b64encode(
+        private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+    ).decode()
+    with TestClient(create_app(settings)) as client:
+        issued_response = client.post(
+            "/nodes/enrollment-codes",
+            headers=admin_headers,
+            json={"workspace_id": "default", "display_name": "Hermes Node"},
+        )
+        assert issued_response.status_code == 200
+        enrollment_code = issued_response.json()["enrollment_code"]
+        enrollment = client.post(
+            "/nodes/enroll",
+            json={
+                "enrollment_code": enrollment_code,
+                "public_key": public_key,
+                "protocol_version": "1",
+                "node_version": "0.1.0",
+                "runner_adapter": "hermes",
+                "deployment_topology": "docker_sidecar",
+            },
+        )
+        assert enrollment.status_code == 200
+        assert enrollment.json()["evidence_status"] == "complete"
+        node_id = enrollment.json()["node_id"]
+        assert enrollment.json()["principal_id"] == f"agent:node.{node_id}"
+        heartbeat = NodeHeartbeatPayload(
+            protocol_version="1",
+            node_version="0.1.0",
+            runner_adapter="hermes",
+            deployment_topology="docker_sidecar",
+            configuration_digest="sha256:" + ("2" * 64),
+            mission_id="mission-synthetic-001",
+        )
+        timestamp = str(int(datetime.now(UTC).timestamp()))
+        nonce = "e" * 32
+        message = canonical_signature_message(
+            method="POST",
+            path=f"/nodes/{node_id}/heartbeat",
+            timestamp=timestamp,
+            nonce=nonce,
+            body_hash=sha256_digest(heartbeat.safe_payload()),
+        )
+        node_headers = {
+            "X-Ithildin-Node": node_id,
+            "X-Ithildin-Timestamp": timestamp,
+            "X-Ithildin-Nonce": nonce,
+            "X-Ithildin-Signature": base64.b64encode(private_key.sign(message)).decode(),
+        }
+        accepted = client.post(
+            f"/nodes/{node_id}/heartbeat",
+            headers=node_headers,
+            json=heartbeat.model_dump(mode="json", exclude_none=True),
+        )
+        assert accepted.status_code == 200
+        assert accepted.json()["evidence_status"] == "complete"
+        assert accepted.json()["observed_state"] == "observed_connected"
+        replay = client.post(
+            f"/nodes/{node_id}/heartbeat",
+            headers=node_headers,
+            json=heartbeat.model_dump(mode="json", exclude_none=True),
+        )
+        assert replay.status_code == 401
+        assert replay.json()["detail"] == "replayed Node nonce"
+        inventory = client.get("/nodes", headers=admin_headers)
+        assert inventory.status_code == 200
+        assert inventory.json()["nodes"][0]["node_id"] == node_id
+        assert inventory.json()["runner_health_known"] is False
+        revoked = client.post(f"/nodes/{node_id}/revoke", headers=admin_headers)
+        assert revoked.status_code == 200
+        assert revoked.json()["status"] == "revoked"
+        assert revoked.json()["evidence_status"] == "complete"
+        post_revoke_headers = {**node_headers, "X-Ithildin-Nonce": "f" * 32}
+        post_revoke = client.post(
+            f"/nodes/{node_id}/heartbeat",
+            headers=post_revoke_headers,
+            json=heartbeat.model_dump(mode="json", exclude_none=True),
+        )
+        assert post_revoke.status_code == 401
+
+    audit_text = settings.audit_log_path.read_text(encoding="utf-8")
+    assert enrollment_code not in audit_text
+    assert "node.enrollment_code.issued" in audit_text
+    assert "node.enrolled" in audit_text
+    assert "node.heartbeat.accepted" in audit_text
+    assert "node.revoked" in audit_text
 
 
 def _row_count(db_path: Path, table_name: str) -> int:

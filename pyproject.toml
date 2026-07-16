@@ -40,6 +40,7 @@ pythonpath = [
     ".",
     "apps/api/src",
     "apps/mcp-server/src",
+    "apps/node/src",
     "packages/audit-core/src",
     "packages/policy-core/src",
     "packages/schemas/src",
@@ -63,6 +64,7 @@ packages = [
     "ithildin_policy_core",
     "ithildin_schemas",
     "ithildin_tool_sdk",
+    "ithildin_node",
 ]
 
 [tool.setuptools.package-dir]
@@ -72,6 +74,7 @@ ithildin_mcp_server = "apps/mcp-server/src/ithildin_mcp_server"
 ithildin_policy_core = "packages/policy-core/src/ithildin_policy_core"
 ithildin_schemas = "packages/schemas/src/ithildin_schemas"
 ithildin_tool_sdk = "packages/tool-sdk/src/ithildin_tool_sdk"
+ithildin_node = "apps/node/src/ithildin_node"
 
 [tool.mypy]
 python_version = "3.12"
@@ -80,6 +83,7 @@ mypy_path = [
     ".",
     "apps/api/src",
     "apps/mcp-server/src",
+    "apps/node/src",
     "packages/audit-core/src",
     "packages/policy-core/src",
     "packages/schemas/src",
@@ -88,6 +92,7 @@ mypy_path = [
 files = [
     "apps/api/src",
     "apps/mcp-server/src",
+    "apps/node/src",
     "packages/audit-core/src",
     "packages/policy-core/src",
     "packages/schemas/src",

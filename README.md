@@ -406,6 +406,12 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/governed-external-agent-hermes-poc-observed-results.md](docs/codex/governed-external-agent-hermes-poc-observed-results.md) - accepted Track A evidence, rejected model claims, and explicit non-claims.
 - `make hermes-governance-poc-plan-check` - validate the POC packet, image digest, 24-tool boundary,
   and explicit non-approvals.
+- [docs/codex/track-b-node-capability-decision.md](docs/codex/track-b-node-capability-decision.md) - project-owner authorization and the narrow enrollment/identity runtime boundary.
+- [docs/codex/track-b-node-architecture.md](docs/codex/track-b-node-architecture.md) - Gateway-derived Node identity, signed request, replay, and connectivity contracts.
+- [docs/codex/track-b-node-implementation-plan.md](docs/codex/track-b-node-implementation-plan.md) - ordered enrollment, authentication, heartbeat, UI, and synthetic POC milestones.
+- [docs/codex/track-b-node-observed-results.md](docs/codex/track-b-node-observed-results.md) - accepted live enrollment, replay, restart, revocation, and audit evidence with explicit non-claims.
+- `make track-b-node-decision-check` - validate the approved first slice and its explicit non-approvals.
+- `make track-b-node-evidence-check` - validate the local ignored Node POC without printing enrollment or private-key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
   addendum for the staging-only trusted-host promotion runtime slice.
 - `docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md` - local proxy disposition
