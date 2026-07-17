@@ -92,6 +92,8 @@ externally closed.
 - [CC-PILOT-106 Implementation Handoff](command-center-cc-pilot-106-implementation-handoff.md)
 - [Node Governed-Run Correlation Feasibility Map](command-center-node-governed-run-correlation-data-feasibility.md)
 - [Node Governed-Run Correlation Implementation Handoff](command-center-node-governed-run-correlation-implementation-handoff.md)
+- [Node Run-Origin Evidence Parity Feasibility Map](command-center-node-run-origin-evidence-parity-data-feasibility.md)
+- [Node Run-Origin Evidence Parity Implementation Handoff](command-center-node-run-origin-evidence-parity-implementation-handoff.md)
 - [CC-PILOT-107 Fresh-Operator UAT Handoff](command-center-cc-pilot-107-uat-handoff.md)
 - [Command Center Pre-UAT Accessibility, Authority, and UI Review](command-center-pre-uat-accessibility-authority-ui-review.md)
 - [Command Center Independent Sol Ultra Pre-UAT Findings Register](command-center-sol-ultra-pre-uat-review.md)

@@ -179,6 +179,8 @@ REVIEW_DOCS = [
     "docs/codex/command-center-cc-pilot-106-implementation-handoff.md",
     "docs/codex/command-center-node-governed-run-correlation-data-feasibility.md",
     "docs/codex/command-center-node-governed-run-correlation-implementation-handoff.md",
+    "docs/codex/command-center-node-run-origin-evidence-parity-data-feasibility.md",
+    "docs/codex/command-center-node-run-origin-evidence-parity-implementation-handoff.md",
     "docs/codex/command-center-cc-pilot-107-uat-handoff.md",
     "docs/codex/command-center-pre-uat-accessibility-authority-ui-review.md",
     "docs/codex/command-center-sol-ultra-pre-uat-review.md",

@@ -3012,7 +3012,11 @@ export function App() {
                       </button>
                     </div>
                   </div>
-                  <NodeRunAuthority run={selectedRun.run} />
+                  <NodeRunAuthority
+                    evidence={selectedRunEvidence}
+                    evidenceError={runEvidenceError}
+                    run={selectedRun.run}
+                  />
                   <EvidenceCloseout
                     evidence={selectedRunEvidence}
                     evidenceError={runEvidenceError}
@@ -4333,8 +4337,17 @@ function RunnerGovernancePosture({ run }: { run: AgentRun | null }) {
   );
 }
 
-function NodeRunAuthority({ run }: { run: AgentRun }) {
+function NodeRunAuthority({
+  evidence,
+  evidenceError,
+  run,
+}: {
+  evidence: RunEvidenceExport | null;
+  evidenceError: string | null;
+  run: AgentRun;
+}) {
   if (!isNodeGovernedRun(run)) return null;
+  const parity = nodeRunOriginEvidenceParity(run, evidence, evidenceError);
   return (
     <section className="runner-governance-posture" aria-label="Node governed-run authority">
       <div className="runner-posture-heading">
@@ -4367,10 +4380,21 @@ function NodeRunAuthority({ run }: { run: AgentRun }) {
           <dt>Runner enforcement</dt>
           <dd>{run.metadata.runner_enforcement_proven === false ? "Not proven" : "Unproven"}</dd>
         </div>
+        <div>
+          <dt>Evidence-origin parity</dt>
+          <dd>{nodeRunOriginParityLabel(parity)}</dd>
+        </div>
       </dl>
       <p>
-        This snapshot is Gateway-derived run provenance. The external runner label is correlation
-        only, and activity that bypassed the Gateway remains outside this evidence.
+        {parity === "matched"
+          ? "The generated redacted snapshot repeats the same bounded origin as this selected Gateway run. This is same-record consistency, not independent attestation."
+          : parity === "mismatch"
+            ? "The selected run and generated snapshot do not agree on bounded Node origin. Do not rely on the export origin; reload and review the evidence before handoff."
+            : parity === "unavailable"
+              ? "The generated snapshot is unavailable, so its Node origin cannot be compared with this selected run."
+              : "The generated snapshot is still loading. Node origin parity has not yet been established."}
+        {" "}The external runner label is correlation only, and activity that bypassed the Gateway
+        remains outside this evidence.
       </p>
     </section>
   );
@@ -5231,6 +5255,41 @@ function isNodeGovernedRun(run: AgentRun) {
     run.metadata.identity_source === "gateway_derived_node" &&
     typeof run.metadata.node_id === "string"
   );
+}
+
+type NodeRunOriginParity = "preparing" | "matched" | "mismatch" | "unavailable";
+
+const NODE_RUN_ORIGIN_FIELDS = [
+  "ingress_kind",
+  "identity_source",
+  "node_id",
+  "node_display_name",
+  "authorization_profile",
+  "configuration_generation",
+  "configuration_digest",
+  "offline_fallback_allowed",
+  "runner_enforcement_proven",
+] as const;
+
+function nodeRunOriginEvidenceParity(
+  run: AgentRun,
+  evidence: RunEvidenceExport | null,
+  evidenceError: string | null,
+): NodeRunOriginParity {
+  if (evidenceError) return "unavailable";
+  if (!evidence) return "preparing";
+  const origin = evidence.run.origin;
+  if (!origin || typeof origin !== "object" || Array.isArray(origin)) return "mismatch";
+  return NODE_RUN_ORIGIN_FIELDS.every((field) => origin[field] === run.metadata[field])
+    ? "matched"
+    : "mismatch";
+}
+
+function nodeRunOriginParityLabel(parity: NodeRunOriginParity) {
+  if (parity === "matched") return "Matches selected run";
+  if (parity === "mismatch") return "Mismatch - do not rely on export origin";
+  if (parity === "unavailable") return "Unavailable";
+  return "Preparing comparison";
 }
 
 function RunEvidenceOverview({ timeline }: { timeline: AgentRunTimelineEvent[] }) {

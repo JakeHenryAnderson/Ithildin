@@ -191,8 +191,10 @@ type FetchMockOptions = {
   nodeOverrides?: Record<string, unknown>;
   nodeRevokeFailure?: boolean;
   nodeRun?: boolean;
+  nodeRunOriginMismatch?: boolean;
   nodeStatus?: "enrolled" | "revoked";
   proposalStatus?: "applied" | "proposed";
+  runEvidenceFailure?: boolean;
 };
 
 function installFetchMock(status = systemStatus(), options: FetchMockOptions = {}) {
@@ -598,13 +600,26 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
       });
     }
     if (path === "/runs/run_123456789/evidence-export") {
+      if (options.runEvidenceFailure) {
+        return jsonResponse(
+          { detail: "run evidence unavailable" },
+          { status: 503, statusText: "Unavailable" },
+        );
+      }
       return jsonResponse({
         schema_version: "1",
         export_id: "runev_123456789",
         exported_at: "2026-06-03T12:02:00Z",
         run: {
           run_id: "run_123456789",
-          origin: options.nodeRun ? runMetadata : null,
+          origin: options.nodeRun
+            ? {
+                ...runMetadata,
+                ...(options.nodeRunOriginMismatch
+                  ? { configuration_digest: "sha256:mismatched-configuration" }
+                  : {}),
+              }
+            : null,
         },
         summary: {
           principal_id: runPrincipalId,
@@ -983,8 +998,57 @@ describe("Review console interactions", () => {
     expect(within(authority).getByText(/Generation 1/)).toBeInTheDocument();
     expect(within(authority).getByText("Prohibited")).toBeInTheDocument();
     expect(within(authority).getByText("Not proven")).toBeInTheDocument();
+    expect(within(authority).getByText("Matches selected run")).toBeInTheDocument();
+    expect(within(authority).getByText(/same-record consistency, not independent attestation/i))
+      .toBeInTheDocument();
     expect(within(authority).getByText(/activity that bypassed the Gateway remains outside/i))
       .toBeInTheDocument();
+  });
+
+  it("blocks reliance on a mismatched Node origin in generated run evidence", async () => {
+    installFetchMock(systemStatus(), {
+      nodeRun: true,
+      nodeRunOriginMismatch: true,
+      noApprovals: true,
+      proposalStatus: "applied",
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Missions" }));
+    const missions = screen.getByRole("region", { name: "Agent runs" });
+    const authority = await within(missions).findByRole("region", {
+      name: "Node governed-run authority",
+    });
+    expect(within(authority).getByText("Mismatch - do not rely on export origin"))
+      .toBeInTheDocument();
+    expect(within(authority).getByText(/do not rely on the export origin/i)).toBeInTheDocument();
+    expect(within(authority).queryByText("Matches selected run")).toBeNull();
+  });
+
+  it("keeps Node evidence-origin parity unavailable when snapshot loading fails", async () => {
+    installFetchMock(systemStatus(), {
+      nodeRun: true,
+      runEvidenceFailure: true,
+      noApprovals: true,
+      proposalStatus: "applied",
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Missions" }));
+    const missions = screen.getByRole("region", { name: "Agent runs" });
+    const authority = await within(missions).findByRole("region", {
+      name: "Node governed-run authority",
+    });
+    expect(within(authority).getByText("Unavailable")).toBeInTheDocument();
+    expect(within(authority).getByText(/cannot be compared with this selected run/i))
+      .toBeInTheDocument();
+    expect(within(authority).queryByText("Matches selected run")).toBeNull();
   });
 
   it("requires exact confirmation before revoking Gateway Node authority", async () => {

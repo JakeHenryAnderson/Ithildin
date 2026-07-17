@@ -117,6 +117,10 @@ Use `Gateway-derived Node identity` only when the run carries the persisted
 identity` for generic ingress. The Node run authority snapshot must show offline fallback as
 `Prohibited` only when the persisted value is false and runner enforcement as `Not proven` only
 when the persisted value is false; missing or malformed provenance is `Unproven`, not success.
+`Matches selected run` means the selected run detail and its generated redacted evidence snapshot
+contain equal bounded Node-origin fields from the same Gateway record. It must never be shortened
+to `Verified`, `Attested`, or `Trusted`. `Mismatch - do not rely on export origin` blocks reliance
+on that export field but does not silently rewrite either source.
 
 ## Request Decision Language
 

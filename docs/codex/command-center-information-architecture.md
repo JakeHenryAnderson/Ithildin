@@ -94,6 +94,10 @@ For a Node-authenticated governed read, the Gateway persists the exact Node iden
 authorization profile, and signed configuration generation/digest on that existing run. Command
 Center labels this source as `Gateway-derived Node identity`; the external runner session remains
 correlation only, and runner enforcement, model activity, and filesystem non-bypass remain unknown.
+The Workbench compares that displayed bounded origin with the origin serialized into the matching
+redacted run-evidence snapshot. Equality means same-record serialization consistency only;
+missing, unavailable, or different evidence remains visibly unproven and must not be presented as
+independent attestation.
 
 Opening a mission enters Workbench with tabs or local navigation for Overview, Activity, Decisions,
 Artifacts, and Evidence. The raw timeline remains available under Activity or technical detail.
