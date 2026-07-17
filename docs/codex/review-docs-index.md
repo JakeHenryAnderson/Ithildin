@@ -50,6 +50,12 @@ externally closed.
 - [Trust Rotation Implementation Plan](track-b-node-configuration-trust-rotation-implementation-plan.md)
 - [Trust Rotation Observed Results](track-b-node-configuration-trust-rotation-observed-results.md)
 
+## Track B Node Version Posture
+
+- [Version Posture Capability Decision](track-b-node-version-posture-capability-decision.md)
+- [Version Posture Architecture](track-b-node-version-posture-architecture.md)
+- [Version Posture Implementation Plan](track-b-node-version-posture-implementation-plan.md)
+
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
 - [Command Center Information Architecture](command-center-information-architecture.md)

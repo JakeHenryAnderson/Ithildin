@@ -429,6 +429,10 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-configuration-trust-rotation-observed-results.md](docs/codex/track-b-node-configuration-trust-rotation-observed-results.md) - live K1-to-K2 activation and bounded K1 recovery evidence across real Gateway restarts.
 - `make track-b-node-configuration-trust-rotation-decision-check` - validate bounded restart-based rotation and reject automatic/private-key/production-PKI expansion.
 - `make track-b-node-configuration-trust-rotation-evidence-check` - validate ignored live rotation evidence without printing private material.
+- [docs/codex/track-b-node-version-posture-capability-decision.md](docs/codex/track-b-node-version-posture-capability-decision.md) - authorization and non-approvals for authoritative desired-versus-observed Node version posture.
+- [docs/codex/track-b-node-version-posture-architecture.md](docs/codex/track-b-node-version-posture-architecture.md) - closed semantic-version grammar, truth sources, fail-closed states, and operator-managed maintenance boundary.
+- [docs/codex/track-b-node-version-posture-implementation-plan.md](docs/codex/track-b-node-version-posture-implementation-plan.md) - ordered persistence, API, UI, negative-test, observed-evidence, and exact-candidate work.
+- `make track-b-node-version-posture-decision-check` - validate version observation while rejecting self-update, package transfer, process control, and fleet rollout.
 - `make node-configuration-keygen` - create the dedicated local Ed25519 Node-configuration signing keypair; private material remains mode `0600` under `var/keys/`.
 - `make node-configuration-signing-status` - report configuration trust-root availability and key ID without printing key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
