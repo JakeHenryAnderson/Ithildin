@@ -14,12 +14,13 @@ The persistent primary navigation is:
 
 1. **Attention**
 2. **Missions / Agent Runs**
-3. **Artifacts**
-4. **Approvals**
-5. **Evidence**
-6. **Administration**
+3. **Nodes**
+4. **Artifacts**
+5. **Approvals**
+6. **Evidence**
+7. **Administration**
 
-`Workbench` is not a seventh inventory page. It is the contextual workspace opened from a mission,
+`Workbench` is not an eighth inventory page. It is the contextual workspace opened from a mission,
 run, attention item, approval, artifact, or evidence record. It keeps the selected mission and its
 correlated objects together.
 
@@ -92,6 +93,29 @@ intent is presentation context, not proof that Ithildin started, owns, or contro
 
 Opening a mission enters Workbench with tabs or local navigation for Overview, Activity, Decisions,
 Artifacts, and Evidence. The raw timeline remains available under Activity or technical detail.
+
+### Nodes
+
+**Question:** Which Gateway-enrolled enforcement identities exist, and what posture can Ithildin
+substantiate from its current records?
+
+Primary content:
+
+- fleet-wide counts for enrollment, accepted-heartbeat connectivity, deterministic attention,
+  configuration drift, version drift, and revocation;
+- search over loaded Node names, exact IDs, identities, workspaces, reported adapters/topologies,
+  and displayed posture fields;
+- posture and workspace filters with a visible loaded-result count;
+- deterministic sorting by attention rank, name, workspace, or latest accepted heartbeat;
+- exact Node records retaining Gateway identity, configuration, version, trust-transition, and
+  bounded lifecycle controls.
+
+The default ordering places the highest-ranked deterministic Node exception first, then healthy
+enrolled Nodes, then revoked Nodes, with display name and exact Node ID as stable tie-breakers.
+Filtering and sorting operate only on the currently loaded Gateway records. They do not query a
+monitoring system, change fleet state, acknowledge an exception, establish endpoint health, or
+prove runner/model/configuration enforcement. Opening a Node from Attention clears presentation
+filters that would hide that exact authoritative record.
 
 ### Artifacts
 

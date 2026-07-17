@@ -588,6 +588,10 @@ export function App() {
   const [artifactQuery, setArtifactQuery] = useState("");
   const [artifactStatus, setArtifactStatus] = useState("all");
   const [artifactSort, setArtifactSort] = useState("updated-desc");
+  const [nodeQuery, setNodeQuery] = useState("");
+  const [nodePosture, setNodePosture] = useState("all");
+  const [nodeWorkspace, setNodeWorkspace] = useState("all");
+  const [nodeSort, setNodeSort] = useState("attention");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
   const [selectedRunEvidence, setSelectedRunEvidence] = useState<RunEvidenceExport | null>(null);
@@ -667,6 +671,14 @@ export function App() {
     [data.patches, artifactQuery, artifactStatus, artifactSort],
   );
   const groupedPatches = useMemo(() => groupPatchesByWorkspace(visiblePatches), [visiblePatches]);
+  const visibleNodes = useMemo(
+    () => filterAndSortNodes(data.nodes, nodeQuery, nodePosture, nodeWorkspace, nodeSort),
+    [data.nodes, nodePosture, nodeQuery, nodeSort, nodeWorkspace],
+  );
+  const nodeWorkspaces = useMemo(
+    () => [...new Set(data.nodes.map((node) => node.workspace_id))].sort(),
+    [data.nodes],
+  );
   const selectedProposalApprovals = useMemo(
     () =>
       data.approvalHistory.filter(
@@ -975,6 +987,11 @@ export function App() {
     }
     if (item.proposalId) {
       setSelectedProposalId(item.proposalId);
+    }
+    if (item.nodeId) {
+      setNodeQuery("");
+      setNodePosture("all");
+      setNodeWorkspace("all");
     }
     const targetElementId = item.nodeId ? `node-${item.nodeId}` : item.targetId;
     window.setTimeout(() => scrollAndFocusElement(targetElementId), 0);
@@ -2586,6 +2603,64 @@ export function App() {
               <dd>{data.nodes.filter((node) => node.status === "revoked").length}</dd>
             </div>
           </dl>
+          {data.nodes.length > 0 ? (
+            <div className="node-controls" aria-label="Node inventory filters">
+              <label>
+                Search loaded Nodes
+                <input
+                  type="search"
+                  value={nodeQuery}
+                  onChange={(event) => setNodeQuery(event.target.value)}
+                  placeholder="Name, ID, workspace, adapter…"
+                />
+              </label>
+              <label>
+                Fleet posture
+                <select value={nodePosture} onChange={(event) => setNodePosture(event.target.value)}>
+                  <option value="all">All postures</option>
+                  <option value="attention">Needs attention</option>
+                  <option value="enrolled">Enrolled identities</option>
+                  <option value="observed_connected">Recently observed</option>
+                  <option value="stale">Stale heartbeat</option>
+                  <option value="never_observed">Never observed</option>
+                  <option value="revoked">Revoked</option>
+                </select>
+              </label>
+              <label>
+                Workspace
+                <select value={nodeWorkspace} onChange={(event) => setNodeWorkspace(event.target.value)}>
+                  <option value="all">All workspaces</option>
+                  {nodeWorkspaces.map((workspace) => (
+                    <option key={workspace} value={workspace}>{workspace}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Sort
+                <select value={nodeSort} onChange={(event) => setNodeSort(event.target.value)}>
+                  <option value="attention">Attention first</option>
+                  <option value="name">Name</option>
+                  <option value="workspace">Workspace</option>
+                  <option value="last-seen">Latest heartbeat</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setNodeQuery("");
+                  setNodePosture("all");
+                  setNodeWorkspace("all");
+                  setNodeSort("attention");
+                }}
+              >
+                Clear filters
+              </button>
+              <span className="node-result-count" role="status" aria-live="polite">
+                {visibleNodes.length} of {data.nodes.length} loaded {data.nodes.length === 1 ? "Node" : "Nodes"}
+              </span>
+              <p>Filters and ordering use loaded Gateway records only; they do not change fleet state.</p>
+            </div>
+          ) : null}
           {data.nodes.length === 0 ? (
             <EmptyState
               text={
@@ -2594,13 +2669,16 @@ export function App() {
                   : "Sign in to load Node inventory."
               }
             />
+          ) : visibleNodes.length === 0 ? (
+            <EmptyState text="No loaded Nodes match the current fleet filters." />
           ) : (
-            <div className="node-card-grid">
-              {data.nodes.map((node) => (
+            <div className="node-card-grid" role="list" aria-label="Filtered Node inventory">
+              {visibleNodes.map((node) => (
                 <article
                   className="node-card"
                   id={`node-${node.node_id}`}
                   key={node.node_id}
+                  role="listitem"
                   tabIndex={-1}
                 >
                   <header>
@@ -3979,6 +4057,55 @@ function nodeAttentionPosture(node: IthildinNode): NodeAttentionPosture | null {
     };
   }
   return null;
+}
+
+function filterAndSortNodes(
+  nodes: IthildinNode[],
+  query: string,
+  posture: string,
+  workspace: string,
+  sort: string,
+) {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  return nodes
+    .filter((node) => {
+      if (workspace !== "all" && node.workspace_id !== workspace) return false;
+      if (posture === "attention" && !nodeNeedsAttention(node)) return false;
+      if (posture === "enrolled" && node.status !== "enrolled") return false;
+      if (posture === "revoked" && node.status !== "revoked") return false;
+      if (
+        !["all", "attention", "enrolled", "revoked"].includes(posture)
+        && node.observed_state !== posture
+      ) return false;
+      if (!normalizedQuery) return true;
+      return [
+        node.display_name,
+        node.node_id,
+        node.principal_id,
+        node.workspace_id,
+        scopeString(node.descriptor, "runner_adapter"),
+        scopeString(node.descriptor, "deployment_topology"),
+        node.observed_state,
+        node.configuration_state,
+        node.version_posture,
+      ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
+    })
+    .sort((left, right) => {
+      const byName = left.display_name.localeCompare(right.display_name)
+        || left.node_id.localeCompare(right.node_id);
+      if (sort === "name") return byName;
+      if (sort === "workspace") {
+        return left.workspace_id.localeCompare(right.workspace_id) || byName;
+      }
+      if (sort === "last-seen") {
+        return (right.last_seen_at ?? "").localeCompare(left.last_seen_at ?? "") || byName;
+      }
+      const leftRank = nodeAttentionPosture(left)?.rank ?? 100;
+      const rightRank = nodeAttentionPosture(right)?.rank ?? 100;
+      if (leftRank !== rightRank) return leftRank - rightRank;
+      if (left.status !== right.status) return left.status === "enrolled" ? -1 : 1;
+      return byName;
+    });
 }
 
 function missionFacingLabel(run: AgentRun | undefined, workspaceId: string) {

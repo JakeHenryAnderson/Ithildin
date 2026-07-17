@@ -45,6 +45,11 @@ technical detail, and route to that Node's fleet record. `Review` means inspect 
 and available bounded actions; it does not acknowledge, repair, restart, upgrade, revoke, or mutate
 the Node merely by opening the record.
 
+`N of M loaded Nodes` means the presentation filters match `N` records out of the `M` records in
+the current Gateway response. It is not an organization-wide inventory or discovery claim.
+`Attention first` is a deterministic presentation order using the documented Node exception ranks;
+it is not a risk score, anomaly model, or severity inferred from endpoint behavior.
+
 ## System Trust
 
 `System Trust` should be presented as **Local system posture** unless a future reviewed definition

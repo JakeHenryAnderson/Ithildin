@@ -187,6 +187,7 @@ type FetchMockOptions = {
   emptyTimeline?: boolean;
   invalidBinding?: boolean;
   noApprovals?: boolean;
+  additionalNodes?: Record<string, unknown>[];
   nodeOverrides?: Record<string, unknown>;
   nodeRevokeFailure?: boolean;
   nodeStatus?: "enrolled" | "revoked";
@@ -362,8 +363,8 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
     }
     if (path === "/nodes") {
       return jsonResponse({
-        nodes: [
-          {
+        nodes: (() => {
+          const baseNode = {
             node_id: "node_11111111111111111111111111111111",
             principal_id: "agent:node.node_11111111111111111111111111111111",
             workspace_id: "demo",
@@ -441,8 +442,12 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             runner_health_known: false,
             model_health_known: false,
             ...(options.nodeOverrides ?? {}),
-          },
-        ],
+          };
+          return [
+            baseNode,
+            ...(options.additionalNodes ?? []).map((node) => ({ ...baseNode, ...node })),
+          ];
+        })(),
       });
     }
     if (path === "/runs?limit=25" || path.startsWith("/runs?limit=25&")) {
@@ -976,6 +981,16 @@ describe("Review console interactions", () => {
       },
     });
     const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.type(within(nodes).getByLabelText("Search loaded Nodes"), "hidden by filter");
+    expect(
+      within(nodes).getByText("No loaded Nodes match the current fleet filters."),
+    ).toBeInTheDocument();
+    await user.click(within(navigation).getByRole("link", { name: "Attention" }));
     const attention = screen.getByRole("region", { name: "Attention" });
 
     expect(
@@ -998,9 +1013,76 @@ describe("Review console interactions", () => {
       );
     });
     expect(
-      screen.getByRole("navigation", { name: "Command Center sections" })
-        .querySelector('a[href="#nodes"]'),
+      navigation.querySelector('a[href="#nodes"]'),
     ).toHaveAttribute("aria-current", "page");
+    expect(within(nodes).getByLabelText("Search loaded Nodes")).toHaveValue("");
+  });
+
+  it("filters and deterministically sorts the loaded Node fleet", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      proposalStatus: "applied",
+      nodeOverrides: {
+        observed_state: "stale",
+        last_seen_at: "2026-07-16T11:00:00Z",
+      },
+      additionalNodes: [
+        {
+          node_id: "node_22222222222222222222222222222222",
+          principal_id: "agent:node.node_22222222222222222222222222222222",
+          workspace_id: "alpha",
+          display_name: "Atlas Node",
+          observed_state: "observed_connected",
+          last_seen_at: "2026-07-16T12:05:00Z",
+        },
+        {
+          node_id: "node_33333333333333333333333333333333",
+          principal_id: "agent:node.node_33333333333333333333333333333333",
+          workspace_id: "archive",
+          display_name: "Retired Node",
+          status: "revoked",
+          observed_state: "revoked",
+          configuration_state: "revoked",
+          version_posture: "revoked",
+          revoked_at: "2026-07-16T12:10:00Z",
+        },
+      ],
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const inventory = within(nodes).getByRole("list", { name: "Filtered Node inventory" });
+
+    expect(within(nodes).getByRole("status")).toHaveTextContent("3 of 3 loaded Nodes");
+    expect(
+      within(inventory).getAllByRole("listitem")[0],
+    ).toHaveTextContent("Hermes Node");
+
+    await user.selectOptions(within(nodes).getByLabelText("Sort"), "name");
+    expect(
+      within(inventory).getAllByRole("listitem")[0],
+    ).toHaveTextContent("Atlas Node");
+
+    await user.selectOptions(within(nodes).getByLabelText("Workspace"), "alpha");
+    expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 3 loaded Nodes");
+    expect(within(inventory).getByRole("heading", { name: "Atlas Node" })).toBeInTheDocument();
+    expect(within(inventory).queryByRole("heading", { name: "Hermes Node" })).toBeNull();
+
+    await user.click(within(nodes).getByRole("button", { name: "Clear filters" }));
+    await user.selectOptions(within(nodes).getByLabelText("Fleet posture"), "revoked");
+    expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 3 loaded Nodes");
+    expect(within(inventory).getByRole("heading", { name: "Retired Node" })).toBeInTheDocument();
+
+    await user.selectOptions(within(nodes).getByLabelText("Fleet posture"), "all");
+    await user.type(
+      within(nodes).getByLabelText("Search loaded Nodes"),
+      "node_22222222222222222222222222222222",
+    );
+    expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 3 loaded Nodes");
+    expect(within(inventory).getByRole("heading", { name: "Atlas Node" })).toBeInTheDocument();
   });
 
   it("prioritizes incomplete Node authority evidence over passive proposals", async () => {

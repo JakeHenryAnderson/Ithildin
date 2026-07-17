@@ -3324,7 +3324,7 @@ td,
 .node-metrics {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   margin: 0 0 16px;
 }
 
@@ -3348,6 +3348,61 @@ td,
   font-size: 1.55rem;
   font-weight: 750;
   margin: 5px 0 0;
+}
+
+.node-controls {
+  align-items: end;
+  background: #0d2232;
+  border: 1px solid #304a5c;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 1.25fr) repeat(3, minmax(145px, 0.55fr)) auto;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+}
+
+.node-controls label {
+  color: #91a9b7;
+  display: grid;
+  font-size: 0.68rem;
+  font-weight: 700;
+  gap: 5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.node-controls input,
+.node-controls select {
+  background: #10293a;
+  border: 1px solid #3a5668;
+  color: #e4f1f3;
+  font: inherit;
+  font-size: 0.78rem;
+  min-width: 0;
+  padding: 8px 10px;
+  text-transform: none;
+}
+
+.node-controls button {
+  background: #173746;
+  border: 1px solid #456777;
+  color: #c6dce1;
+  font-size: 0.76rem;
+  padding: 8px 11px;
+}
+
+.node-controls > p {
+  color: #7894a5;
+  font-size: 0.7rem;
+  grid-column: 1 / -2;
+  margin: 0;
+}
+
+.node-result-count {
+  color: #a7c5cc;
+  font-size: 0.72rem;
+  grid-column: -2 / -1;
+  justify-self: end;
 }
 
 .node-card-grid {
@@ -3661,6 +3716,16 @@ td,
 }
 
 @media (max-width: 900px) {
+  .node-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .node-controls > p,
+  .node-result-count {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
   .node-metrics,
   .node-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3677,6 +3742,7 @@ td,
 }
 
 @media (max-width: 560px) {
+  .node-controls,
   .node-metrics,
   .node-card-grid,
   .node-card dl {

@@ -60,6 +60,12 @@ anomaly detector, health probe, acknowledgment, repair, upgrade, or host-control
 or absent accepted heartbeat remains a Gateway connectivity observation, not a runner, model,
 endpoint, or process-health conclusion.
 
+Search, workspace/posture filters, loaded-result counts, and fleet sorting are presentation-only
+operations over the current Gateway response. They do not discover unmanaged endpoints, establish
+fleet completeness, issue a remote query, or change Node authority. Exact-record navigation from
+Attention may clear presentation filters so an already-loaded Node is visible; that is not an
+acknowledgment or remediation action.
+
 Node revocation removes that identity's future Gateway request authority. It does not stop an
 external runner, terminate model inference, delete endpoint state, prove process shutdown, recover
 a lost Node credential, or establish production identity. A replacement requires fresh enrollment;
