@@ -49,6 +49,9 @@ the Node merely by opening the record.
 the current Gateway response. It is not an organization-wide inventory or discovery claim.
 `Attention first` is a deterministic presentation order using the documented Node exception ranks;
 it is not a risk score, anomaly model, or severity inferred from endpoint behavior.
+`Selected authoritative record` means the detail pane is rendering one exact record from the
+current Gateway response. `Selected` is presentation state only; it is not monitoring, inspection,
+acknowledgment, assignment, lock ownership, or a change to Node authority.
 
 ## System Trust
 

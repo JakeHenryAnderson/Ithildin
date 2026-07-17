@@ -834,7 +834,10 @@ describe("Review console interactions", () => {
 
     const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
     expect(within(nodes).getByRole("heading", { name: "Enforcement nodes" })).toBeInTheDocument();
-    expect(within(nodes).getByText("Hermes Node")).toBeInTheDocument();
+    expect(within(nodes).getAllByText("Hermes Node")).toHaveLength(2);
+    expect(within(nodes).getByRole("region", { name: "Selected Node record" })).toHaveTextContent(
+      "Hermes Node",
+    );
     expect(within(nodes).getAllByText("observed connected").length).toBeGreaterThan(0);
     expect(
       within(nodes).getByText(/correctly signed heartbeat was recently accepted/i),
@@ -1065,16 +1068,29 @@ describe("Review console interactions", () => {
     expect(
       within(inventory).getAllByRole("listitem")[0],
     ).toHaveTextContent("Atlas Node");
+    await user.click(within(inventory).getByRole("button", { name: /Retired Node/ }));
+    expect(within(nodes).getByRole("region", { name: "Selected Node record" })).toHaveTextContent(
+      "Retired Node",
+    );
 
     await user.selectOptions(within(nodes).getByLabelText("Workspace"), "alpha");
     expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 3 loaded Nodes");
-    expect(within(inventory).getByRole("heading", { name: "Atlas Node" })).toBeInTheDocument();
-    expect(within(inventory).queryByRole("heading", { name: "Hermes Node" })).toBeNull();
+    expect(within(inventory).getByRole("button", { name: /Atlas Node/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(inventory).queryByRole("button", { name: /Hermes Node/ })).toBeNull();
+    expect(within(nodes).getByRole("region", { name: "Selected Node record" })).toHaveTextContent(
+      "Atlas Node",
+    );
 
     await user.click(within(nodes).getByRole("button", { name: "Clear filters" }));
     await user.selectOptions(within(nodes).getByLabelText("Fleet posture"), "revoked");
     expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 3 loaded Nodes");
-    expect(within(inventory).getByRole("heading", { name: "Retired Node" })).toBeInTheDocument();
+    expect(within(inventory).getByRole("button", { name: /Retired Node/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
 
     await user.selectOptions(within(nodes).getByLabelText("Fleet posture"), "all");
     await user.type(
@@ -1082,7 +1098,10 @@ describe("Review console interactions", () => {
       "node_22222222222222222222222222222222",
     );
     expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 3 loaded Nodes");
-    expect(within(inventory).getByRole("heading", { name: "Atlas Node" })).toBeInTheDocument();
+    expect(within(inventory).getByRole("button", { name: /Atlas Node/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("prioritizes incomplete Node authority evidence over passive proposals", async () => {

@@ -66,6 +66,12 @@ fleet completeness, issue a remote query, or change Node authority. Exact-record
 Attention may clear presentation filters so an already-loaded Node is visible; that is not an
 acknowledgment or remediation action.
 
+The fleet list/detail layout may select one currently loaded Node record and hide full details for
+the other loaded rows. Selection is browser presentation state, not a Gateway lease, endpoint
+session, remote inspection, assignment, acknowledgment, or authority transition. Lifecycle and
+configuration controls remain bound to the exact selected Node ID and still execute only through
+their existing reviewed Gateway APIs.
+
 Node revocation removes that identity's future Gateway request authority. It does not stop an
 external runner, terminate model inference, delete endpoint state, prove process shutdown, recover
 a lost Node credential, or establish production identity. A replacement requires fresh enrollment;

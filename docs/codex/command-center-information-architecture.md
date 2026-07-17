@@ -107,6 +107,9 @@ Primary content:
   and displayed posture fields;
 - posture and workspace filters with a visible loaded-result count;
 - deterministic sorting by attention rank, name, workspace, or latest accepted heartbeat;
+- a compact selectable fleet list that keeps identity, workspace, observed connectivity,
+  configuration/version posture, and the first deterministic exception visible without expanding
+  every administrative record;
 - exact Node records retaining Gateway identity, configuration, version, trust-transition, and
   bounded lifecycle controls.
 
@@ -115,7 +118,9 @@ enrolled Nodes, then revoked Nodes, with display name and exact Node ID as stabl
 Filtering and sorting operate only on the currently loaded Gateway records. They do not query a
 monitoring system, change fleet state, acknowledge an exception, establish endpoint health, or
 prove runner/model/configuration enforcement. Opening a Node from Attention clears presentation
-filters that would hide that exact authoritative record.
+filters that would hide that exact authoritative record, selects it in the fleet list, and focuses
+the corresponding detail. Selecting a list row changes only the displayed loaded record. It does
+not contact the Node, inspect an endpoint, acknowledge an exception, or exercise lifecycle control.
 
 ### Artifacts
 

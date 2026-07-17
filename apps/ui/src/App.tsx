@@ -592,6 +592,7 @@ export function App() {
   const [nodePosture, setNodePosture] = useState("all");
   const [nodeWorkspace, setNodeWorkspace] = useState("all");
   const [nodeSort, setNodeSort] = useState("attention");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
   const [selectedRunEvidence, setSelectedRunEvidence] = useState<RunEvidenceExport | null>(null);
@@ -678,6 +679,10 @@ export function App() {
   const nodeWorkspaces = useMemo(
     () => [...new Set(data.nodes.map((node) => node.workspace_id))].sort(),
     [data.nodes],
+  );
+  const selectedVisibleNode = useMemo(
+    () => visibleNodes.find((node) => node.node_id === selectedNodeId) ?? visibleNodes[0] ?? null,
+    [selectedNodeId, visibleNodes],
   );
   const selectedProposalApprovals = useMemo(
     () =>
@@ -992,6 +997,7 @@ export function App() {
       setNodeQuery("");
       setNodePosture("all");
       setNodeWorkspace("all");
+      setSelectedNodeId(item.nodeId);
     }
     const targetElementId = item.nodeId ? `node-${item.nodeId}` : item.targetId;
     window.setTimeout(() => scrollAndFocusElement(targetElementId), 0);
@@ -2672,150 +2678,47 @@ export function App() {
           ) : visibleNodes.length === 0 ? (
             <EmptyState text="No loaded Nodes match the current fleet filters." />
           ) : (
-            <div className="node-card-grid" role="list" aria-label="Filtered Node inventory">
-              {visibleNodes.map((node) => (
-                <article
-                  className="node-card"
-                  id={`node-${node.node_id}`}
-                  key={node.node_id}
-                  role="listitem"
-                  tabIndex={-1}
-                >
-                  <header>
-                    <span className="node-card-icon" aria-hidden="true"><Server size={20} /></span>
-                    <div>
-                      <h3>{node.display_name}</h3>
-                      <p>{node.node_id}</p>
+            <div className="node-fleet-layout">
+              <div className="node-inventory-list" role="list" aria-label="Filtered Node inventory">
+                {visibleNodes.map((node) => {
+                  const attention = nodeAttentionPosture(node);
+                  const selected = node.node_id === selectedVisibleNode?.node_id;
+                  return (
+                    <div key={node.node_id} role="listitem">
+                      <button
+                        className={selected ? "node-inventory-row selected" : "node-inventory-row"}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setSelectedNodeId(node.node_id)}
+                      >
+                        <span className="node-inventory-row-heading">
+                          <span className="node-card-icon" aria-hidden="true"><Server size={18} /></span>
+                          <span>
+                            <strong>{node.display_name}</strong>
+                            <small>{node.node_id}</small>
+                          </span>
+                          <StatusPill status={node.observed_state} />
+                        </span>
+                        <span className="node-inventory-row-context">
+                          <span>{node.workspace_id}</span>
+                          <span>Config · {node.configuration_state.replace(/_/g, " ")}</span>
+                          <span>Version · {node.version_posture.replace(/_/g, " ")}</span>
+                        </span>
+                        <span className={attention ? "node-row-attention" : "node-row-clear"}>
+                          {attention ? attention.title : "No deterministic exception in loaded records"}
+                        </span>
+                      </button>
                     </div>
-                    <StatusPill status={node.observed_state} />
-                  </header>
-                  <div className="node-configuration-posture">
-                    <div>
-                      <span>Configuration posture</span>
-                      <strong>{node.configuration_state.replace(/_/g, " ")}</strong>
-                    </div>
-                    <StatusPill status={node.configuration_state} />
-                    <p>
-                      {node.configuration_acknowledgment_status === "stored_not_enforced"
-                        ? "Node attests that the signed configuration is stored. Enforcement is not proven."
-                        : "No current Node storage acknowledgment. Enforcement is not proven."}
-                    </p>
-                  </div>
-                  <NodeConfigurationTrustPosture transition={node.configuration_trust_transition} />
-                  <div className="node-configuration-posture">
-                    <div>
-                      <span>Node identity-key posture</span>
-                      <strong>{node.status === "revoked"
-                        ? "request authority revoked"
-                        : node.identity_key_rotation
-                          ? node.identity_key_rotation.status.replace(/_/g, " ")
-                          : "enrollment key active"}</strong>
-                    </div>
-                    <StatusPill
-                      status={node.status === "revoked"
-                        ? "revoked"
-                        : node.identity_key_rotation?.status ?? "active"}
-                    />
-                    <p>
-                      {node.status === "revoked"
-                        ? `Gateway retains fingerprint ${shortHash(node.active_identity_key_id)} for evidence; the key cannot authenticate future Node requests.`
-                        : `Active request key ${shortHash(node.active_identity_key_id)}. Rotation requires current-key authorization and proof by the next key; retired keys have no request authority.`}
-                    </p>
-                  </div>
-                  <div className="node-configuration-posture">
-                    <div>
-                      <span>Node version posture</span>
-                      <strong>{node.version_posture.replace(/_/g, " ")}</strong>
-                    </div>
-                    <StatusPill status={node.version_posture} />
-                    <p>
-                      Signed heartbeat observation versus signed desired minimum. Maintenance remains
-                      operator-managed; package authenticity and process health are unknown.
-                    </p>
-                  </div>
-                  <dl>
-                    <div>
-                      <dt>Administrative state</dt>
-                      <dd>{node.status}</dd>
-                    </div>
-                    <div>
-                      <dt>Audit evidence</dt>
-                      <dd>{node.evidence_status}</dd>
-                    </div>
-                    <div>
-                      <dt>
-                        {node.status === "revoked"
-                          ? "Identity key fingerprint"
-                          : "Active identity key"}{" "}
-                        <small>Gateway fingerprint</small>
-                      </dt>
-                      <dd>{shortHash(node.active_identity_key_id)}</dd>
-                    </div>
-                    <div>
-                      <dt>Assigned workspace</dt>
-                      <dd>{node.workspace_id}</dd>
-                    </div>
-                    <div>
-                      <dt>Runner adapter <small>reported posture</small></dt>
-                      <dd>{scopeString(node.descriptor, "runner_adapter") || "Unavailable"}</dd>
-                    </div>
-                    <div>
-                      <dt>Topology <small>reported posture</small></dt>
-                      <dd>{scopeString(node.descriptor, "deployment_topology") || "Unavailable"}</dd>
-                    </div>
-                    <div>
-                      <dt>Last accepted heartbeat</dt>
-                      <dd>{node.last_seen_at ? formatDate(node.last_seen_at) : "Never observed"}</dd>
-                    </div>
-                    <div>
-                      <dt>Observed Node version <small>signed heartbeat</small></dt>
-                      <dd>{node.last_observed_node_version ?? "Never observed"}</dd>
-                    </div>
-                    <div>
-                      <dt>Desired minimum version <small>signed configuration</small></dt>
-                      <dd>{node.minimum_node_version ?? "Unassigned"}</dd>
-                    </div>
-                    <div>
-                      <dt>Desired configuration</dt>
-                      <dd>{node.desired_configuration_generation === null
-                        ? "Unassigned"
-                        : `Generation ${node.desired_configuration_generation}`}</dd>
-                    </div>
-                    <div>
-                      <dt>Stored configuration <small>Node-attested, not enforced</small></dt>
-                      <dd>{node.acknowledged_configuration_generation === null
-                        ? "Not acknowledged"
-                        : `Generation ${node.acknowledged_configuration_generation}`}</dd>
-                    </div>
-                    <div>
-                      <dt>Desired digest</dt>
-                      <dd>{node.desired_configuration_digest ? shortHash(node.desired_configuration_digest) : "Unavailable"}</dd>
-                    </div>
-                    <div>
-                      <dt>Last reported digest <small>heartbeat posture</small></dt>
-                      <dd>{node.last_configuration_digest ? shortHash(node.last_configuration_digest) : "Unavailable"}</dd>
-                    </div>
-                  </dl>
-                  <NodeConfigurationControl
-                    node={node}
-                    token={token}
-                    onChanged={() => loadDashboard()}
-                  />
-                  <NodeRevocationControl
-                    node={node}
-                    token={token}
-                    onChanged={() => loadDashboard()}
-                  />
-                  <footer>
-                    <span>Identity source · Gateway derived</span>
-                    <span>Config signer · {node.configuration_signing_key_id
-                      ? shortHash(node.configuration_signing_key_id)
-                      : "unavailable"}</span>
-                    <span>Runner health · unknown</span>
-                    <span>Policy enforcement · unknown</span>
-                  </footer>
-                </article>
-              ))}
+                  );
+                })}
+              </div>
+              {selectedVisibleNode ? (
+                <NodeDetailRecord
+                  node={selectedVisibleNode}
+                  token={token}
+                  onChanged={() => loadDashboard()}
+                />
+              ) : null}
             </div>
           )}
         </Panel>
@@ -3185,6 +3088,159 @@ export function App() {
       ) : null}
       </main>
     </div>
+  );
+}
+
+function NodeDetailRecord({
+  node,
+  token,
+  onChanged,
+}: {
+  node: IthildinNode;
+  token: string;
+  onChanged: () => Promise<void>;
+}) {
+  return (
+    <article
+      className="node-card node-detail-record"
+      id={`node-${node.node_id}`}
+      role="region"
+      aria-label="Selected Node record"
+      tabIndex={-1}
+    >
+      <header>
+        <span className="node-card-icon" aria-hidden="true"><Server size={20} /></span>
+        <div>
+          <p className="eyebrow">Selected authoritative record</p>
+          <h3>{node.display_name}</h3>
+          <p>{node.node_id}</p>
+        </div>
+        <StatusPill status={node.observed_state} />
+      </header>
+      <p className="node-selection-boundary">
+        Selection changes only this loaded Gateway record view. It does not contact, inspect, or
+        change the endpoint.
+      </p>
+      <div className="node-configuration-posture">
+        <div>
+          <span>Configuration posture</span>
+          <strong>{node.configuration_state.replace(/_/g, " ")}</strong>
+        </div>
+        <StatusPill status={node.configuration_state} />
+        <p>
+          {node.configuration_acknowledgment_status === "stored_not_enforced"
+            ? "Node attests that the signed configuration is stored. Enforcement is not proven."
+            : "No current Node storage acknowledgment. Enforcement is not proven."}
+        </p>
+      </div>
+      <NodeConfigurationTrustPosture transition={node.configuration_trust_transition} />
+      <div className="node-configuration-posture">
+        <div>
+          <span>Node identity-key posture</span>
+          <strong>{node.status === "revoked"
+            ? "request authority revoked"
+            : node.identity_key_rotation
+              ? node.identity_key_rotation.status.replace(/_/g, " ")
+              : "enrollment key active"}</strong>
+        </div>
+        <StatusPill
+          status={node.status === "revoked"
+            ? "revoked"
+            : node.identity_key_rotation?.status ?? "active"}
+        />
+        <p>
+          {node.status === "revoked"
+            ? `Gateway retains fingerprint ${shortHash(node.active_identity_key_id)} for evidence; the key cannot authenticate future Node requests.`
+            : `Active request key ${shortHash(node.active_identity_key_id)}. Rotation requires current-key authorization and proof by the next key; retired keys have no request authority.`}
+        </p>
+      </div>
+      <div className="node-configuration-posture">
+        <div>
+          <span>Node version posture</span>
+          <strong>{node.version_posture.replace(/_/g, " ")}</strong>
+        </div>
+        <StatusPill status={node.version_posture} />
+        <p>
+          Signed heartbeat observation versus signed desired minimum. Maintenance remains
+          operator-managed; package authenticity and process health are unknown.
+        </p>
+      </div>
+      <dl>
+        <div>
+          <dt>Administrative state</dt>
+          <dd>{node.status}</dd>
+        </div>
+        <div>
+          <dt>Audit evidence</dt>
+          <dd>{node.evidence_status}</dd>
+        </div>
+        <div>
+          <dt>
+            {node.status === "revoked" ? "Identity key fingerprint" : "Active identity key"}{" "}
+            <small>Gateway fingerprint</small>
+          </dt>
+          <dd>{shortHash(node.active_identity_key_id)}</dd>
+        </div>
+        <div>
+          <dt>Assigned workspace</dt>
+          <dd>{node.workspace_id}</dd>
+        </div>
+        <div>
+          <dt>Runner adapter <small>reported posture</small></dt>
+          <dd>{scopeString(node.descriptor, "runner_adapter") || "Unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Topology <small>reported posture</small></dt>
+          <dd>{scopeString(node.descriptor, "deployment_topology") || "Unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Last accepted heartbeat</dt>
+          <dd>{node.last_seen_at ? formatDate(node.last_seen_at) : "Never observed"}</dd>
+        </div>
+        <div>
+          <dt>Observed Node version <small>signed heartbeat</small></dt>
+          <dd>{node.last_observed_node_version ?? "Never observed"}</dd>
+        </div>
+        <div>
+          <dt>Desired minimum version <small>signed configuration</small></dt>
+          <dd>{node.minimum_node_version ?? "Unassigned"}</dd>
+        </div>
+        <div>
+          <dt>Desired configuration</dt>
+          <dd>{node.desired_configuration_generation === null
+            ? "Unassigned"
+            : `Generation ${node.desired_configuration_generation}`}</dd>
+        </div>
+        <div>
+          <dt>Stored configuration <small>Node-attested, not enforced</small></dt>
+          <dd>{node.acknowledged_configuration_generation === null
+            ? "Not acknowledged"
+            : `Generation ${node.acknowledged_configuration_generation}`}</dd>
+        </div>
+        <div>
+          <dt>Desired digest</dt>
+          <dd>{node.desired_configuration_digest
+            ? shortHash(node.desired_configuration_digest)
+            : "Unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Last reported digest <small>heartbeat posture</small></dt>
+          <dd>{node.last_configuration_digest
+            ? shortHash(node.last_configuration_digest)
+            : "Unavailable"}</dd>
+        </div>
+      </dl>
+      <NodeConfigurationControl node={node} token={token} onChanged={onChanged} />
+      <NodeRevocationControl node={node} token={token} onChanged={onChanged} />
+      <footer>
+        <span>Identity source · Gateway derived</span>
+        <span>Config signer · {node.configuration_signing_key_id
+          ? shortHash(node.configuration_signing_key_id)
+          : "unavailable"}</span>
+        <span>Runner health · unknown</span>
+        <span>Policy enforcement · unknown</span>
+      </footer>
+    </article>
   );
 }
 
