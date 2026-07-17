@@ -57,6 +57,12 @@ externally closed.
 - [Version Posture Implementation Plan](track-b-node-version-posture-implementation-plan.md)
 - [Version Posture Observed Results](track-b-node-version-posture-observed-results.md)
 
+## Track B Node Identity-Key Rotation
+
+- [Identity-Key Rotation Capability Decision](track-b-node-identity-key-rotation-capability-decision.md)
+- [Identity-Key Rotation Architecture](track-b-node-identity-key-rotation-architecture.md)
+- [Identity-Key Rotation Implementation Plan](track-b-node-identity-key-rotation-implementation-plan.md)
+
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
 - [Command Center Information Architecture](command-center-information-architecture.md)

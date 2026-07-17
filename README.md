@@ -435,6 +435,10 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-version-posture-observed-results.md](docs/codex/track-b-node-version-posture-observed-results.md) - live signed below-minimum, operator-managed upgrade, restart, rollback, invalid-input, and revocation evidence.
 - `make track-b-node-version-posture-decision-check` - validate version observation while rejecting self-update, package transfer, process control, and fleet rollout.
 - `make track-b-node-version-posture-evidence-check` - validate ignored live version-posture evidence without printing private material.
+- [docs/codex/track-b-node-identity-key-rotation-capability-decision.md](docs/codex/track-b-node-identity-key-rotation-capability-decision.md) - bounded old-key authorization plus new-key proof-of-possession decision and recovery boundary.
+- [docs/codex/track-b-node-identity-key-rotation-architecture.md](docs/codex/track-b-node-identity-key-rotation-architecture.md) - exact trust sequence, fail-closed evidence state, crash recovery, and retired-key rejection rules.
+- [docs/codex/track-b-node-identity-key-rotation-implementation-plan.md](docs/codex/track-b-node-identity-key-rotation-implementation-plan.md) - ordered Gateway, Node-state, operator-posture, adversarial-test, and evidence work.
+- `make track-b-node-identity-key-rotation-decision-check` - validate the bounded identity-key rotation authority and explicit non-approvals.
 - `make node-configuration-keygen` - create the dedicated local Ed25519 Node-configuration signing keypair; private material remains mode `0600` under `var/keys/`.
 - `make node-configuration-signing-status` - report configuration trust-root availability and key ID without printing key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
