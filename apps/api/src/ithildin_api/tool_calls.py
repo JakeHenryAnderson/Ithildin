@@ -75,6 +75,7 @@ class GovernedToolCallService:
         principal_registry: PrincipalRegistry | None = None,
         telemetry: Telemetry | None = None,
         agent_run_store: AgentRunStore | None = None,
+        agent_run_metadata: JsonObject | None = None,
         sandbox_artifact_service: SandboxArtifactWriteService | None = None,
     ) -> None:
         self.registry = registry
@@ -88,6 +89,7 @@ class GovernedToolCallService:
         self.redaction_service = redaction_service or RedactionService()
         self.principal_registry = principal_registry
         self.agent_run_store = agent_run_store
+        self.agent_run_metadata = agent_run_metadata
         self.telemetry = telemetry or Telemetry(
             enabled=False,
             service_name="ithildin-api",
@@ -821,6 +823,7 @@ class GovernedToolCallService:
             tool_name=tool_name,
             policy_hash=self.policy_evaluator.policy_hash,
             tool_manifest_hash=tool_manifest_hash,
+            run_metadata=self.agent_run_metadata,
         )
         if created:
             self.audit_writer.write_event(

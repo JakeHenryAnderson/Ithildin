@@ -34,6 +34,7 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
         "read_after": root / "evidence/governed-read-after-restart.json",
         "audit_verification": root / "evidence/audit-verification.json",
         "final_posture": root / "evidence/final-node-posture.json",
+        "run_correlation": root / "evidence/governed-run-correlation.json",
     }
     failures = [
         f"missing Node governed-access POC evidence: {name}"
@@ -65,6 +66,12 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
             replay_nonce_count = connection.execute(
                 "SELECT COUNT(*) FROM node_nonces WHERE nonce = ?", ("a7" * 16,)
             ).fetchone()[0]
+            node_principal = str(node_row[1]) if node_row else ""
+            run_rows = connection.execute(
+                "SELECT principal_id, workspace_id, session_id, metadata_json "
+                "FROM agent_runs WHERE principal_id = ? ORDER BY session_id",
+                (node_principal,),
+            ).fetchall()
         verification = AuditWriter(paths["database"], paths["audit"]).verify_chain()
         runtime = {
             "gateway_derived_identity_persisted": bool(node_row)
@@ -110,6 +117,13 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
             "derived_principal_and_configuration_bound_in_audit": bool(node_row)
             and str(node_row[1]) in audit_text
             and ":cfg:1:sha256:" in audit_text,
+            "gateway_run_correlation_persisted_and_exported": _run_correlation_valid(
+                documents["run_correlation"],
+                run_rows,
+                node_id=str(node_row[0]) if node_row else "",
+                principal_id=node_principal,
+                configuration_digest=str(documents["assignment"].get("configuration_digest")),
+            ),
             "read_execution_and_ingress_denials_audited": sum(
                 event.get("event_type") == "tool.execution.completed"
                 for event in audit_events
@@ -176,6 +190,66 @@ def _json(path: Path) -> dict[str, Any]:
     if not isinstance(document, dict):
         raise ValueError(f"invalid Node governed-access POC evidence: {path.name}")
     return cast(dict[str, Any], document)
+
+
+def _run_correlation_valid(
+    document: dict[str, Any],
+    rows: list[tuple[Any, ...]],
+    *,
+    node_id: str,
+    principal_id: str,
+    configuration_digest: str,
+) -> bool:
+    expected = {
+        "ingress_kind": "node_governed_access",
+        "identity_source": "gateway_derived_node",
+        "node_id": node_id,
+        "node_display_name": "Hermes governed-access POC",
+        "authorization_profile": "agent:node-local-preview-readonly",
+        "configuration_generation": 1,
+        "configuration_digest": configuration_digest,
+        "offline_fallback_allowed": False,
+        "runner_enforcement_proven": False,
+    }
+    recorded = document.get("runs")
+    if (
+        document.get("principal_id") != principal_id
+        or document.get("workspace_id") != "default"
+        or document.get("returned") != 2
+        or not isinstance(recorded, list)
+        or len(recorded) != 2
+        or len(rows) != 2
+    ):
+        return False
+    expected_sessions = {
+        "hermes-read-before-restart",
+        "hermes-read-after-restart",
+    }
+    observed_sessions: set[str] = set()
+    for row in rows:
+        row_principal, workspace_id, session_id, raw_metadata = row
+        try:
+            metadata = json.loads(str(raw_metadata))
+        except json.JSONDecodeError:
+            return False
+        if (
+            row_principal != principal_id
+            or workspace_id != "default"
+            or not isinstance(session_id, str)
+            or not isinstance(metadata, dict)
+            or any(metadata.get(key) != value for key, value in expected.items())
+        ):
+            return False
+        matched = {suffix for suffix in expected_sessions if session_id.endswith(f":{suffix}")}
+        observed_sessions.update(matched)
+    if observed_sessions != expected_sessions:
+        return False
+    return all(
+        isinstance(run, dict)
+        and run.get("metadata") == expected
+        and run.get("export_origin") == expected
+        for run in recorded
+    )
 
 
 def main() -> int:

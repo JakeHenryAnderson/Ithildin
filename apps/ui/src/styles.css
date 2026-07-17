@@ -1354,6 +1354,8 @@ caption {
   font-size: 0.78rem;
   line-height: 1.35;
   margin: 4px 0 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .runner-governance-posture > p {
@@ -3609,6 +3611,11 @@ td,
   font-size: 0.72rem;
   grid-column: 1 / -1;
   margin: 0;
+}
+
+.node-configuration-posture > button {
+  grid-column: 1 / -1;
+  justify-self: start;
 }
 
 .node-trust-posture {

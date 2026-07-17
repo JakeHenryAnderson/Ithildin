@@ -6,6 +6,7 @@ import argparse
 import base64
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,7 +15,7 @@ from typing import cast
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ithildin_api.nodes import canonical_signature_message
 from ithildin_node.client import NodeClient, NodeClientError, NodeState, StoredNodeConfiguration
-from ithildin_schemas import JsonObject, canonical_json, sha256_digest
+from ithildin_schemas import JsonObject, JsonValue, canonical_json, sha256_digest
 
 REPLAY_NONCE = "a7" * 16
 
@@ -180,6 +181,45 @@ def _after_restart(api_url: str, token: str, root: Path) -> None:
     _write(root / "evidence/audit-verification.json", verification)
     inventory = _request(api_url, f"/nodes/{state.node_id}", token)
     _write(root / "evidence/final-node-posture.json", inventory)
+    query = urllib.parse.urlencode(
+        {
+            "limit": 25,
+            "principal_id": state.principal_id,
+            "workspace_id": state.workspace_id,
+        }
+    )
+    listed = _request(api_url, f"/runs?{query}", token)
+    runs = listed.get("runs")
+    if not isinstance(runs, list):
+        raise RuntimeError("Gateway run response is invalid")
+    correlated: list[JsonObject] = []
+    for item in runs:
+        if not isinstance(item, dict):
+            raise RuntimeError("Gateway run record is invalid")
+        run_id = _required(item, "run_id")
+        exported = _request(api_url, f"/runs/{run_id}/evidence-export", token)
+        exported_run = exported.get("run")
+        if not isinstance(exported_run, dict):
+            raise RuntimeError("Gateway run evidence response is invalid")
+        correlated.append(
+            {
+                "run_id": run_id,
+                "session_id": item.get("session_id"),
+                "metadata": _run_origin_summary(item.get("metadata")),
+                "export_origin": _run_origin_summary(exported_run.get("origin")),
+            }
+        )
+    summary = listed.get("summary")
+    returned = summary.get("returned") if isinstance(summary, dict) else None
+    _write(
+        root / "evidence/governed-run-correlation.json",
+        {
+            "principal_id": state.principal_id,
+            "workspace_id": state.workspace_id,
+            "returned": returned,
+            "runs": cast(list[JsonValue], correlated),
+        },
+    )
 
 
 def _signed_request(
@@ -273,6 +313,25 @@ def _configuration_summary(document: JsonObject) -> JsonObject:
         "generation": document.get("generation"),
         "configuration_digest": document.get("configuration_digest"),
         "evidence_status": document.get("evidence_status"),
+    }
+
+
+def _run_origin_summary(value: object) -> JsonObject:
+    if not isinstance(value, dict):
+        raise RuntimeError("Gateway run origin is invalid")
+    return {
+        key: value.get(key)
+        for key in (
+            "ingress_kind",
+            "identity_source",
+            "node_id",
+            "node_display_name",
+            "authorization_profile",
+            "configuration_generation",
+            "configuration_digest",
+            "offline_fallback_allowed",
+            "runner_enforcement_proven",
+        )
     }
 
 

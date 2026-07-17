@@ -90,6 +90,10 @@ Primary content:
 
 The current Agent Run record remains a diagnostic grouping of mediated calls. A mission label or
 intent is presentation context, not proof that Ithildin started, owns, or controls an agent process.
+For a Node-authenticated governed read, the Gateway persists the exact Node identity, read-only
+authorization profile, and signed configuration generation/digest on that existing run. Command
+Center labels this source as `Gateway-derived Node identity`; the external runner session remains
+correlation only, and runner enforcement, model activity, and filesystem non-bypass remain unknown.
 
 Opening a mission enters Workbench with tabs or local navigation for Overview, Activity, Decisions,
 Artifacts, and Evidence. The raw timeline remains available under Activity or technical detail.
@@ -121,6 +125,10 @@ prove runner/model/configuration enforcement. Opening a Node from Attention clea
 filters that would hide that exact authoritative record, selects it in the fleet list, and focuses
 the corresponding detail. Selecting a list row changes only the displayed loaded record. It does
 not contact the Node, inspect an endpoint, acknowledge an exception, or exercise lifecycle control.
+`View mediated runs` opens the existing Agent Runs surface with that record's exact Gateway-derived
+principal and enrolled workspace filters. It is navigation over persisted Gateway records, not a
+Node query, runner command, mission dispatch, or claim that the filtered runs capture all endpoint
+activity.
 
 ### Artifacts
 

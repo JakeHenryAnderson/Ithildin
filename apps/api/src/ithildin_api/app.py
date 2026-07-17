@@ -71,6 +71,8 @@ from ithildin_api.node_configuration_trust import (
     NodeConfigurationTrustTransitionStore,
 )
 from ithildin_api.node_governed_access import (
+    NODE_READ_ONLY_PROFILE_ID,
+    NodeGovernedAccessContext,
     NodeGovernedAccessError,
     NodeGovernedToolCallPayload,
     bind_node_tool_arguments,
@@ -596,7 +598,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             ) from exc
 
         registry = cast(ToolRegistry, api.state.registry)
-        service = _node_governed_tool_service(api, context.principal_registry)
+        service = _node_governed_tool_service(
+            api,
+            context.principal_registry,
+            node=node,
+            context=context,
+        )
         try:
             registered_tool = registry.get_tool(governed_request.tool_name)
         except UnknownToolDenied:
@@ -2141,7 +2148,11 @@ def _approval_or_404(approval_service: ApprovalService, approval_id: str) -> App
 
 
 def _node_governed_tool_service(
-    api: FastAPI, principal_registry: PrincipalRegistry
+    api: FastAPI,
+    principal_registry: PrincipalRegistry,
+    *,
+    node: NodeRecord,
+    context: NodeGovernedAccessContext,
 ) -> GovernedToolCallService:
     return GovernedToolCallService(
         registry=cast(ToolRegistry, api.state.registry),
@@ -2157,6 +2168,17 @@ def _node_governed_tool_service(
         principal_registry=principal_registry,
         telemetry=cast(Telemetry, api.state.tool_call_telemetry),
         agent_run_store=cast(AgentRunStore, api.state.agent_run_store),
+        agent_run_metadata={
+            "ingress_kind": "node_governed_access",
+            "identity_source": "gateway_derived_node",
+            "node_id": node.node_id,
+            "node_display_name": node.display_name,
+            "authorization_profile": NODE_READ_ONLY_PROFILE_ID,
+            "configuration_generation": context.configuration_generation,
+            "configuration_digest": context.configuration_digest,
+            "offline_fallback_allowed": False,
+            "runner_enforcement_proven": False,
+        },
         sandbox_artifact_service=cast(
             SandboxArtifactWriteService, api.state.sandbox_artifact_service
         ),

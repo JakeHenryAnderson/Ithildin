@@ -983,6 +983,28 @@ export function App() {
     void loadDashboard(token, emptyFilters);
   }
 
+  function openNodeGovernedRuns(node: IthildinNode) {
+    const filters = {
+      principal_id: node.principal_id,
+      workspace_id: node.workspace_id,
+      status: "",
+      tool_name: "",
+    };
+    setRunFilters(filters);
+    setAppliedRunFilters(filters);
+    setInvestigationFilters({
+      time_range: "all",
+      mission: "",
+      decision: "all",
+      outcome: "all",
+      attention: "all",
+    });
+    setWorkspaceLens("investigator");
+    setActiveSection("missions");
+    void loadDashboard(token, filters);
+    window.setTimeout(() => scrollAndFocusElement("missions"), 0);
+  }
+
   function clearInvestigationFilter(name: keyof InvestigationFilters) {
     setInvestigationFilters((current) => ({
       ...current,
@@ -2616,6 +2638,10 @@ export function App() {
               <dd>{data.nodes.filter((node) => node.configuration_state === "configuration_drift").length}</dd>
             </div>
             <div>
+              <dt>Governed access ready</dt>
+              <dd>{data.nodes.filter((node) => node.governed_access.state === "ready_read_only").length}</dd>
+            </div>
+            <div>
               <dt>Version drift</dt>
               <dd>{data.nodes.filter((node) => node.version_posture === "below_minimum").length}</dd>
             </div>
@@ -2733,6 +2759,7 @@ export function App() {
                   node={selectedVisibleNode}
                   token={token}
                   onChanged={() => loadDashboard()}
+                  onOpenRuns={() => openNodeGovernedRuns(selectedVisibleNode)}
                 />
               ) : null}
             </div>
@@ -2924,7 +2951,9 @@ export function App() {
                   >
                     <span>
                       <strong>{missionFacingLabel(run, run.workspace_id)}</strong>
-                      <small>Reported identity: {run.principal_id}</small>
+                      <small>{isNodeGovernedRun(run)
+                        ? "Gateway-derived Node identity"
+                        : "Reported identity"}: {run.principal_id}</small>
                     </span>
                     <small>
                       Configured governed workspace: {run.workspace_id} · {run.last_tool_name ?? "no tool"}
@@ -2943,9 +2972,17 @@ export function App() {
                       <h3>{missionFacingLabel(selectedRun.run, selectedRun.run.workspace_id)}</h3>
                       <dl className="mission-context-facts">
                         <div>
-                          <dt>Reported requesting identity</dt>
+                          <dt>{isNodeGovernedRun(selectedRun.run)
+                            ? "Gateway-derived Node identity"
+                            : "Reported requesting identity"}</dt>
                           <dd>{selectedRun.run.principal_id}</dd>
                         </div>
+                        {isNodeGovernedRun(selectedRun.run) ? (
+                          <div>
+                            <dt>Authoritative Node</dt>
+                            <dd>{scopeString(selectedRun.run.metadata, "node_id")}</dd>
+                          </div>
+                        ) : null}
                         <div>
                           <dt>Configured governed workspace</dt>
                           <dd>{selectedRun.run.workspace_id}</dd>
@@ -2956,8 +2993,9 @@ export function App() {
                         </div>
                       </dl>
                       <p className="mission-authority-boundary">
-                        Ithildin reconstructs mediated activity. It does not start the external
-                        agent or verify workspace isolation.
+                        {isNodeGovernedRun(selectedRun.run)
+                          ? "Ithildin authenticated this Node and mediated the recorded read under its enrolled workspace. It does not start or control the external runner, prove runner enforcement, or verify filesystem isolation."
+                          : "Ithildin reconstructs mediated activity. It does not start the external agent or verify workspace isolation."}
                       </p>
                     </div>
                     <div className="run-actions">
@@ -2974,6 +3012,7 @@ export function App() {
                       </button>
                     </div>
                   </div>
+                  <NodeRunAuthority run={selectedRun.run} />
                   <EvidenceCloseout
                     evidence={selectedRunEvidence}
                     evidenceError={runEvidenceError}
@@ -3111,10 +3150,12 @@ function NodeDetailRecord({
   node,
   token,
   onChanged,
+  onOpenRuns,
 }: {
   node: IthildinNode;
   token: string;
   onChanged: () => Promise<void>;
+  onOpenRuns: () => void;
 }) {
   return (
     <article
@@ -3149,6 +3190,10 @@ function NodeDetailRecord({
             : `Blocked by ${node.governed_access.reason_code.replace(/_/g, " ")}. No offline fallback is permitted.`}
           {" "}This does not prove runner enforcement or filesystem non-bypass.
         </p>
+        <button className="secondary-action" type="button" onClick={onOpenRuns}>
+          <Activity aria-hidden="true" size={16} />
+          View mediated runs
+        </button>
       </div>
       <div className="node-configuration-posture">
         <div>
@@ -4212,6 +4257,10 @@ function missionFacingLabel(run: AgentRun | undefined, workspaceId: string) {
   if (run && isDemoRun(run)) {
     return "Guided local demo mission";
   }
+  if (run && isNodeGovernedRun(run)) {
+    const nodeName = scopeString(run.metadata, "node_display_name") || "Ithildin Node";
+    return `${nodeName} governed session`;
+  }
   if (run) {
     return `${workspaceId} mediated run`;
   }
@@ -4222,38 +4271,106 @@ function RunnerGovernancePosture({ run }: { run: AgentRun | null }) {
   const fixedStdioIdentity =
     run?.principal_id === "agent:mcp-local" && run.session_id === "mcp-stdio";
   const hermesTrackA = fixedStdioIdentity && run?.workspace_id === "hermes-poc";
+  const nodeGoverned = run ? isNodeGovernedRun(run) : false;
+  const nodeName = run ? scopeString(run.metadata, "node_display_name") : "";
+  const configurationGeneration = run?.metadata.configuration_generation;
 
   return (
     <section className="runner-governance-posture" aria-label="External runner governance posture">
       <div className="runner-posture-heading">
         <div>
           <p className="eyebrow">External runner posture</p>
-          <h3>{hermesTrackA ? "Hermes Track A compatibility fixture" : "Recorded ingress posture"}</h3>
+          <h3>{nodeGoverned
+            ? `${nodeName || "Ithildin Node"} governed ingress`
+            : hermesTrackA
+              ? "Hermes Track A compatibility fixture"
+              : "Recorded ingress posture"}</h3>
         </div>
         <span className="posture-claim">Governed calls only</span>
       </div>
       <dl>
         <div>
           <dt>Runner</dt>
-          <dd>{hermesTrackA ? "Operator-started Hermes" : "Not identified by Gateway"}</dd>
+          <dd>{nodeGoverned
+            ? "External runner behind authenticated Node"
+            : hermesTrackA
+              ? "Operator-started Hermes"
+              : "Not identified by Gateway"}</dd>
         </div>
         <div>
           <dt>Connection</dt>
-          <dd>{fixedStdioIdentity ? "Local stdio MCP" : "Recorded ingress only"}</dd>
+          <dd>{nodeGoverned
+            ? "Signed Node request to Gateway"
+            : fixedStdioIdentity
+              ? "Local stdio MCP"
+              : "Recorded ingress only"}</dd>
         </div>
         <div>
-          <dt>Reported identity</dt>
+          <dt>{nodeGoverned ? "Gateway-derived Node identity" : "Reported identity"}</dt>
           <dd>{run?.principal_id ?? "No run selected"}</dd>
         </div>
         <div>
           <dt>Lifecycle authority</dt>
           <dd>Unmanaged · no launch or health control</dd>
         </div>
+        {nodeGoverned ? (
+          <div>
+            <dt>Configuration authority</dt>
+            <dd>Generation {typeof configurationGeneration === "number"
+              ? configurationGeneration
+              : "unavailable"} · stored, enforcement unproven</dd>
+          </div>
+        ) : null}
       </dl>
       <p>
-        {hermesTrackA
+        {nodeGoverned
+          ? "The Gateway authenticated this Node, derived its identity and workspace, and mediated the recorded read. Offline fallback was prohibited. This does not prove runner enforcement, model activity, or filesystem non-bypass."
+          : hermesTrackA
           ? "Track A shares its synthetic workspace with the runner. Ithildin proves policy and execution outcomes for recorded MCP calls, not filesystem isolation or all runner activity."
           : "Ithildin reconstructs recorded mediated activity. It does not infer the runner process, model inference, health, or isolation from run state."}
+      </p>
+    </section>
+  );
+}
+
+function NodeRunAuthority({ run }: { run: AgentRun }) {
+  if (!isNodeGovernedRun(run)) return null;
+  return (
+    <section className="runner-governance-posture" aria-label="Node governed-run authority">
+      <div className="runner-posture-heading">
+        <div>
+          <p className="eyebrow">Gateway authority snapshot</p>
+          <h3>Node-authenticated governed read</h3>
+        </div>
+        <span className="posture-claim">Read only</span>
+      </div>
+      <dl>
+        <div>
+          <dt>Node</dt>
+          <dd>{scopeString(run.metadata, "node_id")}</dd>
+        </div>
+        <div>
+          <dt>Authorization profile</dt>
+          <dd>{scopeString(run.metadata, "authorization_profile")}</dd>
+        </div>
+        <div>
+          <dt>Configuration</dt>
+          <dd>Generation {String(run.metadata.configuration_generation ?? "unavailable")} · {shortHash(
+            scopeString(run.metadata, "configuration_digest"),
+          )}</dd>
+        </div>
+        <div>
+          <dt>Offline fallback</dt>
+          <dd>{run.metadata.offline_fallback_allowed === false ? "Prohibited" : "Unproven"}</dd>
+        </div>
+        <div>
+          <dt>Runner enforcement</dt>
+          <dd>{run.metadata.runner_enforcement_proven === false ? "Not proven" : "Unproven"}</dd>
+        </div>
+      </dl>
+      <p>
+        This snapshot is Gateway-derived run provenance. The external runner label is correlation
+        only, and activity that bypassed the Gateway remains outside this evidence.
       </p>
     </section>
   );
@@ -4447,10 +4564,12 @@ function InvestigationSummary({
 }) {
   const observedAttention = runs.filter((run) => runObservedAttention(run, auditEvents)).length;
   const missions = new Set(runs.map((run) => missionFacingLabel(run, run.workspace_id))).size;
+  const nodeGovernedRuns = runs.filter(isNodeGovernedRun).length;
   return (
     <div className="investigation-summary" aria-label="Bounded investigation summary">
       <span>{runs.length} of {loadedCount} loaded runs shown</span>
       <span>{missions} presentation mission groups</span>
+      <span>{nodeGovernedRuns} Node-authenticated governed runs</span>
       <span>{observedAttention} with observed attention</span>
       <span>decision/outcome scope: 100 recent audit events</span>
       <small>
@@ -5103,6 +5222,14 @@ function isDemoRun(run: AgentRun) {
     run.metadata.scenario === "guided_local_demo" ||
     run.metadata.demo_step === "mediated_patch_flow" ||
     run.metadata.model_client_label === "guided_local_demo"
+  );
+}
+
+function isNodeGovernedRun(run: AgentRun) {
+  return (
+    run.metadata.ingress_kind === "node_governed_access" &&
+    run.metadata.identity_source === "gateway_derived_node" &&
+    typeof run.metadata.node_id === "string"
   );
 }
 

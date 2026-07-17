@@ -190,6 +190,7 @@ type FetchMockOptions = {
   additionalNodes?: Record<string, unknown>[];
   nodeOverrides?: Record<string, unknown>;
   nodeRevokeFailure?: boolean;
+  nodeRun?: boolean;
   nodeStatus?: "enrolled" | "revoked";
   proposalStatus?: "applied" | "proposed";
 };
@@ -209,6 +210,27 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
           : approvalReview.review.valid,
     },
   };
+  const runPrincipalId = options.nodeRun
+    ? "agent:node.node_11111111111111111111111111111111"
+    : "agent:mcp-local";
+  const runSessionId = options.nodeRun
+    ? "node:node_11111111111111111111111111111111:cfg:1:sha256:desiredconfiguration:hermes-read"
+    : "mcp-stdio";
+  const runRoles = options.nodeRun ? ["AgentReadOnly"] : ["AgentDeveloper"];
+  const runMetadata = options.nodeRun
+    ? {
+        authorization_profile: "agent:node-local-preview-readonly",
+        configuration_digest: "sha256:desiredconfiguration",
+        configuration_generation: 1,
+        created_by: "governed_tool_call",
+        identity_source: "gateway_derived_node",
+        ingress_kind: "node_governed_access",
+        node_display_name: "Hermes Node",
+        node_id: "node_11111111111111111111111111111111",
+        offline_fallback_allowed: false,
+        runner_enforcement_proven: false,
+      }
+    : { scenario: "guided_local_demo", demo_step: "mediated_patch_flow" };
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = url.replace(API_BASE, "");
@@ -448,7 +470,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
                 : "all_gateway_prerequisites_current",
               identity_source: "gateway_derived_node",
               authorization_profile: "agent:node-local-preview-readonly",
-              workspace_id: "default",
+              workspace_id: "demo",
               allowed_risks: ["read"],
               allowed_tool_count: 19,
               enforcement_point: "gateway_governed_tool_pipeline",
@@ -486,11 +508,11 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
         runs: [
           {
             run_id: "run_123456789",
-            principal_id: "agent:mcp-local",
+            principal_id: runPrincipalId,
             principal_type: "agent",
-            principal_roles: ["AgentDeveloper"],
+            principal_roles: runRoles,
             workspace_id: "demo",
-            session_id: "mcp-stdio",
+            session_id: runSessionId,
             status: "active",
             tool_call_count: 2,
             created_at: "2026-06-03T12:00:00Z",
@@ -499,16 +521,18 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             policy_hash: "sha256:policyhash",
             last_tool_name: "fs.read",
             last_tool_manifest_hash: "sha256:toolhash",
-            metadata: { scenario: "guided_local_demo", demo_step: "mediated_patch_flow" },
+            metadata: runMetadata,
           },
         ],
         summary: {
           returned: 1,
           filters: path.includes("principal_id")
-            ? { principal_id: "agent:mcp-local", workspace_id: "demo", tool_name: "fs.read" }
+            ? options.nodeRun
+              ? { principal_id: runPrincipalId, workspace_id: "demo" }
+              : { principal_id: "agent:mcp-local", workspace_id: "demo", tool_name: "fs.read" }
             : {},
           workspaces: { demo: 1 },
-          principals: { "agent:mcp-local": 1 },
+          principals: { [runPrincipalId]: 1 },
           statuses: { active: 1 },
           tools: { "fs.read": 1 },
           latest_updated_at: "2026-06-03T12:01:00Z",
@@ -519,11 +543,11 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
       return jsonResponse({
         run: {
           run_id: "run_123456789",
-          principal_id: "agent:mcp-local",
+          principal_id: runPrincipalId,
           principal_type: "agent",
-          principal_roles: ["AgentDeveloper"],
+          principal_roles: runRoles,
           workspace_id: "demo",
-          session_id: "mcp-stdio",
+          session_id: runSessionId,
           status: "active",
           tool_call_count: 2,
           created_at: "2026-06-03T12:00:00Z",
@@ -532,7 +556,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
           policy_hash: "sha256:policyhash",
           last_tool_name: "fs.read",
           last_tool_manifest_hash: "sha256:toolhash",
-          metadata: { scenario: "guided_local_demo", demo_step: "mediated_patch_flow" },
+          metadata: runMetadata,
         },
         timeline: options.emptyTimeline
           ? []
@@ -578,11 +602,14 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
         schema_version: "1",
         export_id: "runev_123456789",
         exported_at: "2026-06-03T12:02:00Z",
-        run: { run_id: "run_123456789" },
+        run: {
+          run_id: "run_123456789",
+          origin: options.nodeRun ? runMetadata : null,
+        },
         summary: {
-          principal_id: "agent:mcp-local",
+          principal_id: runPrincipalId,
           workspace_id: "demo",
-          session_id: "mcp-stdio",
+          session_id: runSessionId,
           status: "active",
           tool_call_count: 2,
           tools_used: ["fs.read"],
@@ -905,6 +932,59 @@ describe("Review console interactions", () => {
         expect.objectContaining({ method: "POST" }),
       );
     });
+  });
+
+  it("opens a Node's mediated runs with Gateway-derived authority and non-claims", async () => {
+    const fetchMock = installFetchMock(systemStatus(), {
+      nodeRun: true,
+      noApprovals: true,
+      proposalStatus: "applied",
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    expect(within(nodes).getByText("Governed access ready").parentElement).toHaveTextContent("1");
+    await user.click(within(nodes).getByRole("button", { name: "View mediated runs" }));
+
+    await waitFor(() => {
+      expect(within(navigation).getByRole("link", { name: "Missions" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/runs?limit=25&principal_id=agent%3Anode.node_11111111111111111111111111111111&workspace_id=demo`,
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer local-token" }),
+      }),
+    );
+
+    const missions = screen.getByRole("region", { name: "Agent runs" });
+    expect(within(missions).getByLabelText("Principal")).toHaveValue(
+      "agent:node.node_11111111111111111111111111111111",
+    );
+    expect(within(missions).getByLabelText("Workspace")).toHaveValue("demo");
+    expect(within(missions).getAllByText("Hermes Node governed session").length).toBeGreaterThan(0);
+    expect(within(missions).getAllByText("Gateway-derived Node identity").length).toBeGreaterThan(0);
+    expect(within(missions).getByText("1 Node-authenticated governed runs")).toBeInTheDocument();
+
+    const authority = within(missions).getByRole("region", {
+      name: "Node governed-run authority",
+    });
+    expect(within(authority).getByRole("heading", {
+      name: "Node-authenticated governed read",
+    })).toBeInTheDocument();
+    expect(within(authority).getByText("node_11111111111111111111111111111111")).toBeInTheDocument();
+    expect(within(authority).getByText("agent:node-local-preview-readonly")).toBeInTheDocument();
+    expect(within(authority).getByText(/Generation 1/)).toBeInTheDocument();
+    expect(within(authority).getByText("Prohibited")).toBeInTheDocument();
+    expect(within(authority).getByText("Not proven")).toBeInTheDocument();
+    expect(within(authority).getByText(/activity that bypassed the Gateway remains outside/i))
+      .toBeInTheDocument();
   });
 
   it("requires exact confirmation before revoking Gateway Node authority", async () => {

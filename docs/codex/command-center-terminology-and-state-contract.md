@@ -108,9 +108,15 @@ write as inherently `high risk` without naming the policy outcome and operationa
 | `workspace_id` such as `default` | Workspace ID | Stable machine label; it must never appear as an unlabeled value. |
 | session | Agent/client session | Correlation label supplied or derived by the current run model; not proof that Ithildin controls the process. |
 | Agent Run | Mediated run record | Diagnostic grouping of Ithildin-mediated calls; not an orchestrated job. |
+| Node-originated Agent Run | Node-authenticated governed session | A run whose Node identity, workspace, read-only profile, and configuration snapshot were derived or bound by the Gateway; not proof of runner enforcement or complete endpoint coverage. |
 
 When a human-facing name is unavailable, show a type label plus the short machine ID, for example
 `Requesting identity: agent:mcp-local`. Do not fabricate organization, owner, or person names.
+Use `Gateway-derived Node identity` only when the run carries the persisted
+`node_governed_access` and `gateway_derived_node` provenance pair. Continue to use `Reported
+identity` for generic ingress. The Node run authority snapshot must show offline fallback as
+`Prohibited` only when the persisted value is false and runner enforcement as `Not proven` only
+when the persisted value is false; missing or malformed provenance is `Unproven`, not success.
 
 ## Request Decision Language
 

@@ -26,6 +26,10 @@ real FastAPI process on loopback port `8013`, and one synthetic Hermes sidecar i
 7. Audit-chain verification passed after restart. The exact Node principal and configuration-bound
    session namespace were present in audit evidence, while private-key material and raw read content
    were absent from exported POC summaries.
+8. The Gateway returned both Node-authenticated runs through the existing principal/workspace
+   query. Each record persisted the exact Gateway-derived Node, read-only profile, and signed
+   configuration snapshot; each safe run evidence export returned the same bounded origin and
+   explicit false values for offline fallback and runner enforcement.
 
 The reproducible local evidence is under ignored path:
 
@@ -41,7 +45,8 @@ make track-b-node-governed-access-evidence-check
 
 The checker reports all closed claims true, including 24 unchanged tools, current acknowledged
 configuration, reads before and after restart, network/workspace denial, partition failure, durable
-replay denial, audit validity, mode-0600 private state, and secret-free evidence.
+replay denial, run correlation and evidence-export origin, audit validity, mode-0600 private state,
+and secret-free evidence.
 
 ## What This Proves
 
@@ -49,7 +54,8 @@ This proves one local-preview Node can originate an existing workspace-bound rea
 Ithildin's real manifest, principal-risk, resource-scope, policy, audit, redaction, agent-run, and
 executor pipeline. Identity and workspace are Gateway-derived; the signed configuration snapshot
 is bound into request hashing and correlation; replay survives Gateway restart; partition fails
-closed at the Node client.
+closed at the Node client. The resulting Agent Runs preserve that authoritative origin for cockpit
+navigation and export without turning the client-supplied runner session into identity authority.
 
 ## What This Does Not Prove
 

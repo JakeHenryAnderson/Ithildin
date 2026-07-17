@@ -12,7 +12,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
-from ithildin_api.agent_runs import AgentRunStore
+from ithildin_api.agent_runs import AgentRunError, AgentRunStore
 from ithildin_api.app import create_app
 from ithildin_api.approvals import ApprovalService, CreateApprovalInput
 from ithildin_api.config import Settings
@@ -897,6 +897,56 @@ def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> 
         }
     ]
     assert missing_response.status_code == 404
+
+
+def test_agent_run_rejects_conflicting_authority_provenance(tmp_path: Path) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    initialize_database(db_path)
+    store = AgentRunStore(db_path)
+    store.initialize()
+    principal: JsonObject = {
+        "id": "agent:node.node_authoritative",
+        "type": "agent",
+        "roles": ["AgentReadOnly"],
+    }
+    provenance: JsonObject = {
+        "ingress_kind": "node_governed_access",
+        "identity_source": "gateway_derived_node",
+        "node_id": "node_authoritative",
+        "offline_fallback_allowed": False,
+        "runner_enforcement_proven": False,
+    }
+
+    _run, created = store.ensure_for_tool_call(
+        principal=principal,
+        session_id="node:node_authoritative:cfg:1:sha256:configuration:runner",
+        workspace_id="default",
+        request_id="req_first",
+        tool_name="fs.read",
+        policy_hash="sha256:" + ("1" * 64),
+        tool_manifest_hash="sha256:" + ("2" * 64),
+        run_metadata=provenance,
+    )
+    assert created is True
+
+    with pytest.raises(AgentRunError, match="authority provenance conflicts"):
+        store.ensure_for_tool_call(
+            principal=principal,
+            session_id="node:node_authoritative:cfg:1:sha256:configuration:runner",
+            workspace_id="default",
+            request_id="req_conflict",
+            tool_name="fs.read",
+            policy_hash="sha256:" + ("1" * 64),
+            tool_manifest_hash="sha256:" + ("2" * 64),
+            run_metadata={**provenance, "node_id": "node_conflicting"},
+        )
+
+    [persisted] = store.list_runs()
+    assert persisted["last_request_id"] == "req_first"
+    assert persisted["tool_call_count"] == 1
+    persisted_metadata = persisted["metadata"]
+    assert isinstance(persisted_metadata, dict)
+    assert persisted_metadata["node_id"] == "node_authoritative"
 
 
 def test_run_list_filters_and_denies_bad_queries_safely(tmp_path: Path) -> None:
@@ -3439,6 +3489,45 @@ def test_node_governed_read_uses_derived_identity_workspace_and_durable_replay(
         assert governed.json()["workspace_id"] == "default"
         assert governed.json()["content"]["content"] == "governed Node read\n"
         assert governed.json()["offline_fallback_used"] is False
+
+        runs = client.get(
+            "/runs",
+            headers=admin_headers,
+            params={"principal_id": f"agent:node.{node_id}"},
+        )
+        assert runs.status_code == 200
+        [node_run] = runs.json()["runs"]
+        assert node_run["metadata"] == {
+            "authorization_profile": "agent:node-local-preview-readonly",
+            "configuration_digest": bundle["configuration_digest"],
+            "configuration_generation": bundle["generation"],
+            "created_by": "governed_tool_call",
+            "identity_source": "gateway_derived_node",
+            "ingress_kind": "node_governed_access",
+            "node_display_name": "Governed Read Node",
+            "node_id": node_id,
+            "offline_fallback_allowed": False,
+            "runner_enforcement_proven": False,
+        }
+        run_evidence = client.get(
+            f"/runs/{node_run['run_id']}/evidence-export",
+            headers=admin_headers,
+        )
+        assert run_evidence.status_code == 200
+        assert run_evidence.json()["run"]["origin"] == {
+            key: node_run["metadata"][key]
+            for key in (
+                "authorization_profile",
+                "configuration_digest",
+                "configuration_generation",
+                "identity_source",
+                "ingress_kind",
+                "node_display_name",
+                "node_id",
+                "offline_fallback_allowed",
+                "runner_enforcement_proven",
+            )
+        }
 
         replay = client.post(
             governed_path, headers=successful_headers, json=successful_payload

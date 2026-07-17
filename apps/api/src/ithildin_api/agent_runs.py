@@ -143,16 +143,22 @@ class AgentRunStore:
         tool_name: str,
         policy_hash: str | None,
         tool_manifest_hash: str | None,
+        run_metadata: JsonObject | None = None,
     ) -> tuple[AgentRunContext, bool]:
         principal_id = _string_or_default(principal.get("id"), "unknown")
         principal_type = _string_or_default(principal.get("type"), "unknown")
         principal_roles = _string_list(principal.get("roles"))
         now = datetime.now(UTC).isoformat()
-        metadata: JsonObject = {"created_by": "governed_tool_call"}
+        requested_metadata: JsonObject = {
+            "created_by": "governed_tool_call",
+            **(run_metadata or {}),
+        }
+        if requested_metadata.get("created_by") != "governed_tool_call":
+            raise AgentRunError("agent run creation source cannot be overridden")
         with sqlite3.connect(self.db_path) as connection:
             row = connection.execute(
                 """
-                SELECT run_id
+                SELECT run_id, metadata_json
                 FROM agent_runs
                 WHERE principal_id = ?
                   AND session_id = ?
@@ -162,6 +168,7 @@ class AgentRunStore:
             ).fetchone()
             if row is None:
                 run_id = _new_id("run")
+                metadata = requested_metadata
                 connection.execute(
                     """
                     INSERT INTO agent_runs (
@@ -198,12 +205,13 @@ class AgentRunStore:
                         policy_hash,
                         tool_name,
                         tool_manifest_hash,
-                        json.dumps(metadata, sort_keys=True, separators=(",", ":")),
+                        canonical_json(metadata),
                     ),
                 )
                 created = True
             else:
                 run_id = str(row[0])
+                metadata = _merge_run_metadata(row[1], requested_metadata)
                 connection.execute(
                     """
                     UPDATE agent_runs
@@ -212,6 +220,7 @@ class AgentRunStore:
                         policy_hash = COALESCE(?, policy_hash),
                         last_tool_name = ?,
                         last_tool_manifest_hash = COALESCE(?, last_tool_manifest_hash),
+                        metadata_json = ?,
                         tool_call_count = tool_call_count + 1
                     WHERE run_id = ?
                     """,
@@ -221,6 +230,7 @@ class AgentRunStore:
                         policy_hash,
                         tool_name,
                         tool_manifest_hash,
+                        canonical_json(metadata),
                         run_id,
                     ),
                 )
@@ -459,6 +469,19 @@ def _record_from_row(row: tuple[object, ...]) -> AgentRunRecord:
     )
 
 
+def _merge_run_metadata(raw: object, requested: JsonObject) -> JsonObject:
+    try:
+        existing = json.loads(str(raw))
+    except json.JSONDecodeError as exc:
+        raise AgentRunError("failed to decode agent run metadata") from exc
+    if not isinstance(existing, dict):
+        raise AgentRunError("failed to decode agent run metadata")
+    for key, value in requested.items():
+        if key in existing and existing[key] != value:
+            raise AgentRunError("agent run authority provenance conflicts")
+    return {**cast(JsonObject, existing), **requested}
+
+
 def _runs_summary(runs: list[JsonObject], filters: AgentRunFilters) -> JsonObject:
     latest_update = None
     for run in runs:
@@ -518,6 +541,29 @@ def _export_run_summary(run: JsonObject) -> JsonObject:
         "tool_call_count": run.get("tool_call_count"),
         "created_at": run.get("created_at"),
         "updated_at": run.get("updated_at"),
+        "origin": _export_run_origin(cast(JsonObject, metadata)),
+    }
+
+
+def _export_run_origin(metadata: JsonObject) -> JsonObject | None:
+    node_id = metadata.get("node_id")
+    if (
+        metadata.get("ingress_kind") != "node_governed_access"
+        or metadata.get("identity_source") != "gateway_derived_node"
+        or not isinstance(node_id, str)
+        or not node_id
+    ):
+        return None
+    return {
+        "ingress_kind": "node_governed_access",
+        "identity_source": "gateway_derived_node",
+        "node_id": node_id,
+        "node_display_name": metadata.get("node_display_name"),
+        "authorization_profile": metadata.get("authorization_profile"),
+        "configuration_generation": metadata.get("configuration_generation"),
+        "configuration_digest": metadata.get("configuration_digest"),
+        "offline_fallback_allowed": metadata.get("offline_fallback_allowed"),
+        "runner_enforcement_proven": metadata.get("runner_enforcement_proven"),
     }
 
 
