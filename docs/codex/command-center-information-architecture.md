@@ -1,7 +1,7 @@
 # Command Center Information Architecture
 
-Status: first-pass product/UX information architecture; no UI implementation is authorized by this
-document.
+Status: current product/UX information architecture. This document describes presentation and
+routing contracts; it does not authorize new runtime behavior.
 
 This information architecture applies the
 [pilot scope](command-center-product-direction-and-pilot-scope.md) to Ithildin Command Center. It
@@ -47,6 +47,7 @@ Primary content:
 
 - pending operator decisions;
 - denied or failed mediated actions that affect a mission outcome;
+- deterministic Node fleet exceptions derived from existing Gateway state;
 - recovery-required diagnostics;
 - artifacts ready for review;
 - evidence integrity or signing warnings that affect the current handoff;
@@ -60,6 +61,17 @@ deterministic comparison exists; otherwise show neutral counts and filters.
 
 Technical drill-down may show request IDs, run IDs, approval IDs, policy hashes, event hashes, and
 raw audit records. Those details must not dominate the queue.
+
+The current deterministic queue precedence is: pending approval; Node authority or evidence
+incompleteness; failed mediated action; patch recovery; operational Node drift; passive patch
+proposal. Within the Node classes, one item per enrolled Node represents that Node's highest-ranked
+known exception. Revoked and currently healthy Nodes do not create Attention items. A Node action
+routes to the exact authoritative fleet record; it does not mutate Node state.
+
+Node Attention is a presentation derivation from enrollment, audit-evidence, accepted-heartbeat,
+signed desired-configuration, storage-acknowledgment, signing-trust, and version-comparison fields
+already returned by the Gateway. It is not anomaly detection, endpoint health monitoring, runner
+health, model-provider health, or proof of configuration enforcement.
 
 ### Missions / Agent Runs
 

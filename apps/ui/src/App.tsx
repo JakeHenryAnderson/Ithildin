@@ -504,7 +504,7 @@ type DashboardData = {
 };
 
 type AttentionItem = {
-  source: "approval" | "failure" | "recovery" | "proposal";
+  source: "approval" | "failure" | "recovery" | "proposal" | "node";
   title: string;
   status: string;
   bindingStatus: string | null;
@@ -517,8 +517,22 @@ type AttentionItem = {
   policyReason: string;
   runId: string | null;
   proposalId: string | null;
-  targetId: "missions" | "approvals" | "artifacts" | "evidence";
+  nodeId: string | null;
+  targetId: "missions" | "approvals" | "artifacts" | "evidence" | "nodes";
   actionLabel: string;
+  occurredAt: string | null;
+};
+
+type NodeAttentionClass = "authority" | "operational";
+
+type NodeAttentionPosture = {
+  attentionClass: NodeAttentionClass;
+  rank: number;
+  title: string;
+  status: string;
+  consequence: string;
+  actionLabel: string;
+  observedBasis: string;
   occurredAt: string | null;
 };
 
@@ -962,7 +976,8 @@ export function App() {
     if (item.proposalId) {
       setSelectedProposalId(item.proposalId);
     }
-    window.setTimeout(() => scrollAndFocusElement(item.targetId), 0);
+    const targetElementId = item.nodeId ? `node-${item.nodeId}` : item.targetId;
+    window.setTimeout(() => scrollAndFocusElement(targetElementId), 0);
   }
 
   function openWorkspaceLens(lens: WorkspaceLens, targetId: string) {
@@ -1439,11 +1454,14 @@ export function App() {
               </div>
               <dl className="attention-context-grid">
                 <div>
-                  <dt>Requesting identity <small>reported context</small></dt>
+                  <dt>
+                    {primaryAttention.source === "node" ? "Node identity" : "Requesting identity"}{" "}
+                    <small>{primaryAttention.source === "node" ? "Gateway derived" : "reported context"}</small>
+                  </dt>
                   <dd>{primaryAttention.requestingIdentity}</dd>
                 </div>
                 <div>
-                  <dt>Policy result</dt>
+                  <dt>{primaryAttention.source === "node" ? "Fleet posture" : "Policy result"}</dt>
                   <dd>{primaryAttention.status}</dd>
                 </div>
                 <div>
@@ -1451,7 +1469,7 @@ export function App() {
                   <dd>{primaryAttention.workspaceId}</dd>
                 </div>
                 <div>
-                  <dt>Governed tool</dt>
+                  <dt>{primaryAttention.source === "node" ? "Authority source" : "Governed tool"}</dt>
                   <dd>{primaryAttention.toolName}</dd>
                 </div>
               </dl>
@@ -1465,7 +1483,11 @@ export function App() {
                   <ClipboardList aria-hidden="true" size={20} />
                   <span>
                     <strong>{primaryAttention.actionLabel}</strong>
-                    <small>Review the source record and decide the next bounded step.</small>
+                    <small>
+                      {primaryAttention.source === "node"
+                        ? "Inspect the authoritative fleet record and choose only an available bounded action."
+                        : "Review the source record and decide the next bounded step."}
+                    </small>
                   </span>
                 </button>
                 {primaryAttention.runId ? (
@@ -1491,7 +1513,14 @@ export function App() {
                 <ol>
                   <li className="observed">
                     <span aria-hidden="true"><Check size={15} /></span>
-                    <div><strong>Request recorded</strong><small>Gateway evidence identifies the reported requester and governed tool.</small></div>
+                    <div>
+                      <strong>{primaryAttention.source === "node" ? "Fleet posture recorded" : "Request recorded"}</strong>
+                      <small>
+                        {primaryAttention.source === "node"
+                          ? "Gateway enrollment state and accepted Node evidence establish this displayed posture."
+                          : "Gateway evidence identifies the reported requester and governed tool."}
+                      </small>
+                    </div>
                   </li>
                   <li className="operator-step">
                     <span aria-hidden="true">!</span>
@@ -1500,14 +1529,16 @@ export function App() {
                 </ol>
               </section>
               <details className="attention-technical">
-                <summary>Technical details <span>IDs, policy reason, and timing</span></summary>
+                <summary>
+                  Technical details <span>IDs, {primaryAttention.source === "node" ? "observed basis" : "policy reason"}, and timing</span>
+                </summary>
                 <dl className="meta-list attention-meta">
                   <div>
-                    <dt>Request</dt>
-                    <dd>{primaryAttention.requestId ? shortId(primaryAttention.requestId) : "Unavailable"}</dd>
+                    <dt>{primaryAttention.source === "node" ? "Node" : "Request"}</dt>
+                    <dd>{primaryAttention.nodeId ?? (primaryAttention.requestId ? shortId(primaryAttention.requestId) : "Unavailable")}</dd>
                   </div>
                   <div>
-                    <dt>Policy reason</dt>
+                    <dt>{primaryAttention.source === "node" ? "Observed basis" : "Policy reason"}</dt>
                     <dd>{primaryAttention.policyReason}</dd>
                   </div>
                   <div>
@@ -2540,12 +2571,7 @@ export function App() {
             </div>
             <div>
               <dt>Needs attention</dt>
-              <dd>{data.nodes.filter((node) =>
-                ["stale", "never_observed", "evidence_incomplete"].includes(node.observed_state)
-                || ["configuration_drift", "evidence_incomplete"].includes(node.configuration_state)
-                || ["below_minimum", "evidence_incomplete"].includes(node.version_posture)
-                || node.identity_key_rotation?.evidence_status === "pending"
-              ).length}</dd>
+              <dd>{data.nodes.filter(nodeNeedsAttention).length}</dd>
             </div>
             <div>
               <dt>Config drift</dt>
@@ -2571,7 +2597,12 @@ export function App() {
           ) : (
             <div className="node-card-grid">
               {data.nodes.map((node) => (
-                <article className="node-card" key={node.node_id}>
+                <article
+                  className="node-card"
+                  id={`node-${node.node_id}`}
+                  key={node.node_id}
+                  tabIndex={-1}
+                >
                   <header>
                     <span className="node-card-icon" aria-hidden="true"><Server size={20} /></span>
                     <div>
@@ -3580,6 +3611,7 @@ function operatorAttentionItems(data: DashboardData) {
     ...data,
     approvals: [...data.approvals],
     auditEvents: [...data.auditEvents],
+    nodes: [...data.nodes],
     patches: [...data.patches],
   };
 
@@ -3605,6 +3637,11 @@ function operatorAttentionItems(data: DashboardData) {
       };
     } else if (item.source === "recovery") {
       remaining = { ...remaining, patchDiagnostics: null };
+    } else if (item.source === "node") {
+      remaining = {
+        ...remaining,
+        nodes: remaining.nodes.filter((candidate) => candidate.node_id !== item.nodeId),
+      };
     } else {
       remaining = {
         ...remaining,
@@ -3618,7 +3655,7 @@ function operatorAttentionItems(data: DashboardData) {
 }
 
 function attentionItemKey(item: AttentionItem) {
-  return `${item.source}:${item.requestId || item.proposalId || item.title}`;
+  return `${item.source}:${item.requestId || item.proposalId || item.nodeId || item.title}`;
 }
 
 function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
@@ -3648,10 +3685,16 @@ function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
       policyReason: scopeString(approval.metadata, "policy_reason") || "Policy reason unavailable",
       runId: run?.run_id ?? null,
       proposalId: scopeString(approval.one_time_scope, "proposal_id") || null,
+      nodeId: null,
       targetId: run ? "missions" : "approvals",
       actionLabel: validBinding ? "Review decision" : "Review binding evidence",
       occurredAt: approval.expires_at,
     };
+  }
+
+  const authorityNode = firstNodeAttentionItem(data.nodes, "authority");
+  if (authorityNode) {
+    return authorityNode;
   }
 
   const failure = data.auditEvents.find((event) => event.event_type.endsWith(".failed"));
@@ -3677,6 +3720,7 @@ function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
       policyReason: "Not applicable to the recorded execution failure",
       runId: run?.run_id ?? null,
       proposalId: null,
+      nodeId: null,
       targetId: run ? "missions" : "evidence",
       actionLabel: "Investigate failure",
       occurredAt: failure.timestamp,
@@ -3699,10 +3743,16 @@ function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
       policyReason: "Not applicable to recovery diagnostics",
       runId: null,
       proposalId: null,
+      nodeId: null,
       targetId: "evidence",
       actionLabel: "Review recovery evidence",
       occurredAt: latestPatchDiagnosticTimestamp(data.patchDiagnostics),
     };
+  }
+
+  const operationalNode = firstNodeAttentionItem(data.nodes, "operational");
+  if (operationalNode) {
+    return operationalNode;
   }
 
   const proposal = data.patches.find((candidate) => candidate.status === "proposed");
@@ -3723,12 +3773,211 @@ function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
       policyReason: "No pending approval reason is loaded for this proposal",
       runId: run?.run_id ?? null,
       proposalId: proposal.proposal_id,
+      nodeId: null,
       targetId: run ? "missions" : "artifacts",
       actionLabel: "Review proposal",
       occurredAt: proposal.updated_at,
     };
   }
 
+  return null;
+}
+
+function nodeNeedsAttention(node: IthildinNode) {
+  return nodeAttentionPosture(node) !== null;
+}
+
+function firstNodeAttentionItem(
+  nodes: IthildinNode[],
+  attentionClass: NodeAttentionClass,
+): AttentionItem | null {
+  const candidates: { node: IthildinNode; posture: NodeAttentionPosture }[] = [];
+  for (const node of nodes) {
+    const posture = nodeAttentionPosture(node);
+    if (posture?.attentionClass === attentionClass) {
+      candidates.push({ node, posture });
+    }
+  }
+  candidates.sort((left, right) =>
+    left.posture.rank - right.posture.rank
+    || (right.posture.occurredAt ?? "").localeCompare(left.posture.occurredAt ?? "")
+    || left.node.node_id.localeCompare(right.node.node_id),
+  );
+  const selected = candidates[0];
+  if (!selected) return null;
+  const { node, posture } = selected;
+  return {
+    source: "node",
+    title: posture.title,
+    status: posture.status,
+    bindingStatus: null,
+    consequence: posture.consequence,
+    missionLabel: `${node.workspace_id} Node fleet`,
+    workspaceId: node.workspace_id,
+    requestingIdentity: node.principal_id,
+    toolName: "Ithildin Gateway",
+    requestId: "",
+    policyReason: posture.observedBasis,
+    runId: null,
+    proposalId: null,
+    nodeId: node.node_id,
+    targetId: "nodes",
+    actionLabel: posture.actionLabel,
+    occurredAt: posture.occurredAt,
+  };
+}
+
+function nodeAttentionPosture(node: IthildinNode): NodeAttentionPosture | null {
+  if (node.status !== "enrolled") return null;
+  if (node.evidence_status !== "complete") {
+    return {
+      attentionClass: "authority",
+      rank: 0,
+      title: `${node.display_name} identity evidence is incomplete`,
+      status: "evidence incomplete",
+      consequence:
+        "The Gateway Node record is fail-closed because enrollment or lifecycle audit evidence has not completed. Review evidence before relying on this identity.",
+      actionLabel: "Review identity evidence",
+      observedBasis: "Gateway Node administrative and audit-evidence state",
+      occurredAt: node.updated_at,
+    };
+  }
+  if (node.observed_state === "evidence_incomplete") {
+    return {
+      attentionClass: "authority",
+      rank: 1,
+      title: `${node.display_name} connectivity evidence is incomplete`,
+      status: "evidence incomplete",
+      consequence:
+        "Gateway records cannot establish a current connectivity posture. Runner, model, and host-process health remain unknown.",
+      actionLabel: "Review connectivity evidence",
+      observedBasis: "Gateway-derived Node evidence and accepted-heartbeat state",
+      occurredAt: node.updated_at,
+    };
+  }
+  if (node.identity_key_rotation?.evidence_status === "pending") {
+    return {
+      attentionClass: "authority",
+      rank: 2,
+      title: `${node.display_name} identity-key evidence is pending`,
+      status: "identity evidence pending",
+      consequence:
+        "Identity-key rotation evidence has not completed. Review Gateway evidence before relying on the displayed key posture.",
+      actionLabel: "Review identity-key evidence",
+      observedBasis: "Gateway identity-key rotation and audit-evidence state",
+      occurredAt:
+        node.identity_key_rotation.activated_at ?? node.identity_key_rotation.created_at,
+    };
+  }
+  const transition = node.configuration_trust_transition;
+  if (
+    transition
+    && (
+      transition.evidence_status !== "complete"
+      || transition.acknowledgment_evidence_status === "pending"
+      || transition.rotation_state === "gateway_advanced_node_pending"
+      || transition.rotation_state === "transition_expired_not_activated"
+    )
+  ) {
+    const expired = transition.rotation_state === "transition_expired_not_activated";
+    const gatewayAdvanced = transition.rotation_state === "gateway_advanced_node_pending";
+    return {
+      attentionClass: "authority",
+      rank: 3,
+      title: expired
+        ? `${node.display_name} signing-trust transition expired`
+        : gatewayAdvanced
+          ? `${node.display_name} has not acknowledged active signing trust`
+          : `${node.display_name} signing-trust evidence is incomplete`,
+      status: transition.rotation_state.replace(/_/g, " "),
+      consequence:
+        "Gateway and Node signing-trust evidence is not aligned. Review the transition before relying on configuration distribution posture.",
+      actionLabel: "Review signing-trust evidence",
+      observedBasis: "Gateway configuration trust-transition and Node acknowledgment evidence",
+      occurredAt: transition.acknowledged_at ?? transition.issued_at,
+    };
+  }
+  if (node.configuration_state === "evidence_incomplete") {
+    return {
+      attentionClass: "authority",
+      rank: 4,
+      title: `${node.display_name} configuration evidence is incomplete`,
+      status: "configuration evidence incomplete",
+      consequence:
+        "The Gateway cannot establish a current signed desired-configuration comparison. Enforcement remains unknown.",
+      actionLabel: "Review configuration evidence",
+      observedBasis: "Gateway desired-configuration and Node storage-acknowledgment evidence",
+      occurredAt: node.configuration_acknowledged_at ?? node.updated_at,
+    };
+  }
+  if (node.version_posture === "evidence_incomplete") {
+    return {
+      attentionClass: "authority",
+      rank: 5,
+      title: `${node.display_name} version evidence is incomplete`,
+      status: "version evidence incomplete",
+      consequence:
+        "The Gateway cannot establish the Node version comparison from current signed desired and heartbeat evidence.",
+      actionLabel: "Review version evidence",
+      observedBasis: "Signed desired minimum and Gateway-accepted heartbeat version evidence",
+      occurredAt: node.last_seen_at ?? node.updated_at,
+    };
+  }
+  if (node.version_posture === "below_minimum") {
+    return {
+      attentionClass: "operational",
+      rank: 20,
+      title: `${node.display_name} is below the desired minimum version`,
+      status: "below minimum",
+      consequence:
+        "The signed heartbeat reports a version below the signed desired minimum. Maintenance is operator-managed; package authenticity and process health are unknown.",
+      actionLabel: "Review version posture",
+      observedBasis: "Gateway-accepted signed heartbeat compared with signed desired configuration",
+      occurredAt: node.last_seen_at ?? node.updated_at,
+    };
+  }
+  if (node.configuration_state === "configuration_drift") {
+    return {
+      attentionClass: "operational",
+      rank: 21,
+      title: `${node.display_name} configuration does not match desired state`,
+      status: "configuration drift",
+      consequence:
+        "The Node's recorded configuration acknowledgment does not match Gateway desired state. Storage and enforcement are separate; enforcement remains unknown.",
+      actionLabel: "Review configuration drift",
+      observedBasis: "Gateway desired configuration compared with Node storage acknowledgment",
+      occurredAt: node.configuration_acknowledged_at ?? node.updated_at,
+    };
+  }
+  if (node.observed_state === "stale") {
+    return {
+      attentionClass: "operational",
+      rank: 22,
+      title: `${node.display_name} heartbeat is stale`,
+      status: "heartbeat stale",
+      consequence:
+        "The Gateway has not recently accepted a correctly signed heartbeat. This does not establish runner, model, or host-process health.",
+      actionLabel: "Review connectivity evidence",
+      observedBasis: "Age of the latest Gateway-accepted signed heartbeat",
+      occurredAt: node.last_seen_at,
+    };
+  }
+  if (
+    node.observed_state === "never_observed"
+    || node.version_posture === "never_observed"
+  ) {
+    return {
+      attentionClass: "operational",
+      rank: 23,
+      title: `${node.display_name} has never sent an accepted heartbeat`,
+      status: "never observed",
+      consequence:
+        "Enrollment is complete, but the Gateway has never accepted a signed heartbeat from this Node. Runner, model, and host-process health are unknown.",
+      actionLabel: "Review enrollment posture",
+      observedBasis: "Gateway enrollment record with no accepted heartbeat timestamp",
+      occurredAt: node.enrolled_at,
+    };
+  }
   return null;
 }
 

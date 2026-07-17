@@ -53,6 +53,13 @@ operator-confirmed revocation request through the existing audited Gateway API. 
 the source of enrollment and revocation truth; the UI must not present a locally optimistic success
 state when the Gateway rejects or has not completed the transition.
 
+Command Center may also derive deterministic Attention items from those same Gateway fields. The
+derivation may prioritize incomplete identity, connectivity, signing-trust, configuration, or
+version evidence and may route the operator to the exact Node record. It adds no monitoring source,
+anomaly detector, health probe, acknowledgment, repair, upgrade, or host-control authority. A stale
+or absent accepted heartbeat remains a Gateway connectivity observation, not a runner, model,
+endpoint, or process-health conclusion.
+
 Node revocation removes that identity's future Gateway request authority. It does not stop an
 external runner, terminate model inference, delete endpoint state, prove process shutdown, recover
 a lost Node credential, or establish production identity. A replacement requires fresh enrollment;

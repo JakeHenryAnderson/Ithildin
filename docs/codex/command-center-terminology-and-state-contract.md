@@ -29,6 +29,22 @@ audit, signing, or export semantics.
 | No action needed | The current recorded state requires no operator decision. | Provide outcome and optional evidence; do not imply global safety. |
 | Unknown | Ithildin cannot substantiate the summary from current authoritative records. | Do not offer a success action; direct the user to diagnostics or technical detail. |
 
+### Node Fleet Attention
+
+| Gateway-derived condition | Operator-facing label | Required interpretation |
+| --- | --- | --- |
+| Node or lifecycle evidence is incomplete | Identity evidence is incomplete | The Gateway record is fail-closed; do not rely on the displayed identity posture until evidence is reviewed. |
+| Accepted-heartbeat evidence is incomplete, stale, or absent | Connectivity evidence is incomplete, heartbeat is stale, or never observed | This describes Gateway receipt of a correctly signed heartbeat only; runner, model, and host-process health remain unknown. |
+| Identity-key rotation evidence is pending | Identity-key evidence is pending | The key transition has not established its displayed completed posture. |
+| Signing-trust transition is incomplete, unacknowledged, or expired | Signing-trust evidence needs review | Gateway and Node trust-transition evidence is not aligned; configuration enforcement remains unknown. |
+| Desired configuration cannot be compared or differs from the Node acknowledgment | Configuration evidence is incomplete or configuration does not match desired state | Gateway desired state and Node storage acknowledgment are distinct from runtime enforcement. |
+| Reported Node version is unavailable or below the signed desired minimum | Version evidence is incomplete or below desired minimum | This is a signed-evidence comparison, not package authenticity, process health, or upgrade authority. |
+
+Node fleet Attention items use the Gateway-derived Node identity, show the exact Node ID in
+technical detail, and route to that Node's fleet record. `Review` means inspect existing evidence
+and available bounded actions; it does not acknowledge, repair, restart, upgrade, revoke, or mutate
+the Node merely by opening the record.
+
 ## System Trust
 
 `System Trust` should be presented as **Local system posture** unless a future reviewed definition

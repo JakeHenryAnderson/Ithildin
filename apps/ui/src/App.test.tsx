@@ -187,6 +187,7 @@ type FetchMockOptions = {
   emptyTimeline?: boolean;
   invalidBinding?: boolean;
   noApprovals?: boolean;
+  nodeOverrides?: Record<string, unknown>;
   nodeRevokeFailure?: boolean;
   nodeStatus?: "enrolled" | "revoked";
   proposalStatus?: "applied" | "proposed";
@@ -439,6 +440,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             connectivity_source: "gateway_accepted_heartbeat",
             runner_health_known: false,
             model_health_known: false,
+            ...(options.nodeOverrides ?? {}),
           },
         ],
       });
@@ -962,6 +964,76 @@ describe("Review console interactions", () => {
     expect(within(nodes).queryByText("enrollment key active")).toBeNull();
     expect(within(nodes).getByText("Identity key fingerprint")).toBeInTheDocument();
     expect(within(nodes).queryByText("Active identity key")).toBeNull();
+  });
+
+  it("routes a stale Node from Attention to its exact authoritative fleet record", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      proposalStatus: "applied",
+      nodeOverrides: {
+        observed_state: "stale",
+        last_seen_at: "2026-07-16T11:00:00Z",
+      },
+    });
+    const user = await saveToken();
+    const attention = screen.getByRole("region", { name: "Attention" });
+
+    expect(
+      within(attention).getByRole("heading", { name: "Hermes Node heartbeat is stale" }),
+    ).toBeInTheDocument();
+    expect(
+      within(attention).getByText(/does not establish runner, model, or host-process health/i),
+    ).toBeInTheDocument();
+    expect(within(attention).getByText("Node identity")).toBeInTheDocument();
+    expect(within(attention).getByText("Fleet posture")).toBeInTheDocument();
+    expect(within(attention).getByText("Authority source")).toBeInTheDocument();
+
+    await user.click(
+      within(attention).getByRole("button", { name: "Review connectivity evidence" }),
+    );
+    await waitFor(() => {
+      expect(document.activeElement).toHaveAttribute(
+        "id",
+        "node-node_11111111111111111111111111111111",
+      );
+    });
+    expect(
+      screen.getByRole("navigation", { name: "Command Center sections" })
+        .querySelector('a[href="#nodes"]'),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("prioritizes incomplete Node authority evidence over passive proposals", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      nodeOverrides: { configuration_state: "evidence_incomplete" },
+    });
+    await saveToken();
+    const attention = screen.getByRole("region", { name: "Attention" });
+    const selected = within(attention).getByRole("button", {
+      name: /demo Node fleet.*Hermes Node configuration evidence is incomplete/i,
+    });
+
+    expect(selected).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(attention).getByRole("button", { name: "Review configuration evidence" }),
+    ).toBeInTheDocument();
+    expect(within(attention).getByText("Review proposed change to demo.txt")).toBeInTheDocument();
+  });
+
+  it("does not create an Attention item for a revoked Node", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      nodeStatus: "revoked",
+      proposalStatus: "applied",
+    });
+    await saveToken();
+    const attention = screen.getByRole("region", { name: "Attention" });
+
+    expect(
+      within(attention).getByText(/No action identified in the currently loaded local records/i),
+    ).toBeInTheDocument();
+    expect(within(attention).queryByText(/Hermes Node/)).toBeNull();
   });
 
   it("shows locked and empty Agent Run states without run controls", async () => {
