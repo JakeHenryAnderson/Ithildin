@@ -53,6 +53,14 @@ it is not a risk score, anomaly model, or severity inferred from endpoint behavi
 current Gateway response. `Selected` is presentation state only; it is not monitoring, inspection,
 acknowledgment, assignment, lock ownership, or a change to Node authority.
 
+`Configuration cohort` means a presentation grouping of loaded enrolled Nodes sharing the exact
+workspace, desired generation, desired digest, and current Gateway configuration signing-key field.
+That signer field is current trust posture, not proof of which historical key signed the desired
+generation. `Stored current not enforced` means every counted Node attested to storing that desired
+generation and digest. It is not proof of activation, runtime enforcement, package authenticity,
+runner health, host health, or a group rollout. Revoked Nodes do not belong to active configuration
+cohorts.
+
 ## System Trust
 
 `System Trust` should be presented as **Local system posture** unless a future reviewed definition

@@ -111,6 +111,9 @@ Primary content:
 
 - fleet-wide counts for enrollment, accepted-heartbeat connectivity, deterministic attention,
   configuration drift, version drift, and revocation;
+- bounded configuration cohorts grouped by exact workspace, desired generation and digest, with the
+  current Gateway signer, storage acknowledgment, drift, version, and connectivity evidence kept
+  separate;
 - search over loaded Node names, exact IDs, identities, workspaces, reported adapters/topologies,
   and displayed posture fields;
 - posture and workspace filters with a visible loaded-result count;
@@ -133,6 +136,9 @@ not contact the Node, inspect an endpoint, acknowledge an exception, or exercise
 principal and enrolled workspace filters. It is navigation over persisted Gateway records, not a
 Node query, runner command, mission dispatch, or claim that the filtered runs capture all endpoint
 activity.
+Configuration cohorts exclude revoked records and aggregate only loaded enrolled records. `Stored
+current` is a Node storage acknowledgment for the exact desired generation and digest; it is not
+configuration activation or enforcement evidence, and the cohort view is not a rollout controller.
 
 ### Artifacts
 

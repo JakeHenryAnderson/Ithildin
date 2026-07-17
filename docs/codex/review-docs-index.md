@@ -94,6 +94,8 @@ externally closed.
 - [Node Governed-Run Correlation Implementation Handoff](command-center-node-governed-run-correlation-implementation-handoff.md)
 - [Node Run-Origin Evidence Parity Feasibility Map](command-center-node-run-origin-evidence-parity-data-feasibility.md)
 - [Node Run-Origin Evidence Parity Implementation Handoff](command-center-node-run-origin-evidence-parity-implementation-handoff.md)
+- [Node Configuration Cohort Feasibility Map](command-center-node-configuration-cohort-data-feasibility.md)
+- [Node Configuration Cohort Implementation Handoff](command-center-node-configuration-cohort-implementation-handoff.md)
 - [Run-Evidence Revision Integrity Feasibility Map](command-center-run-evidence-revision-integrity-data-feasibility.md)
 - [Run-Evidence Revision Integrity Implementation Handoff](command-center-run-evidence-revision-integrity-implementation-handoff.md)
 - [Run-Evidence Digest Verification Feasibility Map](command-center-run-evidence-digest-verification-data-feasibility.md)

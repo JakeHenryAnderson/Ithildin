@@ -551,6 +551,21 @@ type NodeAttentionPosture = {
   occurredAt: string | null;
 };
 
+type NodeConfigurationCohort = {
+  key: string;
+  workspaceId: string;
+  desiredGeneration: number | null;
+  desiredDigest: string | null;
+  gatewaySigningKeyId: string | null;
+  nodeCount: number;
+  storedCurrentCount: number;
+  awaitingStorageCount: number;
+  driftCount: number;
+  evidenceIncompleteCount: number;
+  versionExceptionCount: number;
+  recentlyObservedCount: number;
+};
+
 function emptyDashboardData(): DashboardData {
   return {
     systemStatus: null,
@@ -693,6 +708,10 @@ export function App() {
   );
   const nodeWorkspaces = useMemo(
     () => [...new Set(data.nodes.map((node) => node.workspace_id))].sort(),
+    [data.nodes],
+  );
+  const nodeConfigurationCohorts = useMemo(
+    () => groupNodeConfigurationCohorts(data.nodes),
     [data.nodes],
   );
   const selectedVisibleNode = useMemo(
@@ -2671,6 +2690,12 @@ export function App() {
               <dd>{data.nodes.filter((node) => node.status === "revoked").length}</dd>
             </div>
           </dl>
+          {nodeConfigurationCohorts.length > 0 ? (
+            <NodeConfigurationCohorts
+              cohorts={nodeConfigurationCohorts}
+              loadedNodeCount={data.nodes.length}
+            />
+          ) : null}
           {data.nodes.length > 0 ? (
             <div className="node-controls" aria-label="Node inventory filters">
               <label>
@@ -3169,6 +3194,79 @@ export function App() {
       ) : null}
       </main>
     </div>
+  );
+}
+
+function NodeConfigurationCohorts({
+  cohorts,
+  loadedNodeCount,
+}: {
+  cohorts: NodeConfigurationCohort[];
+  loadedNodeCount: number;
+}) {
+  return (
+    <section className="node-cohort-panel" aria-label="Loaded Node configuration cohorts">
+      <div className="node-cohort-heading">
+        <div>
+          <p className="eyebrow">Fleet rollout evidence</p>
+          <h4>Configuration cohorts</h4>
+        </div>
+        <span>{cohorts.length} loaded {cohorts.length === 1 ? "cohort" : "cohorts"}</span>
+      </div>
+      <p className="node-cohort-scope">
+        Grouped from {loadedNodeCount} loaded Gateway Node records by workspace, desired signed
+        generation and digest, with the current Gateway configuration signer shown separately.
+        Storage acknowledgments are Node-attested; enforcement, runner health, and host state are
+        not proven.
+      </p>
+      <div className="node-cohort-grid">
+        {cohorts.map((cohort) => {
+          const status = nodeConfigurationCohortStatus(cohort);
+          const generationLabel = cohort.desiredGeneration === null
+            ? "Unassigned"
+            : `Generation ${cohort.desiredGeneration}`;
+          return (
+            <article
+              key={cohort.key}
+              aria-label={`${cohort.workspaceId} configuration ${generationLabel}`}
+            >
+              <header>
+                <div>
+                  <span>{cohort.workspaceId}</span>
+                  <strong>{generationLabel}</strong>
+                </div>
+                <StatusPill status={status} />
+              </header>
+              <dl>
+                <div><dt>Enrolled Nodes</dt><dd>{cohort.nodeCount}</dd></div>
+                <div>
+                  <dt>Stored current</dt>
+                  <dd>{cohort.storedCurrentCount} / {cohort.nodeCount}</dd>
+                </div>
+                <div><dt>Awaiting storage</dt><dd>{cohort.awaitingStorageCount}</dd></div>
+                <div><dt>Drift</dt><dd>{cohort.driftCount}</dd></div>
+                <div><dt>Version exceptions</dt><dd>{cohort.versionExceptionCount}</dd></div>
+                <div>
+                  <dt>Recently observed</dt>
+                  <dd>{cohort.recentlyObservedCount} / {cohort.nodeCount}</dd>
+                </div>
+              </dl>
+              <footer>
+                <span>Digest · {cohort.desiredDigest ? shortHash(cohort.desiredDigest) : "Unassigned"}</span>
+                <span>
+                  Current Gateway signer · {cohort.gatewaySigningKeyId
+                    ? shortHash(cohort.gatewaySigningKeyId)
+                    : "Unavailable"}
+                </span>
+                {cohort.evidenceIncompleteCount > 0 ? (
+                  <span>{cohort.evidenceIncompleteCount} with incomplete configuration evidence</span>
+                ) : null}
+              </footer>
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -4226,6 +4324,79 @@ function nodeAttentionPosture(node: IthildinNode): NodeAttentionPosture | null {
     };
   }
   return null;
+}
+
+function groupNodeConfigurationCohorts(nodes: IthildinNode[]): NodeConfigurationCohort[] {
+  const cohorts = new Map<string, NodeConfigurationCohort>();
+  for (const node of nodes) {
+    if (node.status !== "enrolled") continue;
+    const key = [
+      node.workspace_id,
+      node.desired_configuration_generation ?? "unassigned",
+      node.desired_configuration_digest ?? "unassigned",
+      node.configuration_signing_key_id ?? "unavailable",
+    ].join("\u0000");
+    const cohort = cohorts.get(key) ?? {
+      key,
+      workspaceId: node.workspace_id,
+      desiredGeneration: node.desired_configuration_generation,
+      desiredDigest: node.desired_configuration_digest,
+      gatewaySigningKeyId: node.configuration_signing_key_id,
+      nodeCount: 0,
+      storedCurrentCount: 0,
+      awaitingStorageCount: 0,
+      driftCount: 0,
+      evidenceIncompleteCount: 0,
+      versionExceptionCount: 0,
+      recentlyObservedCount: 0,
+    };
+    cohort.nodeCount += 1;
+    if (node.configuration_state === "stored_current_not_enforced") {
+      cohort.storedCurrentCount += 1;
+    }
+    if (node.configuration_state === "awaiting_node_storage") {
+      cohort.awaitingStorageCount += 1;
+    }
+    if (node.configuration_state === "configuration_drift") {
+      cohort.driftCount += 1;
+    }
+    if (node.configuration_state === "evidence_incomplete") {
+      cohort.evidenceIncompleteCount += 1;
+    }
+    if (node.version_posture !== "meets_minimum") {
+      cohort.versionExceptionCount += 1;
+    }
+    if (node.observed_state === "observed_connected") {
+      cohort.recentlyObservedCount += 1;
+    }
+    cohorts.set(key, cohort);
+  }
+  return [...cohorts.values()].sort((left, right) => {
+    const attentionDifference = nodeConfigurationCohortAttentionRank(left)
+      - nodeConfigurationCohortAttentionRank(right);
+    if (attentionDifference !== 0) return attentionDifference;
+    const workspaceDifference = left.workspaceId.localeCompare(right.workspaceId);
+    if (workspaceDifference !== 0) return workspaceDifference;
+    return (right.desiredGeneration ?? -1) - (left.desiredGeneration ?? -1);
+  });
+}
+
+function nodeConfigurationCohortAttentionRank(cohort: NodeConfigurationCohort) {
+  if (cohort.driftCount > 0 || cohort.evidenceIncompleteCount > 0) return 0;
+  if (cohort.awaitingStorageCount > 0 || cohort.desiredGeneration === null) return 1;
+  if (
+    cohort.versionExceptionCount > 0
+    || cohort.recentlyObservedCount < cohort.nodeCount
+  ) return 2;
+  return 3;
+}
+
+function nodeConfigurationCohortStatus(cohort: NodeConfigurationCohort) {
+  if (cohort.driftCount > 0 || cohort.evidenceIncompleteCount > 0) return "attention required";
+  if (cohort.desiredGeneration === null) return "unassigned";
+  if (cohort.awaitingStorageCount > 0) return "storage pending";
+  if (cohort.storedCurrentCount === cohort.nodeCount) return "stored current not enforced";
+  return "evidence incomplete";
 }
 
 function filterAndSortNodes(

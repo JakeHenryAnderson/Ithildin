@@ -941,11 +941,12 @@ describe("Review console interactions", () => {
     await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
 
     const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const selectedNodeRecord = within(nodes).getByRole("region", {
+      name: "Selected Node record",
+    });
     expect(within(nodes).getByRole("heading", { name: "Enforcement nodes" })).toBeInTheDocument();
     expect(within(nodes).getAllByText("Hermes Node")).toHaveLength(2);
-    expect(within(nodes).getByRole("region", { name: "Selected Node record" })).toHaveTextContent(
-      "Hermes Node",
-    );
+    expect(selectedNodeRecord).toHaveTextContent("Hermes Node");
     expect(within(nodes).getAllByText("observed connected").length).toBeGreaterThan(0);
     expect(
       within(nodes).getByText(/correctly signed heartbeat was recently accepted/i),
@@ -963,7 +964,7 @@ describe("Review console interactions", () => {
     expect(within(nodes).getAllByText("meets minimum").length).toBeGreaterThan(0);
     expect(within(nodes).getByText(/Maintenance remains operator-managed/i)).toBeInTheDocument();
     expect(within(nodes).getByText(/Node attests that the signed configuration is stored/i)).toBeInTheDocument();
-    expect(within(nodes).getAllByText("Generation 1")).toHaveLength(2);
+    expect(within(selectedNodeRecord).getAllByText("Generation 1")).toHaveLength(2);
     expect(within(nodes).getByText("Identity source · Gateway derived")).toBeInTheDocument();
 
     await user.click(within(nodes).getByText("Manage signed desired state"));
@@ -1386,6 +1387,81 @@ describe("Review console interactions", () => {
     );
   });
 
+  it("groups loaded enrolled Nodes into bounded configuration rollout cohorts", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      proposalStatus: "applied",
+      additionalNodes: [
+        {
+          node_id: "node_22222222222222222222222222222222",
+          principal_id: "agent:node.node_22222222222222222222222222222222",
+          display_name: "Drifted Demo Node",
+          configuration_state: "configuration_drift",
+          acknowledged_configuration_generation: 0,
+          acknowledged_configuration_digest: "sha256:previousconfiguration",
+          version_posture: "below_minimum",
+          observed_state: "stale",
+          last_seen_at: "2026-07-16T10:00:00Z",
+        },
+        {
+          node_id: "node_33333333333333333333333333333333",
+          principal_id: "agent:node.node_33333333333333333333333333333333",
+          display_name: "Pending Demo Node",
+          desired_configuration_generation: 2,
+          desired_configuration_digest: "sha256:nextconfiguration",
+          configuration_state: "awaiting_node_storage",
+          acknowledged_configuration_generation: null,
+          acknowledged_configuration_digest: null,
+          configuration_acknowledged_at: null,
+          configuration_acknowledgment_status: null,
+        },
+        {
+          node_id: "node_44444444444444444444444444444444",
+          principal_id: "agent:node.node_44444444444444444444444444444444",
+          workspace_id: "alpha",
+          display_name: "Alpha Node",
+        },
+      ],
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const cohorts = within(nodes).getByRole("region", {
+      name: "Loaded Node configuration cohorts",
+    });
+
+    expect(within(cohorts).getByText("3 loaded cohorts")).toBeInTheDocument();
+    expect(within(cohorts).getByText(/Grouped from 4 loaded Gateway Node records/))
+      .toBeInTheDocument();
+    expect(within(cohorts).getByText(/Storage acknowledgments are Node-attested/))
+      .toBeInTheDocument();
+
+    const drifted = within(cohorts).getByRole("article", {
+      name: "demo configuration Generation 1",
+    });
+    expect(drifted).toHaveTextContent("attention required");
+    expect(drifted).toHaveTextContent("Enrolled Nodes2");
+    expect(drifted).toHaveTextContent("Stored current1 / 2");
+    expect(drifted).toHaveTextContent("Drift1");
+    expect(drifted).toHaveTextContent("Version exceptions1");
+    expect(drifted).toHaveTextContent("Recently observed1 / 2");
+
+    const pending = within(cohorts).getByRole("article", {
+      name: "demo configuration Generation 2",
+    });
+    expect(pending).toHaveTextContent("storage pending");
+    expect(pending).toHaveTextContent("Awaiting storage1");
+
+    const current = within(cohorts).getByRole("article", {
+      name: "alpha configuration Generation 1",
+    });
+    expect(current).toHaveTextContent("stored current not enforced");
+    expect(current).toHaveTextContent("Stored current1 / 1");
+  });
+
   it("prioritizes incomplete Node authority evidence over passive proposals", async () => {
     installFetchMock(systemStatus(), {
       noApprovals: true,
@@ -1410,13 +1486,19 @@ describe("Review console interactions", () => {
       nodeStatus: "revoked",
       proposalStatus: "applied",
     });
-    await saveToken();
+    const user = await saveToken();
     const attention = screen.getByRole("region", { name: "Attention" });
 
     expect(
       within(attention).getByText(/No action identified in the currently loaded local records/i),
     ).toBeInTheDocument();
     expect(within(attention).queryByText(/Hermes Node/)).toBeNull();
+
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    expect(within(nodes).queryByRole("region", {
+      name: "Loaded Node configuration cohorts",
+    })).toBeNull();
   });
 
   it("shows locked and empty Agent Run states without run controls", async () => {
