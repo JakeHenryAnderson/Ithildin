@@ -34,6 +34,9 @@ def main() -> int:
     configuration_trust_stage = subparsers.add_parser("configuration-trust-stage")
     configuration_trust_stage.add_argument("--api-url", default="http://127.0.0.1:8000")
     configuration_trust_stage.add_argument("--state", type=Path, required=True)
+    identity_key_rotate = subparsers.add_parser("identity-key-rotate")
+    identity_key_rotate.add_argument("--api-url", default="http://127.0.0.1:8000")
+    identity_key_rotate.add_argument("--state", type=Path, required=True)
     status = subparsers.add_parser("status")
     status.add_argument("--state", type=Path, required=True)
     args = parser.parse_args()
@@ -54,6 +57,24 @@ def main() -> int:
             print(json.dumps(state.safe_summary(), indent=2, sort_keys=True))
             return 0
         state = NodeState.load(args.state)
+        if args.command == "identity-key-rotate":
+            if state.pending_identity_rotation_id is None:
+                state = client.stage_identity_key_rotation(state)
+                state.write_atomic(args.state)
+            try:
+                rotated = client.activate_identity_key_rotation(state)
+            except NodeClientError as activation_error:
+                try:
+                    rotated = client.recover_identity_key_rotation(state)
+                except NodeClientError:
+                    if not state.pending_identity_rotation_expired():
+                        raise activation_error from None
+                    state = client.replace_expired_identity_key_rotation(state)
+                    state.write_atomic(args.state)
+                    rotated = client.activate_identity_key_rotation(state)
+            rotated.write_atomic(args.state)
+            print(json.dumps(rotated.safe_summary(), indent=2, sort_keys=True))
+            return 0
         if args.command == "configuration-trust-stage":
             staged = client.stage_configuration_trust(state)
             staged.state.write_atomic(args.state)

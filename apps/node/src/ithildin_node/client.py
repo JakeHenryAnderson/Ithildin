@@ -34,7 +34,13 @@ from ithildin_api.node_configuration_trust import (
     transition_next_trust,
     verify_configuration_trust_transition,
 )
-from ithildin_api.nodes import NODE_PROTOCOL_VERSION, canonical_signature_message
+from ithildin_api.nodes import (
+    NODE_PROTOCOL_VERSION,
+    NodeIdentityRotationRecord,
+    canonical_identity_rotation_proof_message,
+    canonical_signature_message,
+    node_identity_key_id,
+)
 from ithildin_schemas import JsonObject, canonical_json, sha256_digest
 
 _LOCAL_PREVIEW_HOSTS = {
@@ -70,6 +76,13 @@ class NodeState:
     previous_configuration_key_id: str | None = None
     previous_configuration_public_key: str | None = None
     previous_trust_expires_at: str | None = None
+    pending_identity_private_key: str | None = None
+    pending_identity_public_key: str | None = None
+    pending_identity_rotation_id: str | None = None
+    pending_identity_current_key_id: str | None = None
+    pending_identity_challenge: str | None = None
+    pending_identity_challenge_digest: str | None = None
+    pending_identity_expires_at: str | None = None
 
     def safe_summary(self) -> JsonObject:
         return {
@@ -86,7 +99,23 @@ class NodeState:
             "pending_trust_expires_at": self.pending_trust_expires_at,
             "previous_configuration_key_id": self.previous_configuration_key_id,
             "previous_trust_expires_at": self.previous_trust_expires_at,
+            "active_identity_key_id": node_identity_key_id(self.public_key),
+            "pending_identity_key_id": (
+                node_identity_key_id(self.pending_identity_public_key)
+                if self.pending_identity_public_key is not None
+                else None
+            ),
+            "pending_identity_rotation_id": self.pending_identity_rotation_id,
+            "pending_identity_expires_at": self.pending_identity_expires_at,
         }
+
+    def pending_identity_rotation_expired(self, *, now: datetime | None = None) -> bool:
+        if self.pending_identity_expires_at is None:
+            return False
+        return (now or datetime.now(UTC)) >= _parse_aware_datetime(
+            self.pending_identity_expires_at,
+            "pending identity-key rotation expiry",
+        )
 
     def _document(self) -> JsonObject:
         return {
@@ -99,6 +128,11 @@ class NodeState:
             "pending_configuration_public_key": self.pending_configuration_public_key,
             "pending_trust_transition_digest": self.pending_trust_transition_digest,
             "previous_configuration_public_key": self.previous_configuration_public_key,
+            "pending_identity_private_key": self.pending_identity_private_key,
+            "pending_identity_public_key": self.pending_identity_public_key,
+            "pending_identity_current_key_id": self.pending_identity_current_key_id,
+            "pending_identity_challenge": self.pending_identity_challenge,
+            "pending_identity_challenge_digest": self.pending_identity_challenge_digest,
         }
 
     def write_new(self, path: Path) -> None:
@@ -179,6 +213,27 @@ class NodeState:
                 previous_trust_expires_at=_optional_string(
                     document, "previous_trust_expires_at"
                 ),
+                pending_identity_private_key=_optional_string(
+                    document, "pending_identity_private_key"
+                ),
+                pending_identity_public_key=_optional_string(
+                    document, "pending_identity_public_key"
+                ),
+                pending_identity_rotation_id=_optional_string(
+                    document, "pending_identity_rotation_id"
+                ),
+                pending_identity_current_key_id=_optional_string(
+                    document, "pending_identity_current_key_id"
+                ),
+                pending_identity_challenge=_optional_string(
+                    document, "pending_identity_challenge"
+                ),
+                pending_identity_challenge_digest=_optional_string(
+                    document, "pending_identity_challenge_digest"
+                ),
+                pending_identity_expires_at=_optional_string(
+                    document, "pending_identity_expires_at"
+                ),
             )
         except NodeClientError:
             raise
@@ -190,9 +245,12 @@ class NodeState:
         _validate_api_url(state.api_url)
         if state.principal_id != f"agent:node.{state.node_id}":
             raise NodeClientError("Node state identity binding is invalid")
-        _private_key(state.private_key)
+        _validate_identity_keypair(
+            state.private_key, state.public_key, label="active Node identity"
+        )
         _configuration_trust(state)
         _validate_optional_trust_state(state)
+        _validate_optional_identity_rotation_state(state)
         return state
 
 
@@ -337,6 +395,122 @@ class NodeClient:
             now=now,
             nonce=nonce,
         )
+
+    def stage_identity_key_rotation(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> NodeState:
+        if state.pending_identity_rotation_id is not None:
+            raise NodeClientError("Node already has a pending identity-key rotation")
+        return self._stage_identity_key_rotation(state, now=now, nonce=nonce)
+
+    def replace_expired_identity_key_rotation(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> NodeState:
+        effective_now = now or datetime.now(UTC)
+        if not state.pending_identity_rotation_expired(now=effective_now):
+            raise NodeClientError("Node pending identity-key rotation is not expired")
+        # The Gateway issues a replacement only after authenticating this request with the still
+        # active K1. That proof makes it safe to replace the expired local pending K2.
+        return self._stage_identity_key_rotation(state, now=effective_now, nonce=nonce)
+
+    def _stage_identity_key_rotation(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None,
+        nonce: str | None,
+    ) -> NodeState:
+        response = self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/identity-key-rotation/challenges",
+            {"protocol_version": NODE_PROTOCOL_VERSION},
+            now=now,
+            nonce=nonce,
+        )
+        private_key = Ed25519PrivateKey.generate()
+        private_key_text, public_key_text = _identity_keypair_text(private_key)
+        current_key_id = _required_string(response, "current_key_id")
+        if current_key_id != node_identity_key_id(state.public_key):
+            raise NodeClientError("Gateway identity-key rotation current key mismatch")
+        challenge = _required_string(response, "challenge")
+        challenge_digest = sha256_digest(challenge)
+        staged = replace(
+            state,
+            pending_identity_private_key=private_key_text,
+            pending_identity_public_key=public_key_text,
+            pending_identity_rotation_id=_required_string(response, "rotation_id"),
+            pending_identity_current_key_id=current_key_id,
+            pending_identity_challenge=challenge,
+            pending_identity_challenge_digest=challenge_digest,
+            pending_identity_expires_at=_required_string(response, "expires_at"),
+        )
+        _validate_optional_identity_rotation_state(staged)
+        return staged
+
+    def activate_identity_key_rotation(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> NodeState:
+        rotation = _pending_identity_rotation_record(state)
+        next_public_key = cast(str, state.pending_identity_public_key)
+        next_private_key = cast(str, state.pending_identity_private_key)
+        next_key_id = node_identity_key_id(next_public_key)
+        proof = canonical_identity_rotation_proof_message(
+            rotation=rotation,
+            next_key_id=next_key_id,
+        )
+        payload: JsonObject = {
+            "protocol_version": NODE_PROTOCOL_VERSION,
+            "rotation_id": rotation.rotation_id,
+            "challenge": cast(str, state.pending_identity_challenge),
+            "next_public_key": next_public_key,
+            "next_key_proof": base64.b64encode(_private_key(next_private_key).sign(proof)).decode(),
+        }
+        response = self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/identity-key-rotation/activations",
+            payload,
+            now=now,
+            nonce=nonce,
+        )
+        _validate_identity_rotation_activation_response(response, rotation, next_key_id)
+        return _promote_pending_identity_key(state)
+
+    def recover_identity_key_rotation(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> NodeState:
+        rotation = _pending_identity_rotation_record(state)
+        next_public_key = cast(str, state.pending_identity_public_key)
+        next_private_key = cast(str, state.pending_identity_private_key)
+        next_key_id = node_identity_key_id(next_public_key)
+        response = self._signed_post_with_private_key(
+            state,
+            f"/nodes/{state.node_id}/identity-key-rotation/status",
+            {
+                "protocol_version": NODE_PROTOCOL_VERSION,
+                "rotation_id": rotation.rotation_id,
+            },
+            private_key=next_private_key,
+            now=now,
+            nonce=nonce,
+        )
+        _validate_identity_rotation_activation_response(response, rotation, next_key_id)
+        return _promote_pending_identity_key(state)
 
     def pull_configuration(
         self,
@@ -514,6 +688,25 @@ class NodeClient:
         now: datetime | None = None,
         nonce: str | None = None,
     ) -> JsonObject:
+        return self._signed_post_with_private_key(
+            state,
+            path,
+            payload,
+            private_key=state.private_key,
+            now=now,
+            nonce=nonce,
+        )
+
+    def _signed_post_with_private_key(
+        self,
+        state: NodeState,
+        path: str,
+        payload: JsonObject,
+        *,
+        private_key: str,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject:
         if state.api_url != self.api_url:
             raise NodeClientError("Node state API binding mismatch")
         timestamp = str(int((now or datetime.now(UTC)).timestamp()))
@@ -525,7 +718,7 @@ class NodeClient:
             nonce=effective_nonce,
             body_hash=sha256_digest(payload),
         )
-        signature = base64.b64encode(_private_key(state.private_key).sign(message)).decode()
+        signature = base64.b64encode(_private_key(private_key).sign(message)).decode()
         return self._post(
             path,
             payload,
@@ -585,6 +778,39 @@ def _private_key(value: str) -> Ed25519PrivateKey:
         raise NodeClientError("Node private key is invalid") from exc
 
 
+def _identity_keypair_text(private_key: Ed25519PrivateKey) -> tuple[str, str]:
+    private_key_text = base64.b64encode(
+        private_key.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    ).decode()
+    public_key_text = base64.b64encode(
+        private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+    ).decode()
+    return private_key_text, public_key_text
+
+
+def _validate_identity_keypair(private_key_text: str, public_key_text: str, *, label: str) -> None:
+    private_key = _private_key(private_key_text)
+    expected = base64.b64encode(
+        private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+    ).decode()
+    if expected != public_key_text:
+        raise NodeClientError(f"{label} keypair is invalid")
+    try:
+        node_identity_key_id(public_key_text)
+    except ValueError as exc:
+        raise NodeClientError(f"{label} public key is invalid") from exc
+
+
 def _configuration_trust(state: NodeState) -> NodeConfigurationTrust:
     return _trust(
         state.gateway_configuration_key_id,
@@ -636,6 +862,95 @@ def _validate_optional_trust_state(state: NodeState) -> None:
         if previous[0] == state.gateway_configuration_key_id:
             raise NodeClientError("Node previous configuration trust matches active trust")
         _parse_aware_datetime(cast(str, previous[2]), "previous trust expiry")
+
+
+def _validate_optional_identity_rotation_state(state: NodeState) -> None:
+    pending = (
+        state.pending_identity_private_key,
+        state.pending_identity_public_key,
+        state.pending_identity_rotation_id,
+        state.pending_identity_current_key_id,
+        state.pending_identity_challenge,
+        state.pending_identity_challenge_digest,
+        state.pending_identity_expires_at,
+    )
+    if not any(value is not None for value in pending):
+        return
+    if any(value is None for value in pending):
+        raise NodeClientError("Node pending identity-key rotation state is incomplete")
+    private_key, public_key, rotation_id, current_key_id, challenge, digest, expires_at = cast(
+        tuple[str, str, str, str, str, str, str], pending
+    )
+    _validate_identity_keypair(private_key, public_key, label="pending Node identity")
+    if not re.fullmatch(r"nkr_[0-9a-f]{32}", rotation_id):
+        raise NodeClientError("Node pending identity-key rotation ID is invalid")
+    if current_key_id != node_identity_key_id(state.public_key):
+        raise NodeClientError("Node pending identity current key binding is invalid")
+    if node_identity_key_id(public_key) == current_key_id:
+        raise NodeClientError("Node pending identity key matches active key")
+    if sha256_digest(challenge) != digest:
+        raise NodeClientError("Node pending identity challenge digest is invalid")
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+        raise NodeClientError("Node pending identity challenge digest is invalid")
+    _parse_aware_datetime(expires_at, "pending identity-key rotation expiry")
+
+
+def _pending_identity_rotation_record(state: NodeState) -> NodeIdentityRotationRecord:
+    _validate_optional_identity_rotation_state(state)
+    if state.pending_identity_rotation_id is None:
+        raise NodeClientError("Node has no pending identity-key rotation")
+    return NodeIdentityRotationRecord(
+        rotation_id=state.pending_identity_rotation_id,
+        node_id=state.node_id,
+        principal_id=state.principal_id,
+        workspace_id=state.workspace_id,
+        current_key_id=cast(str, state.pending_identity_current_key_id),
+        challenge_digest=cast(str, state.pending_identity_challenge_digest),
+        created_at=state.enrolled_at,
+        expires_at=cast(str, state.pending_identity_expires_at),
+        status="pending",
+        evidence_status="complete",
+        next_key_id=None,
+        activated_at=None,
+    )
+
+
+def _validate_identity_rotation_activation_response(
+    response: JsonObject,
+    rotation: NodeIdentityRotationRecord,
+    next_key_id: str,
+) -> None:
+    if (
+        _required_string(response, "rotation_id") != rotation.rotation_id
+        or _required_string(response, "node_id") != rotation.node_id
+        or _required_string(response, "principal_id") != rotation.principal_id
+        or _required_string(response, "workspace_id") != rotation.workspace_id
+        or _required_string(response, "current_key_id") != rotation.current_key_id
+        or _required_string(response, "expires_at") != rotation.expires_at
+        or _required_string(response, "status") != "activated"
+        or _required_string(response, "evidence_status") != "complete"
+        or _required_string(response, "active_identity_key_id") != next_key_id
+        or _required_string(response, "next_key_id") != next_key_id
+    ):
+        raise NodeClientError("Gateway identity-key rotation response is invalid")
+
+
+def _promote_pending_identity_key(state: NodeState) -> NodeState:
+    _validate_optional_identity_rotation_state(state)
+    if state.pending_identity_private_key is None or state.pending_identity_public_key is None:
+        raise NodeClientError("Node has no pending identity-key rotation")
+    return replace(
+        state,
+        private_key=state.pending_identity_private_key,
+        public_key=state.pending_identity_public_key,
+        pending_identity_private_key=None,
+        pending_identity_public_key=None,
+        pending_identity_rotation_id=None,
+        pending_identity_current_key_id=None,
+        pending_identity_challenge=None,
+        pending_identity_challenge_digest=None,
+        pending_identity_expires_at=None,
+    )
 
 
 def _bundle_signing_key_id(bundle: JsonObject) -> str:

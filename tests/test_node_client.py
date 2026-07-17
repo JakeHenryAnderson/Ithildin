@@ -15,7 +15,12 @@ from ithildin_api.node_configuration import (
     NodeConfigurationSigner,
     NodeConfigurationTrust,
 )
-from ithildin_api.nodes import canonical_signature_message
+from ithildin_api.nodes import (
+    NodeIdentityRotationRecord,
+    canonical_identity_rotation_proof_message,
+    canonical_signature_message,
+    node_identity_key_id,
+)
 from ithildin_node.client import (
     NodeClient,
     NodeClientError,
@@ -52,6 +57,11 @@ class RecordingNodeClient(NodeClient):
             ),
         )
         self.response_configuration_signer = self.configuration_signer
+        self.enrolled_identity_public_key: str | None = None
+        self.activated_identity_key_id: str | None = None
+        self.identity_rotation_challenge = "challenge-value-with-at-least-forty-characters-0001"
+        self.identity_rotation_id = "nkr_" + ("4" * 32)
+        self.identity_rotation_expires_at = "2026-07-16T13:00:00+00:00"
 
     def _post(
         self,
@@ -62,6 +72,7 @@ class RecordingNodeClient(NodeClient):
     ) -> JsonObject:
         self.requests.append((path, payload, headers or {}))
         if path == "/nodes/enroll":
+            self.enrolled_identity_public_key = str(payload["public_key"])
             return {
                 "node_id": "node_" + ("1" * 32),
                 "principal_id": "agent:node.node_" + ("1" * 32),
@@ -73,6 +84,61 @@ class RecordingNodeClient(NodeClient):
                 },
                 "manifest_lock_digest": "sha256:" + ("a" * 64),
             }
+        if path.endswith("/identity-key-rotation/challenges"):
+            assert self.enrolled_identity_public_key is not None
+            return {
+                "rotation_id": self.identity_rotation_id,
+                "node_id": "node_" + ("1" * 32),
+                "principal_id": "agent:node.node_" + ("1" * 32),
+                "workspace_id": "default",
+                "current_key_id": node_identity_key_id(self.enrolled_identity_public_key),
+                "next_key_id": None,
+                "challenge": self.identity_rotation_challenge,
+                "challenge_digest": sha256_digest(self.identity_rotation_challenge),
+                "created_at": "2026-07-16T12:00:00+00:00",
+                "expires_at": self.identity_rotation_expires_at,
+                "activated_at": None,
+                "status": "pending",
+                "evidence_status": "complete",
+            }
+        if path.endswith("/identity-key-rotation/activations"):
+            assert self.enrolled_identity_public_key is not None
+            next_public_key = str(payload["next_public_key"])
+            next_key_id = node_identity_key_id(next_public_key)
+            rotation = NodeIdentityRotationRecord(
+                rotation_id=self.identity_rotation_id,
+                node_id="node_" + ("1" * 32),
+                principal_id="agent:node.node_" + ("1" * 32),
+                workspace_id="default",
+                current_key_id=node_identity_key_id(self.enrolled_identity_public_key),
+                challenge_digest=sha256_digest(self.identity_rotation_challenge),
+                created_at="2026-07-16T12:00:00+00:00",
+                expires_at=self.identity_rotation_expires_at,
+                status="pending",
+                evidence_status="complete",
+                next_key_id=None,
+                activated_at=None,
+            )
+            proof = canonical_identity_rotation_proof_message(
+                rotation=rotation, next_key_id=next_key_id
+            )
+            Ed25519PublicKey.from_public_bytes(base64.b64decode(next_public_key)).verify(
+                base64.b64decode(str(payload["next_key_proof"])), proof
+            )
+            self.activated_identity_key_id = next_key_id
+            return _identity_rotation_activated_response(
+                self.identity_rotation_id,
+                node_identity_key_id(self.enrolled_identity_public_key),
+                next_key_id,
+            )
+        if path.endswith("/identity-key-rotation/status"):
+            assert self.activated_identity_key_id is not None
+            assert self.enrolled_identity_public_key is not None
+            return _identity_rotation_activated_response(
+                self.identity_rotation_id,
+                node_identity_key_id(self.enrolled_identity_public_key),
+                self.activated_identity_key_id,
+            )
         if path.endswith("/configuration-trust-transition"):
             transition: JsonObject = {
                 "schema_version": "1",
@@ -301,6 +367,115 @@ def test_client_stages_promotes_and_retains_bounded_previous_trust(tmp_path: Pat
         )
 
 
+def test_client_identity_rotation_persists_pending_then_promotes_atomically(
+    tmp_path: Path,
+) -> None:
+    client = RecordingNodeClient()
+    state = client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    original_key_id = node_identity_key_id(state.public_key)
+    state_path = tmp_path / "node" / "state.json"
+    state.write_new(state_path)
+    staged = client.stage_identity_key_rotation(
+        state,
+        now=datetime(2026, 7, 16, 12, 5, tzinfo=UTC),
+        nonce="5" * 32,
+    )
+    staged.write_atomic(state_path)
+    reloaded = NodeState.load(state_path)
+
+    assert stat.S_IMODE(state_path.stat().st_mode) == 0o600
+    assert reloaded.pending_identity_rotation_id == client.identity_rotation_id
+    assert reloaded.pending_identity_private_key is not None
+    assert "pending_identity_private_key" not in reloaded.safe_summary()
+    assert reloaded.safe_summary()["active_identity_key_id"] == original_key_id
+
+    rotated = client.activate_identity_key_rotation(
+        reloaded,
+        now=datetime(2026, 7, 16, 12, 5, tzinfo=UTC),
+        nonce="6" * 32,
+    )
+    rotated.write_atomic(state_path)
+    final = NodeState.load(state_path)
+    assert final.pending_identity_rotation_id is None
+    assert final.pending_identity_private_key is None
+    assert node_identity_key_id(final.public_key) != original_key_id
+    assert final.safe_summary()["active_identity_key_id"] == client.activated_identity_key_id
+
+
+def test_client_identity_rotation_recovers_after_gateway_activation_response_loss() -> None:
+    client = RecordingNodeClient()
+    state = client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    staged = client.stage_identity_key_rotation(
+        state,
+        now=datetime(2026, 7, 16, 12, 5, tzinfo=UTC),
+        nonce="7" * 32,
+    )
+    assert staged.pending_identity_public_key is not None
+    client.activated_identity_key_id = node_identity_key_id(
+        staged.pending_identity_public_key
+    )
+
+    recovered = client.recover_identity_key_rotation(
+        staged,
+        now=datetime(2026, 7, 16, 12, 5, tzinfo=UTC),
+        nonce="8" * 32,
+    )
+
+    assert recovered.pending_identity_rotation_id is None
+    path, payload, headers = client.requests[-1]
+    message = canonical_signature_message(
+        method="POST",
+        path=path,
+        timestamp=headers["X-Ithildin-Timestamp"],
+        nonce=headers["X-Ithildin-Nonce"],
+        body_hash=sha256_digest(payload),
+    )
+    Ed25519PublicKey.from_public_bytes(base64.b64decode(recovered.public_key)).verify(
+        base64.b64decode(headers["X-Ithildin-Signature"]), message
+    )
+
+
+def test_client_replaces_expired_pending_key_only_after_k1_challenge_succeeds() -> None:
+    client = RecordingNodeClient()
+    state = client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    staged = client.stage_identity_key_rotation(
+        state,
+        now=datetime(2026, 7, 16, 12, 5, tzinfo=UTC),
+        nonce="9" * 32,
+    )
+    previous_pending_key = staged.pending_identity_public_key
+
+    refreshed = client.replace_expired_identity_key_rotation(
+        staged,
+        now=datetime(2026, 7, 16, 13, 1, tzinfo=UTC),
+        nonce="a" * 32,
+    )
+
+    assert refreshed.pending_identity_public_key != previous_pending_key
+    assert refreshed.public_key == state.public_key
+    with pytest.raises(NodeClientError, match="is not expired"):
+        client.replace_expired_identity_key_rotation(
+            refreshed,
+            now=datetime(2026, 7, 16, 12, 59, tzinfo=UTC),
+            nonce="b" * 32,
+        )
+
+
 @pytest.mark.parametrize(
     "url",
     [
@@ -313,3 +488,22 @@ def test_client_stages_promotes_and_retains_bounded_previous_trust(tmp_path: Pat
 def test_client_rejects_non_local_preview_api_urls(url: str) -> None:
     with pytest.raises(NodeClientError, match="Node API URL"):
         NodeClient(url)
+
+
+def _identity_rotation_activated_response(
+    rotation_id: str, current_key_id: str, key_id: str
+) -> JsonObject:
+    return {
+        "rotation_id": rotation_id,
+        "node_id": "node_" + ("1" * 32),
+        "principal_id": "agent:node.node_" + ("1" * 32),
+        "workspace_id": "default",
+        "current_key_id": current_key_id,
+        "next_key_id": key_id,
+        "created_at": "2026-07-16T12:00:00+00:00",
+        "expires_at": "2026-07-16T13:00:00+00:00",
+        "activated_at": "2026-07-16T12:05:00+00:00",
+        "status": "activated",
+        "evidence_status": "complete",
+        "active_identity_key_id": key_id,
+    }

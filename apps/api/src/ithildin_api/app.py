@@ -77,10 +77,15 @@ from ithildin_api.nodes import (
     NodeConflictError,
     NodeEnrollmentPayload,
     NodeHeartbeatPayload,
+    NodeIdentityRotationActivationPayload,
+    NodeIdentityRotationChallengePayload,
+    NodeIdentityRotationStatusPayload,
     NodeNotFoundError,
     NodeStore,
     enrollment_audit_metadata,
+    identity_rotation_audit_metadata,
     node_audit_metadata,
+    node_identity_key_id,
 )
 from ithildin_api.patches import (
     PATCH_APPLY_TOOL,
@@ -520,6 +525,138 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         )
         return summary
 
+    @api.post("/nodes/{node_id}/identity-key-rotation/challenges")
+    def issue_node_identity_key_rotation_challenge(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            request_payload = NodeIdentityRotationChallengePayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node identity-key rotation challenge request",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        body = cast(JsonObject, request_payload.model_dump(mode="json"))
+        try:
+            node_store.authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=body,
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            issued = node_store.issue_identity_rotation_challenge(node_id)
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except NodeConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_IDENTITY_KEY_ROTATION_CHALLENGE_ISSUED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": issued.record.principal_id, "roles": []},
+            metadata=identity_rotation_audit_metadata(issued.record),
+        )
+        rotation = node_store.mark_identity_rotation_challenge_evidence_complete(
+            issued.record.rotation_id
+        )
+        return {**rotation.summary(), "challenge": issued.challenge}
+
+    @api.post("/nodes/{node_id}/identity-key-rotation/activations")
+    def activate_node_identity_key_rotation(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            activation = NodeIdentityRotationActivationPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node identity-key rotation activation request",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        body = cast(JsonObject, activation.model_dump(mode="json"))
+        try:
+            node_store.authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=body,
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            node, rotation = node_store.activate_identity_rotation(node_id, activation)
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except NodeConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        try:
+            cast(AuditWriter, api.state.audit_writer).write_event(
+                event_id=f"evt_{uuid4().hex}",
+                event_type=AuditEventType.NODE_IDENTITY_KEY_ROTATED,
+                request_id=f"req_{uuid4().hex}",
+                principal={"id": node.principal_id, "roles": []},
+                metadata=identity_rotation_audit_metadata(rotation),
+            )
+        except Exception:
+            node_store.abort_identity_rotation_after_audit_failure(rotation.rotation_id)
+            raise
+        node, rotation = node_store.mark_identity_rotation_activation_evidence_complete(
+            rotation.rotation_id
+        )
+        return {
+            **rotation.summary(),
+            "active_identity_key_id": node_identity_key_id(node.public_key),
+            "recovery_required": False,
+        }
+
+    @api.post("/nodes/{node_id}/identity-key-rotation/status")
+    def get_node_identity_key_rotation_status(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            status_payload = NodeIdentityRotationStatusPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node identity-key rotation status request",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        body = cast(JsonObject, status_payload.model_dump(mode="json"))
+        try:
+            node = node_store.authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=body,
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            rotation = node_store.get_identity_rotation(status_payload.rotation_id)
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        if rotation.node_id != node_id or rotation.next_key_id != node_identity_key_id(
+            node.public_key
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="identity-key rotation status binding mismatch",
+            )
+        return {
+            **rotation.summary(),
+            "active_identity_key_id": node_identity_key_id(node.public_key),
+        }
+
     @api.get("/nodes", dependencies=[Depends(require_admin_token)])
     def list_nodes(request: Request) -> JsonObject:
         unexpected = sorted(set(request.query_params.keys()) - {"limit"})
@@ -553,6 +690,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     record.get("acknowledged_active_configuration_signing_key_id"),
                 ),
             )
+            identity_rotation = cast(NodeStore, api.state.node_store).latest_identity_rotation(
+                str(record["node_id"])
+            )
+            record["identity_key_rotation"] = (
+                identity_rotation.summary() if identity_rotation else None
+            )
         return {
             "nodes": cast(JsonValue, records),
             "count": len(records),
@@ -583,6 +726,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             transitions[0].summary() if transitions else None,
             gateway_key_id=signer.trust.key_id if signer else None,
             acknowledged_key_id=record.acknowledged_active_configuration_signing_key_id,
+        )
+        identity_rotation = cast(NodeStore, api.state.node_store).latest_identity_rotation(node_id)
+        summary["identity_key_rotation"] = (
+            identity_rotation.summary() if identity_rotation else None
         )
         return summary
 

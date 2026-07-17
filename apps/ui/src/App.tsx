@@ -183,6 +183,8 @@ type IthildinNode = {
   acknowledged_active_configuration_signing_key_id: string | null;
   configuration_signing_key_id: string | null;
   configuration_trust_transition: NodeConfigurationTrustTransition | null;
+  active_identity_key_id: string;
+  identity_key_rotation: NodeIdentityKeyRotation | null;
   minimum_node_version: string | null;
   version_posture: string;
   version_desired_source: string;
@@ -194,6 +196,19 @@ type IthildinNode = {
   connectivity_source: "gateway_accepted_heartbeat";
   runner_health_known: false;
   model_health_known: false;
+};
+
+type NodeIdentityKeyRotation = {
+  rotation_id: string;
+  current_key_id: string;
+  next_key_id: string | null;
+  created_at: string;
+  expires_at: string;
+  activated_at: string | null;
+  status: string;
+  evidence_status: string;
+  private_key_received: false;
+  retired_key_request_authority: false;
 };
 
 type NodeConfigurationTrustTransition = {
@@ -2529,6 +2544,7 @@ export function App() {
                 ["stale", "never_observed", "evidence_incomplete"].includes(node.observed_state)
                 || ["configuration_drift", "evidence_incomplete"].includes(node.configuration_state)
                 || ["below_minimum", "evidence_incomplete"].includes(node.version_posture)
+                || node.identity_key_rotation?.evidence_status === "pending"
               ).length}</dd>
             </div>
             <div>
@@ -2579,6 +2595,19 @@ export function App() {
                   <NodeConfigurationTrustPosture transition={node.configuration_trust_transition} />
                   <div className="node-configuration-posture">
                     <div>
+                      <span>Node identity-key posture</span>
+                      <strong>{node.identity_key_rotation
+                        ? node.identity_key_rotation.status.replace(/_/g, " ")
+                        : "enrollment key active"}</strong>
+                    </div>
+                    <StatusPill status={node.identity_key_rotation?.status ?? "active"} />
+                    <p>
+                      Active request key {shortHash(node.active_identity_key_id)}. Rotation requires
+                      current-key authorization and proof by the next key; retired keys have no request authority.
+                    </p>
+                  </div>
+                  <div className="node-configuration-posture">
+                    <div>
                       <span>Node version posture</span>
                       <strong>{node.version_posture.replace(/_/g, " ")}</strong>
                     </div>
@@ -2596,6 +2625,10 @@ export function App() {
                     <div>
                       <dt>Audit evidence</dt>
                       <dd>{node.evidence_status}</dd>
+                    </div>
+                    <div>
+                      <dt>Active identity key <small>Gateway fingerprint</small></dt>
+                      <dd>{shortHash(node.active_identity_key_id)}</dd>
                     </div>
                     <div>
                       <dt>Assigned workspace</dt>

@@ -28,7 +28,14 @@ from ithildin_api.node_configuration import (
     NodeConfigurationStore,
     generate_node_configuration_signing_keypair,
 )
-from ithildin_api.nodes import NodeHeartbeatPayload, canonical_signature_message
+from ithildin_api.nodes import (
+    NodeHeartbeatPayload,
+    NodeIdentityRotationRecord,
+    NodeStore,
+    canonical_identity_rotation_proof_message,
+    canonical_signature_message,
+    node_identity_key_id,
+)
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
@@ -2912,6 +2919,203 @@ def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Pat
     assert "node.enrolled" in audit_text
     assert "node.heartbeat.accepted" in audit_text
     assert "node.revoked" in audit_text
+
+
+def test_node_identity_key_rotation_api_retires_old_key_and_reports_posture(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    admin_headers = {"Authorization": "Bearer test-admin-token"}
+    current_private = Ed25519PrivateKey.generate()
+    current_public = base64.b64encode(
+        current_private.public_key().public_bytes_raw()
+    ).decode()
+    api = create_app(settings)
+    with TestClient(api) as client:
+        issued = client.post(
+            "/nodes/enrollment-codes",
+            headers=admin_headers,
+            json={"workspace_id": "default", "display_name": "Rotating Node"},
+        )
+        enrollment = client.post(
+            "/nodes/enroll",
+            json={
+                "enrollment_code": issued.json()["enrollment_code"],
+                "public_key": current_public,
+                "protocol_version": "1",
+                "node_version": "0.1.0",
+                "runner_adapter": "hermes",
+                "deployment_topology": "docker_sidecar",
+            },
+        )
+        assert enrollment.status_code == 200
+        node_id = enrollment.json()["node_id"]
+        challenge_path = f"/nodes/{node_id}/identity-key-rotation/challenges"
+        challenge_payload: JsonObject = {"protocol_version": "1"}
+        challenge = client.post(
+            challenge_path,
+            headers=_signed_node_headers(
+                current_private,
+                node_id=node_id,
+                path=challenge_path,
+                payload=challenge_payload,
+                nonce="a1" * 16,
+            ),
+            json=challenge_payload,
+        )
+        assert challenge.status_code == 200
+        challenge_document = challenge.json()
+        assert challenge_document["evidence_status"] == "complete"
+        next_private = Ed25519PrivateKey.generate()
+        next_public = base64.b64encode(
+            next_private.public_key().public_bytes_raw()
+        ).decode()
+        next_key_id = node_identity_key_id(next_public)
+        rotation = NodeIdentityRotationRecord(
+            rotation_id=challenge_document["rotation_id"],
+            node_id=node_id,
+            principal_id=enrollment.json()["principal_id"],
+            workspace_id="default",
+            current_key_id=challenge_document["current_key_id"],
+            challenge_digest=sha256_digest(challenge_document["challenge"]),
+            created_at=challenge_document["created_at"],
+            expires_at=challenge_document["expires_at"],
+            status="pending",
+            evidence_status="complete",
+            next_key_id=None,
+            activated_at=None,
+        )
+        proof = canonical_identity_rotation_proof_message(
+            rotation=rotation, next_key_id=next_key_id
+        )
+        activation_path = f"/nodes/{node_id}/identity-key-rotation/activations"
+        activation_payload: JsonObject = {
+            "protocol_version": "1",
+            "rotation_id": rotation.rotation_id,
+            "challenge": challenge_document["challenge"],
+            "next_public_key": next_public,
+            "next_key_proof": base64.b64encode(next_private.sign(proof)).decode(),
+        }
+        activated = client.post(
+            activation_path,
+            headers=_signed_node_headers(
+                current_private,
+                node_id=node_id,
+                path=activation_path,
+                payload=activation_payload,
+                nonce="a2" * 16,
+            ),
+            json=activation_payload,
+        )
+        assert activated.status_code == 200
+        assert activated.json()["active_identity_key_id"] == next_key_id
+        assert activated.json()["retired_key_request_authority"] is False
+
+        status_path = f"/nodes/{node_id}/identity-key-rotation/status"
+        status_payload: JsonObject = {
+            "protocol_version": "1",
+            "rotation_id": rotation.rotation_id,
+        }
+        old_key_status = client.post(
+            status_path,
+            headers=_signed_node_headers(
+                current_private,
+                node_id=node_id,
+                path=status_path,
+                payload=status_payload,
+                nonce="a3" * 16,
+            ),
+            json=status_payload,
+        )
+        assert old_key_status.status_code == 401
+        new_key_status = client.post(
+            status_path,
+            headers=_signed_node_headers(
+                next_private,
+                node_id=node_id,
+                path=status_path,
+                payload=status_payload,
+                nonce="a4" * 16,
+            ),
+            json=status_payload,
+        )
+        assert new_key_status.status_code == 200
+        detail = client.get(f"/nodes/{node_id}", headers=admin_headers)
+        assert detail.json()["active_identity_key_id"] == next_key_id
+        assert detail.json()["identity_key_rotation"]["status"] == "activated"
+
+        second_challenge = client.post(
+            challenge_path,
+            headers=_signed_node_headers(
+                next_private,
+                node_id=node_id,
+                path=challenge_path,
+                payload=challenge_payload,
+                nonce="a5" * 16,
+            ),
+            json=challenge_payload,
+        ).json()
+        third_private = Ed25519PrivateKey.generate()
+        third_public = base64.b64encode(
+            third_private.public_key().public_bytes_raw()
+        ).decode()
+        second_rotation = NodeIdentityRotationRecord(
+            rotation_id=second_challenge["rotation_id"],
+            node_id=node_id,
+            principal_id=enrollment.json()["principal_id"],
+            workspace_id="default",
+            current_key_id=next_key_id,
+            challenge_digest=sha256_digest(second_challenge["challenge"]),
+            created_at=second_challenge["created_at"],
+            expires_at=second_challenge["expires_at"],
+            status="pending",
+            evidence_status="complete",
+            next_key_id=None,
+            activated_at=None,
+        )
+        third_key_id = node_identity_key_id(third_public)
+        second_proof = canonical_identity_rotation_proof_message(
+            rotation=second_rotation, next_key_id=third_key_id
+        )
+        second_activation_payload: JsonObject = {
+            "protocol_version": "1",
+            "rotation_id": second_rotation.rotation_id,
+            "challenge": second_challenge["challenge"],
+            "next_public_key": third_public,
+            "next_key_proof": base64.b64encode(third_private.sign(second_proof)).decode(),
+        }
+
+        class FailingIdentityRotationAuditWriter:
+            def write_event(self, **_: object) -> None:
+                raise RuntimeError("simulated identity rotation audit failure")
+
+        api.state.audit_writer = FailingIdentityRotationAuditWriter()
+        with pytest.raises(RuntimeError, match="simulated identity rotation audit failure"):
+            client.post(
+                activation_path,
+                headers=_signed_node_headers(
+                    next_private,
+                    node_id=node_id,
+                    path=activation_path,
+                    payload=second_activation_payload,
+                    nonce="a6" * 16,
+                ),
+                json=second_activation_payload,
+            )
+        failed_store = NodeStore(settings.db_path)
+        compensated_node = failed_store.get(node_id)
+        assert compensated_node.evidence_status == "complete"
+        assert node_identity_key_id(compensated_node.public_key) == next_key_id
+        failed_rotation = failed_store.latest_identity_rotation(node_id)
+        assert failed_rotation is not None
+        assert failed_rotation.status == "audit_failed"
+        assert failed_rotation.evidence_status == "complete"
+
+    audit_text = settings.audit_log_path.read_text(encoding="utf-8")
+    assert "node.identity_key_rotation.challenge_issued" in audit_text
+    assert "node.identity_key.rotated" in audit_text
+    assert challenge_document["challenge"] not in audit_text
+    assert next_public not in audit_text
 
 
 def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(

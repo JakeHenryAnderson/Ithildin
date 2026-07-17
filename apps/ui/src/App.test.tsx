@@ -393,6 +393,19 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
               activation_proven: false,
               enforcement_proven: false,
             },
+            active_identity_key_id: "sha256:nodeidentitykey2",
+            identity_key_rotation: {
+              rotation_id: "nkr_44444444444444444444444444444444",
+              current_key_id: "sha256:nodeidentitykey1",
+              next_key_id: "sha256:nodeidentitykey2",
+              created_at: "2026-07-16T12:00:00Z",
+              expires_at: "2026-07-16T13:00:00Z",
+              activated_at: "2026-07-16T12:05:00Z",
+              status: "activated",
+              evidence_status: "complete",
+              private_key_received: false,
+              retired_key_request_authority: false,
+            },
             minimum_node_version: "0.1.0",
             version_posture: "meets_minimum",
             version_desired_source: "signed_desired_configuration",
@@ -800,6 +813,8 @@ describe("Review console interactions", () => {
     expect(within(nodes).getByText("Runner health · unknown")).toBeInTheDocument();
     expect(within(nodes).getByText("Policy enforcement · unknown")).toBeInTheDocument();
     expect(within(nodes).getByText("Node version posture")).toBeInTheDocument();
+    expect(within(nodes).getByText("Node identity-key posture")).toBeInTheDocument();
+    expect(within(nodes).getByText(/retired keys have no request authority/i)).toBeInTheDocument();
     expect(within(nodes).getAllByText("meets minimum").length).toBeGreaterThan(0);
     expect(within(nodes).getByText(/Maintenance remains operator-managed/i)).toBeInTheDocument();
     expect(within(nodes).getByText(/Node attests that the signed configuration is stored/i)).toBeInTheDocument();

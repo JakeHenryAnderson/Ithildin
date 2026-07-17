@@ -14,10 +14,13 @@ from ithildin_api.nodes import (
     NodeConflictError,
     NodeEnrollmentPayload,
     NodeHeartbeatPayload,
+    NodeIdentityRotationActivationPayload,
     NodeStore,
+    canonical_identity_rotation_proof_message,
     canonical_signature_message,
+    node_identity_key_id,
 )
-from ithildin_schemas import sha256_digest
+from ithildin_schemas import JsonObject, sha256_digest
 from pydantic import ValidationError
 
 
@@ -290,6 +293,184 @@ def test_invalid_signature_stale_timestamp_and_unsafe_metadata_are_rejected(
         )
 
 
+def test_identity_key_rotation_requires_both_keys_retires_old_key_and_survives_restart(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    store = NodeStore(db_path)
+    store.initialize()
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+    issued = store.issue_enrollment_code(
+        EnrollmentCodeIssuePayload(workspace_id="default", display_name="Node"),
+        expires_in_seconds=600,
+        now=now,
+    )
+    store.mark_enrollment_code_evidence_complete(issued.code_id)
+    current_private, current_public = _keypair()
+    node = store.enroll(_enrollment(issued.enrollment_code, current_public), now=now)
+    node = store.mark_node_evidence_complete(node.node_id)
+    challenge_path = f"/nodes/{node.node_id}/identity-key-rotation/challenges"
+    challenge_body = {"protocol_version": "1"}
+    store.authenticate_request(
+        node_id=node.node_id,
+        timestamp=str(int(now.timestamp())),
+        nonce="1" * 32,
+        signature=_sign_request(
+            current_private,
+            path=challenge_path,
+            timestamp=str(int(now.timestamp())),
+            nonce="1" * 32,
+            body=challenge_body,
+        ),
+        body=challenge_body,
+        path=challenge_path,
+        max_clock_skew_seconds=120,
+        now=now,
+    )
+    challenge = store.issue_identity_rotation_challenge(node.node_id, now=now)
+    rotation = store.mark_identity_rotation_challenge_evidence_complete(
+        challenge.record.rotation_id
+    )
+    next_private, next_public = _keypair()
+    next_key_id = node_identity_key_id(next_public)
+    proof = canonical_identity_rotation_proof_message(
+        rotation=rotation, next_key_id=next_key_id
+    )
+    activation = NodeIdentityRotationActivationPayload(
+        protocol_version="1",
+        rotation_id=rotation.rotation_id,
+        challenge=challenge.challenge,
+        next_public_key=next_public,
+        next_key_proof=base64.b64encode(next_private.sign(proof)).decode(),
+    )
+    activation_body = activation.model_dump(mode="json")
+    activation_path = f"/nodes/{node.node_id}/identity-key-rotation/activations"
+    store.authenticate_request(
+        node_id=node.node_id,
+        timestamp=str(int(now.timestamp())),
+        nonce="2" * 32,
+        signature=_sign_request(
+            current_private,
+            path=activation_path,
+            timestamp=str(int(now.timestamp())),
+            nonce="2" * 32,
+            body=activation_body,
+        ),
+        body=activation_body,
+        path=activation_path,
+        max_clock_skew_seconds=120,
+        now=now,
+    )
+    pending_node, pending_rotation = store.activate_identity_rotation(
+        node.node_id, activation, now=now
+    )
+    assert pending_node.evidence_status == "pending"
+    assert pending_rotation.evidence_status == "pending"
+    rotated_node, rotated = store.mark_identity_rotation_activation_evidence_complete(
+        rotation.rotation_id
+    )
+    assert node_identity_key_id(rotated_node.public_key) == next_key_id
+    assert rotated.summary(now=now)["retired_key_request_authority"] is False
+
+    status_path = f"/nodes/{node.node_id}/identity-key-rotation/status"
+    status_body = {"protocol_version": "1", "rotation_id": rotation.rotation_id}
+    with pytest.raises(NodeAuthenticationError, match="invalid Node signature"):
+        store.authenticate_request(
+            node_id=node.node_id,
+            timestamp=str(int(now.timestamp())),
+            nonce="3" * 32,
+            signature=_sign_request(
+                current_private,
+                path=status_path,
+                timestamp=str(int(now.timestamp())),
+                nonce="3" * 32,
+                body=status_body,
+            ),
+            body=status_body,
+            path=status_path,
+            max_clock_skew_seconds=120,
+            now=now,
+        )
+    restarted = NodeStore(db_path)
+    restarted.initialize()
+    restarted.authenticate_request(
+        node_id=node.node_id,
+        timestamp=str(int(now.timestamp())),
+        nonce="4" * 32,
+        signature=_sign_request(
+            next_private,
+            path=status_path,
+            timestamp=str(int(now.timestamp())),
+            nonce="4" * 32,
+            body=status_body,
+        ),
+        body=status_body,
+        path=status_path,
+        max_clock_skew_seconds=120,
+        now=now,
+    )
+    assert restarted.latest_identity_rotation(node.node_id) == rotated
+
+
+def test_identity_key_rotation_rejects_incomplete_expired_same_key_and_bad_proof(
+    tmp_path: Path,
+) -> None:
+    store = NodeStore(tmp_path / "ithildin.sqlite3")
+    store.initialize()
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+    issued = store.issue_enrollment_code(
+        EnrollmentCodeIssuePayload(workspace_id="default", display_name="Node"),
+        expires_in_seconds=600,
+        now=now,
+    )
+    store.mark_enrollment_code_evidence_complete(issued.code_id)
+    current_private, current_public = _keypair()
+    node = store.enroll(_enrollment(issued.enrollment_code, current_public), now=now)
+    store.mark_node_evidence_complete(node.node_id)
+    challenge = store.issue_identity_rotation_challenge(
+        node.node_id, expires_in_seconds=60, now=now
+    )
+    same_key_activation = NodeIdentityRotationActivationPayload(
+        protocol_version="1",
+        rotation_id=challenge.record.rotation_id,
+        challenge=challenge.challenge,
+        next_public_key=current_public,
+        next_key_proof=base64.b64encode(current_private.sign(b"wrong-domain")).decode(),
+    )
+    with pytest.raises(NodeAuthenticationError, match="evidence is incomplete"):
+        store.activate_identity_rotation(node.node_id, same_key_activation, now=now)
+    rotation = store.mark_identity_rotation_challenge_evidence_complete(
+        challenge.record.rotation_id
+    )
+    with pytest.raises(NodeConflictError, match="must change the key"):
+        store.activate_identity_rotation(node.node_id, same_key_activation, now=now)
+    next_private, next_public = _keypair()
+    bad_proof = NodeIdentityRotationActivationPayload(
+        protocol_version="1",
+        rotation_id=rotation.rotation_id,
+        challenge=challenge.challenge,
+        next_public_key=next_public,
+        next_key_proof=base64.b64encode(next_private.sign(b"wrong-domain")).decode(),
+    )
+    with pytest.raises(NodeAuthenticationError, match="invalid Node signature"):
+        store.activate_identity_rotation(node.node_id, bad_proof, now=now)
+    valid_proof = canonical_identity_rotation_proof_message(
+        rotation=rotation, next_key_id=node_identity_key_id(next_public)
+    )
+    expired = bad_proof.model_copy(
+        update={"next_key_proof": base64.b64encode(next_private.sign(valid_proof)).decode()}
+    )
+    with pytest.raises(NodeAuthenticationError, match="expired"):
+        store.activate_identity_rotation(
+            node.node_id, expired, now=now + timedelta(seconds=61)
+        )
+    replacement = store.issue_identity_rotation_challenge(
+        node.node_id, expires_in_seconds=60, now=now + timedelta(seconds=61)
+    )
+    assert replacement.record.rotation_id != rotation.rotation_id
+    assert store.get_identity_rotation(rotation.rotation_id).summary(
+        now=now + timedelta(seconds=61)
+    )["status"] == "expired"
 def _keypair() -> tuple[Ed25519PrivateKey, str]:
     private_key = Ed25519PrivateKey.generate()
     public_bytes = private_key.public_key().public_bytes(
@@ -335,5 +516,23 @@ def _sign(
         timestamp=timestamp,
         nonce=nonce,
         body_hash=sha256_digest(heartbeat.safe_payload()),
+    )
+    return base64.b64encode(private_key.sign(message)).decode()
+
+
+def _sign_request(
+    private_key: Ed25519PrivateKey,
+    *,
+    path: str,
+    timestamp: str,
+    nonce: str,
+    body: JsonObject,
+) -> str:
+    message = canonical_signature_message(
+        method="POST",
+        path=path,
+        timestamp=timestamp,
+        nonce=nonce,
+        body_hash=sha256_digest(body),
     )
     return base64.b64encode(private_key.sign(message)).decode()

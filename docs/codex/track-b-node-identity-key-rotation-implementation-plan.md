@@ -1,6 +1,6 @@
 # Track B Node Identity-Key Rotation Implementation Plan
 
-Status: approved and in implementation.
+Status: implemented and observed in the bounded local-preview runtime.
 
 Current governed tool count: `24`.
 

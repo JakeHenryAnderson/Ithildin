@@ -55,6 +55,10 @@ class AuditEventType(StrEnum):
     NODE_ENROLLMENT_CODE_ISSUED = "node.enrollment_code.issued"
     NODE_ENROLLED = "node.enrolled"
     NODE_HEARTBEAT_ACCEPTED = "node.heartbeat.accepted"
+    NODE_IDENTITY_KEY_ROTATION_CHALLENGE_ISSUED = (
+        "node.identity_key_rotation.challenge_issued"
+    )
+    NODE_IDENTITY_KEY_ROTATED = "node.identity_key.rotated"
     NODE_REVOKED = "node.revoked"
     NODE_CONFIGURATION_ASSIGNED = "node.configuration.assigned"
     NODE_CONFIGURATION_ROLLBACK_ASSIGNED = "node.configuration.rollback_assigned"

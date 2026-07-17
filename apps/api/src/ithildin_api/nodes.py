@@ -26,11 +26,13 @@ from ithildin_api.node_versions import validate_node_version
 
 NODE_PROTOCOL_VERSION = "1"
 NODE_SIGNATURE_CONTEXT = "ITHILDIN-NODE-V1"
+NODE_IDENTITY_ROTATION_PROOF_CONTEXT = "ITHILDIN-NODE-IDENTITY-ROTATION-V1"
 NODE_PRINCIPAL_PREFIX = "agent:node."
 _LABEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}$")
 _DISPLAY_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.,:@()-]{0,127}$")
 _NODE_ID_PATTERN = re.compile(r"^node_[0-9a-f]{32}$")
 _NONCE_PATTERN = re.compile(r"^[0-9a-f]{32,128}$")
+_ROTATION_ID_PATTERN = re.compile(r"^nkr_[0-9a-f]{32}$")
 _ACTIVE_STATUS = "enrolled"
 _REVOKED_STATUS = "revoked"
 _EVIDENCE_PENDING = "pending"
@@ -127,6 +129,29 @@ class NodeHeartbeatPayload(StrictBaseModel):
         return cast(JsonObject, self.model_dump(mode="json", exclude_none=True))
 
 
+class NodeIdentityRotationChallengePayload(StrictBaseModel):
+    protocol_version: Literal["1"]
+
+
+class NodeIdentityRotationActivationPayload(StrictBaseModel):
+    protocol_version: Literal["1"]
+    rotation_id: str = Field(pattern=r"^nkr_[0-9a-f]{32}$")
+    challenge: str = Field(min_length=40, max_length=64)
+    next_public_key: str = Field(min_length=40, max_length=64)
+    next_key_proof: str = Field(min_length=80, max_length=128)
+
+    @field_validator("next_public_key")
+    @classmethod
+    def _public_key_is_raw_ed25519(cls, value: str) -> str:
+        _decode_public_key(value)
+        return value
+
+
+class NodeIdentityRotationStatusPayload(StrictBaseModel):
+    protocol_version: Literal["1"]
+    rotation_id: str = Field(pattern=r"^nkr_[0-9a-f]{32}$")
+
+
 @dataclass(frozen=True)
 class IssuedEnrollmentCode:
     code_id: str
@@ -146,6 +171,54 @@ class IssuedEnrollmentCode:
             "expires_at": self.expires_at,
             "secret_returned_once": True,
         }
+
+
+@dataclass(frozen=True)
+class NodeIdentityRotationRecord:
+    rotation_id: str
+    node_id: str
+    principal_id: str
+    workspace_id: str
+    current_key_id: str
+    challenge_digest: str
+    created_at: str
+    expires_at: str
+    status: str
+    evidence_status: str
+    next_key_id: str | None
+    activated_at: str | None
+
+    def summary(self, *, now: datetime | None = None) -> JsonObject:
+        effective_status = self.status
+        if (
+            effective_status == "pending"
+            and _parse_datetime(self.expires_at) <= (now or datetime.now(UTC))
+        ):
+            effective_status = "expired"
+        return {
+            "rotation_id": self.rotation_id,
+            "node_id": self.node_id,
+            "principal_id": self.principal_id,
+            "workspace_id": self.workspace_id,
+            "current_key_id": self.current_key_id,
+            "next_key_id": self.next_key_id,
+            "created_at": self.created_at,
+            "expires_at": self.expires_at,
+            "activated_at": self.activated_at,
+            "status": effective_status,
+            "evidence_status": self.evidence_status,
+            "private_key_received": False,
+            "retired_key_request_authority": False,
+        }
+
+
+@dataclass(frozen=True)
+class IssuedNodeIdentityRotation:
+    record: NodeIdentityRotationRecord
+    challenge: str
+
+    def response(self) -> JsonObject:
+        return {**self.record.summary(), "challenge": self.challenge}
 
 
 @dataclass(frozen=True)
@@ -232,6 +305,7 @@ class NodeRecord:
             "connectivity_source": "gateway_accepted_heartbeat",
             "runner_health_known": False,
             "model_health_known": False,
+            "active_identity_key_id": node_identity_key_id(self.public_key),
         }
 
 
@@ -291,6 +365,27 @@ class NodeStore:
                 );
                 CREATE INDEX IF NOT EXISTS idx_node_nonces_accepted_at
                     ON node_nonces(accepted_at);
+                CREATE TABLE IF NOT EXISTS node_identity_key_rotations (
+                    rotation_id TEXT PRIMARY KEY,
+                    node_id TEXT NOT NULL,
+                    principal_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    current_key_id TEXT NOT NULL,
+                    current_public_key TEXT NOT NULL,
+                    challenge_digest TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    evidence_status TEXT NOT NULL,
+                    next_public_key TEXT,
+                    next_key_id TEXT,
+                    activated_at TEXT,
+                    FOREIGN KEY (node_id) REFERENCES nodes(node_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_node_identity_key_rotations_node_created
+                    ON node_identity_key_rotations(node_id, created_at DESC);
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_node_identity_key_rotations_one_pending
+                    ON node_identity_key_rotations(node_id) WHERE status = 'pending';
                 """
             )
             _ensure_column(
@@ -326,6 +421,12 @@ class NodeStore:
                 table="nodes",
                 column="evidence_status",
                 definition="TEXT NOT NULL DEFAULT 'complete'",
+            )
+            _ensure_column(
+                connection,
+                table="node_identity_key_rotations",
+                column="current_public_key",
+                definition="TEXT",
             )
             connection.commit()
 
@@ -676,12 +777,292 @@ class NodeStore:
             connection.commit()
         return record
 
+    def issue_identity_rotation_challenge(
+        self,
+        node_id: str,
+        *,
+        expires_in_seconds: int = 300,
+        now: datetime | None = None,
+    ) -> IssuedNodeIdentityRotation:
+        effective_now = now or datetime.now(UTC)
+        record = self.get(node_id)
+        if record.status != _ACTIVE_STATUS:
+            raise NodeAuthenticationError("Node is revoked")
+        if record.evidence_status != _EVIDENCE_COMPLETE:
+            raise NodeAuthenticationError("Node evidence is incomplete")
+        rotation_id = f"nkr_{uuid4().hex}"
+        challenge = secrets.token_urlsafe(32)
+        expires_at = effective_now + timedelta(seconds=expires_in_seconds)
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT status, evidence_status, public_key FROM nodes WHERE node_id = ?",
+                (node_id,),
+            ).fetchone()
+            if (
+                current is None
+                or str(current[0]) != _ACTIVE_STATUS
+                or str(current[1]) != _EVIDENCE_COMPLETE
+                or str(current[2]) != record.public_key
+            ):
+                raise NodeAuthenticationError("Node is not active")
+            connection.execute(
+                """
+                UPDATE node_identity_key_rotations SET status = 'expired'
+                WHERE node_id = ? AND status = 'pending' AND expires_at <= ?
+                """,
+                (node_id, effective_now.isoformat()),
+            )
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO node_identity_key_rotations (
+                        rotation_id, node_id, principal_id, workspace_id, current_key_id,
+                        current_public_key, challenge_digest, created_at, expires_at, status,
+                        evidence_status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+                    """,
+                    (
+                        rotation_id,
+                        node_id,
+                        record.principal_id,
+                        record.workspace_id,
+                        node_identity_key_id(record.public_key),
+                        record.public_key,
+                        sha256_digest(challenge),
+                        effective_now.isoformat(),
+                        expires_at.isoformat(),
+                        _EVIDENCE_PENDING,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise NodeConflictError("Node already has a pending identity-key rotation") from exc
+            connection.commit()
+        return IssuedNodeIdentityRotation(self.get_identity_rotation(rotation_id), challenge)
+
+    def mark_identity_rotation_challenge_evidence_complete(
+        self, rotation_id: str
+    ) -> NodeIdentityRotationRecord:
+        with sqlite3.connect(self.db_path) as connection:
+            updated = connection.execute(
+                """
+                UPDATE node_identity_key_rotations SET evidence_status = ?
+                WHERE rotation_id = ? AND status = 'pending' AND evidence_status = ?
+                """,
+                (_EVIDENCE_COMPLETE, rotation_id, _EVIDENCE_PENDING),
+            )
+            if updated.rowcount != 1:
+                raise NodeConflictError("identity-key rotation evidence state changed")
+            connection.commit()
+        return self.get_identity_rotation(rotation_id)
+
+    def activate_identity_rotation(
+        self,
+        node_id: str,
+        payload: NodeIdentityRotationActivationPayload,
+        *,
+        now: datetime | None = None,
+    ) -> tuple[NodeRecord, NodeIdentityRotationRecord]:
+        effective_now = now or datetime.now(UTC)
+        node = self.get(node_id)
+        rotation = self.get_identity_rotation(payload.rotation_id)
+        if rotation.node_id != node_id:
+            raise NodeAuthenticationError("identity-key rotation target mismatch")
+        if rotation.status != "pending":
+            raise NodeConflictError("identity-key rotation is not pending")
+        if rotation.evidence_status != _EVIDENCE_COMPLETE:
+            raise NodeAuthenticationError("identity-key rotation evidence is incomplete")
+        if _parse_datetime(rotation.expires_at) <= effective_now:
+            raise NodeAuthenticationError("identity-key rotation expired")
+        current_key_id = node_identity_key_id(node.public_key)
+        if current_key_id != rotation.current_key_id:
+            raise NodeConflictError("Node identity key changed")
+        next_key_id = node_identity_key_id(payload.next_public_key)
+        if next_key_id == current_key_id:
+            raise NodeConflictError("identity-key rotation must change the key")
+        if sha256_digest(payload.challenge) != rotation.challenge_digest:
+            raise NodeAuthenticationError("identity-key rotation challenge mismatch")
+        proof = canonical_identity_rotation_proof_message(
+            rotation=rotation,
+            next_key_id=next_key_id,
+        )
+        _verify_signature(payload.next_public_key, payload.next_key_proof, proof)
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT status, evidence_status, public_key FROM nodes WHERE node_id = ?",
+                (node_id,),
+            ).fetchone()
+            transition = connection.execute(
+                """
+                SELECT status, evidence_status, current_key_id, challenge_digest, expires_at
+                FROM node_identity_key_rotations WHERE rotation_id = ? AND node_id = ?
+                """,
+                (payload.rotation_id, node_id),
+            ).fetchone()
+            if current is None or transition is None:
+                raise NodeAuthenticationError("unknown Node identity-key rotation")
+            if (
+                str(current[0]) != _ACTIVE_STATUS
+                or str(current[1]) != _EVIDENCE_COMPLETE
+                or str(current[2]) != node.public_key
+                or str(transition[0]) != "pending"
+                or str(transition[1]) != _EVIDENCE_COMPLETE
+                or str(transition[2]) != current_key_id
+                or str(transition[3]) != rotation.challenge_digest
+                or _parse_datetime(str(transition[4])) <= effective_now
+            ):
+                raise NodeConflictError("identity-key rotation state changed")
+            now_text = effective_now.isoformat()
+            connection.execute(
+                """
+                UPDATE nodes SET public_key = ?, evidence_status = ?, updated_at = ?
+                WHERE node_id = ?
+                """,
+                (payload.next_public_key, _EVIDENCE_PENDING, now_text, node_id),
+            )
+            connection.execute(
+                """
+                UPDATE node_identity_key_rotations
+                SET status = 'activated', evidence_status = ?, next_public_key = ?,
+                    next_key_id = ?, activated_at = ?
+                WHERE rotation_id = ?
+                """,
+                (
+                    _EVIDENCE_PENDING,
+                    payload.next_public_key,
+                    next_key_id,
+                    now_text,
+                    payload.rotation_id,
+                ),
+            )
+            connection.commit()
+        return self.get(node_id), self.get_identity_rotation(payload.rotation_id)
+
+    def mark_identity_rotation_activation_evidence_complete(
+        self, rotation_id: str
+    ) -> tuple[NodeRecord, NodeIdentityRotationRecord]:
+        rotation = self.get_identity_rotation(rotation_id)
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            transition = connection.execute(
+                """
+                UPDATE node_identity_key_rotations SET evidence_status = ?
+                WHERE rotation_id = ? AND status = 'activated' AND evidence_status = ?
+                """,
+                (_EVIDENCE_COMPLETE, rotation_id, _EVIDENCE_PENDING),
+            )
+            node = connection.execute(
+                """
+                UPDATE nodes SET evidence_status = ?
+                WHERE node_id = ? AND evidence_status = ? AND public_key = (
+                    SELECT next_public_key FROM node_identity_key_rotations
+                    WHERE rotation_id = ?
+                )
+                """,
+                (_EVIDENCE_COMPLETE, rotation.node_id, _EVIDENCE_PENDING, rotation_id),
+            )
+            if transition.rowcount != 1 or node.rowcount != 1:
+                raise NodeConflictError("identity-key rotation evidence state changed")
+            connection.commit()
+        return self.get(rotation.node_id), self.get_identity_rotation(rotation_id)
+
+    def abort_identity_rotation_after_audit_failure(
+        self, rotation_id: str
+    ) -> tuple[NodeRecord, NodeIdentityRotationRecord]:
+        """Restore the pre-rotation key only when activation evidence was never durable."""
+        rotation = self.get_identity_rotation(rotation_id)
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                """
+                SELECT current_public_key, next_public_key, status, evidence_status
+                FROM node_identity_key_rotations WHERE rotation_id = ?
+                """,
+                (rotation_id,),
+            ).fetchone()
+            node = connection.execute(
+                "SELECT public_key, evidence_status FROM nodes WHERE node_id = ?",
+                (rotation.node_id,),
+            ).fetchone()
+            if (
+                row is None
+                or node is None
+                or str(row[2]) != "activated"
+                or str(row[3]) != _EVIDENCE_PENDING
+                or str(node[0]) != str(row[1])
+                or str(node[1]) != _EVIDENCE_PENDING
+            ):
+                raise NodeConflictError("identity-key rotation cannot be compensated")
+            connection.execute(
+                """
+                UPDATE nodes SET public_key = ?, evidence_status = ? WHERE node_id = ?
+                """,
+                (str(row[0]), _EVIDENCE_COMPLETE, rotation.node_id),
+            )
+            connection.execute(
+                """
+                UPDATE node_identity_key_rotations
+                SET status = 'audit_failed', evidence_status = ? WHERE rotation_id = ?
+                """,
+                (_EVIDENCE_COMPLETE, rotation_id),
+            )
+            connection.commit()
+        return self.get(rotation.node_id), self.get_identity_rotation(rotation_id)
+
+    def get_identity_rotation(self, rotation_id: str) -> NodeIdentityRotationRecord:
+        if not _ROTATION_ID_PATTERN.fullmatch(rotation_id):
+            raise NodeNotFoundError("unknown Node identity-key rotation")
+        with sqlite3.connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT rotation_id, node_id, principal_id, workspace_id, current_key_id,
+                       challenge_digest, created_at, expires_at, status, evidence_status,
+                       next_key_id, activated_at
+                FROM node_identity_key_rotations WHERE rotation_id = ?
+                """,
+                (rotation_id,),
+            ).fetchone()
+        if row is None:
+            raise NodeNotFoundError("unknown Node identity-key rotation")
+        return _identity_rotation_record(row)
+
+    def latest_identity_rotation(self, node_id: str) -> NodeIdentityRotationRecord | None:
+        with sqlite3.connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT rotation_id, node_id, principal_id, workspace_id, current_key_id,
+                       challenge_digest, created_at, expires_at, status, evidence_status,
+                       next_key_id, activated_at
+                FROM node_identity_key_rotations WHERE node_id = ?
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                (node_id,),
+            ).fetchone()
+        return _identity_rotation_record(row) if row is not None else None
+
 
 def canonical_signature_message(
     *, method: str, path: str, timestamp: str, nonce: str, body_hash: str
 ) -> bytes:
     return (
         f"{NODE_SIGNATURE_CONTEXT}\n{method.upper()}\n{path}\n{timestamp}\n{nonce}\n{body_hash}"
+    ).encode()
+
+
+def node_identity_key_id(public_key: str) -> str:
+    _decode_public_key(public_key)
+    return sha256_digest(public_key)
+
+
+def canonical_identity_rotation_proof_message(
+    *, rotation: NodeIdentityRotationRecord, next_key_id: str
+) -> bytes:
+    return (
+        f"{NODE_IDENTITY_ROTATION_PROOF_CONTEXT}\n"
+        f"{NODE_PROTOCOL_VERSION}\n{rotation.rotation_id}\n{rotation.node_id}\n"
+        f"{rotation.principal_id}\n{rotation.workspace_id}\n{rotation.current_key_id}\n"
+        f"{next_key_id}\n{rotation.challenge_digest}\n{rotation.expires_at}"
     ).encode()
 
 
@@ -704,6 +1085,17 @@ def node_audit_metadata(record: NodeRecord) -> JsonObject:
         "descriptor_hash": record.descriptor_hash,
         "last_heartbeat_hash": record.last_heartbeat_hash,
         "identity_source": "gateway_derived",
+    }
+
+
+def identity_rotation_audit_metadata(
+    rotation: NodeIdentityRotationRecord,
+) -> JsonObject:
+    return {
+        **rotation.summary(),
+        "challenge_digest": rotation.challenge_digest,
+        "public_key_recorded": False,
+        "private_key_received": False,
     }
 
 
@@ -743,6 +1135,23 @@ def _record(row: tuple[object, ...]) -> NodeRecord:
         acknowledged_active_configuration_signing_key_id=(
             str(row[24]) if row[24] is not None else None
         ),
+    )
+
+
+def _identity_rotation_record(row: tuple[object, ...]) -> NodeIdentityRotationRecord:
+    return NodeIdentityRotationRecord(
+        rotation_id=str(row[0]),
+        node_id=str(row[1]),
+        principal_id=str(row[2]),
+        workspace_id=str(row[3]),
+        current_key_id=str(row[4]),
+        challenge_digest=str(row[5]),
+        created_at=str(row[6]),
+        expires_at=str(row[7]),
+        status=str(row[8]),
+        evidence_status=str(row[9]),
+        next_key_id=str(row[10]) if row[10] is not None else None,
+        activated_at=str(row[11]) if row[11] is not None else None,
     )
 
 

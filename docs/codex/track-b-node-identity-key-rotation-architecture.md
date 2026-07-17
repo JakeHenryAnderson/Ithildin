@@ -31,7 +31,10 @@ Node, workspace, key pair, or later transition.
 - The Node writes pending K2 to its existing mode-0600 state before activation. It never sends K2's
   private material.
 - While activation evidence is pending, ordinary Node requests fail closed. After the activation
-  audit event succeeds, the Gateway marks both the Node and transition evidence complete.
+  audit event succeeds, the Gateway marks both the Node and transition evidence complete. A caught
+  audit-write failure compensates the uncompleted swap back to K1 and labels the attempt
+  `audit_failed`; a process exit inside that narrow interval remains fail closed for explicit
+  evidence reconciliation.
 - Administrative summaries expose fingerprints and state, never raw private material.
 
 ## Crash And Recovery Matrix
@@ -43,6 +46,10 @@ Node, workspace, key pair, or later transition.
 | After Gateway activation, before local promotion | K2 | Query activation status signed by pending K2, then promote locally |
 | After local promotion | K2 | Ordinary signed requests continue |
 | K2 missing after Gateway activation | K2, unavailable locally | Revoke and re-enroll; never restore K1 |
+
+If an unactivated challenge expires, the Node first attempts K2-authenticated recovery. Only after
+that fails may it request a replacement challenge signed by K1; successful issuance proves K1 is
+still active before the expired pending K2 is replaced locally.
 
 ## Rejection Rules
 

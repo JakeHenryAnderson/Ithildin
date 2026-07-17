@@ -29,6 +29,7 @@ var/node-poc-*/
 var/node-config-poc-*/
 var/node-config-rollback-poc-*/
 var/node-version-posture-poc-*/
+var/node-identity-key-rotation-poc-*/
 var/review-packets/*
 var/review-runs/*
 var/signatures/*

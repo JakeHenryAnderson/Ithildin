@@ -62,6 +62,7 @@ externally closed.
 - [Identity-Key Rotation Capability Decision](track-b-node-identity-key-rotation-capability-decision.md)
 - [Identity-Key Rotation Architecture](track-b-node-identity-key-rotation-architecture.md)
 - [Identity-Key Rotation Implementation Plan](track-b-node-identity-key-rotation-implementation-plan.md)
+- [Identity-Key Rotation Observed Results](track-b-node-identity-key-rotation-observed-results.md)
 
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
