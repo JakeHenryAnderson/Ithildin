@@ -12,7 +12,7 @@ when describing the operator UI.
 
 - `Ithildin Gateway`: the governed MCP/tool gateway and enforcement point.
 - `Ithildin Command Center`: the operator UI/control-plane surface for reviewing state, evidence,
-  approvals, packets, run timelines, diagnostics, and handoff material.
+  approvals, Node fleet posture, packets, run timelines, diagnostics, and handoff material.
 - `Workbench`: the operator workspace inside Command Center for active runs, artifacts, evidence
   review, and demo flows.
 - `Evidence`: audit events, signed exports, source-review packets, diagnostics, transcripts, and
@@ -45,3 +45,15 @@ The current ERG-005 state is: staging-only local-preview runtime implemented and
 focused external/source disposition remains pending before any broader trusted-host promotion,
 approved-output publishing, or Command Center-host integration.
 
+## Current Node Fleet Implication
+
+Command Center may display existing Gateway-enrolled Node records, accepted-heartbeat connectivity,
+signed desired-configuration posture, version posture, and identity-key posture. It may submit an
+operator-confirmed revocation request through the existing audited Gateway API. The Gateway remains
+the source of enrollment and revocation truth; the UI must not present a locally optimistic success
+state when the Gateway rejects or has not completed the transition.
+
+Node revocation removes that identity's future Gateway request authority. It does not stop an
+external runner, terminate model inference, delete endpoint state, prove process shutdown, recover
+a lost Node credential, or establish production identity. A replacement requires fresh enrollment;
+Command Center must not offer private-key export or credential-clone recovery.

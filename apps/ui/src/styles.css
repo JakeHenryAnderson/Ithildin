@@ -3542,6 +3542,30 @@ td,
   margin: 0;
 }
 
+.node-revocation-warning {
+  align-items: start;
+  background: #351f24;
+  border-left: 3px solid #e07870;
+  color: #d6b5b3;
+  display: grid;
+  font-size: 0.72rem;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 9px 10px;
+}
+
+.node-revocation-warning svg {
+  color: #ef8c83;
+}
+
+.node-revocation-warning p {
+  margin: 0;
+}
+
+.node-revocation-control .danger-button {
+  justify-self: start;
+}
+
 .node-config-control-heading {
   align-items: start;
   display: flex;

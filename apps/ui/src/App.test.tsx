@@ -187,6 +187,8 @@ type FetchMockOptions = {
   emptyTimeline?: boolean;
   invalidBinding?: boolean;
   noApprovals?: boolean;
+  nodeRevokeFailure?: boolean;
+  nodeStatus?: "enrolled" | "revoked";
   proposalStatus?: "applied" | "proposed";
 };
 
@@ -315,6 +317,23 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
         enforcement_proven: false,
       });
     }
+    if (
+      path === "/nodes/node_11111111111111111111111111111111/revoke"
+      && init?.method === "POST"
+    ) {
+      if (options.nodeRevokeFailure) {
+        return jsonResponse(
+          { detail: "Node evidence is incomplete" },
+          { status: 409, statusText: "Conflict" },
+        );
+      }
+      return jsonResponse({
+        node_id: "node_11111111111111111111111111111111",
+        status: "revoked",
+        evidence_status: "complete",
+        revoked_at: "2026-07-16T12:10:00Z",
+      });
+    }
     if (path === "/nodes/node_11111111111111111111111111111111/configurations?limit=50") {
       return jsonResponse({
         node_id: "node_11111111111111111111111111111111",
@@ -348,9 +367,10 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             principal_id: "agent:node.node_11111111111111111111111111111111",
             workspace_id: "demo",
             display_name: "Hermes Node",
-            status: "enrolled",
+            status: options.nodeStatus ?? "enrolled",
             evidence_status: "complete",
-            observed_state: "observed_connected",
+            observed_state:
+              options.nodeStatus === "revoked" ? "revoked" : "observed_connected",
             descriptor_hash: "sha256:nodedescriptor",
             descriptor: {
               protocol_version: "1",
@@ -361,12 +381,14 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             enrolled_at: "2026-07-16T12:00:00Z",
             updated_at: "2026-07-16T12:01:00Z",
             last_seen_at: "2026-07-16T12:01:00Z",
-            revoked_at: null,
+            revoked_at: options.nodeStatus === "revoked" ? "2026-07-16T12:10:00Z" : null,
             last_heartbeat_hash: "sha256:heartbeat",
             last_observed_node_version: "0.1.0",
             last_configuration_digest: "sha256:configuration",
             last_mission_id: "mission-synthetic-001",
-            configuration_state: "stored_current_not_enforced",
+            configuration_state: options.nodeStatus === "revoked"
+              ? "revoked"
+              : "stored_current_not_enforced",
             desired_configuration_generation: 1,
             desired_configuration_digest: "sha256:desiredconfiguration",
             acknowledged_configuration_generation: 1,
@@ -407,7 +429,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
               retired_key_request_authority: false,
             },
             minimum_node_version: "0.1.0",
-            version_posture: "meets_minimum",
+            version_posture: options.nodeStatus === "revoked" ? "revoked" : "meets_minimum",
             version_desired_source: "signed_desired_configuration",
             version_observed_source: "gateway_accepted_signed_heartbeat",
             maintenance_control_source: "operator_managed",
@@ -851,6 +873,95 @@ describe("Review console interactions", () => {
         expect.objectContaining({ method: "POST" }),
       );
     });
+  });
+
+  it("requires exact confirmation before revoking Gateway Node authority", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.click(within(nodes).getByText("Manage Node lifecycle"));
+
+    expect(
+      within(nodes).getByText(/does not stop a runner, terminate model inference/i),
+    ).toBeInTheDocument();
+    const revokeButton = within(nodes).getByRole("button", { name: "Revoke Node identity" });
+    const confirmation = within(nodes).getByLabelText("Type Node ID to confirm");
+    const consequence = within(nodes).getByRole("checkbox", {
+      name: /revokes Gateway request authority only/i,
+    });
+    expect(revokeButton).toBeDisabled();
+
+    await user.type(confirmation, "node_wrong");
+    await user.click(consequence);
+    expect(revokeButton).toBeDisabled();
+    await user.clear(confirmation);
+    await user.type(confirmation, "node_11111111111111111111111111111111");
+    expect(revokeButton).toBeEnabled();
+
+    await user.click(revokeButton);
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/nodes/node_11111111111111111111111111111111/revoke`,
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({ Authorization: "Bearer local-token" }),
+        }),
+      );
+    });
+    expect(
+      await within(nodes).findByText(/Future authenticated Node requests are denied/i),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps Node revocation unconfirmed when the Gateway rejects the transition", async () => {
+    installFetchMock(systemStatus(), { nodeRevokeFailure: true });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.click(within(nodes).getByText("Manage Node lifecycle"));
+    await user.type(
+      within(nodes).getByLabelText("Type Node ID to confirm"),
+      "node_11111111111111111111111111111111",
+    );
+    await user.click(within(nodes).getByRole("checkbox", {
+      name: /revokes Gateway request authority only/i,
+    }));
+    await user.click(within(nodes).getByRole("button", { name: "Revoke Node identity" }));
+
+    expect(await within(nodes).findByRole("alert")).toHaveTextContent(
+      "Node evidence is incomplete",
+    );
+    expect(within(nodes).queryByText(/Future authenticated Node requests are denied/i)).toBeNull();
+  });
+
+  it("never presents a retained revoked-key fingerprint as active request authority", async () => {
+    installFetchMock(systemStatus(), { nodeStatus: "revoked" });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    expect(within(nodes).getByText("request authority revoked")).toBeInTheDocument();
+    expect(
+      within(nodes).getByText(
+        /Gateway retains fingerprint .* the key cannot authenticate future Node requests/i,
+      ),
+    ).toBeInTheDocument();
+    expect(within(nodes).getByText("Node identity revoked")).toBeInTheDocument();
+    expect(within(nodes).queryByText("enrollment key active")).toBeNull();
+    expect(within(nodes).getByText("Identity key fingerprint")).toBeInTheDocument();
+    expect(within(nodes).queryByText("Active identity key")).toBeNull();
   });
 
   it("shows locked and empty Agent Run states without run controls", async () => {

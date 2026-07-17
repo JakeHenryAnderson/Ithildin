@@ -2596,14 +2596,21 @@ export function App() {
                   <div className="node-configuration-posture">
                     <div>
                       <span>Node identity-key posture</span>
-                      <strong>{node.identity_key_rotation
-                        ? node.identity_key_rotation.status.replace(/_/g, " ")
-                        : "enrollment key active"}</strong>
+                      <strong>{node.status === "revoked"
+                        ? "request authority revoked"
+                        : node.identity_key_rotation
+                          ? node.identity_key_rotation.status.replace(/_/g, " ")
+                          : "enrollment key active"}</strong>
                     </div>
-                    <StatusPill status={node.identity_key_rotation?.status ?? "active"} />
+                    <StatusPill
+                      status={node.status === "revoked"
+                        ? "revoked"
+                        : node.identity_key_rotation?.status ?? "active"}
+                    />
                     <p>
-                      Active request key {shortHash(node.active_identity_key_id)}. Rotation requires
-                      current-key authorization and proof by the next key; retired keys have no request authority.
+                      {node.status === "revoked"
+                        ? `Gateway retains fingerprint ${shortHash(node.active_identity_key_id)} for evidence; the key cannot authenticate future Node requests.`
+                        : `Active request key ${shortHash(node.active_identity_key_id)}. Rotation requires current-key authorization and proof by the next key; retired keys have no request authority.`}
                     </p>
                   </div>
                   <div className="node-configuration-posture">
@@ -2627,7 +2634,12 @@ export function App() {
                       <dd>{node.evidence_status}</dd>
                     </div>
                     <div>
-                      <dt>Active identity key <small>Gateway fingerprint</small></dt>
+                      <dt>
+                        {node.status === "revoked"
+                          ? "Identity key fingerprint"
+                          : "Active identity key"}{" "}
+                        <small>Gateway fingerprint</small>
+                      </dt>
                       <dd>{shortHash(node.active_identity_key_id)}</dd>
                     </div>
                     <div>
@@ -2676,6 +2688,11 @@ export function App() {
                     </div>
                   </dl>
                   <NodeConfigurationControl
+                    node={node}
+                    token={token}
+                    onChanged={() => loadDashboard()}
+                  />
+                  <NodeRevocationControl
                     node={node}
                     token={token}
                     onChanged={() => loadDashboard()}
@@ -3405,6 +3422,119 @@ function NodeConfigurationControl({
             Assign signed trust transition
           </button>
         </form>
+        {notice ? <p className="node-config-notice" role="status">{notice}</p> : null}
+        {actionError ? <p className="node-config-error" role="alert">{actionError}</p> : null}
+      </div>
+    </details>
+  );
+}
+
+function NodeRevocationControl({
+  node,
+  token,
+  onChanged,
+}: {
+  node: IthildinNode;
+  token: string;
+  onChanged: () => Promise<void>;
+}) {
+  const [confirmation, setConfirmation] = useState("");
+  const [consequenceConfirmed, setConsequenceConfirmed] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const actionable = node.status === "enrolled" && node.evidence_status === "complete";
+  const confirmed = confirmation === node.node_id && consequenceConfirmed;
+
+  async function revokeNode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!actionable || !confirmed || actionLoading) return;
+    setActionLoading(true);
+    setNotice(null);
+    setActionError(null);
+    try {
+      await apiRequest<JsonObject>(
+        `/nodes/${encodeURIComponent(node.node_id)}/revoke`,
+        token,
+        { method: "POST" },
+      );
+      setConfirmation("");
+      setConsequenceConfirmed(false);
+      setNotice(
+        "Gateway recorded this Node identity as revoked. Future authenticated Node requests are denied.",
+      );
+      await onChanged();
+    } catch (caught) {
+      setActionError(errorMessage(caught));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  return (
+    <details className="node-config-control node-revocation-control">
+      <summary>
+        {node.status === "revoked" ? "Node identity revoked" : "Manage Node lifecycle"}
+      </summary>
+      <div className="node-config-control-body">
+        <div className="node-revocation-warning">
+          <AlertTriangle aria-hidden="true" size={18} />
+          <p>
+            Revocation is an irreversible Gateway identity decision in this local preview. It denies
+            future signed Node requests, but it does not stop a runner, terminate model inference,
+            delete host state, or prove that an endpoint process has stopped.
+          </p>
+        </div>
+        {node.status === "revoked" ? (
+          <p className="node-config-empty">
+            Revoked {node.revoked_at ? formatDate(node.revoked_at) : "at an unavailable time"}. The
+            Gateway will not restore this identity; replacement requires a fresh enrollment.
+          </p>
+        ) : (
+          <form onSubmit={revokeNode}>
+            <div className="node-config-control-heading">
+              <div>
+                <strong>Revoke Gateway identity</strong>
+                <span>Target: {node.display_name}</span>
+              </div>
+            </div>
+            <label>
+              <span>Type Node ID to confirm</span>
+              <input
+                autoComplete="off"
+                spellCheck="false"
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+                placeholder={node.node_id}
+                disabled={!actionable || actionLoading}
+              />
+            </label>
+            <label className="node-config-confirmation">
+              <input
+                type="checkbox"
+                checked={consequenceConfirmed}
+                onChange={(event) => setConsequenceConfirmed(event.target.checked)}
+                disabled={!actionable || actionLoading}
+              />
+              <span>
+                I understand this revokes Gateway request authority only and does not control the
+                runner, model provider, or host process.
+              </span>
+            </label>
+            <button
+              className="danger-button"
+              type="submit"
+              disabled={!actionable || actionLoading || !confirmed}
+            >
+              {actionLoading ? "Revoking Node identity…" : "Revoke Node identity"}
+            </button>
+            {!actionable ? (
+              <p className="node-config-empty">
+                Revocation is unavailable while enrollment evidence is incomplete.
+              </p>
+            ) : null}
+          </form>
+        )}
         {notice ? <p className="node-config-notice" role="status">{notice}</p> : null}
         {actionError ? <p className="node-config-error" role="alert">{actionError}</p> : null}
       </div>
