@@ -159,6 +159,8 @@ class NodeRecord:
     desired_configuration_digest: str | None
     acknowledged_configuration_generation: int | None
     acknowledged_configuration_digest: str | None
+    acknowledged_configuration_signing_key_id: str | None
+    acknowledged_active_configuration_signing_key_id: str | None
     configuration_acknowledged_at: str | None
     configuration_acknowledgment_status: str | None
 
@@ -196,6 +198,12 @@ class NodeRecord:
             "desired_configuration_digest": self.desired_configuration_digest,
             "acknowledged_configuration_generation": self.acknowledged_configuration_generation,
             "acknowledged_configuration_digest": self.acknowledged_configuration_digest,
+            "acknowledged_configuration_signing_key_id": (
+                self.acknowledged_configuration_signing_key_id
+            ),
+            "acknowledged_active_configuration_signing_key_id": (
+                self.acknowledged_active_configuration_signing_key_id
+            ),
             "configuration_acknowledged_at": self.configuration_acknowledged_at,
             "configuration_acknowledgment_status": self.configuration_acknowledgment_status,
             "configuration_state": configuration_state(
@@ -255,6 +263,8 @@ class NodeStore:
                     desired_configuration_digest TEXT,
                     acknowledged_configuration_generation INTEGER,
                     acknowledged_configuration_digest TEXT,
+                    acknowledged_configuration_signing_key_id TEXT,
+                    acknowledged_active_configuration_signing_key_id TEXT,
                     configuration_acknowledged_at TEXT,
                     configuration_acknowledgment_status TEXT
                 );
@@ -280,6 +290,8 @@ class NodeStore:
                 ("desired_configuration_digest", "TEXT"),
                 ("acknowledged_configuration_generation", "INTEGER"),
                 ("acknowledged_configuration_digest", "TEXT"),
+                ("acknowledged_configuration_signing_key_id", "TEXT"),
+                ("acknowledged_active_configuration_signing_key_id", "TEXT"),
                 ("configuration_acknowledged_at", "TEXT"),
                 ("configuration_acknowledgment_status", "TEXT"),
             ):
@@ -443,7 +455,9 @@ class NodeStore:
                        revoked_at, last_heartbeat_hash, last_configuration_digest, last_mission_id
                        , desired_configuration_generation, desired_configuration_digest,
                        acknowledged_configuration_generation, acknowledged_configuration_digest,
-                       configuration_acknowledged_at, configuration_acknowledgment_status
+                       configuration_acknowledged_at, configuration_acknowledgment_status,
+                       acknowledged_configuration_signing_key_id,
+                       acknowledged_active_configuration_signing_key_id
                 FROM nodes WHERE node_id = ?
                 """,
                 (node_id,),
@@ -463,7 +477,9 @@ class NodeStore:
                        revoked_at, last_heartbeat_hash, last_configuration_digest, last_mission_id
                        , desired_configuration_generation, desired_configuration_digest,
                        acknowledged_configuration_generation, acknowledged_configuration_digest,
-                       configuration_acknowledged_at, configuration_acknowledgment_status
+                       configuration_acknowledged_at, configuration_acknowledgment_status,
+                       acknowledged_configuration_signing_key_id,
+                       acknowledged_active_configuration_signing_key_id
                 FROM nodes ORDER BY updated_at DESC LIMIT ?
                 """,
                 (bounded_limit,),
@@ -697,6 +713,12 @@ def _record(row: tuple[object, ...]) -> NodeRecord:
         acknowledged_configuration_digest=str(row[19]) if row[19] is not None else None,
         configuration_acknowledged_at=str(row[20]) if row[20] is not None else None,
         configuration_acknowledgment_status=str(row[21]) if row[21] is not None else None,
+        acknowledged_configuration_signing_key_id=(
+            str(row[22]) if row[22] is not None else None
+        ),
+        acknowledged_active_configuration_signing_key_id=(
+            str(row[23]) if row[23] is not None else None
+        ),
     )
 
 

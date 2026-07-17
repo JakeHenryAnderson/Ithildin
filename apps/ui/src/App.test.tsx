@@ -293,6 +293,28 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
         rollback_source_generation: null,
       });
     }
+    if (
+      path === "/nodes/node_11111111111111111111111111111111/configuration-trust-transitions"
+      && init?.method === "POST"
+    ) {
+      return jsonResponse({
+        transition_id: "nct_44444444444444444444444444444444",
+        transition_digest: "sha256:newtrusttransition",
+        current_key_id: "sha256:configsigner",
+        next_key_id: "sha256:operatornextsigner",
+        issued_at: "2026-07-16T12:03:00Z",
+        expires_at: "2026-07-17T12:03:00Z",
+        evidence_status: "complete",
+        acknowledgment_status: null,
+        acknowledgment_evidence_status: null,
+        acknowledged_at: null,
+        gateway_key_id: "sha256:configsigner",
+        node_acknowledged_key_id: "sha256:configsigner",
+        rotation_state: "awaiting_node_stage",
+        activation_proven: false,
+        enforcement_proven: false,
+      });
+    }
     if (path === "/nodes/node_11111111111111111111111111111111/configurations?limit=50") {
       return jsonResponse({
         node_id: "node_11111111111111111111111111111111",
@@ -350,7 +372,26 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             acknowledged_configuration_digest: "sha256:desiredconfiguration",
             configuration_acknowledged_at: "2026-07-16T12:01:00Z",
             configuration_acknowledgment_status: "stored_not_enforced",
+            acknowledged_configuration_signing_key_id: "sha256:configsigner",
+            acknowledged_active_configuration_signing_key_id: "sha256:configsigner",
             configuration_signing_key_id: "sha256:configsigner",
+            configuration_trust_transition: {
+              transition_id: "nct_33333333333333333333333333333333",
+              transition_digest: "sha256:trusttransition",
+              current_key_id: "sha256:configsigner",
+              next_key_id: "sha256:nextconfigsigner",
+              issued_at: "2026-07-16T12:00:00Z",
+              expires_at: "2026-07-17T12:00:00Z",
+              evidence_status: "complete",
+              acknowledgment_status: "staged_not_active",
+              acknowledgment_evidence_status: "complete",
+              acknowledged_at: "2026-07-16T12:02:00Z",
+              gateway_key_id: "sha256:configsigner",
+              node_acknowledged_key_id: "sha256:configsigner",
+              rotation_state: "staged_not_active",
+              activation_proven: false,
+              enforcement_proven: false,
+            },
             identity_source: "gateway_derived",
             connectivity_source: "gateway_accepted_heartbeat",
             runner_health_known: false,
@@ -764,6 +805,23 @@ describe("Review console interactions", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         `${API_BASE}/nodes/node_11111111111111111111111111111111/configurations`,
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+    expect(within(nodes).getAllByText("staged not active").length).toBeGreaterThan(0);
+    await user.type(
+      within(nodes).getByLabelText("Next Ed25519 public key"),
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    );
+    await user.click(within(nodes).getByRole("checkbox", {
+      name: /stages a public trust root for this Node only/i,
+    }));
+    await user.click(within(nodes).getByRole("button", {
+      name: "Assign signed trust transition",
+    }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/nodes/node_11111111111111111111111111111111/configuration-trust-transitions`,
         expect.objectContaining({ method: "POST" }),
       );
     });

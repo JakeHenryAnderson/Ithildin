@@ -423,6 +423,12 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-manual-rollback-implementation-plan.md](docs/codex/track-b-node-manual-rollback-implementation-plan.md) - ordered backend, negative-test, Command Center, evidence, and exact-candidate work.
 - [docs/codex/track-b-node-manual-rollback-observed-results.md](docs/codex/track-b-node-manual-rollback-observed-results.md) - live restart, fresh generation 3 rollback, drift, stale-precondition denial, storage acknowledgment, revocation, and audit evidence.
 - `make track-b-node-manual-rollback-decision-check` - validate manual single-Node rollback and reject automatic/group/enforcement expansion.
+- [docs/codex/track-b-node-configuration-trust-rotation-capability-decision.md](docs/codex/track-b-node-configuration-trust-rotation-capability-decision.md) - authorization and non-approvals for old-key-authorized, restart-based signing-trust rotation.
+- [docs/codex/track-b-node-configuration-trust-rotation-architecture.md](docs/codex/track-b-node-configuration-trust-rotation-architecture.md) - active, pending, and time-bounded previous recovery trust semantics.
+- [docs/codex/track-b-node-configuration-trust-rotation-implementation-plan.md](docs/codex/track-b-node-configuration-trust-rotation-implementation-plan.md) - ordered transition API, Node state, fleet UX, observed rotation, and exact-candidate work.
+- [docs/codex/track-b-node-configuration-trust-rotation-observed-results.md](docs/codex/track-b-node-configuration-trust-rotation-observed-results.md) - live K1-to-K2 activation and bounded K1 recovery evidence across real Gateway restarts.
+- `make track-b-node-configuration-trust-rotation-decision-check` - validate bounded restart-based rotation and reject automatic/private-key/production-PKI expansion.
+- `make track-b-node-configuration-trust-rotation-evidence-check` - validate ignored live rotation evidence without printing private material.
 - `make node-configuration-keygen` - create the dedicated local Ed25519 Node-configuration signing keypair; private material remains mode `0600` under `var/keys/`.
 - `make node-configuration-signing-status` - report configuration trust-root availability and key ID without printing key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review

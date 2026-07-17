@@ -3442,6 +3442,23 @@ td,
   margin: 0;
 }
 
+.node-trust-posture {
+  background: #102638;
+  border: 1px solid #355365;
+  margin-top: 10px;
+  padding: 10px 12px;
+}
+
+.node-trust-posture > p {
+  color: #89a4b0;
+  font-size: 0.7rem;
+  margin: 8px 0 0;
+}
+
+.node-trust-posture dl {
+  margin: 9px 0 0;
+}
+
 .node-card dl div {
   background: #10293a;
   min-width: 0;
@@ -3562,7 +3579,8 @@ td,
 }
 
 .node-config-control input,
-.node-config-control select {
+.node-config-control select,
+.node-config-control textarea {
   background: #091c2a;
   border: 1px solid #3b5b6d;
   color: #e2eff2;
@@ -3571,6 +3589,11 @@ td,
   min-height: 34px;
   padding: 6px 8px;
   width: 100%;
+}
+
+.node-config-control textarea {
+  min-height: 68px;
+  resize: vertical;
 }
 
 .node-config-confirmation {

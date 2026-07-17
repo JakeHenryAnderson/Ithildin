@@ -22,6 +22,7 @@ from ithildin_api.node_configuration import (
     generate_node_configuration_signing_keypair,
     verify_configuration_bundle,
 )
+from ithildin_api.node_configuration_trust import NodeConfigurationTrustTransitionStore
 from ithildin_api.nodes import (
     EnrollmentCodeIssuePayload,
     NodeEnrollmentPayload,
@@ -99,8 +100,28 @@ def test_immutable_configuration_assignment_verification_acknowledgment_and_drif
         protocol_version="1",
         generation=1,
         configuration_digest=current.configuration_digest,
+        configuration_signing_key_id=signer.trust.key_id,
+        active_configuration_signing_key_id=signer.trust.key_id,
         status="stored_not_enforced",
     )
+    with pytest.raises(NodeConfigurationConflictError, match="signing key mismatch"):
+        configuration_store.acknowledge_pending(
+            node_id=node_id,
+            payload=acknowledgment.model_copy(
+                update={"configuration_signing_key_id": "sha256:" + ("0" * 64)}
+            ),
+            now=now + timedelta(milliseconds=500),
+        )
+    with pytest.raises(NodeConfigurationConflictError, match="active signing key is invalid"):
+        configuration_store.acknowledge_pending(
+            node_id=node_id,
+            payload=acknowledgment.model_copy(
+                update={
+                    "active_configuration_signing_key_id": "sha256:" + ("0" * 64)
+                }
+            ),
+            now=now + timedelta(milliseconds=500),
+        )
     configuration_store.acknowledge_pending(
         node_id=node_id,
         payload=acknowledgment,
@@ -282,6 +303,7 @@ def _stores(
     node_store.initialize()
     configuration_store = NodeConfigurationStore(db_path)
     configuration_store.initialize()
+    NodeConfigurationTrustTransitionStore(db_path).initialize()
     private_path = tmp_path / "keys" / "config-private.pem"
     public_path = tmp_path / "keys" / "config-public.pem"
     generate_node_configuration_signing_keypair(private_path, public_path)

@@ -2977,6 +2977,8 @@ def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
             "protocol_version": "1",
             "generation": 1,
             "configuration_digest": retrieved.json()["configuration_digest"],
+            "configuration_signing_key_id": retrieved.json()["signature"]["key_id"],
+            "active_configuration_signing_key_id": retrieved.json()["signature"]["key_id"],
             "status": "stored_not_enforced",
         }
         acknowledgment_path = f"/nodes/{node_id}/configuration/acknowledgments"
@@ -3065,6 +3067,117 @@ def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
     assert "node.configuration.acknowledged" in audit_text
     assert "node.configuration.rollback_assigned" in audit_text
     assert "stored_not_enforced" in audit_text
+
+
+def test_node_configuration_trust_transition_api_is_targeted_signed_and_audited(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    node_private_key = Ed25519PrivateKey.generate()
+    node_public_key = base64.b64encode(
+        node_private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+    ).decode()
+    next_private_path = tmp_path / "keys" / "next-node-config-private.pem"
+    next_public_path = tmp_path / "keys" / "next-node-config-public.pem"
+    next_trust = generate_node_configuration_signing_keypair(
+        next_private_path, next_public_path
+    )
+    api = create_app(settings)
+    with TestClient(api) as client:
+        issued = client.post(
+            "/nodes/enrollment-codes",
+            headers=admin_headers,
+            json={"workspace_id": "default", "display_name": "Trust Rotation Node"},
+        )
+        enrollment = client.post(
+            "/nodes/enroll",
+            json={
+                "enrollment_code": issued.json()["enrollment_code"],
+                "public_key": node_public_key,
+                "protocol_version": "1",
+                "node_version": "0.1.0",
+                "runner_adapter": "hermes",
+                "deployment_topology": "docker_sidecar",
+            },
+        )
+        node_id = enrollment.json()["node_id"]
+        current_key_id = enrollment.json()["configuration_trust"]["key_id"]
+        path = f"/nodes/{node_id}/configuration-trust-transitions"
+        assigned = client.post(
+            path,
+            headers=admin_headers,
+            json={
+                "expected_current_key_id": current_key_id,
+                "next_public_key": next_trust.public_key,
+                "validity_seconds": 3600,
+            },
+        )
+        assert assigned.status_code == 200
+        assert assigned.json()["current_key_id"] == current_key_id
+        assert assigned.json()["next_key_id"] == next_trust.key_id
+        assert assigned.json()["activation_proven"] is False
+
+        request_payload: JsonObject = {"protocol_version": "1"}
+        request_path = f"/nodes/{node_id}/configuration-trust-transition"
+        retrieved = client.post(
+            request_path,
+            headers=_signed_node_headers(
+                node_private_key,
+                node_id=node_id,
+                path=request_path,
+                payload=request_payload,
+                nonce="a" * 32,
+            ),
+            json=request_payload,
+        )
+        assert retrieved.status_code == 200
+        assert retrieved.json()["node_id"] == node_id
+        assert retrieved.json()["signature"]["key_id"] == current_key_id
+        assert retrieved.json()["transition"]["next_trust"]["key_id"] == next_trust.key_id
+
+        acknowledgment_payload: JsonObject = {
+            "protocol_version": "1",
+            "transition_id": retrieved.json()["transition_id"],
+            "transition_digest": retrieved.json()["transition_digest"],
+            "status": "staged_not_active",
+        }
+        acknowledgment_path = (
+            f"/nodes/{node_id}/configuration-trust-transition/acknowledgments"
+        )
+        acknowledged = client.post(
+            acknowledgment_path,
+            headers=_signed_node_headers(
+                node_private_key,
+                node_id=node_id,
+                path=acknowledgment_path,
+                payload=acknowledgment_payload,
+                nonce="b" * 32,
+            ),
+            json=acknowledgment_payload,
+        )
+        assert acknowledged.status_code == 200
+        assert acknowledged.json()["acknowledgment_status"] == "staged_not_active"
+        assert acknowledged.json()["acknowledgment_evidence_status"] == "complete"
+
+        history = client.get(path, headers=admin_headers)
+        assert history.status_code == 200
+        assert history.json()["count"] == 1
+        assert history.json()["automatic"] is False
+        inventory = client.get(f"/nodes/{node_id}", headers=admin_headers)
+        transition = inventory.json()["configuration_trust_transition"]
+        assert transition["next_key_id"] == next_trust.key_id
+        assert transition["rotation_state"] == "staged_not_active"
+        assert transition["activation_proven"] is False
+
+    audit_text = settings.audit_log_path.read_text(encoding="utf-8")
+    assert "node.configuration_trust_transition.assigned" in audit_text
+    assert "node.configuration_trust_transition.retrieved" in audit_text
+    assert "node.configuration_trust_transition.acknowledged" in audit_text
+    assert next_trust.public_key not in audit_text
 
 
 def _row_count(db_path: Path, table_name: str) -> int:

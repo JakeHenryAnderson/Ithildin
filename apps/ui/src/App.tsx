@@ -178,11 +178,32 @@ type IthildinNode = {
   acknowledged_configuration_digest: string | null;
   configuration_acknowledged_at: string | null;
   configuration_acknowledgment_status: string | null;
+  acknowledged_configuration_signing_key_id: string | null;
+  acknowledged_active_configuration_signing_key_id: string | null;
   configuration_signing_key_id: string | null;
+  configuration_trust_transition: NodeConfigurationTrustTransition | null;
   identity_source: "gateway_derived";
   connectivity_source: "gateway_accepted_heartbeat";
   runner_health_known: false;
   model_health_known: false;
+};
+
+type NodeConfigurationTrustTransition = {
+  transition_id: string;
+  transition_digest: string;
+  current_key_id: string;
+  next_key_id: string;
+  issued_at: string;
+  expires_at: string;
+  evidence_status: string;
+  acknowledgment_status: string | null;
+  acknowledgment_evidence_status: string | null;
+  acknowledged_at: string | null;
+  gateway_key_id: string | null;
+  node_acknowledged_key_id: string | null;
+  rotation_state: string;
+  activation_proven: boolean;
+  enforcement_proven: false;
 };
 
 type NodeConfigurationHistoryItem = {
@@ -2542,6 +2563,7 @@ export function App() {
                         : "No current Node storage acknowledgment. Enforcement is not proven."}
                     </p>
                   </div>
+                  <NodeConfigurationTrustPosture transition={node.configuration_trust_transition} />
                   <dl>
                     <div>
                       <dt>Administrative state</dt>
@@ -2998,6 +3020,9 @@ function NodeConfigurationControl({
   const [assignmentConfirmed, setAssignmentConfirmed] = useState(false);
   const [rollbackSource, setRollbackSource] = useState("");
   const [rollbackConfirmed, setRollbackConfirmed] = useState(false);
+  const [nextConfigurationPublicKey, setNextConfigurationPublicKey] = useState("");
+  const [trustValiditySeconds, setTrustValiditySeconds] = useState("86400");
+  const [trustTransitionConfirmed, setTrustTransitionConfirmed] = useState(false);
 
   async function loadHistory() {
     if (!token || loadingHistory) return;
@@ -3075,6 +3100,40 @@ function NodeConfigurationControl({
         `Generation ${result.generation} assigned from generation ${result.rollback_source_generation}. Enforcement remains unknown.`,
       );
       await loadHistory();
+      await onChanged();
+    } catch (caught) {
+      setActionError(errorMessage(caught));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function assignTrustTransition(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !trustTransitionConfirmed
+      || !nextConfigurationPublicKey.trim()
+      || !node.configuration_signing_key_id
+    ) return;
+    setActionLoading(true);
+    setNotice(null);
+    setActionError(null);
+    try {
+      await apiRequest<NodeConfigurationTrustTransition>(
+        `/nodes/${encodeURIComponent(node.node_id)}/configuration-trust-transitions`,
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            expected_current_key_id: node.configuration_signing_key_id,
+            next_public_key: nextConfigurationPublicKey.trim(),
+            validity_seconds: Number(trustValiditySeconds),
+          }),
+        },
+      );
+      setTrustTransitionConfirmed(false);
+      setNextConfigurationPublicKey("");
+      setNotice("Signed one-Node trust transition assigned. The Node has not staged it yet.");
       await onChanged();
     } catch (caught) {
       setActionError(errorMessage(caught));
@@ -3227,10 +3286,96 @@ function NodeConfigurationControl({
             </p>
           )}
         </form>
+        <form onSubmit={assignTrustTransition}>
+          <div className="node-config-control-heading">
+            <div>
+              <strong>Stage signing-key rotation</strong>
+              <span>One Node, signed by the current key; activation requires Gateway restart.</span>
+            </div>
+          </div>
+          <label>
+            <span>Next Ed25519 public key</span>
+            <textarea
+              value={nextConfigurationPublicKey}
+              onChange={(event) => setNextConfigurationPublicKey(event.target.value)}
+              placeholder="Base64 public key only — never paste a private key"
+              disabled={actionDisabled || actionLoading || !node.configuration_signing_key_id}
+              rows={3}
+            />
+          </label>
+          <label>
+            <span>Recovery overlap seconds</span>
+            <input
+              type="number"
+              min="600"
+              max="604800"
+              value={trustValiditySeconds}
+              onChange={(event) => setTrustValiditySeconds(event.target.value)}
+              disabled={actionDisabled || actionLoading}
+            />
+          </label>
+          <label className="node-config-confirmation">
+            <input
+              type="checkbox"
+              checked={trustTransitionConfirmed}
+              onChange={(event) => setTrustTransitionConfirmed(event.target.checked)}
+              disabled={actionDisabled || actionLoading}
+            />
+            <span>
+              I confirm this stages a public trust root for this Node only. It does not rotate the
+              Gateway, activate fleet rollout, or prove enforcement.
+            </span>
+          </label>
+          <button
+            className="secondary-button"
+            type="submit"
+            disabled={
+              actionDisabled
+              || actionLoading
+              || !trustTransitionConfirmed
+              || !nextConfigurationPublicKey.trim()
+              || !node.configuration_signing_key_id
+            }
+          >
+            Assign signed trust transition
+          </button>
+        </form>
         {notice ? <p className="node-config-notice" role="status">{notice}</p> : null}
         {actionError ? <p className="node-config-error" role="alert">{actionError}</p> : null}
       </div>
     </details>
+  );
+}
+
+function NodeConfigurationTrustPosture({
+  transition,
+}: {
+  transition: NodeConfigurationTrustTransition | null;
+}) {
+  return (
+    <div className="node-trust-posture">
+      <div className="node-config-control-heading">
+        <div>
+          <strong>Configuration signing trust</strong>
+          <span>{transition ? transition.rotation_state.replace(/_/g, " ") : "No rotation staged"}</span>
+        </div>
+        {transition ? <StatusPill status={transition.rotation_state} /> : null}
+      </div>
+      {transition ? (
+        <dl>
+          <div><dt>Gateway signer</dt><dd>{transition.gateway_key_id ? shortHash(transition.gateway_key_id) : "Unavailable"}</dd></div>
+          <div><dt>Node-attested signer</dt><dd>{transition.node_acknowledged_key_id ? shortHash(transition.node_acknowledged_key_id) : "Not acknowledged"}</dd></div>
+          <div>
+            <dt>{transition.activation_proven ? "Activated transition signer" : "Staged next signer"}</dt>
+            <dd>{shortHash(transition.next_key_id)}</dd>
+          </div>
+          <div><dt>Recovery cutoff</dt><dd>{formatDate(transition.expires_at)}</dd></div>
+        </dl>
+      ) : (
+        <p>No signed per-Node trust transition has been assigned.</p>
+      )}
+      <p>Trust activation can be proven by key-bound storage acknowledgment. Runner enforcement remains unknown.</p>
+    </div>
   );
 }
 

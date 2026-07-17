@@ -60,6 +60,15 @@ class AuditEventType(StrEnum):
     NODE_CONFIGURATION_ROLLBACK_ASSIGNED = "node.configuration.rollback_assigned"
     NODE_CONFIGURATION_RETRIEVED = "node.configuration.retrieved"
     NODE_CONFIGURATION_ACKNOWLEDGED = "node.configuration.acknowledged"
+    NODE_CONFIGURATION_TRUST_TRANSITION_ASSIGNED = (
+        "node.configuration_trust_transition.assigned"
+    )
+    NODE_CONFIGURATION_TRUST_TRANSITION_RETRIEVED = (
+        "node.configuration_trust_transition.retrieved"
+    )
+    NODE_CONFIGURATION_TRUST_TRANSITION_ACKNOWLEDGED = (
+        "node.configuration_trust_transition.acknowledged"
+    )
     TOOL_LIST_REQUESTED = "tool.list.requested"
     TOOL_CALL_PROPOSED = "tool.call.proposed"
     POLICY_EVALUATED = "policy.evaluated"

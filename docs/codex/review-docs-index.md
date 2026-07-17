@@ -43,6 +43,13 @@ externally closed.
 - [Manual Rollback Implementation Plan](track-b-node-manual-rollback-implementation-plan.md)
 - [Manual Rollback Observed Results](track-b-node-manual-rollback-observed-results.md)
 
+## Track B Node Configuration Trust Rotation
+
+- [Trust Rotation Capability Decision](track-b-node-configuration-trust-rotation-capability-decision.md)
+- [Trust Rotation Architecture](track-b-node-configuration-trust-rotation-architecture.md)
+- [Trust Rotation Implementation Plan](track-b-node-configuration-trust-rotation-implementation-plan.md)
+- [Trust Rotation Observed Results](track-b-node-configuration-trust-rotation-observed-results.md)
+
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
 - [Command Center Information Architecture](command-center-information-architecture.md)

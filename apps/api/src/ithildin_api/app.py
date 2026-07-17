@@ -6,7 +6,7 @@ import json
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Optional, cast
 from uuid import uuid4
@@ -61,6 +61,14 @@ from ithildin_api.node_configuration import (
     NodeConfigurationSigner,
     NodeConfigurationSigningError,
     NodeConfigurationStore,
+)
+from ithildin_api.node_configuration_trust import (
+    NodeConfigurationTrustTransitionAcknowledgmentPayload,
+    NodeConfigurationTrustTransitionAssignmentPayload,
+    NodeConfigurationTrustTransitionConflictError,
+    NodeConfigurationTrustTransitionNotFoundError,
+    NodeConfigurationTrustTransitionRequestPayload,
+    NodeConfigurationTrustTransitionStore,
 )
 from ithildin_api.nodes import (
     EnrollmentCodeIssuePayload,
@@ -143,6 +151,13 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             node_configuration_store = NodeConfigurationStore(resolved_settings.db_path)
             node_configuration_store.initialize()
             app_instance.state.node_configuration_store = node_configuration_store
+            node_configuration_trust_transition_store = (
+                NodeConfigurationTrustTransitionStore(resolved_settings.db_path)
+            )
+            node_configuration_trust_transition_store.initialize()
+            app_instance.state.node_configuration_trust_transition_store = (
+                node_configuration_trust_transition_store
+            )
             app_instance.state.node_configuration_signer = _load_node_configuration_signer(
                 resolved_settings
             )
@@ -516,6 +531,18 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
         for record in records:
             record["configuration_signing_key_id"] = signer.trust.key_id if signer else None
+            transitions = cast(
+                NodeConfigurationTrustTransitionStore,
+                api.state.node_configuration_trust_transition_store,
+            ).list(str(record["node_id"]), limit=1)
+            record["configuration_trust_transition"] = _configuration_trust_posture(
+                transitions[0].summary() if transitions else None,
+                gateway_key_id=signer.trust.key_id if signer else None,
+                acknowledged_key_id=cast(
+                    str | None,
+                    record.get("acknowledged_active_configuration_signing_key_id"),
+                ),
+            )
         return {
             "nodes": cast(JsonValue, records),
             "count": len(records),
@@ -534,6 +561,15 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         summary = record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
         signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
         summary["configuration_signing_key_id"] = signer.trust.key_id if signer else None
+        transitions = cast(
+            NodeConfigurationTrustTransitionStore,
+            api.state.node_configuration_trust_transition_store,
+        ).list(node_id, limit=1)
+        summary["configuration_trust_transition"] = _configuration_trust_posture(
+            transitions[0].summary() if transitions else None,
+            gateway_key_id=signer.trust.key_id if signer else None,
+            acknowledged_key_id=record.acknowledged_active_configuration_signing_key_id,
+        )
         return summary
 
     @api.post("/nodes/{node_id}/revoke", dependencies=[Depends(require_admin_token)])
@@ -735,6 +771,191 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         )
         return record.bundle
 
+    @api.post(
+        "/nodes/{node_id}/configuration-trust-transitions",
+        dependencies=[Depends(require_admin_token)],
+    )
+    def assign_node_configuration_trust_transition(
+        node_id: str, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            assignment = NodeConfigurationTrustTransitionAssignmentPayload.model_validate(
+                payload
+            )
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node configuration trust transition assignment",
+            ) from exc
+        signer = _require_node_configuration_signer(api)
+        store = cast(
+            NodeConfigurationTrustTransitionStore,
+            api.state.node_configuration_trust_transition_store,
+        )
+        try:
+            record = store.assign(node_id=node_id, payload=assignment, signer=signer)
+        except NodeConfigurationTrustTransitionNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConfigurationTrustTransitionConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_CONFIGURATION_TRUST_TRANSITION_ASSIGNED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": "admin:local", "roles": ["Admin"]},
+            input_hash=record.transition_digest,
+            metadata={
+                "node_id": node_id,
+                "transition_id": record.transition_id,
+                "transition_digest": record.transition_digest,
+                "current_key_id": record.current_key_id,
+                "next_key_id": record.next_key_id,
+                "expires_at": record.expires_at,
+                "automatic": False,
+                "activation_proven": False,
+            },
+        )
+        return store.mark_assignment_evidence_complete(
+            node_id, record.transition_id
+        ).summary()
+
+    @api.get(
+        "/nodes/{node_id}/configuration-trust-transitions",
+        dependencies=[Depends(require_admin_token)],
+    )
+    def list_node_configuration_trust_transitions(
+        node_id: str, request: Request
+    ) -> JsonObject:
+        unexpected = sorted(set(request.query_params.keys()) - {"limit"})
+        if unexpected:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported query parameter",
+            )
+        try:
+            cast(NodeStore, api.state.node_store).get(node_id)
+        except NodeNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        limit = _bounded_query_limit(request.query_params.get("limit"), default=20, maximum=100)
+        records = cast(
+            NodeConfigurationTrustTransitionStore,
+            api.state.node_configuration_trust_transition_store,
+        ).list(node_id, limit=limit)
+        return {
+            "node_id": node_id,
+            "configuration_trust_transitions": [record.summary() for record in records],
+            "count": len(records),
+            "activation_mode": "explicit_gateway_restart",
+            "automatic": False,
+            "activation_proven": False,
+        }
+
+    @api.post("/nodes/{node_id}/configuration-trust-transition")
+    def retrieve_node_configuration_trust_transition(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            transition_request = NodeConfigurationTrustTransitionRequestPayload.model_validate(
+                payload
+            )
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node configuration trust transition request",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        store = cast(
+            NodeConfigurationTrustTransitionStore,
+            api.state.node_configuration_trust_transition_store,
+        )
+        try:
+            node = cast(NodeStore, api.state.node_store).authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=transition_request.safe_payload(),
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            record = store.desired(node_id)
+        except NodeAuthenticationError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except NodeConfigurationTrustTransitionNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConfigurationTrustTransitionConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_CONFIGURATION_TRUST_TRANSITION_RETRIEVED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": node.principal_id, "roles": []},
+            input_hash=record.transition_digest,
+            metadata={
+                "node_id": node_id,
+                "transition_id": record.transition_id,
+                "transition_digest": record.transition_digest,
+                "known_transition_id": transition_request.known_transition_id,
+                "activation_proven": False,
+            },
+        )
+        return record.bundle
+
+    @api.post("/nodes/{node_id}/configuration-trust-transition/acknowledgments")
+    def acknowledge_node_configuration_trust_transition(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            acknowledgment = (
+                NodeConfigurationTrustTransitionAcknowledgmentPayload.model_validate(payload)
+            )
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node configuration trust transition acknowledgment",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        store = cast(
+            NodeConfigurationTrustTransitionStore,
+            api.state.node_configuration_trust_transition_store,
+        )
+        try:
+            node = cast(NodeStore, api.state.node_store).authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=acknowledgment.safe_payload(),
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            store.acknowledge_pending(node_id=node_id, payload=acknowledgment)
+        except NodeAuthenticationError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except NodeConfigurationTrustTransitionNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except NodeConfigurationTrustTransitionConflictError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        cast(AuditWriter, api.state.audit_writer).write_event(
+            event_id=f"evt_{uuid4().hex}",
+            event_type=AuditEventType.NODE_CONFIGURATION_TRUST_TRANSITION_ACKNOWLEDGED,
+            request_id=f"req_{uuid4().hex}",
+            principal={"id": node.principal_id, "roles": []},
+            input_hash=acknowledgment.transition_digest,
+            metadata={
+                "node_id": node_id,
+                "transition_id": acknowledgment.transition_id,
+                "transition_digest": acknowledgment.transition_digest,
+                "status": acknowledgment.status,
+                "activation_proven": False,
+            },
+        )
+        return store.mark_acknowledgment_evidence_complete(
+            node_id, acknowledgment.transition_id
+        ).summary()
+
     @api.post("/nodes/{node_id}/configuration/acknowledgments")
     def acknowledge_node_configuration(
         node_id: str, request: Request, payload: JsonObject
@@ -779,6 +1000,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 "node_id": node_id,
                 "generation": acknowledgment.generation,
                 "configuration_digest": acknowledgment.configuration_digest,
+                "configuration_signing_key_id": acknowledgment.configuration_signing_key_id,
+                "active_configuration_signing_key_id": (
+                    acknowledgment.active_configuration_signing_key_id
+                ),
                 "status": acknowledgment.status,
                 "enforcement_proven": False,
             },
@@ -1431,6 +1656,49 @@ def _bounded_query_limit(value: str | None, *, default: int, maximum: int) -> in
             detail="invalid limit",
         )
     return parsed
+
+
+def _configuration_trust_posture(
+    transition: JsonObject | None,
+    *,
+    gateway_key_id: str | None,
+    acknowledged_key_id: str | None,
+) -> JsonObject | None:
+    if transition is None:
+        return None
+    next_key_id = transition.get("next_key_id")
+    acknowledgment_evidence = transition.get("acknowledgment_evidence_status")
+    expires_at = transition.get("expires_at")
+    expired = False
+    if isinstance(expires_at, str):
+        try:
+            parsed_expiry = datetime.fromisoformat(expires_at)
+            expired = parsed_expiry.tzinfo is not None and parsed_expiry <= datetime.now(UTC)
+        except ValueError:
+            expired = True
+    if acknowledged_key_id is not None and acknowledged_key_id == next_key_id:
+        posture = "active_not_enforced"
+        activation_proven = True
+    elif gateway_key_id is not None and gateway_key_id == next_key_id:
+        posture = "gateway_advanced_node_pending"
+        activation_proven = False
+    elif expired:
+        posture = "transition_expired_not_activated"
+        activation_proven = False
+    elif acknowledgment_evidence == "complete":
+        posture = "staged_not_active"
+        activation_proven = False
+    else:
+        posture = "awaiting_node_stage"
+        activation_proven = False
+    return {
+        **transition,
+        "gateway_key_id": gateway_key_id,
+        "node_acknowledged_key_id": acknowledged_key_id,
+        "rotation_state": posture,
+        "activation_proven": activation_proven,
+        "enforcement_proven": False,
+    }
 
 
 def _safe_query_filter(value: str | None) -> str | None:

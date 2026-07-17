@@ -31,6 +31,9 @@ def main() -> int:
     configuration_pull.add_argument("--api-url", default="http://127.0.0.1:8000")
     configuration_pull.add_argument("--state", type=Path, required=True)
     configuration_pull.add_argument("--output", type=Path, required=True)
+    configuration_trust_stage = subparsers.add_parser("configuration-trust-stage")
+    configuration_trust_stage.add_argument("--api-url", default="http://127.0.0.1:8000")
+    configuration_trust_stage.add_argument("--state", type=Path, required=True)
     status = subparsers.add_parser("status")
     status.add_argument("--state", type=Path, required=True)
     args = parser.parse_args()
@@ -51,20 +54,43 @@ def main() -> int:
             print(json.dumps(state.safe_summary(), indent=2, sort_keys=True))
             return 0
         state = NodeState.load(args.state)
+        if args.command == "configuration-trust-stage":
+            staged = client.stage_configuration_trust(state)
+            staged.state.write_atomic(args.state)
+            acknowledgment = client.acknowledge_configuration_trust(staged.state)
+            print(
+                json.dumps(
+                    {
+                        **staged.state.safe_summary(),
+                        "gateway_acknowledgment_status": acknowledgment.get(
+                            "acknowledgment_status"
+                        ),
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
         if args.command == "configuration-pull":
             known_generation = None
             if args.output.exists():
                 known_generation = StoredNodeConfiguration.load(args.output).generation
-            configuration = client.pull_configuration(
+            pulled = client.pull_configuration_with_state(
                 state,
                 known_generation=known_generation,
             )
-            configuration.write_atomic(args.output)
-            acknowledgment = client.acknowledge_configuration(state, configuration)
+            pulled.configuration.write_atomic(args.output)
+            if pulled.state != state:
+                pulled.state.write_atomic(args.state)
+            acknowledgment = client.acknowledge_configuration(
+                pulled.state, pulled.configuration
+            )
             print(
                 json.dumps(
                     {
-                        **configuration.safe_summary(),
+                        **pulled.configuration.safe_summary(),
+                        "configuration_verification_trust": pulled.verification_trust,
+                        "configuration_trust_promoted": pulled.trust_promoted,
                         "gateway_configuration_state": acknowledgment.get(
                             "configuration_state"
                         ),

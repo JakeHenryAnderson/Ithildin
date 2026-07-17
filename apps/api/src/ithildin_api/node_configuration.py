@@ -122,6 +122,8 @@ class NodeConfigurationAcknowledgmentPayload(StrictBaseModel):
     protocol_version: Literal["1"]
     generation: int = Field(ge=1)
     configuration_digest: str = Field(pattern=SHA256_PATTERN)
+    configuration_signing_key_id: str = Field(pattern=SHA256_PATTERN)
+    active_configuration_signing_key_id: str = Field(pattern=SHA256_PATTERN)
     status: Literal["stored_not_enforced"]
 
     def safe_payload(self) -> JsonObject:
@@ -228,6 +230,8 @@ class NodeConfigurationStore:
                 ("desired_configuration_digest", "TEXT"),
                 ("acknowledged_configuration_generation", "INTEGER"),
                 ("acknowledged_configuration_digest", "TEXT"),
+                ("acknowledged_configuration_signing_key_id", "TEXT"),
+                ("acknowledged_active_configuration_signing_key_id", "TEXT"),
                 ("configuration_acknowledged_at", "TEXT"),
                 ("configuration_acknowledgment_status", "TEXT"),
             ):
@@ -546,7 +550,7 @@ class NodeConfigurationStore:
                 raise NodeConfigurationConflictError("configuration acknowledgment is not current")
             config = connection.execute(
                 """
-                SELECT evidence_status, expires_at FROM node_configurations
+                SELECT evidence_status, expires_at, bundle_json FROM node_configurations
                 WHERE node_id = ? AND generation = ? AND configuration_digest = ?
                 """,
                 (node_id, payload.generation, payload.configuration_digest),
@@ -555,11 +559,43 @@ class NodeConfigurationStore:
                 raise NodeConfigurationConflictError("configuration evidence is incomplete")
             if _parse_datetime(str(config[1])) <= effective_now:
                 raise NodeConfigurationConflictError("configuration acknowledgment expired")
+            bundle = json.loads(str(config[2]))
+            signature = bundle.get("signature") if isinstance(bundle, dict) else None
+            signing_key_id = signature.get("key_id") if isinstance(signature, dict) else None
+            if signing_key_id != payload.configuration_signing_key_id:
+                raise NodeConfigurationConflictError(
+                    "configuration acknowledgment signing key mismatch"
+                )
+            if (
+                payload.active_configuration_signing_key_id
+                != payload.configuration_signing_key_id
+            ):
+                recovery = connection.execute(
+                    """
+                    SELECT current_key_id, next_key_id, expires_at,
+                           acknowledgment_evidence_status
+                    FROM node_configuration_trust_transitions
+                    WHERE node_id = ? ORDER BY issued_at DESC LIMIT 1
+                    """,
+                    (node_id,),
+                ).fetchone()
+                if (
+                    recovery is None
+                    or str(recovery[0]) != payload.configuration_signing_key_id
+                    or str(recovery[1]) != payload.active_configuration_signing_key_id
+                    or str(recovery[3]) != _EVIDENCE_COMPLETE
+                    or _parse_datetime(str(recovery[2])) <= effective_now
+                ):
+                    raise NodeConfigurationConflictError(
+                        "configuration acknowledgment active signing key is invalid"
+                    )
             connection.execute(
                 """
                 UPDATE nodes SET evidence_status = ?, acknowledged_configuration_generation = ?,
                     acknowledged_configuration_digest = ?, configuration_acknowledged_at = ?,
-                    configuration_acknowledgment_status = ?, updated_at = ?
+                    configuration_acknowledgment_status = ?,
+                    acknowledged_configuration_signing_key_id = ?,
+                    acknowledged_active_configuration_signing_key_id = ?, updated_at = ?
                 WHERE node_id = ?
                 """,
                 (
@@ -568,6 +604,8 @@ class NodeConfigurationStore:
                     payload.configuration_digest,
                     effective_now.isoformat(),
                     payload.status,
+                    payload.configuration_signing_key_id,
+                    payload.active_configuration_signing_key_id,
                     effective_now.isoformat(),
                     node_id,
                 ),

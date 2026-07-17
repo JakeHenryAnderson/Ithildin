@@ -6,12 +6,13 @@ import base64
 import binascii
 import json
 import os
+import re
 import secrets
 import stat
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -26,6 +27,12 @@ from ithildin_api.node_configuration import (
     NodeConfigurationTrust,
     NodeConfigurationVerificationError,
     verify_configuration_bundle,
+)
+from ithildin_api.node_configuration_trust import (
+    TRUST_TRANSITION_ACK_STATUS,
+    NodeConfigurationTrustTransitionVerificationError,
+    transition_next_trust,
+    verify_configuration_trust_transition,
 )
 from ithildin_api.nodes import NODE_PROTOCOL_VERSION, canonical_signature_message
 from ithildin_schemas import JsonObject, canonical_json, sha256_digest
@@ -55,6 +62,14 @@ class NodeState:
     gateway_configuration_key_id: str
     gateway_configuration_public_key: str
     gateway_manifest_lock_digest: str
+    pending_configuration_key_id: str | None = None
+    pending_configuration_public_key: str | None = None
+    pending_trust_transition_id: str | None = None
+    pending_trust_transition_digest: str | None = None
+    pending_trust_expires_at: str | None = None
+    previous_configuration_key_id: str | None = None
+    previous_configuration_public_key: str | None = None
+    previous_trust_expires_at: str | None = None
 
     def safe_summary(self) -> JsonObject:
         return {
@@ -66,6 +81,11 @@ class NodeState:
             "private_key_present": True,
             "configuration_trust_key_id": self.gateway_configuration_key_id,
             "manifest_lock_digest": self.gateway_manifest_lock_digest,
+            "pending_configuration_key_id": self.pending_configuration_key_id,
+            "pending_trust_transition_id": self.pending_trust_transition_id,
+            "pending_trust_expires_at": self.pending_trust_expires_at,
+            "previous_configuration_key_id": self.previous_configuration_key_id,
+            "previous_trust_expires_at": self.previous_trust_expires_at,
         }
 
     def _document(self) -> JsonObject:
@@ -76,6 +96,9 @@ class NodeState:
             "gateway_configuration_key_id": self.gateway_configuration_key_id,
             "gateway_configuration_public_key": self.gateway_configuration_public_key,
             "gateway_manifest_lock_digest": self.gateway_manifest_lock_digest,
+            "pending_configuration_public_key": self.pending_configuration_public_key,
+            "pending_trust_transition_digest": self.pending_trust_transition_digest,
+            "previous_configuration_public_key": self.previous_configuration_public_key,
         }
 
     def write_new(self, path: Path) -> None:
@@ -97,6 +120,9 @@ class NodeState:
             # Leave a mode-0600 partial file for explicit operator recovery. Unlinking a pathname
             # after opening it would risk removing a replacement created by another actor.
             raise
+
+    def write_atomic(self, path: Path) -> None:
+        _write_private_json_atomic(path, self._document(), label="Node state")
 
     @classmethod
     def load(cls, path: Path) -> NodeState:
@@ -129,6 +155,30 @@ class NodeState:
                     document["gateway_configuration_public_key"]
                 ),
                 gateway_manifest_lock_digest=str(document["gateway_manifest_lock_digest"]),
+                pending_configuration_key_id=_optional_string(
+                    document, "pending_configuration_key_id"
+                ),
+                pending_configuration_public_key=_optional_string(
+                    document, "pending_configuration_public_key"
+                ),
+                pending_trust_transition_id=_optional_string(
+                    document, "pending_trust_transition_id"
+                ),
+                pending_trust_transition_digest=_optional_string(
+                    document, "pending_trust_transition_digest"
+                ),
+                pending_trust_expires_at=_optional_string(
+                    document, "pending_trust_expires_at"
+                ),
+                previous_configuration_key_id=_optional_string(
+                    document, "previous_configuration_key_id"
+                ),
+                previous_configuration_public_key=_optional_string(
+                    document, "previous_configuration_public_key"
+                ),
+                previous_trust_expires_at=_optional_string(
+                    document, "previous_trust_expires_at"
+                ),
             )
         except NodeClientError:
             raise
@@ -142,6 +192,7 @@ class NodeState:
             raise NodeClientError("Node state identity binding is invalid")
         _private_key(state.private_key)
         _configuration_trust(state)
+        _validate_optional_trust_state(state)
         return state
 
 
@@ -160,6 +211,13 @@ class StoredNodeConfiguration:
     def configuration_digest(self) -> str:
         return _required_string(self.bundle, "configuration_digest")
 
+    @property
+    def signing_key_id(self) -> str:
+        signature = self.bundle.get("signature")
+        if not isinstance(signature, dict):
+            raise NodeClientError("stored configuration signature is invalid")
+        return _required_string(signature, "key_id")
+
     def safe_summary(self) -> JsonObject:
         return {
             "configuration_id": _required_string(self.bundle, "configuration_id"),
@@ -171,30 +229,26 @@ class StoredNodeConfiguration:
         }
 
     def write_atomic(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f".{path.name}.{secrets.token_hex(16)}.tmp")
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-        if hasattr(os, "O_NOFOLLOW"):
-            flags |= os.O_NOFOLLOW
-        try:
-            descriptor = os.open(temporary, flags, 0o600)
-            with os.fdopen(descriptor, "wb") as handle:
-                handle.write(canonical_json(self.bundle).encode())
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.replace(temporary, path)
-            directory_descriptor = os.open(path.parent, os.O_RDONLY)
-            try:
-                os.fsync(directory_descriptor)
-            finally:
-                os.close(directory_descriptor)
-        except OSError as exc:
-            raise NodeClientError("failed to store verified Node configuration") from exc
+        _write_private_json_atomic(path, self.bundle, label="verified Node configuration")
 
     @classmethod
     def load(cls, path: Path) -> StoredNodeConfiguration:
         document = _read_private_json(path, label="Node configuration")
         return cls(bundle=document)
+
+
+@dataclass(frozen=True)
+class NodeConfigurationPullResult:
+    configuration: StoredNodeConfiguration
+    state: NodeState
+    trust_promoted: bool
+    verification_trust: str
+
+
+@dataclass(frozen=True)
+class NodeConfigurationTrustStageResult:
+    state: NodeState
+    bundle: JsonObject
 
 
 class NodeClient:
@@ -292,6 +346,26 @@ class NodeClient:
         now: datetime | None = None,
         nonce: str | None = None,
     ) -> StoredNodeConfiguration:
+        result = self.pull_configuration_with_state(
+            state,
+            known_generation=known_generation,
+            now=now,
+            nonce=nonce,
+        )
+        if result.trust_promoted:
+            raise NodeClientError(
+                "configuration trust promotion requires atomic Node state persistence"
+            )
+        return result.configuration
+
+    def pull_configuration_with_state(
+        self,
+        state: NodeState,
+        *,
+        known_generation: int | None = None,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> NodeConfigurationPullResult:
         payload: JsonObject = {"protocol_version": NODE_PROTOCOL_VERSION}
         if known_generation is not None:
             payload["known_generation"] = known_generation
@@ -302,10 +376,12 @@ class NodeClient:
             now=now,
             nonce=nonce,
         )
+        signing_key_id = _bundle_signing_key_id(bundle)
+        trust, source = _configuration_verification_trust(state, signing_key_id, now=now)
         try:
             verified = verify_configuration_bundle(
                 bundle,
-                trust=_configuration_trust(state),
+                trust=trust,
                 node_id=state.node_id,
                 principal_id=state.principal_id,
                 workspace_id=state.workspace_id,
@@ -315,7 +391,95 @@ class NodeClient:
             )
         except NodeConfigurationVerificationError as exc:
             raise NodeClientError(str(exc)) from exc
-        return StoredNodeConfiguration(bundle=verified)
+        configuration = StoredNodeConfiguration(bundle=verified)
+        next_state = state
+        promoted = source == "pending"
+        if promoted:
+            next_state = replace(
+                state,
+                gateway_configuration_key_id=trust.key_id,
+                gateway_configuration_public_key=trust.public_key,
+                pending_configuration_key_id=None,
+                pending_configuration_public_key=None,
+                pending_trust_transition_id=None,
+                pending_trust_transition_digest=None,
+                pending_trust_expires_at=None,
+                previous_configuration_key_id=state.gateway_configuration_key_id,
+                previous_configuration_public_key=state.gateway_configuration_public_key,
+                previous_trust_expires_at=state.pending_trust_expires_at,
+            )
+        return NodeConfigurationPullResult(
+            configuration=configuration,
+            state=next_state,
+            trust_promoted=promoted,
+            verification_trust=source,
+        )
+
+    def stage_configuration_trust(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> NodeConfigurationTrustStageResult:
+        payload: JsonObject = {"protocol_version": NODE_PROTOCOL_VERSION}
+        if state.pending_trust_transition_id is not None:
+            payload["known_transition_id"] = state.pending_trust_transition_id
+        bundle = self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/configuration-trust-transition",
+            payload,
+            now=now,
+            nonce=nonce,
+        )
+        try:
+            verified = verify_configuration_trust_transition(
+                bundle,
+                current_trust=_configuration_trust(state),
+                node_id=state.node_id,
+                principal_id=state.principal_id,
+                workspace_id=state.workspace_id,
+                now=now,
+            )
+            next_trust = transition_next_trust(verified)
+        except NodeConfigurationTrustTransitionVerificationError as exc:
+            raise NodeClientError(str(exc)) from exc
+        staged = replace(
+            state,
+            pending_configuration_key_id=next_trust.key_id,
+            pending_configuration_public_key=next_trust.public_key,
+            pending_trust_transition_id=_required_string(verified, "transition_id"),
+            pending_trust_transition_digest=_required_string(
+                verified, "transition_digest"
+            ),
+            pending_trust_expires_at=_required_string(verified, "expires_at"),
+        )
+        return NodeConfigurationTrustStageResult(state=staged, bundle=verified)
+
+    def acknowledge_configuration_trust(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject:
+        if (
+            state.pending_trust_transition_id is None
+            or state.pending_trust_transition_digest is None
+        ):
+            raise NodeClientError("Node has no staged configuration trust transition")
+        return self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/configuration-trust-transition/acknowledgments",
+            {
+                "protocol_version": NODE_PROTOCOL_VERSION,
+                "transition_id": state.pending_trust_transition_id,
+                "transition_digest": state.pending_trust_transition_digest,
+                "status": TRUST_TRANSITION_ACK_STATUS,
+            },
+            now=now,
+            nonce=nonce,
+        )
 
     def acknowledge_configuration(
         self,
@@ -332,12 +496,15 @@ class NodeClient:
                 "protocol_version": NODE_PROTOCOL_VERSION,
                 "generation": configuration.generation,
                 "configuration_digest": configuration.configuration_digest,
+                "configuration_signing_key_id": configuration.signing_key_id,
+                "active_configuration_signing_key_id": (
+                    state.gateway_configuration_key_id
+                ),
                 "status": CONFIGURATION_ACK_STATUS,
             },
             now=now,
             nonce=nonce,
         )
-
     def _signed_post(
         self,
         state: NodeState,
@@ -419,19 +586,130 @@ def _private_key(value: str) -> Ed25519PrivateKey:
 
 
 def _configuration_trust(state: NodeState) -> NodeConfigurationTrust:
+    return _trust(
+        state.gateway_configuration_key_id,
+        state.gateway_configuration_public_key,
+    )
+
+
+def _trust(key_id: str, public_key_text: str) -> NodeConfigurationTrust:
     try:
-        public_key = base64.b64decode(
-            state.gateway_configuration_public_key, validate=True
-        )
+        public_key = base64.b64decode(public_key_text, validate=True)
         if len(public_key) != 32:
             raise ValueError
         Ed25519PublicKey.from_public_bytes(public_key)
     except (binascii.Error, ValueError) as exc:
         raise NodeClientError("Gateway configuration trust is invalid") from exc
-    return NodeConfigurationTrust(
-        key_id=state.gateway_configuration_key_id,
-        public_key=state.gateway_configuration_public_key,
+    if sha256_digest(public_key_text) != key_id:
+        raise NodeClientError("Gateway configuration trust key ID is invalid")
+    return NodeConfigurationTrust(key_id=key_id, public_key=public_key_text)
+
+
+def _validate_optional_trust_state(state: NodeState) -> None:
+    pending = (
+        state.pending_configuration_key_id,
+        state.pending_configuration_public_key,
+        state.pending_trust_transition_id,
+        state.pending_trust_transition_digest,
+        state.pending_trust_expires_at,
     )
+    if any(value is not None for value in pending):
+        if any(value is None for value in pending):
+            raise NodeClientError("Node pending configuration trust state is incomplete")
+        _trust(cast(str, pending[0]), cast(str, pending[1]))
+        if pending[0] == state.gateway_configuration_key_id:
+            raise NodeClientError("Node pending configuration trust matches active trust")
+        if not re.fullmatch(r"nct_[0-9a-f]{32}", cast(str, pending[2])):
+            raise NodeClientError("Node pending trust transition ID is invalid")
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", cast(str, pending[3])):
+            raise NodeClientError("Node pending trust transition digest is invalid")
+        _parse_aware_datetime(cast(str, pending[4]), "pending trust expiry")
+    previous = (
+        state.previous_configuration_key_id,
+        state.previous_configuration_public_key,
+        state.previous_trust_expires_at,
+    )
+    if any(value is not None for value in previous):
+        if any(value is None for value in previous):
+            raise NodeClientError("Node previous configuration trust state is incomplete")
+        _trust(cast(str, previous[0]), cast(str, previous[1]))
+        if previous[0] == state.gateway_configuration_key_id:
+            raise NodeClientError("Node previous configuration trust matches active trust")
+        _parse_aware_datetime(cast(str, previous[2]), "previous trust expiry")
+
+
+def _bundle_signing_key_id(bundle: JsonObject) -> str:
+    signature = bundle.get("signature")
+    if not isinstance(signature, dict):
+        raise NodeClientError("configuration signature is invalid")
+    return _required_string(signature, "key_id")
+
+
+def _configuration_verification_trust(
+    state: NodeState,
+    signing_key_id: str,
+    *,
+    now: datetime | None,
+) -> tuple[NodeConfigurationTrust, str]:
+    effective_now = now or datetime.now(UTC)
+    if signing_key_id == state.gateway_configuration_key_id:
+        return _configuration_trust(state), "active"
+    if signing_key_id == state.pending_configuration_key_id:
+        if state.pending_configuration_public_key is None or state.pending_trust_expires_at is None:
+            raise NodeClientError("Node pending configuration trust state is incomplete")
+        if effective_now >= _parse_aware_datetime(
+            state.pending_trust_expires_at, "pending trust expiry"
+        ):
+            raise NodeClientError("pending configuration trust expired")
+        return _trust(signing_key_id, state.pending_configuration_public_key), "pending"
+    if signing_key_id == state.previous_configuration_key_id:
+        if (
+            state.previous_configuration_public_key is None
+            or state.previous_trust_expires_at is None
+        ):
+            raise NodeClientError("Node previous configuration trust state is incomplete")
+        if effective_now >= _parse_aware_datetime(
+            state.previous_trust_expires_at, "previous trust expiry"
+        ):
+            raise NodeClientError("previous configuration trust expired")
+        return _trust(signing_key_id, state.previous_configuration_public_key), "previous"
+    raise NodeClientError("configuration signing key is not trusted")
+
+
+def _parse_aware_datetime(value: str, label: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise NodeClientError(f"{label} is invalid") from exc
+    if parsed.tzinfo is None:
+        raise NodeClientError(f"{label} must include timezone")
+    return parsed.astimezone(UTC)
+
+
+def _write_private_json_atomic(path: Path, document: JsonObject, *, label: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{secrets.token_hex(16)}.tmp")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(temporary, flags, 0o600)
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(canonical_json(document).encode())
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        directory_descriptor = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    except OSError as exc:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise NodeClientError(f"failed to store {label}") from exc
 
 
 def _read_private_json(path: Path, *, label: str) -> JsonObject:
@@ -465,4 +743,15 @@ def _required_string(document: JsonObject, key: str) -> str:
     value = document.get(key)
     if not isinstance(value, str) or not value:
         raise NodeClientError("Gateway enrollment response is incomplete")
+    return value
+
+
+def _optional_string(document: object, key: str) -> str | None:
+    if not isinstance(document, dict):
+        raise NodeClientError("Node state is invalid")
+    value = document.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value:
+        raise NodeClientError("Node state is invalid")
     return value
