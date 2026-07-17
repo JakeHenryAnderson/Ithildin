@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { App } from "./App";
+import { App, verifyEvidenceSectionDigests } from "./App";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -196,7 +196,33 @@ type FetchMockOptions = {
   nodeStatus?: "enrolled" | "revoked";
   proposalStatus?: "applied" | "proposed";
   runEvidenceFailure?: boolean;
+  runEvidenceHashMismatch?: boolean;
 };
+
+type TestJsonValue = string | number | boolean | null | TestJsonValue[] | TestJsonObject;
+type TestJsonObject = { [key: string]: TestJsonValue };
+
+function testCanonicalJson(value: TestJsonValue): string {
+  if (Array.isArray(value)) return `[${value.map(testCanonicalJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${testCanonicalJson(value[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+async function testSha256(value: TestJsonValue) {
+  const digest = await globalThis.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(testCanonicalJson(value)),
+  );
+  return `sha256:${Array.from(
+    new Uint8Array(digest),
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("")}`;
+}
 
 function installFetchMock(status = systemStatus(), options: FetchMockOptions = {}) {
   const approvalForScenario = {
@@ -607,30 +633,43 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
           { status: 503, statusText: "Unavailable" },
         );
       }
+      const evidenceRun = JSON.parse(JSON.stringify({
+        run_id: "run_123456789",
+        principal_id: runPrincipalId,
+        workspace_id: "demo",
+        session_id: runSessionId,
+        status: "active",
+        tool_call_count: options.runEvidenceRevisionMismatch ? 1 : 2,
+        created_at: "2026-06-03T12:00:00Z",
+        updated_at: "2026-06-03T12:01:00Z",
+        policy_hash: "sha256:policyhash",
+        manifest_lock_hash: "sha256:toolhash",
+        origin: options.nodeRun
+          ? {
+              ...runMetadata,
+              ...(options.nodeRunOriginMismatch
+                ? { configuration_digest: "sha256:mismatched-configuration" }
+                : {}),
+            }
+          : null,
+      })) as TestJsonObject;
+      const timeline: TestJsonValue[] = [];
+      const approvals: TestJsonValue[] = [];
+      const patchDiagnostics: TestJsonValue[] = [];
+      const evidenceHashes = {
+        run_sha256: await testSha256(evidenceRun),
+        timeline_sha256: await testSha256(timeline),
+        approvals_sha256: await testSha256(approvals),
+        patch_diagnostics_sha256: await testSha256(patchDiagnostics),
+      };
+      if (options.runEvidenceHashMismatch) {
+        evidenceHashes.timeline_sha256 = `sha256:${"0".repeat(64)}`;
+      }
       return jsonResponse({
         schema_version: "1",
         export_id: "runev_123456789",
         exported_at: "2026-06-03T12:02:00Z",
-        run: {
-          run_id: "run_123456789",
-          principal_id: runPrincipalId,
-          workspace_id: "demo",
-          session_id: runSessionId,
-          status: "active",
-          tool_call_count: options.runEvidenceRevisionMismatch ? 1 : 2,
-          created_at: "2026-06-03T12:00:00Z",
-          updated_at: "2026-06-03T12:01:00Z",
-          policy_hash: "sha256:policyhash",
-          manifest_lock_hash: "sha256:toolhash",
-          origin: options.nodeRun
-            ? {
-                ...runMetadata,
-                ...(options.nodeRunOriginMismatch
-                  ? { configuration_digest: "sha256:mismatched-configuration" }
-                  : {}),
-              }
-            : null,
-        },
+        run: evidenceRun,
         summary: {
           principal_id: runPrincipalId,
           workspace_id: "demo",
@@ -646,16 +685,11 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
           latest_policy_hash: "sha256:policyhash",
           manifest_lock_hash: "sha256:toolhash",
         },
-        timeline: [],
-        approvals: [],
-        patch_diagnostics: [],
+        timeline,
+        approvals,
+        patch_diagnostics: patchDiagnostics,
         signed_export_references: [],
-        evidence_hashes: {
-          run_sha256: "sha256:runhash",
-          timeline_sha256: "sha256:timelinehash",
-          approvals_sha256: "sha256:approvalshash",
-          patch_diagnostics_sha256: "sha256:patchhash",
-        },
+        evidence_hashes: evidenceHashes,
         redaction_summary: { excluded_categories: ["prompts"] },
         warnings: [{ type: "signed_evidence_unavailable" }],
       });
@@ -1013,7 +1047,7 @@ describe("Review console interactions", () => {
     expect(within(authority).getByText(/Generation 1/)).toBeInTheDocument();
     expect(within(authority).getByText("Prohibited")).toBeInTheDocument();
     expect(within(authority).getByText("Not proven")).toBeInTheDocument();
-    expect(within(authority).getByText("Matches selected run")).toBeInTheDocument();
+    expect(await within(authority).findByText("Matches selected run")).toBeInTheDocument();
     expect(within(authority).getByText(/same-record consistency, not independent attestation/i))
       .toBeInTheDocument();
     expect(within(authority).getByText(/activity that bypassed the Gateway remains outside/i))
@@ -1060,6 +1094,54 @@ describe("Review console interactions", () => {
     expect(within(closeout).getByText(/selected detail and generated snapshot differ/i))
       .toBeInTheDocument();
     expect(within(closeout).queryByText("Matches generated snapshot")).toBeNull();
+  });
+
+  it("blocks snapshot reliance when local evidence section digest verification fails", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      proposalStatus: "applied",
+      runEvidenceHashMismatch: true,
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Missions" }));
+    const closeout = await screen.findByRole("region", { name: "Run evidence closeout" });
+    expect(await within(closeout).findByText("Mismatch - do not rely on snapshot"))
+      .toBeInTheDocument();
+    expect(within(closeout).getByText(/Mismatched or missing: timeline/i)).toBeInTheDocument();
+    expect(within(closeout).queryByText("4 of 4 section digests match")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /Export Run Evidence/i }));
+    await waitFor(() => {
+      expect(within(closeout).getByRole("status")).toHaveTextContent(
+        "Run evidence section digest verification failed; download blocked",
+      );
+    });
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("reports local evidence digest verification as unavailable when hashing fails", async () => {
+    const result = await verifyEvidenceSectionDigests(
+      {
+        evidence_hashes: {},
+        run: {},
+        timeline: [],
+        approvals: [],
+        patch_diagnostics: [],
+      } as never,
+      async () => {
+        throw new Error("Web Crypto unavailable");
+      },
+    );
+
+    expect(result).toEqual({
+      status: "unavailable",
+      matchedSections: 0,
+      mismatchedSections: [],
+    });
   });
 
   it("keeps Node evidence-origin parity unavailable when snapshot loading fails", async () => {
@@ -1395,8 +1477,15 @@ describe("Review console interactions", () => {
     expect(screen.getByText("1 bundle warnings")).toBeInTheDocument();
     expect(screen.getByText("Matches generated snapshot")).toBeInTheDocument();
     expect(screen.getByText("4 section digests")).toBeInTheDocument();
-    expect(screen.getByText("sha256:runhash")).toBeInTheDocument();
-    expect(screen.getByText("sha256:timelinehash")).toBeInTheDocument();
+    expect(await screen.findByText("4 of 4 section digests match")).toBeInTheDocument();
+    const sectionDigests = screen.getByLabelText("Evidence section digests");
+    expect(within(sectionDigests).getAllByText(/^sha256:[0-9a-f]{64}$/)).toHaveLength(4);
+    expect(within(sectionDigests).getByText(
+      "sha256:e5c640ee0a8c46fe0eb70bef86905c6d21cd4f7fb8d75140832cecbfe95b4d64",
+    )).toBeInTheDocument();
+    expect(within(sectionDigests).getAllByText(
+      "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    )).toHaveLength(3);
     expect(
       screen.getByText("Verified for 1 currently loaded local audit events"),
     ).toBeInTheDocument();
@@ -1629,7 +1718,7 @@ describe("Review console interactions", () => {
     fireEvent.change(argumentsEditor, { target: { value: "[not-object]" } });
     await user.click(screen.getByRole("button", { name: /^Test decision$/i }));
 
-    expect(await screen.findByText(/Unexpected token/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Unexpected token/)).length).toBeGreaterThan(0);
   });
 
   it("keeps export failure distinct from evidence and signing availability", async () => {

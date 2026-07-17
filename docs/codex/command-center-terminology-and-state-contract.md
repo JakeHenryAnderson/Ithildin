@@ -209,6 +209,12 @@ Never shorten `Local signature verified` to `Trusted` or `Secure`.
 | export failed | Export failed | No successful bundle should be implied; show safe diagnostics. |
 | selected detail matches generated snapshot | Matches generated snapshot | Shared run identity and revision fields are exactly equal for the two current responses. |
 | selected detail differs from generated snapshot | Mismatch - reload before handoff | Do not rely on the snapshot as the selected detail revision; reload and review both responses. |
+| all required evidence section digests recompute locally | 4 of 4 section digests match | The current browser recomputed all required response-section hashes; this is not signature or custody evidence. |
+| evidence section digest is absent or differs | Mismatch - do not rely on snapshot | At least one response section does not agree with its supplied digest; name the section and block reliance. |
+| local digest comparison cannot run | Unavailable | Supplied digests remain technical data but are not locally verified in this browser session. |
+
+Run-evidence download must fail closed when the exact export response is malformed, names a
+different run, has a missing or mismatched required section digest, or cannot be locally hashed.
 
 Exports must state their scope, generated time, selected mission/run, redaction posture, included
 sections, warnings, and signing status. JSONL, raw audit events, full hashes, and packet manifests are

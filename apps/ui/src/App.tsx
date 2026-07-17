@@ -1188,10 +1188,31 @@ export function App() {
       if (operationAuthGeneration !== operationGeneration.current) {
         return;
       }
-      const bundle = await response.blob();
+      const rawBundle = await response.text();
       if (operationAuthGeneration !== operationGeneration.current) {
         return;
       }
+      const parsedBundle: unknown = JSON.parse(rawBundle);
+      if (!parsedBundle || typeof parsedBundle !== "object" || Array.isArray(parsedBundle)) {
+        throw new Error("Run evidence export was not a JSON object; download blocked");
+      }
+      const evidence = parsedBundle as RunEvidenceExport;
+      if (evidence.run?.run_id !== runId) {
+        throw new Error("Run evidence export does not match the selected run; download blocked");
+      }
+      const digestVerification = await verifyEvidenceSectionDigests(evidence);
+      if (operationAuthGeneration !== operationGeneration.current) {
+        return;
+      }
+      if (digestVerification.status === "mismatch") {
+        throw new Error("Run evidence section digest verification failed; download blocked");
+      }
+      if (digestVerification.status !== "verified") {
+        throw new Error(
+          "Run evidence section digest verification is unavailable; download blocked",
+        );
+      }
+      const bundle = new Blob([rawBundle], { type: "application/json" });
       const objectUrl = URL.createObjectURL(bundle);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
@@ -1205,7 +1226,7 @@ export function App() {
         runId,
         state: "download-initiated",
         message:
-          "Run evidence response prepared and browser download initiated; save location, custody, receipt, and later integrity are not verified.",
+          "Run evidence sections matched their supplied digests and browser download was initiated; signature, save location, custody, receipt, and later integrity are not verified.",
       });
     } catch (caught) {
       if (operationAuthGeneration === operationGeneration.current) {
@@ -4635,6 +4656,35 @@ function EvidenceCloseout({
   signingAvailable: boolean;
   verification: AuditVerification | null;
 }) {
+  const [digestVerification, setDigestVerification] = useState<EvidenceDigestVerification | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!evidence) {
+      setDigestVerification(null);
+      return;
+    }
+    let active = true;
+    setDigestVerification({ status: "checking", matchedSections: 0, mismatchedSections: [] });
+    void verifyEvidenceSectionDigests(evidence)
+      .then((result) => {
+        if (active) setDigestVerification(result);
+      })
+      .catch(() => {
+        if (active) {
+          setDigestVerification({
+            status: "unavailable",
+            matchedSections: 0,
+            mismatchedSections: [],
+          });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [evidence]);
+
   if (!evidence) {
     return (
       <section className="evidence-closeout" aria-label="Run evidence closeout">
@@ -4670,6 +4720,13 @@ function EvidenceCloseout({
   const revisionLabel = revisionParity === "matched"
     ? "Matches generated snapshot"
     : "Mismatch - reload before handoff";
+  const digestVerificationLabel = digestVerification?.status === "verified"
+    ? "4 of 4 section digests match"
+    : digestVerification?.status === "mismatch"
+      ? "Mismatch - do not rely on snapshot"
+      : digestVerification?.status === "unavailable"
+        ? "Unavailable"
+        : "Verifying locally";
 
   return (
     <section className="evidence-closeout" aria-label="Run evidence closeout">
@@ -4708,6 +4765,19 @@ function EvidenceCloseout({
             {revisionParity === "matched"
               ? "Run identity, status, timestamps, call count, policy, and manifest fields match this generated snapshot."
               : "The selected detail and generated snapshot differ. Reload before relying on this handoff."}
+          </small>
+        </article>
+        <article>
+          <span>Section digest verification</span>
+          <strong>{digestVerificationLabel}</strong>
+          <small>
+            {digestVerification?.status === "verified"
+              ? "Command Center recomputed the run, timeline, approvals, and patch-diagnostic SHA-256 values in this browser session."
+              : digestVerification?.status === "mismatch"
+                ? `Mismatched or missing: ${digestVerification.mismatchedSections.join(", ")}. Reload and do not export this snapshot.`
+                : digestVerification?.status === "unavailable"
+                  ? "Local Web Crypto verification is unavailable; the displayed server digests are not locally checked."
+                  : "Recomputing the four required section digests with local Web Crypto."}
           </small>
         </article>
         <article>
@@ -5283,6 +5353,68 @@ function isNodeGovernedRun(run: AgentRun) {
 
 type NodeRunOriginParity = "preparing" | "matched" | "mismatch" | "unavailable";
 type RunEvidenceRevisionParity = "matched" | "mismatch";
+type EvidenceDigestVerification = {
+  status: "checking" | "verified" | "mismatch" | "unavailable";
+  matchedSections: number;
+  mismatchedSections: string[];
+};
+
+const RUN_EVIDENCE_DIGEST_SECTIONS = {
+  run_sha256: "run",
+  timeline_sha256: "timeline",
+  approvals_sha256: "approvals",
+  patch_diagnostics_sha256: "patch_diagnostics",
+} as const;
+
+export async function verifyEvidenceSectionDigests(
+  evidence: RunEvidenceExport,
+  digestValue: (value: JsonValue) => Promise<string> = sha256CanonicalJson,
+): Promise<EvidenceDigestVerification> {
+  if (!globalThis.crypto?.subtle) {
+    return { status: "unavailable", matchedSections: 0, mismatchedSections: [] };
+  }
+  const mismatchedSections: string[] = [];
+  let matchedSections = 0;
+  try {
+    for (const [digestName, sectionName] of Object.entries(RUN_EVIDENCE_DIGEST_SECTIONS)) {
+      const expected = evidence.evidence_hashes[digestName];
+      const actual = await digestValue(evidence[sectionName]);
+      if (typeof expected === "string" && expected === actual) {
+        matchedSections += 1;
+      } else {
+        mismatchedSections.push(sectionName.replace(/_/g, " "));
+      }
+    }
+  } catch {
+    return { status: "unavailable", matchedSections: 0, mismatchedSections: [] };
+  }
+  return {
+    status: mismatchedSections.length === 0 ? "verified" : "mismatch",
+    matchedSections,
+    mismatchedSections,
+  };
+}
+
+async function sha256CanonicalJson(value: JsonValue): Promise<string> {
+  const encoded = new TextEncoder().encode(canonicalJson(value));
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", encoded);
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return `sha256:${hex}`;
+}
+
+function canonicalJson(value: JsonValue): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalJson(item)).join(",")}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
 
 const RUN_EVIDENCE_REVISION_FIELDS = [
   "run_id",

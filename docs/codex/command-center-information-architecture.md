@@ -272,12 +272,14 @@ Every decision explanation answers, in order:
 | Agent Run | Existing run records and audit correlation | Group and explain mediated activity; compare separately loaded detail/export revisions and never claim process control. |
 | Artifact and promotion state | Existing artifact/proposal/promotion records | Display exact recorded state; never equate review readiness with promotion. |
 | Audit integrity and signing | Existing audit verification and signing records | Explain status and limitations; never mutate or overclaim custody. |
-| Export | Existing export API or packet generator | Initiate only an existing reviewed export and label the result accurately. |
+| Export | Existing export API or packet generator | Initiate only an existing reviewed export, locally compare supplied section digests where possible, and label the result accurately. |
 
 Presentation-derived counts, labels, and groupings must be deterministic, traceable to authoritative
 records, and visibly marked when they are a UI summary rather than stored Gateway state.
 Separately fetched run detail and evidence snapshots must not be presented as the same revision when
 their shared identity, state, timestamp, count, policy, or manifest fields differ.
+Supplied evidence hashes must not be labeled as locally verified unless Command Center successfully
+recomputes every required section with the matching canonical JSON contract.
 
 ## Implementation Review Gate
 
