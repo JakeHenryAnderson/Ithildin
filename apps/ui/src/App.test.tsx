@@ -1474,7 +1474,7 @@ describe("Review console interactions", () => {
     expect(screen.getByText("Run Evidence")).toBeInTheDocument();
     expect(await screen.findByLabelText("Run evidence closeout")).toBeInTheDocument();
     expect(screen.getByText("Evidence closeout")).toBeInTheDocument();
-    expect(screen.getByText("1 bundle warnings")).toBeInTheDocument();
+    expect(await screen.findByText("1 bundle warnings")).toBeInTheDocument();
     expect(screen.getByText("Matches generated snapshot")).toBeInTheDocument();
     expect(screen.getByText("4 section digests")).toBeInTheDocument();
     expect(await screen.findByText("4 of 4 section digests match")).toBeInTheDocument();
