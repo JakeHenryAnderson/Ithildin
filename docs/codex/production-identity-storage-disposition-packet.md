@@ -84,6 +84,8 @@ Before implementation planning, the lane needs clear answers for:
 - SQLite migration path, rollback, and compatibility policy;
 - approval, patch-attempt, audit, and Agent Run transaction requirements;
 - backup, restore, disaster recovery, retention, deletion, and export policy;
+- whether the replace-not-restore Node identity candidate, external recovery watermark, stale
+  restore denial, and split-brain fencing rules are sufficient;
 - storage encryption and key-management boundary;
 - unavailable-storage and partial-migration failure modes;
 - external architecture/source review requirements.
@@ -121,6 +123,8 @@ The disposition review should look for:
   response bodies, or raw sensitive paths;
 - unclear failure behavior for unavailable identity providers, unavailable storage, failed
   migrations, partial backups, stale restores, or retention conflicts;
+- any recovery path that copies a Node private key, resurrects a revoked credential, trusts only a
+  restored database to prove freshness, or permits two Manager primaries to hold authority;
 - claims of custody-grade audit, production deployment readiness, compliance automation, or
   public/security-product positioning.
 

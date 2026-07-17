@@ -369,7 +369,9 @@ Current selected capability: `not selected`.
 - Current architecture evidence:
   `production-identity-storage-architecture.md` defines the `ERG-006`/`ERG-007` identity, tenancy,
   storage, migration, backup/restore, retention, and evidence questions before any future runtime
-  decision.
+  decision. Its disaster-recovery candidate treats lost Node identities as replaceable rather than
+  restorable, requires an external recovery watermark before a restored Manager can regain
+  authority, and fails closed on stale snapshots, missing authority epochs, or split-brain risk.
 - Current disposition evidence:
   `production-identity-storage-disposition-packet.md` asks whether the current architecture
   evidence is coherent enough for continued planning while runtime identity and storage behavior

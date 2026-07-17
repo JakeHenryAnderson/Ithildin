@@ -26,6 +26,11 @@ REQUIRED_PHRASES = [
     "SQLite runtime storage, not runtime Postgres",
     "Future Identity Architecture Questions",
     "Future Storage Architecture Questions",
+    "Disaster-Recovery Candidate Contract",
+    "replace a lost Node; do not restore its private",
+    "Stale-Restore And Split-Brain Rule",
+    "monotonic recovery watermark held outside the restored database",
+    "Required Recovery Proof",
     "Evidence Contract",
     "Required Before Implementation",
     "external architecture review",
@@ -42,6 +47,9 @@ REQUIRED_SAFE_EVIDENCE_PHRASES = [
     "backup/restore status labels",
     "retention-policy label",
     "safe error labels for identity or storage failures",
+    "retired Node credential replay",
+    "reconciliation_failed",
+    "fenced",
 ]
 
 FORBIDDEN_PHRASES = [
