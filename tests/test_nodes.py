@@ -310,7 +310,7 @@ def test_identity_key_rotation_requires_both_keys_retires_old_key_and_survives_r
     node = store.enroll(_enrollment(issued.enrollment_code, current_public), now=now)
     node = store.mark_node_evidence_complete(node.node_id)
     challenge_path = f"/nodes/{node.node_id}/identity-key-rotation/challenges"
-    challenge_body = {"protocol_version": "1"}
+    challenge_body: JsonObject = {"protocol_version": "1"}
     store.authenticate_request(
         node_id=node.node_id,
         timestamp=str(int(now.timestamp())),
@@ -373,7 +373,10 @@ def test_identity_key_rotation_requires_both_keys_retires_old_key_and_survives_r
     assert rotated.summary(now=now)["retired_key_request_authority"] is False
 
     status_path = f"/nodes/{node.node_id}/identity-key-rotation/status"
-    status_body = {"protocol_version": "1", "rotation_id": rotation.rotation_id}
+    status_body: JsonObject = {
+        "protocol_version": "1",
+        "rotation_id": rotation.rotation_id,
+    }
     with pytest.raises(NodeAuthenticationError, match="invalid Node signature"):
         store.authenticate_request(
             node_id=node.node_id,
