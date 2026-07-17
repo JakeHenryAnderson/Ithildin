@@ -441,6 +441,14 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-identity-key-rotation-observed-results.md](docs/codex/track-b-node-identity-key-rotation-observed-results.md) - live K1/K2 two-proof activation, retired-key denial, Gateway restart, pending-key recovery, and revocation evidence.
 - `make track-b-node-identity-key-rotation-decision-check` - validate the bounded identity-key rotation authority and explicit non-approvals.
 - `make track-b-node-identity-key-rotation-evidence-check` - validate ignored live rotation evidence without printing key material.
+- [docs/codex/track-b-node-service-lifecycle-capability-decision.md](docs/codex/track-b-node-service-lifecycle-capability-decision.md) - authorization and non-approvals for the supervised Node synchronization loop and operator-managed container lifecycle.
+- [docs/codex/track-b-node-service-lifecycle-architecture.md](docs/codex/track-b-node-service-lifecycle-architecture.md) - persistence ordering, restart/partition semantics, bounded retry, and deployment boundary.
+- [docs/codex/track-b-node-service-lifecycle-implementation-plan.md](docs/codex/track-b-node-service-lifecycle-implementation-plan.md) - ordered service, container, negative-test, live-proof, and exact-candidate work.
+- [docs/codex/track-b-node-service-lifecycle-observed-results.md](docs/codex/track-b-node-service-lifecycle-observed-results.md) - live container enrollment, duplicate-use denial, graceful stop, partition, restart, version change/rollback, identity continuity, and revocation evidence.
+- `make track-b-node-service-lifecycle-decision-check` - validate the service lifecycle authority and explicit self-update/runner-control non-approvals.
+- `make track-b-node-service-lifecycle-evidence-check` - validate the ignored live lifecycle proof without printing private material.
+- `make node-service-image` - build the unprivileged local-preview Ithildin Node image.
+- `make node-service-compose-check` - validate the optional Node Compose profile without starting it.
 - `make node-configuration-keygen` - create the dedicated local Ed25519 Node-configuration signing keypair; private material remains mode `0600` under `var/keys/`.
 - `make node-configuration-signing-status` - report configuration trust-root availability and key ID without printing key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review

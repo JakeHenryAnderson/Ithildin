@@ -45,6 +45,8 @@ status. OPA is optional and is not started by the local Compose stack in this ta
 
 - `ithildin-api` runs `uvicorn ithildin_api.app:app` on `127.0.0.1:8000`.
 - `ithildin-ui` serves the built review console on `127.0.0.1:5173`.
+- Optional profile `ithildin-node` runs the signed configuration and heartbeat client with no
+  inbound port or runner authority. See `deploy/node/README.md`; it is not started by `compose-up`.
 
 The Compose stack mounts only:
 

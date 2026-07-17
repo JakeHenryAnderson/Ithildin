@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import getpass
 import json
+import sys
 from pathlib import Path
+from threading import Event
 
 from ithildin_node.client import (
     NodeClient,
@@ -13,6 +15,7 @@ from ithildin_node.client import (
     NodeState,
     StoredNodeConfiguration,
 )
+from ithildin_node.service import install_signal_handlers, run_service
 
 
 def main() -> int:
@@ -21,6 +24,11 @@ def main() -> int:
     enroll = subparsers.add_parser("enroll")
     _common(enroll)
     enroll.add_argument("--state", type=Path, required=True)
+    enroll.add_argument(
+        "--enrollment-code-stdin",
+        action="store_true",
+        help="read the one-time enrollment code from stdin instead of a terminal prompt",
+    )
     heartbeat = subparsers.add_parser("heartbeat")
     _common(heartbeat)
     heartbeat.add_argument("--state", type=Path, required=True)
@@ -39,14 +47,47 @@ def main() -> int:
     identity_key_rotate.add_argument("--state", type=Path, required=True)
     status = subparsers.add_parser("status")
     status.add_argument("--state", type=Path, required=True)
+    run = subparsers.add_parser("run")
+    run.add_argument("--state", type=Path, required=True)
+    run.add_argument("--configuration", type=Path, required=True)
+    run.add_argument("--node-version", default="0.1.0")
+    run.add_argument("--runner-adapter", default="hermes")
+    run.add_argument(
+        "--deployment-topology",
+        choices=("local_process", "docker_sidecar", "server_service"),
+        default="docker_sidecar",
+    )
+    run.add_argument("--max-cycles", type=int)
+    run.add_argument("--retry-initial-seconds", type=int, default=5)
+    run.add_argument("--retry-max-seconds", type=int, default=60)
     args = parser.parse_args()
     try:
         if args.command == "status":
             print(json.dumps(NodeState.load(args.state).safe_summary(), indent=2, sort_keys=True))
             return 0
+        if args.command == "run":
+            stop_event = Event()
+            install_signal_handlers(stop_event)
+            return run_service(
+                state_path=args.state,
+                configuration_path=args.configuration,
+                node_version=args.node_version,
+                runner_adapter=args.runner_adapter,
+                deployment_topology=args.deployment_topology,
+                max_cycles=args.max_cycles,
+                retry_initial_seconds=args.retry_initial_seconds,
+                retry_max_seconds=args.retry_max_seconds,
+                stop_event=stop_event,
+            )
         client = NodeClient(args.api_url)
         if args.command == "enroll":
-            code = getpass.getpass("One-time enrollment code: ")
+            code = (
+                sys.stdin.readline().rstrip("\r\n")
+                if args.enrollment_code_stdin
+                else getpass.getpass("One-time enrollment code: ")
+            )
+            if not code:
+                parser.error("one-time enrollment code is required")
             state = client.enroll(
                 enrollment_code=code,
                 node_version=args.node_version,

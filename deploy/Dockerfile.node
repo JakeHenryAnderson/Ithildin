@@ -1,0 +1,23 @@
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim@sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58
+
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock README.md ./
+COPY apps ./apps
+COPY packages ./packages
+
+RUN uv sync --frozen --no-dev \
+    && groupadd --gid 10002 ithildin-node \
+    && useradd --uid 10002 --gid ithildin-node --home-dir /nonexistent --no-create-home ithildin-node \
+    && mkdir -p /var/lib/ithildin-node /tmp/ithildin-node \
+    && chown -R 10002:10002 /var/lib/ithildin-node /tmp/ithildin-node
+
+USER 10002:10002
+
+ENTRYPOINT ["python", "-m", "ithildin_node"]
+CMD ["run", "--state", "/var/lib/ithildin-node/state.json", "--configuration", "/var/lib/ithildin-node/configuration.json", "--deployment-topology", "docker_sidecar"]

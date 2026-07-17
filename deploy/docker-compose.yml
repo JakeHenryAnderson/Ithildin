@@ -91,3 +91,41 @@ services:
     depends_on:
       ithildin-api:
         condition: service_healthy
+
+  ithildin-node:
+    profiles:
+      - node
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.node
+    image: ithildin/node:local
+    user: "10002:10002"
+    command:
+      - run
+      - --state
+      - /var/lib/ithildin-node/state.json
+      - --configuration
+      - /var/lib/ithildin-node/configuration.json
+      - --node-version
+      - "${ITHILDIN_NODE_VERSION:-0.1.0}"
+      - --runner-adapter
+      - "${ITHILDIN_NODE_RUNNER_ADAPTER:-hermes}"
+      - --deployment-topology
+      - docker_sidecar
+    volumes:
+      - ithildin-node-state:/var/lib/ithildin-node
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    init: true
+    depends_on:
+      ithildin-api:
+        condition: service_healthy
+
+volumes:
+  ithildin-node-state:

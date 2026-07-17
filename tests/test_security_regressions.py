@@ -281,6 +281,25 @@ def test_deployment_security_boundaries_are_loopback_and_no_docker_socket() -> N
     assert all("docker.sock" not in str(volume) for volume in all_volumes)
 
 
+def test_node_service_container_is_optional_unprivileged_and_has_no_inbound_surface() -> None:
+    compose = yaml.safe_load(Path("deploy/docker-compose.yml").read_text(encoding="utf-8"))
+    node = compose["services"]["ithildin-node"]
+    dockerfile = Path("deploy/Dockerfile.node").read_text(encoding="utf-8")
+
+    assert node["profiles"] == ["node"]
+    assert node.get("ports", []) == []
+    assert node.get("environment", {}) == {}
+    assert node["read_only"] is True
+    assert node["cap_drop"] == ["ALL"]
+    assert node["security_opt"] == ["no-new-privileges:true"]
+    assert node["pids_limit"] == 64
+    assert node["user"] == "10002:10002"
+    assert node["volumes"] == ["ithildin-node-state:/var/lib/ithildin-node"]
+    assert "USER 10002:10002" in dockerfile
+    assert "EXPOSE" not in dockerfile
+    assert "docker.sock" not in dockerfile
+
+
 def _filesystem(tmp_path: Path, *, max_read_bytes: int = 128) -> FilesystemReadTools:
     return FilesystemReadTools(
         workspace_root=tmp_path / "workspace",
