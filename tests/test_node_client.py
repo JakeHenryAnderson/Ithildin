@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import os
 import stat
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -209,6 +210,14 @@ class RecordingNodeClient(NodeClient):
                 "configuration_state": "stored_current_not_enforced",
                 "configuration_acknowledgment_status": "stored_not_enforced",
             }
+        if path.endswith("/governed-tool-calls"):
+            return {
+                "status": "completed",
+                "request_id": "req_" + ("5" * 32),
+                "tool_name": payload["tool_name"],
+                "content": {"path": "README.md"},
+                "is_error": False,
+            }
         return {"status": "enrolled", "observed_state": "observed_connected"}
 
 
@@ -301,6 +310,92 @@ def test_client_verifies_stores_and_acknowledges_configuration(tmp_path: Path) -
     assert acknowledged["configuration_state"] == "stored_current_not_enforced"
     assert client.requests[-2][0].endswith("/configuration")
     assert client.requests[-1][0].endswith("/configuration/acknowledgments")
+
+
+def test_client_governed_read_reverifies_configuration_binds_workspace_and_signs_once() -> None:
+    client = RecordingNodeClient()
+    state = client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+    configuration = client.pull_configuration(state, known_generation=0, now=now)
+
+    result = client.governed_tool_call(
+        state,
+        configuration,
+        node_version="0.1.0",
+        session_id="hermes-read-1",
+        tool_name="fs.read",
+        arguments={"path": "README.md"},
+        now=now,
+        nonce="e1" * 16,
+    )
+
+    assert result["status"] == "completed"
+    path, payload, headers = client.requests[-1]
+    assert path == f"/nodes/{state.node_id}/governed-tool-calls"
+    assert payload["arguments"] == {"path": "README.md", "workspace_id": "default"}
+    assert payload["configuration_generation"] == 1
+    assert payload["configuration_digest"] == configuration.configuration_digest
+    message = canonical_signature_message(
+        method="POST",
+        path=path,
+        timestamp=headers["X-Ithildin-Timestamp"],
+        nonce=headers["X-Ithildin-Nonce"],
+        body_hash=sha256_digest(payload),
+    )
+    Ed25519PublicKey.from_public_bytes(base64.b64decode(state.public_key)).verify(
+        base64.b64decode(headers["X-Ithildin-Signature"]), message
+    )
+    with pytest.raises(NodeClientError, match="workspace differs"):
+        client.governed_tool_call(
+            state,
+            configuration,
+            node_version="0.1.0",
+            session_id="hermes-read-2",
+            tool_name="fs.read",
+            arguments={"path": "README.md", "workspace_id": "other"},
+            now=now,
+        )
+    with pytest.raises(NodeClientError, match="does not meet"):
+        client.governed_tool_call(
+            state,
+            configuration,
+            node_version="0.0.9",
+            session_id="hermes-read-3",
+            tool_name="fs.read",
+            arguments={"path": "README.md"},
+            now=now,
+        )
+
+
+def test_client_governed_read_partition_fails_without_retry_or_local_fallback() -> None:
+    fixture = RecordingNodeClient()
+    state = fixture.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+    configuration = fixture.pull_configuration(state, known_generation=0, now=now)
+    unavailable = NodeClient("http://127.0.0.1:9", timeout_seconds=0.05)
+    partitioned_state = replace(state, api_url="http://127.0.0.1:9")
+
+    with pytest.raises(NodeClientError, match="Gateway is unavailable"):
+        unavailable.governed_tool_call(
+            partitioned_state,
+            configuration,
+            node_version="0.1.0",
+            session_id="partitioned-read",
+            tool_name="fs.read",
+            arguments={"path": "README.md"},
+            now=now,
+            nonce="e2" * 16,
+        )
 
 
 def test_client_stages_promotes_and_retains_bounded_previous_trust(tmp_path: Path) -> None:

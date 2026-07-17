@@ -26,6 +26,7 @@ from ithildin_api.node_configuration import (
     CONFIGURATION_ACK_STATUS,
     NodeConfigurationTrust,
     NodeConfigurationVerificationError,
+    NodeDesiredConfigurationPayload,
     verify_configuration_bundle,
 )
 from ithildin_api.node_configuration_trust import (
@@ -34,6 +35,7 @@ from ithildin_api.node_configuration_trust import (
     transition_next_trust,
     verify_configuration_trust_transition,
 )
+from ithildin_api.node_versions import parse_node_version
 from ithildin_api.nodes import (
     NODE_PROTOCOL_VERSION,
     NodeIdentityRotationRecord,
@@ -679,6 +681,66 @@ class NodeClient:
             now=now,
             nonce=nonce,
         )
+
+    def governed_tool_call(
+        self,
+        state: NodeState,
+        configuration: StoredNodeConfiguration,
+        *,
+        node_version: str,
+        session_id: str,
+        tool_name: str,
+        arguments: JsonObject,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject:
+        """Submit one signed governed read request with no retry or local fallback."""
+
+        effective_now = now or datetime.now(UTC)
+        signing_key_id = configuration.signing_key_id
+        trust, _source = _configuration_verification_trust(
+            state, signing_key_id, now=effective_now
+        )
+        try:
+            verified = verify_configuration_bundle(
+                configuration.bundle,
+                trust=trust,
+                node_id=state.node_id,
+                principal_id=state.principal_id,
+                workspace_id=state.workspace_id,
+                minimum_generation=configuration.generation,
+                expected_manifest_lock_digest=state.gateway_manifest_lock_digest,
+                now=effective_now,
+            )
+            closed = NodeDesiredConfigurationPayload.model_validate(
+                verified.get("configuration")
+            )
+        except (NodeConfigurationVerificationError, ValueError) as exc:
+            raise NodeClientError("stored configuration is not valid for governed access") from exc
+        if closed.offline_posture != "deny_governed_actions":
+            raise NodeClientError("stored configuration does not fail closed offline")
+        if parse_node_version(node_version) < parse_node_version(closed.minimum_node_version):
+            raise NodeClientError("Node version does not meet the stored minimum")
+        requested_workspace = arguments.get("workspace_id")
+        if requested_workspace is not None and requested_workspace != state.workspace_id:
+            raise NodeClientError("governed request workspace differs from Node enrollment")
+        bound_arguments = {**arguments, "workspace_id": state.workspace_id}
+        return self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/governed-tool-calls",
+            {
+                "protocol_version": NODE_PROTOCOL_VERSION,
+                "configuration_generation": configuration.generation,
+                "configuration_digest": configuration.configuration_digest,
+                "node_version": node_version,
+                "session_id": session_id,
+                "tool_name": tool_name,
+                "arguments": bound_arguments,
+            },
+            now=effective_now,
+            nonce=nonce,
+        )
+
     def _signed_post(
         self,
         state: NodeState,

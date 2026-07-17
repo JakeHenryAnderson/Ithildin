@@ -15,7 +15,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-execution-board roadmap-status technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
-.PHONY: hermes-governance-poc-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-service-image node-service-compose-check node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
+.PHONY: hermes-governance-poc-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-service-image node-service-compose-check node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 
 test:
@@ -42,6 +42,9 @@ track-b-node-decision-check:
 
 track-b-node-configuration-decision-check:
 	uv run python scripts/track_b_node_configuration_decision_check.py
+
+track-b-node-governed-access-decision-check:
+	uv run python scripts/track_b_node_governed_access_decision_check.py
 
 track-b-node-manual-rollback-decision-check:
 	uv run python scripts/track_b_node_manual_rollback_decision_check.py
@@ -139,6 +142,9 @@ track-b-node-evidence-check:
 
 track-b-node-configuration-evidence-check:
 	uv run python scripts/node_configuration_poc_evidence_check.py
+
+track-b-node-governed-access-evidence-check:
+	uv run python scripts/node_governed_access_poc_evidence_check.py
 
 track-b-node-configuration-trust-rotation-evidence-check:
 	uv run python scripts/node_configuration_trust_rotation_poc_evidence_check.py
@@ -1993,6 +1999,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 release-check: hermes-governance-poc-plan-check
 release-check: track-b-node-decision-check
 release-check: track-b-node-configuration-decision-check
+release-check: track-b-node-governed-access-decision-check
 release-check: track-b-node-manual-rollback-decision-check
 release-check: track-b-node-configuration-trust-rotation-decision-check
 release-check: track-b-node-version-posture-decision-check

@@ -441,6 +441,23 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             connectivity_source: "gateway_accepted_heartbeat",
             runner_health_known: false,
             model_health_known: false,
+            governed_access: {
+              state: options.nodeStatus === "revoked" ? "blocked" : "ready_read_only",
+              reason_code: options.nodeStatus === "revoked"
+                ? "node_not_currently_observed"
+                : "all_gateway_prerequisites_current",
+              identity_source: "gateway_derived_node",
+              authorization_profile: "agent:node-local-preview-readonly",
+              workspace_id: "default",
+              allowed_risks: ["read"],
+              allowed_tool_count: 19,
+              enforcement_point: "gateway_governed_tool_pipeline",
+              node_configuration_enforcement_proven: false,
+              runner_enforcement_proven: false,
+              offline_fallback_allowed: false,
+              configuration_generation: 1,
+              configuration_digest: "sha256:desiredconfiguration",
+            },
             ...(options.nodeOverrides ?? {}),
           };
           return [
@@ -846,6 +863,11 @@ describe("Review console interactions", () => {
     expect(within(nodes).getByText("Policy enforcement · unknown")).toBeInTheDocument();
     expect(within(nodes).getByText("Node version posture")).toBeInTheDocument();
     expect(within(nodes).getByText("Node identity-key posture")).toBeInTheDocument();
+    expect(within(nodes).getByText("Governed access posture")).toBeInTheDocument();
+    expect(within(nodes).getAllByText("ready read only")).toHaveLength(2);
+    expect(
+      within(nodes).getByText(/19 existing read-only tools may be mediated through the Gateway/i),
+    ).toBeInTheDocument();
     expect(within(nodes).getByText(/retired keys have no request authority/i)).toBeInTheDocument();
     expect(within(nodes).getAllByText("meets minimum").length).toBeGreaterThan(0);
     expect(within(nodes).getByText(/Maintenance remains operator-managed/i)).toBeInTheDocument();

@@ -196,6 +196,21 @@ type IthildinNode = {
   connectivity_source: "gateway_accepted_heartbeat";
   runner_health_known: false;
   model_health_known: false;
+  governed_access: {
+    state: string;
+    reason_code: string;
+    identity_source: "gateway_derived_node";
+    authorization_profile: string;
+    workspace_id: string;
+    allowed_risks: string[];
+    allowed_tool_count: number;
+    enforcement_point: string;
+    node_configuration_enforcement_proven: false;
+    runner_enforcement_proven: false;
+    offline_fallback_allowed: false;
+    configuration_generation?: number;
+    configuration_digest?: string;
+  };
 };
 
 type NodeIdentityKeyRotation = {
@@ -2703,6 +2718,7 @@ export function App() {
                           <span>{node.workspace_id}</span>
                           <span>Config · {node.configuration_state.replace(/_/g, " ")}</span>
                           <span>Version · {node.version_posture.replace(/_/g, " ")}</span>
+                          <span>Access · {node.governed_access.state.replace(/_/g, " ")}</span>
                         </span>
                         <span className={attention ? "node-row-attention" : "node-row-clear"}>
                           {attention ? attention.title : "No deterministic exception in loaded records"}
@@ -3121,6 +3137,19 @@ function NodeDetailRecord({
         Selection changes only this loaded Gateway record view. It does not contact, inspect, or
         change the endpoint.
       </p>
+      <div className="node-configuration-posture">
+        <div>
+          <span>Governed access posture</span>
+          <strong>{node.governed_access.state.replace(/_/g, " ")}</strong>
+        </div>
+        <StatusPill status={node.governed_access.state} />
+        <p>
+          {node.governed_access.state === "ready_read_only"
+            ? `${node.governed_access.allowed_tool_count} existing read-only tools may be mediated through the Gateway for this exact Node, workspace, and configuration snapshot.`
+            : `Blocked by ${node.governed_access.reason_code.replace(/_/g, " ")}. No offline fallback is permitted.`}
+          {" "}This does not prove runner enforcement or filesystem non-bypass.
+        </p>
+      </div>
       <div className="node-configuration-posture">
         <div>
           <span>Configuration posture</span>
@@ -4083,10 +4112,23 @@ function nodeAttentionPosture(node: IthildinNode): NodeAttentionPosture | null {
       occurredAt: node.configuration_acknowledged_at ?? node.updated_at,
     };
   }
-  if (node.observed_state === "stale") {
+  if (node.governed_access.state === "blocked") {
     return {
       attentionClass: "operational",
       rank: 22,
+      title: `${node.display_name} governed read access is blocked`,
+      status: node.governed_access.reason_code.replace(/_/g, " "),
+      consequence:
+        "The Gateway will not mediate Node-authenticated read calls until every identity, workspace, configuration, policy, and manifest prerequisite is current.",
+      actionLabel: "Review governed access posture",
+      observedBasis: "Gateway-derived governed-access prerequisite evaluation",
+      occurredAt: node.last_seen_at ?? node.updated_at,
+    };
+  }
+  if (node.observed_state === "stale") {
+    return {
+      attentionClass: "operational",
+      rank: 23,
       title: `${node.display_name} heartbeat is stale`,
       status: "heartbeat stale",
       consequence:
@@ -4102,7 +4144,7 @@ function nodeAttentionPosture(node: IthildinNode): NodeAttentionPosture | null {
   ) {
     return {
       attentionClass: "operational",
-      rank: 23,
+      rank: 24,
       title: `${node.display_name} has never sent an accepted heartbeat`,
       status: "never observed",
       consequence:
@@ -4144,6 +4186,8 @@ function filterAndSortNodes(
         node.observed_state,
         node.configuration_state,
         node.version_posture,
+        node.governed_access.state,
+        node.governed_access.reason_code,
       ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
     })
     .sort((left, right) => {

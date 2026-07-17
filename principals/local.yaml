@@ -46,6 +46,16 @@ principals:
     metadata:
       source: local-seed
 
+  - id: agent:node-local-preview-readonly
+    type: agent
+    display_name: Local Preview Node Read-Only Profile
+    roles:
+      - AgentReadOnly
+    enabled: true
+    metadata:
+      source: static-node-authorization-profile
+      identity_source: gateway-node-store
+
   - id: user:auditor
     type: user
     display_name: Local Auditor

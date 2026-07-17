@@ -418,6 +418,12 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-configuration-observed-results.md](docs/codex/track-b-node-configuration-observed-results.md) - live assignment, drift, restart, storage acknowledgment, tamper denial, revocation, and audit evidence with explicit non-claims.
 - `make track-b-node-configuration-decision-check` - validate the signed-configuration slice and its enforcement/production non-claims.
 - `make track-b-node-configuration-evidence-check` - validate the ignored live configuration POC without printing enrollment or private-key material.
+- [docs/codex/track-b-node-governed-access-capability-decision.md](docs/codex/track-b-node-governed-access-capability-decision.md) - project-owner authorization and explicit non-approvals for the first Node-authenticated read-only governed-action path.
+- [docs/codex/track-b-node-governed-access-architecture.md](docs/codex/track-b-node-governed-access-architecture.md) - server-derived Node identity, current-configuration, workspace, replay, and partition boundaries for governed reads.
+- [docs/codex/track-b-node-governed-access-implementation-plan.md](docs/codex/track-b-node-governed-access-implementation-plan.md) - ordered ingress, binding, client, adversarial-test, evidence, and exact-candidate work.
+- [docs/codex/track-b-node-governed-access-observed-results.md](docs/codex/track-b-node-governed-access-observed-results.md) - live derived-identity read, network/workspace denial, partition, restart, durable replay, and audit evidence with explicit non-claims.
+- `make track-b-node-governed-access-decision-check` - validate read-only Node mediation while rejecting write/network/offline/runner-control expansion.
+- `make track-b-node-governed-access-evidence-check` - validate the ignored live governed-access proof without printing private material or raw read content.
 - [docs/codex/track-b-node-manual-rollback-capability-decision.md](docs/codex/track-b-node-manual-rollback-capability-decision.md) - authorization and non-approvals for one-Node manual rollback as a fresh signed generation.
 - [docs/codex/track-b-node-manual-rollback-architecture.md](docs/codex/track-b-node-manual-rollback-architecture.md) - compare-and-set, immutable history, audit lineage, and fail-closed recovery semantics.
 - [docs/codex/track-b-node-manual-rollback-implementation-plan.md](docs/codex/track-b-node-manual-rollback-implementation-plan.md) - ordered backend, negative-test, Command Center, evidence, and exact-candidate work.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import builtins
 import json
 import re
 import secrets
@@ -588,7 +589,15 @@ class NodeStore:
             raise NodeNotFoundError("unknown Node")
         return _record(row)
 
-    def list(self, *, limit: int = 50, stale_after_seconds: int = 90) -> list[JsonObject]:
+    def list(
+        self, *, limit: int = 50, stale_after_seconds: int = 90
+    ) -> builtins.list[JsonObject]:
+        return [
+            record.summary(stale_after_seconds=stale_after_seconds)
+            for record in self.list_records(limit=limit)
+        ]
+
+    def list_records(self, *, limit: int = 50) -> builtins.list[NodeRecord]:
         bounded_limit = max(1, min(limit, 200))
         with sqlite3.connect(self.db_path) as connection:
             rows = connection.execute(
@@ -607,9 +616,7 @@ class NodeStore:
                 """,
                 (bounded_limit,),
             ).fetchall()
-        return [
-            _record(row).summary(stale_after_seconds=stale_after_seconds) for row in rows
-        ]
+        return [_record(row) for row in rows]
 
     def revoke(self, node_id: str, *, now: datetime | None = None) -> NodeRecord:
         effective_now = now or datetime.now(UTC)

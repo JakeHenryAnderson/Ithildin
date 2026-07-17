@@ -160,6 +160,8 @@ input_schema:
   properties:
     path:
       type: string
+    workspace_id:
+      type: string
     proposal_id:
       type: string
     url:
@@ -3302,6 +3304,202 @@ def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
     assert "node.configuration.acknowledged" in audit_text
     assert "node.configuration.rollback_assigned" in audit_text
     assert "stored_not_enforced" in audit_text
+
+
+def test_node_governed_read_uses_derived_identity_workspace_and_durable_replay(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    write_manifest(settings.manifest_dir, name="fs.read", risk="read", required=["path"])
+    write_manifest(settings.manifest_dir, name="http.fetch", risk="network", required=["url"])
+    settings.workspace_root.mkdir(parents=True)
+    settings.workspace_root.joinpath("README.md").write_text(
+        "governed Node read\n", encoding="utf-8"
+    )
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode()
+    successful_payload: JsonObject
+    successful_headers: dict[str, str]
+    node_id: str
+
+    with TestClient(create_app(settings)) as client:
+        issued = client.post(
+            "/nodes/enrollment-codes",
+            headers=admin_headers,
+            json={"workspace_id": "default", "display_name": "Governed Read Node"},
+        )
+        enrollment = client.post(
+            "/nodes/enroll",
+            json={
+                "enrollment_code": issued.json()["enrollment_code"],
+                "public_key": public_key,
+                "protocol_version": "1",
+                "node_version": "0.1.0",
+                "runner_adapter": "hermes",
+                "deployment_topology": "docker_sidecar",
+            },
+        )
+        assert enrollment.status_code == 200
+        node_id = enrollment.json()["node_id"]
+        assigned = client.post(
+            f"/nodes/{node_id}/configurations",
+            headers=admin_headers,
+            json={"minimum_node_version": "0.1.0"},
+        )
+        assert assigned.status_code == 200
+        configuration_request: JsonObject = {"protocol_version": "1", "known_generation": 0}
+        configuration_path = f"/nodes/{node_id}/configuration"
+        configuration = client.post(
+            configuration_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=configuration_path,
+                payload=configuration_request,
+                nonce="d1" * 16,
+            ),
+            json=configuration_request,
+        )
+        assert configuration.status_code == 200
+        bundle = configuration.json()
+        acknowledgment: JsonObject = {
+            "protocol_version": "1",
+            "generation": bundle["generation"],
+            "configuration_digest": bundle["configuration_digest"],
+            "configuration_signing_key_id": bundle["signature"]["key_id"],
+            "active_configuration_signing_key_id": bundle["signature"]["key_id"],
+            "status": "stored_not_enforced",
+        }
+        acknowledgment_path = f"/nodes/{node_id}/configuration/acknowledgments"
+        acknowledged = client.post(
+            acknowledgment_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=acknowledgment_path,
+                payload=acknowledgment,
+                nonce="d2" * 16,
+            ),
+            json=acknowledgment,
+        )
+        assert acknowledged.status_code == 200
+        heartbeat: JsonObject = {
+            "protocol_version": "1",
+            "node_version": "0.1.0",
+            "runner_adapter": "hermes",
+            "deployment_topology": "docker_sidecar",
+            "configuration_digest": bundle["configuration_digest"],
+        }
+        heartbeat_path = f"/nodes/{node_id}/heartbeat"
+        accepted = client.post(
+            heartbeat_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=heartbeat_path,
+                payload=heartbeat,
+                nonce="d3" * 16,
+            ),
+            json=heartbeat,
+        )
+        assert accepted.status_code == 200
+
+        inventory = client.get(f"/nodes/{node_id}", headers=admin_headers)
+        assert inventory.status_code == 200
+        governed_posture = inventory.json()["governed_access"]
+        assert governed_posture["state"] == "ready_read_only"
+        assert governed_posture["allowed_risks"] == ["read"]
+        assert governed_posture["offline_fallback_allowed"] is False
+        assert governed_posture["runner_enforcement_proven"] is False
+
+        governed_path = f"/nodes/{node_id}/governed-tool-calls"
+        successful_payload = {
+            "protocol_version": "1",
+            "configuration_generation": bundle["generation"],
+            "configuration_digest": bundle["configuration_digest"],
+            "node_version": "0.1.0",
+            "session_id": "hermes-read-1",
+            "tool_name": "fs.read",
+            "arguments": {"path": "README.md"},
+        }
+        successful_headers = _signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=governed_path,
+            payload=successful_payload,
+            nonce="d4" * 16,
+        )
+        governed = client.post(
+            governed_path, headers=successful_headers, json=successful_payload
+        )
+        assert governed.status_code == 200
+        assert governed.json()["status"] == "completed"
+        assert governed.json()["identity_source"] == "gateway_derived_node"
+        assert governed.json()["workspace_id"] == "default"
+        assert governed.json()["content"]["content"] == "governed Node read\n"
+        assert governed.json()["offline_fallback_used"] is False
+
+        replay = client.post(
+            governed_path, headers=successful_headers, json=successful_payload
+        )
+        assert replay.status_code == 401
+        assert replay.json()["detail"] == "replayed Node nonce"
+
+        cross_workspace: JsonObject = {
+            **successful_payload,
+            "arguments": {"path": "README.md", "workspace_id": "demo"},
+        }
+        cross_workspace_response = client.post(
+            governed_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=governed_path,
+                payload=cross_workspace,
+                nonce="d5" * 16,
+            ),
+            json=cross_workspace,
+        )
+        assert cross_workspace_response.status_code == 200
+        assert cross_workspace_response.json()["status"] == "denied"
+        assert cross_workspace_response.json()["is_error"] is True
+
+        network_request: JsonObject = {
+            **successful_payload,
+            "tool_name": "http.fetch",
+            "arguments": {"url": "https://example.com"},
+        }
+        network_response = client.post(
+            governed_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=governed_path,
+                payload=network_request,
+                nonce="d6" * 16,
+            ),
+            json=network_request,
+        )
+        assert network_response.status_code == 200
+        assert network_response.json()["status"] == "denied"
+
+    with TestClient(create_app(settings)) as restarted:
+        replay_after_restart = restarted.post(
+            f"/nodes/{node_id}/governed-tool-calls",
+            headers=successful_headers,
+            json=successful_payload,
+        )
+        assert replay_after_restart.status_code == 401
+        assert replay_after_restart.json()["detail"] == "replayed Node nonce"
+        verification = restarted.get("/audit-events/verify", headers=admin_headers)
+        assert verification.status_code == 200
+        assert verification.json()["valid"] is True
+
+    audit_text = settings.audit_log_path.read_text(encoding="utf-8")
+    assert f"agent:node.{node_id}" in audit_text
+    assert "node:node_" in audit_text
+    assert private_key.private_bytes_raw().hex() not in audit_text
 
 
 def test_node_configuration_trust_transition_api_is_targeted_signed_and_audited(

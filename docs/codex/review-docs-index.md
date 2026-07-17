@@ -36,6 +36,13 @@ externally closed.
 - [Configuration Implementation Plan](track-b-node-configuration-implementation-plan.md)
 - [Configuration Observed Results](track-b-node-configuration-observed-results.md)
 
+## Track B Node Governed Access
+
+- [Governed Access Capability Decision](track-b-node-governed-access-capability-decision.md)
+- [Governed Access Architecture](track-b-node-governed-access-architecture.md)
+- [Governed Access Implementation Plan](track-b-node-governed-access-implementation-plan.md)
+- [Governed Access Observed Results](track-b-node-governed-access-observed-results.md)
+
 ## Track B Node Manual Rollback
 
 - [Manual Rollback Capability Decision](track-b-node-manual-rollback-capability-decision.md)

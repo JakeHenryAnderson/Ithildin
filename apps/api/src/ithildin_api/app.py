@@ -70,6 +70,13 @@ from ithildin_api.node_configuration_trust import (
     NodeConfigurationTrustTransitionRequestPayload,
     NodeConfigurationTrustTransitionStore,
 )
+from ithildin_api.node_governed_access import (
+    NodeGovernedAccessError,
+    NodeGovernedToolCallPayload,
+    bind_node_tool_arguments,
+    node_governed_access_posture,
+    prepare_node_governed_access,
+)
 from ithildin_api.node_versions import node_version_posture
 from ithildin_api.nodes import (
     EnrollmentCodeIssuePayload,
@@ -81,6 +88,7 @@ from ithildin_api.nodes import (
     NodeIdentityRotationChallengePayload,
     NodeIdentityRotationStatusPayload,
     NodeNotFoundError,
+    NodeRecord,
     NodeStore,
     enrollment_audit_metadata,
     identity_rotation_audit_metadata,
@@ -101,7 +109,7 @@ from ithildin_api.policy_preview import (
 )
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
-from ithildin_api.registry import ToolRegistry, ToolRegistryError
+from ithildin_api.registry import ToolRegistry, ToolRegistryError, UnknownToolDenied
 from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
 from ithildin_api.sandbox_descriptors import (
     SandboxDescriptorError,
@@ -118,6 +126,7 @@ from ithildin_api.security_status import (
 )
 from ithildin_api.storage import storage_status, validate_storage_settings
 from ithildin_api.telemetry import Telemetry, configure_telemetry, safe_span_attributes
+from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_api.trusted_host_promotions import (
     TRUSTED_HOST_PROMOTION_TOOL,
     TrustedHostPromotionError,
@@ -525,6 +534,120 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         )
         return summary
 
+    @api.post("/nodes/{node_id}/governed-tool-calls")
+    def call_node_governed_tool(
+        node_id: str, request: Request, payload: JsonObject
+    ) -> JsonObject:
+        try:
+            governed_request = NodeGovernedToolCallPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid Node governed-tool request",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        body = governed_request.safe_payload()
+        try:
+            node = node_store.authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=body,
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+        configuration_store = cast(
+            NodeConfigurationStore, api.state.node_configuration_store
+        )
+        try:
+            desired = configuration_store.desired(node_id)
+            context = prepare_node_governed_access(
+                node=node,
+                desired=desired,
+                payload=governed_request,
+                principal_registry=cast(
+                    PrincipalRegistry, api.state.principal_registry
+                ),
+                workspace_registry=cast(
+                    WorkspaceRegistry, api.state.workspace_registry
+                ),
+                current_policy_digest=cast(
+                    PolicyEngine, api.state.policy_evaluator
+                ).policy_hash,
+                current_manifest_lock_digest=_manifest_lock_digest(
+                    settings_state.manifest_lock_path
+                ),
+                stale_after_seconds=settings_state.node_stale_after_seconds,
+            )
+        except (NodeConfigurationNotFoundError, NodeConfigurationConflictError) as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        except NodeGovernedAccessError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Node governed-access trust inputs are unavailable",
+            ) from exc
+
+        registry = cast(ToolRegistry, api.state.registry)
+        service = _node_governed_tool_service(api, context.principal_registry)
+        try:
+            registered_tool = registry.get_tool(governed_request.tool_name)
+        except UnknownToolDenied:
+            result = service.call_tool(
+                tool_name=governed_request.tool_name,
+                arguments=context.arguments,
+                principal=context.principal,
+                session_id=context.session_id,
+            )
+        else:
+            try:
+                bound = bind_node_tool_arguments(
+                    context=context,
+                    registered_tool=registered_tool,
+                    workspace_id=node.workspace_id,
+                )
+            except NodeGovernedAccessError as exc:
+                result = service.deny_tool_call(
+                    tool_name=governed_request.tool_name,
+                    arguments=context.arguments,
+                    principal=context.principal,
+                    session_id=context.session_id,
+                    reason=str(exc),
+                    metadata={
+                        "deny_source": "node_governed_ingress",
+                        "node_id": node.node_id,
+                        "workspace_id": node.workspace_id,
+                        "configuration_generation": context.configuration_generation,
+                        "configuration_digest": context.configuration_digest,
+                    },
+                )
+            else:
+                result = service.call_tool(
+                    tool_name=governed_request.tool_name,
+                    arguments=bound.arguments,
+                    principal=bound.principal,
+                    session_id=bound.session_id,
+                )
+        return {
+            "status": result.status,
+            "request_id": result.request_id,
+            "tool_name": result.tool_name,
+            "content": result.content,
+            "is_error": result.is_error,
+            "identity_source": "gateway_derived_node",
+            "workspace_id": node.workspace_id,
+            "configuration_generation": context.configuration_generation,
+            "configuration_digest": context.configuration_digest,
+            "offline_fallback_used": False,
+        }
+
     @api.post("/nodes/{node_id}/identity-key-rotation/challenges")
     def issue_node_identity_key_rotation_challenge(
         node_id: str, request: Request, payload: JsonObject
@@ -667,12 +790,14 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             )
         limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
         settings_state = cast(Settings, api.state.settings)
-        records = cast(NodeStore, api.state.node_store).list(
-            limit=limit,
-            stale_after_seconds=settings_state.node_stale_after_seconds,
-        )
+        node_store = cast(NodeStore, api.state.node_store)
+        node_records = node_store.list_records(limit=limit)
+        records = [
+            record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+            for record in node_records
+        ]
         signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
-        for record in records:
+        for node_record, record in zip(node_records, records, strict=True):
             _add_node_version_posture(
                 record,
                 cast(NodeConfigurationStore, api.state.node_configuration_store),
@@ -696,6 +821,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             record["identity_key_rotation"] = (
                 identity_rotation.summary() if identity_rotation else None
             )
+            _add_node_governed_access_posture(api, node_record, record)
         return {
             "nodes": cast(JsonValue, records),
             "count": len(records),
@@ -731,6 +857,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         summary["identity_key_rotation"] = (
             identity_rotation.summary() if identity_rotation else None
         )
+        _add_node_governed_access_posture(api, record, summary)
         return summary
 
     @api.post("/nodes/{node_id}/revoke", dependencies=[Depends(require_admin_token)])
@@ -1920,6 +2047,41 @@ def _add_node_version_posture(
     summary["self_update_allowed"] = False
 
 
+def _add_node_governed_access_posture(
+    api: FastAPI, node: NodeRecord, summary: JsonObject
+) -> None:
+    desired = None
+    if node.desired_configuration_generation is not None:
+        try:
+            desired = cast(
+                NodeConfigurationStore, api.state.node_configuration_store
+            ).get(node.node_id, node.desired_configuration_generation)
+        except NodeConfigurationNotFoundError:
+            desired = None
+    settings_state = cast(Settings, api.state.settings)
+    try:
+        manifest_digest = _manifest_lock_digest(settings_state.manifest_lock_path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        summary["governed_access"] = {
+            "state": "blocked",
+            "reason_code": "manifest_lock_unavailable",
+            "identity_source": "gateway_derived_node",
+            "allowed_risks": ["read"],
+            "offline_fallback_allowed": False,
+        }
+        return
+    summary["governed_access"] = node_governed_access_posture(
+        node=node,
+        desired=desired,
+        principal_registry=cast(PrincipalRegistry, api.state.principal_registry),
+        workspace_registry=cast(WorkspaceRegistry, api.state.workspace_registry),
+        tool_registry=cast(ToolRegistry, api.state.registry),
+        current_policy_digest=cast(PolicyEngine, api.state.policy_evaluator).policy_hash,
+        current_manifest_lock_digest=manifest_digest,
+        stale_after_seconds=settings_state.node_stale_after_seconds,
+    )
+
+
 def _safe_query_filter(value: str | None) -> str | None:
     if value is None or value == "":
         return None
@@ -1976,6 +2138,29 @@ def _approval_or_404(approval_service: ApprovalService, approval_id: str) -> App
         return approval_service.get(approval_id)
     except ApprovalError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+def _node_governed_tool_service(
+    api: FastAPI, principal_registry: PrincipalRegistry
+) -> GovernedToolCallService:
+    return GovernedToolCallService(
+        registry=cast(ToolRegistry, api.state.registry),
+        policy_evaluator=cast(PolicyEngine, api.state.policy_evaluator),
+        approval_service=cast(ApprovalService, api.state.approval_service),
+        audit_writer=cast(AuditWriter, api.state.audit_writer),
+        read_tool_executor=cast(ReadToolExecutor, api.state.read_tool_executor),
+        patch_proposal_service=cast(
+            PatchProposalService, api.state.patch_proposal_service
+        ),
+        http_fetch_executor=cast(HttpFetchExecutor, api.state.http_fetch_executor),
+        redaction_service=cast(RedactionService, api.state.redaction_service),
+        principal_registry=principal_registry,
+        telemetry=cast(Telemetry, api.state.tool_call_telemetry),
+        agent_run_store=cast(AgentRunStore, api.state.agent_run_store),
+        sandbox_artifact_service=cast(
+            SandboxArtifactWriteService, api.state.sandbox_artifact_service
+        ),
+    )
 
 
 app = create_app()
