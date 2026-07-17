@@ -39,6 +39,13 @@ Each cohort shows:
 - version-exception count; and
 - recently accepted heartbeat count versus cohort size.
 
+An operator may scope the loaded inventory to the exact cohort key from the same response. Selecting
+a cohort clears free-text and posture filters, applies its workspace, returns ordering to
+attention-first, and selects the first matching loaded record. Existing search and posture controls
+may then narrow that exact cohort. Replacing or clearing the cohort scope changes browser
+presentation state only. Any dashboard refresh clears the scope before loading a new response so a
+selection from one response cannot silently carry authority into another.
+
 The deterministic order is: configuration drift or incomplete evidence; storage pending or
 unassigned desired state; version/connectivity exceptions; then fully stored-current cohorts.
 Workspace and newest desired generation provide stable tie-breakers.
@@ -52,6 +59,7 @@ organization discovery, endpoint inventory, deployment execution, rollout contro
 
 This slice does not contact a Node, distribute configuration, change desired state, acknowledge an
 exception, start a rollout, retry a failed Node, verify package authenticity, prove runner/model
-health, prove host isolation, prove configuration enforcement, or add group assignment. It adds no
-endpoint, schema, persistence, governed tool, Node authority, host write, orchestration, telemetry,
-SIEM behavior, production identity, or enterprise/security-product claim.
+health, prove host isolation, prove configuration enforcement, or add group assignment. Cohort
+selection is not a rollout target, persistent Node group, policy assignment, or authorization scope.
+It adds no endpoint, schema, persistence, governed tool, Node authority, host write, orchestration,
+telemetry, SIEM behavior, production identity, or enterprise/security-product claim.

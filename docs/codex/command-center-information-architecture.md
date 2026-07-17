@@ -139,6 +139,9 @@ activity.
 Configuration cohorts exclude revoked records and aggregate only loaded enrolled records. `Stored
 current` is a Node storage acknowledgment for the exact desired generation and digest; it is not
 configuration activation or enforcement evidence, and the cohort view is not a rollout controller.
+Selecting a cohort scopes the loaded inventory to the exact same-response member key for
+investigation. The scope is browser presentation state, not a persistent group, rollout target,
+policy assignment, or authorization boundary.
 
 ### Artifacts
 

@@ -622,6 +622,7 @@ export function App() {
   const [nodePosture, setNodePosture] = useState("all");
   const [nodeWorkspace, setNodeWorkspace] = useState("all");
   const [nodeSort, setNodeSort] = useState("attention");
+  const [selectedNodeCohortKey, setSelectedNodeCohortKey] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
@@ -702,10 +703,6 @@ export function App() {
     [data.patches, artifactQuery, artifactStatus, artifactSort],
   );
   const groupedPatches = useMemo(() => groupPatchesByWorkspace(visiblePatches), [visiblePatches]);
-  const visibleNodes = useMemo(
-    () => filterAndSortNodes(data.nodes, nodeQuery, nodePosture, nodeWorkspace, nodeSort),
-    [data.nodes, nodePosture, nodeQuery, nodeSort, nodeWorkspace],
-  );
   const nodeWorkspaces = useMemo(
     () => [...new Set(data.nodes.map((node) => node.workspace_id))].sort(),
     [data.nodes],
@@ -713,6 +710,28 @@ export function App() {
   const nodeConfigurationCohorts = useMemo(
     () => groupNodeConfigurationCohorts(data.nodes),
     [data.nodes],
+  );
+  const selectedNodeConfigurationCohort = useMemo(
+    () => nodeConfigurationCohorts.find((cohort) => cohort.key === selectedNodeCohortKey) ?? null,
+    [nodeConfigurationCohorts, selectedNodeCohortKey],
+  );
+  const visibleNodes = useMemo(
+    () => filterAndSortNodes(
+      data.nodes,
+      nodeQuery,
+      nodePosture,
+      nodeWorkspace,
+      nodeSort,
+      selectedNodeConfigurationCohort?.key ?? null,
+    ),
+    [
+      data.nodes,
+      nodePosture,
+      nodeQuery,
+      nodeSort,
+      nodeWorkspace,
+      selectedNodeConfigurationCohort?.key,
+    ],
   );
   const selectedVisibleNode = useMemo(
     () => visibleNodes.find((node) => node.node_id === selectedNodeId) ?? visibleNodes[0] ?? null,
@@ -743,6 +762,7 @@ export function App() {
   async function loadDashboard(activeToken = token, activeRunFilters = appliedRunFilters) {
     const requestId = ++dashboardRequest.current;
     operationGeneration.current += 1;
+    setSelectedNodeCohortKey(null);
     setPreviewResult(null);
     setPreviewError(null);
     setPreviewLoading(false);
@@ -1053,6 +1073,7 @@ export function App() {
       setNodeQuery("");
       setNodePosture("all");
       setNodeWorkspace("all");
+      setSelectedNodeCohortKey(null);
       setSelectedNodeId(item.nodeId);
     }
     const targetElementId = item.nodeId ? `node-${item.nodeId}` : item.targetId;
@@ -2694,6 +2715,15 @@ export function App() {
             <NodeConfigurationCohorts
               cohorts={nodeConfigurationCohorts}
               loadedNodeCount={data.nodes.length}
+              selectedCohortKey={selectedNodeConfigurationCohort?.key ?? null}
+              onSelect={(cohort) => {
+                setNodeQuery("");
+                setNodePosture("all");
+                setNodeWorkspace(cohort.workspaceId);
+                setNodeSort("attention");
+                setSelectedNodeCohortKey(cohort.key);
+                setSelectedNodeId(null);
+              }}
             />
           ) : null}
           {data.nodes.length > 0 ? (
@@ -2721,7 +2751,13 @@ export function App() {
               </label>
               <label>
                 Workspace
-                <select value={nodeWorkspace} onChange={(event) => setNodeWorkspace(event.target.value)}>
+                <select
+                  value={nodeWorkspace}
+                  onChange={(event) => {
+                    setNodeWorkspace(event.target.value);
+                    setSelectedNodeCohortKey(null);
+                  }}
+                >
                   <option value="all">All workspaces</option>
                   {nodeWorkspaces.map((workspace) => (
                     <option key={workspace} value={workspace}>{workspace}</option>
@@ -2744,6 +2780,7 @@ export function App() {
                   setNodePosture("all");
                   setNodeWorkspace("all");
                   setNodeSort("attention");
+                  setSelectedNodeCohortKey(null);
                 }}
               >
                 Clear filters
@@ -2751,6 +2788,27 @@ export function App() {
               <span className="node-result-count" role="status" aria-live="polite">
                 {visibleNodes.length} of {data.nodes.length} loaded {data.nodes.length === 1 ? "Node" : "Nodes"}
               </span>
+              {selectedNodeConfigurationCohort ? (
+                <div
+                  className="node-cohort-filter"
+                  role="group"
+                  aria-label="Active configuration cohort filter"
+                >
+                  <span>
+                    Cohort scope · {selectedNodeConfigurationCohort.workspaceId} · {nodeCohortGenerationLabel(
+                      selectedNodeConfigurationCohort,
+                    )} · {selectedNodeConfigurationCohort.nodeCount} enrolled {
+                      selectedNodeConfigurationCohort.nodeCount === 1 ? "Node" : "Nodes"
+                    }
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNodeCohortKey(null)}
+                  >
+                    Clear cohort scope
+                  </button>
+                </div>
+              ) : null}
               <p>Filters and ordering use loaded Gateway records only; they do not change fleet state.</p>
             </div>
           ) : null}
@@ -3200,9 +3258,13 @@ export function App() {
 function NodeConfigurationCohorts({
   cohorts,
   loadedNodeCount,
+  selectedCohortKey,
+  onSelect,
 }: {
   cohorts: NodeConfigurationCohort[];
   loadedNodeCount: number;
+  selectedCohortKey: string | null;
+  onSelect: (cohort: NodeConfigurationCohort) => void;
 }) {
   return (
     <section className="node-cohort-panel" aria-label="Loaded Node configuration cohorts">
@@ -3222,12 +3284,12 @@ function NodeConfigurationCohorts({
       <div className="node-cohort-grid">
         {cohorts.map((cohort) => {
           const status = nodeConfigurationCohortStatus(cohort);
-          const generationLabel = cohort.desiredGeneration === null
-            ? "Unassigned"
-            : `Generation ${cohort.desiredGeneration}`;
+          const generationLabel = nodeCohortGenerationLabel(cohort);
+          const selected = cohort.key === selectedCohortKey;
           return (
             <article
               key={cohort.key}
+              className={selected ? "selected" : undefined}
               aria-label={`${cohort.workspaceId} configuration ${generationLabel}`}
             >
               <header>
@@ -3262,6 +3324,16 @@ function NodeConfigurationCohorts({
                   <span>{cohort.evidenceIncompleteCount} with incomplete configuration evidence</span>
                 ) : null}
               </footer>
+              <button
+                className="node-cohort-inspect"
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onSelect(cohort)}
+              >
+                {selected
+                  ? `Inspecting ${cohort.nodeCount} ${cohort.nodeCount === 1 ? "Node" : "Nodes"}`
+                  : `Inspect ${cohort.nodeCount} ${cohort.nodeCount === 1 ? "Node" : "Nodes"}`}
+              </button>
             </article>
           );
         })}
@@ -4330,12 +4402,7 @@ function groupNodeConfigurationCohorts(nodes: IthildinNode[]): NodeConfiguration
   const cohorts = new Map<string, NodeConfigurationCohort>();
   for (const node of nodes) {
     if (node.status !== "enrolled") continue;
-    const key = [
-      node.workspace_id,
-      node.desired_configuration_generation ?? "unassigned",
-      node.desired_configuration_digest ?? "unassigned",
-      node.configuration_signing_key_id ?? "unavailable",
-    ].join("\u0000");
+    const key = nodeConfigurationCohortKey(node);
     const cohort = cohorts.get(key) ?? {
       key,
       workspaceId: node.workspace_id,
@@ -4399,16 +4466,33 @@ function nodeConfigurationCohortStatus(cohort: NodeConfigurationCohort) {
   return "evidence incomplete";
 }
 
+function nodeCohortGenerationLabel(cohort: NodeConfigurationCohort) {
+  return cohort.desiredGeneration === null
+    ? "Unassigned"
+    : `Generation ${cohort.desiredGeneration}`;
+}
+
+function nodeConfigurationCohortKey(node: IthildinNode) {
+  return [
+    node.workspace_id,
+    node.desired_configuration_generation ?? "unassigned",
+    node.desired_configuration_digest ?? "unassigned",
+    node.configuration_signing_key_id ?? "unavailable",
+  ].join("\u0000");
+}
+
 function filterAndSortNodes(
   nodes: IthildinNode[],
   query: string,
   posture: string,
   workspace: string,
   sort: string,
+  cohortKey: string | null = null,
 ) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   return nodes
     .filter((node) => {
+      if (cohortKey !== null && nodeConfigurationCohortKey(node) !== cohortKey) return false;
       if (workspace !== "all" && node.workspace_id !== workspace) return false;
       if (posture === "attention" && !nodeNeedsAttention(node)) return false;
       if (posture === "enrolled" && node.status !== "enrolled") return false;

@@ -3406,6 +3406,11 @@ td,
   padding: 12px;
 }
 
+.node-cohort-grid article.selected {
+  border-color: #77cfd0;
+  box-shadow: inset 0 0 0 1px rgb(119 207 208 / 30%);
+}
+
 .node-cohort-grid article header {
   align-items: start;
   display: flex;
@@ -3466,6 +3471,23 @@ td,
   gap: 5px 12px;
 }
 
+.node-cohort-inspect {
+  background: #123849;
+  border: 1px solid #3f6d79;
+  color: #cfe7e9;
+  font-size: 0.72rem;
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  width: 100%;
+}
+
+.node-cohort-inspect[aria-pressed="true"] {
+  background: #1a515d;
+  border-color: #77cfd0;
+  color: #f1ffff;
+}
+
 .node-controls {
   align-items: end;
   background: #0d2232;
@@ -3519,6 +3541,24 @@ td,
   font-size: 0.72rem;
   grid-column: -2 / -1;
   justify-self: end;
+}
+
+.node-cohort-filter {
+  align-items: center;
+  background: #102f3e;
+  border: 1px solid #3e6673;
+  color: #b9d8dc;
+  display: flex;
+  font-size: 0.7rem;
+  gap: 10px;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+
+.node-cohort-filter button {
+  min-height: 44px;
+  white-space: nowrap;
 }
 
 .node-fleet-layout {
@@ -3993,6 +4033,11 @@ td,
   .node-cohort-grid dl,
   .node-card dl {
     grid-template-columns: 1fr;
+  }
+
+  .node-cohort-filter {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .node-config-fields {

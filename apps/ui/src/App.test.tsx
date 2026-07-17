@@ -1460,6 +1460,56 @@ describe("Review console interactions", () => {
     });
     expect(current).toHaveTextContent("stored current not enforced");
     expect(current).toHaveTextContent("Stored current1 / 1");
+
+    await user.click(within(drifted).getByRole("button", { name: "Inspect 2 Nodes" }));
+    expect(within(drifted).getByRole("button", { name: "Inspecting 2 Nodes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(nodes).getByRole("status")).toHaveTextContent("2 of 4 loaded Nodes");
+    const activeCohort = within(nodes).getByRole("group", {
+      name: "Active configuration cohort filter",
+    });
+    expect(activeCohort).toHaveTextContent("Cohort scope · demo · Generation 1 · 2 enrolled Nodes");
+    const inventory = within(nodes).getByRole("list", { name: "Filtered Node inventory" });
+    expect(within(inventory).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(inventory).getByRole("button", { name: /Drifted Demo Node/ }))
+      .toBeInTheDocument();
+    expect(within(inventory).queryByRole("button", { name: /Pending Demo Node/ })).toBeNull();
+
+    await user.type(
+      within(nodes).getByLabelText("Search loaded Nodes"),
+      "node_11111111111111111111111111111111",
+    );
+    expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 4 loaded Nodes");
+    expect(within(inventory).getByRole("button", { name: /Hermes Node/ })).toBeInTheDocument();
+
+    await user.click(within(pending).getByRole("button", { name: "Inspect 1 Node" }));
+    expect(within(pending).getByRole("button", { name: "Inspecting 1 Node" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(nodes).getByLabelText("Search loaded Nodes")).toHaveValue("");
+    expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 4 loaded Nodes");
+    expect(within(inventory).getByRole("button", { name: /Pending Demo Node/ }))
+      .toBeInTheDocument();
+
+    await user.click(within(activeCohort).getByRole("button", { name: "Clear cohort scope" }));
+    expect(within(nodes).queryByRole("group", {
+      name: "Active configuration cohort filter",
+    })).toBeNull();
+    expect(within(nodes).getByRole("status")).toHaveTextContent("3 of 4 loaded Nodes");
+
+    await user.click(within(current).getByRole("button", { name: "Inspect 1 Node" }));
+    expect(within(nodes).getByRole("group", {
+      name: "Active configuration cohort filter",
+    })).toHaveTextContent("alpha · Generation 1");
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => {
+      expect(within(nodes).queryByRole("group", {
+        name: "Active configuration cohort filter",
+      })).toBeNull();
+    });
   });
 
   it("prioritizes incomplete Node authority evidence over passive proposals", async () => {

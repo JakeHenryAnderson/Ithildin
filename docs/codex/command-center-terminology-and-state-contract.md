@@ -59,7 +59,9 @@ That signer field is current trust posture, not proof of which historical key si
 generation. `Stored current not enforced` means every counted Node attested to storing that desired
 generation and digest. It is not proof of activation, runtime enforcement, package authenticity,
 runner health, host health, or a group rollout. Revoked Nodes do not belong to active configuration
-cohorts.
+cohorts. `Cohort scope` means the operator selected that exact same-response grouping as a temporary
+inventory filter. It does not create a Node group, rollout target, policy scope, assignment, or
+durable Gateway record, and it is cleared when Command Center loads a new dashboard response.
 
 ## System Trust
 
