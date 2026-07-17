@@ -1921,6 +1921,12 @@ caption {
   margin-top: 10px;
 }
 
+.evidence-closeout-meta dd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .run-summary span,
 .run-summary .demo-label,
 .warning-chip,

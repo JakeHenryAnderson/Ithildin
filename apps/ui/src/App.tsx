@@ -3021,6 +3021,7 @@ export function App() {
                     evidence={selectedRunEvidence}
                     evidenceError={runEvidenceError}
                     exportNotice={exportNotice}
+                    run={selectedRun.run}
                     signingAvailable={
                       data.systemStatus?.audit_signing.signed_export_available ?? false
                     }
@@ -4623,12 +4624,14 @@ function EvidenceCloseout({
   evidence,
   evidenceError,
   exportNotice,
+  run,
   signingAvailable,
   verification,
 }: {
   evidence: RunEvidenceExport | null;
   evidenceError: string | null;
   exportNotice: ExportNotice | null;
+  run: AgentRun;
   signingAvailable: boolean;
   verification: AuditVerification | null;
 }) {
@@ -4663,6 +4666,10 @@ function EvidenceCloseout({
       ? `Verified for ${verification.event_count} currently loaded local audit events`
       : "Verification failed"
     : "Verification unavailable";
+  const revisionParity = runEvidenceRevisionParity(run, evidence);
+  const revisionLabel = revisionParity === "matched"
+    ? "Matches generated snapshot"
+    : "Mismatch - reload before handoff";
 
   return (
     <section className="evidence-closeout" aria-label="Run evidence closeout">
@@ -4693,6 +4700,15 @@ function EvidenceCloseout({
               : `${evidence.summary.warning_count} bundle warnings`}
           </strong>
           <small>Zero warnings would not prove off-platform activity is represented.</small>
+        </article>
+        <article>
+          <span>Selected run revision</span>
+          <strong>{revisionLabel}</strong>
+          <small>
+            {revisionParity === "matched"
+              ? "Run identity, status, timestamps, call count, policy, and manifest fields match this generated snapshot."
+              : "The selected detail and generated snapshot differ. Reload before relying on this handoff."}
+          </small>
         </article>
         <article>
           <span>Local audit-chain verification</span>
@@ -4758,8 +4774,16 @@ function EvidenceCloseout({
           </div>
           <div>
             <dt>Evidence hashes</dt>
-            <dd>{Object.keys(evidence.evidence_hashes).length}</dd>
+            <dd>{Object.keys(evidence.evidence_hashes).length} section digests</dd>
           </div>
+        </dl>
+        <dl className="meta-list evidence-closeout-meta" aria-label="Evidence section digests">
+          {Object.entries(evidence.evidence_hashes).map(([section, digest]) => (
+            <div key={section}>
+              <dt>{section.replace(/_sha256$/, "").replace(/_/g, " ")}</dt>
+              <dd>{typeof digest === "string" ? digest : "Unavailable"}</dd>
+            </div>
+          ))}
         </dl>
         <pre>{JSON.stringify(evidence, null, 2)}</pre>
       </details>
@@ -5258,6 +5282,32 @@ function isNodeGovernedRun(run: AgentRun) {
 }
 
 type NodeRunOriginParity = "preparing" | "matched" | "mismatch" | "unavailable";
+type RunEvidenceRevisionParity = "matched" | "mismatch";
+
+const RUN_EVIDENCE_REVISION_FIELDS = [
+  "run_id",
+  "principal_id",
+  "workspace_id",
+  "session_id",
+  "status",
+  "tool_call_count",
+  "created_at",
+  "updated_at",
+  "policy_hash",
+] as const;
+
+function runEvidenceRevisionParity(
+  run: AgentRun,
+  evidence: RunEvidenceExport,
+): RunEvidenceRevisionParity {
+  const evidenceRun = evidence.run;
+  const commonFieldsMatch = RUN_EVIDENCE_REVISION_FIELDS.every(
+    (field) => evidenceRun[field] === run[field],
+  );
+  return commonFieldsMatch && evidenceRun.manifest_lock_hash === run.last_tool_manifest_hash
+    ? "matched"
+    : "mismatch";
+}
 
 const NODE_RUN_ORIGIN_FIELDS = [
   "ingress_kind",

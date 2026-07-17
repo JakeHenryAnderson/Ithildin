@@ -269,13 +269,15 @@ Every decision explanation answers, in order:
 | Policy decision | Gateway policy evaluation/audit evidence | Summarize the recorded decision and retain policy evidence. |
 | Approval state | Existing approval records/APIs | Display and submit allowed operator action; never synthesize completion. |
 | Execution/application result | Gateway executor and diagnostics | Display recorded outcome; never execute outside Gateway. |
-| Agent Run | Existing run records and audit correlation | Group and explain mediated activity; never claim process control. |
+| Agent Run | Existing run records and audit correlation | Group and explain mediated activity; compare separately loaded detail/export revisions and never claim process control. |
 | Artifact and promotion state | Existing artifact/proposal/promotion records | Display exact recorded state; never equate review readiness with promotion. |
 | Audit integrity and signing | Existing audit verification and signing records | Explain status and limitations; never mutate or overclaim custody. |
 | Export | Existing export API or packet generator | Initiate only an existing reviewed export and label the result accurately. |
 
 Presentation-derived counts, labels, and groupings must be deterministic, traceable to authoritative
 records, and visibly marked when they are a UI summary rather than stored Gateway state.
+Separately fetched run detail and evidence snapshots must not be presented as the same revision when
+their shared identity, state, timestamp, count, policy, or manifest fields differ.
 
 ## Implementation Review Gate
 

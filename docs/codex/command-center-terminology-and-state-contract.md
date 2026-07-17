@@ -207,10 +207,14 @@ Never shorten `Local signature verified` to `Trusted` or `Secure`.
 | export incomplete | Evidence bundle has warnings | Expected sections are absent or warnings affect interpretation. |
 | export signed and verified | Evidence bundle created; local signature verified | Bundle creation and local signature verification both succeeded. |
 | export failed | Export failed | No successful bundle should be implied; show safe diagnostics. |
+| selected detail matches generated snapshot | Matches generated snapshot | Shared run identity and revision fields are exactly equal for the two current responses. |
+| selected detail differs from generated snapshot | Mismatch - reload before handoff | Do not rely on the snapshot as the selected detail revision; reload and review both responses. |
 
 Exports must state their scope, generated time, selected mission/run, redaction posture, included
 sections, warnings, and signing status. JSONL, raw audit events, full hashes, and packet manifests are
 technical-reviewer detail rather than routine-operator primary content.
+An equality label is same-record revision consistency only. It is not signature verification,
+independent attestation, custody proof, or proof that off-platform activity is represented.
 
 ## Copy Prohibitions
 

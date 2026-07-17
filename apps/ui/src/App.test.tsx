@@ -192,6 +192,7 @@ type FetchMockOptions = {
   nodeRevokeFailure?: boolean;
   nodeRun?: boolean;
   nodeRunOriginMismatch?: boolean;
+  runEvidenceRevisionMismatch?: boolean;
   nodeStatus?: "enrolled" | "revoked";
   proposalStatus?: "applied" | "proposed";
   runEvidenceFailure?: boolean;
@@ -612,6 +613,15 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
         exported_at: "2026-06-03T12:02:00Z",
         run: {
           run_id: "run_123456789",
+          principal_id: runPrincipalId,
+          workspace_id: "demo",
+          session_id: runSessionId,
+          status: "active",
+          tool_call_count: options.runEvidenceRevisionMismatch ? 1 : 2,
+          created_at: "2026-06-03T12:00:00Z",
+          updated_at: "2026-06-03T12:01:00Z",
+          policy_hash: "sha256:policyhash",
+          manifest_lock_hash: "sha256:toolhash",
           origin: options.nodeRun
             ? {
                 ...runMetadata,
@@ -640,7 +650,12 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
         approvals: [],
         patch_diagnostics: [],
         signed_export_references: [],
-        evidence_hashes: { run_sha256: "sha256:runhash" },
+        evidence_hashes: {
+          run_sha256: "sha256:runhash",
+          timeline_sha256: "sha256:timelinehash",
+          approvals_sha256: "sha256:approvalshash",
+          patch_diagnostics_sha256: "sha256:patchhash",
+        },
         redaction_summary: { excluded_categories: ["prompts"] },
         warnings: [{ type: "signed_evidence_unavailable" }],
       });
@@ -1028,6 +1043,25 @@ describe("Review console interactions", () => {
     expect(within(authority).queryByText("Matches selected run")).toBeNull();
   });
 
+  it("blocks handoff reliance when selected run detail and evidence revisions differ", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      proposalStatus: "applied",
+      runEvidenceRevisionMismatch: true,
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+
+    await user.click(within(navigation).getByRole("link", { name: "Missions" }));
+    const closeout = await screen.findByRole("region", { name: "Run evidence closeout" });
+    expect(within(closeout).getByText("Mismatch - reload before handoff")).toBeInTheDocument();
+    expect(within(closeout).getByText(/selected detail and generated snapshot differ/i))
+      .toBeInTheDocument();
+    expect(within(closeout).queryByText("Matches generated snapshot")).toBeNull();
+  });
+
   it("keeps Node evidence-origin parity unavailable when snapshot loading fails", async () => {
     installFetchMock(systemStatus(), {
       nodeRun: true,
@@ -1359,6 +1393,10 @@ describe("Review console interactions", () => {
     expect(await screen.findByLabelText("Run evidence closeout")).toBeInTheDocument();
     expect(screen.getByText("Evidence closeout")).toBeInTheDocument();
     expect(screen.getByText("1 bundle warnings")).toBeInTheDocument();
+    expect(screen.getByText("Matches generated snapshot")).toBeInTheDocument();
+    expect(screen.getByText("4 section digests")).toBeInTheDocument();
+    expect(screen.getByText("sha256:runhash")).toBeInTheDocument();
+    expect(screen.getByText("sha256:timelinehash")).toBeInTheDocument();
     expect(
       screen.getByText("Verified for 1 currently loaded local audit events"),
     ).toBeInTheDocument();

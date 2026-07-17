@@ -3,6 +3,11 @@
 Status: bounded work queue for progress that may continue while the ERG-005 operator walkthrough
 waits for a human pass.
 
+Historical scope note: this queue predates the separately authorized Track B Node and current
+Command Center implementation milestones. Its `Command Center Integration Prep` section records the
+then-current display-only boundary; it is not the current implementation roadmap and grants no new
+authority.
+
 This queue exists so adjacent work does not blur the ERG-005 checkpoint. The trusted artifact
 promotion walkthrough remains ready for a guided human pass, but not every useful improvement has
 to wait on that walkthrough.
