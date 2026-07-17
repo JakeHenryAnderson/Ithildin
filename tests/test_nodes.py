@@ -135,6 +135,7 @@ def test_node_store_migrates_existing_schemas_with_evidence_state(tmp_path: Path
             row[1] for row in connection.execute("PRAGMA table_info(node_enrollment_codes)")
         }
     assert "evidence_status" in node_columns
+    assert "last_node_version" in node_columns
     assert "evidence_status" in code_columns
 
 
@@ -177,10 +178,32 @@ def test_signed_heartbeat_replay_restart_and_revocation(tmp_path: Path) -> None:
     assert accepted.summary(now=now)["observed_state"] == "evidence_incomplete"
     accepted = store.mark_node_evidence_complete(record.node_id)
     assert accepted.summary(now=now)["observed_state"] == "observed_connected"
+    assert accepted.last_node_version == heartbeat.node_version
     assert accepted.last_configuration_digest == heartbeat.configuration_digest
     assert accepted.last_heartbeat_hash is not None
     restarted = NodeStore(db_path)
     restarted.initialize()
+    assert restarted.get(record.node_id).last_node_version == heartbeat.node_version
+    tampered = heartbeat.model_copy(update={"node_version": "0.0.1"})
+    tamper_nonce = "d" * 32
+    with pytest.raises(NodeAuthenticationError, match="invalid Node signature"):
+        restarted.accept_heartbeat(
+            node_id=record.node_id,
+            timestamp=timestamp,
+            nonce=tamper_nonce,
+            signature=_sign(
+                private_key,
+                node_id=record.node_id,
+                timestamp=timestamp,
+                nonce=tamper_nonce,
+                heartbeat=heartbeat,
+            ),
+            payload=tampered,
+            path=f"/nodes/{record.node_id}/heartbeat",
+            max_clock_skew_seconds=120,
+            now=now,
+        )
+    assert restarted.get(record.node_id).last_node_version == heartbeat.node_version
     with pytest.raises(NodeAuthenticationError, match="replayed Node nonce"):
         restarted.accept_heartbeat(
             node_id=record.node_id,

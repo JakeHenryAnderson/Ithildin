@@ -2878,6 +2878,10 @@ def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Pat
         assert accepted.status_code == 200
         assert accepted.json()["evidence_status"] == "complete"
         assert accepted.json()["observed_state"] == "observed_connected"
+        assert accepted.json()["last_observed_node_version"] == "0.1.0"
+        assert accepted.json()["version_posture"] == "unassigned"
+        assert accepted.json()["maintenance_control_source"] == "operator_managed"
+        assert accepted.json()["self_update_allowed"] is False
         replay = client.post(
             f"/nodes/{node_id}/heartbeat",
             headers=node_headers,
@@ -2889,6 +2893,7 @@ def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Pat
         assert inventory.status_code == 200
         assert inventory.json()["nodes"][0]["node_id"] == node_id
         assert inventory.json()["runner_health_known"] is False
+        assert inventory.json()["nodes"][0]["version_posture"] == "unassigned"
         revoked = client.post(f"/nodes/{node_id}/revoke", headers=admin_headers)
         assert revoked.status_code == 200
         assert revoked.json()["status"] == "revoked"
@@ -3006,6 +3011,32 @@ def test_node_signed_configuration_distribution_acknowledgment_and_drift_api(
         assert second.json()["generation"] == 2
         inventory = client.get(f"/nodes/{node_id}", headers=admin_headers)
         assert inventory.json()["configuration_state"] == "configuration_drift"
+        assert inventory.json()["minimum_node_version"] == "0.2.0"
+        assert inventory.json()["version_posture"] == "never_observed"
+
+        heartbeat_payload: JsonObject = {
+            "protocol_version": "1",
+            "node_version": "0.1.0",
+            "runner_adapter": "hermes",
+            "deployment_topology": "docker_sidecar",
+            "configuration_digest": retrieved.json()["configuration_digest"],
+        }
+        heartbeat_path = f"/nodes/{node_id}/heartbeat"
+        heartbeat_response = client.post(
+            heartbeat_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=heartbeat_path,
+                payload=heartbeat_payload,
+                nonce="c" * 32,
+            ),
+            json=heartbeat_payload,
+        )
+        assert heartbeat_response.status_code == 200
+        assert heartbeat_response.json()["last_observed_node_version"] == "0.1.0"
+        assert heartbeat_response.json()["minimum_node_version"] == "0.2.0"
+        assert heartbeat_response.json()["version_posture"] == "below_minimum"
 
         history = client.get(f"/nodes/{node_id}/configurations", headers=admin_headers)
         assert history.status_code == 200

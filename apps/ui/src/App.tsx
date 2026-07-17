@@ -169,6 +169,7 @@ type IthildinNode = {
   last_seen_at: string | null;
   revoked_at: string | null;
   last_heartbeat_hash: string | null;
+  last_observed_node_version: string | null;
   last_configuration_digest: string | null;
   last_mission_id: string | null;
   configuration_state: string;
@@ -182,6 +183,13 @@ type IthildinNode = {
   acknowledged_active_configuration_signing_key_id: string | null;
   configuration_signing_key_id: string | null;
   configuration_trust_transition: NodeConfigurationTrustTransition | null;
+  minimum_node_version: string | null;
+  version_posture: string;
+  version_desired_source: string;
+  version_observed_source: string;
+  maintenance_control_source: "operator_managed";
+  package_authenticity_known: false;
+  self_update_allowed: false;
   identity_source: "gateway_derived";
   connectivity_source: "gateway_accepted_heartbeat";
   runner_health_known: false;
@@ -2520,11 +2528,16 @@ export function App() {
               <dd>{data.nodes.filter((node) =>
                 ["stale", "never_observed", "evidence_incomplete"].includes(node.observed_state)
                 || ["configuration_drift", "evidence_incomplete"].includes(node.configuration_state)
+                || ["below_minimum", "evidence_incomplete"].includes(node.version_posture)
               ).length}</dd>
             </div>
             <div>
               <dt>Config drift</dt>
               <dd>{data.nodes.filter((node) => node.configuration_state === "configuration_drift").length}</dd>
+            </div>
+            <div>
+              <dt>Version drift</dt>
+              <dd>{data.nodes.filter((node) => node.version_posture === "below_minimum").length}</dd>
             </div>
             <div>
               <dt>Revoked</dt>
@@ -2564,6 +2577,17 @@ export function App() {
                     </p>
                   </div>
                   <NodeConfigurationTrustPosture transition={node.configuration_trust_transition} />
+                  <div className="node-configuration-posture">
+                    <div>
+                      <span>Node version posture</span>
+                      <strong>{node.version_posture.replace(/_/g, " ")}</strong>
+                    </div>
+                    <StatusPill status={node.version_posture} />
+                    <p>
+                      Signed heartbeat observation versus signed desired minimum. Maintenance remains
+                      operator-managed; package authenticity and process health are unknown.
+                    </p>
+                  </div>
                   <dl>
                     <div>
                       <dt>Administrative state</dt>
@@ -2588,6 +2612,14 @@ export function App() {
                     <div>
                       <dt>Last accepted heartbeat</dt>
                       <dd>{node.last_seen_at ? formatDate(node.last_seen_at) : "Never observed"}</dd>
+                    </div>
+                    <div>
+                      <dt>Observed Node version <small>signed heartbeat</small></dt>
+                      <dd>{node.last_observed_node_version ?? "Never observed"}</dd>
+                    </div>
+                    <div>
+                      <dt>Desired minimum version <small>signed configuration</small></dt>
+                      <dd>{node.minimum_node_version ?? "Unassigned"}</dd>
                     </div>
                     <div>
                       <dt>Desired configuration</dt>

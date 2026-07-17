@@ -6,7 +6,6 @@ import base64
 import binascii
 import json
 import os
-import re
 import sqlite3
 import stat
 from dataclasses import dataclass
@@ -22,12 +21,13 @@ from ithildin_schemas import JsonObject, canonical_json, sha256_digest
 from ithildin_schemas.models import SHA256_PATTERN, StrictBaseModel
 from pydantic import Field, field_validator
 
+from ithildin_api.node_versions import validate_node_version
+
 CONFIGURATION_SIGNATURE_CONTEXT = "ITHILDIN-NODE-CONFIG-V1"
 CONFIGURATION_SIGNATURE_TYPE = "ithildin.node_configuration"
 CONFIGURATION_FORMAT_VERSION = "1"
 CONFIGURATION_ALGORITHM = "ed25519"
 CONFIGURATION_ACK_STATUS = "stored_not_enforced"
-_SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}$")
 _EVIDENCE_PENDING = "pending"
 _EVIDENCE_COMPLETE = "complete"
 
@@ -62,9 +62,7 @@ class NodeConfigurationAssignmentPayload(StrictBaseModel):
     @field_validator("minimum_node_version")
     @classmethod
     def _safe_version(cls, value: str) -> str:
-        if not _SAFE_LABEL.fullmatch(value) or ".." in value:
-            raise ValueError("unsafe Node version")
-        return value
+        return validate_node_version(value)
 
     def configuration(
         self,
@@ -99,9 +97,7 @@ class NodeDesiredConfigurationPayload(StrictBaseModel):
     @field_validator("minimum_node_version")
     @classmethod
     def _safe_version(cls, value: str) -> str:
-        if not _SAFE_LABEL.fullmatch(value) or ".." in value:
-            raise ValueError("unsafe Node version")
-        return value
+        return validate_node_version(value)
 
 
 class NodeConfigurationRollbackPayload(StrictBaseModel):

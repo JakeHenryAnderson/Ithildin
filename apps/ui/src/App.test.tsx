@@ -363,6 +363,7 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
             last_seen_at: "2026-07-16T12:01:00Z",
             revoked_at: null,
             last_heartbeat_hash: "sha256:heartbeat",
+            last_observed_node_version: "0.1.0",
             last_configuration_digest: "sha256:configuration",
             last_mission_id: "mission-synthetic-001",
             configuration_state: "stored_current_not_enforced",
@@ -392,6 +393,13 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
               activation_proven: false,
               enforcement_proven: false,
             },
+            minimum_node_version: "0.1.0",
+            version_posture: "meets_minimum",
+            version_desired_source: "signed_desired_configuration",
+            version_observed_source: "gateway_accepted_signed_heartbeat",
+            maintenance_control_source: "operator_managed",
+            package_authenticity_known: false,
+            self_update_allowed: false,
             identity_source: "gateway_derived",
             connectivity_source: "gateway_accepted_heartbeat",
             runner_health_known: false,
@@ -791,6 +799,9 @@ describe("Review console interactions", () => {
     ).toBeInTheDocument();
     expect(within(nodes).getByText("Runner health · unknown")).toBeInTheDocument();
     expect(within(nodes).getByText("Policy enforcement · unknown")).toBeInTheDocument();
+    expect(within(nodes).getByText("Node version posture")).toBeInTheDocument();
+    expect(within(nodes).getAllByText("meets minimum").length).toBeGreaterThan(0);
+    expect(within(nodes).getByText(/Maintenance remains operator-managed/i)).toBeInTheDocument();
     expect(within(nodes).getByText(/Node attests that the signed configuration is stored/i)).toBeInTheDocument();
     expect(within(nodes).getAllByText("Generation 1")).toHaveLength(2);
     expect(within(nodes).getByText("Identity source · Gateway derived")).toBeInTheDocument();

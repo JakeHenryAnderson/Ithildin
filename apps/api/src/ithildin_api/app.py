@@ -70,6 +70,7 @@ from ithildin_api.node_configuration_trust import (
     NodeConfigurationTrustTransitionRequestPayload,
     NodeConfigurationTrustTransitionStore,
 )
+from ithildin_api.node_versions import node_version_posture
 from ithildin_api.nodes import (
     EnrollmentCodeIssuePayload,
     NodeAuthenticationError,
@@ -512,7 +513,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             metadata=node_audit_metadata(record),
         )
         record = node_store.mark_node_evidence_complete(record.node_id)
-        return record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+        summary = record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+        _add_node_version_posture(
+            summary,
+            cast(NodeConfigurationStore, api.state.node_configuration_store),
+        )
+        return summary
 
     @api.get("/nodes", dependencies=[Depends(require_admin_token)])
     def list_nodes(request: Request) -> JsonObject:
@@ -530,6 +536,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         )
         signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
         for record in records:
+            _add_node_version_posture(
+                record,
+                cast(NodeConfigurationStore, api.state.node_configuration_store),
+            )
             record["configuration_signing_key_id"] = signer.trust.key_id if signer else None
             transitions = cast(
                 NodeConfigurationTrustTransitionStore,
@@ -559,6 +569,10 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         except NodeNotFoundError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
         summary = record.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
+        _add_node_version_posture(
+            summary,
+            cast(NodeConfigurationStore, api.state.node_configuration_store),
+        )
         signer = cast(NodeConfigurationSigner | None, api.state.node_configuration_signer)
         summary["configuration_signing_key_id"] = signer.trust.key_id if signer else None
         transitions = cast(
@@ -589,7 +603,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             metadata=node_audit_metadata(record),
         )
         record = node_store.mark_node_evidence_complete(record.node_id)
-        return record.summary()
+        summary = record.summary()
+        _add_node_version_posture(
+            summary,
+            cast(NodeConfigurationStore, api.state.node_configuration_store),
+        )
+        return summary
 
     @api.post(
         "/nodes/{node_id}/configurations",
@@ -1699,6 +1718,59 @@ def _configuration_trust_posture(
         "activation_proven": activation_proven,
         "enforcement_proven": False,
     }
+
+
+def _add_node_version_posture(
+    summary: JsonObject,
+    configuration_store: NodeConfigurationStore,
+) -> None:
+    generation_value = summary.get("desired_configuration_generation")
+    generation = (
+        generation_value
+        if isinstance(generation_value, int) and not isinstance(generation_value, bool)
+        else None
+    )
+    desired_assigned = generation is not None
+    minimum_version: str | None = None
+    desired_evidence_complete = False
+    desired_source = "none"
+    if generation is not None:
+        try:
+            desired = configuration_store.get(str(summary["node_id"]), generation)
+            configuration = desired.bundle.get("configuration")
+            candidate = (
+                configuration.get("minimum_node_version")
+                if isinstance(configuration, dict)
+                else None
+            )
+            minimum_version = candidate if isinstance(candidate, str) else None
+            expires_at = datetime.fromisoformat(desired.expires_at)
+            desired_evidence_complete = (
+                desired.evidence_status == "complete"
+                and expires_at.tzinfo is not None
+                and expires_at > datetime.now(UTC)
+            )
+            desired_source = "signed_desired_configuration"
+        except (NodeConfigurationNotFoundError, ValueError):
+            desired_source = "invalid_or_missing_desired_configuration"
+    observed = summary.get("last_observed_node_version")
+    observed_version = observed if isinstance(observed, str) else None
+    summary["minimum_node_version"] = minimum_version
+    summary["version_posture"] = node_version_posture(
+        node_status=str(summary.get("status", "")),
+        node_evidence_status=str(summary.get("evidence_status", "")),
+        desired_assigned=desired_assigned,
+        desired_evidence_complete=desired_evidence_complete,
+        observed_version=observed_version,
+        minimum_version=minimum_version,
+    )
+    summary["version_desired_source"] = desired_source
+    summary["version_observed_source"] = (
+        "gateway_accepted_signed_heartbeat" if observed_version is not None else "none"
+    )
+    summary["maintenance_control_source"] = "operator_managed"
+    summary["package_authenticity_known"] = False
+    summary["self_update_allowed"] = False
 
 
 def _safe_query_filter(value: str | None) -> str | None:

@@ -22,6 +22,7 @@ from ithildin_schemas.models import SHA256_PATTERN, StrictBaseModel
 from pydantic import Field, field_validator
 
 from ithildin_api.node_configuration import configuration_state
+from ithildin_api.node_versions import validate_node_version
 
 NODE_PROTOCOL_VERSION = "1"
 NODE_SIGNATURE_CONTEXT = "ITHILDIN-NODE-V1"
@@ -79,7 +80,12 @@ class NodeEnrollmentPayload(StrictBaseModel):
     runner_adapter: str = Field(min_length=1, max_length=128)
     deployment_topology: Literal["local_process", "docker_sidecar", "server_service"]
 
-    @field_validator("node_version", "runner_adapter")
+    @field_validator("node_version")
+    @classmethod
+    def _closed_node_version(cls, value: str) -> str:
+        return validate_node_version(value)
+
+    @field_validator("runner_adapter")
     @classmethod
     def _safe_labels(cls, value: str) -> str:
         return _safe_label(value)
@@ -107,7 +113,12 @@ class NodeHeartbeatPayload(StrictBaseModel):
     configuration_digest: str = Field(pattern=SHA256_PATTERN)
     mission_id: str | None = Field(default=None, max_length=128)
 
-    @field_validator("node_version", "runner_adapter", "mission_id")
+    @field_validator("node_version")
+    @classmethod
+    def _closed_node_version(cls, value: str) -> str:
+        return validate_node_version(value)
+
+    @field_validator("runner_adapter", "mission_id")
     @classmethod
     def _safe_labels(cls, value: str | None) -> str | None:
         return _safe_label(value) if value is not None else None
@@ -153,6 +164,7 @@ class NodeRecord:
     last_seen_at: str | None
     revoked_at: str | None
     last_heartbeat_hash: str | None
+    last_node_version: str | None
     last_configuration_digest: str | None
     last_mission_id: str | None
     desired_configuration_generation: int | None
@@ -192,6 +204,7 @@ class NodeRecord:
             "last_seen_at": self.last_seen_at,
             "revoked_at": self.revoked_at,
             "last_heartbeat_hash": self.last_heartbeat_hash,
+            "last_observed_node_version": self.last_node_version,
             "last_configuration_digest": self.last_configuration_digest,
             "last_mission_id": self.last_mission_id,
             "desired_configuration_generation": self.desired_configuration_generation,
@@ -257,6 +270,7 @@ class NodeStore:
                     last_seen_at TEXT,
                     revoked_at TEXT,
                     last_heartbeat_hash TEXT,
+                    last_node_version TEXT,
                     last_configuration_digest TEXT,
                     last_mission_id TEXT,
                     desired_configuration_generation INTEGER,
@@ -301,6 +315,12 @@ class NodeStore:
                     column=column,
                     definition=definition,
                 )
+            _ensure_column(
+                connection,
+                table="nodes",
+                column="last_node_version",
+                definition="TEXT",
+            )
             _ensure_column(
                 connection,
                 table="nodes",
@@ -452,7 +472,8 @@ class NodeStore:
                 SELECT node_id, principal_id, workspace_id, display_name, status, evidence_status,
                        public_key,
                        descriptor_hash, descriptor_json, enrolled_at, updated_at, last_seen_at,
-                       revoked_at, last_heartbeat_hash, last_configuration_digest, last_mission_id
+                       revoked_at, last_heartbeat_hash, last_node_version,
+                       last_configuration_digest, last_mission_id
                        , desired_configuration_generation, desired_configuration_digest,
                        acknowledged_configuration_generation, acknowledged_configuration_digest,
                        configuration_acknowledged_at, configuration_acknowledgment_status,
@@ -474,7 +495,8 @@ class NodeStore:
                 SELECT node_id, principal_id, workspace_id, display_name, status, evidence_status,
                        public_key,
                        descriptor_hash, descriptor_json, enrolled_at, updated_at, last_seen_at,
-                       revoked_at, last_heartbeat_hash, last_configuration_digest, last_mission_id
+                       revoked_at, last_heartbeat_hash, last_node_version,
+                       last_configuration_digest, last_mission_id
                        , desired_configuration_generation, desired_configuration_digest,
                        acknowledged_configuration_generation, acknowledged_configuration_digest,
                        configuration_acknowledged_at, configuration_acknowledgment_status,
@@ -578,7 +600,7 @@ class NodeStore:
                 """
                 UPDATE nodes
                 SET evidence_status = ?, updated_at = ?, last_seen_at = ?, last_heartbeat_hash = ?,
-                    last_configuration_digest = ?, last_mission_id = ?
+                    last_node_version = ?, last_configuration_digest = ?, last_mission_id = ?
                 WHERE node_id = ?
                 """,
                 (
@@ -586,6 +608,7 @@ class NodeStore:
                     effective_now.isoformat(),
                     effective_now.isoformat(),
                     heartbeat_hash,
+                    payload.node_version,
                     payload.configuration_digest,
                     payload.mission_id,
                     node_id,
@@ -703,21 +726,22 @@ def _record(row: tuple[object, ...]) -> NodeRecord:
         last_seen_at=str(row[11]) if row[11] is not None else None,
         revoked_at=str(row[12]) if row[12] is not None else None,
         last_heartbeat_hash=str(row[13]) if row[13] is not None else None,
-        last_configuration_digest=str(row[14]) if row[14] is not None else None,
-        last_mission_id=str(row[15]) if row[15] is not None else None,
-        desired_configuration_generation=int(str(row[16])) if row[16] is not None else None,
-        desired_configuration_digest=str(row[17]) if row[17] is not None else None,
+        last_node_version=str(row[14]) if row[14] is not None else None,
+        last_configuration_digest=str(row[15]) if row[15] is not None else None,
+        last_mission_id=str(row[16]) if row[16] is not None else None,
+        desired_configuration_generation=int(str(row[17])) if row[17] is not None else None,
+        desired_configuration_digest=str(row[18]) if row[18] is not None else None,
         acknowledged_configuration_generation=(
-            int(str(row[18])) if row[18] is not None else None
+            int(str(row[19])) if row[19] is not None else None
         ),
-        acknowledged_configuration_digest=str(row[19]) if row[19] is not None else None,
-        configuration_acknowledged_at=str(row[20]) if row[20] is not None else None,
-        configuration_acknowledgment_status=str(row[21]) if row[21] is not None else None,
+        acknowledged_configuration_digest=str(row[20]) if row[20] is not None else None,
+        configuration_acknowledged_at=str(row[21]) if row[21] is not None else None,
+        configuration_acknowledgment_status=str(row[22]) if row[22] is not None else None,
         acknowledged_configuration_signing_key_id=(
-            str(row[22]) if row[22] is not None else None
+            str(row[23]) if row[23] is not None else None
         ),
         acknowledged_active_configuration_signing_key_id=(
-            str(row[23]) if row[23] is not None else None
+            str(row[24]) if row[24] is not None else None
         ),
     )
 
