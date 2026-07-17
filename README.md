@@ -452,7 +452,9 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/track-b-node-release-artifact-capability-decision.md](docs/codex/track-b-node-release-artifact-capability-decision.md) - authorization and non-approvals for dedicated local Node OCI artifact signing and verification.
 - [docs/codex/track-b-node-release-artifact-architecture.md](docs/codex/track-b-node-release-artifact-architecture.md) - closed signed manifest, explicit image selection, immutable image-ID binding, and local-only trust semantics.
 - [docs/codex/track-b-node-release-artifact-implementation-plan.md](docs/codex/track-b-node-release-artifact-implementation-plan.md) - ordered key, signing, verification, adversarial-proof, and exact-candidate work.
+- [docs/codex/track-b-node-release-artifact-observed-results.md](docs/codex/track-b-node-release-artifact-observed-results.md) - signed current/rollback OCI selection plus tamper, untrusted-key, dirty-source, and mutable-tag-substitution evidence.
 - `make track-b-node-release-artifact-decision-check` - validate the local artifact-provenance authority and supply-chain nonclaims.
+- `make track-b-node-release-artifact-evidence-check` - validate the ignored live signed-image proof without printing private material.
 - `make node-release-image NODE_RELEASE_VERSION=0.1.0` - build a clean-checkout Node image with version and source-revision labels.
 - `make node-release-artifact-keygen` - generate the dedicated local mode-0600 Node release signing key.
 - `make node-release-artifact-sign NODE_RELEASE_VERSION=0.1.0` - sign the selected local image and closed source/runtime posture.
