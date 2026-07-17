@@ -331,6 +331,7 @@ REVIEW_DOCS = [
     "docs/codex/track-b-node-version-posture-capability-decision.md",
     "docs/codex/track-b-node-version-posture-architecture.md",
     "docs/codex/track-b-node-version-posture-implementation-plan.md",
+    "docs/codex/track-b-node-version-posture-observed-results.md",
     "docs/codex/enterprise-status-export.md",
     "docs/codex/mission-control-enterprise-status-import-contract.md",
     "docs/codex/mission-control-enterprise-status-fixtures.md",

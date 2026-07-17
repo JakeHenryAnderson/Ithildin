@@ -12,7 +12,7 @@ RECEIPT ?= var/review-packets/v3/enterprise-review-send-receipt-template/enterpr
 .PHONY: mission-control-enterprise-status-reference-validator
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-execution-board roadmap-status technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
-.PHONY: hermes-governance-poc-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-configuration-trust-rotation-evidence-check node-configuration-keygen node-configuration-signing-status
+.PHONY: hermes-governance-poc-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check node-configuration-keygen node-configuration-signing-status
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 
 test:
@@ -130,6 +130,9 @@ track-b-node-configuration-evidence-check:
 
 track-b-node-configuration-trust-rotation-evidence-check:
 	uv run python scripts/node_configuration_trust_rotation_poc_evidence_check.py
+
+track-b-node-version-posture-evidence-check:
+	uv run python scripts/node_version_posture_poc_evidence_check.py
 
 validation-plan:
 	uv run python scripts/validation_plan.py $(ARGS)

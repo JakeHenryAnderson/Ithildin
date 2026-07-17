@@ -55,6 +55,7 @@ externally closed.
 - [Version Posture Capability Decision](track-b-node-version-posture-capability-decision.md)
 - [Version Posture Architecture](track-b-node-version-posture-architecture.md)
 - [Version Posture Implementation Plan](track-b-node-version-posture-implementation-plan.md)
+- [Version Posture Observed Results](track-b-node-version-posture-observed-results.md)
 
 - [Ithildin Two-Lane Development Control Board](ithildin-two-lane-development-control-board.md)
 - [Command Center Product Direction and Pilot Scope](command-center-product-direction-and-pilot-scope.md)
