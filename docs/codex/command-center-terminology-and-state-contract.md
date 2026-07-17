@@ -63,6 +63,14 @@ cohorts. `Cohort scope` means the operator selected that exact same-response gro
 inventory filter. It does not create a Node group, rollout target, policy scope, assignment, or
 durable Gateway record, and it is cleared when Command Center loads a new dashboard response.
 
+`Software version cohort` means a presentation grouping of loaded enrolled Nodes sharing the exact
+workspace, signed desired minimum version, and last version from a Gateway-accepted signed
+heartbeat. The desired value is configuration intent and the observed value is Node-attested
+heartbeat content. Neither is package authenticity, installed-artifact measurement, SBOM or
+vulnerability posture, process health, upgrade execution, rollback execution, or self-update
+authority. `Version scope` is the same temporary same-response inventory-filter concept as cohort
+scope; the two scopes replace each other and neither creates an update ring or deployment target.
+
 ## System Trust
 
 `System Trust` should be presented as **Local system posture** unless a future reviewed definition

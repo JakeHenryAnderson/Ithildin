@@ -1512,6 +1512,120 @@ describe("Review console interactions", () => {
     });
   });
 
+  it("groups loaded enrolled Nodes into bounded software version observation cohorts", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      proposalStatus: "applied",
+      additionalNodes: [
+        {
+          node_id: "node_22222222222222222222222222222222",
+          principal_id: "agent:node.node_22222222222222222222222222222222",
+          display_name: "Same-version Demo Node",
+        },
+        {
+          node_id: "node_33333333333333333333333333333333",
+          principal_id: "agent:node.node_33333333333333333333333333333333",
+          display_name: "Below-minimum Demo Node",
+          last_observed_node_version: "0.0.9",
+          version_posture: "below_minimum",
+          observed_state: "stale",
+          last_seen_at: "2026-07-16T10:00:00Z",
+        },
+        {
+          node_id: "node_44444444444444444444444444444444",
+          principal_id: "agent:node.node_44444444444444444444444444444444",
+          workspace_id: "alpha",
+          display_name: "Alpha Node",
+          minimum_node_version: "0.2.0",
+          last_observed_node_version: "0.2.0",
+        },
+      ],
+    });
+    const user = await saveToken();
+    const navigation = screen.getByRole("navigation", {
+      name: "Command Center sections",
+    });
+    await user.click(within(navigation).getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const versionCohorts = within(nodes).getByRole("region", {
+      name: "Loaded Node software version cohorts",
+    });
+
+    expect(within(versionCohorts).getByText("3 loaded cohorts")).toBeInTheDocument();
+    expect(within(versionCohorts).getByText(/Grouped from 4 loaded Gateway Node records/))
+      .toBeInTheDocument();
+    expect(within(versionCohorts).getByText(/does not verify installed packages/))
+      .toBeInTheDocument();
+
+    const currentDemo = within(versionCohorts).getByRole("article", {
+      name: "demo version observed 0.1.0 minimum 0.1.0",
+    });
+    expect(currentDemo).toHaveTextContent("meets minimum");
+    expect(currentDemo).toHaveTextContent("Enrolled Nodes2");
+    expect(currentDemo).toHaveTextContent("Meets minimum2");
+    expect(currentDemo).toHaveTextContent("Recently observed2 / 2");
+
+    const belowMinimum = within(versionCohorts).getByRole("article", {
+      name: "demo version observed 0.0.9 minimum 0.1.0",
+    });
+    expect(belowMinimum).toHaveTextContent("below minimum");
+    expect(belowMinimum).toHaveTextContent("Below minimum1");
+    expect(belowMinimum).toHaveTextContent("Recently observed0 / 1");
+
+    const currentAlpha = within(versionCohorts).getByRole("article", {
+      name: "alpha version observed 0.2.0 minimum 0.2.0",
+    });
+    expect(currentAlpha).toHaveTextContent("meets minimum");
+
+    await user.click(within(currentDemo).getByRole("button", { name: "Inspect 2 Nodes" }));
+    expect(within(nodes).getByRole("status")).toHaveTextContent("2 of 4 loaded Nodes");
+    const activeVersion = within(nodes).getByRole("group", {
+      name: "Active Node version cohort filter",
+    });
+    expect(activeVersion).toHaveTextContent(
+      "Version scope · demo · observed 0.1.0 · minimum 0.1.0 · 2 enrolled Nodes",
+    );
+    const inventory = within(nodes).getByRole("list", { name: "Filtered Node inventory" });
+    expect(within(inventory).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(inventory).getByRole("button", { name: /Hermes Node/ })).toBeInTheDocument();
+    expect(within(inventory).queryByRole("button", { name: /Below-minimum Demo Node/ })).toBeNull();
+
+    await user.click(within(belowMinimum).getByRole("button", { name: "Inspect 1 Node" }));
+    expect(within(nodes).getByRole("status")).toHaveTextContent("1 of 4 loaded Nodes");
+    expect(within(inventory).getByRole("button", { name: /Below-minimum Demo Node/ }))
+      .toBeInTheDocument();
+
+    const configurationCohorts = within(nodes).getByRole("region", {
+      name: "Loaded Node configuration cohorts",
+    });
+    const demoConfiguration = within(configurationCohorts).getByRole("article", {
+      name: "demo configuration Generation 1",
+    });
+    await user.click(
+      within(demoConfiguration).getByRole("button", { name: "Inspect 3 Nodes" }),
+    );
+    expect(within(nodes).queryByRole("group", {
+      name: "Active Node version cohort filter",
+    })).toBeNull();
+    expect(within(nodes).getByRole("group", {
+      name: "Active configuration cohort filter",
+    })).toBeInTheDocument();
+
+    await user.click(within(currentAlpha).getByRole("button", { name: "Inspect 1 Node" }));
+    expect(within(nodes).queryByRole("group", {
+      name: "Active configuration cohort filter",
+    })).toBeNull();
+    expect(within(nodes).getByRole("group", {
+      name: "Active Node version cohort filter",
+    })).toHaveTextContent("alpha · observed 0.2.0 · minimum 0.2.0");
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => {
+      expect(within(nodes).queryByRole("group", {
+        name: "Active Node version cohort filter",
+      })).toBeNull();
+    });
+  });
+
   it("prioritizes incomplete Node authority evidence over passive proposals", async () => {
     installFetchMock(systemStatus(), {
       noApprovals: true,

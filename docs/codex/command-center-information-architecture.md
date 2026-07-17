@@ -114,6 +114,8 @@ Primary content:
 - bounded configuration cohorts grouped by exact workspace, desired generation and digest, with the
   current Gateway signer, storage acknowledgment, drift, version, and connectivity evidence kept
   separate;
+- bounded software-version cohorts grouped by exact workspace, signed desired minimum, and last
+  version from an accepted signed heartbeat, with below-minimum and missing evidence prioritized;
 - search over loaded Node names, exact IDs, identities, workspaces, reported adapters/topologies,
   and displayed posture fields;
 - posture and workspace filters with a visible loaded-result count;

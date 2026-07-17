@@ -183,6 +183,8 @@ REVIEW_DOCS = [
     "docs/codex/command-center-node-run-origin-evidence-parity-implementation-handoff.md",
     "docs/codex/command-center-node-configuration-cohort-data-feasibility.md",
     "docs/codex/command-center-node-configuration-cohort-implementation-handoff.md",
+    "docs/codex/command-center-node-version-cohort-data-feasibility.md",
+    "docs/codex/command-center-node-version-cohort-implementation-handoff.md",
     "docs/codex/command-center-run-evidence-revision-integrity-data-feasibility.md",
     "docs/codex/command-center-run-evidence-revision-integrity-implementation-handoff.md",
     "docs/codex/command-center-run-evidence-digest-verification-data-feasibility.md",

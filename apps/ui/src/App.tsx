@@ -566,6 +566,18 @@ type NodeConfigurationCohort = {
   recentlyObservedCount: number;
 };
 
+type NodeVersionCohort = {
+  key: string;
+  workspaceId: string;
+  minimumVersion: string | null;
+  observedVersion: string | null;
+  nodeCount: number;
+  meetsMinimumCount: number;
+  belowMinimumCount: number;
+  neverObservedCount: number;
+  recentlyObservedCount: number;
+};
+
 function emptyDashboardData(): DashboardData {
   return {
     systemStatus: null,
@@ -622,7 +634,14 @@ export function App() {
   const [nodePosture, setNodePosture] = useState("all");
   const [nodeWorkspace, setNodeWorkspace] = useState("all");
   const [nodeSort, setNodeSort] = useState("attention");
-  const [selectedNodeCohortKey, setSelectedNodeCohortKey] = useState<string | null>(null);
+  const [
+    selectedNodeConfigurationCohortKey,
+    setSelectedNodeConfigurationCohortKey,
+  ] = useState<string | null>(null);
+  const [
+    selectedNodeVersionCohortKey,
+    setSelectedNodeVersionCohortKey,
+  ] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
@@ -712,8 +731,18 @@ export function App() {
     [data.nodes],
   );
   const selectedNodeConfigurationCohort = useMemo(
-    () => nodeConfigurationCohorts.find((cohort) => cohort.key === selectedNodeCohortKey) ?? null,
-    [nodeConfigurationCohorts, selectedNodeCohortKey],
+    () => nodeConfigurationCohorts.find(
+      (cohort) => cohort.key === selectedNodeConfigurationCohortKey,
+    ) ?? null,
+    [nodeConfigurationCohorts, selectedNodeConfigurationCohortKey],
+  );
+  const nodeVersionCohorts = useMemo(
+    () => groupNodeVersionCohorts(data.nodes),
+    [data.nodes],
+  );
+  const selectedNodeVersionCohort = useMemo(
+    () => nodeVersionCohorts.find((cohort) => cohort.key === selectedNodeVersionCohortKey) ?? null,
+    [nodeVersionCohorts, selectedNodeVersionCohortKey],
   );
   const visibleNodes = useMemo(
     () => filterAndSortNodes(
@@ -723,6 +752,7 @@ export function App() {
       nodeWorkspace,
       nodeSort,
       selectedNodeConfigurationCohort?.key ?? null,
+      selectedNodeVersionCohort?.key ?? null,
     ),
     [
       data.nodes,
@@ -731,6 +761,7 @@ export function App() {
       nodeSort,
       nodeWorkspace,
       selectedNodeConfigurationCohort?.key,
+      selectedNodeVersionCohort?.key,
     ],
   );
   const selectedVisibleNode = useMemo(
@@ -762,7 +793,8 @@ export function App() {
   async function loadDashboard(activeToken = token, activeRunFilters = appliedRunFilters) {
     const requestId = ++dashboardRequest.current;
     operationGeneration.current += 1;
-    setSelectedNodeCohortKey(null);
+    setSelectedNodeConfigurationCohortKey(null);
+    setSelectedNodeVersionCohortKey(null);
     setPreviewResult(null);
     setPreviewError(null);
     setPreviewLoading(false);
@@ -1073,7 +1105,8 @@ export function App() {
       setNodeQuery("");
       setNodePosture("all");
       setNodeWorkspace("all");
-      setSelectedNodeCohortKey(null);
+      setSelectedNodeConfigurationCohortKey(null);
+      setSelectedNodeVersionCohortKey(null);
       setSelectedNodeId(item.nodeId);
     }
     const targetElementId = item.nodeId ? `node-${item.nodeId}` : item.targetId;
@@ -2721,7 +2754,24 @@ export function App() {
                 setNodePosture("all");
                 setNodeWorkspace(cohort.workspaceId);
                 setNodeSort("attention");
-                setSelectedNodeCohortKey(cohort.key);
+                setSelectedNodeConfigurationCohortKey(cohort.key);
+                setSelectedNodeVersionCohortKey(null);
+                setSelectedNodeId(null);
+              }}
+            />
+          ) : null}
+          {nodeVersionCohorts.length > 0 ? (
+            <NodeVersionCohorts
+              cohorts={nodeVersionCohorts}
+              loadedNodeCount={data.nodes.length}
+              selectedCohortKey={selectedNodeVersionCohort?.key ?? null}
+              onSelect={(cohort) => {
+                setNodeQuery("");
+                setNodePosture("all");
+                setNodeWorkspace(cohort.workspaceId);
+                setNodeSort("attention");
+                setSelectedNodeVersionCohortKey(cohort.key);
+                setSelectedNodeConfigurationCohortKey(null);
                 setSelectedNodeId(null);
               }}
             />
@@ -2755,7 +2805,8 @@ export function App() {
                   value={nodeWorkspace}
                   onChange={(event) => {
                     setNodeWorkspace(event.target.value);
-                    setSelectedNodeCohortKey(null);
+                    setSelectedNodeConfigurationCohortKey(null);
+                    setSelectedNodeVersionCohortKey(null);
                   }}
                 >
                   <option value="all">All workspaces</option>
@@ -2780,7 +2831,8 @@ export function App() {
                   setNodePosture("all");
                   setNodeWorkspace("all");
                   setNodeSort("attention");
-                  setSelectedNodeCohortKey(null);
+                  setSelectedNodeConfigurationCohortKey(null);
+                  setSelectedNodeVersionCohortKey(null);
                 }}
               >
                 Clear filters
@@ -2803,9 +2855,30 @@ export function App() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setSelectedNodeCohortKey(null)}
+                    onClick={() => setSelectedNodeConfigurationCohortKey(null)}
                   >
                     Clear cohort scope
+                  </button>
+                </div>
+              ) : null}
+              {selectedNodeVersionCohort ? (
+                <div
+                  className="node-cohort-filter"
+                  role="group"
+                  aria-label="Active Node version cohort filter"
+                >
+                  <span>
+                    Version scope · {selectedNodeVersionCohort.workspaceId} · observed {
+                      selectedNodeVersionCohort.observedVersion ?? "never observed"
+                    } · minimum {selectedNodeVersionCohort.minimumVersion ?? "unassigned"} · {
+                      selectedNodeVersionCohort.nodeCount
+                    } enrolled {selectedNodeVersionCohort.nodeCount === 1 ? "Node" : "Nodes"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNodeVersionCohortKey(null)}
+                  >
+                    Clear version scope
                   </button>
                 </div>
               ) : null}
@@ -3323,6 +3396,86 @@ function NodeConfigurationCohorts({
                 {cohort.evidenceIncompleteCount > 0 ? (
                   <span>{cohort.evidenceIncompleteCount} with incomplete configuration evidence</span>
                 ) : null}
+              </footer>
+              <button
+                className="node-cohort-inspect"
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onSelect(cohort)}
+              >
+                {selected
+                  ? `Inspecting ${cohort.nodeCount} ${cohort.nodeCount === 1 ? "Node" : "Nodes"}`
+                  : `Inspect ${cohort.nodeCount} ${cohort.nodeCount === 1 ? "Node" : "Nodes"}`}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function NodeVersionCohorts({
+  cohorts,
+  loadedNodeCount,
+  selectedCohortKey,
+  onSelect,
+}: {
+  cohorts: NodeVersionCohort[];
+  loadedNodeCount: number;
+  selectedCohortKey: string | null;
+  onSelect: (cohort: NodeVersionCohort) => void;
+}) {
+  return (
+    <section
+      className="node-cohort-panel node-version-cohort-panel"
+      aria-label="Loaded Node software version cohorts"
+    >
+      <div className="node-cohort-heading">
+        <div>
+          <p className="eyebrow">Operator-managed maintenance evidence</p>
+          <h4>Software version observations</h4>
+        </div>
+        <span>{cohorts.length} loaded {cohorts.length === 1 ? "cohort" : "cohorts"}</span>
+      </div>
+      <p className="node-cohort-scope">
+        Grouped from {loadedNodeCount} loaded Gateway Node records by workspace, signed desired
+        minimum version, and the last version reported in an accepted signed heartbeat. This does
+        not verify installed packages, process health, upgrade execution, or rollback execution.
+      </p>
+      <div className="node-cohort-grid">
+        {cohorts.map((cohort) => {
+          const selected = cohort.key === selectedCohortKey;
+          const observedLabel = cohort.observedVersion ?? "Never observed";
+          const minimumLabel = cohort.minimumVersion ?? "Unassigned";
+          return (
+            <article
+              key={cohort.key}
+              className={selected ? "selected" : undefined}
+              aria-label={`${cohort.workspaceId} version observed ${observedLabel} minimum ${minimumLabel}`}
+            >
+              <header>
+                <div>
+                  <span>{cohort.workspaceId}</span>
+                  <strong>Observed {observedLabel}</strong>
+                </div>
+                <StatusPill status={nodeVersionCohortStatus(cohort)} />
+              </header>
+              <dl>
+                <div><dt>Enrolled Nodes</dt><dd>{cohort.nodeCount}</dd></div>
+                <div><dt>Desired minimum</dt><dd>{minimumLabel}</dd></div>
+                <div><dt>Meets minimum</dt><dd>{cohort.meetsMinimumCount}</dd></div>
+                <div><dt>Below minimum</dt><dd>{cohort.belowMinimumCount}</dd></div>
+                <div><dt>Never observed</dt><dd>{cohort.neverObservedCount}</dd></div>
+                <div>
+                  <dt>Recently observed</dt>
+                  <dd>{cohort.recentlyObservedCount} / {cohort.nodeCount}</dd>
+                </div>
+              </dl>
+              <footer>
+                <span>Desired source · signed configuration</span>
+                <span>Observed source · accepted signed heartbeat</span>
+                <span>Maintenance · operator managed</span>
               </footer>
               <button
                 className="node-cohort-inspect"
@@ -4481,18 +4634,83 @@ function nodeConfigurationCohortKey(node: IthildinNode) {
   ].join("\u0000");
 }
 
+function groupNodeVersionCohorts(nodes: IthildinNode[]): NodeVersionCohort[] {
+  const cohorts = new Map<string, NodeVersionCohort>();
+  for (const node of nodes) {
+    if (node.status !== "enrolled") continue;
+    const key = nodeVersionCohortKey(node);
+    const cohort = cohorts.get(key) ?? {
+      key,
+      workspaceId: node.workspace_id,
+      minimumVersion: node.minimum_node_version,
+      observedVersion: node.last_observed_node_version,
+      nodeCount: 0,
+      meetsMinimumCount: 0,
+      belowMinimumCount: 0,
+      neverObservedCount: 0,
+      recentlyObservedCount: 0,
+    };
+    cohort.nodeCount += 1;
+    if (node.version_posture === "meets_minimum") cohort.meetsMinimumCount += 1;
+    if (node.version_posture === "below_minimum") cohort.belowMinimumCount += 1;
+    if (node.last_observed_node_version === null) cohort.neverObservedCount += 1;
+    if (node.observed_state === "observed_connected") cohort.recentlyObservedCount += 1;
+    cohorts.set(key, cohort);
+  }
+  return [...cohorts.values()].sort((left, right) => {
+    const attentionDifference = nodeVersionCohortAttentionRank(left)
+      - nodeVersionCohortAttentionRank(right);
+    if (attentionDifference !== 0) return attentionDifference;
+    const workspaceDifference = left.workspaceId.localeCompare(right.workspaceId);
+    if (workspaceDifference !== 0) return workspaceDifference;
+    const minimumDifference = (left.minimumVersion ?? "").localeCompare(
+      right.minimumVersion ?? "",
+    );
+    if (minimumDifference !== 0) return minimumDifference;
+    return (left.observedVersion ?? "").localeCompare(right.observedVersion ?? "");
+  });
+}
+
+function nodeVersionCohortAttentionRank(cohort: NodeVersionCohort) {
+  if (cohort.belowMinimumCount > 0) return 0;
+  if (cohort.neverObservedCount > 0 || cohort.minimumVersion === null) return 1;
+  if (cohort.recentlyObservedCount < cohort.nodeCount) return 2;
+  return 3;
+}
+
+function nodeVersionCohortStatus(cohort: NodeVersionCohort) {
+  if (cohort.belowMinimumCount > 0) return "below minimum";
+  if (cohort.neverObservedCount > 0) return "never observed";
+  if (cohort.minimumVersion === null) return "minimum unassigned";
+  if (cohort.meetsMinimumCount === cohort.nodeCount) return "meets minimum";
+  return "evidence incomplete";
+}
+
+function nodeVersionCohortKey(node: IthildinNode) {
+  return JSON.stringify([
+    node.workspace_id,
+    node.minimum_node_version,
+    node.last_observed_node_version,
+  ]);
+}
+
 function filterAndSortNodes(
   nodes: IthildinNode[],
   query: string,
   posture: string,
   workspace: string,
   sort: string,
-  cohortKey: string | null = null,
+  configurationCohortKey: string | null = null,
+  versionCohortKey: string | null = null,
 ) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   return nodes
     .filter((node) => {
-      if (cohortKey !== null && nodeConfigurationCohortKey(node) !== cohortKey) return false;
+      if (
+        configurationCohortKey !== null
+        && nodeConfigurationCohortKey(node) !== configurationCohortKey
+      ) return false;
+      if (versionCohortKey !== null && nodeVersionCohortKey(node) !== versionCohortKey) return false;
       if (workspace !== "all" && node.workspace_id !== workspace) return false;
       if (posture === "attention" && !nodeNeedsAttention(node)) return false;
       if (posture === "enrolled" && node.status !== "enrolled") return false;
