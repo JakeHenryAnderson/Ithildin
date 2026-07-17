@@ -48,3 +48,24 @@ ITHILDIN_NODE_VERSION=0.2.0 docker compose -f deploy/docker-compose.yml \
 This demonstrates identity and configuration continuity only. It does not prove artifact
 provenance, installation correctness, runner health, policy enforcement, production transport, or
 production readiness.
+
+## Local Signed Artifact Selection
+
+For a clean-checkout operator build, use the dedicated release-artifact workflow before replacing
+the service:
+
+```sh
+make node-release-image NODE_RELEASE_VERSION=0.1.0
+make node-release-artifact-keygen
+make node-release-artifact-sign NODE_RELEASE_VERSION=0.1.0
+make node-release-artifact-verify NODE_RELEASE_VERSION=0.1.0
+```
+
+Verification binds the explicitly selected local image to an immutable image ID, clean Git commit,
+locked-input digests, version/revision labels, unprivileged user, fixed Node entrypoint, and zero
+exposed ports. Rollback means verifying the previously approved image and manifest, then having the
+operator replace the container.
+
+This remains local operator evidence. It is not a registry, image transfer mechanism, updater,
+remote attestation, reproducible-build proof, vulnerability assessment, official supply-chain
+signature, Gateway enforcement, or permission for Ithildin to control Docker.

@@ -1,5 +1,13 @@
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim@sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58
 
+ARG ITHILDIN_NODE_VERSION=0.1.0
+ARG ITHILDIN_SOURCE_REVISION=unknown
+
+LABEL org.opencontainers.image.title="Ithildin Node" \
+    org.opencontainers.image.version="${ITHILDIN_NODE_VERSION}" \
+    org.opencontainers.image.revision="${ITHILDIN_SOURCE_REVISION}" \
+    org.opencontainers.image.description="Local-preview governed control-plane Node; no runner or self-update authority"
+
 ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

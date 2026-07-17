@@ -449,6 +449,14 @@ checked with `make control-mapping-readiness`.
 - `make track-b-node-service-lifecycle-evidence-check` - validate the ignored live lifecycle proof without printing private material.
 - `make node-service-image` - build the unprivileged local-preview Ithildin Node image.
 - `make node-service-compose-check` - validate the optional Node Compose profile without starting it.
+- [docs/codex/track-b-node-release-artifact-capability-decision.md](docs/codex/track-b-node-release-artifact-capability-decision.md) - authorization and non-approvals for dedicated local Node OCI artifact signing and verification.
+- [docs/codex/track-b-node-release-artifact-architecture.md](docs/codex/track-b-node-release-artifact-architecture.md) - closed signed manifest, explicit image selection, immutable image-ID binding, and local-only trust semantics.
+- [docs/codex/track-b-node-release-artifact-implementation-plan.md](docs/codex/track-b-node-release-artifact-implementation-plan.md) - ordered key, signing, verification, adversarial-proof, and exact-candidate work.
+- `make track-b-node-release-artifact-decision-check` - validate the local artifact-provenance authority and supply-chain nonclaims.
+- `make node-release-image NODE_RELEASE_VERSION=0.1.0` - build a clean-checkout Node image with version and source-revision labels.
+- `make node-release-artifact-keygen` - generate the dedicated local mode-0600 Node release signing key.
+- `make node-release-artifact-sign NODE_RELEASE_VERSION=0.1.0` - sign the selected local image and closed source/runtime posture.
+- `make node-release-artifact-verify NODE_RELEASE_VERSION=0.1.0` - verify the signed manifest against the explicitly selected current local image.
 - `make node-configuration-keygen` - create the dedicated local Ed25519 Node-configuration signing keypair; private material remains mode `0600` under `var/keys/`.
 - `make node-configuration-signing-status` - report configuration trust-root availability and key ID without printing key material.
 - `docs/codex/v3-trusted-host-promotion-runtime-review-closure.md` - bounded ERG-005 local review
