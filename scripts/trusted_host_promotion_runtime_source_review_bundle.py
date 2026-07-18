@@ -313,6 +313,17 @@ def build_bundle(
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
 
+    check = {
+        **check,
+        "existing_packet": {
+            "present": True,
+            "commit": commit,
+            "commit_matches_head": True,
+            "generated_from_clean_tree": not dirty,
+            "artifact_hashes_match_files": False,
+        },
+    }
+
     context = {
         "commit": commit,
         "dirty": dirty,
@@ -368,6 +379,22 @@ def build_bundle(
         _command_output(FOCUSED_TEST_COMMAND, run_commands=run_commands),
     )
     _write_json(output_dir / HASH_MANIFEST, _hashes(output_dir))
+    packet_evidence = _existing_packet_evidence(repo_root, output_dir)
+    check["existing_packet"] = packet_evidence
+    _write_json(
+        output_dir / "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json",
+        check,
+    )
+    _write_json(output_dir / HASH_MANIFEST, _hashes(output_dir))
+    final_evidence = _existing_packet_evidence(repo_root, output_dir)
+    if (
+        not final_evidence["commit_matches_head"]
+        or not final_evidence["artifact_hashes_match_files"]
+        or (not allow_dirty and not final_evidence["generated_from_clean_tree"])
+    ):
+        raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+            "generated packet failed exact-candidate self-validation"
+        )
     return output_dir
 
 

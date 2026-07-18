@@ -34205,6 +34205,17 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
             "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
         ).read_text(encoding="utf-8")
     )
+    gate_evidence = json.loads(
+        output_dir.joinpath(
+            "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated_packet = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
 
     assert "Finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`" in prompt
     assert "apps/api/src/ithildin_api/trusted_host_promotions.py" in source_bundle
@@ -34213,6 +34224,9 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert "v3-trusted-host-promotion-runtime-internal-review.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-local-disposition.md" in contracts_bundle
+    assert gate_evidence["existing_packet"] == generated_packet
+    assert gate_evidence["existing_packet"]["commit_matches_head"] is True
+    assert gate_evidence["existing_packet"]["artifact_hashes_match_files"] is True
     assert "skipped command: make trusted-host-promotion-negative-transcripts" in evidence
     assert "trusted-host-promotion-runtime-source-review-bundle:" in makefile
     assert "trusted-host-promotion-runtime-source-review-bundle-check" in (
