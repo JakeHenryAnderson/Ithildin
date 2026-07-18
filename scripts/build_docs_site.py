@@ -510,6 +510,7 @@ DEFAULT_DOCS = [
     "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
     "docs/codex/trusted-host-promotion-runtime-implementation.md",
     "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
+    "docs/codex/v3-trusted-host-promotion-governance-binding-internal-review.md",
     "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
     "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md",
     "docs/codex/trusted-host-promotion-runtime-source-review.md",

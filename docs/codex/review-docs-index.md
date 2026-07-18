@@ -547,6 +547,7 @@ externally closed.
 - [Trusted-Host Promotion Runtime Implementation Decision](trusted-host-promotion-runtime-implementation-decision.md)
 - [Trusted-Host Promotion Runtime Implementation](trusted-host-promotion-runtime-implementation.md)
 - [Trusted-Host Promotion Runtime Internal Review](v3-trusted-host-promotion-runtime-internal-review.md)
+- [Trusted-Host Promotion Governance-Binding Internal Review](v3-trusted-host-promotion-governance-binding-internal-review.md)
 - [Trusted-Host Promotion Runtime Review Closure](v3-trusted-host-promotion-runtime-review-closure.md)
 - [Trusted-Host Promotion Runtime Local Disposition](v3-trusted-host-promotion-runtime-local-disposition.md)
 - [Trusted-Host Promotion Runtime Source Review](trusted-host-promotion-runtime-source-review.md)

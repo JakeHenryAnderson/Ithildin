@@ -549,6 +549,9 @@ required without a separate reviewed contract update.
 
 ## TGB-006 — Adversarial Proof And Exact-Candidate Review
 
+Status: internally implemented and evidence-complete on `2026-07-18`; exact-candidate independent
+response intake remains pending, so external findings and runtime authorization are unchanged.
+
 ### Objective
 
 Prove the complete binding on one clean candidate, obtain independent source review, and update

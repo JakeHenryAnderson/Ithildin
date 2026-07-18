@@ -84,6 +84,7 @@ CONTRACT_DOCS = [
     "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
     "docs/codex/trusted-host-promotion-runtime-implementation.md",
     "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
+    "docs/codex/v3-trusted-host-promotion-governance-binding-internal-review.md",
     "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
     "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md",
     "docs/codex/trusted-host-promotion-runtime-source-review.md",
@@ -253,6 +254,16 @@ def build_check_report(
             review_docs,
         ),
         (
+            "docs site governance-binding internal review doc",
+            "docs/codex/v3-trusted-host-promotion-governance-binding-internal-review.md",
+            docs_site,
+        ),
+        (
+            "review docs governance-binding internal review doc",
+            "docs/codex/v3-trusted-host-promotion-governance-binding-internal-review.md",
+            review_docs,
+        ),
+        (
             "review docs closure review doc",
             "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
             review_docs,
@@ -270,6 +281,11 @@ def build_check_report(
         (
             "review index internal runtime review",
             "Trusted-Host Promotion Runtime Internal Review",
+            review_index,
+        ),
+        (
+            "review index governance-binding internal review",
+            "Trusted-Host Promotion Governance-Binding Internal Review",
             review_index,
         ),
         (
@@ -298,6 +314,9 @@ def build_check_report(
     internal_review = (
         repo_root / "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md"
     ).read_text(encoding="utf-8")
+    governance_internal_review = repo_root.joinpath(
+        "docs/codex/v3-trusted-host-promotion-governance-binding-internal-review.md"
+    ).read_text(encoding="utf-8")
     closure_review = (
         repo_root / "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md"
     ).read_text(encoding="utf-8")
@@ -307,6 +326,7 @@ def build_check_report(
     for text_label, text in [
         ("runtime review", runtime_review),
         ("internal review", internal_review),
+        ("governance-binding internal review", governance_internal_review),
         ("closure review", closure_review),
         ("local disposition", local_disposition),
     ]:
@@ -314,6 +334,17 @@ def build_check_report(
             failures.append(f"{text_label} missing finding namespace {FINDING_NAMESPACE}")
     if "No critical or high implementation findings" not in internal_review:
         failures.append("internal review does not record no critical/high findings")
+    if (
+        "Status: `implementation_candidate_ready_for_independent_re_review`."
+        not in governance_internal_review
+    ):
+        failures.append(
+            "governance-binding internal review does not record the bounded disposition"
+        )
+    if "external_review_complete: false" not in governance_internal_review:
+        failures.append(
+            "governance-binding internal review does not preserve external review boundary"
+        )
     if "Disposition: `local_reviewed_external_pending`" not in closure_review:
         failures.append("closure review does not record local_reviewed_external_pending")
     if "Disposition: `external_review_received_remediation_pending`" not in local_disposition:

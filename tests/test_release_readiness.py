@@ -34402,6 +34402,10 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert "tests/test_api_service.py" in tests_bundle
     assert "trusted-host-promotion-runtime-implementation.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-internal-review.md" in contracts_bundle
+    assert (
+        "v3-trusted-host-promotion-governance-binding-internal-review.md"
+        in contracts_bundle
+    )
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-local-disposition.md" in contracts_bundle
     assert gate_evidence["existing_packet"] == generated_packet
