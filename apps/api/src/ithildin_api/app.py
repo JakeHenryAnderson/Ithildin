@@ -109,6 +109,7 @@ from ithildin_api.policy_preview import (
     DEFAULT_PREVIEW_SESSION_ID,
     PolicyPreviewService,
 )
+from ithildin_api.promotion_authority import RuntimeCandidateRecord
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry, ToolRegistryError, UnknownToolDenied
@@ -136,12 +137,18 @@ from ithildin_api.trusted_host_promotions import (
     TrustedHostPromotionService,
     TrustedHostPromotionStore,
 )
+from ithildin_api.trusted_host_registry import TrustedHostDescriptorRegistry
 from ithildin_api.workspaces import WorkspaceRegistry, WorkspaceRegistryError
 
 SERVICE_NAME = "ithildin-api"
 
 
-def create_app(settings: Optional[Settings] = None) -> FastAPI:
+def create_app(
+    settings: Optional[Settings] = None,
+    *,
+    runtime_candidate: RuntimeCandidateRecord | None = None,
+    trusted_host_promotion_test_fixture_ready: bool = False,
+) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
         resolved_settings = settings or load_settings()
@@ -150,6 +157,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         validate_storage_settings(resolved_settings)
         telemetry = configure_telemetry(resolved_settings)
         app_instance.state.settings = resolved_settings
+        app_instance.state.runtime_candidate = runtime_candidate
         app_instance.state.telemetry = telemetry
         with telemetry.start_span(
             "ithildin.api.startup",
@@ -215,10 +223,14 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 fallback_root=resolved_settings.workspace_root,
                 default_workspace_id=resolved_settings.default_workspace_id,
             )
+            trusted_host_registry = TrustedHostDescriptorRegistry.load(
+                resolved_settings.trusted_host_registry_path
+            )
             policy_evaluator = load_policy_engine(resolved_settings)
             app_instance.state.registry = registry
             app_instance.state.principal_registry = principal_registry
             app_instance.state.workspace_registry = workspace_registry
+            app_instance.state.trusted_host_registry = trusted_host_registry
             app_instance.state.policy_evaluator = policy_evaluator
             http_fetch_executor = HttpFetchExecutor.from_settings(
                 http_allowlist=resolved_settings.http_allowlist,
@@ -253,6 +265,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 read_executor=read_tool_executor,
                 descriptor_store=sandbox_descriptor_store,
                 staging_root=resolved_settings.trusted_host_staging_root,
+                governance_binding_ready=trusted_host_promotion_test_fixture_ready,
             )
             app_instance.state.policy_preview_service = PolicyPreviewService(
                 registry,
@@ -297,6 +310,9 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         registry = cast(ToolRegistry, api.state.registry)
         principal_registry = cast(PrincipalRegistry, api.state.principal_registry)
         workspace_registry = cast(WorkspaceRegistry, api.state.workspace_registry)
+        trusted_host_registry = cast(
+            TrustedHostDescriptorRegistry, api.state.trusted_host_registry
+        )
         policy_evaluator = cast(PolicyEngine, api.state.policy_evaluator)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         telemetry = cast(Telemetry, api.state.telemetry)
@@ -334,6 +350,23 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                     "required": settings_state.require_known_principals,
                 },
                 "workspaces": workspace_registry.status(),
+                "trusted_host_registry": trusted_host_registry.status(),
+                "runtime_candidate": (
+                    {
+                        "posture": "reviewed",
+                        "candidate_id": runtime_candidate.candidate_id,
+                        "source_commit": runtime_candidate.source_commit,
+                        "reviewed_inventory_digest": (
+                            runtime_candidate.reviewed_inventory_digest
+                        ),
+                        "review_packet_digest": runtime_candidate.review_packet_digest,
+                    }
+                    if runtime_candidate is not None
+                    else {
+                        "posture": "unreviewed_local",
+                        "promotion_allowed": False,
+                    }
+                ),
                 "filesystem": collect_filesystem_contract_status(),
                 "storage": storage_status(settings_state),
                 "security": security_status(settings_state),

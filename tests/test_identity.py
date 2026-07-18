@@ -32,6 +32,10 @@ def test_principal_registry_loads_seed_records() -> None:
         "type": "model",
         "roles": ["AgentReadOnly"],
     }
+    context = registry.admin_context()
+    assert context.principal_id == "admin:local-ui"
+    assert context.roles == ("Admin", "Approver", "Auditor")
+    assert context.identity_generation.startswith("sha256:")
 
 
 def test_principal_registry_requires_file_when_strict(tmp_path: Path) -> None:

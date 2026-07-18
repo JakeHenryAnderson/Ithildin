@@ -320,7 +320,9 @@ def _client(root: Path) -> tuple[TestClient, Settings, str]:
     settings = _settings(root)
     settings.workspace_root.mkdir(parents=True)
     settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
-    client = TestClient(create_app(settings))
+    client = TestClient(
+        create_app(settings, trusted_host_promotion_test_fixture_ready=True)
+    )
     client.__enter__()
     response = client.post(
         "/sandbox-descriptors",

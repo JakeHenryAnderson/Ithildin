@@ -587,7 +587,7 @@ observed evidence, not only as a plan.
 
 ## Bounded Implementation Slices
 
-If explicitly approved, one implementation owner should execute these slices in order:
+Under the bound authorization record, one implementation owner executes these slices in order:
 
 1. **Foundation models and fixtures** — `AdminPrincipalContext`, read-only trusted-host registry,
    verified runtime-candidate inventory, authority snapshot canonicalization, safe reason enum; no
@@ -609,8 +609,8 @@ three repetitions of the same gate failure stops implementation.
 
 ## Implementation Acceptance Gates
 
-Implementation is not approved by this document. A later explicit decision must authorize the
-public request and persistence changes above. Once authorized, completion requires:
+This architecture document alone does not grant authority; the bound authorization record now
+authorizes the public request and persistence changes above. Completion still requires:
 
 - no caller-supplied principal field anywhere in the proposal route or service;
 - no caller-supplied `decided_by` field in approval decision routes or service calls;

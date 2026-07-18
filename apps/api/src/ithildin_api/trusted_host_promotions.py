@@ -19,6 +19,7 @@ from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, field_validator
 
 from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
+from ithildin_api.promotion_authority import PromotionReadinessReason
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError, ReadToolExecutor
 from ithildin_api.sandbox_descriptors import SandboxDescriptorStore
 
@@ -435,11 +436,13 @@ class TrustedHostPromotionService:
         read_executor: ReadToolExecutor,
         descriptor_store: SandboxDescriptorStore,
         staging_root: Path,
+        governance_binding_ready: bool = False,
     ) -> None:
         self.store = store
         self.read_executor = read_executor
         self.descriptor_store = descriptor_store
         self.staging_root = staging_root
+        self.governance_binding_ready = governance_binding_ready
 
     def create_proposal(
         self,
@@ -447,6 +450,7 @@ class TrustedHostPromotionService:
         *,
         approval_service: ApprovalService,
     ) -> JsonObject:
+        self._require_governance_binding()
         filesystem = self._filesystem(payload.workspace_id)
         source_path = _safe_relative_path(
             payload.source_artifact_path,
@@ -626,6 +630,7 @@ class TrustedHostPromotionService:
         approval_id: str,
         approval_service: ApprovalService,
     ) -> JsonObject:
+        self._require_governance_binding()
         proposal = self.store.get_proposal(proposal_id)
         approval = approval_service.get(approval_id)
         review = self.approval_review(
@@ -719,6 +724,7 @@ class TrustedHostPromotionService:
             raise TrustedHostPromotionError("trusted-host promotion did not complete") from exc
 
     def complete_with_evidence(self, attempt_id: str) -> TrustedHostPromotionAttempt:
+        self._require_governance_binding()
         attempt = self.store.get_attempt(attempt_id)
         if attempt.status != "staged" or attempt.staged_sha256 != attempt.artifact_sha256:
             raise TrustedHostPromotionError(
@@ -754,6 +760,11 @@ class TrustedHostPromotionService:
             diagnostic_status = "ambiguous"
         return {
             "status": diagnostic_status,
+            "availability": (
+                PromotionReadinessReason.READY.value
+                if self.governance_binding_ready
+                else PromotionReadinessReason.GOVERNANCE_BINDING_INCOMPLETE.value
+            ),
             "attempts": cast(JsonValue, attempts),
             "stuck_approvals": cast(JsonValue, stuck_approvals),
             "recommendations": cast(JsonValue, [
@@ -772,6 +783,12 @@ class TrustedHostPromotionService:
             ),
             "output_policy": _output_policy(),
         }
+
+    def _require_governance_binding(self) -> None:
+        if not self.governance_binding_ready:
+            raise TrustedHostPromotionError(
+                PromotionReadinessReason.GOVERNANCE_BINDING_INCOMPLETE.value
+            )
 
     def _filesystem(self, workspace_id: str) -> FilesystemReadTools:
         try:

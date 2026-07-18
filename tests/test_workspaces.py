@@ -46,6 +46,10 @@ def test_workspace_registry_loads_and_reports_status(tmp_path: Path) -> None:
         "count": 2,
         "enabled_count": 2,
     }
+    workspace_id, record_hash, generation = registry.authority_record("alpha")
+    assert workspace_id == "alpha"
+    assert record_hash.startswith("sha256:")
+    assert generation.startswith("sha256:")
 
 
 def test_workspace_registry_fails_closed_on_duplicate_ids(tmp_path: Path) -> None:

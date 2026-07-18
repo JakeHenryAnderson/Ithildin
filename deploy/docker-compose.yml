@@ -24,6 +24,8 @@ services:
       ITHILDIN_PRINCIPAL_REGISTRY_PATH: /app/principals/local.yaml
       ITHILDIN_WORKSPACE_ROOT: /app/workspaces
       ITHILDIN_WORKSPACE_REGISTRY_PATH: /app/workspaces/local.yaml
+      ITHILDIN_TRUSTED_HOST_REGISTRY_PATH: /app/trusted-hosts/local.yaml
+      ITHILDIN_RUNTIME_CANDIDATE_AUTHORIZATION_PATH: /run/ithildin-authority/api-candidate.json
       ITHILDIN_LOG_LEVEL: "${ITHILDIN_LOG_LEVEL:-INFO}"
       ITHILDIN_MAX_READ_BYTES: "${ITHILDIN_MAX_READ_BYTES:-131072}"
       ITHILDIN_MAX_PATCH_BYTES: "${ITHILDIN_MAX_PATCH_BYTES:-131072}"
@@ -46,6 +48,8 @@ services:
       - ../tool-manifests:/app/tool-manifests:ro
       - ../policies:/app/policies:ro
       - ../principals:/app/principals:ro
+      - ../trusted-hosts:/app/trusted-hosts:ro
+      - ../runtime-authority/api-candidate.json:/run/ithildin-authority/api-candidate.json:ro
       - ../scripts:/app/scripts:ro
       - ../workspaces:/app/workspaces
       - ../var:/app/var

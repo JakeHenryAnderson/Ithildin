@@ -25,6 +25,7 @@ build/
 var/db/*
 var/logs/*
 workspaces/*
+runtime-authority/
 
 # Git/editor noise
 .git/

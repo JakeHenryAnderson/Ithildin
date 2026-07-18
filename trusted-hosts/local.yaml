@@ -1,0 +1,16 @@
+version: "2"
+registry_schema_digest: "sha256:2cd9989b62a95a03ab165e2bf8c3b163ec3c8654147194131287b4cbc9dd94ee"
+descriptors:
+  - descriptor_schema_version: "2"
+    descriptor_id: thd_manager_local_artifact
+    enabled: true
+    os_family: darwin
+    filesystem_posture: local_create_exclusive
+    operator_review_status: reviewed
+    evidence_timestamp: 2026-07-18T00:00:00Z
+    workspace_id: default
+    staging_label: host-staging://artifact
+    staging_root_resolver_ref: manager_local_trusted_host_staging_root
+    staging_create_exclusive_allowed: true
+    host_write_allowed: false
+    broad_host_write_allowed: false

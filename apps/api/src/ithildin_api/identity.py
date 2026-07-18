@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from ithildin_schemas import JsonObject, ToolRisk
+from ithildin_schemas import JsonObject, ToolRisk, sha256_digest
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, ValidationError, field_validator
 
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.yaml_utils import safe_load_no_duplicate_keys
 
 
@@ -96,16 +97,30 @@ class PrincipalRegistryDocument(StrictBaseModel):
 
 
 class PrincipalRegistry:
-    def __init__(self, principals: dict[str, PrincipalRecord], source_path: Path) -> None:
+    def __init__(
+        self,
+        principals: dict[str, PrincipalRecord],
+        source_path: Path,
+        *,
+        document_generation: str | None = None,
+    ) -> None:
         self._principals = principals
         self.source_path = source_path
+        self.document_generation = document_generation or sha256_digest(
+            {
+                "principals": [
+                    principals[principal_id].safe_summary()
+                    for principal_id in sorted(principals)
+                ]
+            }
+        )
 
     @classmethod
     def load(cls, path: Path, *, require_registry: bool = True) -> PrincipalRegistry:
         if not path.exists():
             if require_registry:
                 raise PrincipalRegistryError(f"principal registry not found: {path}")
-            return cls({}, path)
+            return cls({}, path, document_generation=sha256_digest({"principals": []}))
 
         try:
             raw_document = safe_load_no_duplicate_keys(path)
@@ -132,7 +147,11 @@ class PrincipalRegistry:
                 )
             principals[principal.id] = principal
 
-        return cls(principals, path)
+        return cls(
+            principals,
+            path,
+            document_generation=sha256_digest(document.model_dump(mode="json")),
+        )
 
     @property
     def count(self) -> int:
@@ -160,6 +179,25 @@ class PrincipalRegistry:
         if not principal.enabled:
             raise DisabledPrincipalError(f"disabled principal: {principal_id}")
         return principal
+
+    def admin_context(self) -> AdminPrincipalContext:
+        principal = self.resolve_active("admin:local-ui")
+        if principal.type is not PrincipalType.ADMIN or PrincipalRole.ADMIN not in principal.roles:
+            raise PrincipalAccessDeniedError("local admin principal is not an enabled Admin")
+        identity_generation = sha256_digest(
+            {
+                "registry_generation": self.document_generation,
+                "principal": principal.safe_summary(),
+            }
+        )
+        return AdminPrincipalContext(
+            principal_id="admin:local-ui",
+            principal_type="admin",
+            roles=tuple(role.value for role in principal.roles),
+            authentication_method="local_admin_bearer",
+            identity_source="principal_registry",
+            identity_generation=identity_generation,
+        )
 
 
 def principal_id_from_json(principal: JsonObject) -> str | None:

@@ -38,6 +38,7 @@ markers = [
 ]
 pythonpath = [
     ".",
+    "apps/api",
     "apps/api/src",
     "apps/mcp-server/src",
     "apps/node/src",
@@ -81,6 +82,7 @@ python_version = "3.12"
 strict = true
 mypy_path = [
     ".",
+    "apps/api",
     "apps/api/src",
     "apps/mcp-server/src",
     "apps/node/src",

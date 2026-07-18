@@ -40,6 +40,7 @@ from ithildin_api.nodes import (
 )
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.trusted_host_registry import TRUSTED_HOST_REGISTRY_SCHEMA_DIGEST
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType, JsonObject, sha256_digest
@@ -255,6 +256,39 @@ def test_admin_status_rejects_wrong_bearer_token(tmp_path: Path) -> None:
     assert "wrong-token" not in response.text
 
 
+@pytest.mark.parametrize(
+    "principal_fields",
+    [
+        "roles: [Admin]\n    enabled: false",
+        "roles: [Auditor]\n    enabled: true",
+    ],
+)
+def test_admin_token_fails_closed_without_enabled_registry_admin(
+    tmp_path: Path,
+    principal_fields: str,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    registry = tmp_path / "principals.yaml"
+    registry.write_text(
+        "principals:\n"
+        "  - id: admin:local-ui\n"
+        "    type: admin\n"
+        "    display_name: Local Admin\n"
+        f"    {principal_fields}\n",
+        encoding="utf-8",
+    )
+    settings.principal_registry_path = registry
+
+    with TestClient(create_app(settings)) as client:
+        response = client.get(
+            "/admin/status",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "admin principal is not authorized"
+
+
 def test_admin_status_ignores_cookie_tokens(tmp_path: Path) -> None:
     app = create_app(make_settings(tmp_path, token="correct-token"))
 
@@ -338,6 +372,18 @@ def test_system_status_requires_auth_and_returns_trust_summary(tmp_path: Path) -
         "default_workspace_id": "default",
         "count": 1,
         "enabled_count": 1,
+    }
+    assert payload["trusted_host_registry"] == {
+        "schema_version": "2",
+        "registry_schema_digest": TRUSTED_HOST_REGISTRY_SCHEMA_DIGEST,
+        "generation": payload["trusted_host_registry"]["generation"],
+        "count": 1,
+        "enabled_count": 1,
+        "raw_paths_included": False,
+    }
+    assert payload["runtime_candidate"] == {
+        "posture": "unreviewed_local",
+        "promotion_allowed": False,
     }
     assert payload["filesystem"]["support"]["status"] in {
         "supported",
@@ -615,7 +661,7 @@ def test_trusted_host_promotion_stages_single_artifact_after_approval(
     settings.workspace_root.mkdir()
     settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
     settings.workspace_root.joinpath("summary.txt").write_text("Hello World\n", encoding="utf-8")
-    app = create_app(settings)
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
 
     with TestClient(app) as client:
         descriptor = client.post(
@@ -736,6 +782,55 @@ def test_trusted_host_promotion_stages_single_artifact_after_approval(
     assert completed_metadata["output_policy"]["file_contents_included"] is False
 
 
+def test_trusted_host_promotion_is_fail_closed_until_binding_is_complete(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+
+    with TestClient(create_app(settings)) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-disabled"),
+            headers=headers,
+        ).json()
+        response = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-disabled",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+                "artifact_media_label": "text/plain",
+                "operator_note_label": "reviewed-output",
+                "principal": {"id": "admin:local-ui", "roles": ["Admin"]},
+            },
+            headers=headers,
+        )
+        proposals = client.get("/trusted-host-promotions/proposals", headers=headers).json()
+        approvals = client.get("/approvals", headers=headers).json()
+        diagnostics = client.get(
+            "/trusted-host-promotions/diagnostics", headers=headers
+        ).json()
+        audit_events = client.get("/audit-events", headers=headers).json()["audit_events"]
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "governance_binding_incomplete"
+    assert proposals["promotion_proposals"] == []
+    assert approvals["approvals"] == []
+    assert diagnostics["availability"] == "governance_binding_incomplete"
+    assert not any(
+        event.get("tool_name") == "trusted_host.promotion.stage"
+        and event.get("event_type") == "tool.execution.completed"
+        for event in audit_events
+    )
+    assert not settings.trusted_host_staging_root.exists()
+
+
 def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
     tmp_path: Path,
 ) -> None:
@@ -744,7 +839,7 @@ def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
     settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
     artifact = settings.workspace_root / "summary.txt"
     artifact.write_text("original\n", encoding="utf-8")
-    app = create_app(settings)
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
 
     with TestClient(app) as client:
         descriptor = client.post(
@@ -832,7 +927,7 @@ def test_trusted_host_promotion_binds_route_proposal_and_allows_one_attempt(
     settings.workspace_root.mkdir()
     settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
     (settings.workspace_root / "summary.txt").write_text("bounded output\n", encoding="utf-8")
-    app = create_app(settings)
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
 
     with TestClient(app) as client:
         headers = {"Authorization": "Bearer correct-token"}
@@ -950,7 +1045,7 @@ def test_trusted_host_promotion_rejects_unsafe_source_object_types(
     (settings.workspace_root / "linked.txt").symlink_to(source)
     os.link(source, settings.workspace_root / "hardlinked.txt")
     (settings.workspace_root / "directory.txt").mkdir()
-    app = create_app(settings)
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
 
     with TestClient(app) as client:
         headers = {"Authorization": "Bearer correct-token"}
@@ -992,7 +1087,7 @@ def test_trusted_host_promotion_concurrent_apply_stages_once(tmp_path: Path) -> 
         "bounded output\n",
         encoding="utf-8",
     )
-    app = create_app(settings)
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
 
     with TestClient(app) as client:
         headers = {"Authorization": "Bearer correct-token"}
@@ -1051,7 +1146,7 @@ def test_trusted_host_promotion_preserves_existing_destination(
         "new output\n",
         encoding="utf-8",
     )
-    app = create_app(settings)
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
 
     with TestClient(app) as client:
         headers = {"Authorization": "Bearer correct-token"}
@@ -1115,7 +1210,7 @@ def test_trusted_host_promotion_audit_failure_remains_incomplete(
         "bounded output\n",
         encoding="utf-8",
     )
-    app = create_app(settings)
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
 
     with TestClient(app) as client:
         headers = {"Authorization": "Bearer correct-token"}

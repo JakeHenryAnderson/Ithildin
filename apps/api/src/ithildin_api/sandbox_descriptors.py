@@ -15,6 +15,8 @@ from ithildin_schemas import JsonObject, JsonValue, canonical_json, sha256_diges
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, field_validator
 
+from ithildin_api.promotion_authority import SandboxAuthorityRecord
+
 
 class SandboxDescriptorError(RuntimeError):
     """Raised when sandbox descriptor evidence is unsafe or missing."""
@@ -237,6 +239,24 @@ class SandboxDescriptorStore:
         if row is None:
             raise SandboxDescriptorError("sandbox descriptor not found")
         return _record_from_row(row).detail()
+
+    def authority_record(self, descriptor_id: str) -> SandboxAuthorityRecord:
+        detail = self.get(descriptor_id)
+        payload_hash = detail.get("payload_hash")
+        created_at = detail.get("created_at")
+        if not isinstance(payload_hash, str) or not isinstance(created_at, str):
+            raise SandboxDescriptorError("sandbox descriptor authority is unavailable")
+        return SandboxAuthorityRecord(
+            descriptor_id=descriptor_id,
+            descriptor_payload_hash=payload_hash,
+            descriptor_generation=sha256_digest(
+                {
+                    "descriptor_id": descriptor_id,
+                    "payload_hash": payload_hash,
+                    "created_at": created_at,
+                }
+            ),
+        )
 
     def status(self) -> JsonObject:
         with sqlite3.connect(self.db_path) as connection:

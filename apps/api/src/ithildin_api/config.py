@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     require_known_workspaces: bool = True
     default_workspace_id: str = "default"
     trusted_host_staging_root: Path = Path("var/trusted-host-staging")
+    trusted_host_registry_path: Path = Path("trusted-hosts/local.yaml")
+    runtime_candidate_authorization_path: Path = Path(
+        "/run/ithildin-authority/api-candidate.json"
+    )
     max_read_bytes: int = Field(default=131_072, gt=0)
     max_patch_bytes: int = Field(default=131_072, gt=0)
     http_allowlist: str = ""

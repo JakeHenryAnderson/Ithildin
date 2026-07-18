@@ -46,6 +46,7 @@ deploy/hermes-poc/workspace/output/case-001-artifact.txt
 workspaces/*
 !workspaces/.gitkeep
 !workspaces/local.yaml
+runtime-authority/
 
 # OS/editor
 .DS_Store

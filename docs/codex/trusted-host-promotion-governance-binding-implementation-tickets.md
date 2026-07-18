@@ -86,6 +86,9 @@ slice.
 
 ## TGB-001 — Authority Foundation And Verified Candidate
 
+Status: implemented on `2026-07-18`; trusted-host promotion remains fail closed outside explicit
+test fixtures and the live route is not enabled.
+
 ### Objective
 
 Introduce closed, immutable authority models and startup-only registries without changing public
@@ -196,6 +199,13 @@ make typecheck
 make tool-surface-invariant-gate
 make no-new-powers-guardrail
 ```
+
+Implementation evidence includes immutable authority models, server-derived admin identity and
+workspace/sandbox generations, the schema-version-2 read-only trusted-host registry, stdlib-only
+pre-import candidate verification, detached create-exclusive operator authorization, explicit
+launcher-order proof, and no-side-effect API denial while the binding is incomplete. These controls
+establish the foundation only; they do not claim the version-2 proposal, migration, policy binding,
+atomic placement, or final evidence slices from `TGB-002` through `TGB-006`.
 
 ### Stop conditions
 

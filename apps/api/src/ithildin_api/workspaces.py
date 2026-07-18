@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from ithildin_schemas import JsonObject
+from ithildin_schemas import JsonObject, sha256_digest
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, ValidationError
 
@@ -53,6 +53,7 @@ class WorkspaceRegistry:
         self.path = path
         self.required = required
         self._records = {record.id: record for record in document.workspaces}
+        self.generation = sha256_digest(document.model_dump(mode="json"))
 
     @property
     def default_workspace_id(self) -> str:
@@ -141,6 +142,14 @@ class WorkspaceRegistry:
 
     def list_workspaces(self) -> list[WorkspaceRecord]:
         return list(self._records.values())
+
+    def authority_record(self, workspace_id: str | None = None) -> tuple[str, str, str]:
+        record, _ = self.resolve_active(workspace_id)
+        return (
+            record.id,
+            sha256_digest(record.model_dump(mode="json")),
+            self.generation,
+        )
 
     def status(self) -> JsonObject:
         return {

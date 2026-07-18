@@ -27,16 +27,31 @@ HASH_MANIFEST = "trusted-host-promotion-runtime-source-review-artifact-hashes.js
 FINDING_NAMESPACE = "EXT-TRUSTED-HOST-RUNTIME-###"
 
 SOURCE_FILES = [
+    "apps/api/runtime_candidate_bootstrap.py",
+    "apps/api/verified_launch.py",
     "apps/api/src/ithildin_api/trusted_host_promotions.py",
     "apps/api/src/ithildin_api/app.py",
+    "apps/api/src/ithildin_api/auth.py",
     "apps/api/src/ithildin_api/config.py",
+    "apps/api/src/ithildin_api/identity.py",
+    "apps/api/src/ithildin_api/promotion_authority.py",
     "apps/api/src/ithildin_api/approvals.py",
     "apps/api/src/ithildin_api/read_tools.py",
     "apps/api/src/ithildin_api/sandbox_descriptors.py",
+    "apps/api/src/ithildin_api/trusted_host_registry.py",
+    "apps/api/src/ithildin_api/workspaces.py",
+    "scripts/runtime_candidate_authorization_record.py",
+    "schemas/runtime-candidate-authorization.schema.json",
+    "trusted-hosts/local.yaml",
 ]
 TEST_FILES = [
     "tests/test_api_service.py",
+    "tests/test_identity.py",
+    "tests/test_promotion_authority.py",
     "tests/test_release_readiness.py",
+    "tests/test_runtime_candidate_bootstrap.py",
+    "tests/test_trusted_host_registry.py",
+    "tests/test_workspaces.py",
 ]
 CONTRACT_DOCS = [
     "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
@@ -70,6 +85,10 @@ FOCUSED_TEST_COMMAND = [
     "tests/test_api_service.py::test_trusted_host_promotion_concurrent_apply_stages_once",
     "tests/test_api_service.py::test_trusted_host_promotion_preserves_existing_destination",
     "tests/test_api_service.py::test_trusted_host_promotion_audit_failure_remains_incomplete",
+    "tests/test_api_service.py::test_trusted_host_promotion_is_fail_closed_until_binding_is_complete",
+    "tests/test_promotion_authority.py",
+    "tests/test_runtime_candidate_bootstrap.py",
+    "tests/test_trusted_host_registry.py",
     "-q",
 ]
 
