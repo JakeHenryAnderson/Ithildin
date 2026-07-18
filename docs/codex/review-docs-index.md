@@ -29,6 +29,13 @@ externally closed.
 - [Node Implementation Plan](track-b-node-implementation-plan.md)
 - [Node Observed Results](track-b-node-observed-results.md)
 
+### Mission Command Control Plane
+
+- [Capability Decision](mission-command-control-plane-capability-decision.md)
+- [Architecture](mission-command-control-plane-architecture.md)
+- [Implementation Tickets](mission-command-control-plane-implementation-tickets.md)
+- [Authorization Record](mission-command-control-plane-authorization-record.md)
+
 ## Track B Node Signed Configuration
 
 - [Configuration Capability Decision](track-b-node-configuration-capability-decision.md)

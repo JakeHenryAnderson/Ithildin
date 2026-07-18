@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CATEGORY_PREFIXES: tuple[tuple[str, str], ...] = (
     ("track-b-node-", "external_agent_node"),
     ("hermes-", "external_agent_poc"),
+    ("mission-command-", "mission_command"),
     ("enterprise-", "enterprise"),
     ("mission-control-", "mission_control"),
     ("sandbox-vm-", "sandbox_vm"),
