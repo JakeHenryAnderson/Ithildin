@@ -34317,14 +34317,18 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
         assert report["existing_packet"]["commit_matches_head"] is True
         assert report["existing_packet"]["generated_from_clean_tree"] is True
         assert report["existing_packet"]["artifact_hashes_match_files"] is True
+        assert report["existing_packet"]["bundled_files_match_head"] is True
         assert report["existing_packet"]["redaction_scan_valid"] is True
         assert report["existing_packet"]["candidate_digest_evidence_valid"] is True
+        assert report["existing_packet"]["candidate_index_evidence_matches"] is True
     else:
         assert report["existing_packet"]["commit_matches_head"] is None
         assert report["existing_packet"]["generated_from_clean_tree"] is None
         assert report["existing_packet"]["artifact_hashes_match_files"] is None
+        assert report["existing_packet"]["bundled_files_match_head"] is None
         assert report["existing_packet"]["redaction_scan_valid"] is None
         assert report["existing_packet"]["candidate_digest_evidence_valid"] is None
+        assert report["existing_packet"]["candidate_index_evidence_matches"] is None
     assert report["broad_host_promotion_allowed"] is False
     assert report["new_governed_tool_allowed"] is False
 
@@ -34403,7 +34407,9 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert gate_evidence["existing_packet"] == generated_packet
     assert gate_evidence["existing_packet"]["commit_matches_head"] is True
     assert gate_evidence["existing_packet"]["artifact_hashes_match_files"] is True
+    assert gate_evidence["existing_packet"]["bundled_files_match_head"] is True
     assert gate_evidence["existing_packet"]["redaction_scan_valid"] is True
+    assert gate_evidence["existing_packet"]["candidate_index_evidence_matches"] is True
     assert "skipped command: make trusted-host-promotion-negative-transcripts" in evidence
     assert "skipped command: make trusted-host-promotion-governance-drift-transcripts" in evidence
     assert redaction_scan["valid"] is True
@@ -34660,6 +34666,163 @@ def test_trusted_host_promotion_runtime_source_review_packet_rejects_interrupted
     )
 
     assert rebuilt_report["valid"] is True
+
+
+def test_trusted_host_promotion_runtime_source_review_packet_rejects_modified_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_dir = tmp_path / "trusted-host-runtime-source-review"
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=False,
+        run_commands=False,
+    )
+    source_bundle_path = (
+        output_dir / "02_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_BUNDLE.md"
+    )
+    source_bundle = source_bundle_path.read_text(encoding="utf-8")
+    original_roles = 'PROMOTION_REQUIRED_APPROVER_ROLES = ("Admin", "Approver")'
+    weakened_roles = 'PROMOTION_REQUIRED_APPROVER_ROLES = ("Admin",)'
+    assert original_roles in source_bundle
+    source_bundle_path.write_text(
+        source_bundle.replace(original_roles, weakened_roles, 1),
+        encoding="utf-8",
+    )
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        output_dir
+        / "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
+        trusted_host_promotion_runtime_source_review_bundle._hashes(output_dir),
+    )
+
+    evidence = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
+    assert evidence["artifact_hashes_match_files"] is True
+    assert evidence["candidate_digest_evidence_valid"] is True
+    assert evidence["candidate_index_evidence_matches"] is True
+    assert evidence["bundled_files_match_head"] is False
+
+    monkeypatch.setattr(
+        trusted_host_promotion_runtime_source_review_bundle,
+        "DEFAULT_OUTPUT_DIR",
+        output_dir,
+    )
+    report = trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+        Path.cwd()
+    )
+
+    assert report["valid"] is False
+    assert (
+        "existing runtime source-review packet bundles do not match current HEAD"
+        in report["failures"]
+    )
+
+
+def test_trusted_host_promotion_runtime_source_review_packet_rejects_omitted_inventory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_dir = tmp_path / "trusted-host-runtime-source-review"
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=False,
+        run_commands=False,
+    )
+    evidence_path = output_dir / (
+        "12_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_DIGEST_EVIDENCE.json"
+    )
+    review_packet_path = output_dir / (
+        "11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json"
+    )
+    index_path = output_dir / "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    original_evidence = dict(evidence)
+    evidence["inventory_files"] = [
+        record
+        for record in evidence["inventory_files"]
+        if record["path"] != "workspaces/local.yaml"
+    ]
+    assert len(evidence["inventory_files"]) == original_evidence["inventory_file_count"] - 1
+    evidence["inventory_file_count"] = len(evidence["inventory_files"])
+    evidence["reviewed_inventory_digest"] = (
+        trusted_host_promotion_runtime_source_review_bundle._sha256_json(
+            {
+                "schema_version": evidence["inventory_schema_version"],
+                "files": evidence["inventory_files"],
+            }
+        )
+    )
+    candidate_core = {
+        "source_commit": evidence["source_commit"],
+        "inventory_schema_version": evidence["inventory_schema_version"],
+        "reviewed_inventory_digest": evidence["reviewed_inventory_digest"],
+        "dependency_lock_digest": evidence["dependency_lock_digest"],
+        "release_artifact_digest": evidence["release_artifact_digest"],
+        "evidence_schema_version": evidence["evidence_schema_version"],
+    }
+    evidence["candidate_id"] = (
+        trusted_host_promotion_runtime_source_review_bundle._sha256_json(candidate_core)
+    )
+    review_packet = json.loads(review_packet_path.read_text(encoding="utf-8"))
+    review_packet["candidate_id"] = evidence["candidate_id"]
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        review_packet_path,
+        review_packet,
+    )
+    evidence["review_packet_digest"] = (
+        trusted_host_promotion_runtime_source_review_bundle._file_digest(
+            review_packet_path
+        )
+    )
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        evidence_path,
+        evidence,
+    )
+    index = index_path.read_text(encoding="utf-8")
+    for key in (
+        "candidate_id",
+        "reviewed_inventory_digest",
+        "review_packet_digest",
+    ):
+        index = index.replace(original_evidence[key], evidence[key])
+    index_path.write_text(index, encoding="utf-8")
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        output_dir
+        / "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
+        trusted_host_promotion_runtime_source_review_bundle._hashes(output_dir),
+    )
+
+    packet_evidence = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
+    assert packet_evidence["artifact_hashes_match_files"] is True
+    assert packet_evidence["bundled_files_match_head"] is True
+    assert packet_evidence["candidate_index_evidence_matches"] is True
+    assert packet_evidence["candidate_digest_evidence_valid"] is False
+
+    monkeypatch.setattr(
+        trusted_host_promotion_runtime_source_review_bundle,
+        "DEFAULT_OUTPUT_DIR",
+        output_dir,
+    )
+    report = trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+        Path.cwd()
+    )
+
+    assert report["valid"] is False
+    assert (
+        "existing runtime source-review packet candidate digest evidence is invalid"
+        in report["failures"]
+    )
 
 
 def test_trusted_artifact_promotion_operator_demo_is_wired(tmp_path: Path) -> None:

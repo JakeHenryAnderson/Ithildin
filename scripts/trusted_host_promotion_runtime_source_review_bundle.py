@@ -101,6 +101,7 @@ CONTRACT_DOCS = [
     "docs/codex/findings/ext-trusted-host-runtime-007-gate-evidence-serialization.md",
     "docs/codex/findings/ext-trusted-host-runtime-008-interrupted-packet-generation.md",
     "docs/codex/findings/ext-trusted-host-runtime-009-approver-role-enforcement.md",
+    "docs/codex/findings/ext-trusted-host-runtime-010-packet-candidate-equivalence.md",
 ]
 FOCUSED_TEST_COMMAND = [
     "uv",
@@ -338,6 +339,10 @@ def build_check_report(
             failures.append(
                 "existing runtime source-review packet artifact hashes do not match files"
             )
+        if not packet_evidence["bundled_files_match_head"]:
+            failures.append(
+                "existing runtime source-review packet bundles do not match current HEAD"
+            )
         if not packet_evidence["redaction_scan_valid"]:
             failures.append(
                 "existing runtime source-review packet redaction scan is missing or invalid"
@@ -345,6 +350,10 @@ def build_check_report(
         if not packet_evidence["candidate_digest_evidence_valid"]:
             failures.append(
                 "existing runtime source-review packet candidate digest evidence is invalid"
+            )
+        if not packet_evidence["candidate_index_evidence_matches"]:
+            failures.append(
+                "existing runtime source-review packet index does not match candidate evidence"
             )
         embedded_packet_evidence = _embedded_packet_evidence(
             repo_root / DEFAULT_OUTPUT_DIR
@@ -402,8 +411,10 @@ def build_bundle(
             "commit_matches_head": True,
             "generated_from_clean_tree": not dirty,
             "artifact_hashes_match_files": False,
+            "bundled_files_match_head": False,
             "redaction_scan_valid": False,
             "candidate_digest_evidence_valid": False,
+            "candidate_index_evidence_matches": False,
         },
     }
 
@@ -533,8 +544,10 @@ def build_bundle(
     if (
         not final_evidence["commit_matches_head"]
         or not final_evidence["artifact_hashes_match_files"]
+        or not final_evidence["bundled_files_match_head"]
         or not final_evidence["redaction_scan_valid"]
         or (not allow_dirty and not final_evidence["candidate_digest_evidence_valid"])
+        or (not allow_dirty and not final_evidence["candidate_index_evidence_matches"])
         or (not allow_dirty and not final_evidence["generated_from_clean_tree"])
     ):
         raise TrustedHostPromotionRuntimeSourceReviewBundleError(
@@ -948,19 +961,45 @@ def _candidate_digest_evidence_valid(repo_root: Path, output_dir: Path) -> bool:
         return False
     if not isinstance(evidence, dict) or not isinstance(review_packet, dict):
         return False
+    if set(evidence) != {
+        "schema_version",
+        "source_commit",
+        "source_dirty",
+        "candidate_id",
+        "inventory_schema_version",
+        "inventory_file_count",
+        "inventory_files",
+        "reviewed_inventory_digest",
+        "dependency_lock_path",
+        "dependency_lock_digest",
+        "release_artifact_domain",
+        "release_artifact_digest",
+        "review_packet_path",
+        "review_packet_digest",
+        "evidence_schema_version",
+        "digest_domains_acyclic",
+        "authorization_record_created",
+        "external_review_complete",
+    }:
+        return False
     commit = evidence.get("source_commit")
     files = evidence.get("inventory_files")
     if not isinstance(commit, str) or not isinstance(files, list):
         return False
     if evidence.get("source_dirty") is not False:
         return False
+    if (
+        evidence.get("schema_version") != "1"
+        or evidence.get("inventory_schema_version") != "1"
+        or evidence.get("dependency_lock_path") != "uv.lock"
+        or evidence.get("release_artifact_domain") != "git_archive_exact_commit"
+        or evidence.get("review_packet_path") != RUNTIME_CANDIDATE_REVIEW_PACKET
+        or evidence.get("evidence_schema_version") != "1"
+    ):
+        return False
     if _git(repo_root, ["rev-parse", "HEAD"]) != commit:
         return False
     if _git(repo_root, ["status", "--short"]):
-        return False
-    if review_packet.get("source_commit") != commit:
-        return False
-    if review_packet.get("candidate_id") != evidence.get("candidate_id"):
         return False
     if evidence.get("review_packet_digest") != _file_digest(review_packet_path):
         return False
@@ -982,6 +1021,11 @@ def _candidate_digest_evidence_valid(repo_root: Path, output_dir: Path) -> bool:
             return False
         previous = relative
         normalized_files.append({"path": relative, "sha256": digest})
+    expected_paths = _runtime_candidate_paths(repo_root)
+    if [record["path"] for record in normalized_files] != expected_paths:
+        return False
+    if evidence.get("inventory_file_count") != len(expected_paths):
+        return False
     inventory_schema_version = evidence.get("inventory_schema_version")
     reviewed_inventory_digest = _sha256_json(
         {"schema_version": inventory_schema_version, "files": normalized_files}
@@ -996,11 +1040,62 @@ def _candidate_digest_evidence_valid(repo_root: Path, output_dir: Path) -> bool:
         "release_artifact_digest": evidence.get("release_artifact_digest"),
         "evidence_schema_version": evidence.get("evidence_schema_version"),
     }
+    candidate_id = _sha256_json(candidate_core)
+    expected_review_packet = {
+        "schema_version": "1",
+        "candidate_id": candidate_id,
+        "source_commit": commit,
+        "finding_namespace": FINDING_NAMESPACE,
+        "review_scope": "trusted_host_promotion_runtime_staging_only",
+        "external_review_complete": False,
+    }
     return (
-        evidence.get("candidate_id") == _sha256_json(candidate_core)
+        evidence.get("candidate_id") == candidate_id
+        and review_packet == expected_review_packet
         and evidence.get("digest_domains_acyclic") is True
         and evidence.get("authorization_record_created") is False
         and evidence.get("external_review_complete") is False
+    )
+
+
+def _bundled_files_match_head(repo_root: Path, output_dir: Path) -> bool:
+    bundles = {
+        "02_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_BUNDLE.md": SOURCE_FILES,
+        "03_TRUSTED_HOST_PROMOTION_RUNTIME_TESTS_BUNDLE.md": TEST_FILES,
+        "04_TRUSTED_HOST_PROMOTION_RUNTIME_CONTRACTS_BUNDLE.md": CONTRACT_DOCS,
+    }
+    try:
+        return all(
+            output_dir.joinpath(name).read_text(encoding="utf-8")
+            == _packet_text(_bundle_files(repo_root, paths))
+            for name, paths in bundles.items()
+        )
+    except (OSError, UnicodeError, TrustedHostPromotionRuntimeSourceReviewBundleError):
+        return False
+
+
+def _candidate_index_evidence_matches(output_dir: Path) -> bool:
+    evidence_path = output_dir / RUNTIME_CANDIDATE_DIGEST_EVIDENCE
+    index_path = output_dir / "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md"
+    try:
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        index = index_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return False
+    if not isinstance(evidence, dict):
+        return False
+    labels = {
+        "Reviewed commit": "source_commit",
+        "Runtime candidate ID": "candidate_id",
+        "Candidate inventory digest": "reviewed_inventory_digest",
+        "Dependency-lock digest": "dependency_lock_digest",
+        "Immutable release-artifact digest": "release_artifact_digest",
+        "Detached candidate review-packet digest": "review_packet_digest",
+    }
+    return all(
+        isinstance((value := evidence.get(key)), str)
+        and f"- {label}: `{value}`." in index
+        for label, key in labels.items()
     )
 
 
@@ -1032,8 +1127,10 @@ def _existing_packet_evidence(
             "commit_matches_head": None,
             "generated_from_clean_tree": None,
             "artifact_hashes_match_files": None,
+            "bundled_files_match_head": None,
             "redaction_scan_valid": None,
             "candidate_digest_evidence_valid": None,
+            "candidate_index_evidence_matches": None,
         }
 
     head = _git(repo_root, ["rev-parse", "HEAD"])
@@ -1069,6 +1166,8 @@ def _existing_packet_evidence(
         repo_root,
         output_dir,
     )
+    bundled_files_match_head = _bundled_files_match_head(repo_root, output_dir)
+    candidate_index_evidence_matches = _candidate_index_evidence_matches(output_dir)
 
     return {
         "present": True,
@@ -1076,8 +1175,10 @@ def _existing_packet_evidence(
         "commit_matches_head": packet_commit == head and prompt_commit == head,
         "generated_from_clean_tree": "Dirty at generation: `false`." in index,
         "artifact_hashes_match_files": hashes_match,
+        "bundled_files_match_head": bundled_files_match_head,
         "redaction_scan_valid": redaction_scan_valid,
         "candidate_digest_evidence_valid": candidate_digest_evidence_valid,
+        "candidate_index_evidence_matches": candidate_index_evidence_matches,
     }
 
 
