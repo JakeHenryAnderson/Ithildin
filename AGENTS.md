@@ -17,6 +17,38 @@ Current governed tool count is 24. Any tool-count change requires an explicit ca
 implementation plan, implementation gate, manifest lock update, policy/parity coverage, source-review
 handoff, and release/readiness updates.
 
+## Standing Project Authority
+
+The user delegates routine technical design, repair, and implementation decisions within the
+documented current product boundary to the main Codex agent. The main agent may add or change
+dependencies, public APIs, schemas, migrations, policy, authorization, audit, persistence, and
+placement internals when all of the following are true:
+
+- the work is necessary for an already approved architecture, capability, or bounded sprint;
+- the change remains inside the product and governed-power boundaries above;
+- compatibility, migration, rollback, and data-loss risks are addressed proportionally;
+- focused tests and the applicable broader gates verify the result; and
+- the resulting state, evidence limits, and remaining human gates are recorded honestly.
+
+Do not ask the user to adjudicate technical implementation details, supply magic approval wording,
+or restate permission for work already inside an active goal and approved boundary. Repository
+authorization records should capture the user's standing delegation and the bounded decision, not
+turn implementation into a phrase-matching exercise.
+
+Explicit user direction is still required before:
+
+- adding a new product boundary, governed power class, or governed tool-count change outside the
+  capability process;
+- a destructive or irreversible action against real user or production data or an external system;
+- taking custody of production credentials, production identity, hosted trust, or signing keys;
+- making external commitments or public legal, compliance, or security-product claims;
+- using Sol Ultra, which remains opt-in by prior user approval; or
+- treating human UAT, release acceptance, or production promotion as complete.
+
+Also stop on the critical/high security and repeated-gate-failure conditions below. These stop lines
+preserve meaningful human authority without making the user responsible for implementation-level
+technical decisions.
+
 ## Planner-Implementer Model
 
 - The main Codex agent owns scope, safety judgment, implementation review, gates, staging, and

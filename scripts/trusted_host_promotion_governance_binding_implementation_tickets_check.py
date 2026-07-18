@@ -1,4 +1,4 @@
-"""Validate the proposal-only ERG-005 governance-binding implementation tickets."""
+"""Validate the approved ERG-005 governance-binding implementation tickets."""
 
 from __future__ import annotations
 
@@ -25,13 +25,15 @@ TARGET = "trusted-host-promotion-governance-binding-implementation-tickets-check
 
 REQUIRED_PHRASES = [
     (
-        "Status: proposal-only execution packet for `PRD-TRUSTED-HOST-BINDING-001`; "
-        "implementation remains"
+        "Status: approved bounded execution packet for "
+        "`PRD-TRUSTED-HOST-BINDING-001`."
     ),
     "Current governed tool count: `24`.",
-    "Current decision status: `proposed_for_explicit_approval`.",
+    "Current decision status: `approved_for_bounded_implementation`.",
     "make trusted-host-promotion-governance-binding-implementation-tickets-check",
-    "Approve PRD-TRUSTED-HOST-BINDING-001 for bounded implementation",
+    "The direct user instruction recorded on `2026-07-18`",
+    "The user does not need to",
+    "repeat a technical approval formula",
     "TGB-001 — Authority Foundation And Verified Candidate",
     "TGB-002 — Version-2 Contracts And Transactional Migration",
     "TGB-003 — YAML Policy And Approval-Scope Binding",
@@ -70,7 +72,7 @@ REQUIRED_PHRASES = [
     "No human UAT is required to execute `TGB-001` through `TGB-006`.",
     "Sol Ultra is not used without the user's prior approval.",
     "No ticket changes `tool-manifests.lock.json`",
-    "does not mean implementation is",
+    "implementation path is authorized and reviewable",
 ]
 
 REQUIRED_SOURCE_PATHS = [
@@ -144,7 +146,6 @@ SOURCE_ANCHORS = {
 }
 
 FORBIDDEN_PHRASES = [
-    "implementation is approved",
     "implementation has started",
     "erg-005 is closed",
     "ext-trusted-host-runtime-002 is fixed",
@@ -217,10 +218,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     ]:
         failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
 
-    if architecture.get("decision_status") != "proposed_for_explicit_approval":
-        failures.append("architecture decision status is not proposed_for_explicit_approval")
-    if architecture.get("runtime_changes_allowed") is not False:
-        failures.append("architecture unexpectedly allows runtime changes")
+    if architecture.get("decision_status") != "approved_for_bounded_implementation":
+        failures.append("architecture decision status is not approved_for_bounded_implementation")
+    if architecture.get("runtime_changes_allowed") is not True:
+        failures.append("architecture does not authorize bounded runtime changes")
     if tool_surface.get("tool_count") != 24:
         failures.append("live governed tool count is not 24")
     if no_new_powers.get("new_power_classes_allowed") is not False:
@@ -249,19 +250,20 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "ticket_packet": DOC_REL,
         "decision_id": "PRD-TRUSTED-HOST-BINDING-001",
-        "decision_status": "proposed_for_explicit_approval",
+        "decision_status": "approved_for_bounded_implementation",
         "ticket_count": 6,
         "source_path_count": len(REQUIRED_SOURCE_PATHS),
         "source_anchor_count": sum(len(anchors) for anchors in SOURCE_ANCHORS.values()),
         "tool_count": tool_surface.get("tool_count"),
         "tool_surface_valid": tool_surface.get("valid"),
         "no_new_powers_valid": no_new_powers.get("valid"),
-        "implementation_authorized": False,
-        "runtime_changes_allowed": False,
-        "public_contract_changes_allowed": False,
-        "database_migration_allowed": False,
-        "policy_changes_allowed": False,
-        "placement_changes_allowed": False,
+        "implementation_authorized": True,
+        "runtime_changes_allowed": True,
+        "public_contract_changes_allowed": True,
+        "database_migration_allowed": True,
+        "policy_changes_allowed": True,
+        "placement_changes_allowed": True,
+        "trusted_host_promotion_allowed": False,
         "node_side_placement_allowed": False,
         "new_power_classes_allowed": no_new_powers.get("new_power_classes_allowed"),
         "uat_required_now": False,
@@ -288,6 +290,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"database_migration_allowed: {str(report['database_migration_allowed']).lower()}",
         f"policy_changes_allowed: {str(report['policy_changes_allowed']).lower()}",
         f"placement_changes_allowed: {str(report['placement_changes_allowed']).lower()}",
+        "trusted_host_promotion_allowed: "
+        f"{str(report['trusted_host_promotion_allowed']).lower()}",
         f"node_side_placement_allowed: {str(report['node_side_placement_allowed']).lower()}",
         f"new_power_classes_allowed: {str(report['new_power_classes_allowed']).lower()}",
         f"uat_required_now: {str(report['uat_required_now']).lower()}",

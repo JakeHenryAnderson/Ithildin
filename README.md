@@ -2531,25 +2531,25 @@ The runtime internal review and focused source-review handoff are in
 and
 [docs/codex/trusted-host-promotion-runtime-source-review.md](docs/codex/trusted-host-promotion-runtime-source-review.md);
 the packet is built with `make trusted-host-promotion-runtime-source-review-bundle`.
-The proposed architecture for closing the remaining server-derived identity, trusted-host,
+The approved bounded architecture for closing the remaining server-derived identity, trusted-host,
 policy/manifest/schema, and reviewed-candidate binding gap is in
 [docs/codex/trusted-host-promotion-governance-binding-architecture.md](docs/codex/trusted-host-promotion-governance-binding-architecture.md)
-and is checked with `make trusted-host-promotion-governance-binding-architecture-check`. It remains
-proposal-only until the version-2 request and versioned SQLite migration receive explicit approval;
-it preserves the 24-tool, staging-only, Manager-local boundary and does not authorize Node-side
-placement or broader host control.
-The proposal-only six-ticket execution sequence is in
+and is checked with `make trusted-host-promotion-governance-binding-architecture-check`. Its bounded
+authorization covers the version-2 request and versioned SQLite migration implementation while
+preserving the 24-tool, staging-only, Manager-local boundary; it does not authorize Node-side
+placement, live route enablement, or broader host control.
+The approved six-ticket execution sequence is in
 [docs/codex/trusted-host-promotion-governance-binding-implementation-tickets.md](docs/codex/trusted-host-promotion-governance-binding-implementation-tickets.md)
 and is checked with
 `make trusted-host-promotion-governance-binding-implementation-tickets-check`. It maps exact source
-ownership, migrations, adversarial tests, rollback stops, and source-review gates but leaves runtime,
-public-contract, schema, policy, and placement changes unauthorized pending the architecture approval.
-The pending authorization landing record is
+ownership, migrations, adversarial tests, rollback stops, and source-review gates. Implementation is
+authorized; live route enablement and finding closure remain separately gated.
+The durable authorization record is
 [docs/codex/trusted-host-promotion-governance-binding-authorization-record.md](docs/codex/trusted-host-promotion-governance-binding-authorization-record.md)
 and is checked with
-`make trusted-host-promotion-governance-binding-authorization-record-check`. It records no approval
-and keeps every implementation permission false until a later reviewed commit deliberately captures
-the direct user decision for `PRD-TRUSTED-HOST-BINDING-001`.
+`make trusted-host-promotion-governance-binding-authorization-record-check`. It records the direct
+user delegation for `PRD-TRUSTED-HOST-BINDING-001`, authorizes bounded technical implementation, and
+keeps live promotion, Node-side placement, new powers, release, and UAT outside that authority.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

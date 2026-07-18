@@ -34089,13 +34089,14 @@ def test_trusted_host_promotion_governance_binding_architecture_is_wired() -> No
 
     assert report["valid"] is True
     assert report["decision_id"] == "PRD-TRUSTED-HOST-BINDING-001"
-    assert report["decision_status"] == "proposed_for_explicit_approval"
+    assert report["decision_status"] == "approved_for_bounded_implementation"
     assert report["tool_count"] == 24
     assert report["tool_surface_valid"] is True
     assert report["no_new_powers_valid"] is True
-    assert report["runtime_changes_allowed"] is False
-    assert report["public_contract_changes_allowed"] is False
-    assert report["database_migration_allowed"] is False
+    assert report["implementation_authorized"] is True
+    assert report["runtime_changes_allowed"] is True
+    assert report["public_contract_changes_allowed"] is True
+    assert report["database_migration_allowed"] is True
     assert report["trusted_host_promotion_expansion_allowed"] is False
     assert report["node_side_placement_allowed"] is False
     assert report["new_power_classes_allowed"] is False
@@ -34109,7 +34110,7 @@ def test_trusted_host_promotion_governance_binding_architecture_is_wired() -> No
         "Adversarial Validation Matrix",
         "Bounded Implementation Slices",
         "Implementation Acceptance Gates",
-        "proposed_for_explicit_approval",
+        "approved_for_bounded_implementation",
     ]:
         assert phrase in doc
     target = "trusted-host-promotion-governance-binding-architecture-check"
@@ -34140,19 +34141,20 @@ def test_trusted_host_promotion_governance_binding_implementation_tickets_are_wi
 
     assert report["valid"] is True
     assert report["decision_id"] == "PRD-TRUSTED-HOST-BINDING-001"
-    assert report["decision_status"] == "proposed_for_explicit_approval"
+    assert report["decision_status"] == "approved_for_bounded_implementation"
     assert report["ticket_count"] == 6
     assert report["source_path_count"] >= 20
     assert report["source_anchor_count"] >= 10
     assert report["tool_count"] == 24
     assert report["tool_surface_valid"] is True
     assert report["no_new_powers_valid"] is True
-    assert report["implementation_authorized"] is False
-    assert report["runtime_changes_allowed"] is False
-    assert report["public_contract_changes_allowed"] is False
-    assert report["database_migration_allowed"] is False
-    assert report["policy_changes_allowed"] is False
-    assert report["placement_changes_allowed"] is False
+    assert report["implementation_authorized"] is True
+    assert report["runtime_changes_allowed"] is True
+    assert report["public_contract_changes_allowed"] is True
+    assert report["database_migration_allowed"] is True
+    assert report["policy_changes_allowed"] is True
+    assert report["placement_changes_allowed"] is True
+    assert report["trusted_host_promotion_allowed"] is False
     assert report["node_side_placement_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["uat_required_now"] is False
@@ -34169,7 +34171,7 @@ def test_trusted_host_promotion_governance_binding_implementation_tickets_are_wi
     assert "Trusted-Host Promotion Governance-Binding Implementation Tickets" in review_index
 
 
-def test_trusted_host_promotion_governance_binding_authorization_record_is_pending() -> None:
+def test_trusted_host_promotion_governance_binding_authorization_record_is_approved() -> None:
     report = (
         trusted_host_promotion_governance_binding_authorization_record_check.build_report(
             Path.cwd()
@@ -34186,23 +34188,23 @@ def test_trusted_host_promotion_governance_binding_authorization_record_is_pendi
 
     assert report["valid"] is True
     assert report["decision_id"] == "PRD-TRUSTED-HOST-BINDING-001"
-    assert report["decision_status"] == "awaiting_explicit_user_approval"
-    assert report["approval_recorded"] is False
+    assert report["decision_status"] == "approved_for_bounded_implementation"
+    assert report["approval_recorded"] is True
     assert report["tool_count"] == 24
     assert report["tool_surface_valid"] is True
     assert report["no_new_powers_valid"] is True
-    assert report["implementation_authorized"] is False
-    assert report["runtime_changes_allowed"] is False
-    assert report["public_contract_changes_allowed"] is False
-    assert report["database_migration_allowed"] is False
-    assert report["policy_changes_allowed"] is False
-    assert report["placement_changes_allowed"] is False
+    assert report["implementation_authorized"] is True
+    assert report["runtime_changes_allowed"] is True
+    assert report["public_contract_changes_allowed"] is True
+    assert report["database_migration_allowed"] is True
+    assert report["policy_changes_allowed"] is True
+    assert report["placement_changes_allowed"] is True
     assert report["trusted_host_promotion_allowed"] is False
     assert report["node_side_placement_allowed"] is False
     assert report["new_power_classes_allowed"] is False
     assert report["uat_required_now"] is False
-    assert "Approval recorded: `false`." in doc
-    assert "Decision status: `awaiting_explicit_user_approval`." in doc
+    assert "Approval recorded: `true`." in doc
+    assert "Decision status: `approved_for_bounded_implementation`." in doc
     target = "trusted-host-promotion-governance-binding-authorization-record-check"
     assert f"{target}:" in makefile
     assert f"release-check: {target}" in makefile

@@ -1,6 +1,6 @@
 # Trusted-Host Promotion Governance-Binding Architecture
 
-Status: proposed architecture decision for `ERG-005`; explicit implementation approval required.
+Status: approved for bounded implementation under `PRD-TRUSTED-HOST-BINDING-001`.
 
 Decision ID: `PRD-TRUSTED-HOST-BINDING-001`.
 
@@ -8,15 +8,15 @@ Current governed tool count: `24`.
 
 Current runtime boundary: one-artifact, create-exclusive, Manager-local host-staging placement.
 
-Proposed decision outcome: `approve_governance_binding_implementation_plan`.
+Decision outcome: `approve_governance_binding_implementation_plan`.
 
-This packet proposes the smallest architecture intended to close
+This packet defines the approved smallest architecture intended to close
 `EXT-TRUSTED-HOST-RUNTIME-002` and the dependent governance-drift portion of
-`EXT-TRUSTED-HOST-RUNTIME-006`. It does not change an API, database schema, manifest, policy,
-executor, deployment mode, or runtime behavior. It does not close either finding and it does not
-approve implementation by itself.
+`EXT-TRUSTED-HOST-RUNTIME-006`. The architecture document does not itself change an API, database
+schema, manifest, policy, executor, deployment mode, or runtime behavior. The bound authorization
+record permits implementation; neither document closes either finding.
 
-Validate the proposal with:
+Validate the architecture with:
 
 ```sh
 make trusted-host-promotion-governance-binding-architecture-check
@@ -646,18 +646,17 @@ Stop and require a new decision if implementation needs any of those capabilitie
 immutable-generation safety design, or cannot fail closed when candidate/policy/manifest evidence
 is unavailable.
 
-## Approval Gate
+## Authorization Record
 
-The current decision remains `proposed_for_explicit_approval`.
+The current decision is `approved_for_bounded_implementation`.
 
-The required approval statement is:
+On `2026-07-18`, the user directly delegated implementation-level technical decisions and instructed
+the main agent to fix project-related problems it knows how to fix. That standing delegation is
+recorded for this decision in
+`docs/codex/trusted-host-promotion-governance-binding-authorization-record.md` and authorizes the
+version-2 request contracts, versioned SQLite table-rebuild migration, policy binding, persistence,
+and placement work in `TGB-001` through `TGB-006`.
 
-```text
-Approve PRD-TRUSTED-HOST-BINDING-001 for bounded implementation, including the version-2 trusted-host
-promotion and approval-decision requests plus the versioned SQLite table-rebuild migration, while
-preserving the 24-tool, staging-only,
-Manager-local boundary and every stop line in the architecture packet.
-```
-
-Until that approval is recorded, runtime API, schema, policy, persistence, and placement behavior
-remain unchanged.
+This authorization preserves the 24-tool, staging-only, Manager-local boundary and every stop line
+above. It authorizes implementation work, not live route enablement, finding closure, release,
+production promotion, Node-side placement, new powers, or UAT acceptance.

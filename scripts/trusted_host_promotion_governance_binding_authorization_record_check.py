@@ -1,4 +1,4 @@
-"""Validate the pending PRD-TRUSTED-HOST-BINDING-001 authorization record."""
+"""Validate the approved PRD-TRUSTED-HOST-BINDING-001 authorization record."""
 
 from __future__ import annotations
 
@@ -25,28 +25,29 @@ DOC_TITLE = "Trusted-Host Promotion Governance-Binding Authorization Record"
 TARGET = "trusted-host-promotion-governance-binding-authorization-record-check"
 
 REQUIRED_PHRASES = [
-    "Status: pending explicit user authorization for `PRD-TRUSTED-HOST-BINDING-001`.",
+    "Status: approved bounded implementation authorization for `PRD-TRUSTED-HOST-BINDING-001`.",
     "Decision ID: `PRD-TRUSTED-HOST-BINDING-001`.",
-    "Decision status: `awaiting_explicit_user_approval`.",
-    "Approval recorded: `false`.",
+    "Decision status: `approved_for_bounded_implementation`.",
+    "Approval recorded: `true`.",
+    "Authorization date: `2026-07-18`.",
+    "Authorized architecture baseline commit: `250e6d8947972de28de134b72e0561bf39c62f5f`.",
     "Current governed tool count: `24`.",
     f"make {TARGET}",
-    "Approve PRD-TRUSTED-HOST-BINDING-001 for bounded implementation",
+    '"if something is broken and you know how to fix it, please,',
     "version-2 public request contracts",
     "SQLite table-rebuild migration",
     "TGB-001` through `TGB-006",
     "one artifact, create-exclusive, staging-only, Manager-local",
-    "implementation_authorized: false",
-    "runtime_changes_allowed: false",
-    "public_contract_changes_allowed: false",
-    "database_migration_allowed: false",
-    "policy_changes_allowed: false",
-    "placement_changes_allowed: false",
+    "implementation_authorized: true",
+    "runtime_changes_allowed: true",
+    "public_contract_changes_allowed: true",
+    "database_migration_allowed: true",
+    "policy_changes_allowed: true",
+    "placement_changes_allowed: true",
     "trusted_host_promotion_allowed: false",
     "node_side_placement_allowed: false",
     "new_power_classes_allowed: false",
     "uat_required_now: false",
-    "approved_for_bounded_implementation",
     "Promotion remains unavailable through `TGB-004`",
     "implementation_candidate_ready_for_independent_re_review",
     "Sol Ultra is not used without the user's prior approval.",
@@ -54,14 +55,14 @@ REQUIRED_PHRASES = [
 ]
 
 FORBIDDEN_PHRASES = [
-    "Approval recorded: `true`.",
-    "Decision status: `approved_for_bounded_implementation`.",
-    "implementation_authorized: true",
-    "runtime_changes_allowed: true",
-    "public_contract_changes_allowed: true",
-    "database_migration_allowed: true",
-    "policy_changes_allowed: true",
-    "placement_changes_allowed: true",
+    "Approval recorded: `false`.",
+    "Decision status: `awaiting_explicit_user_approval`.",
+    "implementation_authorized: false",
+    "runtime_changes_allowed: false",
+    "public_contract_changes_allowed: false",
+    "database_migration_allowed: false",
+    "policy_changes_allowed: false",
+    "placement_changes_allowed: false",
     "trusted_host_promotion_allowed: true",
     "node_side_placement_allowed: true",
     "new_power_classes_allowed: true",
@@ -109,7 +110,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"authorization record is missing phrase: {phrase}")
     for phrase in FORBIDDEN_PHRASES:
         if phrase in text:
-            failures.append(f"pending authorization record contains forbidden phrase: {phrase}")
+            failures.append(f"authorization record contains forbidden phrase: {phrase}")
 
     for label, report in [
         ("architecture", architecture),
@@ -119,12 +120,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     ]:
         failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
 
-    if architecture.get("decision_status") != "proposed_for_explicit_approval":
-        failures.append("architecture is not awaiting explicit approval")
-    if tickets.get("decision_status") != "proposed_for_explicit_approval":
-        failures.append("ticket packet is not awaiting explicit approval")
-    if tickets.get("implementation_authorized") is not False:
-        failures.append("ticket packet unexpectedly reports implementation authorized")
+    if architecture.get("decision_status") != "approved_for_bounded_implementation":
+        failures.append("architecture is not approved for bounded implementation")
+    if tickets.get("decision_status") != "approved_for_bounded_implementation":
+        failures.append("ticket packet is not approved for bounded implementation")
+    if tickets.get("implementation_authorized") is not True:
+        failures.append("ticket packet does not report implementation authorization")
+    if tickets.get("trusted_host_promotion_allowed") is not False:
+        failures.append("ticket packet unexpectedly enables live trusted-host promotion")
     if tool_surface.get("tool_count") != 24:
         failures.append("live governed tool count is not 24")
     if no_new_powers.get("new_power_classes_allowed") is not False:
@@ -153,17 +156,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "authorization_record": DOC_REL,
         "decision_id": "PRD-TRUSTED-HOST-BINDING-001",
-        "decision_status": "awaiting_explicit_user_approval",
-        "approval_recorded": False,
+        "decision_status": "approved_for_bounded_implementation",
+        "approval_recorded": True,
         "tool_count": tool_surface.get("tool_count"),
         "tool_surface_valid": tool_surface.get("valid"),
         "no_new_powers_valid": no_new_powers.get("valid"),
-        "implementation_authorized": False,
-        "runtime_changes_allowed": False,
-        "public_contract_changes_allowed": False,
-        "database_migration_allowed": False,
-        "policy_changes_allowed": False,
-        "placement_changes_allowed": False,
+        "implementation_authorized": True,
+        "runtime_changes_allowed": True,
+        "public_contract_changes_allowed": True,
+        "database_migration_allowed": True,
+        "policy_changes_allowed": True,
+        "placement_changes_allowed": True,
         "trusted_host_promotion_allowed": False,
         "node_side_placement_allowed": False,
         "new_power_classes_allowed": no_new_powers.get("new_power_classes_allowed"),

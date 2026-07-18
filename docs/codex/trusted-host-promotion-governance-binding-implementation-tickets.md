@@ -1,13 +1,12 @@
 # Trusted-Host Promotion Governance-Binding Implementation Tickets
 
-Status: proposal-only execution packet for `PRD-TRUSTED-HOST-BINDING-001`; implementation remains
-unauthorized pending the explicit approval gate.
+Status: approved bounded execution packet for `PRD-TRUSTED-HOST-BINDING-001`.
 
 Current governed tool count: `24`.
 
 Current product boundary: one-artifact, create-exclusive, Manager-local host-staging placement.
 
-Current decision status: `proposed_for_explicit_approval`.
+Current decision status: `approved_for_bounded_implementation`.
 
 Run:
 
@@ -18,25 +17,22 @@ make trusted-host-promotion-governance-binding-implementation-tickets-check
 This packet converts the reviewed architecture in
 `docs/codex/trusted-host-promotion-governance-binding-architecture.md` into six bounded implementation
 tickets. It names current source anchors, proposed file ownership, sequencing, acceptance evidence,
-and stop conditions. It does not change runtime behavior, authorize a public-contract or database
-change, close `EXT-TRUSTED-HOST-RUNTIME-002`, close `EXT-TRUSTED-HOST-RUNTIME-006`, or close
-`ERG-005`.
+and stop conditions. Its bound authorization record permits the public-contract, database, policy,
+persistence, and placement implementation changes required by those tickets. It does not itself
+change runtime behavior, enable the live promotion route, close `EXT-TRUSTED-HOST-RUNTIME-002`,
+close `EXT-TRUSTED-HOST-RUNTIME-006`, or close `ERG-005`.
 
-## Approval Gate
+## Authorization Scope
 
-No ticket below may start until the user records this exact decision or an unambiguously equivalent
-approval that names the same decision ID and boundaries:
-
-```text
-Approve PRD-TRUSTED-HOST-BINDING-001 for bounded implementation, including the version-2 trusted-host
-promotion and approval-decision requests plus the versioned SQLite table-rebuild migration, while
-preserving the 24-tool, staging-only, Manager-local boundary and every stop line in the architecture
+The direct user instruction recorded on `2026-07-18`, together with the standing project authority
+in `AGENTS.md`, authorizes tickets `TGB-001` through `TGB-006` in order. The user does not need to
+repeat a technical approval formula for changes already bounded by this architecture and ticket
 packet.
-```
 
-Approval authorizes only tickets `TGB-001` through `TGB-006` in order. It does not authorize a new
+Authorization is limited to these tickets. It does not authorize a new
 MCP tool, a new API route, Node-side placement, runner control, arbitrary host writes, production
 identity, runtime Postgres, OPA-backed promotion, SIEM delivery, or public security-product claims.
+The live trusted-host promotion route remains unavailable until the `TGB-005` gates pass.
 
 ## Current Source Baseline
 
@@ -639,14 +635,16 @@ automated, migration, adversarial, or source-review gate above.
 
 ## Packet Completion Definition
 
-This proposal-only ticket packet is complete when:
+This approved ticket packet is complete when:
 
 - all six tickets name exact objectives, owners, source files, acceptance evidence, validation, and
   stop conditions;
 - the architecture checker, this packet checker, live tool-surface gate, and live no-new-powers gate
   pass;
-- no runtime/API/schema/policy/persistence/placement behavior changed while preparing it;
-- current decision remains `proposed_for_explicit_approval`.
+- authorization remains bounded to the runtime/API/schema/policy/persistence/placement changes
+  named by `TGB-001` through `TGB-006`;
+- current decision remains `approved_for_bounded_implementation`.
 
-Packet completion means the implementation path is reviewable. It does not mean implementation is
-approved, started, complete, externally accepted, released, or ready for UAT.
+Packet completion means the implementation path is authorized and reviewable. It does not mean the
+implementation is complete, the live route is enabled, findings are closed, the candidate is
+externally accepted, the product is released, or UAT has passed.

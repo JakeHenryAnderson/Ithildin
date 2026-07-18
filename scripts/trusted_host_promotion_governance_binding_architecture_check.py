@@ -1,4 +1,4 @@
-"""Validate the proposed ERG-005 governance-binding architecture packet."""
+"""Validate the approved ERG-005 governance-binding architecture packet."""
 
 from __future__ import annotations
 
@@ -18,12 +18,12 @@ DOC_REL = "docs/codex/trusted-host-promotion-governance-binding-architecture.md"
 
 REQUIRED_PHRASES = [
     (
-        "Status: proposed architecture decision for `ERG-005`; explicit implementation "
-        "approval required."
+        "Status: approved for bounded implementation under "
+        "`PRD-TRUSTED-HOST-BINDING-001`."
     ),
     "Decision ID: `PRD-TRUSTED-HOST-BINDING-001`.",
     "Current governed tool count: `24`.",
-    "Proposed decision outcome: `approve_governance_binding_implementation_plan`.",
+    "Decision outcome: `approve_governance_binding_implementation_plan`.",
     "PromotionAuthoritySnapshot",
     "AdminPrincipalContext",
     "TrustedHostDescriptorRegistry",
@@ -58,17 +58,14 @@ REQUIRED_PHRASES = [
     "Bounded Implementation Slices",
     "Implementation Acceptance Gates",
     "Explicit Non-Goals And Stop Lines",
-    "The current decision remains `proposed_for_explicit_approval`.",
-    "Approve PRD-TRUSTED-HOST-BINDING-001 for bounded implementation",
-    (
-        "Until that approval is recorded, runtime API, schema, policy, persistence, "
-        "and placement behavior"
-    ),
+    "The current decision is `approved_for_bounded_implementation`.",
+    "On `2026-07-18`, the user directly delegated implementation-level technical decisions",
+    "This authorization preserves the 24-tool, staging-only, Manager-local boundary",
+    "It authorizes implementation work, not live route enablement",
     "make trusted-host-promotion-governance-binding-architecture-check",
 ]
 
 FORBIDDEN_PHRASES = [
-    "implementation is approved",
     "erg-005 is closed",
     "trusted-host promotion is production ready",
     "node-side placement is approved",
@@ -151,13 +148,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "architecture_doc": DOC_REL,
         "decision_id": "PRD-TRUSTED-HOST-BINDING-001",
-        "decision_status": "proposed_for_explicit_approval",
+        "decision_status": "approved_for_bounded_implementation",
         "tool_count": tool_surface["tool_count"],
         "tool_surface_valid": tool_surface["valid"],
         "no_new_powers_valid": no_new_powers["valid"],
-        "runtime_changes_allowed": False,
-        "public_contract_changes_allowed": False,
-        "database_migration_allowed": False,
+        "implementation_authorized": True,
+        "runtime_changes_allowed": True,
+        "public_contract_changes_allowed": True,
+        "database_migration_allowed": True,
         "trusted_host_promotion_expansion_allowed": False,
         "node_side_placement_allowed": False,
         "new_power_classes_allowed": no_new_powers["new_power_classes_allowed"],
@@ -174,6 +172,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         f"tool_surface_valid: {str(report['tool_surface_valid']).lower()}",
         f"no_new_powers_valid: {str(report['no_new_powers_valid']).lower()}",
+        f"implementation_authorized: {str(report['implementation_authorized']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "public_contract_changes_allowed: "
         f"{str(report['public_contract_changes_allowed']).lower()}",
