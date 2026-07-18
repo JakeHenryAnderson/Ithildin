@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,12 @@ DEFAULT_OUTPUT_DIR = Path(
 )
 HASH_MANIFEST = "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
 FINDING_NAMESPACE = "EXT-TRUSTED-HOST-RUNTIME-###"
+RUNTIME_CANDIDATE_REVIEW_PACKET = (
+    "11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json"
+)
+RUNTIME_CANDIDATE_DIGEST_EVIDENCE = (
+    "12_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_DIGEST_EVIDENCE.json"
+)
 
 SOURCE_FILES = [
     "apps/api/runtime_candidate_bootstrap.py",
@@ -45,15 +52,20 @@ SOURCE_FILES = [
     "apps/api/src/ithildin_api/trusted_host_registry.py",
     "apps/api/src/ithildin_api/workspaces.py",
     "apps/ui/src/App.tsx",
+    "apps/ui/src/styles.css",
+    "packages/audit-core/src/ithildin_audit_core/writer.py",
     "packages/schemas/src/ithildin_schemas/models.py",
     "packages/schemas/src/ithildin_schemas/types.py",
     "scripts/runtime_candidate_authorization_record.py",
     "scripts/trusted_host_promotion_negative_transcripts.py",
+    "scripts/trusted_host_promotion_governance_drift_transcripts.py",
     "scripts/trusted_host_promotion_v2_downgrade_evidence.py",
     "schemas/runtime-candidate-authorization.schema.json",
     "trusted-hosts/local.yaml",
 ]
 TEST_FILES = [
+    "apps/ui/src/App.test.tsx",
+    "tests/test_audit_writer.py",
     "tests/test_api_service.py",
     "tests/test_approval_workflow.py",
     "tests/test_core_schemas.py",
@@ -99,9 +111,9 @@ FOCUSED_TEST_COMMAND = [
     "tests/test_api_service.py::test_trusted_host_promotion_rejects_unsafe_source_object_types",
     "tests/test_api_service.py::test_trusted_host_promotion_concurrent_apply_remains_disabled",
     "tests/test_api_service.py::test_trusted_host_promotion_preserves_existing_destination",
-    "tests/test_api_service.py::test_trusted_host_promotion_emits_no_completion_audit_while_disabled",
+    "tests/test_api_service.py::test_trusted_host_promotion_audit_failure_leaves_completion_pending",
     "tests/test_api_service.py::test_trusted_host_promotion_is_fail_closed_until_binding_is_complete",
-    "tests/test_api_service.py::test_trusted_host_promotion_internal_fixture_places_once_without_completion_claim",
+    "tests/test_api_service.py::test_trusted_host_promotion_internal_fixture_completes_after_audit_evidence",
     "tests/test_api_service.py::test_trusted_host_promotion_apply_opens_source_exactly_once",
     "tests/test_api_service.py::test_trusted_host_promotion_internal_fixture_concurrent_replay_reserves_once",
     "tests/test_api_service.py::test_trusted_host_promotion_source_drift_is_terminal_before_reservation",
@@ -323,6 +335,14 @@ def build_check_report(
             failures.append(
                 "existing runtime source-review packet artifact hashes do not match files"
             )
+        if not packet_evidence["redaction_scan_valid"]:
+            failures.append(
+                "existing runtime source-review packet redaction scan is missing or invalid"
+            )
+        if not packet_evidence["candidate_digest_evidence_valid"]:
+            failures.append(
+                "existing runtime source-review packet candidate digest evidence is invalid"
+            )
         embedded_packet_evidence = _embedded_packet_evidence(
             repo_root / DEFAULT_OUTPUT_DIR
         )
@@ -379,6 +399,8 @@ def build_bundle(
             "commit_matches_head": True,
             "generated_from_clean_tree": not dirty,
             "artifact_hashes_match_files": False,
+            "redaction_scan_valid": False,
+            "candidate_digest_evidence_valid": False,
         },
     }
 
@@ -387,6 +409,8 @@ def build_bundle(
         "dirty": dirty,
         "check": check,
     }
+    candidate_evidence = _candidate_digest_evidence(repo_root, commit=commit, dirty=dirty)
+    context["candidate_evidence"] = candidate_evidence
     files = {
         "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md": _index(context),
         "01_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_PROMPT.md": _prompt(context),
@@ -404,21 +428,42 @@ def build_bundle(
     }
     for name, content in files.items():
         (output_dir / name).write_text(_packet_text(content), encoding="utf-8")
+    _write_json(
+        output_dir / RUNTIME_CANDIDATE_REVIEW_PACKET,
+        candidate_evidence["candidate_review_packet"],
+    )
+    _write_json(
+        output_dir / RUNTIME_CANDIDATE_DIGEST_EVIDENCE,
+        {
+            key: value
+            for key, value in candidate_evidence.items()
+            if key != "candidate_review_packet"
+        },
+    )
 
     decision_output = _command_output(
         ["make", "trusted-host-promotion-runtime-implementation-decision-check"],
+        repo_root=repo_root,
         run_commands=run_commands,
     )
     negative_output = _command_output(
         ["make", "trusted-host-promotion-negative-transcripts"],
+        repo_root=repo_root,
+        run_commands=run_commands,
+    )
+    governance_drift_output = _command_output(
+        ["make", "trusted-host-promotion-governance-drift-transcripts"],
+        repo_root=repo_root,
         run_commands=run_commands,
     )
     no_new_powers_output = _command_output(
         ["make", "no-new-powers-guardrail"],
+        repo_root=repo_root,
         run_commands=run_commands,
     )
     tool_surface_output = _command_output(
         ["make", "tool-surface-invariant-gate"],
+        repo_root=repo_root,
         run_commands=run_commands,
     )
     (output_dir / "06_TRUSTED_HOST_PROMOTION_RUNTIME_EVIDENCE.md").write_text(
@@ -426,6 +471,7 @@ def build_bundle(
             _evidence(
                 decision_output,
                 negative_output,
+                governance_drift_output,
                 no_new_powers_output,
                 tool_surface_output,
             )
@@ -434,8 +480,44 @@ def build_bundle(
     )
     _write_command_output(
         output_dir / "07_TRUSTED_HOST_PROMOTION_RUNTIME_FOCUSED_TESTS.txt",
-        _command_output(FOCUSED_TEST_COMMAND, run_commands=run_commands),
+        _command_output(
+            FOCUSED_TEST_COMMAND,
+            repo_root=repo_root,
+            run_commands=run_commands,
+        ),
     )
+    governance_transcript = (
+        repo_root
+        / "var/review-packets/v3/trusted-host-promotion-governance-drift/"
+        "TRUSTED_HOST_PROMOTION_GOVERNANCE_DRIFT_TRANSCRIPTS.md"
+    )
+    governance_packet_path = (
+        output_dir / "09_TRUSTED_HOST_PROMOTION_GOVERNANCE_DRIFT_TRANSCRIPTS.md"
+    )
+    if run_commands:
+        if not governance_transcript.is_file():
+            raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+                "governance-drift transcript command did not produce its artifact"
+            )
+        governance_packet_path.write_text(
+            governance_transcript.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        governance_packet_path.write_text(
+            "# Trusted-Host Promotion Governance-Drift Transcripts\n\n"
+            "Command execution skipped for packet-shape validation.\n",
+            encoding="utf-8",
+        )
+    redaction_report = _packet_redaction_report(output_dir, repo_root=repo_root)
+    _write_json(
+        output_dir / "10_TRUSTED_HOST_PROMOTION_RUNTIME_REDACTION_SCAN.json",
+        redaction_report,
+    )
+    if not redaction_report["valid"]:
+        raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+            "generated packet failed bounded evidence redaction scan"
+        )
     _write_json(output_dir / HASH_MANIFEST, _hashes(output_dir))
     packet_evidence = _existing_packet_evidence(repo_root, output_dir)
     check["existing_packet"] = packet_evidence
@@ -448,6 +530,8 @@ def build_bundle(
     if (
         not final_evidence["commit_matches_head"]
         or not final_evidence["artifact_hashes_match_files"]
+        or not final_evidence["redaction_scan_valid"]
+        or (not allow_dirty and not final_evidence["candidate_digest_evidence_valid"])
         or (not allow_dirty and not final_evidence["generated_from_clean_tree"])
     ):
         raise TrustedHostPromotionRuntimeSourceReviewBundleError(
@@ -457,6 +541,7 @@ def build_bundle(
 
 
 def _index(context: dict[str, Any]) -> str:
+    candidate = context["candidate_evidence"]
     return f"""# Trusted-Host Promotion Runtime Source Review Handoff
 
 This packet prepares the implemented staging-only `ERG-005` runtime slice for source review.
@@ -469,6 +554,11 @@ This packet prepares the implemented staging-only `ERG-005` runtime slice for so
 - Dirty at generation: `{str(context["dirty"]).lower()}`.
 - Tool count: `{context["check"]["tool_count"]}`.
 - Runtime slice: one stored sandbox/workspace artifact -> one approved local host-staging placement.
+- Runtime candidate ID: `{candidate["candidate_id"]}`.
+- Candidate inventory digest: `{candidate["reviewed_inventory_digest"]}`.
+- Dependency-lock digest: `{candidate["dependency_lock_digest"]}`.
+- Immutable release-artifact digest: `{candidate["release_artifact_digest"]}`.
+- Detached candidate review-packet digest: `{candidate["review_packet_digest"]}`.
 - MCP/tool manifest exposure: not added.
 - Approved-output publishing: not implemented.
 - Arbitrary host paths or broad host writes: not implemented.
@@ -484,7 +574,11 @@ This packet prepares the implemented staging-only `ERG-005` runtime slice for so
 7. `06_TRUSTED_HOST_PROMOTION_RUNTIME_EVIDENCE.md`
 8. `07_TRUSTED_HOST_PROMOTION_RUNTIME_FOCUSED_TESTS.txt`
 9. `08_TRUSTED_HOST_PROMOTION_RUNTIME_INTAKE_COMMANDS.md`
-10. `{HASH_MANIFEST}`
+10. `09_TRUSTED_HOST_PROMOTION_GOVERNANCE_DRIFT_TRANSCRIPTS.md`
+11. `10_TRUSTED_HOST_PROMOTION_RUNTIME_REDACTION_SCAN.json`
+12. `{RUNTIME_CANDIDATE_REVIEW_PACKET}`
+13. `{RUNTIME_CANDIDATE_DIGEST_EVIDENCE}`
+14. `{HASH_MANIFEST}`
 
 ## What This Does Not Approve
 
@@ -513,13 +607,22 @@ boundary. If it cannot, explain exactly which implementation issue or evidence g
 Review that:
 
 - all runtime routes are admin-protected;
+- requester, approver, and executor identities are server-derived and generation-bound;
 - no MCP tool, tool manifest, or governed tool power was added;
 - proposals and apply payloads are closed and bounded;
+- every principal, workspace, sandbox, host, policy, manifest, schema, candidate, and approval
+  component is revalidated immediately before one atomic reservation;
+- migrations are one-transaction, downgrade-safe, idempotent, and preserve legacy rows without
+  synthesizing authority;
+- the exact runtime candidate is bound to a clean commit, closed file inventory, dependency lock,
+  immutable Git-archive release domain, and detached review packet;
 - source artifacts are relative, workspace-confined, UTF-8 text, size-limited, and re-hashed before
   staging;
 - hidden/sensitive paths, `.git`, symlinks, hardlinks, traversal, stale hashes, replayed approvals,
   and extra apply fields fail safely;
 - approval consumption is one-time and evidence-bound;
+- completion is recorded only after append-only audit evidence succeeds, while interrupted and
+  post-write recovery states remain terminal and non-retryable;
 - host staging accepts only safe `host-staging://<label>` labels, not raw host paths;
 - placement uses create-exclusive behavior and does not overwrite;
 - API responses, audit events, diagnostics, and transcripts do not expose file contents, diffs,
@@ -538,6 +641,7 @@ product claims, or new governed tool powers.
 def _evidence(
     decision_output: str,
     negative_output: str,
+    governance_drift_output: str,
     no_new_powers_output: str,
     tool_surface_output: str,
 ) -> str:
@@ -553,6 +657,12 @@ def _evidence(
 
 ```text
 {negative_output}
+```
+
+## Observed Governance-Drift Matrix
+
+```text
+{governance_drift_output}
 ```
 
 ## No-New-Powers Guardrail
@@ -575,6 +685,7 @@ def _intake_commands() -> str:
 ```bash
 make trusted-host-promotion-runtime-implementation-decision-check
 make trusted-host-promotion-negative-transcripts
+make trusted-host-promotion-governance-drift-transcripts
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 uv run pytest \\
@@ -605,11 +716,26 @@ def _collect_missing(
             failures.append(f"missing {label}: {relative}")
 
 
-def _command_output(command: list[str], *, run_commands: bool) -> str:
+def _command_output(
+    command: list[str],
+    *,
+    repo_root: Path,
+    run_commands: bool,
+) -> str:
     if not run_commands:
         return f"skipped command: {' '.join(command)}"
-    process = subprocess.run(command, text=True, capture_output=True, check=False)
+    process = subprocess.run(
+        command,
+        cwd=repo_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
     output = (process.stdout + process.stderr).strip()
+    if process.returncode != 0:
+        raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+            f"evidence command failed ({process.returncode}): {' '.join(command)}"
+        )
     return f"$ {' '.join(command)}\nexit_code={process.returncode}\n{output}"
 
 
@@ -623,6 +749,256 @@ def _write_json(path: Path, payload: Any) -> None:
 
 def _json(payload: Any) -> str:
     return json.dumps(payload, indent=2, sort_keys=True)
+
+
+def _candidate_digest_evidence(
+    repo_root: Path,
+    *,
+    commit: str,
+    dirty: bool,
+) -> dict[str, Any]:
+    candidate_paths = _runtime_candidate_paths(repo_root)
+    files = [
+        {
+            "path": relative,
+            "sha256": _file_digest(repo_root / relative),
+        }
+        for relative in candidate_paths
+    ]
+    inventory_schema_version = "1"
+    reviewed_inventory_digest = _sha256_json(
+        {"schema_version": inventory_schema_version, "files": files}
+    )
+    dependency_lock_digest = _file_digest(repo_root / "uv.lock")
+    release_artifact_digest = _git_archive_digest(repo_root, commit)
+    evidence_schema_version = "1"
+    candidate_core = {
+        "source_commit": commit,
+        "inventory_schema_version": inventory_schema_version,
+        "reviewed_inventory_digest": reviewed_inventory_digest,
+        "dependency_lock_digest": dependency_lock_digest,
+        "release_artifact_digest": release_artifact_digest,
+        "evidence_schema_version": evidence_schema_version,
+    }
+    candidate_id = _sha256_json(candidate_core)
+    candidate_review_packet = {
+        "schema_version": "1",
+        "candidate_id": candidate_id,
+        "source_commit": commit,
+        "finding_namespace": FINDING_NAMESPACE,
+        "review_scope": "trusted_host_promotion_runtime_staging_only",
+        "external_review_complete": False,
+    }
+    review_packet_digest = _sha256_bytes(
+        (_json(candidate_review_packet) + "\n").encode("utf-8")
+    )
+    return {
+        "schema_version": "1",
+        "source_commit": commit,
+        "source_dirty": dirty,
+        "candidate_id": candidate_id,
+        "inventory_schema_version": inventory_schema_version,
+        "inventory_file_count": len(files),
+        "inventory_files": files,
+        "reviewed_inventory_digest": reviewed_inventory_digest,
+        "dependency_lock_path": "uv.lock",
+        "dependency_lock_digest": dependency_lock_digest,
+        "release_artifact_domain": "git_archive_exact_commit",
+        "release_artifact_digest": release_artifact_digest,
+        "review_packet_path": RUNTIME_CANDIDATE_REVIEW_PACKET,
+        "review_packet_digest": review_packet_digest,
+        "evidence_schema_version": evidence_schema_version,
+        "digest_domains_acyclic": True,
+        "candidate_review_packet": candidate_review_packet,
+        "authorization_record_created": False,
+        "external_review_complete": False,
+    }
+
+
+def _runtime_candidate_paths(repo_root: Path) -> list[str]:
+    process = subprocess.run(
+        ["git", "ls-files"],
+        cwd=repo_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if process.returncode != 0:
+        raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+            "runtime candidate inventory is unavailable"
+        )
+    exact = {
+        "deploy/Dockerfile.api",
+        "pyproject.toml",
+        "tool-manifests.lock.json",
+        "uv.lock",
+    }
+    prefixes = (
+        "apps/api/",
+        "migrations/",
+        "packages/",
+        "policies/",
+        "principals/",
+        "schemas/",
+        "tool-manifests/",
+        "trusted-hosts/",
+        "workspaces/",
+    )
+    candidates = sorted(
+        relative
+        for relative in process.stdout.splitlines()
+        if relative in exact or relative.startswith(prefixes)
+    )
+    if not candidates or "uv.lock" not in candidates:
+        raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+            "runtime candidate inventory is incomplete"
+        )
+    missing = [relative for relative in candidates if not (repo_root / relative).is_file()]
+    if missing:
+        raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+            "runtime candidate inventory contains unavailable files"
+        )
+    return candidates
+
+
+def _packet_redaction_report(output_dir: Path, *, repo_root: Path) -> dict[str, Any]:
+    scanned_names = [
+        "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md",
+        "01_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_PROMPT.md",
+        "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json",
+        "06_TRUSTED_HOST_PROMOTION_RUNTIME_EVIDENCE.md",
+        "07_TRUSTED_HOST_PROMOTION_RUNTIME_FOCUSED_TESTS.txt",
+        "08_TRUSTED_HOST_PROMOTION_RUNTIME_INTAKE_COMMANDS.md",
+        "09_TRUSTED_HOST_PROMOTION_GOVERNANCE_DRIFT_TRANSCRIPTS.md",
+        RUNTIME_CANDIDATE_REVIEW_PACKET,
+        RUNTIME_CANDIDATE_DIGEST_EVIDENCE,
+    ]
+    patterns = [
+        ("repo_absolute_path", re.escape(repo_root.as_posix())),
+        ("user_home_path", r"/Users/"),
+        ("test_bearer_token", r"correct-token"),
+        ("sample_bearer_token", r"dev-admin-token"),
+        ("stack_trace", r"Traceback \(most recent call last\)"),
+        ("authorization_header", r"(?i)authorization:\s*bearer\s+\S+"),
+    ]
+    findings: list[dict[str, str]] = []
+    for name in scanned_names:
+        path = output_dir / name
+        text = path.read_text(encoding="utf-8")
+        for finding_type, pattern in patterns:
+            if re.search(pattern, text):
+                findings.append({"path": name, "finding_type": finding_type})
+    return {
+        "schema_version": "1",
+        "valid": not findings,
+        "scanned_files": scanned_names,
+        "scanned_file_count": len(scanned_names),
+        "finding_count": len(findings),
+        "findings": findings,
+        "source_test_contract_bundles_excluded": True,
+        "exclusion_reason": (
+            "bundled reviewed source contains deliberate security-test literals; "
+            "generated handoff and evidence surfaces are scanned"
+        ),
+    }
+
+
+def _file_digest(path: Path) -> str:
+    return _sha256_bytes(path.read_bytes())
+
+
+def _sha256_json(value: object) -> str:
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return _sha256_bytes(encoded)
+
+
+def _sha256_bytes(value: bytes) -> str:
+    return "sha256:" + hashlib.sha256(value).hexdigest()
+
+
+def _git_archive_digest(repo_root: Path, commit: str) -> str:
+    process = subprocess.run(
+        ["git", "archive", "--format=tar", commit],
+        cwd=repo_root,
+        capture_output=True,
+        check=False,
+    )
+    if process.returncode != 0:
+        raise TrustedHostPromotionRuntimeSourceReviewBundleError(
+            "immutable release artifact domain is unavailable"
+        )
+    return _sha256_bytes(process.stdout)
+
+
+def _candidate_digest_evidence_valid(repo_root: Path, output_dir: Path) -> bool:
+    evidence_path = output_dir / RUNTIME_CANDIDATE_DIGEST_EVIDENCE
+    review_packet_path = output_dir / RUNTIME_CANDIDATE_REVIEW_PACKET
+    try:
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        review_packet = json.loads(review_packet_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(evidence, dict) or not isinstance(review_packet, dict):
+        return False
+    commit = evidence.get("source_commit")
+    files = evidence.get("inventory_files")
+    if not isinstance(commit, str) or not isinstance(files, list):
+        return False
+    if evidence.get("source_dirty") is not False:
+        return False
+    if _git(repo_root, ["rev-parse", "HEAD"]) != commit:
+        return False
+    if _git(repo_root, ["status", "--short"]):
+        return False
+    if review_packet.get("source_commit") != commit:
+        return False
+    if review_packet.get("candidate_id") != evidence.get("candidate_id"):
+        return False
+    if evidence.get("review_packet_digest") != _file_digest(review_packet_path):
+        return False
+    if evidence.get("dependency_lock_digest") != _file_digest(repo_root / "uv.lock"):
+        return False
+    if evidence.get("release_artifact_digest") != _git_archive_digest(repo_root, commit):
+        return False
+    normalized_files: list[dict[str, str]] = []
+    previous = ""
+    for record in files:
+        if not isinstance(record, dict) or set(record) != {"path", "sha256"}:
+            return False
+        relative = record.get("path")
+        digest = record.get("sha256")
+        if not isinstance(relative, str) or relative <= previous:
+            return False
+        path = repo_root / relative
+        if not path.is_file() or digest != _file_digest(path):
+            return False
+        previous = relative
+        normalized_files.append({"path": relative, "sha256": digest})
+    inventory_schema_version = evidence.get("inventory_schema_version")
+    reviewed_inventory_digest = _sha256_json(
+        {"schema_version": inventory_schema_version, "files": normalized_files}
+    )
+    if evidence.get("reviewed_inventory_digest") != reviewed_inventory_digest:
+        return False
+    candidate_core = {
+        "source_commit": commit,
+        "inventory_schema_version": inventory_schema_version,
+        "reviewed_inventory_digest": reviewed_inventory_digest,
+        "dependency_lock_digest": evidence.get("dependency_lock_digest"),
+        "release_artifact_digest": evidence.get("release_artifact_digest"),
+        "evidence_schema_version": evidence.get("evidence_schema_version"),
+    }
+    return (
+        evidence.get("candidate_id") == _sha256_json(candidate_core)
+        and evidence.get("digest_domains_acyclic") is True
+        and evidence.get("authorization_record_created") is False
+        and evidence.get("external_review_complete") is False
+    )
 
 
 def _hashes(output_dir: Path) -> list[dict[str, Any]]:
@@ -653,6 +1029,8 @@ def _existing_packet_evidence(
             "commit_matches_head": None,
             "generated_from_clean_tree": None,
             "artifact_hashes_match_files": None,
+            "redaction_scan_valid": None,
+            "candidate_digest_evidence_valid": None,
         }
 
     head = _git(repo_root, ["rev-parse", "HEAD"])
@@ -671,6 +1049,23 @@ def _existing_packet_evidence(
         recorded_hashes = None
     if isinstance(recorded_hashes, list):
         hashes_match = recorded_hashes == _hashes(output_dir)
+    redaction_scan_valid = False
+    redaction_path = (
+        output_dir / "10_TRUSTED_HOST_PROMOTION_RUNTIME_REDACTION_SCAN.json"
+    )
+    try:
+        redaction_payload = json.loads(redaction_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        redaction_payload = None
+    if isinstance(redaction_payload, dict):
+        redaction_scan_valid = (
+            redaction_payload == _packet_redaction_report(output_dir, repo_root=repo_root)
+            and redaction_payload.get("valid") is True
+        )
+    candidate_digest_evidence_valid = _candidate_digest_evidence_valid(
+        repo_root,
+        output_dir,
+    )
 
     return {
         "present": True,
@@ -678,6 +1073,8 @@ def _existing_packet_evidence(
         "commit_matches_head": packet_commit == head and prompt_commit == head,
         "generated_from_clean_tree": "Dirty at generation: `false`." in index,
         "artifact_hashes_match_files": hashes_match,
+        "redaction_scan_valid": redaction_scan_valid,
+        "candidate_digest_evidence_valid": candidate_digest_evidence_valid,
     }
 
 

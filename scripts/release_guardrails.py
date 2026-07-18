@@ -303,6 +303,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "trusted-host-promotion-governance-binding-implementation-tickets-check",
     "trusted-host-promotion-governance-binding-authorization-record-check",
     "trusted-host-promotion-negative-transcripts",
+    "trusted-host-promotion-governance-drift-transcripts",
     "trusted-host-promotion-runtime-source-review-bundle-check",
     "trusted-host-promotion-source-review-packet-check",
     "trusted-host-promotion-internal-review-check",

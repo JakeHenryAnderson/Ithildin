@@ -10,9 +10,11 @@ from pathlib import Path
 import pytest
 from runtime_candidate_bootstrap import (
     RuntimeCandidateVerificationError,
+    verify_from_environment,
     verify_runtime_candidate,
 )
 
+from scripts import runtime_candidate_authorization_record as authorization_record_module
 from scripts.runtime_candidate_authorization_record import (
     AuthorizationRecordError,
     build_authorization_record,
@@ -69,6 +71,177 @@ def test_runtime_candidate_rejects_drift_and_writable_authority(
             inventory_path=inventory_path,
             authorization_path=authorization_path,
             allow_test_paths=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("absent_inventory", "candidate inventory file is unavailable"),
+        ("writable_package_root", "candidate package root has unsafe writable mode"),
+        ("reviewed_inventory_digest", "reviewed inventory digest mismatch"),
+        ("digest_domain_cycle", "candidate id mismatch"),
+        (
+            "wrong_allowlisted_candidate",
+            "candidate authorization does not match verified candidate_id",
+        ),
+        (
+            "inventory_schema_version",
+            "candidate authorization does not match verified inventory_schema_version",
+        ),
+        (
+            "reviewed_commit",
+            "candidate authorization does not match verified reviewed_commit",
+        ),
+        (
+            "authorization_inventory_digest",
+            "candidate authorization does not match verified reviewed_inventory_digest",
+        ),
+        (
+            "dependency_lock_digest",
+            "candidate authorization does not match verified dependency_lock_digest",
+        ),
+        (
+            "release_artifact_digest",
+            "candidate authorization does not match verified release_artifact_digest",
+        ),
+        (
+            "review_packet_digest",
+            "candidate authorization does not match verified review_packet_digest",
+        ),
+        (
+            "metadata_only_spoof",
+            "candidate authorization does not match verified candidate_id",
+        ),
+    ],
+)
+def test_runtime_candidate_rejects_each_closed_evidence_spoof(
+    tmp_path: Path,
+    mutation: str,
+    message: str,
+) -> None:
+    root, inventory_path, authorization_path = _candidate_fixture(tmp_path)
+    if mutation == "absent_inventory":
+        root.chmod(0o755)
+        inventory_path.unlink()
+        root.chmod(0o555)
+    elif mutation == "writable_package_root":
+        root.chmod(0o755)
+    elif mutation in {"reviewed_inventory_digest", "digest_domain_cycle"}:
+        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+        if mutation == "reviewed_inventory_digest":
+            inventory["reviewed_inventory_digest"] = "sha256:" + ("e" * 64)
+        else:
+            cyclic_core = {
+                "source_commit": inventory["source_commit"],
+                "inventory_schema_version": inventory["schema_version"],
+                "reviewed_inventory_digest": inventory["reviewed_inventory_digest"],
+                "dependency_lock_digest": inventory["dependency_lock_digest"],
+                "release_artifact_digest": inventory["release_artifact_digest"],
+                "review_packet_digest": inventory["review_packet_digest"],
+                "evidence_schema_version": inventory["evidence_schema_version"],
+            }
+            inventory["candidate_id"] = _json_digest(cyclic_core)
+        inventory_path.chmod(0o644)
+        inventory_path.write_text(json.dumps(inventory), encoding="utf-8")
+        inventory_path.chmod(0o444)
+    else:
+        authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
+        if mutation == "wrong_allowlisted_candidate":
+            authorization["candidate_id"] = "sha256:" + ("e" * 64)
+        elif mutation == "inventory_schema_version":
+            authorization["inventory_schema_version"] = "2"
+        elif mutation == "reviewed_commit":
+            authorization["reviewed_commit"] = "2" * 40
+        elif mutation == "authorization_inventory_digest":
+            authorization["reviewed_inventory_digest"] = "sha256:" + ("e" * 64)
+        elif mutation == "dependency_lock_digest":
+            authorization["dependency_lock_digest"] = "sha256:" + ("e" * 64)
+        elif mutation == "release_artifact_digest":
+            authorization["release_artifact_digest"] = "sha256:" + ("e" * 64)
+        elif mutation == "review_packet_digest":
+            authorization["review_packet_digest"] = "sha256:" + ("e" * 64)
+        else:
+            for key in (
+                "candidate_id",
+                "reviewed_inventory_digest",
+                "dependency_lock_digest",
+                "release_artifact_digest",
+                "review_packet_digest",
+            ):
+                authorization[key] = "sha256:" + ("e" * 64)
+            authorization["reviewed_commit"] = "2" * 40
+            authorization["inventory_schema_version"] = "2"
+        authorization["record_hash"] = _json_digest(
+            {key: value for key, value in authorization.items() if key != "record_hash"}
+        )
+        authorization_path.chmod(0o644)
+        authorization_path.write_text(json.dumps(authorization), encoding="utf-8")
+        authorization_path.chmod(0o444)
+
+    with pytest.raises(RuntimeCandidateVerificationError, match=message):
+        verify_runtime_candidate(
+            package_root=root,
+            inventory_path=inventory_path,
+            authorization_path=authorization_path,
+            allow_test_paths=True,
+        )
+
+
+def test_runtime_candidate_rejects_environment_only_authority_spoof(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, inventory_path, _authorization_path = _candidate_fixture(tmp_path)
+    missing_authorization = Path("/run/ithildin-authority/missing.json")
+    monkeypatch.setenv("ITHILDIN_RUNTIME_PACKAGE_ROOT", root.as_posix())
+    monkeypatch.setenv(
+        "ITHILDIN_RUNTIME_CANDIDATE_INVENTORY_PATH",
+        inventory_path.as_posix(),
+    )
+    monkeypatch.setenv(
+        "ITHILDIN_RUNTIME_CANDIDATE_AUTHORIZATION_PATH",
+        missing_authorization.as_posix(),
+    )
+    monkeypatch.setenv("ITHILDIN_RUNTIME_CANDIDATE_ID", "sha256:" + ("e" * 64))
+    monkeypatch.setenv("ITHILDIN_RUNTIME_CANDIDATE_POSTURE", "reviewed")
+
+    with pytest.raises(
+        RuntimeCandidateVerificationError,
+        match="candidate authorization is unavailable or unsafe",
+    ):
+        verify_from_environment()
+
+
+def test_runtime_candidate_authorization_rejects_dirty_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, inventory_path, _ = _candidate_fixture(tmp_path, create_authorization=False)
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    packet = tmp_path / "review-packet.json"
+    packet.write_text(json.dumps({"candidate_id": inventory["candidate_id"]}), encoding="utf-8")
+    inventory["review_packet_digest"] = _file_digest(packet)
+    inventory_path.chmod(0o644)
+    inventory_path.write_text(json.dumps(inventory), encoding="utf-8")
+    inventory_path.chmod(0o444)
+    source_commit = inventory["source_commit"]
+    assert isinstance(source_commit, str)
+
+    def dirty_git(_repo_root: Path, *args: str) -> str:
+        if args == ("rev-parse", "HEAD"):
+            return source_commit + "\n"
+        if args == ("status", "--porcelain"):
+            return " M apps/runtime.py\n"
+        raise AssertionError(args)
+
+    monkeypatch.setattr(authorization_record_module, "_git", dirty_git)
+    with pytest.raises(AuthorizationRecordError, match="dirty candidate cannot be authorized"):
+        build_authorization_record(
+            candidate_manifest_path=inventory_path,
+            review_packet_path=packet,
+            repo_root=root,
+            require_clean_git=True,
         )
 
 

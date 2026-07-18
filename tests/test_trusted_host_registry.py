@@ -31,6 +31,33 @@ def test_trusted_host_registry_rejects_unknown_fields(tmp_path: Path) -> None:
         TrustedHostDescriptorRegistry.load(path)
 
 
+@pytest.mark.parametrize(
+    ("original", "replacement"),
+    [
+        ("operator_review_status: reviewed", "operator_review_status: pending"),
+        (
+            "filesystem_posture: local_create_exclusive",
+            "filesystem_posture: broad_host_write",
+        ),
+        ("os_family: darwin", "os_family: windows"),
+    ],
+    ids=["unreviewed", "unsupported-filesystem", "unsupported-os"],
+)
+def test_trusted_host_registry_rejects_unreviewed_or_unsupported_posture(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+) -> None:
+    path = tmp_path / "trusted-hosts.yaml"
+    path.write_text(
+        _registry_yaml("").replace(original, replacement),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TrustedHostRegistryError, match="invalid trusted-host registry schema"):
+        TrustedHostDescriptorRegistry.load(path)
+
+
 def test_trusted_host_registry_rejects_duplicate_binding(tmp_path: Path) -> None:
     path = tmp_path / "trusted-hosts.yaml"
     path.write_text(

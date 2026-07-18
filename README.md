@@ -392,6 +392,8 @@ checked with `make control-mapping-readiness`.
   keeping runtime code changes out of that checkpoint.
 - `make trusted-host-promotion-negative-transcripts` - generate observed ERG-005 negative
   transcripts for the implemented staging-only trusted-host promotion slice.
+- `make trusted-host-promotion-governance-drift-transcripts` - execute and record every `TGB-006`
+  adversarial-matrix category on one clean candidate without changing the 24-tool surface.
 - `make trusted-host-promotion-runtime-source-review-bundle` - build the focused source-review
   handoff for the implemented staging-only trusted-host promotion runtime slice.
 - `make trusted-host-promotion-runtime-source-review-bundle-check` - validate the runtime

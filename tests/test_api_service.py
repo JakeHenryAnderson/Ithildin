@@ -43,6 +43,7 @@ from ithildin_api.nodes import (
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
 from ithildin_api.promotion_authority import (
     AdminPrincipalContext,
+    PolicyAuthorityRecord,
     PromotionAuthoritySnapshot,
     RuntimeCandidateRecord,
 )
@@ -56,7 +57,7 @@ from ithildin_api.trusted_host_promotions import (
 from ithildin_api.trusted_host_registry import TRUSTED_HOST_REGISTRY_SCHEMA_DIGEST
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
-from ithildin_schemas import AuditEventType, JsonObject, sha256_digest
+from ithildin_schemas import AuditEventType, JsonObject, PolicyDecision, PolicyInput, sha256_digest
 from pydantic import ValidationError
 
 ADMIN_CONTEXT = AdminPrincipalContext(
@@ -1479,12 +1480,22 @@ def test_trusted_host_promotion_approval_decision_drift_is_terminal(
     "authority_component",
     [
         "principal",
-        "workspace",
-        "sandbox",
-        "trusted_host",
-        "policy",
-        "manifest",
-        "input_schema",
+        "workspace_record",
+        "workspace_generation",
+        "sandbox_payload",
+        "sandbox_generation",
+        "trusted_host_hash",
+        "trusted_host_generation",
+        "trusted_host_registry_schema",
+        "policy_digest",
+        "policy_version",
+        "policy_document",
+        "policy_rules",
+        "policy_obligations",
+        "manifest_digest",
+        "manifest_version",
+        "input_schema_digest",
+        "input_schema_version",
         "runtime_candidate",
     ],
 )
@@ -1518,50 +1529,102 @@ def test_trusted_host_promotion_every_authority_component_drift_is_terminal(
                 "admin_context",
                 lambda: changed_principal,
             )
-        elif authority_component == "workspace":
+        elif authority_component.startswith("workspace_"):
+            workspace_record_hash = (
+                changed_hash
+                if authority_component == "workspace_record"
+                else snapshot.workspace.workspace_record_hash
+            )
+            workspace_generation = (
+                changed_hash
+                if authority_component == "workspace_generation"
+                else snapshot.workspace.workspace_registry_generation
+            )
             monkeypatch.setattr(
                 service.workspace_registry,
                 "authority_record",
                 lambda workspace_id=None: (
                     snapshot.workspace.workspace_id,
-                    changed_hash,
-                    snapshot.workspace.workspace_registry_generation,
+                    workspace_record_hash,
+                    workspace_generation,
                 ),
             )
-        elif authority_component == "sandbox":
-            changed_sandbox = snapshot.sandbox.model_copy(
-                update={"descriptor_payload_hash": changed_hash}
-            )
+        elif authority_component.startswith("sandbox_"):
+            sandbox_update = {
+                "descriptor_payload_hash": changed_hash
+                if authority_component == "sandbox_payload"
+                else snapshot.sandbox.descriptor_payload_hash,
+                "descriptor_generation": changed_hash
+                if authority_component == "sandbox_generation"
+                else snapshot.sandbox.descriptor_generation,
+            }
+            changed_sandbox = snapshot.sandbox.model_copy(update=sandbox_update)
             monkeypatch.setattr(
                 service.descriptor_store,
                 "authority_record",
                 lambda descriptor_id: changed_sandbox,
             )
-        elif authority_component == "trusted_host":
-            changed_host = snapshot.trusted_host.model_copy(
-                update={"descriptor_hash": changed_hash}
-            )
+        elif authority_component.startswith("trusted_host_"):
+            host_field = {
+                "trusted_host_hash": "descriptor_hash",
+                "trusted_host_generation": "descriptor_generation",
+                "trusted_host_registry_schema": "registry_schema_digest",
+            }[authority_component]
+            changed_host = snapshot.trusted_host.model_copy(update={host_field: changed_hash})
             monkeypatch.setattr(
                 service.trusted_host_registry,
                 "resolve",
                 lambda **kwargs: changed_host,
             )
-        elif authority_component == "policy":
+        elif authority_component.startswith("policy_"):
             original_policy_authority = service._policy_authority
 
-            def changed_policy_authority(**kwargs: object) -> tuple[object, JsonObject]:
+            def changed_policy_authority(
+                **kwargs: object,
+            ) -> tuple[PolicyAuthorityRecord, JsonObject]:
                 policy, obligations = original_policy_authority(**kwargs)  # type: ignore[arg-type]
-                return policy.model_copy(update={"policy_digest": changed_hash}), obligations
+                policy_update: dict[str, object] = {
+                    "policy_digest": changed_hash
+                    if authority_component == "policy_digest"
+                    else policy.policy_digest,
+                    "policy_version": "changed-policy-version"
+                    if authority_component == "policy_version"
+                    else policy.policy_version,
+                    "document_version": "changed-document-version"
+                    if authority_component == "policy_document"
+                    else policy.document_version,
+                    "matched_rules": ("changed_policy_rule",)
+                    if authority_component == "policy_rules"
+                    else policy.matched_rules,
+                    "obligations_digest": changed_hash
+                    if authority_component == "policy_obligations"
+                    else policy.obligations_digest,
+                }
+                return policy.model_copy(update=policy_update), obligations
 
             monkeypatch.setattr(service, "_policy_authority", changed_policy_authority)
-        elif authority_component == "manifest":
+        elif authority_component.startswith("manifest_"):
             assert service._manifest_authority_record is not None
             service._manifest_authority_record = service._manifest_authority_record.model_copy(
-                update={"lock_digest": changed_hash}
+                update={
+                    "lock_digest": changed_hash
+                    if authority_component == "manifest_digest"
+                    else service._manifest_authority_record.lock_digest,
+                    "lock_version": "changed-lock-version"
+                    if authority_component == "manifest_version"
+                    else service._manifest_authority_record.lock_version,
+                }
             )
-        elif authority_component == "input_schema":
+        elif authority_component.startswith("input_schema_"):
             service.input_schema_authority = service.input_schema_authority.model_copy(
-                update={"schema_digest": changed_hash}
+                update={
+                    "schema_digest": changed_hash
+                    if authority_component == "input_schema_digest"
+                    else service.input_schema_authority.schema_digest,
+                    "schema_version": "3"
+                    if authority_component == "input_schema_version"
+                    else service.input_schema_authority.schema_version,
+                }
             )
         else:
             assert service.runtime_candidate is not None
@@ -1969,6 +2032,59 @@ rules:
     assert response.json()["detail"] == expected_detail
     assert proposals["promotion_proposals"] == []
     assert approvals["approvals"] == []
+
+
+@pytest.mark.parametrize(
+    "matched_rules",
+    [
+        ["require_approval_for_trusted_host_promotion_stage"] * 2,
+        ["z_rule", "a_rule"],
+    ],
+    ids=["duplicate", "unsorted"],
+)
+def test_trusted_host_promotion_rejects_noncanonical_policy_rule_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    matched_rules: list[str],
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+    app = promotion_ready_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        service = cast(TrustedHostPromotionService, app.state.trusted_host_promotion_service)
+        original_evaluate = service.policy_engine.evaluate
+
+        def invalid_rule_evidence(policy_input: PolicyInput) -> PolicyDecision:
+            decision = original_evaluate(policy_input)
+            return decision.model_copy(update={"matched_rules": matched_rules})
+
+        monkeypatch.setattr(service.policy_engine, "evaluate", invalid_rule_evidence)
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-policy-evidence"),
+            headers=headers,
+        ).json()
+        response = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-policy-evidence",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        )
+        proposals = client.get("/trusted-host-promotions/proposals", headers=headers).json()
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "trusted-host promotion policy rule evidence is invalid"
+    )
+    assert proposals["promotion_proposals"] == []
 
 
 def test_trusted_host_promotion_routes_reject_opa_without_calling_opa(tmp_path: Path) -> None:

@@ -383,6 +383,7 @@ from scripts import (
     trusted_host_promotion_governance_binding_architecture_check,
     trusted_host_promotion_governance_binding_authorization_record_check,
     trusted_host_promotion_governance_binding_implementation_tickets_check,
+    trusted_host_promotion_governance_drift_transcripts,
     trusted_host_promotion_implementation_gate_decision_check,
     trusted_host_promotion_implementation_plan_check,
     trusted_host_promotion_internal_review_check,
@@ -34316,10 +34317,14 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
         assert report["existing_packet"]["commit_matches_head"] is True
         assert report["existing_packet"]["generated_from_clean_tree"] is True
         assert report["existing_packet"]["artifact_hashes_match_files"] is True
+        assert report["existing_packet"]["redaction_scan_valid"] is True
+        assert report["existing_packet"]["candidate_digest_evidence_valid"] is True
     else:
         assert report["existing_packet"]["commit_matches_head"] is None
         assert report["existing_packet"]["generated_from_clean_tree"] is None
         assert report["existing_packet"]["artifact_hashes_match_files"] is None
+        assert report["existing_packet"]["redaction_scan_valid"] is None
+        assert report["existing_packet"]["candidate_digest_evidence_valid"] is None
     assert report["broad_host_promotion_allowed"] is False
     assert report["new_governed_tool_allowed"] is False
 
@@ -34333,6 +34338,10 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
         "06_TRUSTED_HOST_PROMOTION_RUNTIME_EVIDENCE.md",
         "07_TRUSTED_HOST_PROMOTION_RUNTIME_FOCUSED_TESTS.txt",
         "08_TRUSTED_HOST_PROMOTION_RUNTIME_INTAKE_COMMANDS.md",
+        "09_TRUSTED_HOST_PROMOTION_GOVERNANCE_DRIFT_TRANSCRIPTS.md",
+        "10_TRUSTED_HOST_PROMOTION_RUNTIME_REDACTION_SCAN.json",
+        "11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json",
+        "12_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_DIGEST_EVIDENCE.json",
         "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
     }
     assert {path.name for path in output_dir.iterdir()} == expected_files
@@ -34362,6 +34371,21 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
             "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json"
         ).read_text(encoding="utf-8")
     )
+    redaction_scan = json.loads(
+        output_dir.joinpath(
+            "10_TRUSTED_HOST_PROMOTION_RUNTIME_REDACTION_SCAN.json"
+        ).read_text(encoding="utf-8")
+    )
+    candidate_review_packet = json.loads(
+        output_dir.joinpath(
+            "11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json"
+        ).read_text(encoding="utf-8")
+    )
+    candidate_evidence = json.loads(
+        output_dir.joinpath(
+            "12_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_DIGEST_EVIDENCE.json"
+        ).read_text(encoding="utf-8")
+    )
     generated_packet = (
         trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
             Path.cwd(),
@@ -34379,7 +34403,26 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert gate_evidence["existing_packet"] == generated_packet
     assert gate_evidence["existing_packet"]["commit_matches_head"] is True
     assert gate_evidence["existing_packet"]["artifact_hashes_match_files"] is True
+    assert gate_evidence["existing_packet"]["redaction_scan_valid"] is True
     assert "skipped command: make trusted-host-promotion-negative-transcripts" in evidence
+    assert "skipped command: make trusted-host-promotion-governance-drift-transcripts" in evidence
+    assert redaction_scan["valid"] is True
+    assert redaction_scan["finding_count"] == 0
+    assert candidate_evidence["source_commit"] == candidate_review_packet["source_commit"]
+    assert candidate_evidence["candidate_id"] == candidate_review_packet["candidate_id"]
+    assert candidate_evidence["review_packet_digest"] == (
+        trusted_host_promotion_runtime_source_review_bundle._file_digest(
+            output_dir
+            / "11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json"
+        )
+    )
+    assert candidate_evidence["dependency_lock_digest"] == (
+        trusted_host_promotion_runtime_source_review_bundle._file_digest(Path("uv.lock"))
+    )
+    assert candidate_evidence["release_artifact_domain"] == "git_archive_exact_commit"
+    assert candidate_evidence["digest_domains_acyclic"] is True
+    assert candidate_evidence["authorization_record_created"] is False
+    assert candidate_evidence["external_review_complete"] is False
     assert "trusted-host-promotion-runtime-source-review-bundle:" in makefile
     assert "trusted-host-promotion-runtime-source-review-bundle-check" in (
         release_check_body
@@ -34403,6 +34446,60 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     }
 
 
+def test_trusted_host_promotion_governance_drift_transcripts_cover_matrix(
+    tmp_path: Path,
+) -> None:
+    transcript = trusted_host_promotion_governance_drift_transcripts.build_transcript(
+        repo_root=Path.cwd(),
+        output_dir=tmp_path / "governance-drift",
+        allow_dirty=True,
+        run_commands=False,
+    )
+    text = transcript.read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2]
+    target = "trusted-host-promotion-governance-drift-transcripts"
+
+    assert transcript.name == (
+        "TRUSTED_HOST_PROMOTION_GOVERNANCE_DRIFT_TRANSCRIPTS.md"
+    )
+    for category in (
+        "Identity",
+        "Host descriptor",
+        "Policy",
+        "Manifest",
+        "Schema",
+        "Candidate",
+        "Approval",
+        "Source and destination",
+        "Migration",
+        "Evidence",
+    ):
+        assert f"## {category}" in text
+    assert text.count("Observed result: `pass`.") == 10
+    assert "Matrix categories observed: `10`" in text
+    expected_disposition = (
+        "development_evidence_only"
+        if subprocess.run(
+            ["git", "status", "--short"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        else "implementation_candidate_ready_for_independent_re_review"
+    )
+    assert expected_disposition in text
+    assert "External/source-review closure recorded: `false`" in text
+    assert "command execution skipped" in text
+    assert "/Users/" not in text
+    assert "correct-token" not in text
+    assert f"{target}:" in makefile
+    assert target in release_check_body
+    assert f"make {target}" in readme
+    assert target in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
 def test_trusted_host_promotion_runtime_source_review_packet_rejects_stale_binding(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -34423,6 +34520,7 @@ def test_trusted_host_promotion_runtime_source_review_packet_rejects_stale_bindi
     assert generated_packet["present"] is True
     assert generated_packet["commit_matches_head"] is True
     assert generated_packet["artifact_hashes_match_files"] is True
+    assert generated_packet["redaction_scan_valid"] is True
     stale_commit = "0" * 40
     for name in [
         "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md",
