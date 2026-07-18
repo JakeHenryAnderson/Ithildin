@@ -19,7 +19,10 @@ if __package__ in {None, ""}:
 
 from ithildin_api.app import create_app
 from ithildin_api.config import Settings
+from ithildin_api.promotion_authority import RuntimeCandidateRecord
+from ithildin_schemas import JsonObject, sha256_digest
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/trusted-host-promotion-negative")
 TRANSCRIPT_NAME = "TRUSTED_HOST_PROMOTION_NEGATIVE_TRANSCRIPTS.md"
 
@@ -179,11 +182,11 @@ def _stale_artifact_hash(root: Path) -> ScenarioResult:
     return _scenario(
         "Stale Artifact Hash Denial",
         "source artifact changed after approval",
-        "409 at the TGB-002 placement fence with no staging placement",
+        "409 at the TGB-003 placement fence with no staging placement",
         response.status_code,
         _reason(response.json()),
         (
-            "placement is unavailable before source re-read; this TGB-002 transcript "
+            "placement is unavailable before source re-read; this TGB-003 transcript "
             "does not claim stale-hash enforcement"
         ),
     )
@@ -200,7 +203,7 @@ def _mismatched_proposal_approval(root: Path) -> ScenarioResult:
         "/trusted-host-promotions/proposals",
         json={
             **_proposal_payload(descriptor_id),
-            "host_staging_label": "host-staging://second-output",
+            "host_staging_label": "host-staging://artifact",
         },
         headers=_headers(),
     ).json()
@@ -250,11 +253,11 @@ def _replayed_approval(root: Path) -> ScenarioResult:
     return _scenario(
         "Replayed Approval Denial",
         "two apply calls reuse an approved request while placement is disabled",
-        "both calls stop at the TGB-002 placement fence with no staged artifact",
+        "both calls stop at the TGB-003 placement fence with no staged artifact",
         response.status_code,
         _reason(response.json()),
         (
-            "placement remains unavailable before approval consumption; this TGB-002 "
+            "placement remains unavailable before approval consumption; this TGB-003 "
             "transcript does not claim replay-consumption evidence"
         ),
     )
@@ -273,14 +276,14 @@ def _existing_destination(root: Path) -> ScenarioResult:
         json={"decision": "approve"},
         headers=_headers(),
     )
-    attempt_id = "thpa_" + hashlib.sha256(
-        proposal["promotion_proposal_id"].encode("utf-8")
-    ).hexdigest()[:32]
+    attempt_id = (
+        "thpa_" + hashlib.sha256(proposal["promotion_proposal_id"].encode("utf-8")).hexdigest()[:32]
+    )
     destination = (
         settings.trusted_host_staging_root
         / "default"
         / proposal["promotion_proposal_id"]
-        / f"{attempt_id}-summary-output.artifact"
+        / f"{attempt_id}-artifact.artifact"
     )
     destination.parent.mkdir(parents=True)
     destination.write_text("existing output\n", encoding="utf-8")
@@ -297,7 +300,7 @@ def _existing_destination(root: Path) -> ScenarioResult:
         response.status_code,
         _reason(response.json()),
         (
-            "TGB-002 placement fence left the pre-existing fixture unchanged: "
+            "TGB-003 placement fence left the pre-existing fixture unchanged: "
             f"{str(preserved).lower()}"
         ),
     )
@@ -330,7 +333,11 @@ def _client(root: Path) -> tuple[TestClient, Settings, str]:
     settings.workspace_root.mkdir(parents=True)
     settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
     client = TestClient(
-        create_app(settings, trusted_host_promotion_test_fixture_ready=True)
+        create_app(
+            settings,
+            runtime_candidate=_runtime_candidate(),
+            trusted_host_promotion_test_fixture_ready=True,
+        )
     )
     client.__enter__()
     response = client.post(
@@ -342,10 +349,29 @@ def _client(root: Path) -> tuple[TestClient, Settings, str]:
 
 
 def _settings(root: Path) -> Settings:
-    manifest_dir = root / "tool-manifests"
-    manifest_dir.mkdir(parents=True)
+    root.mkdir(parents=True)
+    manifest_dir = REPO_ROOT / "tool-manifests"
     policy_path = root / "policy.yaml"
-    policy_path.write_text("version: test\nrules: []\n", encoding="utf-8")
+    policy_path.write_text(
+        """
+version: negative-transcript-v1
+rules:
+  - id: require_approval_for_trusted_host_promotion_stage
+    decision: require_approval
+    reason: Trusted-host staging requires one-time approval.
+    match:
+      tool.name: trusted_host.promotion.stage
+      resource.in_scope: true
+      principal.roles_contains: [Admin]
+    obligations:
+      approval_mode: one_time
+      approval_required: true
+      audit_level: full
+      placement_mode: create_exclusive
+      zone: host_staging
+""",
+        encoding="utf-8",
+    )
     policy_tests_path = root / "policy-tests.yaml"
     policy_tests_path.write_text("version: test\ncases: []\n", encoding="utf-8")
     workspace_root = root / "workspace"
@@ -367,12 +393,15 @@ workspaces:
         audit_log_path=root / "audit.jsonl",
         db_path=root / "ithildin.sqlite3",
         manifest_dir=manifest_dir,
-        require_manifest_lock=False,
+        manifest_lock_path=REPO_ROOT / "tool-manifests.lock.json",
+        require_manifest_lock=True,
+        principal_registry_path=REPO_ROOT / "principals/local.yaml",
         policy_path=policy_path,
         policy_tests_path=policy_tests_path,
         workspace_root=workspace_root,
         workspace_registry_path=workspace_registry,
         trusted_host_staging_root=root / "trusted-host-staging",
+        trusted_host_registry_path=REPO_ROOT / "trusted-hosts/local.yaml",
     )
 
 
@@ -406,8 +435,31 @@ def _proposal_payload(descriptor_id: str) -> dict[str, Any]:
         "sandbox_descriptor_id": descriptor_id,
         "sandbox_id": "sandbox-demo",
         "source_artifact_path": "summary.txt",
-        "host_staging_label": "host-staging://summary-output",
+        "host_staging_label": "host-staging://artifact",
     }
+
+
+def _runtime_candidate() -> RuntimeCandidateRecord:
+    core: JsonObject = {
+        "source_commit": "1" * 40,
+        "inventory_schema_version": "1",
+        "reviewed_inventory_digest": "sha256:" + ("a" * 64),
+        "dependency_lock_digest": "sha256:" + ("b" * 64),
+        "release_artifact_digest": "sha256:" + ("c" * 64),
+        "evidence_schema_version": "1",
+    }
+    return RuntimeCandidateRecord(
+        posture="reviewed",
+        candidate_id=sha256_digest(core),
+        source_commit="1" * 40,
+        inventory_schema_version="1",
+        reviewed_inventory_digest="sha256:" + ("a" * 64),
+        dependency_lock_digest="sha256:" + ("b" * 64),
+        release_artifact_digest="sha256:" + ("c" * 64),
+        review_packet_digest="sha256:" + ("d" * 64),
+        evidence_schema_version="1",
+        authorization_id="rca_negative_transcript_fixture",
+    )
 
 
 def _headers() -> dict[str, str]:

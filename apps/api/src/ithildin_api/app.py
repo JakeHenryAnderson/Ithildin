@@ -264,8 +264,17 @@ def create_app(
                 store=trusted_host_promotion_store,
                 read_executor=read_tool_executor,
                 descriptor_store=sandbox_descriptor_store,
+                policy_engine=policy_evaluator,
+                workspace_registry=workspace_registry,
+                principal_registry=principal_registry,
+                tool_registry=registry,
+                manifest_lock_path=resolved_settings.manifest_lock_path,
+                trusted_host_registry=trusted_host_registry,
+                runtime_candidate=runtime_candidate,
                 staging_root=resolved_settings.trusted_host_staging_root,
-                governance_binding_ready=trusted_host_promotion_test_fixture_ready,
+                governance_binding_ready=(
+                    trusted_host_promotion_test_fixture_ready or runtime_candidate is not None
+                ),
             )
             app_instance.state.policy_preview_service = PolicyPreviewService(
                 registry,

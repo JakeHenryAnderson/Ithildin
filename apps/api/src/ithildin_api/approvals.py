@@ -75,48 +75,64 @@ class ApprovalStore:
         promotion_authority_hash: str | None = None,
         promotion_request_hash: str | None = None,
     ) -> ApprovalRequest:
-        if approval.approval_contract_version != APPROVAL_CONTRACT_VERSION:
-            raise ApprovalError("new approvals must use the version-2 contract")
-        now = datetime.now(UTC).isoformat()
         try:
             with sqlite3.connect(self.db_path) as connection:
-                connection.execute(
-                    """
-                    INSERT INTO approvals (
-                        approval_id, request_id, request_hash, principal_json,
-                        tool_name, resource_json, status, summary, expires_at,
-                        one_time_scope_json, metadata_json, created_at, updated_at,
-                        approval_contract_version, requester_principal_id,
-                        requester_principal_generation, promotion_authority_hash,
-                        promotion_request_hash
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        approval.approval_id,
-                        approval.request_id,
-                        approval.request_hash,
-                        canonical_json(approval.principal),
-                        approval.tool_name,
-                        canonical_json(approval.resource),
-                        _v2_storage_status(approval.status),
-                        approval.summary,
-                        approval.expires_at.isoformat(),
-                        canonical_json(approval.one_time_scope),
-                        canonical_json(approval.metadata),
-                        now,
-                        now,
-                        approval.approval_contract_version,
-                        approval.requester_principal_id,
-                        approval.requester_principal_generation,
-                        promotion_authority_hash,
-                        promotion_request_hash,
-                    ),
+                self.insert_on_connection(
+                    connection,
+                    approval,
+                    promotion_authority_hash=promotion_authority_hash,
+                    promotion_request_hash=promotion_request_hash,
                 )
                 connection.commit()
         except sqlite3.IntegrityError as exc:
             raise ApprovalError("approval version-2 authority binding is invalid") from exc
         return self.get(approval.approval_id)
+
+    def insert_on_connection(
+        self,
+        connection: sqlite3.Connection,
+        approval: ApprovalRequest,
+        *,
+        promotion_authority_hash: str | None = None,
+        promotion_request_hash: str | None = None,
+    ) -> None:
+        """Insert one approval on a caller-owned coordinator transaction."""
+        if approval.approval_contract_version != APPROVAL_CONTRACT_VERSION:
+            raise ApprovalError("new approvals must use the version-2 contract")
+        now = datetime.now(UTC).isoformat()
+        connection.execute(
+            """
+            INSERT INTO approvals (
+                approval_id, request_id, request_hash, principal_json,
+                tool_name, resource_json, status, summary, expires_at,
+                one_time_scope_json, metadata_json, created_at, updated_at,
+                approval_contract_version, requester_principal_id,
+                requester_principal_generation, promotion_authority_hash,
+                promotion_request_hash
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                approval.approval_id,
+                approval.request_id,
+                approval.request_hash,
+                canonical_json(approval.principal),
+                approval.tool_name,
+                canonical_json(approval.resource),
+                _v2_storage_status(approval.status),
+                approval.summary,
+                approval.expires_at.isoformat(),
+                canonical_json(approval.one_time_scope),
+                canonical_json(approval.metadata),
+                now,
+                now,
+                approval.approval_contract_version,
+                approval.requester_principal_id,
+                approval.requester_principal_generation,
+                promotion_authority_hash,
+                promotion_request_hash,
+            ),
+        )
 
     def get(self, approval_id: str) -> ApprovalRequest:
         with sqlite3.connect(self.db_path) as connection:
@@ -278,6 +294,17 @@ class ApprovalService:
         self.default_expiry = default_expiry
 
     def create_pending(self, payload: CreateApprovalInput) -> ApprovalRequest:
+        approval = self.prepare_pending(payload)
+        approval = self.store.create(
+            approval,
+            promotion_authority_hash=payload.promotion_authority_hash,
+            promotion_request_hash=payload.promotion_request_hash,
+        )
+        self.record_created(approval)
+        return approval
+
+    def prepare_pending(self, payload: CreateApprovalInput) -> ApprovalRequest:
+        """Build immutable pending evidence without mutating approval storage."""
         request_id = payload.request_id or _new_id("req")
         expires_at = payload.expires_at or datetime.now(UTC) + self.default_expiry
         request_hash = payload.request_hash or _request_hash(
@@ -288,7 +315,7 @@ class ApprovalService:
             one_time_scope=payload.one_time_scope,
         )
         requester_id, requester_generation = _requester_authority(payload)
-        approval = ApprovalRequest(
+        return ApprovalRequest(
             approval_id=_new_id("appr"),
             request_id=request_id,
             request_hash=request_hash,
@@ -304,13 +331,10 @@ class ApprovalService:
             requester_principal_id=requester_id,
             requester_principal_generation=requester_generation,
         )
-        approval = self.store.create(
-            approval,
-            promotion_authority_hash=payload.promotion_authority_hash,
-            promotion_request_hash=payload.promotion_request_hash,
-        )
+
+    def record_created(self, approval: ApprovalRequest) -> None:
+        """Emit the approval-created audit record after durable insertion."""
         self._audit(AuditEventType.APPROVAL_CREATED, approval)
-        return approval
 
     def get(self, approval_id: str) -> ApprovalRequest:
         approval = self.store.get(approval_id)

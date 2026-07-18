@@ -90,7 +90,7 @@ def test_committed_default_policy_fixtures_pass() -> None:
     )
 
     assert result.failed == 0
-    assert result.passed == 10
+    assert result.passed == 11
     assert result.policy_hash.startswith("sha256:")
 
 
@@ -252,7 +252,7 @@ def test_policy_test_json_output_is_stable() -> None:
     assert completed.returncode == 0
     payload = json.loads(completed.stdout)
     assert payload["version"] == "default-policy-tests-v1"
-    assert payload["passed"] == 10
+    assert payload["passed"] == 11
     assert payload["failed"] == 0
     assert payload["policy_path"] == "policies/default.yaml"
     assert [case["id"] for case in payload["cases"]][:2] == [

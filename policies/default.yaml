@@ -23,6 +23,21 @@ rules:
     obligations:
       audit_level: full
 
+  - id: require_approval_for_trusted_host_promotion_stage
+    decision: require_approval
+    reason: Trusted-host staging requires a one-time approval bound to immutable authority evidence.
+    match:
+      tool.name: trusted_host.promotion.stage
+      resource.in_scope: true
+      principal.roles_contains:
+        - Admin
+    obligations:
+      approval_mode: one_time
+      approval_required: true
+      audit_level: full
+      placement_mode: create_exclusive
+      zone: host_staging
+
   - id: allow_in_scope_patch_proposals
     decision: allow
     reason: Patch proposals may be reviewed without modifying files.

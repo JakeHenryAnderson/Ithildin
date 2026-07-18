@@ -34250,7 +34250,7 @@ def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
         assert leaked not in transcript_text
 
     for phrase in [
-        "Status: version-2 authority/persistence slice implemented",
+            "Status: version-2 policy/authority binding slice implemented",
         "one authority-bound proposal and approval -> placement denied",
         "Admin-only `POST /trusted-host-promotions/proposals`",
         "trusted_host.promotion.stage",
