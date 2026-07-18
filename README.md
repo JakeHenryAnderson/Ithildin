@@ -2531,6 +2531,13 @@ The runtime internal review and focused source-review handoff are in
 and
 [docs/codex/trusted-host-promotion-runtime-source-review.md](docs/codex/trusted-host-promotion-runtime-source-review.md);
 the packet is built with `make trusted-host-promotion-runtime-source-review-bundle`.
+The proposed architecture for closing the remaining server-derived identity, trusted-host,
+policy/manifest/schema, and reviewed-candidate binding gap is in
+[docs/codex/trusted-host-promotion-governance-binding-architecture.md](docs/codex/trusted-host-promotion-governance-binding-architecture.md)
+and is checked with `make trusted-host-promotion-governance-binding-architecture-check`. It remains
+proposal-only until the version-2 request and versioned SQLite migration receive explicit approval;
+it preserves the 24-tool, staging-only, Manager-local boundary and does not authorize Node-side
+placement or broader host control.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

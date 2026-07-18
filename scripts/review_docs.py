@@ -551,6 +551,7 @@ REVIEW_DOCS = [
     "docs/codex/v3-trusted-host-promotion-runtime-review-closure.md",
     "docs/codex/v3-trusted-host-promotion-runtime-local-disposition.md",
     "docs/codex/trusted-host-promotion-runtime-source-review.md",
+    "docs/codex/trusted-host-promotion-governance-binding-architecture.md",
     "docs/codex/v3-readiness-debt-register.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",

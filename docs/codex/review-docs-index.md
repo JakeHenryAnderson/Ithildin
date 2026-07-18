@@ -550,6 +550,7 @@ externally closed.
 - [Trusted-Host Promotion Runtime Review Closure](v3-trusted-host-promotion-runtime-review-closure.md)
 - [Trusted-Host Promotion Runtime Local Disposition](v3-trusted-host-promotion-runtime-local-disposition.md)
 - [Trusted-Host Promotion Runtime Source Review](trusted-host-promotion-runtime-source-review.md)
+- [Trusted-Host Promotion Governance-Binding Architecture](trusted-host-promotion-governance-binding-architecture.md)
 - [Trusted-Host Promotion Disposition Packet](trusted-host-promotion-disposition-packet.md)
 - [Trusted-Host Promotion External Review Bundle](trusted-host-promotion-external-review-bundle.md)
 - [Trusted-Host Promotion Disposition Closure Gate](trusted-host-promotion-disposition-closure-gate.md)
