@@ -14,12 +14,24 @@ from ithildin_api.approvals import (
     ApprovalStore,
     CreateApprovalInput,
 )
+from ithildin_api.database import initialize_database
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_audit_core import AuditWriter
-from ithildin_schemas import ApprovalRequest, ApprovalStatus
+from ithildin_schemas import ApprovalRequest, ApprovalStatus, sha256_digest
+
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 
 
 def make_service(tmp_path: Path, expiry: timedelta = timedelta(minutes=15)) -> ApprovalService:
     db_path = tmp_path / "ithildin.sqlite3"
+    initialize_database(db_path)
     audit_writer = AuditWriter(db_path, tmp_path / "audit.jsonl")
     audit_writer.initialize()
     store = ApprovalStore(db_path)
@@ -57,7 +69,7 @@ def test_approve_once_and_prevent_replay(tmp_path: Path) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())
 
-    approved = service.approve(approval.approval_id, decided_by="user:alice")
+    approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     executing = service.begin_execution(approved.approval_id, approved.request_hash)
     executed = service.complete_execution(executing.approval_id, success=True)
 
@@ -71,7 +83,7 @@ def test_approve_once_and_prevent_replay(tmp_path: Path) -> None:
 def test_request_hash_mismatch_is_rejected(tmp_path: Path) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())
-    approved = service.approve(approval.approval_id, decided_by="user:alice")
+    approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
 
     with pytest.raises(ApprovalError, match="hash mismatch"):
         service.begin_execution(approved.approval_id, "sha256:" + ("f" * 64))
@@ -83,7 +95,7 @@ def test_begin_execution_uses_expiry_guard_in_atomic_transition(
 ) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())
-    approved = service.approve(approval.approval_id, decided_by="user:alice")
+    approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     original_compare_and_set = service.store.compare_and_set_status
     observed_expiry_guards: list[datetime | None] = []
 
@@ -108,7 +120,7 @@ def test_begin_execution_rejects_approval_expiring_during_atomic_transition(
 ) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())
-    approved = service.approve(approval.approval_id, decided_by="user:alice")
+    approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     original_compare_and_set = service.store.compare_and_set_status
     expired_during_transition = False
 
@@ -140,7 +152,7 @@ def test_begin_execution_rejects_approval_expiring_during_atomic_transition(
 def test_denied_approval_cannot_execute(tmp_path: Path) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())
-    denied = service.deny(approval.approval_id, decided_by="user:alice", reason="no")
+    denied = service.deny(approval.approval_id, context=ADMIN_CONTEXT, reason="no")
 
     assert denied.status == ApprovalStatus.DENIED
     with pytest.raises(ApprovalError):
@@ -153,16 +165,20 @@ def test_terminal_decision_is_atomic_and_preserves_first_decision_metadata(tmp_p
 
     denied = service.deny(
         approval.approval_id,
-        decided_by="user:alice",
+        context=ADMIN_CONTEXT,
         reason="scope is not authorized",
     )
 
     with pytest.raises(ApprovalError, match="not pending"):
-        service.approve(approval.approval_id, decided_by="user:bob")
+        service.approve(approval.approval_id, context=ADMIN_CONTEXT)
 
     with sqlite3.connect(service.store.db_path) as connection:
         stored = connection.execute(
-            "SELECT status, decided_by, decision_reason FROM approvals WHERE approval_id = ?",
+            """
+            SELECT status, deciding_principal_id, decision_reason,
+                   decision_reason_hash, decision_hash
+            FROM approvals WHERE approval_id = ?
+            """,
             (approval.approval_id,),
         ).fetchone()
     events = [
@@ -171,7 +187,26 @@ def test_terminal_decision_is_atomic_and_preserves_first_decision_metadata(tmp_p
     ]
 
     assert denied.status == ApprovalStatus.DENIED
-    assert stored == ("denied", "user:alice", "scope is not authorized")
+    assert stored is not None
+    assert stored[:3] == (
+        "v2_denied",
+        "admin:local-ui",
+        "scope is not authorized",
+    )
+    assert str(stored[3]).startswith("sha256:")
+    assert str(stored[4]).startswith("sha256:")
+    assert denied.decision_hash == sha256_digest(
+        {
+            "approval_id": denied.approval_id,
+            "approval_request_hash": denied.request_hash,
+            "decision_status": "denied",
+            "decided_at": denied.decided_at.isoformat() if denied.decided_at else None,
+            "deciding_principal_id": ADMIN_CONTEXT.principal_id,
+            "deciding_principal_generation": ADMIN_CONTEXT.identity_generation,
+            "decision_reason_hash": denied.decision_reason_hash,
+            "decision_authority_snapshot_hash": None,
+        }
+    )
     assert events.count("approval.denied") == 1
     assert "approval.approved" not in events
 
@@ -182,22 +217,21 @@ def test_conflicting_terminal_decisions_have_one_atomic_winner(
 ) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())
-    original_compare_and_set = service.store.compare_and_set_status
+    original_decide = service.store.decide
     both_ready = Barrier(2)
 
     def coordinated_transition(*args: object, **kwargs: object) -> object:
-        if kwargs.get("next_status") in {ApprovalStatus.APPROVED, ApprovalStatus.DENIED}:
-            both_ready.wait(timeout=5)
-        return original_compare_and_set(*args, **kwargs)  # type: ignore[arg-type]
+        both_ready.wait(timeout=5)
+        return original_decide(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(service.store, "compare_and_set_status", coordinated_transition)
+    monkeypatch.setattr(service.store, "decide", coordinated_transition)
 
     def decide(action: str) -> str:
         try:
             if action == "approve":
-                approved = service.approve(approval.approval_id, decided_by="user:approver")
+                approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
                 return approved.status.value
-            return service.deny(approval.approval_id, decided_by="user:denier").status.value
+            return service.deny(approval.approval_id, context=ADMIN_CONTEXT).status.value
         except ApprovalError as error:
             return str(error)
 
@@ -225,7 +259,7 @@ def test_terminal_decision_rejects_expiry_during_atomic_transition(
 ) -> None:
     service = make_service(tmp_path)
     approval = service.create_pending(create_input())
-    original_compare_and_set = service.store.compare_and_set_status
+    original_decide = service.store.decide
 
     def expire_before_decision(*args: object, **kwargs: object) -> object:
         with sqlite3.connect(service.store.db_path) as connection:
@@ -237,12 +271,12 @@ def test_terminal_decision_rejects_expiry_during_atomic_transition(
                 ),
             )
             connection.commit()
-        return original_compare_and_set(*args, **kwargs)  # type: ignore[arg-type]
+        return original_decide(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(service.store, "compare_and_set_status", expire_before_decision)
+    monkeypatch.setattr(service.store, "decide", expire_before_decision)
 
     with pytest.raises(ApprovalError, match="expired"):
-        service.approve(approval.approval_id, decided_by="user:alice")
+        service.approve(approval.approval_id, context=ADMIN_CONTEXT)
 
     assert service.store.get(approval.approval_id).status == ApprovalStatus.EXPIRED
 
@@ -277,7 +311,7 @@ def test_stale_expiry_reader_cannot_overwrite_terminal_decision(
     reader.start()
     assert stale_snapshot_read.wait(timeout=5)
 
-    decided = service.approve(approval.approval_id, decided_by="user:alice")
+    decided = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     terminal_decision_won.set()
     reader.join(timeout=5)
 
@@ -302,7 +336,7 @@ def test_expired_approval_cannot_be_approved_or_executed(tmp_path: Path) -> None
 
     assert expired.status == ApprovalStatus.EXPIRED
     with pytest.raises(ApprovalError):
-        service.approve(expired.approval_id, decided_by="user:alice")
+        service.approve(expired.approval_id, context=ADMIN_CONTEXT)
     with pytest.raises(ApprovalError):
         service.begin_execution(expired.approval_id, expired.request_hash)
 
@@ -317,4 +351,4 @@ def test_approval_store_persists_records(tmp_path: Path) -> None:
             (approval.approval_id,),
         ).fetchone()
 
-    assert row == (approval.approval_id, "pending")
+    assert row == (approval.approval_id, "v2_pending")

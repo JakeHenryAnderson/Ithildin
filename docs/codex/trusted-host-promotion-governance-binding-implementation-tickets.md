@@ -204,8 +204,8 @@ Implementation evidence includes immutable authority models, server-derived admi
 workspace/sandbox generations, the schema-version-2 read-only trusted-host registry, stdlib-only
 pre-import candidate verification, detached create-exclusive operator authorization, explicit
 launcher-order proof, and no-side-effect API denial while the binding is incomplete. These controls
-establish the foundation only; they do not claim the version-2 proposal, migration, policy binding,
-atomic placement, or final evidence slices from `TGB-002` through `TGB-006`.
+established the foundation only at the `TGB-001` checkpoint; later tickets own the version-2
+proposal, policy binding, atomic placement, and final evidence slices.
 
 ### Stop conditions
 
@@ -246,8 +246,11 @@ storage atomically while placement remains disabled.
 
 1. Remove `principal` from `TrustedHostPromotionProposalInput`. Strict unknown-field rejection must
    make every legacy principal payload a `400`.
-2. Inject `AdminPrincipalContext` into proposal and apply routes and service calls. Persist requester,
-   approver, and executor as distinct server-derived principal IDs/generations.
+2. Inject `AdminPrincipalContext` into proposal and apply routes and service calls. Persist requester
+   and approver as distinct server-derived principal IDs/generations, and reserve constrained
+   executor ID/generation fields. Because this ticket forbids attempt creation or apply mutation,
+   executor persistence begins with the atomic reservation in `TGB-005`; an unavailable apply call
+   must not fabricate an executor record.
 3. Remove `decided_by` from `ApprovalDecisionPayload` and UI request bodies. Reject, rather than
    ignore, legacy attribution fields. Update approve and deny service entry points to require the
    authenticated context.
@@ -309,6 +312,17 @@ uv run python scripts/trusted_host_promotion_v2_downgrade_evidence.py
 make lint
 make typecheck
 ```
+
+Implementation evidence includes strict rejection of legacy caller `principal`/`decided_by`
+fields, full authenticated admin contexts at proposal/apply/decision boundaries, distinct
+requester and decider generations, bounded reason and decision hashes without raw-reason audit
+metadata, coordinated schema/minimum-writer versioning, one-transaction rebuilds for proposal,
+approval, and attempt storage, immutable `legacy_*` rows, closed `v2_*` status constraints, and an
+exact-baseline downgrade exercise that loads the frozen previous implementation. The apply route
+remains unavailable, creates no attempt or
+execution audit event, and performs no filesystem write. `TGB-003` still owns the real complete
+policy/manifest/schema/candidate authority snapshot; the `TGB-002` test fixture cannot authorize
+placement.
 
 ### Stop conditions
 

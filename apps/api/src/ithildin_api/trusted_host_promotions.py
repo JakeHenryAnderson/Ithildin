@@ -18,10 +18,11 @@ from ithildin_schemas import ApprovalRequest, JsonObject, JsonValue, canonical_j
 from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, field_validator
 
-from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
-from ithildin_api.promotion_authority import PromotionReadinessReason
+from ithildin_api.approvals import ApprovalService, CreateApprovalInput
+from ithildin_api.promotion_authority import AdminPrincipalContext, PromotionReadinessReason
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError, ReadToolExecutor
 from ithildin_api.sandbox_descriptors import SandboxDescriptorStore
+from ithildin_api.trusted_host_promotion_v2_migration import initialize_or_migrate_database
 
 TRUSTED_HOST_PROMOTION_TOOL = "trusted_host.promotion.stage"
 MAX_PROMOTION_ARTIFACT_BYTES = 4096
@@ -41,10 +42,6 @@ class TrustedHostPromotionProposalInput(StrictBaseModel):
     host_staging_label: str = Field(min_length=1, max_length=160)
     artifact_media_label: str = Field(default="text/plain", min_length=1, max_length=64)
     operator_note_label: str | None = Field(default=None, max_length=120)
-    principal: JsonObject = Field(
-        default_factory=lambda: cast(JsonObject, {"id": "admin:local"})
-    )
-
     @field_validator(
         "workspace_id",
         "sandbox_descriptor_id",
@@ -99,6 +96,13 @@ class TrustedHostPromotionProposal:
     artifact_media_label: str
     proposal_hash: str
     metadata: JsonObject
+    authority_schema_version: str | None = None
+    authority_snapshot_json: JsonObject | None = None
+    authority_snapshot_hash: str | None = None
+    requester_principal_id: str | None = None
+    requester_principal_generation: str | None = None
+    executor_principal_id: str | None = None
+    executor_principal_generation: str | None = None
 
     def scope_metadata(self) -> JsonObject:
         return {
@@ -113,6 +117,7 @@ class TrustedHostPromotionProposal:
             "artifact_sha256": self.artifact_sha256,
             "artifact_size_bytes": self.artifact_size_bytes,
             "artifact_media_label": self.artifact_media_label,
+            "authority_snapshot_hash": self.authority_snapshot_hash,
         }
 
     def summary(self) -> JsonObject:
@@ -122,6 +127,16 @@ class TrustedHostPromotionProposal:
             "status": self.status,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "authority_binding_status": (
+                "version_2_bound"
+                if self.authority_snapshot_hash is not None
+                else "legacy_unbound"
+            ),
+            "authority_snapshot_hash": self.authority_snapshot_hash,
+            "requester_principal_id": self.requester_principal_id,
+            "requester_principal_generation": self.requester_principal_generation,
+            "executor_principal_id": self.executor_principal_id,
+            "executor_principal_generation": self.executor_principal_generation,
             **self.scope_metadata(),
             "output_policy": _output_policy(),
         }
@@ -142,6 +157,10 @@ class TrustedHostPromotionAttempt:
     created_at: str
     updated_at: str
     metadata: JsonObject
+    record_version: str = "2"
+    authority_snapshot_hash: str | None = None
+    executor_principal_id: str | None = None
+    executor_principal_generation: str | None = None
 
     def summary(self) -> JsonObject:
         return {
@@ -158,6 +177,10 @@ class TrustedHostPromotionAttempt:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "metadata_keys": cast(JsonValue, sorted(self.metadata.keys())),
+            "record_version": self.record_version,
+            "authority_snapshot_hash": self.authority_snapshot_hash,
+            "executor_principal_id": self.executor_principal_id,
+            "executor_principal_generation": self.executor_principal_generation,
             "output_policy": _output_policy(),
         }
 
@@ -167,50 +190,7 @@ class TrustedHostPromotionStore:
         self.db_path = db_path
 
     def initialize(self) -> None:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.db_path) as connection:
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trusted_host_promotion_proposals (
-                    proposal_id TEXT PRIMARY KEY,
-                    request_id TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    workspace_id TEXT NOT NULL,
-                    sandbox_descriptor_id TEXT NOT NULL,
-                    sandbox_descriptor_hash TEXT NOT NULL,
-                    sandbox_id TEXT NOT NULL,
-                    source_artifact_label TEXT NOT NULL,
-                    host_staging_label TEXT NOT NULL,
-                    artifact_sha256 TEXT NOT NULL,
-                    artifact_size_bytes INTEGER NOT NULL,
-                    artifact_media_label TEXT NOT NULL,
-                    proposal_hash TEXT NOT NULL,
-                    metadata_json TEXT NOT NULL
-                )
-                """
-            )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trusted_host_promotion_attempts (
-                    attempt_id TEXT PRIMARY KEY,
-                    approval_id TEXT NOT NULL UNIQUE,
-                    proposal_id TEXT NOT NULL,
-                    request_id TEXT NOT NULL,
-                    workspace_id TEXT NOT NULL,
-                    host_staging_label TEXT NOT NULL,
-                    artifact_sha256 TEXT NOT NULL,
-                    staged_sha256 TEXT,
-                    status TEXT NOT NULL,
-                    failure_reason TEXT,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    metadata_json TEXT NOT NULL
-                )
-                """
-            )
-            connection.commit()
+        initialize_or_migrate_database(self.db_path)
 
     def create_proposal(self, proposal: TrustedHostPromotionProposal) -> None:
         with sqlite3.connect(self.db_path) as connection:
@@ -221,14 +201,17 @@ class TrustedHostPromotionStore:
                     workspace_id, sandbox_descriptor_id, sandbox_descriptor_hash,
                     sandbox_id, source_artifact_label, host_staging_label,
                     artifact_sha256, artifact_size_bytes, artifact_media_label,
-                    proposal_hash, metadata_json
+                    proposal_hash, metadata_json, authority_schema_version,
+                    authority_snapshot_json, authority_snapshot_hash,
+                    requester_principal_id, requester_principal_generation,
+                    executor_principal_id, executor_principal_generation
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     proposal.proposal_id,
                     proposal.request_id,
-                    proposal.status,
+                    _proposal_storage_status(proposal.status),
                     proposal.created_at,
                     proposal.updated_at,
                     proposal.workspace_id,
@@ -242,6 +225,17 @@ class TrustedHostPromotionStore:
                     proposal.artifact_media_label,
                     proposal.proposal_hash,
                     canonical_json(proposal.metadata),
+                    proposal.authority_schema_version,
+                    (
+                        canonical_json(proposal.authority_snapshot_json)
+                        if proposal.authority_snapshot_json is not None
+                        else None
+                    ),
+                    proposal.authority_snapshot_hash,
+                    proposal.requester_principal_id,
+                    proposal.requester_principal_generation,
+                    proposal.executor_principal_id,
+                    proposal.executor_principal_generation,
                 ),
             )
             connection.commit()
@@ -254,7 +248,10 @@ class TrustedHostPromotionStore:
                        workspace_id, sandbox_descriptor_id, sandbox_descriptor_hash,
                        sandbox_id, source_artifact_label, host_staging_label,
                        artifact_sha256, artifact_size_bytes, artifact_media_label,
-                       proposal_hash, metadata_json
+                       proposal_hash, metadata_json, authority_schema_version,
+                       authority_snapshot_json, authority_snapshot_hash,
+                       requester_principal_id, requester_principal_generation,
+                       executor_principal_id, executor_principal_generation
                 FROM trusted_host_promotion_proposals
                 WHERE proposal_id = ?
                 """,
@@ -272,7 +269,10 @@ class TrustedHostPromotionStore:
                        workspace_id, sandbox_descriptor_id, sandbox_descriptor_hash,
                        sandbox_id, source_artifact_label, host_staging_label,
                        artifact_sha256, artifact_size_bytes, artifact_media_label,
-                       proposal_hash, metadata_json
+                       proposal_hash, metadata_json, authority_schema_version,
+                       authority_snapshot_json, authority_snapshot_hash,
+                       requester_principal_id, requester_principal_generation,
+                       executor_principal_id, executor_principal_generation
                 FROM trusted_host_promotion_proposals
                 ORDER BY updated_at DESC
                 """
@@ -287,7 +287,7 @@ class TrustedHostPromotionStore:
                 SET status = ?, updated_at = ?
                 WHERE proposal_id = ?
                 """,
-                (status, datetime.now(UTC).isoformat(), proposal_id),
+                (_proposal_storage_status(status), datetime.now(UTC).isoformat(), proposal_id),
             ).rowcount
             connection.commit()
         if updated != 1:
@@ -306,7 +306,7 @@ class TrustedHostPromotionStore:
                 """
                 UPDATE trusted_host_promotion_proposals
                 SET metadata_json = ?, updated_at = ?
-                WHERE proposal_id = ? AND status = 'approval_required'
+                WHERE proposal_id = ? AND status = 'v2_approval_required'
                 """,
                 (
                     canonical_json(metadata),
@@ -328,9 +328,11 @@ class TrustedHostPromotionStore:
                     INSERT INTO trusted_host_promotion_attempts (
                         attempt_id, approval_id, proposal_id, request_id, workspace_id,
                         host_staging_label, artifact_sha256, staged_sha256, status,
-                        failure_reason, created_at, updated_at, metadata_json
+                        failure_reason, created_at, updated_at, metadata_json,
+                        record_version, authority_snapshot_hash,
+                        executor_principal_id, executor_principal_generation
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         attempt.attempt_id,
@@ -341,11 +343,15 @@ class TrustedHostPromotionStore:
                         attempt.host_staging_label,
                         attempt.artifact_sha256,
                         attempt.staged_sha256,
-                        attempt.status,
+                        _attempt_storage_status(attempt.status),
                         attempt.failure_reason,
                         attempt.created_at,
                         attempt.updated_at,
                         canonical_json(attempt.metadata),
+                        attempt.record_version,
+                        attempt.authority_snapshot_hash,
+                        attempt.executor_principal_id,
+                        attempt.executor_principal_generation,
                     ),
                 )
                 connection.commit()
@@ -363,7 +369,9 @@ class TrustedHostPromotionStore:
                 """
                 SELECT attempt_id, approval_id, proposal_id, request_id, workspace_id,
                        host_staging_label, artifact_sha256, staged_sha256, status,
-                       failure_reason, created_at, updated_at, metadata_json
+                       failure_reason, created_at, updated_at, metadata_json,
+                       record_version, authority_snapshot_hash,
+                       executor_principal_id, executor_principal_generation
                 FROM trusted_host_promotion_attempts
                 WHERE proposal_id = ?
                 ORDER BY created_at ASC
@@ -391,7 +399,13 @@ class TrustedHostPromotionStore:
                     updated_at = ?
                 WHERE attempt_id = ?
                 """,
-                (status, staged_sha256, failure_reason, datetime.now(UTC).isoformat(), attempt_id),
+                (
+                    _attempt_storage_status(status),
+                    staged_sha256,
+                    failure_reason,
+                    datetime.now(UTC).isoformat(),
+                    attempt_id,
+                ),
             ).rowcount
             connection.commit()
         if updated != 1:
@@ -404,7 +418,9 @@ class TrustedHostPromotionStore:
                 """
                 SELECT attempt_id, approval_id, proposal_id, request_id, workspace_id,
                        host_staging_label, artifact_sha256, staged_sha256, status,
-                       failure_reason, created_at, updated_at, metadata_json
+                       failure_reason, created_at, updated_at, metadata_json,
+                       record_version, authority_snapshot_hash,
+                       executor_principal_id, executor_principal_generation
                 FROM trusted_host_promotion_attempts
                 WHERE attempt_id = ?
                 """,
@@ -420,7 +436,9 @@ class TrustedHostPromotionStore:
                 """
                 SELECT attempt_id, approval_id, proposal_id, request_id, workspace_id,
                        host_staging_label, artifact_sha256, staged_sha256, status,
-                       failure_reason, created_at, updated_at, metadata_json
+                       failure_reason, created_at, updated_at, metadata_json,
+                       record_version, authority_snapshot_hash,
+                       executor_principal_id, executor_principal_generation
                 FROM trusted_host_promotion_attempts
                 ORDER BY updated_at DESC
                 """
@@ -449,6 +467,7 @@ class TrustedHostPromotionService:
         payload: TrustedHostPromotionProposalInput,
         *,
         approval_service: ApprovalService,
+        context: AdminPrincipalContext,
     ) -> JsonObject:
         self._require_governance_binding()
         filesystem = self._filesystem(payload.workspace_id)
@@ -483,6 +502,15 @@ class TrustedHostPromotionService:
                 "output_policy": _output_policy(),
             },
         )
+        authority_snapshot_json = cast(
+            JsonObject,
+            {
+                "authority_schema_version": "1",
+                "readiness": "tgb002_test_fixture_only",
+                "requesting_principal": context.model_dump(mode="json"),
+            },
+        )
+        authority_snapshot_hash = sha256_digest(authority_snapshot_json)
         proposal_hash = sha256_digest(
             {
                 "proposal_id": proposal_id,
@@ -497,6 +525,7 @@ class TrustedHostPromotionService:
                 "artifact_size_bytes": len(artifact_bytes),
                 "artifact_media_label": payload.artifact_media_label,
                 "metadata": metadata,
+                "authority_snapshot_hash": authority_snapshot_hash,
             }
         )
         proposal = TrustedHostPromotionProposal(
@@ -516,6 +545,11 @@ class TrustedHostPromotionService:
             artifact_media_label=payload.artifact_media_label,
             proposal_hash=proposal_hash,
             metadata=metadata,
+            authority_schema_version="1",
+            authority_snapshot_json=authority_snapshot_json,
+            authority_snapshot_hash=authority_snapshot_hash,
+            requester_principal_id=context.principal_id,
+            requester_principal_generation=context.identity_generation,
         )
         self.store.create_proposal(proposal)
         scope = {
@@ -526,7 +560,14 @@ class TrustedHostPromotionService:
         approval = approval_service.create_pending(
             CreateApprovalInput(
                 request_id=request_id,
-                principal=payload.principal,
+                principal=cast(
+                    JsonObject,
+                    {
+                        "id": context.principal_id,
+                        "type": context.principal_type,
+                        "roles": list(context.roles),
+                    },
+                ),
                 tool_name=TRUSTED_HOST_PROMOTION_TOOL,
                 resource={
                     "type": "trusted_host_promotion",
@@ -537,6 +578,9 @@ class TrustedHostPromotionService:
                 },
                 summary=f"Stage sandbox artifact to {payload.host_staging_label}",
                 one_time_scope=scope,
+                requester_context=context,
+                promotion_authority_hash=authority_snapshot_hash,
+                promotion_request_hash=sha256_digest(scope),
                 metadata={
                     "workspace_id": payload.workspace_id,
                     "sandbox_id": payload.sandbox_id,
@@ -629,6 +673,7 @@ class TrustedHostPromotionService:
         proposal_id: str,
         approval_id: str,
         approval_service: ApprovalService,
+        context: AdminPrincipalContext,
     ) -> JsonObject:
         self._require_governance_binding()
         proposal = self.store.get_proposal(proposal_id)
@@ -639,104 +684,17 @@ class TrustedHostPromotionService:
         )
         if review["valid"] is not True:
             raise TrustedHostPromotionError("trusted-host promotion approval binding review failed")
-        if proposal.status != "approval_required":
-            raise TrustedHostPromotionError("trusted-host promotion proposal is not applicable")
-        if self.store.get_attempt_for_proposal(proposal.proposal_id) is not None:
-            raise TrustedHostPromotionError(
-                "trusted-host promotion proposal already has an attempt"
-            )
-        artifact_bytes = _read_source_artifact(
-            self._filesystem(proposal.workspace_id),
-            proposal.source_artifact_label.split("/", 3)[-1],
+        if context.principal_id != "admin:local-ui":
+            raise TrustedHostPromotionError("trusted-host promotion executor is unauthorized")
+        raise TrustedHostPromotionError(
+            "trusted-host promotion placement is unavailable during TGB-002"
         )
-        if _sha256_bytes(artifact_bytes) != proposal.artifact_sha256:
-            raise TrustedHostPromotionError("source artifact hash mismatch")
-        attempt_id = _attempt_id_for_proposal(proposal.proposal_id)
-        now = datetime.now(UTC).isoformat()
-        attempt = TrustedHostPromotionAttempt(
-            attempt_id=attempt_id,
-            approval_id=approval_id,
-            proposal_id=proposal.proposal_id,
-            request_id=approval.request_id,
-            workspace_id=proposal.workspace_id,
-            host_staging_label=proposal.host_staging_label,
-            artifact_sha256=proposal.artifact_sha256,
-            staged_sha256=None,
-            status="prepared",
-            failure_reason=None,
-            created_at=now,
-            updated_at=now,
-            metadata={
-                "proposal_hash": proposal.proposal_hash,
-                "sandbox_descriptor_id": proposal.sandbox_descriptor_id,
-                "sandbox_descriptor_hash": proposal.sandbox_descriptor_hash,
-                "output_policy": _output_policy(),
-            },
-        )
-        placed = False
-        execution_begun = False
-        attempt_created = False
-        try:
-            approval_service.begin_execution(approval_id, approval.request_hash)
-            execution_begun = True
-            self.store.create_attempt(attempt)
-            attempt_created = True
-            destination = self._destination_for(proposal, attempt_id)
-            _copy_without_overwrite(artifact_bytes, destination)
-            placed = True
-            staged_sha256 = _sha256_bytes(destination.read_bytes())
-            if staged_sha256 != proposal.artifact_sha256:
-                raise TrustedHostPromotionError("staged artifact hash mismatch")
-            self.store.set_attempt_status(
-                attempt_id,
-                "staged",
-                staged_sha256=staged_sha256,
-            )
-            approval_service.complete_execution(approval_id, success=True)
-            self.store.set_proposal_status(
-                proposal.proposal_id,
-                "completion_evidence_pending",
-            )
-            return {
-                "status": "completion_evidence_pending",
-                "promotion_attempt_id": attempt_id,
-                "approval_id": approval_id,
-                "promotion_proposal_id": proposal.proposal_id,
-                "workspace_id": proposal.workspace_id,
-                "host_staging_label": proposal.host_staging_label,
-                "artifact_sha256": proposal.artifact_sha256,
-                "staged_sha256": staged_sha256,
-                "output_policy": _output_policy(),
-            }
-        except (OSError, ApprovalError, TrustedHostPromotionError) as exc:
-            if not execution_begun:
-                raise
-            status = "recovery_required" if placed else "failed"
-            if attempt_created:
-                self.store.set_attempt_status(attempt_id, status, failure_reason=str(exc))
-            if not placed:
-                try:
-                    approval_service.complete_execution(approval_id, success=False)
-                except ApprovalError:
-                    pass
-                if attempt_created:
-                    self.store.set_proposal_status(proposal.proposal_id, "failed")
-            raise TrustedHostPromotionError("trusted-host promotion did not complete") from exc
 
     def complete_with_evidence(self, attempt_id: str) -> TrustedHostPromotionAttempt:
         self._require_governance_binding()
-        attempt = self.store.get_attempt(attempt_id)
-        if attempt.status != "staged" or attempt.staged_sha256 != attempt.artifact_sha256:
-            raise TrustedHostPromotionError(
-                "trusted-host promotion completion evidence is not finalizable"
-            )
-        completed = self.store.set_attempt_status(
-            attempt_id,
-            "completed",
-            staged_sha256=attempt.staged_sha256,
+        raise TrustedHostPromotionError(
+            "trusted-host promotion placement is unavailable during TGB-002"
         )
-        self.store.set_proposal_status(attempt.proposal_id, "completed")
-        return completed
 
     def diagnostics(self, approval_service: ApprovalService) -> JsonObject:
         attempts = [attempt.summary() for attempt in self.store.list_attempts()]
@@ -760,11 +718,7 @@ class TrustedHostPromotionService:
             diagnostic_status = "ambiguous"
         return {
             "status": diagnostic_status,
-            "availability": (
-                PromotionReadinessReason.READY.value
-                if self.governance_binding_ready
-                else PromotionReadinessReason.GOVERNANCE_BINDING_INCOMPLETE.value
-            ),
+            "availability": PromotionReadinessReason.GOVERNANCE_BINDING_INCOMPLETE.value,
             "attempts": cast(JsonValue, attempts),
             "stuck_approvals": cast(JsonValue, stuck_approvals),
             "recommendations": cast(JsonValue, [
@@ -808,10 +762,15 @@ class TrustedHostPromotionService:
 
 def _proposal_from_row(row: tuple[object, ...]) -> TrustedHostPromotionProposal:
     metadata = _json_object(str(row[15]), "promotion metadata")
+    authority_snapshot_json = (
+        _json_object(str(row[17]), "promotion authority snapshot")
+        if row[17] is not None
+        else None
+    )
     return TrustedHostPromotionProposal(
         proposal_id=str(row[0]),
         request_id=str(row[1]),
-        status=str(row[2]),
+        status=_proposal_display_status(str(row[2])),
         created_at=str(row[3]),
         updated_at=str(row[4]),
         workspace_id=str(row[5]),
@@ -825,6 +784,13 @@ def _proposal_from_row(row: tuple[object, ...]) -> TrustedHostPromotionProposal:
         artifact_media_label=str(row[13]),
         proposal_hash=str(row[14]),
         metadata=metadata,
+        authority_schema_version=_optional_string(row[16]),
+        authority_snapshot_json=authority_snapshot_json,
+        authority_snapshot_hash=_optional_string(row[18]),
+        requester_principal_id=_optional_string(row[19]),
+        requester_principal_generation=_optional_string(row[20]),
+        executor_principal_id=_optional_string(row[21]),
+        executor_principal_generation=_optional_string(row[22]),
     )
 
 
@@ -841,12 +807,48 @@ def _attempt_from_row(row: tuple[object, ...]) -> TrustedHostPromotionAttempt:
         host_staging_label=str(row[5]),
         artifact_sha256=str(row[6]),
         staged_sha256=str(staged_sha256) if staged_sha256 is not None else None,
-        status=str(row[8]),
+        status=_attempt_display_status(str(row[8])),
         failure_reason=str(failure_reason) if failure_reason is not None else None,
         created_at=str(row[10]),
         updated_at=str(row[11]),
         metadata=metadata,
+        record_version=str(row[13]),
+        authority_snapshot_hash=_optional_string(row[14]),
+        executor_principal_id=_optional_string(row[15]),
+        executor_principal_generation=_optional_string(row[16]),
     )
+
+
+def _proposal_storage_status(status: str) -> str:
+    if status.startswith("legacy_"):
+        raise TrustedHostPromotionError("legacy promotion proposal is immutable")
+    if status.startswith("v2_"):
+        return status
+    return f"v2_{status}"
+
+
+def _proposal_display_status(status: str) -> str:
+    return status.removeprefix("v2_") if status.startswith("v2_") else status
+
+
+def _attempt_storage_status(status: str) -> str:
+    if status.startswith("legacy_"):
+        raise TrustedHostPromotionError("legacy promotion attempt is immutable")
+    if status.startswith("v2_"):
+        return status
+    if status == "recovery_required":
+        return "v2_placement_evidence_recovery_required"
+    return f"v2_{status}"
+
+
+def _attempt_display_status(status: str) -> str:
+    if status == "v2_placement_evidence_recovery_required":
+        return "placement_evidence_recovery_required"
+    return status.removeprefix("v2_") if status.startswith("v2_") else status
+
+
+def _optional_string(value: object) -> str | None:
+    return str(value) if value is not None else None
 
 
 def _json_object(raw: str, label: str) -> JsonObject:

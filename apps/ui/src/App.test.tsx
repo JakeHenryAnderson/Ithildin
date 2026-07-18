@@ -1812,6 +1812,14 @@ describe("Review console interactions", () => {
       `${API_BASE}/approvals/appr_123456789/deny`,
       expect.objectContaining({ method: "POST" }),
     );
+    const denyCall = fetchMock.mock.calls.find(
+      ([input]) => String(input) === `${API_BASE}/approvals/appr_123456789/deny`,
+    );
+    expect(JSON.parse(String(denyCall?.[1]?.body))).toEqual({
+      decision: "deny",
+      reason: "not today",
+    });
+    expect(String(denyCall?.[1]?.body)).not.toContain("decided_by");
     expect(fetchMock).not.toHaveBeenCalledWith(
       `${API_BASE}/approvals/appr_123456789/approve`,
       expect.objectContaining({ method: "POST" }),

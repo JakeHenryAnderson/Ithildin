@@ -11,6 +11,7 @@ from urllib.request import Request
 from ithildin_api.approvals import ApprovalService, ApprovalStore
 from ithildin_api.http_tools import HttpAllowlist, HttpFetchExecutor
 from ithildin_api.patches import PatchProposalService, PatchProposalStore
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
@@ -20,6 +21,15 @@ from ithildin_policy_core import PolicyEvaluator
 from mcp import types
 
 JsonObject = dict[str, Any]
+
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 
 
 class IntegrationHttpResponse:
@@ -122,7 +132,7 @@ async def run_integration_flow(harness: IntegrationHarness) -> None:
 
     approved = harness.approval_service.approve(
         approval_id,
-        decided_by="admin:integration-test",
+        context=ADMIN_CONTEXT,
         reason="integration flow",
     )
     assert approved.status.value == "approved"

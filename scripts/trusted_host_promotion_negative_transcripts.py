@@ -167,7 +167,7 @@ def _stale_artifact_hash(root: Path) -> ScenarioResult:
     approval_id = proposal["approval_id"]
     client.post(
         f"/approvals/{approval_id}/approve",
-        json={"decision": "approve", "decided_by": "admin:local"},
+        json={"decision": "approve"},
         headers=_headers(),
     )
     settings.workspace_root.joinpath("summary.txt").write_text("changed\n", encoding="utf-8")
@@ -179,10 +179,13 @@ def _stale_artifact_hash(root: Path) -> ScenarioResult:
     return _scenario(
         "Stale Artifact Hash Denial",
         "source artifact changed after approval",
-        "409 before staging placement",
+        "409 at the TGB-002 placement fence with no staging placement",
         response.status_code,
         _reason(response.json()),
-        "source artifact hash mismatch",
+        (
+            "placement is unavailable before source re-read; this TGB-002 transcript "
+            "does not claim stale-hash enforcement"
+        ),
     )
 
 
@@ -203,7 +206,7 @@ def _mismatched_proposal_approval(root: Path) -> ScenarioResult:
     ).json()
     client.post(
         f"/approvals/{first['approval_id']}/approve",
-        json={"decision": "approve", "decided_by": "admin:local"},
+        json={"decision": "approve"},
         headers=_headers(),
     )
     response = client.post(
@@ -231,7 +234,7 @@ def _replayed_approval(root: Path) -> ScenarioResult:
     approval_id = proposal["approval_id"]
     client.post(
         f"/approvals/{approval_id}/approve",
-        json={"decision": "approve", "decided_by": "admin:local"},
+        json={"decision": "approve"},
         headers=_headers(),
     )
     client.post(
@@ -246,11 +249,14 @@ def _replayed_approval(root: Path) -> ScenarioResult:
     )
     return _scenario(
         "Replayed Approval Denial",
-        "second apply call reuses executed approval",
-        "409 and no second staged artifact",
+        "two apply calls reuse an approved request while placement is disabled",
+        "both calls stop at the TGB-002 placement fence with no staged artifact",
         response.status_code,
         _reason(response.json()),
-        "approval compare-and-set rejected replay",
+        (
+            "placement remains unavailable before approval consumption; this TGB-002 "
+            "transcript does not claim replay-consumption evidence"
+        ),
     )
 
 
@@ -264,7 +270,7 @@ def _existing_destination(root: Path) -> ScenarioResult:
     approval_id = proposal["approval_id"]
     client.post(
         f"/approvals/{approval_id}/approve",
-        json={"decision": "approve", "decided_by": "admin:local"},
+        json={"decision": "approve"},
         headers=_headers(),
     )
     attempt_id = "thpa_" + hashlib.sha256(
@@ -290,7 +296,10 @@ def _existing_destination(root: Path) -> ScenarioResult:
         "409 without overwriting the existing destination",
         response.status_code,
         _reason(response.json()),
-        f"create-exclusive placement preserved existing destination: {str(preserved).lower()}",
+        (
+            "TGB-002 placement fence left the pre-existing fixture unchanged: "
+            f"{str(preserved).lower()}"
+        ),
     )
 
 
@@ -440,7 +449,8 @@ def _render(results: list[ScenarioResult]) -> str:
     )
     return f"""# Trusted-Host Promotion Negative Transcripts
 
-Status: observed local fixture denials for the staging-only `ERG-005` runtime slice.
+Status: observed local fixture denials for the `TGB-002` authority/persistence slice; placement is
+unavailable.
 
 These transcripts are generated from temporary local API fixtures. They do not use real secrets,
 real customer files, raw host paths, shell execution, Mission Control runtime authority, sandbox

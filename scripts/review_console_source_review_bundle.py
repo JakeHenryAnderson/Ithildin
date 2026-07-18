@@ -249,8 +249,8 @@ Please review:
 - approval lists use `/approvals/review` evidence, display binding checks, expose copyable safe
   approval evidence, and prevent stale approvals at the API before marking stored-proposal patch
   apply approvals approved;
-- approve/deny controls send the expected route decision and `decided_by` value without changing
-  approval semantics or adding execution controls;
+- approve/deny controls send only the expected route decision and optional bounded reason; the API
+  derives deciding-principal identity without adding execution controls;
 - patch proposal detail and diagnostics expose only admin-protected diffs or safe recovery metadata,
   with no file contents/diff contents in diagnostic tables;
 - system trust, audit verification/export, tools, policy preview, and policy impact panels render

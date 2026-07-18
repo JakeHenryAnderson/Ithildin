@@ -30,6 +30,7 @@ from ithildin_api.identity import (
 from ithildin_api.manifest_lock import ManifestLockError, ManifestLockRecord, write_manifest_lock
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
 from ithildin_api.policy_parity import run_policy_parity
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError
 from ithildin_api.registry import ToolRegistry
 from ithildin_audit_core import (
@@ -38,10 +39,23 @@ from ithildin_audit_core import (
     signed_audit_export_bundle,
     verify_signed_audit_export_bundle,
 )
-from ithildin_schemas import AuditEventType, JsonObject, PolicyDecisionValue, sha256_digest
+from ithildin_schemas import (
+    AuditEventType,
+    JsonObject,
+    PolicyDecisionValue,
+    sha256_digest,
+)
 
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v0.2/negative-review-transcripts")
 TRANSCRIPT_NAME = "NEGATIVE_REVIEW_TRANSCRIPTS.md"
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 
 
 @dataclass(frozen=True)
@@ -218,7 +232,7 @@ def _stale_base_patch_apply(root: Path) -> ScenarioResult:
             expires_at=expires_at,
         )
     )
-    approval_service.approve(approval.approval_id, decided_by="admin:negative-review")
+    approval_service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     target.write_text("changed before apply\n", encoding="utf-8")
     try:
         patch_service.apply_approved(
@@ -362,7 +376,7 @@ def _replayed_approval(root: Path) -> ScenarioResult:
             one_time_scope={"scenario": "replay-denial"},
         )
     )
-    approved = service.approve(approval.approval_id, decided_by="admin:negative-review")
+    approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     executing = service.begin_execution(approved.approval_id, approved.request_hash)
     service.complete_execution(executing.approval_id, success=True)
     try:
@@ -462,7 +476,7 @@ def _patch_apply_ambiguous_diagnostics(root: Path) -> ScenarioResult:
             one_time_scope={"proposal_id": "patch_missing"},
         )
     )
-    approved = service.approve(approval.approval_id, decided_by="admin:negative-review")
+    approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     service.begin_execution(approved.approval_id, approved.request_hash)
     diagnostics = patch_service.patch_apply_diagnostics(service)
     if diagnostics["status"] == "ambiguous":

@@ -83,12 +83,18 @@ def test_valid_models_construct() -> None:
         summary="Modify app.py",
         expires_at=NOW,
         one_time_scope={"request_id": "req_123", "tool_name": "fs.apply_patch"},
+        approval_contract_version="2",
+        requester_principal_id="agent:local-dev",
+        requester_principal_generation=VALID_HASH,
     )
     ApprovalDecision(
         approval_id="appr_123",
         decision=ApprovalDecisionValue.APPROVE,
-        decided_by="user:alice",
+        deciding_principal_id="admin:local-ui",
+        deciding_principal_generation=VALID_HASH,
         decided_at=NOW,
+        reason_hash=PREV_HASH,
+        decision_hash=EVENT_HASH,
     )
     AuditEvent(
         event_id="evt_123",
@@ -184,6 +190,9 @@ def test_invalid_hash_strings_are_rejected() -> None:
             summary="Modify app.py",
             expires_at=NOW,
             one_time_scope={"request_id": "req_123"},
+            approval_contract_version="2",
+            requester_principal_id="agent:local-dev",
+            requester_principal_generation=VALID_HASH,
         )
 
 
@@ -199,6 +208,69 @@ def test_approval_request_requires_hash_expiry_and_scope() -> None:
                 "status": ApprovalStatus.PENDING,
                 "summary": "Modify app.py",
             }
+        )
+
+
+def test_v2_pending_approval_cannot_claim_decision_authority() -> None:
+    with pytest.raises(ValidationError, match="nonterminal approval cannot claim a decision"):
+        ApprovalRequest(
+            approval_id="appr_123",
+            request_id="req_123",
+            request_hash=VALID_HASH,
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.apply_patch",
+            resource={"path": "/workspace/app.py"},
+            status=ApprovalStatus.PENDING,
+            summary="Modify app.py",
+            expires_at=NOW,
+            one_time_scope={"request_id": "req_123"},
+            approval_contract_version="2",
+            requester_principal_id="agent:local-dev",
+            requester_principal_generation=VALID_HASH,
+            deciding_principal_id="admin:local-ui",
+            deciding_principal_generation=VALID_HASH,
+            decided_at=NOW,
+            decision_reason_hash=PREV_HASH,
+            decision_hash=EVENT_HASH,
+        )
+
+
+def test_v2_terminal_approval_requires_complete_decision_authority() -> None:
+    with pytest.raises(ValidationError, match="terminal approval decision authority is required"):
+        ApprovalRequest(
+            approval_id="appr_123",
+            request_id="req_123",
+            request_hash=VALID_HASH,
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.apply_patch",
+            resource={"path": "/workspace/app.py"},
+            status=ApprovalStatus.APPROVED,
+            summary="Modify app.py",
+            expires_at=NOW,
+            one_time_scope={"request_id": "req_123"},
+            approval_contract_version="2",
+            requester_principal_id="agent:local-dev",
+            requester_principal_generation=VALID_HASH,
+        )
+
+
+def test_approval_executor_authority_must_be_complete() -> None:
+    with pytest.raises(ValidationError, match="executor authority must be complete"):
+        ApprovalRequest(
+            approval_id="appr_123",
+            request_id="req_123",
+            request_hash=VALID_HASH,
+            principal={"id": "agent:local-dev"},
+            tool_name="fs.apply_patch",
+            resource={"path": "/workspace/app.py"},
+            status=ApprovalStatus.PENDING,
+            summary="Modify app.py",
+            expires_at=NOW,
+            one_time_scope={"request_id": "req_123"},
+            approval_contract_version="2",
+            requester_principal_id="agent:local-dev",
+            requester_principal_generation=VALID_HASH,
+            executor_principal_id="admin:local-ui",
         )
 
 

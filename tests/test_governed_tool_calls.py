@@ -24,6 +24,7 @@ from ithildin_api.patches import (
     PatchProposalService,
     PatchProposalStore,
 )
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
@@ -31,6 +32,15 @@ from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
 from ithildin_schemas import AuditEventType, JsonObject, canonical_json, sha256_digest
+
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 
 
 class FakeHttpResponse:
@@ -1457,7 +1467,7 @@ def test_sandbox_artifact_write_requires_approval_and_executes_once(tmp_path: Pa
     assert "content" not in approval.one_time_scope
     assert approval.one_time_scope["content_sha256"] == sha256_digest("Hello World")
 
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
     apply_result = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
         arguments={**arguments, "approval_id": approval_id},
@@ -1495,7 +1505,7 @@ def test_sandbox_artifact_write_rejects_scope_mismatch_without_write(tmp_path: P
         session_id="session-1",
     )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
@@ -1540,7 +1550,7 @@ def test_sandbox_artifact_write_audit_metadata_is_secret_free(tmp_path: Path) ->
         session_id="session-1",
     )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
     harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
         arguments={**arguments, "approval_id": approval_id},
@@ -1572,7 +1582,7 @@ def test_sandbox_artifact_write_rejects_existing_non_utf8_target_safely(
         session_id="session-1",
     )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
@@ -2798,7 +2808,7 @@ def test_approved_patch_apply_writes_file_and_replay_is_rejected(tmp_path: Path)
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="fs.patch.apply",
@@ -2835,7 +2845,7 @@ def test_patch_apply_rejects_proposal_hash_mismatch(tmp_path: Path) -> None:
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
     with sqlite3.connect(harness.db_path) as connection:
         connection.execute(
             "UPDATE patch_proposals SET proposal_hash = ? WHERE proposal_id = ?",
@@ -2868,7 +2878,7 @@ def test_patch_apply_rejects_manifest_scope_mismatch(tmp_path: Path) -> None:
             (canonical_json(scope), approval["approval_id"]),
         )
         connection.commit()
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="fs.patch.apply",
@@ -2903,7 +2913,7 @@ def test_patch_apply_rejects_approval_scope_drift(
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
     _mutate_approval_scope(harness.db_path, str(approval["approval_id"]), scope_key, replacement)
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="fs.patch.apply",
@@ -2926,7 +2936,7 @@ def test_patch_apply_rejects_wrong_requesting_principal(tmp_path: Path) -> None:
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="fs.patch.apply",
@@ -2944,7 +2954,7 @@ def test_patch_apply_rejects_stale_base_without_partial_write(tmp_path: Path) ->
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
     harness.workspace_root.joinpath("README.md").write_text("changed elsewhere\n", encoding="utf-8")
 
     result = harness.service.call_tool(
@@ -2971,7 +2981,7 @@ def test_patch_apply_failure_before_replace_records_failed_attempt(
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     def fail_before_replace(
         workspace_root: Path,
@@ -3013,7 +3023,7 @@ def test_patch_apply_rechecks_base_immediately_before_replace(tmp_path: Path) ->
     harness = make_patch_harness(tmp_path, apply_fault_hook=fault)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="fs.patch.apply",
@@ -3040,7 +3050,7 @@ def test_patch_apply_attempt_creation_failure_leaves_file_unchanged(
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     def fail_create_attempt(attempt: object) -> NoReturn:
         raise sqlite3.Error("simulated attempt insert failure")
@@ -3074,7 +3084,7 @@ def test_patch_apply_fault_after_begin_execution_marks_failed_without_write(
     harness = make_patch_harness(tmp_path, apply_fault_hook=fault)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="fs.patch.apply",
@@ -3098,7 +3108,7 @@ def test_patch_apply_failure_after_replace_records_recovery_required(
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
     original_compare_and_set_status = harness.patch_service.store.compare_and_set_status
 
     def fail_after_replace(
@@ -3157,7 +3167,7 @@ def test_patch_apply_completed_audit_failure_is_diagnosable(
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
     original_audit_execution = harness.service._audit_execution
 
     def fail_completed_audit(**kwargs: object) -> None:
@@ -3214,7 +3224,7 @@ def test_patch_apply_fault_after_atomic_replace_requires_recovery(
     harness = make_patch_harness(tmp_path, apply_fault_hook=fault)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     result = harness.service.call_tool(
         tool_name="fs.patch.apply",
@@ -3257,8 +3267,8 @@ def test_two_approved_apply_calls_for_same_proposal_mutate_once(
         harness.service,
         cast(str, proposal["proposal_id"]),
     )
-    harness.approval_service.approve(str(first_approval["approval_id"]), decided_by="user:alice")
-    harness.approval_service.approve(str(second_approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(first_approval["approval_id"]), context=ADMIN_CONTEXT)
+    harness.approval_service.approve(str(second_approval["approval_id"]), context=ADMIN_CONTEXT)
     import ithildin_api.patches as patches
 
     original_atomic_write = patches._atomic_write_text
@@ -3380,7 +3390,7 @@ def test_patch_apply_file_replaced_status_failure_is_diagnosable(
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
     original_set_apply_attempt_status = harness.patch_service.store.set_apply_attempt_status
 
     def fail_file_replaced(
@@ -3437,7 +3447,7 @@ def test_patch_apply_diagnostics_reports_executing_approval_without_attempt_as_a
             one_time_scope={"proposal_id": "patch_missing"},
         )
     )
-    harness.approval_service.approve(approval.approval_id, decided_by="user:alice")
+    harness.approval_service.approve(approval.approval_id, context=ADMIN_CONTEXT)
     harness.approval_service.begin_execution(approval.approval_id, approval.request_hash)
 
     diagnostics = harness.patch_service.patch_apply_diagnostics(harness.approval_service)
@@ -3454,7 +3464,7 @@ def test_patch_apply_rejects_hardlinked_target_without_partial_write(tmp_path: P
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
     try:
         os.link(harness.workspace_root / "README.md", harness.workspace_root / "README-copy.md")
     except OSError as exc:
@@ -3481,7 +3491,7 @@ def test_patch_apply_denies_symlink_swap_during_apply_preparation(
     harness = make_patch_harness(tmp_path)
     proposal = propose_patch(harness.service)
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
     outside = tmp_path / "outside.txt"
     outside.write_text("outside\n", encoding="utf-8")
     original_resolver = harness.patch_service.filesystem.resolve_existing_path
@@ -3533,7 +3543,7 @@ def test_patch_apply_denies_parent_directory_symlink_swap_before_replace(
     assert proposal_result.status == "completed"
     proposal = proposal_result.content
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     import ithildin_api.patches as patches_module
 
@@ -3604,7 +3614,7 @@ def test_patch_apply_denies_ancestor_directory_symlink_swap_before_replace(
     assert proposal_result.status == "completed"
     proposal = proposal_result.content
     approval = request_patch_apply_approval(harness.service, cast(str, proposal["proposal_id"]))
-    harness.approval_service.approve(str(approval["approval_id"]), decided_by="user:alice")
+    harness.approval_service.approve(str(approval["approval_id"]), context=ADMIN_CONTEXT)
 
     import ithildin_api.patches as patches_module
 

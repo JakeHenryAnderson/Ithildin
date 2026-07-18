@@ -2550,6 +2550,12 @@ and is checked with
 `make trusted-host-promotion-governance-binding-authorization-record-check`. It records the direct
 user delegation for `PRD-TRUSTED-HOST-BINDING-001`, authorizes bounded technical implementation, and
 keeps live promotion, Node-side placement, new powers, release, and UAT outside that authority.
+The first two execution slices are implemented: immutable authority/candidate foundations and the
+transactional version-2 approval/promotion persistence contract. Run
+`make trusted-host-promotion-v2-downgrade-evidence` to prove the authorized version-1 writer cannot
+insert, decide, apply, or create an attempt after migration. Trusted-host placement remains disabled
+and produces no filesystem effect; complete YAML policy and approval-scope binding begins in
+`TGB-003`.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

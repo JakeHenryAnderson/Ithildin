@@ -39,12 +39,22 @@ from ithildin_api.nodes import (
     node_identity_key_id,
 )
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.trusted_host_registry import TRUSTED_HOST_REGISTRY_SCHEMA_DIGEST
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType, JsonObject, sha256_digest
 from pydantic import ValidationError
+
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 
 
 def make_settings(
@@ -654,7 +664,7 @@ def test_sandbox_descriptor_denies_unsafe_inputs_safely(tmp_path: Path) -> None:
     assert bad_id.json()["detail"] == "invalid sandbox descriptor id"
 
 
-def test_trusted_host_promotion_stages_single_artifact_after_approval(
+def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
     tmp_path: Path,
 ) -> None:
     settings = make_settings(tmp_path, token="correct-token")
@@ -687,7 +697,6 @@ def test_trusted_host_promotion_stages_single_artifact_after_approval(
                 "sandbox_id": "sandbox-demo",
                 "source_artifact_path": "summary.txt",
                 "host_staging_label": "host-staging://summary-output",
-                "principal": {"id": "agent:local-dev", "roles": ["AgentDeveloper"]},
             },
             headers={"Authorization": "Bearer correct-token"},
         )
@@ -695,7 +704,7 @@ def test_trusted_host_promotion_stages_single_artifact_after_approval(
         approval_id = proposal_payload["approval_id"]
         approve_response = client.post(
             f"/approvals/{approval_id}/approve",
-            json={"decision": "approve", "decided_by": "admin:local"},
+            json={"decision": "approve"},
             headers={"Authorization": "Bearer correct-token"},
         )
         apply_response = client.post(
@@ -738,27 +747,28 @@ def test_trusted_host_promotion_stages_single_artifact_after_approval(
     assert settings.workspace_root.as_posix() not in proposal_response.text
 
     assert approve_response.status_code == 200
-    assert apply_response.status_code == 200
-    applied = apply_response.json()
-    assert applied["status"] == "completed"
-    assert applied["staged_sha256"] == proposal_payload["artifact_sha256"]
-    assert applied["host_staging_label"] == "host-staging://summary-output"
-    assert applied["output_policy"]["raw_host_paths_included"] is False
-    assert "Hello World" not in apply_response.text
-    assert settings.trusted_host_staging_root.as_posix() not in apply_response.text
-
-    staged_files = list(settings.trusted_host_staging_root.rglob("*.artifact"))
-    assert len(staged_files) == 1
-    assert staged_files[0].read_text(encoding="utf-8") == "Hello World\n"
-
-    assert replay_response.status_code == 409
-    assert replay_response.json()["detail"] == (
-        "trusted-host promotion proposal is not applicable"
+    approved = approve_response.json()
+    assert approved["deciding_principal_id"] == "admin:local-ui"
+    assert approved["deciding_principal_generation"].startswith("sha256:")
+    assert approved["decision_reason_hash"].startswith("sha256:")
+    assert approved["decision_hash"].startswith("sha256:")
+    assert approved["decision_authority_snapshot_hash"] == (
+        proposal_payload["authority_snapshot_hash"]
     )
+    assert apply_response.status_code == 409
+    assert apply_response.json()["detail"] == (
+        "trusted-host promotion placement is unavailable during TGB-002"
+    )
+    assert replay_response.status_code == 409
+    assert replay_response.json()["detail"] == apply_response.json()["detail"]
+    assert not settings.trusted_host_staging_root.exists()
     assert diagnostics_response.status_code == 200
     assert diagnostics_response.json()["status"] == "clean"
+    assert diagnostics_response.json()["availability"] == "governance_binding_incomplete"
     assert list_response.status_code == 200
-    assert list_response.json()["promotion_proposals"][0]["status"] == "completed"
+    listed = list_response.json()["promotion_proposals"][0]
+    assert listed["status"] == "approval_required"
+    assert listed["requester_principal_id"] == "admin:local-ui"
     assert status_response.status_code == 200
     assert status_response.json()["trusted_host_promotions"] == "clean"
     assert audit_response.status_code == 200
@@ -769,17 +779,8 @@ def test_trusted_host_promotion_stages_single_artifact_after_approval(
     event_types = {event["event_type"] for event in audit_events}
     assert "approval.created" in event_types
     assert "approval.approved" in event_types
-    assert "tool.execution.started" in event_types
-    assert "tool.execution.completed" in event_types
-    completed_metadata = [
-        event["metadata"]
-        for event in audit_events
-        if event["event_type"] == "tool.execution.completed"
-    ][0]
-    assert completed_metadata["staging_only"] is True
-    assert completed_metadata["artifact_sha256"] == proposal_payload["artifact_sha256"]
-    assert completed_metadata["staged_sha256"] == proposal_payload["artifact_sha256"]
-    assert completed_metadata["output_policy"]["file_contents_included"] is False
+    assert "tool.execution.started" not in event_types
+    assert "tool.execution.completed" not in event_types
 
 
 def test_trusted_host_promotion_is_fail_closed_until_binding_is_complete(
@@ -807,7 +808,6 @@ def test_trusted_host_promotion_is_fail_closed_until_binding_is_complete(
                 "host_staging_label": "host-staging://artifact",
                 "artifact_media_label": "text/plain",
                 "operator_note_label": "reviewed-output",
-                "principal": {"id": "admin:local-ui", "roles": ["Admin"]},
             },
             headers=headers,
         )
@@ -829,6 +829,59 @@ def test_trusted_host_promotion_is_fail_closed_until_binding_is_complete(
         for event in audit_events
     )
     assert not settings.trusted_host_staging_root.exists()
+
+
+def test_legacy_caller_attribution_fields_are_rejected(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+    app = create_app(settings, trusted_host_promotion_test_fixture_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-legacy-input"),
+            headers=headers,
+        ).json()
+        legacy_proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-legacy-input",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+                "principal": {"id": "caller:spoofed"},
+            },
+            headers=headers,
+        )
+        created = client.post(
+            "/approvals",
+            json={
+                "principal": {"id": "agent:local-dev"},
+                "tool_name": "fs.apply_patch",
+                "resource": {"path": "README.md"},
+                "summary": "Modify README",
+                "one_time_scope": {"tool_name": "fs.apply_patch"},
+            },
+            headers=headers,
+        ).json()
+        legacy_decision = client.post(
+            f"/approvals/{created['approval_id']}/approve",
+            json={"decision": "approve", "decided_by": "caller:spoofed"},
+            headers=headers,
+        )
+        current = client.get(
+            f"/approvals/{created['approval_id']}",
+            headers=headers,
+        ).json()
+
+    assert legacy_proposal.status_code == 400
+    assert legacy_proposal.json()["detail"] == "invalid trusted-host promotion proposal"
+    assert legacy_decision.status_code == 422
+    assert current["status"] == "pending"
+    assert current["deciding_principal_id"] is None
 
 
 def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
@@ -883,7 +936,7 @@ def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
         approval_id = proposal["approval_id"]
         approve = client.post(
             f"/approvals/{approval_id}/approve",
-            json={"decision": "approve", "decided_by": "admin:local"},
+            json={"decision": "approve"},
             headers={"Authorization": "Bearer correct-token"},
         )
         unsupported_apply_field = client.post(
@@ -912,15 +965,18 @@ def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
         "unsupported trusted-host promotion apply field"
     )
     assert stale_apply.status_code == 409
-    assert stale_apply.json()["detail"] == "source artifact hash mismatch"
+    assert stale_apply.json()["detail"] == (
+        "trusted-host promotion placement is unavailable during TGB-002"
+    )
     assert "original" not in stale_apply.text
     assert "changed" not in stale_apply.text
     assert settings.trusted_host_staging_root.exists() is False
     assert diagnostics.status_code == 200
     assert diagnostics.json()["status"] == "clean"
+    assert diagnostics.json()["attempts"] == []
 
 
-def test_trusted_host_promotion_binds_route_proposal_and_allows_one_attempt(
+def test_trusted_host_promotion_rejects_unbound_approval_and_all_placement(
     tmp_path: Path,
 ) -> None:
     settings = make_settings(tmp_path, token="correct-token")
@@ -973,20 +1029,13 @@ def test_trusted_host_promotion_binds_route_proposal_and_allows_one_attempt(
                 "metadata": first_approval["metadata"],
             },
         )
-        duplicate_approval = duplicate_approval_response.json()
         for approval_id in [first["approval_id"], second["approval_id"]]:
             approve = client.post(
                 f"/approvals/{approval_id}/approve",
-                json={"decision": "approve", "decided_by": "admin:local"},
+                json={"decision": "approve"},
                 headers=headers,
             )
             assert approve.status_code == 200
-        duplicate_approve = client.post(
-            f"/approvals/{duplicate_approval['approval_id']}/approve",
-            json={"decision": "approve", "decided_by": "admin:local"},
-            headers=headers,
-        )
-
         mismatched = client.post(
             f"/trusted-host-promotions/proposals/{second['promotion_proposal_id']}/apply",
             json={"approval_id": first["approval_id"]},
@@ -997,11 +1046,6 @@ def test_trusted_host_promotion_binds_route_proposal_and_allows_one_attempt(
             json={"approval_id": first["approval_id"]},
             headers=headers,
         )
-        duplicate_apply = client.post(
-            f"/trusted-host-promotions/proposals/{first['promotion_proposal_id']}/apply",
-            json={"approval_id": duplicate_approval["approval_id"]},
-            headers=headers,
-        )
         second_apply = client.post(
             f"/trusted-host-promotions/proposals/{second['promotion_proposal_id']}/apply",
             json={"approval_id": second["approval_id"]},
@@ -1009,30 +1053,23 @@ def test_trusted_host_promotion_binds_route_proposal_and_allows_one_attempt(
         )
         diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
 
-    assert duplicate_approval_response.status_code == 200
-    assert duplicate_approve.status_code == 409
-    assert duplicate_approve.json()["detail"] == (
-        "trusted-host promotion approval binding review failed"
+    assert duplicate_approval_response.status_code == 400
+    assert duplicate_approval_response.json()["detail"] == (
+        "trusted-host approvals must originate from a bound proposal"
     )
     assert mismatched.status_code == 409
     assert mismatched.json()["detail"] == (
         "trusted-host promotion approval binding review failed"
     )
-    assert first_apply.status_code == 200
-    assert duplicate_apply.status_code == 409
-    assert duplicate_apply.json()["detail"] == (
-        "trusted-host promotion approval binding review failed"
-    )
-    assert second_apply.status_code == 200
-    for proposal, response in [(first, first_apply), (second, second_apply)]:
-        expected_attempt_id = "thpa_" + hashlib.sha256(
-            proposal["promotion_proposal_id"].encode("utf-8")
-        ).hexdigest()[:32]
-        assert response.json()["promotion_attempt_id"] == expected_attempt_id
-    assert len(list(settings.trusted_host_staging_root.rglob("*.artifact"))) == 2
+    for response in [first_apply, second_apply]:
+        assert response.status_code == 409
+        assert response.json()["detail"] == (
+            "trusted-host promotion placement is unavailable during TGB-002"
+        )
+    assert not settings.trusted_host_staging_root.exists()
     assert diagnostics.status_code == 200
     assert diagnostics.json()["status"] == "clean"
-    assert len(diagnostics.json()["attempts"]) == 2
+    assert diagnostics.json()["attempts"] == []
 
 
 def test_trusted_host_promotion_rejects_unsafe_source_object_types(
@@ -1079,7 +1116,7 @@ def test_trusted_host_promotion_rejects_unsafe_source_object_types(
     assert all("bounded output" not in response.text for response in responses)
 
 
-def test_trusted_host_promotion_concurrent_apply_stages_once(tmp_path: Path) -> None:
+def test_trusted_host_promotion_concurrent_apply_remains_disabled(tmp_path: Path) -> None:
     settings = make_settings(tmp_path, token="correct-token")
     settings.workspace_root.mkdir()
     settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
@@ -1110,7 +1147,7 @@ def test_trusted_host_promotion_concurrent_apply_stages_once(tmp_path: Path) -> 
         approval_id = proposal["approval_id"]
         approve = client.post(
             f"/approvals/{approval_id}/approve",
-            json={"decision": "approve", "decided_by": "admin:local"},
+            json={"decision": "approve"},
             headers=headers,
         )
 
@@ -1127,13 +1164,16 @@ def test_trusted_host_promotion_concurrent_apply_stages_once(tmp_path: Path) -> 
         diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
 
     assert approve.status_code == 200
-    assert sorted(status_code for status_code, _ in responses) == [200, 409]
-    successful = [payload for status_code, payload in responses if status_code == 200]
-    assert successful[0]["status"] == "completed"
-    assert len(list(settings.trusted_host_staging_root.rglob("*.artifact"))) == 1
+    assert [status_code for status_code, _ in responses] == [409, 409]
+    assert all(
+        payload["detail"]
+        == "trusted-host promotion placement is unavailable during TGB-002"
+        for _, payload in responses
+    )
+    assert not settings.trusted_host_staging_root.exists()
     assert diagnostics.status_code == 200
     assert diagnostics.json()["status"] == "clean"
-    assert len(diagnostics.json()["attempts"]) == 1
+    assert diagnostics.json()["attempts"] == []
 
 
 def test_trusted_host_promotion_preserves_existing_destination(
@@ -1169,7 +1209,7 @@ def test_trusted_host_promotion_preserves_existing_destination(
         approval_id = proposal["approval_id"]
         approve = client.post(
             f"/approvals/{approval_id}/approve",
-            json={"decision": "approve", "decided_by": "admin:local"},
+            json={"decision": "approve"},
             headers=headers,
         )
         attempt_id = "thpa_" + hashlib.sha256(
@@ -1192,14 +1232,16 @@ def test_trusted_host_promotion_preserves_existing_destination(
 
     assert approve.status_code == 200
     assert apply_response.status_code == 409
-    assert apply_response.json()["detail"] == "trusted-host promotion did not complete"
+    assert apply_response.json()["detail"] == (
+        "trusted-host promotion placement is unavailable during TGB-002"
+    )
     assert destination.read_text(encoding="utf-8") == "existing output\n"
     assert diagnostics.status_code == 200
-    assert diagnostics.json()["status"] == "ambiguous"
-    assert diagnostics.json()["attempts"][0]["status"] == "failed"
+    assert diagnostics.json()["status"] == "clean"
+    assert diagnostics.json()["attempts"] == []
 
 
-def test_trusted_host_promotion_audit_failure_remains_incomplete(
+def test_trusted_host_promotion_emits_no_completion_audit_while_disabled(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1233,7 +1275,7 @@ def test_trusted_host_promotion_audit_failure_remains_incomplete(
         approval_id = proposal["approval_id"]
         approve = client.post(
             f"/approvals/{approval_id}/approve",
-            json={"decision": "approve", "decided_by": "admin:local"},
+            json={"decision": "approve"},
             headers=headers,
         )
         audit_writer = cast(AuditWriter, app.state.audit_writer)
@@ -1245,15 +1287,11 @@ def test_trusted_host_promotion_audit_failure_remains_incomplete(
             return original_write_event(**kwargs)
 
         monkeypatch.setattr(audit_writer, "write_event", fail_completion_event)
-        with pytest.raises(
-            RuntimeError,
-            match="simulated promotion completion audit failure",
-        ):
-            client.post(
-                f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
-                json={"approval_id": approval_id},
-                headers=headers,
-            )
+        apply_response = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": approval_id},
+            headers=headers,
+        )
         monkeypatch.setattr(audit_writer, "write_event", original_write_event)
         diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
         proposal_response = client.get(
@@ -1262,12 +1300,13 @@ def test_trusted_host_promotion_audit_failure_remains_incomplete(
         )
 
     assert approve.status_code == 200
+    assert apply_response.status_code == 409
     assert diagnostics.status_code == 200
-    assert diagnostics.json()["status"] == "ambiguous"
-    assert diagnostics.json()["attempts"][0]["status"] == "staged"
+    assert diagnostics.json()["status"] == "clean"
+    assert diagnostics.json()["attempts"] == []
     assert proposal_response.status_code == 200
-    assert proposal_response.json()["status"] == "completion_evidence_pending"
-    assert len(list(settings.trusted_host_staging_root.rglob("*.artifact"))) == 1
+    assert proposal_response.json()["status"] == "approval_required"
+    assert not settings.trusted_host_staging_root.exists()
 
 
 def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> None:
@@ -1739,7 +1778,7 @@ def test_create_get_approve_and_deny_approval_endpoints(tmp_path: Path) -> None:
         approve_response = client.post(
             f"/approvals/{created['approval_id']}/approve",
             headers={"Authorization": "Bearer correct-token"},
-            json={"decision": "approve", "decided_by": "user:alice"},
+            json={"decision": "approve"},
         )
 
         deny_create_response = client.post(
@@ -1757,7 +1796,7 @@ def test_create_get_approve_and_deny_approval_endpoints(tmp_path: Path) -> None:
         deny_response = client.post(
             f"/approvals/{deny_created['approval_id']}/deny",
             headers={"Authorization": "Bearer correct-token"},
-            json={"decision": "deny", "decided_by": "user:alice", "reason": "not now"},
+            json={"decision": "deny", "reason": "not now"},
         )
 
     assert create_response.status_code == 200
@@ -1789,12 +1828,12 @@ def test_approval_mutation_routes_reject_body_decision_mismatch(tmp_path: Path) 
         approve_mismatch = client.post(
             f"/approvals/{approval_id}/approve",
             headers={"Authorization": "Bearer correct-token"},
-            json={"decision": "deny", "decided_by": "user:alice"},
+            json={"decision": "deny"},
         )
         deny_mismatch = client.post(
             f"/approvals/{approval_id}/deny",
             headers={"Authorization": "Bearer correct-token"},
-            json={"decision": "approve", "decided_by": "user:alice"},
+            json={"decision": "approve"},
         )
 
     assert approve_mismatch.status_code == 400
@@ -1833,7 +1872,7 @@ def test_approval_list_requires_auth_and_supports_status_filter(tmp_path: Path) 
         client.post(
             f"/approvals/{first_response.json()['approval_id']}/approve",
             headers={"Authorization": "Bearer correct-token"},
-            json={"decision": "approve", "decided_by": "user:alice"},
+            json={"decision": "approve"},
         )
         all_response = client.get(
             "/approvals",
@@ -1882,7 +1921,7 @@ def test_patch_apply_approval_requires_valid_binding_scope_before_approval(
         approve_response = client.post(
             f"/approvals/{create_response.json()['approval_id']}/approve",
             headers={"Authorization": "Bearer correct-token"},
-            json={"decision": "approve", "decided_by": "user:alice"},
+            json={"decision": "approve"},
         )
 
     assert create_response.status_code == 200
@@ -2796,7 +2835,7 @@ def test_patch_apply_diagnostics_reports_recovery_required_without_sensitive_con
                 one_time_scope={"proposal_id": "patch_1"},
             )
         )
-        approval_service.approve(approval.approval_id, decided_by="admin:test")
+        approval_service.approve(approval.approval_id, context=ADMIN_CONTEXT)
         approval_service.begin_execution(approval.approval_id, approval.request_hash)
         now = datetime.now(UTC)
         patch_service.store.create_apply_attempt(
@@ -3032,7 +3071,6 @@ def test_approve_patch_apply_rejects_stale_binding_review(tmp_path: Path) -> Non
             headers={"Authorization": "Bearer correct-token"},
             json={
                 "decision": "approve",
-                "decided_by": "admin:test",
             },
         )
 
@@ -3316,10 +3354,14 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
 
     with sqlite3.connect(db_path) as connection:
         rows = connection.execute(
-            "SELECT key, value FROM app_metadata WHERE key = 'schema_version'"
+            """
+            SELECT key, value FROM app_metadata
+            WHERE key IN ('schema_version', 'minimum_writer_version')
+            ORDER BY key
+            """
         ).fetchall()
 
-    assert rows == [("schema_version", "1")]
+    assert rows == [("minimum_writer_version", "2"), ("schema_version", "2")]
 
 
 def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Path) -> None:

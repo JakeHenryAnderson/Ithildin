@@ -23029,7 +23029,7 @@ def test_review_console_source_review_checklist_is_documented() -> None:
     for required in [
         "apps/ui/src/App.tsx",
         "approval binding evidence display",
-        'decided_by: "admin:local-ui"',
+        "API derives the deciding principal",
         "The UI does not add direct tool execution",
         "derived review verdict/checks/reasons",
         "npm run typecheck --prefix apps/ui",
@@ -34250,12 +34250,13 @@ def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
         assert leaked not in transcript_text
 
     for phrase in [
-        "Status: staging-only local-preview runtime slice implemented for `ERG-005`.",
-        "one stored sandbox artifact -> one operator-approved host staging placement",
+        "Status: version-2 authority/persistence slice implemented",
+        "one authority-bound proposal and approval -> placement denied",
         "Admin-only `POST /trusted-host-promotions/proposals`",
         "trusted_host.promotion.stage",
-        "not accept raw host paths.",
-        "roll back, complete approvals, delete files",
+        "never a raw host path",
+        "does not repair, retry, roll back",
+        "Stale-source, replay-consumption, atomic-placement, and completion",
     ]:
         assert phrase in doc
     for blocked in [

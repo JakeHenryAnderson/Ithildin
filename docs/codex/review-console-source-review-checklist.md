@@ -37,8 +37,8 @@ Inspect:
   where present.
 - The copied approval evidence includes the derived review verdict/checks/reasons that control
   approval enablement, without copying diffs, file contents, tokens, or secrets.
-- Approve/deny controls call only the existing approval mutation endpoints and include
-  `decided_by: "admin:local-ui"`.
+- Approve/deny controls call only the existing approval mutation endpoints and send only the
+  decision plus an optional bounded reason; the API derives the deciding principal.
 - The UI does not add direct tool execution, patch apply, shell, Docker, Kubernetes, browser, or
   broad-write controls.
 - Patch proposal details expose diffs only through admin-authenticated views.

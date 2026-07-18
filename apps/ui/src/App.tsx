@@ -26,7 +26,6 @@ import "./styles.css";
 const API_BASE =
   import.meta.env.VITE_ITHILDIN_API_BASE_URL ?? "http://127.0.0.1:8000";
 const TOKEN_STORAGE_KEY = "ithildin.adminToken";
-const DECIDED_BY = "admin:local-ui";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | JsonObject;
 type JsonObject = { [key: string]: JsonValue };
@@ -43,6 +42,15 @@ type Approval = {
   expires_at: string;
   one_time_scope: JsonObject;
   metadata: JsonObject;
+  approval_contract_version: string;
+  requester_principal_id?: string | null;
+  requester_principal_generation?: string | null;
+  deciding_principal_id?: string | null;
+  deciding_principal_generation?: string | null;
+  decided_at?: string | null;
+  decision_reason_hash?: string | null;
+  decision_authority_snapshot_hash?: string | null;
+  decision_hash?: string | null;
 };
 
 type PatchProposal = {
@@ -1327,7 +1335,6 @@ export function App() {
         method: "POST",
         body: JSON.stringify({
           decision: action,
-          decided_by: DECIDED_BY,
           reason: action === "deny" ? denyReasons[approvalId] || undefined : undefined,
         }),
       });

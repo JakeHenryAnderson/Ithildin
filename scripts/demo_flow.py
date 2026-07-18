@@ -159,7 +159,6 @@ async def _run_governed_tool_flow(api: ApiClient) -> DemoGovernedFlowResult:
         f"/approvals/{approval_id}/approve",
         {
             "decision": "approve",
-            "decided_by": "admin:demo-flow",
             "reason": "local deployment demo",
         },
     )

@@ -12,6 +12,13 @@ Authorization date: `2026-07-18`.
 
 Authorized architecture baseline commit: `250e6d8947972de28de134b72e0561bf39c62f5f`.
 
+Frozen version-1 writer source hashes used by the downgrade proof:
+
+- `apps/api/src/ithildin_api/approvals.py`:
+  `sha256:214bd207ac5208ecbfd6fbd5ba5ec024485edc11f88e133a5e5e699821dfec48`.
+- `apps/api/src/ithildin_api/trusted_host_promotions.py`:
+  `sha256:5361ac1ec20098bff482def23cbd26e3d86e5201a6f64cc03a031853b1df5eeb`.
+
 Current governed tool count: `24`.
 
 Run:

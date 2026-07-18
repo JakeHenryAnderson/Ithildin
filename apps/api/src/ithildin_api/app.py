@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Optional, cast
+from typing import Annotated, Optional, cast
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
@@ -30,7 +30,7 @@ from ithildin_schemas import (
     JsonValue,
     sha256_digest,
 )
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from ithildin_api.agent_runs import AgentRunError, AgentRunFilters, AgentRunStore
 from ithildin_api.approvals import (
@@ -109,7 +109,7 @@ from ithildin_api.policy_preview import (
     DEFAULT_PREVIEW_SESSION_ID,
     PolicyPreviewService,
 )
-from ithildin_api.promotion_authority import RuntimeCandidateRecord
+from ithildin_api.promotion_authority import AdminPrincipalContext, RuntimeCandidateRecord
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import ToolRegistry, ToolRegistryError, UnknownToolDenied
@@ -1396,8 +1396,11 @@ def create_app(
         except SandboxDescriptorError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
-    @api.post("/trusted-host-promotions/proposals", dependencies=[Depends(require_admin_token)])
-    def create_trusted_host_promotion_proposal(payload: JsonObject) -> JsonObject:
+    @api.post("/trusted-host-promotions/proposals")
+    def create_trusted_host_promotion_proposal(
+        payload: JsonObject,
+        context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
+    ) -> JsonObject:
         try:
             proposal_payload = TrustedHostPromotionProposalInput.model_validate(payload)
         except ValidationError as exc:
@@ -1414,6 +1417,7 @@ def create_app(
             return promotion_service.create_proposal(
                 proposal_payload,
                 approval_service=approval_service,
+                context=context,
             )
         except (TrustedHostPromotionError, SandboxDescriptorError) as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
@@ -1455,9 +1459,12 @@ def create_app(
 
     @api.post(
         "/trusted-host-promotions/proposals/{proposal_id}/apply",
-        dependencies=[Depends(require_admin_token)],
     )
-    def apply_trusted_host_promotion(proposal_id: str, payload: JsonObject) -> JsonObject:
+    def apply_trusted_host_promotion(
+        proposal_id: str,
+        payload: JsonObject,
+        context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
+    ) -> JsonObject:
         if not _valid_trusted_host_promotion_id(proposal_id, "thp_"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -1479,85 +1486,15 @@ def create_app(
             api.state.trusted_host_promotion_service,
         )
         approval_service = cast(ApprovalService, api.state.approval_service)
-        audit_writer = cast(AuditWriter, api.state.audit_writer)
-        input_hash = sha256_digest({"proposal_id": proposal_id, "approval_id": approval_id})
-        audit_writer.write_event(
-            event_id=f"evt_{uuid4().hex}",
-            event_type=AuditEventType.TOOL_EXECUTION_STARTED,
-            request_id=f"req_{uuid4().hex}",
-            principal={"id": "admin:local-api", "roles": ["Admin"]},
-            tool_name=TRUSTED_HOST_PROMOTION_TOOL,
-            resource={
-                "type": "trusted_host_promotion",
-                "promotion_proposal_id": proposal_id,
-            },
-            input_hash=input_hash,
-            metadata={
-                "executor": "trusted_host_promotion_stage",
-                "approval_id": approval_id,
-                "promotion_proposal_id": proposal_id,
-                "staging_only": True,
-            },
-        )
         try:
-            result = promotion_service.apply_approved(
+            return promotion_service.apply_approved(
                 proposal_id=proposal_id,
                 approval_id=approval_id,
                 approval_service=approval_service,
+                context=context,
             )
         except (ApprovalError, TrustedHostPromotionError) as exc:
-            audit_writer.write_event(
-                event_id=f"evt_{uuid4().hex}",
-                event_type=AuditEventType.TOOL_EXECUTION_FAILED,
-                request_id=f"req_{uuid4().hex}",
-                principal={"id": "admin:local-api", "roles": ["Admin"]},
-                tool_name=TRUSTED_HOST_PROMOTION_TOOL,
-                resource={
-                    "type": "trusted_host_promotion",
-                    "promotion_proposal_id": proposal_id,
-                },
-                input_hash=input_hash,
-                metadata={
-                    "executor": "trusted_host_promotion_stage",
-                    "approval_id": approval_id,
-                    "promotion_proposal_id": proposal_id,
-                    "reason": str(exc),
-                    "staging_only": True,
-                },
-            )
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-        audit_writer.write_event(
-            event_id=f"evt_{uuid4().hex}",
-            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
-            request_id=f"req_{uuid4().hex}",
-            principal={"id": "admin:local-api", "roles": ["Admin"]},
-            tool_name=TRUSTED_HOST_PROMOTION_TOOL,
-            resource={
-                "type": "trusted_host_promotion",
-                "promotion_proposal_id": proposal_id,
-            },
-            input_hash=input_hash,
-            metadata={
-                "executor": "trusted_host_promotion_stage",
-                "approval_id": approval_id,
-                "promotion_proposal_id": proposal_id,
-                "promotion_attempt_id": result.get("promotion_attempt_id"),
-                "host_staging_label": result.get("host_staging_label"),
-                "artifact_sha256": result.get("artifact_sha256"),
-                "staged_sha256": result.get("staged_sha256"),
-                "staging_only": True,
-                "output_policy": result.get("output_policy"),
-            },
-        )
-        attempt_id = result.get("promotion_attempt_id")
-        if not isinstance(attempt_id, str):
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="trusted-host promotion completion evidence is unavailable",
-            )
-        promotion_service.complete_with_evidence(attempt_id)
-        result["status"] = "completed"
-        return result
 
     @api.get("/trusted-host-promotions/diagnostics", dependencies=[Depends(require_admin_token)])
     def trusted_host_promotion_diagnostics() -> JsonObject:
@@ -1690,8 +1627,16 @@ def create_app(
             ]
         }
 
-    @api.post("/approvals", dependencies=[Depends(require_admin_token)])
-    def create_approval(payload: CreateApprovalPayload) -> ApprovalRequest:
+    @api.post("/approvals")
+    def create_approval(
+        payload: CreateApprovalPayload,
+        context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
+    ) -> ApprovalRequest:
+        if payload.tool_name == TRUSTED_HOST_PROMOTION_TOOL:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="trusted-host approvals must originate from a bound proposal",
+            )
         approval_service = cast(ApprovalService, api.state.approval_service)
         return approval_service.create_pending(
             CreateApprovalInput(
@@ -1704,6 +1649,7 @@ def create_app(
                 request_hash=payload.request_hash,
                 expires_at=payload.expires_at,
                 metadata=payload.metadata,
+                requester_context=context,
             )
         )
 
@@ -1712,8 +1658,12 @@ def create_app(
         approval_service = cast(ApprovalService, api.state.approval_service)
         return _approval_or_404(approval_service, approval_id)
 
-    @api.post("/approvals/{approval_id}/approve", dependencies=[Depends(require_admin_token)])
-    def approve_approval(approval_id: str, payload: ApprovalDecisionPayload) -> ApprovalRequest:
+    @api.post("/approvals/{approval_id}/approve")
+    def approve_approval(
+        approval_id: str,
+        payload: ApprovalDecisionPayload,
+        context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
+    ) -> ApprovalRequest:
         _require_route_decision(payload.decision, ApprovalDecisionValue.APPROVE)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
@@ -1740,20 +1690,24 @@ def create_app(
                     )
             return approval_service.approve(
                 approval_id,
-                decided_by=payload.decided_by,
+                context=context,
                 reason=payload.reason,
             )
         except ApprovalError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
-    @api.post("/approvals/{approval_id}/deny", dependencies=[Depends(require_admin_token)])
-    def deny_approval(approval_id: str, payload: ApprovalDecisionPayload) -> ApprovalRequest:
+    @api.post("/approvals/{approval_id}/deny")
+    def deny_approval(
+        approval_id: str,
+        payload: ApprovalDecisionPayload,
+        context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
+    ) -> ApprovalRequest:
         _require_route_decision(payload.decision, ApprovalDecisionValue.DENY)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
             return approval_service.deny(
                 approval_id,
-                decided_by=payload.decided_by,
+                context=context,
                 reason=payload.reason,
             )
         except ApprovalError as exc:
@@ -2165,9 +2119,10 @@ class CreateApprovalPayload(BaseModel):
 
 
 class ApprovalDecisionPayload(BaseModel):
+    model_config = {"extra": "forbid"}
+
     decision: ApprovalDecisionValue
-    decided_by: str
-    reason: Optional[str] = None
+    reason: Optional[str] = Field(default=None, max_length=500)
 
 
 class PolicyPreviewPayload(BaseModel):

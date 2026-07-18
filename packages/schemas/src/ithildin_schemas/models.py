@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ithildin_schemas.types import (
     ApprovalDecisionValue,
@@ -28,6 +28,10 @@ def _validate_timezone(value: datetime) -> datetime:
     if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
         raise ValueError("datetime must be timezone-aware")
     return value
+
+
+def _validate_optional_timezone(value: Optional[datetime]) -> Optional[datetime]:
+    return _validate_timezone(value) if value is not None else None
 
 
 class ToolManifest(StrictBaseModel):
@@ -91,16 +95,102 @@ class ApprovalRequest(StrictBaseModel):
     expires_at: datetime
     one_time_scope: JsonObject
     metadata: JsonObject = Field(default_factory=dict)
+    approval_contract_version: str = Field(pattern=r"^[12]$")
+    requester_principal_id: Optional[str] = None
+    requester_principal_generation: Optional[str] = Field(
+        default=None,
+        pattern=SHA256_PATTERN,
+    )
+    deciding_principal_id: Optional[str] = None
+    deciding_principal_generation: Optional[str] = Field(
+        default=None,
+        pattern=SHA256_PATTERN,
+    )
+    decided_at: Optional[datetime] = None
+    decision_reason_hash: Optional[str] = Field(default=None, pattern=SHA256_PATTERN)
+    decision_authority_snapshot_hash: Optional[str] = Field(
+        default=None,
+        pattern=SHA256_PATTERN,
+    )
+    decision_hash: Optional[str] = Field(default=None, pattern=SHA256_PATTERN)
+    executor_principal_id: Optional[str] = None
+    executor_principal_generation: Optional[str] = Field(
+        default=None,
+        pattern=SHA256_PATTERN,
+    )
 
     _expires_at_must_have_timezone = field_validator("expires_at")(_validate_timezone)
+    _decided_at_must_have_timezone = field_validator("decided_at")(
+        _validate_optional_timezone
+    )
+
+    @model_validator(mode="after")
+    def _authority_fields_match_contract(self) -> ApprovalRequest:
+        decision_values = (
+            self.deciding_principal_id,
+            self.deciding_principal_generation,
+            self.decided_at,
+            self.decision_reason_hash,
+            self.decision_hash,
+        )
+        if self.approval_contract_version == "2":
+            if self.requester_principal_id is None or self.requester_principal_generation is None:
+                raise ValueError("version-2 approval requester authority is required")
+            decision_statuses = {
+                ApprovalStatus.APPROVED,
+                ApprovalStatus.DENIED,
+                ApprovalStatus.EXECUTING,
+                ApprovalStatus.EXECUTED,
+                ApprovalStatus.FAILED,
+            }
+            if self.status in decision_statuses and not all(
+                value is not None for value in decision_values
+            ):
+                raise ValueError("version-2 terminal approval decision authority is required")
+            if self.status in {ApprovalStatus.CREATED, ApprovalStatus.PENDING} and any(
+                value is not None for value in decision_values
+            ):
+                raise ValueError("version-2 nonterminal approval cannot claim a decision")
+        elif any(
+            value is not None
+            for value in (
+                self.requester_principal_id,
+                self.requester_principal_generation,
+                self.deciding_principal_id,
+                self.deciding_principal_generation,
+                self.decided_at,
+                self.decision_reason_hash,
+                self.decision_authority_snapshot_hash,
+                self.decision_hash,
+                self.executor_principal_id,
+                self.executor_principal_generation,
+            )
+        ):
+            raise ValueError("legacy approval cannot claim version-2 authority")
+        if any(value is not None for value in decision_values) and not all(
+            value is not None for value in decision_values
+        ):
+            raise ValueError("approval decision authority must be complete")
+        executor_values = (
+            self.executor_principal_id,
+            self.executor_principal_generation,
+        )
+        if any(value is not None for value in executor_values) and not all(
+            value is not None for value in executor_values
+        ):
+            raise ValueError("approval executor authority must be complete")
+        return self
 
 
 class ApprovalDecision(StrictBaseModel):
     approval_id: str
     decision: ApprovalDecisionValue
-    decided_by: str
+    deciding_principal_id: str
+    deciding_principal_generation: str = Field(pattern=SHA256_PATTERN)
     decided_at: datetime
-    reason: Optional[str] = None
+    reason_hash: str = Field(pattern=SHA256_PATTERN)
+    authority_snapshot_hash: Optional[str] = Field(default=None, pattern=SHA256_PATTERN)
+    decision_hash: str = Field(pattern=SHA256_PATTERN)
 
     _decided_at_must_have_timezone = field_validator("decided_at")(_validate_timezone)
 

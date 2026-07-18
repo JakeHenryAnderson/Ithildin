@@ -135,8 +135,8 @@ request body must change from caller-supplied `decided_by` to:
 }
 ```
 
-The route passes `AdminPrincipalContext.principal_id` to `ApprovalService`. Approval storage must
-persist and safely return `decided_by`, decision time, and a `decision_hash` over approval ID,
+The route passes the full `AdminPrincipalContext` to `ApprovalService`. Approval storage must
+persist and safely return the deciding principal ID/generation, decision time, and a `decision_hash` over approval ID,
 approval request hash, decision, server-derived deciding principal, bounded reason hash, and
 authority snapshot hash when present. The approval scope binds required approver roles; the later
 decision record binds the actual approver. Apply must validate both. Accepting and ignoring a legacy
@@ -480,7 +480,8 @@ without the reviewed descriptor-relative primitives remains unsupported for prom
 
 ## Persistence And Migration Contract
 
-This architecture proposes a versioned SQLite table-rebuild migration, but does not authorize it:
+The bounded authorization record approves this versioned SQLite table-rebuild migration, and
+`TGB-002` implements its persistence fence while placement remains disabled:
 
 - add `authority_schema_version`;
 - add canonical `authority_snapshot_json`;

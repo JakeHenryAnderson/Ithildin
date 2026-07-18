@@ -16,6 +16,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
@@ -27,6 +28,14 @@ from ithildin_schemas import JsonObject
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/sandbox-artifact-write-text-negative")
 TRANSCRIPT_NAME = "SANDBOX_ARTIFACT_WRITE_TEXT_NEGATIVE_TRANSCRIPTS.md"
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 
 
 @dataclass(frozen=True)
@@ -155,7 +164,7 @@ def _approval_content_mismatch(root: Path) -> ScenarioResult:
         session_id="negative-content-mismatch",
     )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
     result = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
         arguments={
@@ -190,7 +199,7 @@ def _replayed_approval(root: Path) -> ScenarioResult:
         session_id="negative-replay",
     )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
     first = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
         arguments={**arguments, "approval_id": approval_id},
@@ -228,7 +237,7 @@ def _overwrite_denied_by_default(root: Path) -> ScenarioResult:
         session_id="negative-overwrite",
     )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
     result = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
         arguments={**arguments, "approval_id": approval_id},
@@ -261,7 +270,7 @@ def _existing_non_utf8_target(root: Path) -> ScenarioResult:
         session_id="negative-non-utf8",
     )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
     result = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
         arguments={**arguments, "approval_id": approval_id},

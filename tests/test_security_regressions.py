@@ -17,12 +17,22 @@ from ithildin_api.approvals import (
 )
 from ithildin_api.http_tools import HttpAllowlist, HttpFetchError, HttpFetchExecutor
 from ithildin_api.patches import PatchProposalError, PatchProposalService, PatchProposalStore
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError, ReadToolExecutor
 from ithildin_api.redaction import RedactionService
 from ithildin_api.registry import DuplicateToolManifest, InvalidToolManifest, ToolRegistry
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEvaluator
+
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 
 
 class FakeResponse:
@@ -154,7 +164,7 @@ def test_security_regression_approval_replay_and_hash_mismatch(tmp_path: Path) -
             one_time_scope={"proposal_id": "patch_1"},
         )
     )
-    approved = service.approve(approval.approval_id, decided_by="admin:test")
+    approved = service.approve(approval.approval_id, context=ADMIN_CONTEXT)
 
     with pytest.raises(ApprovalError, match="hash mismatch"):
         service.begin_execution(approved.approval_id, "sha256:" + ("1" * 64))

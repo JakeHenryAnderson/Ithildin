@@ -34,6 +34,7 @@ class PolicyDecisionValue(StrEnum):
 
 
 class ApprovalStatus(StrEnum):
+    LEGACY_UNBOUND = "legacy_unbound"
     CREATED = "created"
     PENDING = "pending"
     APPROVED = "approved"

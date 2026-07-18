@@ -1272,6 +1272,10 @@ trusted-host-promotion-governance-binding-implementation-tickets-check:
 trusted-host-promotion-governance-binding-authorization-record-check:
 	uv run python scripts/trusted_host_promotion_governance_binding_authorization_record_check.py
 
+.PHONY: trusted-host-promotion-v2-downgrade-evidence
+trusted-host-promotion-v2-downgrade-evidence:
+	uv run python scripts/trusted_host_promotion_v2_downgrade_evidence.py
+
 trusted-host-promotion-negative-transcripts:
 	uv run python scripts/trusted_host_promotion_negative_transcripts.py
 
@@ -2018,6 +2022,7 @@ release-check: track-b-node-release-artifact-decision-check
 release-check: trusted-host-promotion-governance-binding-architecture-check
 release-check: trusted-host-promotion-governance-binding-implementation-tickets-check
 release-check: trusted-host-promotion-governance-binding-authorization-record-check
+release-check: trusted-host-promotion-v2-downgrade-evidence
 release-check: compliance-mapping-external-review-bundle-check
 release-check: packet-check-recursion-guard
 release-check: technical-mvp-operator-trial-readiness

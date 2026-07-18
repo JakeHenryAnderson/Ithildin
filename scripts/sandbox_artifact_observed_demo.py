@@ -17,6 +17,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ithildin_api.approvals import ApprovalService, ApprovalStore
+from ithildin_api.promotion_authority import AdminPrincipalContext
 from ithildin_api.read_tools import ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
@@ -30,6 +31,14 @@ DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/sandbox-artifact-observed-demo"
 TRANSCRIPT_NAME = "SANDBOX_ARTIFACT_OBSERVED_DEMO.md"
 JSON_NAME = "sandbox-artifact-observed-demo.json"
 HASHES_NAME = "artifact-hashes.json"
+ADMIN_CONTEXT = AdminPrincipalContext(
+    principal_id="admin:local-ui",
+    principal_type="admin",
+    roles=("Admin",),
+    authentication_method="local_admin_bearer",
+    identity_source="principal_registry",
+    identity_generation="sha256:" + ("d" * 64),
+)
 DEMO_CONTENT = "Hello World\n"
 
 
@@ -86,7 +95,7 @@ def _run_observed_demo(root: Path) -> dict[str, Any]:
             f"expected approval_required, observed {request.status}"
         )
     approval_id = cast(str, request.content["approval_id"])
-    harness.approval_service.approve(approval_id, decided_by="admin:local-ui")
+    harness.approval_service.approve(approval_id, context=ADMIN_CONTEXT)
     execution = harness.service.call_tool(
         tool_name="sandbox.artifact.write_text",
         arguments={**arguments, "approval_id": approval_id},
