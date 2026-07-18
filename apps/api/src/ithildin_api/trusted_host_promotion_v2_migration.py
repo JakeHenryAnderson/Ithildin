@@ -5,8 +5,13 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-DATABASE_SCHEMA_VERSION = "3"
-MINIMUM_WRITER_VERSION = "3"
+from ithildin_api.database_migration_backup import (
+    DatabaseBackupError,
+    ensure_pre_v4_backup,
+)
+
+DATABASE_SCHEMA_VERSION = "4"
+MINIMUM_WRITER_VERSION = "4"
 APPROVAL_CONTRACT_VERSION = "2"
 PROMOTION_AUTHORITY_SCHEMA_VERSION = "1"
 
@@ -87,6 +92,101 @@ V2_TABLE_COLUMNS = {
     ),
 }
 
+MISSION_TABLE_COLUMNS = {
+    "missions": (
+        "mission_id",
+        "requester_principal_id",
+        "requester_identity_generation",
+        "client_request_id",
+        "admission_request_digest",
+        "authority_snapshot_json",
+        "authority_snapshot_hash",
+        "target_node_id",
+        "target_node_principal_id",
+        "workspace_id",
+        "configuration_generation",
+        "configuration_digest",
+        "policy_digest",
+        "manifest_lock_digest",
+        "mission_template_id",
+        "template_registry_generation",
+        "template_payload_digest",
+        "envelope_digest",
+        "requested_timeout_seconds",
+        "lifecycle_state",
+        "lifecycle_revision",
+        "created_at",
+        "updated_at",
+        "admitted_at",
+    ),
+    "mission_audit_evidence_bindings": (
+        "audit_event_id",
+        "audit_event_hash",
+        "owner_kind",
+        "owner_id",
+        "request_digest",
+        "bound_at",
+    ),
+    "mission_transition_attempts": (
+        "transition_id",
+        "mission_id",
+        "transition_kind",
+        "prior_lifecycle_state",
+        "prior_lifecycle_revision",
+        "proposed_lifecycle_state",
+        "proposed_lifecycle_revision",
+        "request_digest",
+        "safe_metadata_json",
+        "evidence_status",
+        "audit_event_id",
+        "audit_event_hash",
+        "failure_reason_code",
+        "created_at",
+        "finalized_at",
+    ),
+    "mission_claims": (
+        "claim_id",
+        "mission_id",
+        "transition_id",
+        "node_id",
+        "node_identity_key_id",
+        "envelope_digest",
+        "authority_snapshot_json",
+        "authority_snapshot_hash",
+        "lifecycle_revision",
+        "claim_status",
+        "claimed_at",
+        "expires_at",
+    ),
+    "mission_report_receipts": (
+        "report_id",
+        "mission_id",
+        "claim_id",
+        "node_id",
+        "verified_node_identity_key_id",
+        "envelope_digest",
+        "expected_lifecycle_revision",
+        "report_kind",
+        "outcome_code",
+        "reason_code",
+        "artifact_digest",
+        "request_digest",
+        "receipt_posture_json",
+        "receipt_disposition",
+        "evidence_status",
+        "audit_event_id",
+        "audit_event_hash",
+        "failure_reason_code",
+        "received_at",
+        "finalized_at",
+    ),
+    "mission_report_nonces": (
+        "node_id",
+        "nonce",
+        "accepted_at",
+    ),
+}
+
 TRUSTED_HOST_PROMOTION_TOOL = "trusted_host.promotion.stage"
 
 LEGACY_APPROVAL_STATUSES = (
@@ -144,33 +244,48 @@ class DatabaseMigrationError(RuntimeError):
 
 
 def initialize_or_migrate_database(db_path: Path) -> None:
-    """Create or atomically migrate the coordinated v2 persistence contract."""
+    """Create or atomically migrate the coordinated persistence contract."""
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path, isolation_level=None)
     try:
         connection.execute("PRAGMA foreign_keys = OFF")
         connection.execute("BEGIN IMMEDIATE")
-        _create_metadata_table(connection)
         current = _metadata_value(connection, "schema_version")
         minimum_writer = _metadata_value(connection, "minimum_writer_version")
         _validate_version_metadata(current=current, minimum_writer=minimum_writer)
+        had_user_tables = _has_user_tables(connection)
+        if current != DATABASE_SCHEMA_VERSION and (current is not None or had_user_tables):
+            ensure_pre_v4_backup(
+                locked_source=connection,
+                db_path=db_path,
+                source_schema_version=current or "unversioned",
+                source_minimum_writer_version=minimum_writer,
+            )
+        _create_metadata_table(connection)
 
         if current == DATABASE_SCHEMA_VERSION:
             _verify_v2_schema(connection)
+            _verify_mission_schema(connection)
+        elif current == "3":
+            _verify_v2_schema(connection)
+            _migrate_v3_to_v4(connection)
         elif current == "2":
             _verify_v2_schema(connection, require_placement_states=False)
             _migrate_v2_to_v3(connection)
+            _migrate_v3_to_v4(connection)
         elif current in {None, "0", "1"}:
             _migrate_tables(connection)
+            _migrate_v3_to_v4(connection)
         else:  # pragma: no cover - guarded above, retained as a fail-closed fence
             raise DatabaseMigrationError(f"unsupported database schema version: {current}")
 
         _set_metadata(connection, "schema_version", DATABASE_SCHEMA_VERSION)
         _set_metadata(connection, "minimum_writer_version", MINIMUM_WRITER_VERSION)
         _verify_v2_schema(connection)
+        _verify_mission_schema(connection)
         connection.execute("COMMIT")
-    except (DatabaseMigrationError, sqlite3.DatabaseError):
+    except (DatabaseBackupError, DatabaseMigrationError, sqlite3.DatabaseError):
         if connection.in_transaction:
             connection.execute("ROLLBACK")
         raise
@@ -179,7 +294,7 @@ def initialize_or_migrate_database(db_path: Path) -> None:
 
 
 def verify_database_v2(db_path: Path) -> None:
-    """Reject use before the coordinated v2 contract is on the current writer schema."""
+    """Reject use before the coordinated contract is on the current writer schema."""
 
     try:
         with sqlite3.connect(db_path) as connection:
@@ -187,8 +302,9 @@ def verify_database_v2(db_path: Path) -> None:
             minimum_writer = _metadata_value(connection, "minimum_writer_version")
             _validate_version_metadata(current=current, minimum_writer=minimum_writer)
             if current != DATABASE_SCHEMA_VERSION or minimum_writer != MINIMUM_WRITER_VERSION:
-                raise DatabaseMigrationError("database v2 contract migration has not completed")
+                raise DatabaseMigrationError("coordinated database migration has not completed")
             _verify_v2_schema(connection)
+            _verify_mission_schema(connection)
     except sqlite3.DatabaseError as exc:
         raise DatabaseMigrationError("database v2 schema verification failed") from exc
 
@@ -344,6 +460,17 @@ def _migrate_v2_to_v3(connection: sqlite3.Connection) -> None:
             f"SELECT {column_list} FROM {table}_v2"
         )
         connection.execute(f"DROP TABLE {table}_v2")
+
+
+def _migrate_v3_to_v4(connection: sqlite3.Connection) -> None:
+    """Add the closed Mission Command authority tables in the coordinated transaction."""
+
+    existing = [table for table in MISSION_TABLE_COLUMNS if _table_exists(connection, table)]
+    if existing:
+        raise DatabaseMigrationError(
+            "database v3 contains unexpected Mission Command tables: " + ", ".join(existing)
+        )
+    _create_mission_tables(connection)
 
 
 def _create_v2_tables(connection: sqlite3.Connection) -> None:
@@ -611,6 +738,429 @@ def _verify_v2_schema(
             raise DatabaseMigrationError(f"database v2 constraints are incomplete: {table}")
 
 
+def _create_mission_tables(connection: sqlite3.Connection) -> None:
+    lifecycle_states = _sql_values(
+        (
+            "unadmitted",
+            "queued",
+            "claimed",
+            "runner_reported_running",
+            "runner_reported_succeeded",
+            "runner_reported_failed",
+            "canceled",
+            "cancel_requested",
+            "runner_reported_canceled",
+            "claim_expired_review_required",
+        )
+    )
+    evidence_statuses = _sql_values(("pending", "complete", "evidence_incomplete"))
+    transition_kinds = _sql_values(
+        (
+            "admission_pending_evidence",
+            "claim_pending_evidence",
+            "cancellation_pending_evidence",
+            "control_observation_pending_evidence",
+            "report_pending_evidence",
+            "claim_expiry_pending_evidence",
+        )
+    )
+    connection.execute(
+        f"""
+        CREATE TABLE missions (
+            mission_id TEXT PRIMARY KEY,
+            requester_principal_id TEXT NOT NULL,
+            requester_identity_generation TEXT NOT NULL,
+            client_request_id TEXT NOT NULL,
+            admission_request_digest TEXT NOT NULL,
+            authority_snapshot_json TEXT NOT NULL,
+            authority_snapshot_hash TEXT NOT NULL,
+            target_node_id TEXT NOT NULL,
+            target_node_principal_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            configuration_generation INTEGER NOT NULL,
+            configuration_digest TEXT NOT NULL,
+            policy_digest TEXT NOT NULL,
+            manifest_lock_digest TEXT NOT NULL,
+            mission_template_id TEXT NOT NULL,
+            template_registry_generation TEXT NOT NULL,
+            template_payload_digest TEXT NOT NULL,
+            envelope_digest TEXT NOT NULL,
+            requested_timeout_seconds INTEGER NOT NULL,
+            lifecycle_state TEXT NOT NULL,
+            lifecycle_revision INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            admitted_at TEXT,
+            UNIQUE (
+                requester_principal_id,
+                requester_identity_generation,
+                client_request_id
+            ),
+            CHECK (
+                length(mission_id) = 40 AND substr(mission_id, 1, 8) = 'mission_'
+                AND substr(mission_id, 9) NOT GLOB '*[^0-9a-f]*'
+            ),
+            CHECK (length(requester_principal_id) BETWEEN 1 AND 128),
+            CHECK (length(client_request_id) BETWEEN 1 AND 128),
+            CHECK (length(authority_snapshot_json) BETWEEN 2 AND 32768),
+            CHECK (length(target_node_id) = 37 AND substr(target_node_id, 1, 5) = 'node_'
+                AND substr(target_node_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (configuration_generation >= 1),
+            CHECK (mission_template_id = 'synthetic_read_review_v1'),
+            CHECK (requested_timeout_seconds BETWEEN 60 AND 3600),
+            CHECK (lifecycle_state IN ({lifecycle_states})),
+            CHECK (lifecycle_revision >= 0),
+            CHECK (
+                (lifecycle_state = 'unadmitted' AND lifecycle_revision = 0
+                    AND admitted_at IS NULL) OR
+                (lifecycle_state != 'unadmitted' AND lifecycle_revision >= 1
+                    AND admitted_at IS NOT NULL)
+            ),
+            CHECK (length(requester_identity_generation) = 71
+                AND substr(requester_identity_generation, 1, 7) = 'sha256:'
+                AND substr(requester_identity_generation, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(admission_request_digest) = 71
+                AND substr(admission_request_digest, 1, 7) = 'sha256:'
+                AND substr(admission_request_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(authority_snapshot_hash) = 71
+                AND substr(authority_snapshot_hash, 1, 7) = 'sha256:'
+                AND substr(authority_snapshot_hash, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(configuration_digest) = 71
+                AND substr(configuration_digest, 1, 7) = 'sha256:'
+                AND substr(configuration_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(policy_digest) = 71 AND substr(policy_digest, 1, 7) = 'sha256:'
+                AND substr(policy_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(manifest_lock_digest) = 71
+                AND substr(manifest_lock_digest, 1, 7) = 'sha256:'
+                AND substr(manifest_lock_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(template_registry_generation) = 71
+                AND substr(template_registry_generation, 1, 7) = 'sha256:'
+                AND substr(template_registry_generation, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(template_payload_digest) = 71
+                AND substr(template_payload_digest, 1, 7) = 'sha256:'
+                AND substr(template_payload_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(envelope_digest) = 71
+                AND substr(envelope_digest, 1, 7) = 'sha256:'
+                AND substr(envelope_digest, 8) NOT GLOB '*[^0-9a-f]*')
+        )
+        """
+    )
+    connection.execute(
+        "CREATE INDEX missions_updated_idx ON missions(updated_at DESC, mission_id)"
+    )
+    connection.execute(
+        """
+        CREATE TABLE mission_audit_evidence_bindings (
+            audit_event_id TEXT PRIMARY KEY,
+            audit_event_hash TEXT NOT NULL UNIQUE,
+            owner_kind TEXT NOT NULL,
+            owner_id TEXT NOT NULL UNIQUE,
+            request_digest TEXT NOT NULL,
+            bound_at TEXT NOT NULL,
+            CHECK (length(audit_event_id) = 36
+                AND substr(audit_event_id, 1, 4) = 'evt_'
+                AND substr(audit_event_id, 5) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(audit_event_hash) = 71
+                AND substr(audit_event_hash, 1, 7) = 'sha256:'
+                AND substr(audit_event_hash, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (owner_kind IN ('mission_transition', 'mission_report_receipt')),
+            CHECK (
+                (owner_kind = 'mission_transition' AND length(owner_id) = 44
+                    AND substr(owner_id, 1, 12) = 'mtransition_'
+                    AND substr(owner_id, 13) NOT GLOB '*[^0-9a-f]*') OR
+                (owner_kind = 'mission_report_receipt' AND length(owner_id) = 40
+                    AND substr(owner_id, 1, 8) = 'mreport_'
+                    AND substr(owner_id, 9) NOT GLOB '*[^0-9a-f]*')
+            ),
+            CHECK (length(request_digest) = 71
+                AND substr(request_digest, 1, 7) = 'sha256:'
+                AND substr(request_digest, 8) NOT GLOB '*[^0-9a-f]*')
+        )
+        """
+    )
+    connection.execute(
+        f"""
+        CREATE TABLE mission_transition_attempts (
+            transition_id TEXT PRIMARY KEY,
+            mission_id TEXT NOT NULL,
+            transition_kind TEXT NOT NULL,
+            prior_lifecycle_state TEXT NOT NULL,
+            prior_lifecycle_revision INTEGER NOT NULL,
+            proposed_lifecycle_state TEXT NOT NULL,
+            proposed_lifecycle_revision INTEGER NOT NULL,
+            request_digest TEXT NOT NULL,
+            safe_metadata_json TEXT NOT NULL,
+            evidence_status TEXT NOT NULL,
+            audit_event_id TEXT,
+            audit_event_hash TEXT,
+            failure_reason_code TEXT,
+            created_at TEXT NOT NULL,
+            finalized_at TEXT,
+            UNIQUE (mission_id, proposed_lifecycle_revision),
+            UNIQUE (mission_id, transition_id),
+            FOREIGN KEY (mission_id) REFERENCES missions(mission_id),
+            FOREIGN KEY (audit_event_id)
+                REFERENCES mission_audit_evidence_bindings(audit_event_id),
+            CHECK (length(transition_id) = 44
+                AND substr(transition_id, 1, 12) = 'mtransition_'
+                AND substr(transition_id, 13) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (transition_kind IN ({transition_kinds})),
+            CHECK (prior_lifecycle_state IN ({lifecycle_states})),
+            CHECK (proposed_lifecycle_state IN ({lifecycle_states})),
+            CHECK (prior_lifecycle_revision >= 0),
+            CHECK (proposed_lifecycle_revision = prior_lifecycle_revision + 1),
+            CHECK (length(request_digest) = 71 AND substr(request_digest, 1, 7) = 'sha256:'
+                AND substr(request_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(safe_metadata_json) BETWEEN 2 AND 4096),
+            CHECK (evidence_status IN ({evidence_statuses})),
+            CHECK ((audit_event_id IS NULL AND audit_event_hash IS NULL)
+                OR (audit_event_id IS NOT NULL AND audit_event_hash IS NOT NULL)),
+            CHECK (audit_event_id IS NULL OR (length(audit_event_id) = 36
+                AND substr(audit_event_id, 1, 4) = 'evt_'
+                AND substr(audit_event_id, 5) NOT GLOB '*[^0-9a-f]*')),
+            CHECK (audit_event_hash IS NULL OR (length(audit_event_hash) = 71
+                AND substr(audit_event_hash, 1, 7) = 'sha256:'
+                AND substr(audit_event_hash, 8) NOT GLOB '*[^0-9a-f]*')),
+            CHECK (
+                (evidence_status = 'pending' AND audit_event_id IS NULL
+                    AND failure_reason_code IS NULL AND finalized_at IS NULL) OR
+                (evidence_status = 'complete' AND audit_event_id IS NOT NULL
+                    AND failure_reason_code IS NULL AND finalized_at IS NOT NULL) OR
+                (evidence_status = 'evidence_incomplete'
+                    AND failure_reason_code IS NOT NULL AND finalized_at IS NOT NULL)
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE UNIQUE INDEX mission_transition_one_unresolved_idx
+        ON mission_transition_attempts(mission_id)
+        WHERE evidence_status IN ('pending', 'evidence_incomplete')
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE mission_claims (
+            claim_id TEXT PRIMARY KEY,
+            mission_id TEXT NOT NULL UNIQUE,
+            transition_id TEXT NOT NULL UNIQUE,
+            node_id TEXT NOT NULL,
+            node_identity_key_id TEXT NOT NULL,
+            envelope_digest TEXT NOT NULL,
+            authority_snapshot_json TEXT NOT NULL,
+            authority_snapshot_hash TEXT NOT NULL,
+            lifecycle_revision INTEGER NOT NULL,
+            claim_status TEXT NOT NULL,
+            claimed_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            UNIQUE (mission_id, claim_id),
+            UNIQUE (mission_id, claim_id, node_id, envelope_digest),
+            FOREIGN KEY (mission_id) REFERENCES missions(mission_id),
+            FOREIGN KEY (mission_id, transition_id)
+                REFERENCES mission_transition_attempts(mission_id, transition_id),
+            CHECK (length(claim_id) = 39 AND substr(claim_id, 1, 7) = 'mclaim_'
+                AND substr(claim_id, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(node_id) = 37 AND substr(node_id, 1, 5) = 'node_'
+                AND substr(node_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (lifecycle_revision >= 1),
+            CHECK (claim_status IN ('staged', 'delivered', 'evidence_incomplete',
+                'expired_review_required')),
+            CHECK (length(node_identity_key_id) = 71
+                AND substr(node_identity_key_id, 1, 7) = 'sha256:'
+                AND substr(node_identity_key_id, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(envelope_digest) = 71 AND substr(envelope_digest, 1, 7) = 'sha256:'
+                AND substr(envelope_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(authority_snapshot_hash) = 71
+                AND substr(authority_snapshot_hash, 1, 7) = 'sha256:'
+                AND substr(authority_snapshot_hash, 8) NOT GLOB '*[^0-9a-f]*')
+        )
+        """
+    )
+    connection.execute(
+        f"""
+        CREATE TABLE mission_report_receipts (
+            report_id TEXT PRIMARY KEY,
+            mission_id TEXT NOT NULL,
+            claim_id TEXT NOT NULL,
+            node_id TEXT NOT NULL,
+            verified_node_identity_key_id TEXT NOT NULL,
+            envelope_digest TEXT NOT NULL,
+            expected_lifecycle_revision INTEGER NOT NULL,
+            report_kind TEXT NOT NULL,
+            outcome_code TEXT NOT NULL,
+            reason_code TEXT,
+            artifact_digest TEXT,
+            request_digest TEXT NOT NULL,
+            receipt_posture_json TEXT NOT NULL,
+            receipt_disposition TEXT NOT NULL,
+            evidence_status TEXT NOT NULL,
+            audit_event_id TEXT,
+            audit_event_hash TEXT,
+            failure_reason_code TEXT,
+            received_at TEXT NOT NULL,
+            finalized_at TEXT,
+            FOREIGN KEY (mission_id) REFERENCES missions(mission_id),
+            FOREIGN KEY (mission_id, claim_id, node_id, envelope_digest)
+                REFERENCES mission_claims(mission_id, claim_id, node_id, envelope_digest),
+            FOREIGN KEY (audit_event_id)
+                REFERENCES mission_audit_evidence_bindings(audit_event_id),
+            CHECK (length(report_id) = 40 AND substr(report_id, 1, 8) = 'mreport_'
+                AND substr(report_id, 9) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (expected_lifecycle_revision >= 1),
+            CHECK (report_kind IN ('runner_running', 'runner_succeeded', 'runner_failed',
+                'cancel_observed', 'runner_canceled')),
+            CHECK (outcome_code IN ('started', 'succeeded', 'failed', 'canceled',
+                'cancellation_observed')),
+            CHECK (
+                (report_kind = 'runner_running' AND outcome_code = 'started') OR
+                (report_kind = 'runner_succeeded' AND outcome_code = 'succeeded') OR
+                (report_kind = 'runner_failed' AND outcome_code = 'failed') OR
+                (report_kind = 'cancel_observed'
+                    AND outcome_code = 'cancellation_observed') OR
+                (report_kind = 'runner_canceled' AND outcome_code = 'canceled')
+            ),
+            CHECK (
+                (report_kind = 'runner_failed' AND reason_code IS NOT NULL
+                    AND artifact_digest IS NULL) OR
+                (report_kind = 'runner_succeeded' AND reason_code IS NULL) OR
+                (report_kind NOT IN ('runner_failed', 'runner_succeeded')
+                    AND reason_code IS NULL AND artifact_digest IS NULL)
+            ),
+            CHECK (reason_code IS NULL OR (
+                reason_code IN ('runner_error', 'runner_timeout', 'runner_output_invalid',
+                    'runner_dependency_unavailable')
+            )),
+            CHECK (receipt_disposition IN ('pending', 'lifecycle_advancing', 'quarantined',
+                'evidence_incomplete')),
+            CHECK (evidence_status IN ({evidence_statuses})),
+            CHECK ((audit_event_id IS NULL AND audit_event_hash IS NULL)
+                OR (audit_event_id IS NOT NULL AND audit_event_hash IS NOT NULL)),
+            CHECK (length(node_id) = 37 AND substr(node_id, 1, 5) = 'node_'
+                AND substr(node_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(verified_node_identity_key_id) = 71
+                AND substr(verified_node_identity_key_id, 1, 7) = 'sha256:'
+                AND substr(verified_node_identity_key_id, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(envelope_digest) = 71
+                AND substr(envelope_digest, 1, 7) = 'sha256:'
+                AND substr(envelope_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (audit_event_id IS NULL OR (length(audit_event_id) = 36
+                AND substr(audit_event_id, 1, 4) = 'evt_'
+                AND substr(audit_event_id, 5) NOT GLOB '*[^0-9a-f]*')),
+            CHECK (audit_event_hash IS NULL OR (length(audit_event_hash) = 71
+                AND substr(audit_event_hash, 1, 7) = 'sha256:'
+                AND substr(audit_event_hash, 8) NOT GLOB '*[^0-9a-f]*')),
+            CHECK (artifact_digest IS NULL OR (length(artifact_digest) = 71
+                AND substr(artifact_digest, 1, 7) = 'sha256:'
+                AND substr(artifact_digest, 8) NOT GLOB '*[^0-9a-f]*')),
+            CHECK (length(request_digest) = 71 AND substr(request_digest, 1, 7) = 'sha256:'
+                AND substr(request_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (
+                (evidence_status = 'pending' AND receipt_disposition = 'pending'
+                    AND audit_event_id IS NULL AND failure_reason_code IS NULL
+                    AND finalized_at IS NULL) OR
+                (evidence_status = 'complete'
+                    AND receipt_disposition IN ('lifecycle_advancing', 'quarantined')
+                    AND audit_event_id IS NOT NULL AND failure_reason_code IS NULL
+                    AND finalized_at IS NOT NULL) OR
+                (evidence_status = 'evidence_incomplete'
+                    AND receipt_disposition = 'evidence_incomplete'
+                    AND failure_reason_code IS NOT NULL AND finalized_at IS NOT NULL)
+            ),
+            UNIQUE (claim_id, report_id)
+        )
+        """
+    )
+    connection.execute(
+        "CREATE INDEX mission_report_receipts_mission_idx "
+        "ON mission_report_receipts(mission_id, received_at DESC)"
+    )
+    connection.execute(
+        """
+        CREATE TABLE mission_report_nonces (
+            node_id TEXT NOT NULL,
+            nonce TEXT NOT NULL,
+            accepted_at TEXT NOT NULL,
+            PRIMARY KEY (node_id, nonce),
+            CHECK (length(node_id) = 37 AND substr(node_id, 1, 5) = 'node_'
+                AND substr(node_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(nonce) BETWEEN 32 AND 128
+                AND nonce NOT GLOB '*[^0-9a-f]*')
+        )
+        """
+    )
+    connection.execute(
+        "CREATE INDEX mission_report_nonces_accepted_idx "
+        "ON mission_report_nonces(accepted_at)"
+    )
+
+
+def _verify_mission_schema(connection: sqlite3.Connection) -> None:
+    expected_connection = sqlite3.connect(":memory:")
+    try:
+        _create_mission_tables(expected_connection)
+        for table, expected_columns in MISSION_TABLE_COLUMNS.items():
+            if not _table_exists(connection, table):
+                raise DatabaseMigrationError(f"Mission Command table is missing: {table}")
+            columns = tuple(
+                str(row[1])
+                for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+            )
+            if columns != expected_columns:
+                raise DatabaseMigrationError(f"Mission Command table is incomplete: {table}")
+            if _schema_sql(connection, object_type="table", name=table) != _schema_sql(
+                expected_connection,
+                object_type="table",
+                name=table,
+            ):
+                raise DatabaseMigrationError(f"Mission Command table schema differs: {table}")
+        expected_index_names = (
+            "missions_updated_idx",
+            "mission_transition_one_unresolved_idx",
+            "mission_report_receipts_mission_idx",
+            "mission_report_nonces_accepted_idx",
+        )
+        for index_name in expected_index_names:
+            if _schema_sql(connection, object_type="index", name=index_name) != _schema_sql(
+                expected_connection,
+                object_type="index",
+                name=index_name,
+            ):
+                raise DatabaseMigrationError(f"Mission Command index differs: {index_name}")
+        unexpected_objects = connection.execute(
+            f"""
+            SELECT type, name FROM sqlite_master
+            WHERE tbl_name IN ({_sql_values(tuple(MISSION_TABLE_COLUMNS))})
+              AND sql IS NOT NULL
+              AND NOT (type = 'table' AND name IN ({_sql_values(tuple(MISSION_TABLE_COLUMNS))}))
+              AND NOT (type = 'index' AND name IN ({_sql_values(expected_index_names)}))
+            ORDER BY type, name
+            """
+        ).fetchall()
+        if unexpected_objects:
+            raise DatabaseMigrationError("Mission Command schema has unexpected objects")
+    finally:
+        expected_connection.close()
+    foreign_key_failures = connection.execute("PRAGMA foreign_key_check").fetchall()
+    if foreign_key_failures:
+        raise DatabaseMigrationError("Mission Command foreign-key verification failed")
+
+
+def _schema_sql(
+    connection: sqlite3.Connection,
+    *,
+    object_type: str,
+    name: str,
+) -> str:
+    row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type = ? AND name = ?",
+        (object_type, name),
+    ).fetchone()
+    if row is None or row[0] is None:
+        return ""
+    return " ".join(str(row[0]).split())
+
+
 def _create_metadata_table(connection: sqlite3.Connection) -> None:
     connection.execute(
         """
@@ -647,6 +1197,13 @@ def _table_exists(connection: sqlite3.Connection, table: str) -> bool:
     row = connection.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
         (table,),
+    ).fetchone()
+    return row is not None
+
+
+def _has_user_tables(connection: sqlite3.Connection) -> bool:
+    row = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' LIMIT 1"
     ).fetchone()
     return row is not None
 

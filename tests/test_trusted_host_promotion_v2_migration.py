@@ -34,8 +34,8 @@ def test_empty_database_is_created_with_v2_contract_and_current_writer(tmp_path:
         approval_sql = _table_sql(connection, "approvals")
         proposal_sql = _table_sql(connection, "trusted_host_promotion_proposals")
         attempt_sql = _table_sql(connection, "trusted_host_promotion_attempts")
-    assert metadata["schema_version"] == "3"
-    assert metadata["minimum_writer_version"] == "3"
+    assert metadata["schema_version"] == "4"
+    assert metadata["minimum_writer_version"] == "4"
     assert "v2_pending" in approval_sql
     assert "legacy_unbound" in approval_sql
     assert "authority_snapshot_hash" in proposal_sql
@@ -79,8 +79,8 @@ def test_legacy_rows_migrate_atomically_without_synthesized_authority(tmp_path: 
     assert "legacy-user" in str(approval[5])
     assert proposal == ("thp_v1", "legacy_unbound", None, None, None)
     assert attempt == ("thpa_v1", "legacy_prepared", "1", None)
-    assert metadata["schema_version"] == "3"
-    assert metadata["minimum_writer_version"] == "3"
+    assert metadata["schema_version"] == "4"
+    assert metadata["minimum_writer_version"] == "4"
 
 
 def test_legacy_terminal_rows_remain_readable_with_closed_statuses(tmp_path: Path) -> None:
@@ -186,8 +186,8 @@ def test_schema_two_constraint_upgrade_is_atomic_and_preserves_rows(tmp_path: Pa
         approval = connection.execute(
             "SELECT approval_id, status, approval_contract_version FROM approvals"
         ).fetchone()
-    assert metadata["schema_version"] == "3"
-    assert metadata["minimum_writer_version"] == "3"
+    assert metadata["schema_version"] == "4"
+    assert metadata["minimum_writer_version"] == "4"
     assert "v2_executing" in proposal_sql
     assert "v2_placement_evidence_recovery_required" in proposal_sql
     assert approval == ("appr_v2", "v2_pending", "2")
@@ -230,7 +230,7 @@ def test_interrupted_schema_two_constraint_upgrade_rolls_back(
 
 @pytest.mark.parametrize(
     ("key", "value"),
-    [("schema_version", "4"), ("minimum_writer_version", "4")],
+    [("schema_version", "5"), ("minimum_writer_version", "5")],
 )
 def test_newer_database_or_minimum_writer_is_rejected(
     tmp_path: Path,
@@ -569,6 +569,15 @@ def _make_schema_two_constraint_fixture(connection: sqlite3.Connection) -> None:
         "CREATE INDEX promotion_authority_hash_idx ON "
         "trusted_host_promotion_proposals(authority_snapshot_hash)"
     )
+    for table in (
+        "mission_report_receipts",
+        "mission_report_nonces",
+        "mission_claims",
+        "mission_transition_attempts",
+        "mission_audit_evidence_bindings",
+        "missions",
+    ):
+        connection.execute(f"DROP TABLE {table}")
     connection.execute(
         "UPDATE app_metadata SET value = '2' "
         "WHERE key IN ('schema_version', 'minimum_writer_version')"

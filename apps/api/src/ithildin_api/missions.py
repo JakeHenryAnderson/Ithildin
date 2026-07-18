@@ -1,0 +1,860 @@
+"""Gateway-owned Mission Command authority models and fail-closed persistence."""
+
+from __future__ import annotations
+
+import json
+import re
+import sqlite3
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Literal, cast
+from uuid import uuid4
+
+from ithildin_schemas import JsonObject, canonical_json, sha256_digest
+from ithildin_schemas.models import SHA256_PATTERN
+from pydantic import Field, field_validator, model_validator
+
+from ithildin_api.promotion_authority import AdminPrincipalContext, FrozenAuthorityModel
+from ithildin_api.trusted_host_promotion_v2_migration import verify_database_v2
+
+MISSION_TEMPLATE_ID: Literal["synthetic_read_review_v1"] = "synthetic_read_review_v1"
+MISSION_AUTHORITY_SCHEMA_VERSION = "1"
+MISSION_ADMISSION_TRANSITION_KIND = "admission_pending_evidence"
+MISSION_UNADMITTED = "unadmitted"
+MISSION_QUEUED = "queued"
+EVIDENCE_PENDING = "pending"
+EVIDENCE_COMPLETE = "complete"
+EVIDENCE_INCOMPLETE = "evidence_incomplete"
+
+_NODE_ID_PATTERN = re.compile(r"^node_[0-9a-f]{32}$")
+_MISSION_ID_PATTERN = re.compile(r"^mission_[0-9a-f]{32}$")
+_TRANSITION_ID_PATTERN = re.compile(r"^mtransition_[0-9a-f]{32}$")
+_CLAIM_ID_PATTERN = re.compile(r"^mclaim_[0-9a-f]{32}$")
+_REPORT_ID_PATTERN = re.compile(r"^mreport_[0-9a-f]{32}$")
+_EVENT_ID_PATTERN = re.compile(r"^evt_[0-9a-f]{32}$")
+_SAFE_LABEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}$")
+
+
+class MissionError(RuntimeError):
+    """Raised when mission authority or persistence fails closed."""
+
+
+class MissionNotFoundError(MissionError):
+    """Raised when a mission or transition does not exist."""
+
+
+class MissionConflictError(MissionError):
+    """Raised when an idempotency or lifecycle precondition conflicts."""
+
+
+class MissionAdmissionPayload(FrozenAuthorityModel):
+    target_node_id: str = Field(pattern=r"^node_[0-9a-f]{32}$")
+    mission_template_id: Literal["synthetic_read_review_v1"]
+    requested_timeout_seconds: int = Field(ge=60, le=3600)
+    client_request_id: str = Field(min_length=1, max_length=128)
+
+    @field_validator("client_request_id")
+    @classmethod
+    def _safe_client_request_id(cls, value: str) -> str:
+        if not _SAFE_LABEL_PATTERN.fullmatch(value) or ".." in value:
+            raise ValueError("unsafe mission client request ID")
+        return value
+
+    def safe_payload(self) -> JsonObject:
+        return cast(JsonObject, self.model_dump(mode="json"))
+
+
+class MissionAuthoritySnapshot(FrozenAuthorityModel):
+    snapshot_schema_version: Literal["1"] = "1"
+    requesting_principal: AdminPrincipalContext
+    target_node_id: str = Field(pattern=r"^node_[0-9a-f]{32}$")
+    target_node_principal_id: str = Field(min_length=1, max_length=128)
+    workspace_id: str = Field(min_length=1, max_length=128)
+    node_record_hash: str = Field(pattern=SHA256_PATTERN)
+    node_identity_key_id: str = Field(pattern=SHA256_PATTERN)
+    configuration_generation: int = Field(ge=1)
+    configuration_digest: str = Field(pattern=SHA256_PATTERN)
+    policy_digest: str = Field(pattern=SHA256_PATTERN)
+    manifest_lock_digest: str = Field(pattern=SHA256_PATTERN)
+    tool_count: Literal[24]
+    mission_template_id: Literal["synthetic_read_review_v1"]
+    template_registry_generation: str = Field(pattern=SHA256_PATTERN)
+    template_payload_digest: str = Field(pattern=SHA256_PATTERN)
+
+    @field_validator("target_node_principal_id", "workspace_id")
+    @classmethod
+    def _safe_authority_label(cls, value: str) -> str:
+        if not _SAFE_LABEL_PATTERN.fullmatch(value) or ".." in value:
+            raise ValueError("unsafe mission authority label")
+        return value
+
+
+class MissionRunnerReportPayload(FrozenAuthorityModel):
+    """Closed runner observation; it is never itself Gateway lifecycle authority."""
+
+    mission_id: str = Field(pattern=r"^mission_[0-9a-f]{32}$")
+    claim_id: str = Field(pattern=r"^mclaim_[0-9a-f]{32}$")
+    envelope_digest: str = Field(pattern=SHA256_PATTERN)
+    expected_lifecycle_revision: int = Field(ge=1)
+    report_id: str = Field(pattern=r"^mreport_[0-9a-f]{32}$")
+    report_kind: Literal[
+        "runner_running",
+        "runner_succeeded",
+        "runner_failed",
+        "cancel_observed",
+        "runner_canceled",
+    ]
+    outcome_code: Literal[
+        "started",
+        "succeeded",
+        "failed",
+        "cancellation_observed",
+        "canceled",
+    ]
+    reason_code: Literal[
+        "runner_error",
+        "runner_timeout",
+        "runner_output_invalid",
+        "runner_dependency_unavailable",
+    ] | None = None
+    artifact_digest: str | None = Field(default=None, pattern=SHA256_PATTERN)
+
+    @model_validator(mode="after")
+    def _closed_report_semantics(self) -> MissionRunnerReportPayload:
+        expected_outcome = {
+            "runner_running": "started",
+            "runner_succeeded": "succeeded",
+            "runner_failed": "failed",
+            "cancel_observed": "cancellation_observed",
+            "runner_canceled": "canceled",
+        }[self.report_kind]
+        if self.outcome_code != expected_outcome:
+            raise ValueError("mission report kind and outcome do not match")
+        if self.report_kind == "runner_failed" and self.reason_code is None:
+            raise ValueError("failed mission report requires a reason code")
+        if self.report_kind != "runner_failed" and self.reason_code is not None:
+            raise ValueError("mission report reason code is not allowed for this kind")
+        if self.report_kind != "runner_succeeded" and self.artifact_digest is not None:
+            raise ValueError("mission report artifact digest is not allowed for this kind")
+        return self
+
+    def canonical_digest(self) -> str:
+        return sha256_digest(cast(JsonObject, self.model_dump(mode="json")))
+
+
+@dataclass(frozen=True)
+class MissionRecord:
+    mission_id: str
+    requester_principal_id: str
+    requester_identity_generation: str
+    client_request_id: str
+    admission_request_digest: str
+    authority_snapshot: MissionAuthoritySnapshot
+    authority_snapshot_hash: str
+    target_node_id: str
+    target_node_principal_id: str
+    workspace_id: str
+    configuration_generation: int
+    configuration_digest: str
+    policy_digest: str
+    manifest_lock_digest: str
+    mission_template_id: str
+    template_registry_generation: str
+    template_payload_digest: str
+    envelope_digest: str
+    requested_timeout_seconds: int
+    lifecycle_state: str
+    lifecycle_revision: int
+    created_at: str
+    updated_at: str
+    admitted_at: str | None
+
+    def safe_summary(self) -> JsonObject:
+        return {
+            "mission_id": self.mission_id,
+            "requester_principal_id": self.requester_principal_id,
+            "requester_identity_generation": self.requester_identity_generation,
+            "client_request_id": self.client_request_id,
+            "admission_request_digest": self.admission_request_digest,
+            "authority_snapshot_hash": self.authority_snapshot_hash,
+            "target_node_id": self.target_node_id,
+            "target_node_principal_id": self.target_node_principal_id,
+            "workspace_id": self.workspace_id,
+            "configuration_generation": self.configuration_generation,
+            "configuration_digest": self.configuration_digest,
+            "policy_digest": self.policy_digest,
+            "manifest_lock_digest": self.manifest_lock_digest,
+            "mission_template_id": self.mission_template_id,
+            "template_registry_generation": self.template_registry_generation,
+            "template_payload_digest": self.template_payload_digest,
+            "envelope_digest": self.envelope_digest,
+            "requested_timeout_seconds": self.requested_timeout_seconds,
+            "lifecycle_state": self.lifecycle_state,
+            "lifecycle_revision": self.lifecycle_revision,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "admitted_at": self.admitted_at,
+            "lifecycle_authority": "gateway",
+            "runner_state_authority": "runner_reported_only",
+            "model_provider_state_known": False,
+        }
+
+
+@dataclass(frozen=True)
+class MissionTransitionAttempt:
+    transition_id: str
+    mission_id: str
+    transition_kind: str
+    prior_lifecycle_state: str
+    prior_lifecycle_revision: int
+    proposed_lifecycle_state: str
+    proposed_lifecycle_revision: int
+    request_digest: str
+    safe_metadata: JsonObject
+    evidence_status: str
+    audit_event_id: str | None
+    audit_event_hash: str | None
+    failure_reason_code: str | None
+    created_at: str
+    finalized_at: str | None
+
+    def safe_summary(self) -> JsonObject:
+        return {
+            "transition_id": self.transition_id,
+            "mission_id": self.mission_id,
+            "transition_kind": self.transition_kind,
+            "prior_lifecycle_state": self.prior_lifecycle_state,
+            "prior_lifecycle_revision": self.prior_lifecycle_revision,
+            "proposed_lifecycle_state": self.proposed_lifecycle_state,
+            "proposed_lifecycle_revision": self.proposed_lifecycle_revision,
+            "request_digest": self.request_digest,
+            "safe_metadata": self.safe_metadata,
+            "evidence_status": self.evidence_status,
+            "audit_event_id": self.audit_event_id,
+            "audit_event_hash": self.audit_event_hash,
+            "failure_reason_code": self.failure_reason_code,
+            "created_at": self.created_at,
+            "finalized_at": self.finalized_at,
+        }
+
+
+@dataclass(frozen=True)
+class MissionAdmissionStage:
+    mission: MissionRecord
+    transition: MissionTransitionAttempt
+    idempotent_replay: bool
+
+
+class MissionStore:
+    """Persist staged mission authority without exposing incomplete lifecycle claims."""
+
+    def __init__(self, db_path: Path) -> None:
+        self.db_path = db_path
+
+    def initialize(self) -> None:
+        verify_database_v2(self.db_path)
+
+    def stage_admission(
+        self,
+        payload: MissionAdmissionPayload,
+        *,
+        authority: MissionAuthoritySnapshot,
+        now: datetime | None = None,
+    ) -> MissionAdmissionStage:
+        _require_payload_matches_authority(payload, authority)
+        effective_now = now or datetime.now(UTC)
+        request_digest = mission_admission_request_digest(payload, authority=authority)
+        authority_hash = authority.canonical_hash()
+        requester = authority.requesting_principal
+        with _mission_connection(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = _mission_by_idempotency_namespace(
+                connection,
+                requester_principal_id=requester.principal_id,
+                requester_identity_generation=requester.identity_generation,
+                client_request_id=payload.client_request_id,
+            )
+            if existing is not None:
+                if existing.admission_request_digest != request_digest:
+                    raise MissionConflictError("mission client request ID conflicts")
+                transition = _admission_transition_for_mission(connection, existing.mission_id)
+                connection.commit()
+                return MissionAdmissionStage(
+                    mission=existing,
+                    transition=transition,
+                    idempotent_replay=True,
+                )
+
+            mission_id = f"mission_{uuid4().hex}"
+            transition_id = f"mtransition_{uuid4().hex}"
+            now_text = effective_now.isoformat()
+            envelope_digest = mission_envelope_digest(
+                mission_id=mission_id,
+                payload=payload,
+                authority=authority,
+                authority_snapshot_hash=authority_hash,
+            )
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO missions (
+                        mission_id, requester_principal_id, requester_identity_generation,
+                        client_request_id, admission_request_digest, authority_snapshot_json,
+                        authority_snapshot_hash, target_node_id, target_node_principal_id,
+                        workspace_id, configuration_generation, configuration_digest,
+                        policy_digest, manifest_lock_digest, mission_template_id,
+                        template_registry_generation, template_payload_digest, envelope_digest,
+                        requested_timeout_seconds, lifecycle_state, lifecycle_revision,
+                        created_at, updated_at, admitted_at
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL
+                    )
+                    """,
+                    (
+                        mission_id,
+                        requester.principal_id,
+                        requester.identity_generation,
+                        payload.client_request_id,
+                        request_digest,
+                        canonical_json(authority.canonical_payload()),
+                        authority_hash,
+                        authority.target_node_id,
+                        authority.target_node_principal_id,
+                        authority.workspace_id,
+                        authority.configuration_generation,
+                        authority.configuration_digest,
+                        authority.policy_digest,
+                        authority.manifest_lock_digest,
+                        authority.mission_template_id,
+                        authority.template_registry_generation,
+                        authority.template_payload_digest,
+                        envelope_digest,
+                        payload.requested_timeout_seconds,
+                        MISSION_UNADMITTED,
+                        0,
+                        now_text,
+                        now_text,
+                    ),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO mission_transition_attempts (
+                        transition_id, mission_id, transition_kind,
+                        prior_lifecycle_state, prior_lifecycle_revision,
+                        proposed_lifecycle_state, proposed_lifecycle_revision,
+                        request_digest, safe_metadata_json, evidence_status,
+                        audit_event_id, audit_event_hash, failure_reason_code,
+                        created_at, finalized_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, NULL)
+                    """,
+                    (
+                        transition_id,
+                        mission_id,
+                        MISSION_ADMISSION_TRANSITION_KIND,
+                        MISSION_UNADMITTED,
+                        0,
+                        MISSION_QUEUED,
+                        1,
+                        request_digest,
+                        canonical_json(
+                            {
+                                "mission_template_id": authority.mission_template_id,
+                                "target_node_id": authority.target_node_id,
+                                "workspace_id": authority.workspace_id,
+                                "envelope_digest": envelope_digest,
+                            }
+                        ),
+                        EVIDENCE_PENDING,
+                        now_text,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise MissionConflictError("mission admission conflicts") from exc
+            connection.commit()
+        return MissionAdmissionStage(
+            mission=self.get(mission_id),
+            transition=self.get_transition(transition_id),
+            idempotent_replay=False,
+        )
+
+    def finalize_admission(
+        self,
+        transition_id: str,
+        *,
+        audit_event_id: str,
+        audit_event_hash: str,
+        now: datetime | None = None,
+    ) -> MissionRecord:
+        _require_transition_id(transition_id)
+        if not _EVENT_ID_PATTERN.fullmatch(audit_event_id):
+            raise MissionConflictError("invalid mission audit event ID")
+        if not re.fullmatch(SHA256_PATTERN, audit_event_hash):
+            raise MissionConflictError("invalid mission audit event hash")
+        now_text = (now or datetime.now(UTC)).isoformat()
+        with _mission_connection(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            transition = _transition_by_id(connection, transition_id)
+            if transition.transition_kind != MISSION_ADMISSION_TRANSITION_KIND:
+                raise MissionConflictError("mission transition is not admission")
+            if transition.evidence_status == EVIDENCE_COMPLETE:
+                if (
+                    transition.audit_event_id == audit_event_id
+                    and transition.audit_event_hash == audit_event_hash
+                ):
+                    _verify_audit_evidence_binding(
+                        connection,
+                        transition=transition,
+                        audit_event_id=audit_event_id,
+                        audit_event_hash=audit_event_hash,
+                    )
+                    connection.commit()
+                    return _mission_by_id(connection, transition.mission_id)
+                raise MissionConflictError("mission transition evidence conflicts")
+            if transition.evidence_status != EVIDENCE_PENDING:
+                raise MissionConflictError("mission transition evidence is incomplete")
+            mission = _mission_by_id(connection, transition.mission_id)
+            if (
+                mission.lifecycle_state != transition.prior_lifecycle_state
+                or mission.lifecycle_revision != transition.prior_lifecycle_revision
+            ):
+                raise MissionConflictError("mission lifecycle changed before evidence finalization")
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO mission_audit_evidence_bindings (
+                        audit_event_id, audit_event_hash, owner_kind, owner_id,
+                        request_digest, bound_at
+                    ) VALUES (?, ?, 'mission_transition', ?, ?, ?)
+                    """,
+                    (
+                        audit_event_id,
+                        audit_event_hash,
+                        transition.transition_id,
+                        transition.request_digest,
+                        now_text,
+                    ),
+                )
+                updated_transition = connection.execute(
+                    """
+                    UPDATE mission_transition_attempts
+                    SET evidence_status = ?, audit_event_id = ?, audit_event_hash = ?,
+                        finalized_at = ?
+                    WHERE transition_id = ? AND evidence_status = ?
+                    """,
+                    (
+                        EVIDENCE_COMPLETE,
+                        audit_event_id,
+                        audit_event_hash,
+                        now_text,
+                        transition_id,
+                        EVIDENCE_PENDING,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise MissionConflictError("mission audit evidence is already bound") from exc
+            if updated_transition.rowcount != 1:
+                raise MissionConflictError("mission transition evidence changed")
+            updated_mission = connection.execute(
+                """
+                UPDATE missions
+                SET lifecycle_state = ?, lifecycle_revision = ?, updated_at = ?, admitted_at = ?
+                WHERE mission_id = ? AND lifecycle_state = ? AND lifecycle_revision = ?
+                """,
+                (
+                    transition.proposed_lifecycle_state,
+                    transition.proposed_lifecycle_revision,
+                    now_text,
+                    now_text,
+                    mission.mission_id,
+                    transition.prior_lifecycle_state,
+                    transition.prior_lifecycle_revision,
+                ),
+            )
+            if updated_mission.rowcount != 1:
+                raise MissionConflictError("mission lifecycle finalization conflicted")
+            connection.commit()
+            return _mission_by_id(connection, mission.mission_id)
+
+    def mark_transition_evidence_incomplete(
+        self,
+        transition_id: str,
+        *,
+        failure_reason_code: str,
+        now: datetime | None = None,
+    ) -> MissionTransitionAttempt:
+        _require_transition_id(transition_id)
+        if not _SAFE_LABEL_PATTERN.fullmatch(failure_reason_code) or ".." in failure_reason_code:
+            raise MissionConflictError("invalid mission evidence failure reason")
+        now_text = (now or datetime.now(UTC)).isoformat()
+        with _mission_connection(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            transition = _transition_by_id(connection, transition_id)
+            if transition.evidence_status == EVIDENCE_INCOMPLETE:
+                if transition.failure_reason_code == failure_reason_code:
+                    connection.commit()
+                    return transition
+                raise MissionConflictError("mission evidence failure reason conflicts")
+            if transition.evidence_status != EVIDENCE_PENDING:
+                raise MissionConflictError("completed mission evidence cannot be changed")
+            updated = connection.execute(
+                """
+                UPDATE mission_transition_attempts
+                SET evidence_status = ?, failure_reason_code = ?, finalized_at = ?
+                WHERE transition_id = ? AND evidence_status = ?
+                """,
+                (
+                    EVIDENCE_INCOMPLETE,
+                    failure_reason_code,
+                    now_text,
+                    transition_id,
+                    EVIDENCE_PENDING,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise MissionConflictError("mission transition evidence changed")
+            connection.commit()
+            return _transition_by_id(connection, transition_id)
+
+    def get(self, mission_id: str) -> MissionRecord:
+        _require_mission_id(mission_id)
+        with _mission_connection(self.db_path) as connection:
+            return _mission_by_id(connection, mission_id)
+
+    def get_transition(self, transition_id: str) -> MissionTransitionAttempt:
+        _require_transition_id(transition_id)
+        with _mission_connection(self.db_path) as connection:
+            return _transition_by_id(connection, transition_id)
+
+    def list_admitted(self, *, limit: int = 50) -> list[JsonObject]:
+        bounded_limit = max(1, min(limit, 200))
+        with _mission_connection(self.db_path) as connection:
+            rows = connection.execute(
+                f"""
+                {_MISSION_SELECT}
+                WHERE lifecycle_state != ?
+                ORDER BY updated_at DESC, mission_id ASC LIMIT ?
+                """,
+                (MISSION_UNADMITTED, bounded_limit),
+            ).fetchall()
+        return [_mission_from_row(row).safe_summary() for row in rows]
+
+
+def mission_admission_request_digest(
+    payload: MissionAdmissionPayload,
+    *,
+    authority: MissionAuthoritySnapshot,
+) -> str:
+    requester = authority.requesting_principal
+    return sha256_digest(
+        {
+            "schema_version": MISSION_AUTHORITY_SCHEMA_VERSION,
+            "requester_principal_id": requester.principal_id,
+            "requester_identity_generation": requester.identity_generation,
+            "client_request_id": payload.client_request_id,
+            "request": payload.safe_payload(),
+            "authority_snapshot_hash": authority.canonical_hash(),
+        }
+    )
+
+
+def _mission_connection(db_path: Path) -> sqlite3.Connection:
+    connection = sqlite3.connect(db_path)
+    connection.execute("PRAGMA foreign_keys = ON")
+    return connection
+
+
+def mission_envelope_digest(
+    *,
+    mission_id: str,
+    payload: MissionAdmissionPayload,
+    authority: MissionAuthoritySnapshot,
+    authority_snapshot_hash: str,
+) -> str:
+    _require_mission_id(mission_id)
+    return sha256_digest(
+        {
+            "schema_version": MISSION_AUTHORITY_SCHEMA_VERSION,
+            "mission_id": mission_id,
+            "mission_template_id": authority.mission_template_id,
+            "template_registry_generation": authority.template_registry_generation,
+            "template_payload_digest": authority.template_payload_digest,
+            "target_node_id": authority.target_node_id,
+            "target_node_principal_id": authority.target_node_principal_id,
+            "workspace_id": authority.workspace_id,
+            "configuration_generation": authority.configuration_generation,
+            "configuration_digest": authority.configuration_digest,
+            "requested_timeout_seconds": payload.requested_timeout_seconds,
+            "authority_snapshot_hash": authority_snapshot_hash,
+        }
+    )
+
+
+_MISSION_SELECT = """
+SELECT mission_id, requester_principal_id, requester_identity_generation,
+       client_request_id, admission_request_digest, authority_snapshot_json,
+       authority_snapshot_hash, target_node_id, target_node_principal_id,
+       workspace_id, configuration_generation, configuration_digest,
+       policy_digest, manifest_lock_digest, mission_template_id,
+       template_registry_generation, template_payload_digest, envelope_digest,
+       requested_timeout_seconds, lifecycle_state, lifecycle_revision,
+       created_at, updated_at, admitted_at
+FROM missions
+"""
+
+_TRANSITION_SELECT = """
+SELECT transition_id, mission_id, transition_kind, prior_lifecycle_state,
+       prior_lifecycle_revision, proposed_lifecycle_state,
+       proposed_lifecycle_revision, request_digest, safe_metadata_json,
+       evidence_status, audit_event_id, audit_event_hash, failure_reason_code,
+       created_at, finalized_at
+FROM mission_transition_attempts
+"""
+
+
+def _mission_by_id(connection: sqlite3.Connection, mission_id: str) -> MissionRecord:
+    row = connection.execute(f"{_MISSION_SELECT} WHERE mission_id = ?", (mission_id,)).fetchone()
+    if row is None:
+        raise MissionNotFoundError("unknown mission")
+    return _mission_from_row(row)
+
+
+def _mission_by_idempotency_namespace(
+    connection: sqlite3.Connection,
+    *,
+    requester_principal_id: str,
+    requester_identity_generation: str,
+    client_request_id: str,
+) -> MissionRecord | None:
+    row = connection.execute(
+        f"""
+        {_MISSION_SELECT}
+        WHERE requester_principal_id = ? AND requester_identity_generation = ?
+              AND client_request_id = ?
+        """,
+        (requester_principal_id, requester_identity_generation, client_request_id),
+    ).fetchone()
+    return _mission_from_row(row) if row is not None else None
+
+
+def _admission_transition_for_mission(
+    connection: sqlite3.Connection, mission_id: str
+) -> MissionTransitionAttempt:
+    row = connection.execute(
+        f"{_TRANSITION_SELECT} WHERE mission_id = ? AND transition_kind = ?",
+        (mission_id, MISSION_ADMISSION_TRANSITION_KIND),
+    ).fetchone()
+    if row is None:
+        raise MissionConflictError("mission admission transition is missing")
+    transition = _transition_from_row(row)
+    _verify_admission_transition_bindings(connection, transition)
+    return transition
+
+
+def _transition_by_id(
+    connection: sqlite3.Connection, transition_id: str
+) -> MissionTransitionAttempt:
+    row = connection.execute(
+        f"{_TRANSITION_SELECT} WHERE transition_id = ?", (transition_id,)
+    ).fetchone()
+    if row is None:
+        raise MissionNotFoundError("unknown mission transition")
+    transition = _transition_from_row(row)
+    if transition.transition_kind == MISSION_ADMISSION_TRANSITION_KIND:
+        _verify_admission_transition_bindings(connection, transition)
+    return transition
+
+
+def _mission_from_row(row: sqlite3.Row | tuple[Any, ...]) -> MissionRecord:
+    try:
+        authority_raw = json.loads(
+            str(row[5]),
+            object_pairs_hook=_reject_duplicate_keys,
+        )
+        authority = MissionAuthoritySnapshot.model_validate(authority_raw)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise MissionError("stored mission authority snapshot is invalid") from exc
+    if authority.canonical_hash() != str(row[6]):
+        raise MissionError("stored mission authority snapshot hash is invalid")
+    record = MissionRecord(
+        mission_id=str(row[0]),
+        requester_principal_id=str(row[1]),
+        requester_identity_generation=str(row[2]),
+        client_request_id=str(row[3]),
+        admission_request_digest=str(row[4]),
+        authority_snapshot=authority,
+        authority_snapshot_hash=str(row[6]),
+        target_node_id=str(row[7]),
+        target_node_principal_id=str(row[8]),
+        workspace_id=str(row[9]),
+        configuration_generation=int(row[10]),
+        configuration_digest=str(row[11]),
+        policy_digest=str(row[12]),
+        manifest_lock_digest=str(row[13]),
+        mission_template_id=str(row[14]),
+        template_registry_generation=str(row[15]),
+        template_payload_digest=str(row[16]),
+        envelope_digest=str(row[17]),
+        requested_timeout_seconds=int(row[18]),
+        lifecycle_state=str(row[19]),
+        lifecycle_revision=int(row[20]),
+        created_at=str(row[21]),
+        updated_at=str(row[22]),
+        admitted_at=str(row[23]) if row[23] is not None else None,
+    )
+    _verify_stored_mission_bindings(record)
+    return record
+
+
+def _transition_from_row(row: sqlite3.Row | tuple[Any, ...]) -> MissionTransitionAttempt:
+    try:
+        metadata = json.loads(
+            str(row[8]),
+            object_pairs_hook=_reject_duplicate_keys,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise MissionError("stored mission transition metadata is invalid") from exc
+    if not isinstance(metadata, dict) or set(metadata) != {
+        "mission_template_id",
+        "target_node_id",
+        "workspace_id",
+        "envelope_digest",
+    }:
+        raise MissionError("stored mission transition metadata is invalid")
+    return MissionTransitionAttempt(
+        transition_id=str(row[0]),
+        mission_id=str(row[1]),
+        transition_kind=str(row[2]),
+        prior_lifecycle_state=str(row[3]),
+        prior_lifecycle_revision=int(row[4]),
+        proposed_lifecycle_state=str(row[5]),
+        proposed_lifecycle_revision=int(row[6]),
+        request_digest=str(row[7]),
+        safe_metadata=cast(JsonObject, metadata),
+        evidence_status=str(row[9]),
+        audit_event_id=str(row[10]) if row[10] is not None else None,
+        audit_event_hash=str(row[11]) if row[11] is not None else None,
+        failure_reason_code=str(row[12]) if row[12] is not None else None,
+        created_at=str(row[13]),
+        finalized_at=str(row[14]) if row[14] is not None else None,
+    )
+
+
+def _verify_stored_mission_bindings(record: MissionRecord) -> None:
+    authority = record.authority_snapshot
+    requester = authority.requesting_principal
+    expected_bindings: tuple[tuple[object, object], ...] = (
+        (record.requester_principal_id, requester.principal_id),
+        (record.requester_identity_generation, requester.identity_generation),
+        (record.target_node_id, authority.target_node_id),
+        (record.target_node_principal_id, authority.target_node_principal_id),
+        (record.workspace_id, authority.workspace_id),
+        (record.configuration_generation, authority.configuration_generation),
+        (record.configuration_digest, authority.configuration_digest),
+        (record.policy_digest, authority.policy_digest),
+        (record.manifest_lock_digest, authority.manifest_lock_digest),
+        (record.mission_template_id, authority.mission_template_id),
+        (record.template_registry_generation, authority.template_registry_generation),
+        (record.template_payload_digest, authority.template_payload_digest),
+    )
+    if any(stored != expected for stored, expected in expected_bindings):
+        raise MissionError("stored mission authority bindings are inconsistent")
+    try:
+        payload = MissionAdmissionPayload(
+            target_node_id=record.target_node_id,
+            mission_template_id=MISSION_TEMPLATE_ID,
+            requested_timeout_seconds=record.requested_timeout_seconds,
+            client_request_id=record.client_request_id,
+        )
+    except ValueError as exc:
+        raise MissionError("stored mission admission request is invalid") from exc
+    if record.admission_request_digest != mission_admission_request_digest(
+        payload,
+        authority=authority,
+    ):
+        raise MissionError("stored mission admission request digest is invalid")
+    if record.envelope_digest != mission_envelope_digest(
+        mission_id=record.mission_id,
+        payload=payload,
+        authority=authority,
+        authority_snapshot_hash=record.authority_snapshot_hash,
+    ):
+        raise MissionError("stored mission envelope digest is invalid")
+
+
+def _verify_admission_transition_bindings(
+    connection: sqlite3.Connection,
+    transition: MissionTransitionAttempt,
+) -> None:
+    mission = _mission_by_id(connection, transition.mission_id)
+    if (
+        transition.prior_lifecycle_state != MISSION_UNADMITTED
+        or transition.prior_lifecycle_revision != 0
+        or transition.proposed_lifecycle_state != MISSION_QUEUED
+        or transition.proposed_lifecycle_revision != 1
+        or transition.request_digest != mission.admission_request_digest
+        or transition.safe_metadata
+        != {
+            "mission_template_id": mission.mission_template_id,
+            "target_node_id": mission.target_node_id,
+            "workspace_id": mission.workspace_id,
+            "envelope_digest": mission.envelope_digest,
+        }
+    ):
+        raise MissionError("stored mission admission transition bindings are inconsistent")
+
+
+def _verify_audit_evidence_binding(
+    connection: sqlite3.Connection,
+    *,
+    transition: MissionTransitionAttempt,
+    audit_event_id: str,
+    audit_event_hash: str,
+) -> None:
+    row = connection.execute(
+        """
+        SELECT audit_event_hash, owner_kind, owner_id, request_digest
+        FROM mission_audit_evidence_bindings WHERE audit_event_id = ?
+        """,
+        (audit_event_id,),
+    ).fetchone()
+    if row != (
+        audit_event_hash,
+        "mission_transition",
+        transition.transition_id,
+        transition.request_digest,
+    ):
+        raise MissionError("stored mission audit evidence binding is invalid")
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    document: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in document:
+            raise ValueError(f"duplicate JSON member: {key}")
+        document[key] = value
+    return document
+
+
+def _require_payload_matches_authority(
+    payload: MissionAdmissionPayload, authority: MissionAuthoritySnapshot
+) -> None:
+    if payload.target_node_id != authority.target_node_id:
+        raise MissionConflictError("mission target Node authority mismatch")
+    if payload.mission_template_id != authority.mission_template_id:
+        raise MissionConflictError("mission template authority mismatch")
+
+
+def _require_mission_id(value: str) -> None:
+    if not _MISSION_ID_PATTERN.fullmatch(value):
+        raise MissionNotFoundError("unknown mission")
+
+
+def _require_transition_id(value: str) -> None:
+    if not _TRANSITION_ID_PATTERN.fullmatch(value):
+        raise MissionNotFoundError("unknown mission transition")
+
+
+assert MISSION_AUTHORITY_SCHEMA_VERSION == "1"
+assert MISSION_TEMPLATE_ID == "synthetic_read_review_v1"

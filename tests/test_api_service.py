@@ -5283,7 +5283,7 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
             """
         ).fetchall()
 
-    assert rows == [("minimum_writer_version", "3"), ("schema_version", "3")]
+    assert rows == [("minimum_writer_version", "4"), ("schema_version", "4")]
 
 
 def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Path) -> None:
