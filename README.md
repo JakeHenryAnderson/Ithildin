@@ -2544,6 +2544,12 @@ and is checked with
 `make trusted-host-promotion-governance-binding-implementation-tickets-check`. It maps exact source
 ownership, migrations, adversarial tests, rollback stops, and source-review gates but leaves runtime,
 public-contract, schema, policy, and placement changes unauthorized pending the architecture approval.
+The pending authorization landing record is
+[docs/codex/trusted-host-promotion-governance-binding-authorization-record.md](docs/codex/trusted-host-promotion-governance-binding-authorization-record.md)
+and is checked with
+`make trusted-host-promotion-governance-binding-authorization-record-check`. It records no approval
+and keeps every implementation permission false until a later reviewed commit deliberately captures
+the direct user decision for `PRD-TRUSTED-HOST-BINDING-001`.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in

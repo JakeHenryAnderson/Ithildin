@@ -301,6 +301,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "trusted-host-promotion-runtime-implementation-decision-check",
     "trusted-host-promotion-governance-binding-architecture-check",
     "trusted-host-promotion-governance-binding-implementation-tickets-check",
+    "trusted-host-promotion-governance-binding-authorization-record-check",
     "trusted-host-promotion-negative-transcripts",
     "trusted-host-promotion-runtime-source-review-bundle-check",
     "trusted-host-promotion-source-review-packet-check",

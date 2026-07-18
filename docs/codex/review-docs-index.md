@@ -552,6 +552,7 @@ externally closed.
 - [Trusted-Host Promotion Runtime Source Review](trusted-host-promotion-runtime-source-review.md)
 - [Trusted-Host Promotion Governance-Binding Architecture](trusted-host-promotion-governance-binding-architecture.md)
 - [Trusted-Host Promotion Governance-Binding Implementation Tickets](trusted-host-promotion-governance-binding-implementation-tickets.md)
+- [Trusted-Host Promotion Governance-Binding Authorization Record](trusted-host-promotion-governance-binding-authorization-record.md)
 - [Trusted-Host Promotion Disposition Packet](trusted-host-promotion-disposition-packet.md)
 - [Trusted-Host Promotion External Review Bundle](trusted-host-promotion-external-review-bundle.md)
 - [Trusted-Host Promotion Disposition Closure Gate](trusted-host-promotion-disposition-closure-gate.md)

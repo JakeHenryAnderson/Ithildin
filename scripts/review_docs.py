@@ -553,6 +553,7 @@ REVIEW_DOCS = [
     "docs/codex/trusted-host-promotion-runtime-source-review.md",
     "docs/codex/trusted-host-promotion-governance-binding-architecture.md",
     "docs/codex/trusted-host-promotion-governance-binding-implementation-tickets.md",
+    "docs/codex/trusted-host-promotion-governance-binding-authorization-record.md",
     "docs/codex/v3-readiness-debt-register.md",
     "docs/codex/v0.6-internal-subagent-review-wave.md",
     "docs/codex/v0.6-internal-review-execution-wave-2.md",

@@ -381,6 +381,7 @@ from scripts import (
     trusted_host_promotion_external_response_intake_check,
     trusted_host_promotion_external_review_bundle,
     trusted_host_promotion_governance_binding_architecture_check,
+    trusted_host_promotion_governance_binding_authorization_record_check,
     trusted_host_promotion_governance_binding_implementation_tickets_check,
     trusted_host_promotion_implementation_gate_decision_check,
     trusted_host_promotion_implementation_plan_check,
@@ -34166,6 +34167,51 @@ def test_trusted_host_promotion_governance_binding_implementation_tickets_are_wi
     assert doc_path.as_posix() in docs_site
     assert doc_path.as_posix() in review_docs.REVIEW_DOCS
     assert "Trusted-Host Promotion Governance-Binding Implementation Tickets" in review_index
+
+
+def test_trusted_host_promotion_governance_binding_authorization_record_is_pending() -> None:
+    report = (
+        trusted_host_promotion_governance_binding_authorization_record_check.build_report(
+            Path.cwd()
+        )
+    )
+    doc_path = Path(
+        "docs/codex/trusted-host-promotion-governance-binding-authorization-record.md"
+    )
+    doc = doc_path.read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["decision_id"] == "PRD-TRUSTED-HOST-BINDING-001"
+    assert report["decision_status"] == "awaiting_explicit_user_approval"
+    assert report["approval_recorded"] is False
+    assert report["tool_count"] == 24
+    assert report["tool_surface_valid"] is True
+    assert report["no_new_powers_valid"] is True
+    assert report["implementation_authorized"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["public_contract_changes_allowed"] is False
+    assert report["database_migration_allowed"] is False
+    assert report["policy_changes_allowed"] is False
+    assert report["placement_changes_allowed"] is False
+    assert report["trusted_host_promotion_allowed"] is False
+    assert report["node_side_placement_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["uat_required_now"] is False
+    assert "Approval recorded: `false`." in doc
+    assert "Decision status: `awaiting_explicit_user_approval`." in doc
+    target = "trusted-host-promotion-governance-binding-authorization-record-check"
+    assert f"{target}:" in makefile
+    assert f"release-check: {target}" in makefile
+    assert target in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert f"make {target}" in readme
+    assert doc_path.as_posix() in readme
+    assert doc_path.as_posix() in docs_site
+    assert doc_path.as_posix() in review_docs.REVIEW_DOCS
+    assert "Trusted-Host Promotion Governance-Binding Authorization Record" in review_index
 
 
 def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
