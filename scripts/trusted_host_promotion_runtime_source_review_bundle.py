@@ -100,12 +100,15 @@ CONTRACT_DOCS = [
     "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md",
     "docs/codex/findings/ext-trusted-host-runtime-007-gate-evidence-serialization.md",
     "docs/codex/findings/ext-trusted-host-runtime-008-interrupted-packet-generation.md",
+    "docs/codex/findings/ext-trusted-host-runtime-009-approver-role-enforcement.md",
 ]
 FOCUSED_TEST_COMMAND = [
     "uv",
     "run",
     "pytest",
     "tests/test_api_service.py::test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable",
+    "tests/test_api_service.py::test_trusted_host_promotion_production_readiness_requires_approver_role",
+    "tests/test_api_service.py::test_trusted_host_promotion_missing_approver_role_cannot_decide_or_place",
     "tests/test_api_service.py::test_trusted_host_promotion_denies_stale_and_unsafe_inputs",
     "tests/test_api_service.py::test_trusted_host_promotion_rejects_unbound_approval_and_all_placement",
     "tests/test_api_service.py::test_trusted_host_promotion_rejects_unsafe_source_object_types",

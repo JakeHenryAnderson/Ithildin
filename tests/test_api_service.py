@@ -100,6 +100,7 @@ def promotion_ready_app(
     test_fixture_ready: bool = True,
     manifest_lock_required: bool = True,
     principal_registry_required: bool = True,
+    principal_registry_path: Path | None = None,
     workspace_registry_required: bool = True,
     workspace_registry_path: Path | None = None,
 ) -> Any:
@@ -107,7 +108,11 @@ def promotion_ready_app(
     settings.manifest_lock_path = Path("tool-manifests.lock.json").resolve()
     settings.require_manifest_lock = manifest_lock_required
     settings.trusted_host_registry_path = Path("trusted-hosts/local.yaml").resolve()
-    settings.principal_registry_path = Path("principals/local.yaml").resolve()
+    settings.principal_registry_path = (
+        principal_registry_path
+        if principal_registry_path is not None
+        else Path("principals/local.yaml").resolve()
+    )
     settings.require_known_principals = principal_registry_required
     if workspace_registry_path is not None:
         settings.workspace_registry_path = workspace_registry_path
@@ -1233,6 +1238,139 @@ def test_trusted_host_promotion_production_readiness_requires_principal_registry
     assert readiness["reason"] == "principal_registry"
     assert readiness["components"]["principal_registry"] is False
     assert readiness["operator_override_available"] is False
+
+
+def test_trusted_host_promotion_production_readiness_requires_approver_role(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "approver-role readiness fence\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    principal_registry = tmp_path / "principals-without-approver.yaml"
+    principal_registry.write_text(
+        "principals:\n"
+        "  - id: admin:local-ui\n"
+        "    type: admin\n"
+        "    display_name: Local Admin Without Approver\n"
+        "    roles: [Admin, Auditor]\n"
+        "    enabled: true\n",
+        encoding="utf-8",
+    )
+    app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        principal_registry_path=principal_registry,
+    )
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-missing-approver-readiness"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-missing-approver-readiness",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert proposal.status_code == 400
+    assert proposal.json()["detail"] == "trusted_host_promotion_unavailable"
+    readiness = diagnostics.json()["production_readiness"]
+    assert readiness["ready"] is False
+    assert readiness["reason"] == "principal_registry"
+    assert readiness["components"]["principal_registry"] is False
+    assert readiness["operator_override_available"] is False
+
+
+def test_trusted_host_promotion_missing_approver_role_cannot_decide_or_place(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "must never be placed\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    principal_registry = tmp_path / "principals-without-approver.yaml"
+    principal_registry.write_text(
+        "principals:\n"
+        "  - id: admin:local-ui\n"
+        "    type: admin\n"
+        "    display_name: Local Admin Without Approver\n"
+        "    roles: [Admin, Auditor]\n"
+        "    enabled: true\n",
+        encoding="utf-8",
+    )
+    app = promotion_ready_app(
+        settings,
+        placement_ready=True,
+        principal_registry_path=principal_registry,
+    )
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-missing-approver"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-missing-approver",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        ).json()
+        approval_path = f"/approvals/{proposal['approval_id']}"
+        approve = client.post(
+            f"{approval_path}/approve",
+            json={"decision": "approve"},
+            headers=headers,
+        )
+        deny = client.post(
+            f"{approval_path}/deny",
+            json={"decision": "deny"},
+            headers=headers,
+        )
+        pending = client.get(approval_path, headers=headers)
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    for decision in (approve, deny):
+        assert decision.status_code == 409
+        assert decision.json()["detail"] == (
+            "trusted-host promotion approval decision is not authorized"
+        )
+    assert pending.status_code == 200
+    assert pending.json()["status"] == "pending"
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "trusted-host promotion authority is stale"
+    assert diagnostics.json()["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
 
 
 def test_trusted_host_promotion_apply_opens_source_exactly_once(

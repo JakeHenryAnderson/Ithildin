@@ -1560,6 +1560,21 @@ class TrustedHostPromotionService:
             "output_policy": _output_policy(),
         }
 
+    def approval_decision_context(
+        self,
+        approval: ApprovalRequest,
+        *,
+        context: AdminPrincipalContext,
+    ) -> AdminPrincipalContext:
+        review = self.approval_review(approval)
+        if review["valid"] is not True:
+            raise TrustedHostPromotionError(
+                "trusted-host promotion approval binding review failed"
+            )
+        current_context = self._current_requesting_principal(context)
+        self._require_approver_roles(current_context)
+        return current_context
+
     def proposal_review(
         self,
         proposal: TrustedHostPromotionProposal,
@@ -1842,6 +1857,7 @@ class TrustedHostPromotionService:
         authority_snapshot_hash: str,
         approval_store: ApprovalStore,
     ) -> None:
+        self._require_approver_roles(context)
         if (
             approval.status is not ApprovalStatus.APPROVED
             or approval.decided_at is None
@@ -1877,6 +1893,13 @@ class TrustedHostPromotionService:
             or stored_request_hash != sha256_digest(approval.one_time_scope)
         ):
             raise TrustedHostPromotionError("approval_decision_evidence_mismatch")
+
+    @staticmethod
+    def _require_approver_roles(context: AdminPrincipalContext) -> None:
+        if not set(PROMOTION_REQUIRED_APPROVER_ROLES).issubset(context.roles):
+            raise TrustedHostPromotionError(
+                "trusted-host promotion approver is not authorized"
+            )
 
     def _terminally_stale(self, proposal_id: str) -> None:
         if not self.store.mark_authority_stale(proposal_id):
@@ -2040,9 +2063,10 @@ class TrustedHostPromotionService:
         principal_registry_ready = False
         if self.principal_registry_verified and self.principal_registry.source_path.is_file():
             try:
-                self.principal_registry.admin_context()
+                principal_context = self.principal_registry.admin_context()
+                self._require_approver_roles(principal_context)
                 principal_registry_ready = True
-            except PrincipalRegistryError:
+            except (PrincipalRegistryError, TrustedHostPromotionError):
                 pass
         workspace_registry_ready = False
         if self.workspace_registry_verified and self.workspace_registry.path.is_file():

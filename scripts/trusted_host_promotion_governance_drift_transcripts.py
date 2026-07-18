@@ -166,6 +166,7 @@ MATRIX_ROWS = (
         category="Approval",
         proofs=(
             "copied, wrong-proposal, wrong-snapshot, and wrong-requester approval rejected",
+            "server-derived principal missing the required Approver role cannot decide or place",
             "expired and denied approvals cannot execute",
             "decision drift terminally stale",
             "sequential replay and concurrent double apply reserve only once",
@@ -174,6 +175,7 @@ MATRIX_ROWS = (
         commands=(
             PYTEST
             + (
+                "tests/test_api_service.py::test_trusted_host_promotion_missing_approver_role_cannot_decide_or_place",
                 "tests/test_api_service.py::test_trusted_host_promotion_rejects_unbound_approval_and_all_placement",
                 "tests/test_api_service.py::test_trusted_host_promotion_approval_decision_drift_is_terminal",
                 "tests/test_api_service.py::test_trusted_host_promotion_internal_fixture_concurrent_replay_reserves_once",

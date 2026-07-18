@@ -1711,6 +1711,7 @@ def create_app(
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
             approval = approval_service.get(approval_id)
+            decision_context = context
             if approval.tool_name == PATCH_APPLY_TOOL:
                 try:
                     review = _patch_apply_approval_review(api, approval)
@@ -1722,19 +1723,19 @@ def create_app(
                     raise ApprovalError("patch apply approval binding review failed")
             if approval.tool_name == TRUSTED_HOST_PROMOTION_TOOL:
                 try:
-                    review = _trusted_host_promotion_approval_review(api, approval)
+                    decision_context = _trusted_host_promotion_approval_decision_context(
+                        api,
+                        approval,
+                        context,
+                    )
                 except TrustedHostPromotionError as exc:
                     raise ApprovalError(
-                        "trusted-host promotion approval binding review failed"
+                        "trusted-host promotion approval decision is not authorized"
                     ) from exc
-                if review.get("valid") is not True:
-                    raise ApprovalError(
-                        "trusted-host promotion approval binding review failed"
-                    )
             return _safe_approval_response(
                 approval_service.approve(
                     approval_id,
-                    context=context,
+                    context=decision_context,
                     reason=payload.reason,
                 )
             )
@@ -1750,10 +1751,23 @@ def create_app(
         _require_route_decision(payload.decision, ApprovalDecisionValue.DENY)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
+            approval = approval_service.get(approval_id)
+            decision_context = context
+            if approval.tool_name == TRUSTED_HOST_PROMOTION_TOOL:
+                try:
+                    decision_context = _trusted_host_promotion_approval_decision_context(
+                        api,
+                        approval,
+                        context,
+                    )
+                except TrustedHostPromotionError as exc:
+                    raise ApprovalError(
+                        "trusted-host promotion approval decision is not authorized"
+                    ) from exc
             return _safe_approval_response(
                 approval_service.deny(
                     approval_id,
-                    context=context,
+                    context=decision_context,
                     reason=payload.reason,
                 )
             )
@@ -1937,6 +1951,21 @@ def _trusted_host_promotion_approval_review(
         api.state.trusted_host_promotion_service,
     )
     return promotion_service.approval_review(approval)
+
+
+def _trusted_host_promotion_approval_decision_context(
+    api: FastAPI,
+    approval: ApprovalRequest,
+    context: AdminPrincipalContext,
+) -> AdminPrincipalContext:
+    promotion_service = cast(
+        TrustedHostPromotionService,
+        api.state.trusted_host_promotion_service,
+    )
+    return promotion_service.approval_decision_context(
+        approval,
+        context=context,
+    )
 
 
 def _current_manifest_lock_status(settings: Settings) -> JsonObject:
