@@ -2538,6 +2538,12 @@ and is checked with `make trusted-host-promotion-governance-binding-architecture
 proposal-only until the version-2 request and versioned SQLite migration receive explicit approval;
 it preserves the 24-tool, staging-only, Manager-local boundary and does not authorize Node-side
 placement or broader host control.
+The proposal-only six-ticket execution sequence is in
+[docs/codex/trusted-host-promotion-governance-binding-implementation-tickets.md](docs/codex/trusted-host-promotion-governance-binding-implementation-tickets.md)
+and is checked with
+`make trusted-host-promotion-governance-binding-implementation-tickets-check`. It maps exact source
+ownership, migrations, adversarial tests, rollback stops, and source-review gates but leaves runtime,
+public-contract, schema, policy, and placement changes unauthorized pending the architecture approval.
 Its implementation-planning packet is
 [docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md](docs/codex/capability-implementation-plans/sandbox-artifact-write-text.md);
 fixture and denial expectations are in
