@@ -955,9 +955,9 @@ def _candidate_digest_evidence_valid(repo_root: Path, output_dir: Path) -> bool:
     evidence_path = output_dir / RUNTIME_CANDIDATE_DIGEST_EVIDENCE
     review_packet_path = output_dir / RUNTIME_CANDIDATE_REVIEW_PACKET
     try:
-        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-        review_packet = json.loads(review_packet_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        evidence = _load_json_without_duplicates(evidence_path)
+        review_packet = _load_json_without_duplicates(review_packet_path)
+    except (OSError, ValueError):
         return False
     if not isinstance(evidence, dict) or not isinstance(review_packet, dict):
         return False
@@ -1078,9 +1078,9 @@ def _candidate_index_evidence_matches(output_dir: Path) -> bool:
     evidence_path = output_dir / RUNTIME_CANDIDATE_DIGEST_EVIDENCE
     index_path = output_dir / "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md"
     try:
-        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        evidence = _load_json_without_duplicates(evidence_path)
         index = index_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError, json.JSONDecodeError):
+    except (OSError, UnicodeError, ValueError):
         return False
     if not isinstance(evidence, dict):
         return False
@@ -1092,11 +1092,16 @@ def _candidate_index_evidence_matches(output_dir: Path) -> bool:
         "Immutable release-artifact digest": "release_artifact_digest",
         "Detached candidate review-packet digest": "review_packet_digest",
     }
-    return all(
-        isinstance((value := evidence.get(key)), str)
-        and f"- {label}: `{value}`." in index
-        for label, key in labels.items()
-    )
+    lines = index.splitlines()
+    for label, key in labels.items():
+        value = evidence.get(key)
+        if not isinstance(value, str):
+            return False
+        expected = f"- {label}: `{value}`."
+        matching = [line for line in lines if line.startswith(f"- {label}:")]
+        if matching != [expected]:
+            return False
+    return True
 
 
 def _hashes(output_dir: Path) -> list[dict[str, Any]]:
@@ -1144,8 +1149,8 @@ def _existing_packet_evidence(
 
     hashes_match = False
     try:
-        recorded_hashes = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        recorded_hashes = _load_json_without_duplicates(manifest_path)
+    except (OSError, ValueError):
         recorded_hashes = None
     if isinstance(recorded_hashes, list):
         hashes_match = recorded_hashes == _hashes(output_dir)
@@ -1154,8 +1159,8 @@ def _existing_packet_evidence(
         output_dir / "10_TRUSTED_HOST_PROMOTION_RUNTIME_REDACTION_SCAN.json"
     )
     try:
-        redaction_payload = json.loads(redaction_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        redaction_payload = _load_json_without_duplicates(redaction_path)
+    except (OSError, ValueError):
         redaction_payload = None
     if isinstance(redaction_payload, dict):
         redaction_scan_valid = (
@@ -1187,8 +1192,8 @@ def _embedded_packet_evidence(output_dir: Path) -> dict[str, Any] | None:
         output_dir / "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json"
     )
     try:
-        gate_evidence = json.loads(gate_evidence_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        gate_evidence = _load_json_without_duplicates(gate_evidence_path)
+    except (OSError, ValueError):
         return None
     if not isinstance(gate_evidence, dict):
         return None
@@ -1198,13 +1203,31 @@ def _embedded_packet_evidence(output_dir: Path) -> dict[str, Any] | None:
 
 def _extract_packet_commit(text: str) -> str | None:
     marker = "Reviewed commit: `"
-    if marker not in text:
+    if text.count(marker) != 1:
         return None
     return text.partition(marker)[2].partition("`")[0] or None
 
 
 def _packet_text(text: str) -> str:
     return text.strip() + "\n"
+
+
+def _load_json_without_duplicates(path: Path) -> Any:
+    return json.loads(
+        path.read_text(encoding="utf-8"),
+        object_pairs_hook=_json_object_without_duplicates,
+    )
+
+
+def _json_object_without_duplicates(
+    pairs: list[tuple[str, object]],
+) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON object key")
+        result[key] = value
+    return result
 
 
 def _require_project_root(repo_root: Path) -> None:

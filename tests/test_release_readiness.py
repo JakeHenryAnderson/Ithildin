@@ -34825,6 +34825,159 @@ def test_trusted_host_promotion_runtime_source_review_packet_rejects_omitted_inv
     )
 
 
+@pytest.mark.parametrize(
+    ("artifact_name", "original_member", "conflicting_member"),
+    [
+        (
+            "11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json",
+            '"review_scope": "trusted_host_promotion_runtime_staging_only",',
+            '"review_scope": "broader_scope",',
+        ),
+        (
+            "12_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_DIGEST_EVIDENCE.json",
+            '"release_artifact_domain": "git_archive_exact_commit",',
+            '"release_artifact_domain": "mutable_tree",',
+        ),
+    ],
+)
+def test_trusted_host_promotion_runtime_source_review_packet_rejects_duplicate_json_members(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    artifact_name: str,
+    original_member: str,
+    conflicting_member: str,
+) -> None:
+    output_dir = tmp_path / "trusted-host-runtime-source-review"
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=False,
+        run_commands=False,
+    )
+    artifact_path = output_dir / artifact_name
+    artifact = artifact_path.read_text(encoding="utf-8")
+    assert artifact.count(original_member) == 1
+    artifact_path.write_text(
+        artifact.replace(
+            original_member,
+            f"{conflicting_member}\n  {original_member}",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    if artifact_name.startswith("11_"):
+        evidence_path = output_dir / (
+            "12_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_DIGEST_EVIDENCE.json"
+        )
+        index_path = output_dir / (
+            "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md"
+        )
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        old_digest = evidence["review_packet_digest"]
+        evidence["review_packet_digest"] = (
+            trusted_host_promotion_runtime_source_review_bundle._file_digest(
+                artifact_path
+            )
+        )
+        trusted_host_promotion_runtime_source_review_bundle._write_json(
+            evidence_path,
+            evidence,
+        )
+        index_path.write_text(
+            index_path.read_text(encoding="utf-8").replace(
+                old_digest,
+                evidence["review_packet_digest"],
+            ),
+            encoding="utf-8",
+        )
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        output_dir
+        / "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
+        trusted_host_promotion_runtime_source_review_bundle._hashes(output_dir),
+    )
+
+    packet_evidence = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
+    assert packet_evidence["artifact_hashes_match_files"] is True
+    assert packet_evidence["candidate_digest_evidence_valid"] is False
+
+    monkeypatch.setattr(
+        trusted_host_promotion_runtime_source_review_bundle,
+        "DEFAULT_OUTPUT_DIR",
+        output_dir,
+    )
+    report = trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+        Path.cwd()
+    )
+
+    assert report["valid"] is False
+    assert (
+        "existing runtime source-review packet candidate digest evidence is invalid"
+        in report["failures"]
+    )
+
+
+def test_trusted_host_promotion_runtime_source_review_packet_rejects_duplicate_index_label(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_dir = tmp_path / "trusted-host-runtime-source-review"
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=False,
+        run_commands=False,
+    )
+    evidence = json.loads(
+        output_dir.joinpath(
+            "12_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_DIGEST_EVIDENCE.json"
+        ).read_text(encoding="utf-8")
+    )
+    index_path = output_dir / "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md"
+    index = index_path.read_text(encoding="utf-8")
+    expected = f"- Candidate inventory digest: `{evidence['reviewed_inventory_digest']}`."
+    conflicting = f"- Candidate inventory digest: `sha256:{'0' * 64}`."
+    assert index.count(expected) == 1
+    index_path.write_text(
+        index.replace(expected, f"{conflicting}\n{expected}", 1),
+        encoding="utf-8",
+    )
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        output_dir
+        / "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
+        trusted_host_promotion_runtime_source_review_bundle._hashes(output_dir),
+    )
+
+    packet_evidence = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
+    assert packet_evidence["artifact_hashes_match_files"] is True
+    assert packet_evidence["candidate_digest_evidence_valid"] is True
+    assert packet_evidence["candidate_index_evidence_matches"] is False
+
+    monkeypatch.setattr(
+        trusted_host_promotion_runtime_source_review_bundle,
+        "DEFAULT_OUTPUT_DIR",
+        output_dir,
+    )
+    report = trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+        Path.cwd()
+    )
+
+    assert report["valid"] is False
+    assert (
+        "existing runtime source-review packet index does not match candidate evidence"
+        in report["failures"]
+    )
+
+
 def test_trusted_artifact_promotion_operator_demo_is_wired(tmp_path: Path) -> None:
     report = trusted_artifact_promotion_operator_demo.build_check_report(Path.cwd())
     output_dir = tmp_path / "trusted-artifact-promotion-operator-demo"
