@@ -19,10 +19,15 @@ def test_filesystem_contract_check_json_contains_required_fields(
     assert payload["probe"]["uses_temporary_directory"] is True
     assert payload["probe"]["touches_workspace"] is False
     assert "o_no_follow_available" in payload["capabilities"]
+    assert "o_directory_available" in payload["capabilities"]
+    assert "dir_fd_open_supported" in payload["capabilities"]
+    assert "dir_fd_mkdir_supported" in payload["capabilities"]
+    assert "dir_fd_stat_supported" in payload["capabilities"]
     assert "symlink_supported" in payload["capabilities"]
     assert "hardlink_supported" in payload["capabilities"]
     assert "case_sensitive" in payload["capabilities"]
     assert payload["support"]["status"] in {"supported", "degraded", "unsupported"}
+    assert isinstance(payload["support"]["descriptor_relative_placement_supported"], bool)
 
 
 def test_filesystem_contract_check_fails_when_support_profile_is_unsupported(

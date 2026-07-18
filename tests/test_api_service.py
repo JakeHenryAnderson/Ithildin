@@ -9,8 +9,9 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
+import ithildin_api.trusted_host_promotions as trusted_host_promotions_module
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -40,11 +41,17 @@ from ithildin_api.nodes import (
     node_identity_key_id,
 )
 from ithildin_api.patches import PatchApplyAttempt, PatchProposalService
-from ithildin_api.promotion_authority import AdminPrincipalContext, RuntimeCandidateRecord
+from ithildin_api.promotion_authority import (
+    AdminPrincipalContext,
+    PromotionAuthoritySnapshot,
+    RuntimeCandidateRecord,
+)
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.trusted_host_placement import TrustedHostPlacement
 from ithildin_api.trusted_host_promotions import (
     TrustedHostPromotionError,
     TrustedHostPromotionService,
+    TrustedHostPromotionStore,
 )
 from ithildin_api.trusted_host_registry import TRUSTED_HOST_REGISTRY_SCHEMA_DIGEST
 from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
@@ -85,7 +92,7 @@ def runtime_candidate_fixture() -> RuntimeCandidateRecord:
     )
 
 
-def promotion_ready_app(settings: Settings) -> Any:
+def promotion_ready_app(settings: Settings, *, placement_ready: bool = False) -> Any:
     settings.manifest_dir = Path("tool-manifests").resolve()
     settings.manifest_lock_path = Path("tool-manifests.lock.json").resolve()
     settings.require_manifest_lock = True
@@ -115,6 +122,7 @@ rules:
         settings,
         runtime_candidate=runtime_candidate_fixture(),
         trusted_host_promotion_test_fixture_ready=True,
+        trusted_host_promotion_placement_test_fixture_ready=placement_ready,
     )
 
 
@@ -280,6 +288,41 @@ def sandbox_descriptor_payload(**overrides: Any) -> dict[str, Any]:
     }
     payload.update(overrides)
     return payload
+
+
+def create_approved_promotion(
+    client: TestClient,
+    *,
+    token: str = "correct-token",
+    sandbox_id: str = "sandbox-demo",
+) -> dict[str, Any]:
+    headers = {"Authorization": f"Bearer {token}"}
+    descriptor = client.post(
+        "/sandbox-descriptors",
+        json=sandbox_descriptor_payload(sandbox_id=sandbox_id),
+        headers=headers,
+    )
+    assert descriptor.status_code == 200
+    proposal = client.post(
+        "/trusted-host-promotions/proposals",
+        json={
+            "workspace_id": "default",
+            "sandbox_descriptor_id": descriptor.json()["descriptor_id"],
+            "sandbox_id": sandbox_id,
+            "source_artifact_path": "summary.txt",
+            "host_staging_label": "host-staging://artifact",
+        },
+        headers=headers,
+    )
+    assert proposal.status_code == 200
+    proposal_payload = cast(dict[str, Any], proposal.json())
+    approval = client.post(
+        f"/approvals/{proposal_payload['approval_id']}/approve",
+        json={"decision": "approve"},
+        headers=headers,
+    )
+    assert approval.status_code == 200
+    return proposal_payload
 
 
 def test_healthz_returns_service_health(tmp_path: Path) -> None:
@@ -841,7 +884,7 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
     )
     assert apply_response.status_code == 409
     assert apply_response.json()["detail"] == (
-        "trusted-host promotion placement is unavailable during TGB-003"
+        "trusted-host promotion placement is not production-ready"
     )
     assert replay_response.status_code == 409
     assert replay_response.json()["detail"] == apply_response.json()["detail"]
@@ -865,6 +908,696 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
     assert "approval.approved" in event_types
     assert "tool.execution.started" not in event_types
     assert "tool.execution.completed" not in event_types
+
+
+def test_trusted_host_promotion_internal_fixture_places_once_without_completion_claim(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "governed output\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client)
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        replay = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        )
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers)
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+        audit = client.get(
+            "/audit-events?tool_name=trusted_host.promotion.stage",
+            headers=headers,
+        )
+
+    assert apply.status_code == 200
+    assert apply.json()["completion_claimed"] is False
+    assert apply.json()["proposal_status"] == "completion_evidence_pending"
+    attempt = apply.json()["promotion_attempt"]
+    assert attempt["status"] == "staged"
+    assert attempt["staged_sha256"] == proposal["artifact_sha256"]
+    assert replay.status_code == 409
+    assert replay.json()["detail"] == "proposal_not_applicable"
+    assert current.json()["status"] == "completion_evidence_pending"
+    assert approval.json()["status"] == "executed"
+    assert diagnostics.json()["placement_available"] is False
+    assert diagnostics.json()["status"] == "ambiguous"
+    event_types = {event["event_type"] for event in audit.json()["audit_events"]}
+    assert "tool.execution.started" not in event_types
+    assert "tool.execution.completed" not in event_types
+    destination_dir = (
+        settings.trusted_host_staging_root
+        / "default"
+        / proposal["promotion_proposal_id"]
+    )
+    destinations = list(destination_dir.iterdir())
+    assert len(destinations) == 1
+    assert destinations[0].read_bytes() == b"governed output\n"
+    response_text = apply.text + diagnostics.text + audit.text
+    assert "governed output" not in response_text
+    assert settings.trusted_host_staging_root.as_posix() not in response_text
+
+
+def test_trusted_host_promotion_apply_opens_source_exactly_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("retained\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-source-once")
+        service = cast(TrustedHostPromotionService, app.state.trusted_host_promotion_service)
+        filesystem = service.read_executor.filesystems["default"]
+        original_read = filesystem.read_file_bytes
+        call_count = 0
+
+        def counted_read(path: Path) -> bytes:
+            nonlocal call_count
+            call_count += 1
+            return original_read(path)
+
+        monkeypatch.setattr(filesystem, "read_file_bytes", counted_read)
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+
+    assert apply.status_code == 200
+    assert call_count == 1
+    destinations = list(
+        (
+            settings.trusted_host_staging_root
+            / "default"
+            / proposal["promotion_proposal_id"]
+        ).iterdir()
+    )
+    assert len(destinations) == 1
+    assert destinations[0].read_bytes() == b"retained\n"
+
+
+def test_trusted_host_promotion_internal_fixture_concurrent_replay_reserves_once(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-concurrent")
+
+        def apply_once() -> tuple[int, dict[str, Any]]:
+            response = client.post(
+                f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+                json={"approval_id": proposal["approval_id"]},
+                headers=headers,
+            )
+            return response.status_code, cast(dict[str, Any], response.json())
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            responses = list(executor.map(lambda _: apply_once(), range(2)))
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert sorted(status for status, _ in responses) == [200, 409]
+    assert len(diagnostics["attempts"]) == 1
+    destination_dir = (
+        settings.trusted_host_staging_root
+        / "default"
+        / proposal["promotion_proposal_id"]
+    )
+    assert len(list(destination_dir.iterdir())) == 1
+
+
+@pytest.mark.parametrize("source_drift", ["bytes", "symlink", "hardlink", "directory"])
+def test_trusted_host_promotion_source_drift_is_terminal_before_reservation(
+    tmp_path: Path,
+    source_drift: str,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    source = settings.workspace_root / "summary.txt"
+    source.write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id=f"sandbox-{source_drift}")
+        source.unlink()
+        if source_drift == "bytes":
+            source.write_text("changed\n", encoding="utf-8")
+        elif source_drift == "symlink":
+            outside = tmp_path / "outside.txt"
+            outside.write_text("original\n", encoding="utf-8")
+            source.symlink_to(outside)
+        elif source_drift == "hardlink":
+            outside = tmp_path / "outside.txt"
+            outside.write_text("original\n", encoding="utf-8")
+            os.link(outside, source)
+        else:
+            source.mkdir()
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "trusted-host promotion source is stale"
+    assert current["status"] == "authority_stale"
+    assert approval["status"] == "approved"
+    assert diagnostics["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+
+
+def test_trusted_host_promotion_rejects_source_over_4096_bytes(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_bytes(b"a" * 4097)
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-oversize"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-oversize",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        )
+        proposals = client.get("/trusted-host-promotions/proposals", headers=headers).json()
+
+    assert proposal.status_code == 400
+    assert proposal.json()["detail"] == "source artifact exceeds promotion limit"
+    assert proposals["promotion_proposals"] == []
+
+
+def test_trusted_host_promotion_approval_decision_drift_is_terminal(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-decision-drift")
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                "UPDATE approvals SET decision_hash = ? WHERE approval_id = ?",
+                ("sha256:" + ("e" * 64), proposal["approval_id"]),
+            )
+            connection.commit()
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "trusted-host promotion authority is stale"
+    assert current["status"] == "authority_stale"
+    assert diagnostics["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "authority_component",
+    [
+        "principal",
+        "workspace",
+        "sandbox",
+        "trusted_host",
+        "policy",
+        "manifest",
+        "input_schema",
+        "runtime_candidate",
+    ],
+)
+def test_trusted_host_promotion_every_authority_component_drift_is_terminal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    authority_component: str,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id=f"sandbox-{authority_component}")
+        service = cast(TrustedHostPromotionService, app.state.trusted_host_promotion_service)
+        stored = service.store.get_proposal(proposal["promotion_proposal_id"])
+        assert stored.authority_snapshot_json is not None
+        snapshot = PromotionAuthoritySnapshot.model_validate(stored.authority_snapshot_json)
+        changed_hash = "sha256:" + ("f" * 64)
+
+        if authority_component == "principal":
+            changed_principal = snapshot.requesting_principal.model_copy(
+                update={"identity_generation": changed_hash}
+            )
+            monkeypatch.setattr(
+                service.principal_registry,
+                "admin_context",
+                lambda: changed_principal,
+            )
+        elif authority_component == "workspace":
+            monkeypatch.setattr(
+                service.workspace_registry,
+                "authority_record",
+                lambda workspace_id=None: (
+                    snapshot.workspace.workspace_id,
+                    changed_hash,
+                    snapshot.workspace.workspace_registry_generation,
+                ),
+            )
+        elif authority_component == "sandbox":
+            changed_sandbox = snapshot.sandbox.model_copy(
+                update={"descriptor_payload_hash": changed_hash}
+            )
+            monkeypatch.setattr(
+                service.descriptor_store,
+                "authority_record",
+                lambda descriptor_id: changed_sandbox,
+            )
+        elif authority_component == "trusted_host":
+            changed_host = snapshot.trusted_host.model_copy(
+                update={"descriptor_hash": changed_hash}
+            )
+            monkeypatch.setattr(
+                service.trusted_host_registry,
+                "resolve",
+                lambda **kwargs: changed_host,
+            )
+        elif authority_component == "policy":
+            original_policy_authority = service._policy_authority
+
+            def changed_policy_authority(**kwargs: object) -> tuple[object, JsonObject]:
+                policy, obligations = original_policy_authority(**kwargs)  # type: ignore[arg-type]
+                return policy.model_copy(update={"policy_digest": changed_hash}), obligations
+
+            monkeypatch.setattr(service, "_policy_authority", changed_policy_authority)
+        elif authority_component == "manifest":
+            assert service._manifest_authority_record is not None
+            service._manifest_authority_record = service._manifest_authority_record.model_copy(
+                update={"lock_digest": changed_hash}
+            )
+        elif authority_component == "input_schema":
+            service.input_schema_authority = service.input_schema_authority.model_copy(
+                update={"schema_digest": changed_hash}
+            )
+        else:
+            assert service.runtime_candidate is not None
+            service.runtime_candidate = service.runtime_candidate.model_copy(
+                update={"review_packet_digest": changed_hash}
+            )
+
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "trusted-host promotion authority is stale"
+    assert current["status"] == "authority_stale"
+    assert approval["status"] == "approved"
+    assert diagnostics["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+
+
+def test_trusted_host_promotion_postwrite_root_drift_records_recovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    retained_root = tmp_path / "retained-staging-root"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    def replace_root() -> None:
+        settings.trusted_host_staging_root.rename(retained_root)
+        settings.trusted_host_staging_root.mkdir()
+
+    monkeypatch.setattr(
+        trusted_host_promotions_module,
+        "TrustedHostPlacement",
+        lambda root: TrustedHostPlacement(root, after_write_hook=replace_root),
+    )
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-postwrite-drift")
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "staging_root_namespace_drift"
+    assert current["status"] == "placement_evidence_recovery_required"
+    assert approval["status"] == "failed"
+    assert diagnostics["status"] == "recovery_required"
+    assert len(diagnostics["attempts"]) == 1
+    attempt = diagnostics["attempts"][0]
+    assert attempt["status"] == "placement_evidence_recovery_required"
+    assert attempt["failure_reason"] == "staging_root_namespace_drift"
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+    retained_files = list(retained_root.rglob("*.artifact"))
+    assert len(retained_files) == 1
+    assert retained_files[0].read_bytes() == b"original\n"
+    response_text = apply.text + json.dumps(diagnostics)
+    assert settings.trusted_host_staging_root.as_posix() not in response_text
+    assert retained_root.as_posix() not in response_text
+    assert "original" not in response_text
+
+
+def test_trusted_host_promotion_success_evidence_failure_records_recovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-evidence-failure")
+        service = cast(TrustedHostPromotionService, app.state.trusted_host_promotion_service)
+
+        def fail_success(*args: object, **kwargs: object) -> NoReturn:
+            raise TrustedHostPromotionError("simulated success evidence failure")
+
+        monkeypatch.setattr(service.store, "record_placement_success", fail_success)
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "placement_evidence_recovery_required"
+    assert "simulated" not in apply.text
+    assert current["status"] == "placement_evidence_recovery_required"
+    assert approval["status"] == "failed"
+    assert diagnostics["status"] == "recovery_required"
+    assert diagnostics["attempts"][0]["status"] == (
+        "placement_evidence_recovery_required"
+    )
+    assert diagnostics["attempts"][0]["failure_reason"] == (
+        "placement_evidence_update_failed"
+    )
+    destinations = list(
+        (
+            settings.trusted_host_staging_root
+            / "default"
+            / proposal["promotion_proposal_id"]
+        ).iterdir()
+    )
+    assert len(destinations) == 1
+    assert destinations[0].read_bytes() == b"original\n"
+
+
+def test_trusted_host_promotion_prewrite_root_drift_records_no_effect_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    retained_root = tmp_path / "retained-staging-root"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    class ReplaceBeforePlacement:
+        def __init__(self, root: Path) -> None:
+            self._placement = TrustedHostPlacement(root)
+
+        def __enter__(self) -> ReplaceBeforePlacement:
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+            self._placement.close()
+
+        def place(self, *args: object, **kwargs: object) -> object:
+            settings.trusted_host_staging_root.rename(retained_root)
+            settings.trusted_host_staging_root.mkdir(mode=0o700)
+            return self._placement.place(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(
+        trusted_host_promotions_module,
+        "TrustedHostPlacement",
+        ReplaceBeforePlacement,
+    )
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-prewrite-drift")
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "staging_root_namespace_drift"
+    assert current["status"] == "failed"
+    assert approval["status"] == "failed"
+    assert diagnostics["status"] == "ambiguous"
+    assert len(diagnostics["attempts"]) == 1
+    assert diagnostics["attempts"][0]["status"] == "failed"
+    assert diagnostics["attempts"][0]["failure_reason"] == "staging_root_namespace_drift"
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+    assert list(retained_root.iterdir()) == []
+
+
+def test_trusted_host_promotion_reservation_rolls_back_all_three_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    def fail_attempt_insert(*args: object, **kwargs: object) -> None:
+        raise sqlite3.IntegrityError("simulated attempt insert failure")
+
+    monkeypatch.setattr(
+        TrustedHostPromotionStore,
+        "_insert_attempt",
+        staticmethod(fail_attempt_insert),
+    )
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-reservation-rollback")
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "trusted-host execution reservation failed"
+    assert current["status"] == "approval_required"
+    assert approval["status"] == "approved"
+    assert diagnostics["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+    assert "simulated" not in apply.text
+
+
+def test_trusted_host_promotion_compare_and_set_drift_becomes_terminal_stale(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+    original_placement = TrustedHostPlacement
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-cas-drift")
+
+        def mutate_before_reservation(root: Path) -> TrustedHostPlacement:
+            with sqlite3.connect(settings.db_path) as connection:
+                connection.execute(
+                    """
+                    UPDATE trusted_host_promotion_proposals
+                    SET metadata_json = '{}'
+                    WHERE proposal_id = ?
+                    """,
+                    (proposal["promotion_proposal_id"],),
+                )
+                connection.commit()
+            return original_placement(root)
+
+        monkeypatch.setattr(
+            trusted_host_promotions_module,
+            "TrustedHostPlacement",
+            mutate_before_reservation,
+        )
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "trusted-host promotion authority is stale"
+    assert current["status"] == "authority_stale"
+    assert approval["status"] == "approved"
+    assert diagnostics["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+
+
+def test_trusted_host_promotion_destination_conflict_is_terminal_without_overwrite(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("new bytes\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-conflict")
+        attempt_id = (
+            "thpa_"
+            + hashlib.sha256(proposal["promotion_proposal_id"].encode("utf-8")).hexdigest()[:32]
+        )
+        destination_dir = (
+            settings.trusted_host_staging_root
+            / "default"
+            / proposal["promotion_proposal_id"]
+        )
+        destination_dir.mkdir(parents=True)
+        destination = destination_dir / f"{attempt_id}-artifact.artifact"
+        destination.write_bytes(b"existing bytes\n")
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "destination_conflict"
+    assert destination.read_bytes() == b"existing bytes\n"
+    assert current["status"] == "failed"
+    assert approval["status"] == "failed"
+    assert len(diagnostics["attempts"]) == 1
+    assert diagnostics["attempts"][0]["status"] == "failed"
+    assert diagnostics["attempts"][0]["failure_reason"] == "destination_conflict"
+    assert "new bytes" not in apply.text + json.dumps(diagnostics)
 
 
 @pytest.mark.parametrize(
@@ -1321,7 +2054,7 @@ def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
     )
     assert stale_apply.status_code == 409
     assert stale_apply.json()["detail"] == (
-        "trusted-host promotion placement is unavailable during TGB-003"
+        "trusted-host promotion placement is not production-ready"
     )
     assert "original" not in stale_apply.text
     assert "changed" not in stale_apply.text
@@ -1417,7 +2150,7 @@ def test_trusted_host_promotion_rejects_unbound_approval_and_all_placement(
     for response in [first_apply, second_apply]:
         assert response.status_code == 409
         assert response.json()["detail"] == (
-            "trusted-host promotion placement is unavailable during TGB-003"
+            "trusted-host promotion placement is not production-ready"
         )
     assert not settings.trusted_host_staging_root.exists()
     assert diagnostics.status_code == 200
@@ -1519,7 +2252,7 @@ def test_trusted_host_promotion_concurrent_apply_remains_disabled(tmp_path: Path
     assert approve.status_code == 200
     assert [status_code for status_code, _ in responses] == [409, 409]
     assert all(
-        payload["detail"] == "trusted-host promotion placement is unavailable during TGB-003"
+        payload["detail"] == "trusted-host promotion placement is not production-ready"
         for _, payload in responses
     )
     assert not settings.trusted_host_staging_root.exists()
@@ -1586,7 +2319,7 @@ def test_trusted_host_promotion_preserves_existing_destination(
     assert approve.status_code == 200
     assert apply_response.status_code == 409
     assert apply_response.json()["detail"] == (
-        "trusted-host promotion placement is unavailable during TGB-003"
+        "trusted-host promotion placement is not production-ready"
     )
     assert destination.read_text(encoding="utf-8") == "existing output\n"
     assert diagnostics.status_code == 200

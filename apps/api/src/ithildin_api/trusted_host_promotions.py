@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 import sqlite3
 import unicodedata
@@ -48,6 +47,11 @@ from ithildin_api.promotion_authority import (
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError, ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
 from ithildin_api.sandbox_descriptors import SandboxDescriptorError, SandboxDescriptorStore
+from ithildin_api.trusted_host_placement import (
+    TrustedHostPlacement,
+    TrustedHostPlacementError,
+    descriptor_relative_placement_supported,
+)
 from ithildin_api.trusted_host_promotion_v2_migration import initialize_or_migrate_database
 from ithildin_api.trusted_host_registry import (
     TrustedHostDescriptorRegistry,
@@ -404,42 +408,302 @@ class TrustedHostPromotionStore:
     def create_attempt(self, attempt: TrustedHostPromotionAttempt) -> None:
         try:
             with sqlite3.connect(self.db_path) as connection:
-                connection.execute(
-                    """
-                    INSERT INTO trusted_host_promotion_attempts (
-                        attempt_id, approval_id, proposal_id, request_id, workspace_id,
-                        host_staging_label, artifact_sha256, staged_sha256, status,
-                        failure_reason, created_at, updated_at, metadata_json,
-                        record_version, authority_snapshot_hash,
-                        executor_principal_id, executor_principal_generation
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        attempt.attempt_id,
-                        attempt.approval_id,
-                        attempt.proposal_id,
-                        attempt.request_id,
-                        attempt.workspace_id,
-                        attempt.host_staging_label,
-                        attempt.artifact_sha256,
-                        attempt.staged_sha256,
-                        _attempt_storage_status(attempt.status),
-                        attempt.failure_reason,
-                        attempt.created_at,
-                        attempt.updated_at,
-                        canonical_json(attempt.metadata),
-                        attempt.record_version,
-                        attempt.authority_snapshot_hash,
-                        attempt.executor_principal_id,
-                        attempt.executor_principal_generation,
-                    ),
-                )
+                self._insert_attempt(connection, attempt)
                 connection.commit()
         except sqlite3.IntegrityError as exc:
             raise TrustedHostPromotionError(
                 "trusted-host promotion attempt already exists for approval or proposal"
             ) from exc
+
+    def reserve_execution(
+        self,
+        attempt: TrustedHostPromotionAttempt,
+        *,
+        approval_store: ApprovalStore,
+        approval: ApprovalRequest,
+        proposal: TrustedHostPromotionProposal,
+        promotion_request_hash: str,
+    ) -> None:
+        """Atomically reserve the approval, proposal, and single prepared attempt."""
+        if approval_store.db_path != self.db_path:
+            raise TrustedHostPromotionError(
+                "trusted-host execution records are not transactionally co-located"
+            )
+        if (
+            attempt.authority_snapshot_hash is None
+            or attempt.executor_principal_id is None
+            or attempt.executor_principal_generation is None
+            or approval.decision_hash is None
+        ):
+            raise TrustedHostPromotionError("trusted-host execution evidence is incomplete")
+        now = datetime.now(UTC).isoformat()
+        connection = sqlite3.connect(self.db_path, isolation_level=None)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            approval_updated = connection.execute(
+                """
+                UPDATE approvals
+                SET status = 'v2_executing', updated_at = ?,
+                    executor_principal_id = ?, executor_principal_generation = ?
+                WHERE approval_id = ?
+                  AND approval_contract_version = '2'
+                  AND status = 'v2_approved'
+                  AND expires_at > ?
+                  AND request_hash = ?
+                  AND principal_json = ?
+                  AND resource_json = ?
+                  AND one_time_scope_json = ?
+                  AND requester_principal_id = ?
+                  AND requester_principal_generation = ?
+                  AND promotion_authority_hash = ?
+                  AND promotion_request_hash = ?
+                  AND decided_at = ?
+                  AND deciding_principal_id = ?
+                  AND deciding_principal_generation = ?
+                  AND decision_reason_hash = ?
+                  AND decision_hash = ?
+                  AND decision_authority_snapshot_hash = ?
+                """,
+                (
+                    now,
+                    attempt.executor_principal_id,
+                    attempt.executor_principal_generation,
+                    approval.approval_id,
+                    now,
+                    approval.request_hash,
+                    canonical_json(approval.principal),
+                    canonical_json(approval.resource),
+                    canonical_json(approval.one_time_scope),
+                    approval.requester_principal_id,
+                    approval.requester_principal_generation,
+                    attempt.authority_snapshot_hash,
+                    promotion_request_hash,
+                    approval.decided_at.isoformat() if approval.decided_at is not None else None,
+                    approval.deciding_principal_id,
+                    approval.deciding_principal_generation,
+                    approval.decision_reason_hash,
+                    approval.decision_hash,
+                    attempt.authority_snapshot_hash,
+                ),
+            ).rowcount
+            proposal_updated = connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET status = 'v2_executing', updated_at = ?,
+                    executor_principal_id = ?, executor_principal_generation = ?
+                WHERE proposal_id = ?
+                  AND status = 'v2_approval_required'
+                  AND authority_snapshot_hash = ?
+                  AND proposal_hash = ?
+                  AND request_id = ?
+                  AND workspace_id = ?
+                  AND sandbox_descriptor_id = ?
+                  AND sandbox_descriptor_hash = ?
+                  AND sandbox_id = ?
+                  AND source_artifact_label = ?
+                  AND host_staging_label = ?
+                  AND artifact_sha256 = ?
+                  AND artifact_size_bytes = ?
+                  AND artifact_media_label = ?
+                  AND metadata_json = ?
+                  AND authority_snapshot_json = ?
+                  AND requester_principal_id = ?
+                  AND requester_principal_generation = ?
+                  AND executor_principal_id IS NULL
+                  AND executor_principal_generation IS NULL
+                """,
+                (
+                    now,
+                    attempt.executor_principal_id,
+                    attempt.executor_principal_generation,
+                    attempt.proposal_id,
+                    attempt.authority_snapshot_hash,
+                    proposal.proposal_hash,
+                    proposal.request_id,
+                    proposal.workspace_id,
+                    proposal.sandbox_descriptor_id,
+                    proposal.sandbox_descriptor_hash,
+                    proposal.sandbox_id,
+                    proposal.source_artifact_label,
+                    proposal.host_staging_label,
+                    proposal.artifact_sha256,
+                    proposal.artifact_size_bytes,
+                    proposal.artifact_media_label,
+                    canonical_json(proposal.metadata),
+                    canonical_json(proposal.authority_snapshot_json),
+                    proposal.requester_principal_id,
+                    proposal.requester_principal_generation,
+                ),
+            ).rowcount
+            if approval_updated != 1 or proposal_updated != 1:
+                raise TrustedHostPromotionError("proposal_not_applicable")
+            self._insert_attempt(connection, attempt)
+            connection.execute("COMMIT")
+        except TrustedHostPromotionError:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except sqlite3.DatabaseError as exc:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise TrustedHostPromotionError("trusted-host execution reservation failed") from exc
+        finally:
+            connection.close()
+
+    def mark_authority_stale(self, proposal_id: str) -> bool:
+        """Terminally stale only a proposal that has not been reserved."""
+        with sqlite3.connect(self.db_path) as connection:
+            updated = connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET status = 'v2_authority_stale', updated_at = ?
+                WHERE proposal_id = ? AND status = 'v2_approval_required'
+                """,
+                (datetime.now(UTC).isoformat(), proposal_id),
+            ).rowcount
+            connection.commit()
+        return updated == 1
+
+    def record_placement_success(
+        self,
+        attempt_id: str,
+        *,
+        staged_sha256: str,
+    ) -> TrustedHostPromotionAttempt:
+        return self._record_placement_outcome(
+            attempt_id,
+            attempt_status="v2_staged",
+            proposal_status="v2_completion_evidence_pending",
+            approval_status="v2_executed",
+            staged_sha256=staged_sha256,
+            failure_reason=None,
+        )
+
+    def record_placement_failure(
+        self,
+        attempt_id: str,
+        *,
+        reason: str,
+        recovery_required: bool,
+    ) -> TrustedHostPromotionAttempt:
+        return self._record_placement_outcome(
+            attempt_id,
+            attempt_status=(
+                "v2_placement_evidence_recovery_required"
+                if recovery_required
+                else "v2_failed"
+            ),
+            proposal_status=(
+                "v2_placement_evidence_recovery_required"
+                if recovery_required
+                else "v2_failed"
+            ),
+            approval_status="v2_failed",
+            staged_sha256=None,
+            failure_reason=reason,
+        )
+
+    def _record_placement_outcome(
+        self,
+        attempt_id: str,
+        *,
+        attempt_status: str,
+        proposal_status: str,
+        approval_status: str,
+        staged_sha256: str | None,
+        failure_reason: str | None,
+    ) -> TrustedHostPromotionAttempt:
+        now = datetime.now(UTC).isoformat()
+        connection = sqlite3.connect(self.db_path, isolation_level=None)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                """
+                SELECT approval_id, proposal_id
+                FROM trusted_host_promotion_attempts
+                WHERE attempt_id = ? AND status = 'v2_prepared'
+                """,
+                (attempt_id,),
+            ).fetchone()
+            if row is None:
+                raise TrustedHostPromotionError("trusted-host attempt is not prepared")
+            attempt_updated = connection.execute(
+                """
+                UPDATE trusted_host_promotion_attempts
+                SET status = ?, staged_sha256 = ?, failure_reason = ?, updated_at = ?
+                WHERE attempt_id = ? AND status = 'v2_prepared'
+                """,
+                (attempt_status, staged_sha256, failure_reason, now, attempt_id),
+            ).rowcount
+            proposal_updated = connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET status = ?, updated_at = ?
+                WHERE proposal_id = ? AND status = 'v2_executing'
+                """,
+                (proposal_status, now, str(row[1])),
+            ).rowcount
+            approval_updated = connection.execute(
+                """
+                UPDATE approvals
+                SET status = ?, updated_at = ?
+                WHERE approval_id = ? AND status = 'v2_executing'
+                """,
+                (approval_status, now, str(row[0])),
+            ).rowcount
+            if attempt_updated != 1 or proposal_updated != 1 or approval_updated != 1:
+                raise TrustedHostPromotionError("trusted-host placement evidence update failed")
+            connection.execute("COMMIT")
+        except TrustedHostPromotionError:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except sqlite3.DatabaseError as exc:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise TrustedHostPromotionError(
+                "trusted-host placement evidence update failed"
+            ) from exc
+        finally:
+            connection.close()
+        return self.get_attempt(attempt_id)
+
+    @staticmethod
+    def _insert_attempt(
+        connection: sqlite3.Connection,
+        attempt: TrustedHostPromotionAttempt,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO trusted_host_promotion_attempts (
+                attempt_id, approval_id, proposal_id, request_id, workspace_id,
+                host_staging_label, artifact_sha256, staged_sha256, status,
+                failure_reason, created_at, updated_at, metadata_json,
+                record_version, authority_snapshot_hash,
+                executor_principal_id, executor_principal_generation
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                attempt.attempt_id,
+                attempt.approval_id,
+                attempt.proposal_id,
+                attempt.request_id,
+                attempt.workspace_id,
+                attempt.host_staging_label,
+                attempt.artifact_sha256,
+                attempt.staged_sha256,
+                _attempt_storage_status(attempt.status),
+                attempt.failure_reason,
+                attempt.created_at,
+                attempt.updated_at,
+                canonical_json(attempt.metadata),
+                attempt.record_version,
+                attempt.authority_snapshot_hash,
+                attempt.executor_principal_id,
+                attempt.executor_principal_generation,
+            ),
+        )
 
     def get_attempt_for_proposal(
         self,
@@ -543,6 +807,7 @@ class TrustedHostPromotionService:
         runtime_candidate: RuntimeCandidateRecord | None,
         staging_root: Path,
         governance_binding_ready: bool = False,
+        placement_test_fixture_ready: bool = False,
     ) -> None:
         self.store = store
         self.read_executor = read_executor
@@ -556,6 +821,7 @@ class TrustedHostPromotionService:
         self.runtime_candidate = runtime_candidate
         self.staging_root = staging_root
         self.governance_binding_ready = governance_binding_ready
+        self.placement_test_fixture_ready = placement_test_fixture_ready
         self.input_schema_authority = InputSchemaAuthorityRecord(
             schema_id=PROMOTION_INPUT_SCHEMA_ID,
             schema_version=PROMOTION_INPUT_SCHEMA_VERSION,
@@ -1116,38 +1382,204 @@ class TrustedHostPromotionService:
     ) -> JsonObject:
         self._require_governance_binding()
         proposal = self.store.get_proposal(proposal_id)
+        if proposal.status != "approval_required":
+            raise TrustedHostPromotionError("proposal_not_applicable")
         approval = approval_service.get(approval_id)
         review = self.approval_review(
             approval,
             expected_proposal_id=proposal.proposal_id,
         )
         if review["valid"] is not True:
+            if proposal.metadata.get("approval_id") == approval.approval_id:
+                self._terminally_stale(proposal.proposal_id)
             raise TrustedHostPromotionError("trusted-host promotion approval binding review failed")
-        if context.principal_id != "admin:local-ui":
-            raise TrustedHostPromotionError("trusted-host promotion executor is unauthorized")
         try:
             current_context = self._current_requesting_principal(context)
             current_snapshot, _ = self._authority_snapshot(
                 payload=self._payload_from_proposal(proposal),
                 context=current_context,
             )
+            self._require_current_approval_decision(
+                approval,
+                context=current_context,
+                authority_snapshot_hash=current_snapshot.snapshot_hash,
+                approval_store=approval_service.store,
+            )
         except TrustedHostPromotionError as exc:
-            self.store.set_proposal_status(proposal.proposal_id, "authority_stale")
+            self._terminally_stale(proposal.proposal_id)
             raise TrustedHostPromotionError("trusted-host promotion authority is stale") from exc
         if (
             current_snapshot.snapshot_hash != proposal.authority_snapshot_hash
             or current_snapshot.canonical_payload() != proposal.authority_snapshot_json
         ):
-            self.store.set_proposal_status(proposal.proposal_id, "authority_stale")
+            self._terminally_stale(proposal.proposal_id)
             raise TrustedHostPromotionError("trusted-host promotion authority is stale")
-        raise TrustedHostPromotionError(
-            "trusted-host promotion placement is unavailable during TGB-003"
+        if not self.placement_test_fixture_ready:
+            raise TrustedHostPromotionError(
+                "trusted-host promotion placement is not production-ready"
+            )
+        if not descriptor_relative_placement_supported():
+            raise TrustedHostPromotionError("descriptor_relative_placement_unsupported")
+
+        payload = self._payload_from_proposal(proposal)
+        try:
+            source_bytes = _read_source_artifact(
+                self._filesystem(proposal.workspace_id),
+                payload.source_artifact_path,
+            )
+        except TrustedHostPromotionError as exc:
+            self._terminally_stale(proposal.proposal_id)
+            raise TrustedHostPromotionError("trusted-host promotion source is stale") from exc
+        if (
+            len(source_bytes) != proposal.artifact_size_bytes
+            or _sha256_bytes(source_bytes) != proposal.artifact_sha256
+        ):
+            self._terminally_stale(proposal.proposal_id)
+            raise TrustedHostPromotionError("trusted-host promotion source is stale")
+
+        attempt_id = _attempt_id_for_proposal(proposal.proposal_id)
+        now = datetime.now(UTC).isoformat()
+        attempt = TrustedHostPromotionAttempt(
+            attempt_id=attempt_id,
+            approval_id=approval.approval_id,
+            proposal_id=proposal.proposal_id,
+            request_id=proposal.request_id,
+            workspace_id=proposal.workspace_id,
+            host_staging_label=proposal.host_staging_label,
+            artifact_sha256=proposal.artifact_sha256,
+            staged_sha256=None,
+            status="prepared",
+            failure_reason=None,
+            created_at=now,
+            updated_at=now,
+            metadata={
+                "placement_mode": "create_exclusive",
+                "zone": "host_staging",
+                "source_buffer_sha256": proposal.artifact_sha256,
+                "destination_leaf_hash": sha256_digest(
+                    self._destination_leaf(proposal, attempt_id)
+                ),
+            },
+            authority_snapshot_hash=current_snapshot.snapshot_hash,
+            executor_principal_id=current_context.principal_id,
+            executor_principal_generation=current_context.identity_generation,
         )
+        promotion_request_hash = sha256_digest(approval.one_time_scope)
+        try:
+            with TrustedHostPlacement(self.staging_root) as placement:
+                try:
+                    self.store.reserve_execution(
+                        attempt,
+                        approval_store=approval_service.store,
+                        approval=approval,
+                        proposal=proposal,
+                        promotion_request_hash=promotion_request_hash,
+                    )
+                except TrustedHostPromotionError as exc:
+                    if str(exc) == "proposal_not_applicable":
+                        current = self.store.get_proposal(proposal.proposal_id)
+                        became_stale = (
+                            current.status == "approval_required"
+                            and self.store.mark_authority_stale(proposal.proposal_id)
+                        )
+                        if became_stale:
+                            raise TrustedHostPromotionError(
+                                "trusted-host promotion authority is stale"
+                            ) from exc
+                    raise
+                try:
+                    result = placement.place(
+                        source_bytes,
+                        workspace_id=proposal.workspace_id,
+                        proposal_id=proposal.proposal_id,
+                        destination_leaf=self._destination_leaf(proposal, attempt_id),
+                    )
+                except TrustedHostPlacementError as exc:
+                    self.store.record_placement_failure(
+                        attempt_id,
+                        reason=exc.reason,
+                        recovery_required=exc.effect_possible,
+                    )
+                    raise TrustedHostPromotionError(exc.reason) from exc
+        except TrustedHostPlacementError as exc:
+            raise TrustedHostPromotionError(exc.reason) from exc
+
+        try:
+            recorded = self.store.record_placement_success(
+                attempt_id,
+                staged_sha256=result.staged_sha256,
+            )
+        except TrustedHostPromotionError as exc:
+            try:
+                self.store.record_placement_failure(
+                    attempt_id,
+                    reason="placement_evidence_update_failed",
+                    recovery_required=True,
+                )
+            except TrustedHostPromotionError:
+                pass
+            raise TrustedHostPromotionError(
+                "placement_evidence_recovery_required"
+            ) from exc
+        return {
+            "promotion_attempt": recorded.summary(),
+            "proposal_status": "completion_evidence_pending",
+            "completion_claimed": False,
+            "output_policy": _output_policy(),
+        }
+
+    def _require_current_approval_decision(
+        self,
+        approval: ApprovalRequest,
+        *,
+        context: AdminPrincipalContext,
+        authority_snapshot_hash: str,
+        approval_store: ApprovalStore,
+    ) -> None:
+        if (
+            approval.status is not ApprovalStatus.APPROVED
+            or approval.decided_at is None
+            or approval.deciding_principal_id != context.principal_id
+            or approval.deciding_principal_generation != context.identity_generation
+            or approval.decision_reason_hash is None
+            or approval.decision_authority_snapshot_hash != authority_snapshot_hash
+            or approval.decision_hash is None
+        ):
+            raise TrustedHostPromotionError("approval_decision_evidence_mismatch")
+        expected_decision_hash = sha256_digest(
+            {
+                "approval_id": approval.approval_id,
+                "approval_request_hash": approval.request_hash,
+                "decision_status": ApprovalStatus.APPROVED.value,
+                "decided_at": approval.decided_at.isoformat(),
+                "deciding_principal_id": approval.deciding_principal_id,
+                "deciding_principal_generation": approval.deciding_principal_generation,
+                "decision_reason_hash": approval.decision_reason_hash,
+                "decision_authority_snapshot_hash": authority_snapshot_hash,
+            }
+        )
+        if approval.decision_hash != expected_decision_hash:
+            raise TrustedHostPromotionError("approval_decision_evidence_mismatch")
+        try:
+            stored_authority_hash, stored_request_hash = (
+                approval_store.promotion_binding_hashes(approval.approval_id)
+            )
+        except ApprovalError as exc:
+            raise TrustedHostPromotionError("approval_decision_evidence_mismatch") from exc
+        if (
+            stored_authority_hash != authority_snapshot_hash
+            or stored_request_hash != sha256_digest(approval.one_time_scope)
+        ):
+            raise TrustedHostPromotionError("approval_decision_evidence_mismatch")
+
+    def _terminally_stale(self, proposal_id: str) -> None:
+        if not self.store.mark_authority_stale(proposal_id):
+            raise TrustedHostPromotionError("proposal_not_applicable")
 
     def complete_with_evidence(self, attempt_id: str) -> TrustedHostPromotionAttempt:
         self._require_governance_binding()
         raise TrustedHostPromotionError(
-            "trusted-host promotion placement is unavailable during TGB-003"
+            "trusted-host promotion completion evidence is not production-ready"
         )
 
     def diagnostics(self, approval_service: ApprovalService) -> JsonObject:
@@ -1166,7 +1598,10 @@ class TrustedHostPromotionService:
             and approval.status.value == "executing"
         ]
         diagnostic_status = "clean"
-        if any(attempt["status"] == "recovery_required" for attempt in attempts):
+        if any(
+            attempt["status"] == "placement_evidence_recovery_required"
+            for attempt in attempts
+        ):
             diagnostic_status = "recovery_required"
         elif incomplete or stuck_approvals:
             diagnostic_status = "ambiguous"
@@ -1250,14 +1685,11 @@ class TrustedHostPromotionService:
         except KeyError as exc:
             raise TrustedHostPromotionError("unknown workspace") from exc
 
-    def _destination_for(self, proposal: TrustedHostPromotionProposal, attempt_id: str) -> Path:
+    def _destination_leaf(self, proposal: TrustedHostPromotionProposal, attempt_id: str) -> str:
         label_leaf = proposal.host_staging_label.removeprefix("host-staging://")
         if not SAFE_NAME_RE.fullmatch(label_leaf):
             raise TrustedHostPromotionError("host staging label is unsafe")
-        destination_dir = self.staging_root / proposal.workspace_id / proposal.proposal_id
-        destination = destination_dir / f"{attempt_id}-{label_leaf}.artifact"
-        _ensure_under_root(self.staging_root, destination)
-        return destination
+        return f"{attempt_id}-{label_leaf}.artifact"
 
 
 def _proposal_from_row(row: tuple[object, ...]) -> TrustedHostPromotionProposal:
@@ -1420,22 +1852,6 @@ def _read_source_artifact(filesystem: FilesystemReadTools, relative_path: str) -
     return data
 
 
-def _copy_without_overwrite(data: bytes, destination: Path) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    _ensure_under_root(destination.parent.parent.parent, destination)
-    try:
-        fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        try:
-            os.write(fd, data)
-            os.fsync(fd)
-        finally:
-            os.close(fd)
-    except FileExistsError as exc:
-        raise TrustedHostPromotionError("host staging destination already exists") from exc
-    except OSError as exc:
-        raise TrustedHostPromotionError("host staging placement failed") from exc
-
-
 def _safe_relative_path(value: str, *, label: str) -> str:
     _reject_control_or_unnormalized(value, label=label)
     lowered = value.lower()
@@ -1457,13 +1873,6 @@ def _ensure_not_sensitive_label(value: str) -> None:
     sensitive_markers = ("secret", "token", "password", "credential", "private")
     if lowered in sensitive_exact or any(marker in lowered for marker in sensitive_markers):
         raise ValueError("label is hidden or sensitive")
-
-
-def _ensure_under_root(root: Path, path: Path) -> None:
-    try:
-        path.resolve(strict=False).relative_to(root.resolve(strict=False))
-    except ValueError as exc:
-        raise TrustedHostPromotionError("host staging destination escapes staging root") from exc
 
 
 def _reject_control_or_unnormalized(value: str, *, label: str) -> None:

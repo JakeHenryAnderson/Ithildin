@@ -281,6 +281,23 @@ class ApprovalStore:
             raise ApprovalError("trusted-host approval authority binding is unavailable")
         return str(value)
 
+    def promotion_binding_hashes(self, approval_id: str) -> tuple[str, str]:
+        """Return the frozen promotion authority and one-time request bindings."""
+        with sqlite3.connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT tool_name, promotion_authority_hash, promotion_request_hash
+                FROM approvals
+                WHERE approval_id = ?
+                """,
+                (approval_id,),
+            ).fetchone()
+        if row is None:
+            raise ApprovalError(f"approval not found: {approval_id}")
+        if str(row[0]) != TRUSTED_HOST_PROMOTION_TOOL or row[1] is None or row[2] is None:
+            raise ApprovalError("trusted-host approval authority binding is unavailable")
+        return str(row[1]), str(row[2])
+
 
 class ApprovalService:
     def __init__(

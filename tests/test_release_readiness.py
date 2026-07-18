@@ -34250,13 +34250,13 @@ def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
         assert leaked not in transcript_text
 
     for phrase in [
-            "Status: version-2 policy/authority binding slice implemented",
-        "one authority-bound proposal and approval -> placement denied",
+        "Status: version-2 authority binding and descriptor-relative placement slice implemented",
+        "internal test fixture only -> atomic execution reservation",
         "Admin-only `POST /trusted-host-promotions/proposals`",
         "trusted_host.promotion.stage",
         "never a raw host path",
         "does not repair, retry, roll back",
-        "Stale-source, replay-consumption, atomic-placement, and completion",
+        "Concurrent and sequential replay cannot reserve a second",
     ]:
         assert phrase in doc
     for blocked in [

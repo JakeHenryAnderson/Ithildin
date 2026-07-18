@@ -34,10 +34,16 @@ def _format_human(status: dict[str, Any]) -> str:
             f"platform: {platform_status['system']} ({platform_status['profile']})",
             f"python: {status['python']['version']}",
             f"O_NOFOLLOW available: {capabilities['o_no_follow_available']}",
+            f"O_DIRECTORY available: {capabilities.get('o_directory_available', False)}",
+            f"dir_fd open supported: {capabilities.get('dir_fd_open_supported', False)}",
+            f"dir_fd mkdir supported: {capabilities.get('dir_fd_mkdir_supported', False)}",
+            f"dir_fd stat supported: {capabilities.get('dir_fd_stat_supported', False)}",
             f"symlink supported: {capabilities['symlink_supported']}",
             f"hardlink supported: {capabilities['hardlink_supported']}",
             f"temporary filesystem case-sensitive: {capabilities['case_sensitive']}",
             f"local-preview support status: {support['status']}",
+            "descriptor-relative placement supported: "
+            f"{support.get('descriptor_relative_placement_supported', False)}",
             f"reason: {support['reason']}",
         ]
     )

@@ -39,6 +39,8 @@ def test_empty_database_is_created_at_v2_with_minimum_writer(tmp_path: Path) -> 
     assert "v2_pending" in approval_sql
     assert "legacy_unbound" in approval_sql
     assert "authority_snapshot_hash" in proposal_sql
+    assert "v2_executing" in proposal_sql
+    assert "v2_placement_evidence_recovery_required" in proposal_sql
     assert "record_version TEXT NOT NULL" in attempt_sql
 
 

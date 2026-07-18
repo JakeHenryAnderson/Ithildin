@@ -1,7 +1,8 @@
 # Trusted-Host Promotion Runtime Implementation
 
-Status: version-2 policy/authority binding slice implemented; trusted-host placement intentionally
-unavailable pending `TGB-004` through `TGB-006`.
+Status: version-2 authority binding and descriptor-relative placement slice implemented behind an
+explicit internal test fixture; production proposal/apply readiness remains unavailable pending
+`TGB-005` and `TGB-006`.
 
 Current governed tool count: `24`.
 
@@ -14,7 +15,9 @@ make trusted-host-promotion-negative-transcripts
 The current runtime boundary is:
 
 ```text
-one stored sandbox artifact -> one authority-bound proposal and approval -> placement denied with no attempt or filesystem effect
+one stored sandbox artifact -> one authority-bound proposal and approval -> production placement denied
+
+internal test fixture only -> atomic execution reservation -> descriptor-relative create-exclusive staging -> completion evidence pending
 ```
 
 It adds one canonical YAML rule for the internal action, but does not add an MCP tool, governed tool
@@ -66,11 +69,20 @@ approval. OPA is unsupported only for these routes and returns
 `unsupported_policy_engine_for_promotion`; YAML deny, plain allow, incomplete evidence, changed
 authority, duplicate evidence, and unknown obligations fail closed.
 
-Apply performs a no-effect dry-run reconstruction of the complete in-memory authority snapshot.
-Drift terminally marks the proposal `authority_stale`. A matching snapshot still returns a conflict
-before approval consumption, attempt creation, execution audit events, source re-read, or filesystem
-placement. Stale-source, replay-consumption, atomic-placement, and completion-evidence claims remain
-owned by later tickets.
+Apply reconstructs the complete in-memory authority snapshot, verifies the bound approval decision,
+and reopens the source exactly once through the descriptor-bound no-follow reader. Authority,
+approval-decision, or source drift terminally marks the proposal `authority_stale` before execution
+reservation. Production calls still return a conflict before approval consumption, attempt creation,
+or filesystem placement.
+
+An explicit internal test fixture additionally opens and retains the pre-provisioned staging-root
+descriptor. In one SQLite `BEGIN IMMEDIATE` transaction it compare-and-sets the approved approval
+and approval-required proposal to `executing` and inserts exactly one `prepared` attempt. Placement
+then traverses only descriptor-relative, no-follow directory components and creates the leaf with
+`O_CREAT | O_EXCL | O_NOFOLLOW`. It writes, hashes, and flushes through the same descriptor and
+never reopens a path to claim success. Successful staging stops at `completion_evidence_pending`;
+it does not emit or claim completion. Concurrent and sequential replay cannot reserve a second
+attempt or create a second leaf.
 
 ## Output Policy
 
@@ -82,9 +94,15 @@ keys, or secrets.
 ## Placement Fence
 
 The proposal API accepts only a closed `host-staging://` label and never a raw host path. During
-`TGB-003`, the apply route revalidates authority and then stops at the explicit
-placement-unavailable fence. It creates no promotion attempt, emits no tool-execution
-start/completion claim, and writes no staging artifact.
+`TGB-004`, normal runtime calls still stop at the explicit placement-unavailable fence. The internal
+fixture must be selected when constructing a test app and cannot be enabled by an operator request,
+environment toggle, governed tool call, or production route payload.
+
+The internal fixture requires a pre-provisioned staging root and the reviewed `O_DIRECTORY`,
+`O_NOFOLLOW`, and `dir_fd` primitives. It keeps placement Manager-local, one artifact, at most `4096`
+bytes, and create-exclusive. A staging-root namespace change after writing produces terminal
+`placement_evidence_recovery_required`; no completion is claimed and no automatic deletion, retry,
+or repair occurs.
 
 This is authority and downgrade evidence only. It is not staging evidence, a final approved-output
 transfer, custody system, SIEM adapter, sandbox boundary, or compliance automation.
@@ -94,5 +112,6 @@ transfer, custody system, SIEM adapter, sandbox boundary, or compliance automati
 `GET /trusted-host-promotions/diagnostics` is read-only. A verified YAML-bound runtime reports
 `availability: ready` and `placement_available: false`; unreviewed/local, incomplete, invalid
 candidate, or OPA postures retain their bounded unavailable reasons. Diagnostics can still describe
-migrated historical attempts, but current `TGB-003` apply calls create none. It does not repair, retry, roll back,
-complete approvals, delete files, or mutate staged artifacts.
+migrated historical attempts and internal-fixture `prepared`, `staged`, failed, or recovery-required
+attempts. It does not repair, retry, roll back, complete approvals, delete files, or mutate staged
+artifacts.

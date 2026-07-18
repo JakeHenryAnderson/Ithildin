@@ -148,6 +148,7 @@ def create_app(
     *,
     runtime_candidate: RuntimeCandidateRecord | None = None,
     trusted_host_promotion_test_fixture_ready: bool = False,
+    trusted_host_promotion_placement_test_fixture_ready: bool = False,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
@@ -274,6 +275,10 @@ def create_app(
                 staging_root=resolved_settings.trusted_host_staging_root,
                 governance_binding_ready=(
                     trusted_host_promotion_test_fixture_ready or runtime_candidate is not None
+                ),
+                placement_test_fixture_ready=(
+                    trusted_host_promotion_test_fixture_ready
+                    and trusted_host_promotion_placement_test_fixture_ready
                 ),
             )
             app_instance.state.policy_preview_service = PolicyPreviewService(

@@ -27,6 +27,13 @@ def collect_filesystem_contract_status(
         and capabilities["symlink_supported"]
         and capabilities["hardlink_supported"]
     )
+    descriptor_relative_placement_supported = bool(
+        capabilities.get("o_no_follow_available")
+        and capabilities.get("o_directory_available")
+        and capabilities.get("dir_fd_open_supported")
+        and capabilities.get("dir_fd_mkdir_supported")
+        and capabilities.get("dir_fd_stat_supported")
+    )
     local_preview_supported = supported_platform and required_capabilities
 
     if not supported_platform:
@@ -53,6 +60,9 @@ def collect_filesystem_contract_status(
         "support": {
             "status": support_status,
             "local_preview_security_supported": local_preview_supported,
+            "descriptor_relative_placement_supported": (
+                descriptor_relative_placement_supported
+            ),
             "reason": reason,
         },
         "probe": {
@@ -71,6 +81,10 @@ def _probe_capabilities(probe_parent: Path | None) -> dict[str, bool]:
         hardlink_supported = _probe_hardlink(target, root / "target-hardlink.txt")
         return {
             "o_no_follow_available": hasattr(os, "O_NOFOLLOW"),
+            "o_directory_available": hasattr(os, "O_DIRECTORY"),
+            "dir_fd_open_supported": os.open in os.supports_dir_fd,
+            "dir_fd_mkdir_supported": os.mkdir in os.supports_dir_fd,
+            "dir_fd_stat_supported": os.stat in os.supports_dir_fd,
             "symlink_supported": symlink_supported,
             "hardlink_supported": hardlink_supported,
             "case_sensitive": _probe_case_sensitive(root),

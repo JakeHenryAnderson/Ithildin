@@ -38,9 +38,11 @@ LEGACY_PROPOSAL_STATUSES = (
 )
 V2_PROPOSAL_STATUSES = (
     "v2_approval_required",
+    "v2_executing",
     "v2_completion_evidence_pending",
     "v2_approval_evidence_failed",
     "v2_authority_stale",
+    "v2_placement_evidence_recovery_required",
     "v2_failed",
     "v2_completed",
 )

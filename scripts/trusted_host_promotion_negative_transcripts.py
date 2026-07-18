@@ -182,13 +182,10 @@ def _stale_artifact_hash(root: Path) -> ScenarioResult:
     return _scenario(
         "Stale Artifact Hash Denial",
         "source artifact changed after approval",
-        "409 at the TGB-003 placement fence with no staging placement",
+        "409 before reservation with no staging placement",
         response.status_code,
         _reason(response.json()),
-        (
-            "placement is unavailable before source re-read; this TGB-003 transcript "
-            "does not claim stale-hash enforcement"
-        ),
+        "retained source evidence mismatch terminally staled the proposal",
     )
 
 
@@ -252,14 +249,11 @@ def _replayed_approval(root: Path) -> ScenarioResult:
     )
     return _scenario(
         "Replayed Approval Denial",
-        "two apply calls reuse an approved request while placement is disabled",
-        "both calls stop at the TGB-003 placement fence with no staged artifact",
+        "a second apply call reuses the already reserved approval and proposal",
+        "first call stages once; replay returns 409 without another attempt or artifact",
         response.status_code,
         _reason(response.json()),
-        (
-            "placement remains unavailable before approval consumption; this TGB-003 "
-            "transcript does not claim replay-consumption evidence"
-        ),
+        "atomic proposal/approval reservation makes the replay not applicable",
     )
 
 
@@ -300,7 +294,7 @@ def _existing_destination(root: Path) -> ScenarioResult:
         response.status_code,
         _reason(response.json()),
         (
-            "TGB-003 placement fence left the pre-existing fixture unchanged: "
+            "descriptor-relative O_EXCL placement left the pre-existing fixture unchanged: "
             f"{str(preserved).lower()}"
         ),
     )
@@ -331,12 +325,14 @@ def _unsupported_apply_field(root: Path) -> ScenarioResult:
 def _client(root: Path) -> tuple[TestClient, Settings, str]:
     settings = _settings(root)
     settings.workspace_root.mkdir(parents=True)
+    settings.trusted_host_staging_root.mkdir(parents=True)
     settings.workspace_root.joinpath("summary.txt").write_text("original\n", encoding="utf-8")
     client = TestClient(
         create_app(
             settings,
             runtime_candidate=_runtime_candidate(),
             trusted_host_promotion_test_fixture_ready=True,
+            trusted_host_promotion_placement_test_fixture_ready=True,
         )
     )
     client.__enter__()
@@ -350,6 +346,7 @@ def _client(root: Path) -> tuple[TestClient, Settings, str]:
 
 def _settings(root: Path) -> Settings:
     root.mkdir(parents=True)
+    root = root.resolve(strict=True)
     manifest_dir = REPO_ROOT / "tool-manifests"
     policy_path = root / "policy.yaml"
     policy_path.write_text(
@@ -501,8 +498,8 @@ def _render(results: list[ScenarioResult]) -> str:
     )
     return f"""# Trusted-Host Promotion Negative Transcripts
 
-Status: observed local fixture denials for the `TGB-002` authority/persistence slice; placement is
-unavailable.
+Status: observed local internal-fixture denials for the `TGB-004` atomic reservation and
+descriptor-relative placement slice; production proposal/apply readiness remains false.
 
 These transcripts are generated from temporary local API fixtures. They do not use real secrets,
 real customer files, raw host paths, shell execution, Mission Control runtime authority, sandbox

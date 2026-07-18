@@ -89,6 +89,7 @@ REQUIRED_SOURCE_PATHS = [
     "apps/api/src/ithildin_api/registry.py",
     "apps/api/src/ithildin_api/sandbox_descriptors.py",
     "apps/api/src/ithildin_api/trusted_host_promotions.py",
+    "apps/api/src/ithildin_api/trusted_host_placement.py",
     "apps/api/src/ithildin_api/workspaces.py",
     "apps/ui/src/App.tsx",
     "apps/ui/src/App.test.tsx",
@@ -109,6 +110,7 @@ REQUIRED_SOURCE_PATHS = [
     "tests/test_mcp_integration_flow.py",
     "tests/test_identity.py",
     "tests/test_security_regressions.py",
+    "tests/test_trusted_host_placement.py",
     "tests/test_workspaces.py",
 ]
 
@@ -119,7 +121,12 @@ SOURCE_ANCHORS = {
         "class TrustedHostPromotionStore",
         "class TrustedHostPromotionService",
         "def apply_approved(",
-        "def _copy_without_overwrite(",
+        "def reserve_execution(",
+    ],
+    "apps/api/src/ithildin_api/trusted_host_placement.py": [
+        "class TrustedHostPlacement",
+        "def descriptor_relative_placement_supported(",
+        "def _open_or_create_directory(",
     ],
     "apps/api/src/ithildin_api/approvals.py": [
         "class ApprovalStore",
