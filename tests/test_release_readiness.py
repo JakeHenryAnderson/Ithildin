@@ -34317,6 +34317,29 @@ def test_trusted_host_promotion_runtime_source_review_packet_rejects_stale_bindi
         "failures"
     ]
 
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    rebuilt_packet = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
+    rebuilt_gate_evidence = json.loads(
+        output_dir.joinpath(
+            "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert rebuilt_packet["commit"] != stale_commit
+    assert rebuilt_packet["commit_matches_head"] is True
+    assert rebuilt_packet["artifact_hashes_match_files"] is True
+    assert rebuilt_gate_evidence["existing_packet"] == rebuilt_packet
+
 
 def test_trusted_artifact_promotion_operator_demo_is_wired(tmp_path: Path) -> None:
     report = trusted_artifact_promotion_operator_demo.build_check_report(Path.cwd())
