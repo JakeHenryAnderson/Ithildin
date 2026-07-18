@@ -111,9 +111,8 @@ class AuditWriter:
         metadata: Optional[JsonObject] = None,
     ) -> AuditEvent:
         effective_redactions = set(redactions or []) | self.redact_fields
-        prev_event_hash = self._latest_event_hash()
         event_timestamp = timestamp or datetime.now(UTC)
-        event_data = {
+        event_data: dict[str, object] = {
             "event_id": event_id,
             "timestamp": event_timestamp,
             "event_type": event_type,
@@ -129,30 +128,35 @@ class AuditWriter:
             "input_hash": input_hash,
             "redactions": sorted(effective_redactions),
             "metadata": _redact_json(metadata or {}, effective_redactions),
-            "prev_event_hash": prev_event_hash,
         }
-        event_hash = sha256_digest(_json_ready(event_data))
-
+        connection: sqlite3.Connection | None = None
         try:
-            event = AuditEvent.model_validate({**event_data, "event_hash": event_hash})
+            self.jsonl_path.parent.mkdir(parents=True, exist_ok=True)
+            connection = sqlite3.connect(self.db_path, isolation_level=None)
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT event_hash FROM audit_events ORDER BY rowid DESC LIMIT 1"
+            ).fetchone()
+            prev_event_hash = GENESIS_HASH if row is None else str(row[0])
+            chained_event_data = {**event_data, "prev_event_hash": prev_event_hash}
+            event_hash = sha256_digest(_json_ready(chained_event_data))
+            event = AuditEvent.model_validate(
+                {**chained_event_data, "event_hash": event_hash}
+            )
+            self._persist_event(connection, event)
+            connection.execute("COMMIT")
         except ValidationError as exc:
+            if connection is not None and connection.in_transaction:
+                connection.execute("ROLLBACK")
             raise AuditWriteError("invalid audit event") from exc
-
-        self._persist_event(event)
+        except (OSError, sqlite3.Error) as exc:
+            if connection is not None and connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise AuditWriteError("failed to write audit event") from exc
+        finally:
+            if connection is not None:
+                connection.close()
         return event
-
-    def _latest_event_hash(self) -> str:
-        try:
-            with sqlite3.connect(self.db_path) as connection:
-                row = connection.execute(
-                    "SELECT event_hash FROM audit_events ORDER BY rowid DESC LIMIT 1"
-                ).fetchone()
-        except sqlite3.Error as exc:
-            raise AuditWriteError("failed to read audit hash chain") from exc
-
-        if row is None:
-            return GENESIS_HASH
-        return str(row[0])
 
     def list_events(
         self,
@@ -413,42 +417,34 @@ class AuditWriter:
         except sqlite3.Error as exc:
             raise AuditWriteError("failed to count audit events") from exc
 
-    def _persist_event(self, event: AuditEvent) -> None:
+    def _persist_event(self, connection: sqlite3.Connection, event: AuditEvent) -> None:
         payload = event.model_dump(mode="json")
         payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-
-        try:
-            self.jsonl_path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(self.db_path) as connection:
-                connection.execute("BEGIN")
-                connection.execute(
-                    """
-                    INSERT INTO audit_events (
-                        event_id,
-                        timestamp,
-                        event_type,
-                        request_id,
-                        prev_event_hash,
-                        event_hash,
-                        payload_json
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        event.event_id,
-                        event.timestamp.isoformat(),
-                        event.event_type.value,
-                        event.request_id,
-                        event.prev_event_hash,
-                        event.event_hash,
-                        payload_json,
-                    ),
-                )
-                with self.jsonl_path.open("a", encoding="utf-8") as jsonl_file:
-                    jsonl_file.write(payload_json + "\n")
-                connection.commit()
-        except (OSError, sqlite3.Error) as exc:
-            raise AuditWriteError("failed to write audit event") from exc
+        connection.execute(
+            """
+            INSERT INTO audit_events (
+                event_id,
+                timestamp,
+                event_type,
+                request_id,
+                prev_event_hash,
+                event_hash,
+                payload_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                event.event_id,
+                event.timestamp.isoformat(),
+                event.event_type.value,
+                event.request_id,
+                event.prev_event_hash,
+                event.event_hash,
+                payload_json,
+            ),
+        )
+        with self.jsonl_path.open("a", encoding="utf-8") as jsonl_file:
+            jsonl_file.write(payload_json + "\n")
 
 
 def _redact_json(value: JsonObject, redact_fields: set[str]) -> JsonObject:

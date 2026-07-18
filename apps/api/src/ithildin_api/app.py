@@ -267,15 +267,20 @@ def create_app(
                 descriptor_store=sandbox_descriptor_store,
                 policy_engine=policy_evaluator,
                 workspace_registry=workspace_registry,
+                workspace_registry_verified=resolved_settings.require_known_workspaces,
                 principal_registry=principal_registry,
+                principal_registry_verified=resolved_settings.require_known_principals,
                 tool_registry=registry,
                 manifest_lock_path=resolved_settings.manifest_lock_path,
+                manifest_lock_verified=resolved_settings.require_manifest_lock,
                 trusted_host_registry=trusted_host_registry,
+                audit_writer=audit_writer,
                 runtime_candidate=runtime_candidate,
                 staging_root=resolved_settings.trusted_host_staging_root,
                 governance_binding_ready=(
                     trusted_host_promotion_test_fixture_ready or runtime_candidate is not None
                 ),
+                governance_test_fixture_ready=trusted_host_promotion_test_fixture_ready,
                 placement_test_fixture_ready=(
                     trusted_host_promotion_test_fixture_ready
                     and trusted_host_promotion_placement_test_fixture_ready
@@ -1442,9 +1447,15 @@ def create_app(
             TrustedHostPromotionStore,
             api.state.trusted_host_promotion_store,
         )
+        promotion_service = cast(
+            TrustedHostPromotionService,
+            api.state.trusted_host_promotion_service,
+        )
+        approval_service = cast(ApprovalService, api.state.approval_service)
         return {
             "promotion_proposals": [
-                proposal.summary() for proposal in promotion_store.list_proposals()
+                promotion_service.proposal_review(proposal, approval_service)
+                for proposal in promotion_store.list_proposals()
             ],
             "output_policy": {
                 "file_contents_included": False,
@@ -1466,8 +1477,16 @@ def create_app(
             TrustedHostPromotionStore,
             api.state.trusted_host_promotion_store,
         )
+        promotion_service = cast(
+            TrustedHostPromotionService,
+            api.state.trusted_host_promotion_service,
+        )
+        approval_service = cast(ApprovalService, api.state.approval_service)
         try:
-            return promotion_store.get_proposal(proposal_id).summary()
+            return promotion_service.proposal_review(
+                promotion_store.get_proposal(proposal_id),
+                approval_service,
+            )
         except TrustedHostPromotionError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -1624,9 +1643,17 @@ def create_app(
         return patch_service.patch_apply_diagnostics(approval_service)
 
     @api.get("/approvals", dependencies=[Depends(require_admin_token)])
-    def list_approvals(status: Optional[ApprovalStatus] = None) -> dict[str, list[ApprovalRequest]]:
+    def list_approvals(status: Optional[ApprovalStatus] = None) -> JsonObject:
         approval_service = cast(ApprovalService, api.state.approval_service)
-        return {"approvals": approval_service.list(status=status)}
+        return {
+            "approvals": cast(
+                JsonValue,
+                [
+                    _safe_approval_response(approval)
+                    for approval in approval_service.list(status=status)
+                ],
+            )
+        }
 
     @api.get("/approvals/review", dependencies=[Depends(require_admin_token)])
     def list_approval_reviews(status: Optional[ApprovalStatus] = None) -> JsonObject:
@@ -1634,8 +1661,8 @@ def create_app(
         return {
             "approvals": [
                 {
-                    "approval": approval.model_dump(mode="json"),
-                    "review": _patch_apply_approval_review(api, approval),
+                    "approval": _safe_approval_response(approval),
+                    "review": _approval_review(api, approval),
                 }
                 for approval in approval_service.list(status=status)
             ]
@@ -1645,39 +1672,41 @@ def create_app(
     def create_approval(
         payload: CreateApprovalPayload,
         context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
-    ) -> ApprovalRequest:
+    ) -> JsonObject:
         if payload.tool_name == TRUSTED_HOST_PROMOTION_TOOL:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="trusted-host approvals must originate from a bound proposal",
             )
         approval_service = cast(ApprovalService, api.state.approval_service)
-        return approval_service.create_pending(
-            CreateApprovalInput(
-                principal=payload.principal,
-                tool_name=payload.tool_name,
-                resource=payload.resource,
-                summary=payload.summary,
-                one_time_scope=payload.one_time_scope,
-                request_id=payload.request_id,
-                request_hash=payload.request_hash,
-                expires_at=payload.expires_at,
-                metadata=payload.metadata,
-                requester_context=context,
+        return _safe_approval_response(
+            approval_service.create_pending(
+                CreateApprovalInput(
+                    principal=payload.principal,
+                    tool_name=payload.tool_name,
+                    resource=payload.resource,
+                    summary=payload.summary,
+                    one_time_scope=payload.one_time_scope,
+                    request_id=payload.request_id,
+                    request_hash=payload.request_hash,
+                    expires_at=payload.expires_at,
+                    metadata=payload.metadata,
+                    requester_context=context,
+                )
             )
         )
 
     @api.get("/approvals/{approval_id}", dependencies=[Depends(require_admin_token)])
-    def get_approval(approval_id: str) -> ApprovalRequest:
+    def get_approval(approval_id: str) -> JsonObject:
         approval_service = cast(ApprovalService, api.state.approval_service)
-        return _approval_or_404(approval_service, approval_id)
+        return _safe_approval_response(_approval_or_404(approval_service, approval_id))
 
     @api.post("/approvals/{approval_id}/approve")
     def approve_approval(
         approval_id: str,
         payload: ApprovalDecisionPayload,
         context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
-    ) -> ApprovalRequest:
+    ) -> JsonObject:
         _require_route_decision(payload.decision, ApprovalDecisionValue.APPROVE)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
@@ -1702,10 +1731,12 @@ def create_app(
                     raise ApprovalError(
                         "trusted-host promotion approval binding review failed"
                     )
-            return approval_service.approve(
-                approval_id,
-                context=context,
-                reason=payload.reason,
+            return _safe_approval_response(
+                approval_service.approve(
+                    approval_id,
+                    context=context,
+                    reason=payload.reason,
+                )
             )
         except ApprovalError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
@@ -1715,14 +1746,16 @@ def create_app(
         approval_id: str,
         payload: ApprovalDecisionPayload,
         context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
-    ) -> ApprovalRequest:
+    ) -> JsonObject:
         _require_route_decision(payload.decision, ApprovalDecisionValue.DENY)
         approval_service = cast(ApprovalService, api.state.approval_service)
         try:
-            return approval_service.deny(
-                approval_id,
-                context=context,
-                reason=payload.reason,
+            return _safe_approval_response(
+                approval_service.deny(
+                    approval_id,
+                    context=context,
+                    reason=payload.reason,
+                )
             )
         except ApprovalError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
@@ -1887,6 +1920,12 @@ def _patch_apply_approval_review(api: FastAPI, approval: ApprovalRequest) -> Jso
         expected_matched_rules=_approval_expected_matched_rules(approval),
         expected_principal=approval.principal,
     )
+
+
+def _approval_review(api: FastAPI, approval: ApprovalRequest) -> JsonObject:
+    if approval.tool_name == TRUSTED_HOST_PROMOTION_TOOL:
+        return _trusted_host_promotion_approval_review(api, approval)
+    return _patch_apply_approval_review(api, approval)
 
 
 def _trusted_host_promotion_approval_review(
@@ -2148,6 +2187,22 @@ class PolicyPreviewPayload(BaseModel):
 
 class PolicyImpactPreviewPayload(BaseModel):
     candidate_policy_yaml: str
+
+
+def _safe_approval_response(approval: ApprovalRequest) -> JsonObject:
+    payload = cast(JsonObject, approval.model_dump(mode="json"))
+    if approval.tool_name != TRUSTED_HOST_PROMOTION_TOOL:
+        return payload
+    for field in ("resource", "one_time_scope"):
+        value = payload.get(field)
+        if not isinstance(value, dict):
+            continue
+        sanitized = cast(JsonObject, dict(value))
+        source_label = sanitized.pop("source_artifact_label", None)
+        if isinstance(source_label, str):
+            sanitized["source_artifact_reference_hash"] = sha256_digest(source_label)
+        payload[field] = sanitized
+    return payload
 
 
 def _approval_or_404(approval_service: ApprovalService, approval_id: str) -> ApprovalRequest:

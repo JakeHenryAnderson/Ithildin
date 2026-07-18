@@ -66,3 +66,38 @@ No actionable findings were recorded in this pass.
 - Keep capability expansion blocked unless the source-review bundle returns no blocking findings.
 - Defer approved-output publishing, Mission Control runtime integration, sandbox orchestration,
   SIEM adapter behavior, and compliance mapping runtime to separate milestones.
+
+## TGB-005 Follow-Up Trust Review
+
+Review date: 2026-07-18.
+
+Reviewer: Codex Sol xhigh read-only trust review.
+
+Reviewed scope included the version-3 migration, trusted-host approval dispatch, proposal/apply and
+diagnostic responses, production-readiness construction, completion audit ordering and concurrency,
+Command Center evidence rendering, accessibility behavior, redaction tests, and the final worktree
+validation results.
+
+Disposition: pass for the `TGB-005` implementation candidate. No unresolved critical, high, or
+claim-affecting-medium finding remains. The review does not constitute the independent external
+source review required by `TGB-006` and does not authorize broader capability or product claims.
+
+Remediated findings:
+
+- trusted-host approval review now uses its own binding-aware reviewer instead of patch review;
+- audit-chain head selection and persistence are serialized under one SQLite write transaction;
+- production readiness independently verifies the candidate, detached authorization, database,
+  YAML policy, enforced registries, 24-tool manifest lock, input schema, placement primitives,
+  staging-root descriptor, and disabled internal fixtures;
+- malformed authority evidence and migrated legacy recovery records fail safely into operator
+  review states;
+- denied, expired, and superseded approvals use server-derived effective states and the Command
+  Center states that approval closed without placement;
+- schema-2-to-schema-3 table copies use explicit columns; and
+- Evidence navigation has visible programmatic focus with semantic, non-color-only state text.
+
+One nonblocking low advisory remains: Command Center currently fetches the proposal list and
+diagnostics separately, so a lifecycle transition between those responses can briefly show two
+different Gateway snapshots until refresh. Both surfaces remain server-returned Gateway truth. A
+future bounded cleanup may consume the proposal list embedded in the diagnostics response to render
+one snapshot.

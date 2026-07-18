@@ -24,7 +24,7 @@ BASELINE_PROMOTIONS_SHA256 = (
 )
 
 
-def test_empty_database_is_created_at_v2_with_minimum_writer(tmp_path: Path) -> None:
+def test_empty_database_is_created_with_v2_contract_and_current_writer(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
 
     initialize_database(db_path)
@@ -34,8 +34,8 @@ def test_empty_database_is_created_at_v2_with_minimum_writer(tmp_path: Path) -> 
         approval_sql = _table_sql(connection, "approvals")
         proposal_sql = _table_sql(connection, "trusted_host_promotion_proposals")
         attempt_sql = _table_sql(connection, "trusted_host_promotion_attempts")
-    assert metadata["schema_version"] == "2"
-    assert metadata["minimum_writer_version"] == "2"
+    assert metadata["schema_version"] == "3"
+    assert metadata["minimum_writer_version"] == "3"
     assert "v2_pending" in approval_sql
     assert "legacy_unbound" in approval_sql
     assert "authority_snapshot_hash" in proposal_sql
@@ -79,8 +79,8 @@ def test_legacy_rows_migrate_atomically_without_synthesized_authority(tmp_path: 
     assert "legacy-user" in str(approval[5])
     assert proposal == ("thp_v1", "legacy_unbound", None, None, None)
     assert attempt == ("thpa_v1", "legacy_prepared", "1", None)
-    assert metadata["schema_version"] == "2"
-    assert metadata["minimum_writer_version"] == "2"
+    assert metadata["schema_version"] == "3"
+    assert metadata["minimum_writer_version"] == "3"
 
 
 def test_legacy_terminal_rows_remain_readable_with_closed_statuses(tmp_path: Path) -> None:
@@ -105,6 +105,28 @@ def test_legacy_terminal_rows_remain_readable_with_closed_statuses(tmp_path: Pat
     assert approval_status == ("legacy_executed",)
     assert proposal_status == ("legacy_completed",)
     assert attempt_status == ("legacy_completed",)
+
+
+def test_legacy_recovery_evidence_remains_explicit_after_migration(tmp_path: Path) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    _create_v1_fixture(
+        db_path,
+        proposal_status="failed",
+        attempt_status="recovery_required",
+    )
+
+    initialize_database(db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        proposal_status = connection.execute(
+            "SELECT status FROM trusted_host_promotion_proposals"
+        ).fetchone()
+        attempt_status = connection.execute(
+            "SELECT status FROM trusted_host_promotion_attempts"
+        ).fetchone()
+
+    assert proposal_status == ("legacy_failed",)
+    assert attempt_status == ("legacy_recovery_required",)
 
 
 def test_migrated_legacy_approval_is_readable_but_service_immutable(tmp_path: Path) -> None:
@@ -148,9 +170,67 @@ def test_restart_is_idempotent_and_preserves_v2_rows(tmp_path: Path) -> None:
     assert row == ("appr_v2", "v2_pending", "2")
 
 
+def test_schema_two_constraint_upgrade_is_atomic_and_preserves_rows(tmp_path: Path) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    initialize_database(db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_v2_generic_approval(connection)
+        _make_schema_two_constraint_fixture(connection)
+        connection.commit()
+
+    initialize_database(db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
+        proposal_sql = _table_sql(connection, "trusted_host_promotion_proposals")
+        approval = connection.execute(
+            "SELECT approval_id, status, approval_contract_version FROM approvals"
+        ).fetchone()
+    assert metadata["schema_version"] == "3"
+    assert metadata["minimum_writer_version"] == "3"
+    assert "v2_executing" in proposal_sql
+    assert "v2_placement_evidence_recovery_required" in proposal_sql
+    assert approval == ("appr_v2", "v2_pending", "2")
+
+
+def test_interrupted_schema_two_constraint_upgrade_rolls_back(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    initialize_database(db_path)
+    with sqlite3.connect(db_path) as connection:
+        _make_schema_two_constraint_fixture(connection)
+        connection.commit()
+
+    def interrupt(_: sqlite3.Connection) -> None:
+        raise sqlite3.OperationalError("simulated v2 constraint upgrade interruption")
+
+    monkeypatch.setattr(migration, "_create_v2_tables", interrupt)
+    with pytest.raises(sqlite3.OperationalError, match="constraint upgrade interruption"):
+        initialize_database(db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        tables = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+        metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
+        proposal_sql = _table_sql(connection, "trusted_host_promotion_proposals")
+    assert "approvals_v2" not in tables
+    assert "trusted_host_promotion_proposals_v2" not in tables
+    assert "trusted_host_promotion_attempts_v2" not in tables
+    assert metadata["schema_version"] == "2"
+    assert metadata["minimum_writer_version"] == "2"
+    assert "v2_executing" not in proposal_sql
+    assert "v2_placement_evidence_recovery_required" not in proposal_sql
+
+
 @pytest.mark.parametrize(
     ("key", "value"),
-    [("schema_version", "3"), ("minimum_writer_version", "3")],
+    [("schema_version", "4"), ("minimum_writer_version", "4")],
 )
 def test_newer_database_or_minimum_writer_is_rejected(
     tmp_path: Path,
@@ -464,6 +544,34 @@ def _old_attempt_insert(connection: sqlite3.Connection) -> None:
             '2026-01-01T00:00:00+00:00', '2026-01-01T00:00:00+00:00', '{}')
         """,
         ("sha256:" + ("3" * 64),),
+    )
+
+
+def _make_schema_two_constraint_fixture(connection: sqlite3.Connection) -> None:
+    proposal_sql = _table_sql(connection, "trusted_host_promotion_proposals")
+    schema_two_sql = (
+        proposal_sql.replace(", 'v2_executing'", "")
+        .replace(", 'v2_placement_evidence_recovery_required'", "")
+        .replace(
+            "CREATE TABLE trusted_host_promotion_proposals",
+            "CREATE TABLE trusted_host_promotion_proposals_schema2",
+            1,
+        )
+    )
+    connection.execute("DROP INDEX promotion_authority_hash_idx")
+    connection.execute(schema_two_sql)
+    connection.execute("DROP TABLE trusted_host_promotion_proposals")
+    connection.execute(
+        "ALTER TABLE trusted_host_promotion_proposals_schema2 "
+        "RENAME TO trusted_host_promotion_proposals"
+    )
+    connection.execute(
+        "CREATE INDEX promotion_authority_hash_idx ON "
+        "trusted_host_promotion_proposals(authority_snapshot_hash)"
+    )
+    connection.execute(
+        "UPDATE app_metadata SET value = '2' "
+        "WHERE key IN ('schema_version', 'minimum_writer_version')"
     )
 
 

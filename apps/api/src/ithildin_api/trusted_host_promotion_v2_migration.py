@@ -5,10 +5,87 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-DATABASE_SCHEMA_VERSION = "2"
-MINIMUM_WRITER_VERSION = "2"
+DATABASE_SCHEMA_VERSION = "3"
+MINIMUM_WRITER_VERSION = "3"
 APPROVAL_CONTRACT_VERSION = "2"
 PROMOTION_AUTHORITY_SCHEMA_VERSION = "1"
+
+V2_TABLE_COLUMNS = {
+    "approvals": (
+        "approval_id",
+        "request_id",
+        "request_hash",
+        "principal_json",
+        "tool_name",
+        "resource_json",
+        "status",
+        "summary",
+        "expires_at",
+        "one_time_scope_json",
+        "metadata_json",
+        "created_at",
+        "updated_at",
+        "approval_contract_version",
+        "requester_principal_id",
+        "requester_principal_generation",
+        "promotion_authority_hash",
+        "promotion_request_hash",
+        "decided_at",
+        "deciding_principal_id",
+        "deciding_principal_generation",
+        "decision_reason",
+        "decision_reason_hash",
+        "decision_authority_snapshot_hash",
+        "decision_hash",
+        "executor_principal_id",
+        "executor_principal_generation",
+        "legacy_decision_json",
+    ),
+    "trusted_host_promotion_proposals": (
+        "proposal_id",
+        "request_id",
+        "status",
+        "created_at",
+        "updated_at",
+        "workspace_id",
+        "sandbox_descriptor_id",
+        "sandbox_descriptor_hash",
+        "sandbox_id",
+        "source_artifact_label",
+        "host_staging_label",
+        "artifact_sha256",
+        "artifact_size_bytes",
+        "artifact_media_label",
+        "proposal_hash",
+        "metadata_json",
+        "authority_schema_version",
+        "authority_snapshot_json",
+        "authority_snapshot_hash",
+        "requester_principal_id",
+        "requester_principal_generation",
+        "executor_principal_id",
+        "executor_principal_generation",
+    ),
+    "trusted_host_promotion_attempts": (
+        "attempt_id",
+        "approval_id",
+        "proposal_id",
+        "request_id",
+        "workspace_id",
+        "host_staging_label",
+        "artifact_sha256",
+        "staged_sha256",
+        "status",
+        "failure_reason",
+        "created_at",
+        "updated_at",
+        "metadata_json",
+        "record_version",
+        "authority_snapshot_hash",
+        "executor_principal_id",
+        "executor_principal_generation",
+    ),
+}
 
 TRUSTED_HOST_PROMOTION_TOOL = "trusted_host.promotion.stage"
 
@@ -81,6 +158,9 @@ def initialize_or_migrate_database(db_path: Path) -> None:
 
         if current == DATABASE_SCHEMA_VERSION:
             _verify_v2_schema(connection)
+        elif current == "2":
+            _verify_v2_schema(connection, require_placement_states=False)
+            _migrate_v2_to_v3(connection)
         elif current in {None, "0", "1"}:
             _migrate_tables(connection)
         else:  # pragma: no cover - guarded above, retained as a fail-closed fence
@@ -99,7 +179,7 @@ def initialize_or_migrate_database(db_path: Path) -> None:
 
 
 def verify_database_v2(db_path: Path) -> None:
-    """Reject use of a store before the coordinated migration has completed."""
+    """Reject use before the coordinated v2 contract is on the current writer schema."""
 
     try:
         with sqlite3.connect(db_path) as connection:
@@ -107,7 +187,7 @@ def verify_database_v2(db_path: Path) -> None:
             minimum_writer = _metadata_value(connection, "minimum_writer_version")
             _validate_version_metadata(current=current, minimum_writer=minimum_writer)
             if current != DATABASE_SCHEMA_VERSION or minimum_writer != MINIMUM_WRITER_VERSION:
-                raise DatabaseMigrationError("database v2 migration has not completed")
+                raise DatabaseMigrationError("database v2 contract migration has not completed")
             _verify_v2_schema(connection)
     except sqlite3.DatabaseError as exc:
         raise DatabaseMigrationError("database v2 schema verification failed") from exc
@@ -241,6 +321,29 @@ def _migrate_tables(connection: sqlite3.Connection) -> None:
             """
         )
         connection.execute("DROP TABLE trusted_host_promotion_attempts_v1")
+
+
+def _migrate_v2_to_v3(connection: sqlite3.Connection) -> None:
+    """Rebuild the closed v2 status constraints for placement and recovery states."""
+
+    connection.execute("DROP INDEX IF EXISTS approvals_status_updated_idx")
+    connection.execute("DROP INDEX IF EXISTS promotion_authority_hash_idx")
+    for table in (
+        "approvals",
+        "trusted_host_promotion_proposals",
+        "trusted_host_promotion_attempts",
+    ):
+        connection.execute(f"ALTER TABLE {table} RENAME TO {table}_v2")
+
+    _create_v2_tables(connection)
+
+    for table, columns in V2_TABLE_COLUMNS.items():
+        column_list = ", ".join(columns)
+        connection.execute(
+            f"INSERT INTO {table} ({column_list}) "
+            f"SELECT {column_list} FROM {table}_v2"
+        )
+        connection.execute(f"DROP TABLE {table}_v2")
 
 
 def _create_v2_tables(connection: sqlite3.Connection) -> None:
@@ -435,7 +538,11 @@ def _create_v2_tables(connection: sqlite3.Connection) -> None:
     )
 
 
-def _verify_v2_schema(connection: sqlite3.Connection) -> None:
+def _verify_v2_schema(
+    connection: sqlite3.Connection,
+    *,
+    require_placement_states: bool = True,
+) -> None:
     required = {
         "approvals": {
             "approval_contract_version",
@@ -482,6 +589,15 @@ def _verify_v2_schema(connection: sqlite3.Connection) -> None:
             "status IN ('legacy_prepared'",
         },
     }
+    if require_placement_states:
+        required_schema_fragments["trusted_host_promotion_proposals"].update(
+            {
+                "v2_executing",
+                "v2_completion_evidence_pending",
+                "v2_placement_evidence_recovery_required",
+                "v2_completed",
+            }
+        )
     for table, expected_fragments in required_schema_fragments.items():
         row = connection.execute(
             "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",

@@ -4,8 +4,10 @@ import base64
 import hashlib
 import json
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Barrier
 from typing import Any, cast
 
 import pytest
@@ -116,6 +118,36 @@ def test_audit_writer_hash_chain_links_events(tmp_path: Path) -> None:
 
     assert first.prev_event_hash == "sha256:" + ("0" * 64)
     assert second.prev_event_hash == first.event_hash
+
+
+def test_audit_writer_serializes_concurrent_chain_appends(tmp_path: Path) -> None:
+    writer = make_writer(tmp_path)
+    writer_count = 16
+    barrier = Barrier(writer_count)
+
+    def write_one(index: int) -> str:
+        barrier.wait()
+        event = writer.write_event(
+            event_id=f"evt_{index}",
+            timestamp=NOW,
+            event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+            request_id=f"req_{index}",
+            principal={"id": f"agent:{index}"},
+        )
+        return event.event_hash
+
+    with ThreadPoolExecutor(max_workers=writer_count) as executor:
+        hashes = list(executor.map(write_one, range(writer_count)))
+
+    verification = writer.verify_chain()
+    diagnostics = writer.diagnostics()
+
+    assert len(set(hashes)) == writer_count
+    assert verification.valid is True
+    assert verification.event_count == writer_count
+    assert diagnostics["sqlite_event_count"] == writer_count
+    assert diagnostics["jsonl_line_count"] == writer_count
+    assert diagnostics["jsonl_head_hash"] == verification.head_hash
 
 
 def test_audit_writer_verifies_valid_multi_event_chain(tmp_path: Path) -> None:

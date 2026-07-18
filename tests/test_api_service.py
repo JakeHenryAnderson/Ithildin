@@ -92,12 +92,25 @@ def runtime_candidate_fixture() -> RuntimeCandidateRecord:
     )
 
 
-def promotion_ready_app(settings: Settings, *, placement_ready: bool = False) -> Any:
+def promotion_ready_app(
+    settings: Settings,
+    *,
+    placement_ready: bool = False,
+    test_fixture_ready: bool = True,
+    manifest_lock_required: bool = True,
+    principal_registry_required: bool = True,
+    workspace_registry_required: bool = True,
+    workspace_registry_path: Path | None = None,
+) -> Any:
     settings.manifest_dir = Path("tool-manifests").resolve()
     settings.manifest_lock_path = Path("tool-manifests.lock.json").resolve()
-    settings.require_manifest_lock = True
+    settings.require_manifest_lock = manifest_lock_required
     settings.trusted_host_registry_path = Path("trusted-hosts/local.yaml").resolve()
     settings.principal_registry_path = Path("principals/local.yaml").resolve()
+    settings.require_known_principals = principal_registry_required
+    if workspace_registry_path is not None:
+        settings.workspace_registry_path = workspace_registry_path
+    settings.require_known_workspaces = workspace_registry_required
     settings.policy_path.write_text(
         """
 version: promotion-test-v1
@@ -121,8 +134,10 @@ rules:
     return create_app(
         settings,
         runtime_candidate=runtime_candidate_fixture(),
-        trusted_host_promotion_test_fixture_ready=True,
-        trusted_host_promotion_placement_test_fixture_ready=placement_ready,
+        trusted_host_promotion_test_fixture_ready=test_fixture_ready,
+        trusted_host_promotion_placement_test_fixture_ready=(
+            test_fixture_ready and placement_ready
+        ),
     )
 
 
@@ -810,9 +825,21 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
             f"/approvals/{approval_id}",
             headers={"Authorization": "Bearer correct-token"},
         )
+        pending_detail = client.get(
+            f"/trusted-host-promotions/proposals/{proposal_payload['promotion_proposal_id']}",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        pending_approval_reviews = client.get(
+            "/approvals/review?status=pending",
+            headers={"Authorization": "Bearer correct-token"},
+        )
         approve_response = client.post(
             f"/approvals/{approval_id}/approve",
             json={"decision": "approve"},
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        decided_detail = client.get(
+            f"/trusted-host-promotions/proposals/{proposal_payload['promotion_proposal_id']}",
             headers={"Authorization": "Bearer correct-token"},
         )
         apply_response = client.post(
@@ -846,15 +873,34 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
     assert proposal_response.status_code == 200
     assert proposal_payload["promotion_proposal_id"].startswith("thp_")
     assert proposal_payload["status"] == "approval_required"
-    assert proposal_payload["source_artifact_label"] == "sandbox://sandbox-demo/summary.txt"
+    assert proposal_payload["source_artifact_reference_hash"] == sha256_digest(
+        "sandbox://sandbox-demo/summary.txt"
+    )
+    assert "source_artifact_label" not in proposal_payload
     assert proposal_payload["host_staging_label"] == "host-staging://artifact"
     assert proposal_payload["artifact_sha256"].startswith("sha256:")
     assert proposal_payload["artifact_size_bytes"] == len(b"Hello World\n")
+    authority = proposal_payload["authority_evidence"]
+    assert authority["status"] == "bound"
+    assert authority["requester"]["principal_id"] == "admin:local-ui"
+    assert authority["trusted_host"]["descriptor_hash"].startswith("sha256:")
+    assert authority["policy"]["policy_digest"].startswith("sha256:")
+    assert authority["manifest"] == {
+        "lock_version": "1",
+        "lock_digest": authority["manifest"]["lock_digest"],
+        "tool_count": 24,
+    }
+    assert authority["input_schema"]["schema_version"] == "2"
+    assert authority["runtime_candidate"]["candidate_id"].startswith("sha256:")
     assert proposal_payload["output_policy"]["file_contents_included"] is False
     assert "Hello World" not in proposal_response.text
     assert settings.workspace_root.as_posix() not in proposal_response.text
     assert approval_response.status_code == 200
     approval_scope = approval_response.json()["one_time_scope"]
+    assert approval_scope["source_artifact_reference_hash"] == sha256_digest(
+        "sandbox://sandbox-demo/summary.txt"
+    )
+    assert "source_artifact_label" not in approval_scope
     assert approval_scope["authority_snapshot_hash"] == proposal_payload["authority_snapshot_hash"]
     assert approval_scope["policy_decision"] == "require_approval"
     assert approval_scope["policy_matched_rules"] == [
@@ -871,6 +917,16 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
     assert approval_scope["input_schema_version"] == "2"
     assert approval_scope["runtime_candidate_posture"] == "reviewed"
     assert approval_scope["required_approver_roles"] == ["Admin", "Approver"]
+    assert pending_detail.json()["effective_status"] == "approval_required"
+    assert pending_detail.json()["approval_evidence"]["approver_decision"] is None
+    assert pending_approval_reviews.status_code == 200
+    pending_review = pending_approval_reviews.json()["approvals"][0]
+    assert pending_review["approval"]["approval_id"] == approval_id
+    assert pending_review["review"]["valid"] is True
+    assert pending_review["review"]["binding"]["source_artifact_reference_hash"] == sha256_digest(
+        "sandbox://sandbox-demo/summary.txt"
+    )
+    assert "source_artifact_label" not in pending_approval_reviews.text
 
     assert approve_response.status_code == 200
     approved = approve_response.json()
@@ -882,6 +938,10 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
         approved["decision_authority_snapshot_hash"]
         == (proposal_payload["authority_snapshot_hash"])
     )
+    decision_evidence = decided_detail.json()["approval_evidence"]["approver_decision"]
+    assert decided_detail.json()["effective_status"] == "approval_approved"
+    assert decision_evidence["deciding_principal_id"] == "admin:local-ui"
+    assert decision_evidence["decision_hash"] == approved["decision_hash"]
     assert apply_response.status_code == 409
     assert apply_response.json()["detail"] == (
         "trusted-host promotion placement is not production-ready"
@@ -891,17 +951,35 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
     assert not settings.trusted_host_staging_root.exists()
     assert diagnostics_response.status_code == 200
     assert diagnostics_response.json()["status"] == "clean"
-    assert diagnostics_response.json()["availability"] == "ready"
+    assert diagnostics_response.json()["availability"] == "staging_root_descriptor"
     assert list_response.status_code == 200
     listed = list_response.json()["promotion_proposals"][0]
     assert listed["status"] == "approval_required"
     assert listed["requester_principal_id"] == "admin:local-ui"
+    assert listed["approval_evidence"]["approver_decision"]["decision_hash"] == approved[
+        "decision_hash"
+    ]
     assert status_response.status_code == 200
     assert status_response.json()["trusted_host_promotions"] == "clean"
     assert audit_response.status_code == 200
     audit_payload = audit_response.text
     assert "Hello World" not in audit_payload
     assert settings.trusted_host_staging_root.as_posix() not in audit_payload
+    combined_safe_payload = "\n".join(
+        [
+            proposal_response.text,
+            approval_response.text,
+            pending_detail.text,
+            decided_detail.text,
+            diagnostics_response.text,
+            list_response.text,
+            audit_response.text,
+        ]
+    )
+    assert "sandbox://sandbox-demo/summary.txt" not in combined_safe_payload
+    assert "summary.txt" not in combined_safe_payload
+    assert "Hello World" not in combined_safe_payload
+    assert "Traceback" not in combined_safe_payload
     audit_events = audit_response.json()["audit_events"]
     event_types = {event["event_type"] for event in audit_events}
     assert "approval.created" in event_types
@@ -910,7 +988,7 @@ def test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable(
     assert "tool.execution.completed" not in event_types
 
 
-def test_trusted_host_promotion_internal_fixture_places_once_without_completion_claim(
+def test_trusted_host_promotion_internal_fixture_completes_after_audit_evidence(
     tmp_path: Path,
 ) -> None:
     settings = make_settings(tmp_path, token="correct-token")
@@ -948,20 +1026,26 @@ def test_trusted_host_promotion_internal_fixture_places_once_without_completion_
         )
 
     assert apply.status_code == 200
-    assert apply.json()["completion_claimed"] is False
-    assert apply.json()["proposal_status"] == "completion_evidence_pending"
+    assert apply.json()["completion_claimed"] is True
+    assert apply.json()["proposal_status"] == "completed"
+    assert apply.json()["completion_audit_event_id"].startswith("evt_")
+    assert apply.json()["completion_audit_event_hash"].startswith("sha256:")
     attempt = apply.json()["promotion_attempt"]
-    assert attempt["status"] == "staged"
+    assert attempt["status"] == "completed"
     assert attempt["staged_sha256"] == proposal["artifact_sha256"]
+    assert attempt["completion_evidence_status"] == "recorded"
+    assert attempt["completion_audit_event_hash"] == apply.json()[
+        "completion_audit_event_hash"
+    ]
     assert replay.status_code == 409
     assert replay.json()["detail"] == "proposal_not_applicable"
-    assert current.json()["status"] == "completion_evidence_pending"
+    assert current.json()["status"] == "completed"
     assert approval.json()["status"] == "executed"
     assert diagnostics.json()["placement_available"] is False
-    assert diagnostics.json()["status"] == "ambiguous"
+    assert diagnostics.json()["status"] == "clean"
     event_types = {event["event_type"] for event in audit.json()["audit_events"]}
     assert "tool.execution.started" not in event_types
-    assert "tool.execution.completed" not in event_types
+    assert "tool.execution.completed" in event_types
     destination_dir = (
         settings.trusted_host_staging_root
         / "default"
@@ -973,6 +1057,181 @@ def test_trusted_host_promotion_internal_fixture_places_once_without_completion_
     response_text = apply.text + diagnostics.text + audit.text
     assert "governed output" not in response_text
     assert settings.trusted_host_staging_root.as_posix() not in response_text
+
+
+def test_trusted_host_promotion_production_readiness_has_no_operator_bypass(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "production-ready fixture\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(settings, test_fixture_ready=False)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(client, sandbox_id="sandbox-production-ready")
+        applied = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert applied.status_code == 200
+    assert applied.json()["proposal_status"] == "completed"
+    assert diagnostics.status_code == 200
+    readiness = diagnostics.json()["production_readiness"]
+    assert readiness["ready"] is True
+    assert readiness["reason"] == "ready"
+    assert all(readiness["components"].values())
+    assert readiness["operator_override_available"] is False
+    assert diagnostics.json()["placement_available"] is True
+
+
+def test_trusted_host_promotion_production_readiness_requires_enforced_manifest_lock(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "manifest-lock fence\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        manifest_lock_required=False,
+    )
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-unlocked-manifest"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-unlocked-manifest",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert proposal.status_code == 400
+    assert proposal.json()["detail"] == "trusted_host_promotion_unavailable"
+    readiness = diagnostics.json()["production_readiness"]
+    assert readiness["ready"] is False
+    assert readiness["reason"] == "manifest_lock"
+    assert readiness["components"]["manifest_lock"] is False
+    assert readiness["operator_override_available"] is False
+
+
+def test_trusted_host_promotion_production_readiness_rejects_workspace_fallback(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "workspace-registry fence\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    missing_registry = tmp_path / "missing-workspaces.yaml"
+    app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        workspace_registry_required=False,
+        workspace_registry_path=missing_registry,
+    )
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-workspace-fallback"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-workspace-fallback",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert proposal.status_code == 400
+    assert proposal.json()["detail"] == "trusted_host_promotion_unavailable"
+    readiness = diagnostics.json()["production_readiness"]
+    assert readiness["ready"] is False
+    assert readiness["reason"] == "workspace_registry"
+    assert readiness["components"]["workspace_registry"] is False
+    assert readiness["operator_override_available"] is False
+    assert not missing_registry.exists()
+
+
+def test_trusted_host_promotion_production_readiness_requires_principal_registry(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "principal-registry fence\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        principal_registry_required=False,
+    )
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-principal-unrequired"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-principal-unrequired",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert proposal.status_code == 400
+    assert proposal.json()["detail"] == "trusted_host_promotion_unavailable"
+    readiness = diagnostics.json()["production_readiness"]
+    assert readiness["ready"] is False
+    assert readiness["reason"] == "principal_registry"
+    assert readiness["components"]["principal_registry"] is False
+    assert readiness["operator_override_available"] is False
 
 
 def test_trusted_host_promotion_apply_opens_source_exactly_once(
@@ -1053,6 +1312,47 @@ def test_trusted_host_promotion_internal_fixture_concurrent_replay_reserves_once
         / proposal["promotion_proposal_id"]
     )
     assert len(list(destination_dir.iterdir())) == 1
+
+
+def test_concurrent_distinct_promotions_complete_on_one_valid_audit_chain(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir()
+    app = promotion_ready_app(settings, placement_ready=True)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposals = [
+            create_approved_promotion(client, sandbox_id=f"sandbox-concurrent-{index}")
+            for index in range(2)
+        ]
+
+        def apply_once(proposal: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+            response = client.post(
+                f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+                json={"approval_id": proposal["approval_id"]},
+                headers=headers,
+            )
+            return response.status_code, cast(dict[str, Any], response.json())
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            responses = list(executor.map(apply_once, proposals))
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        audit_verification = audit_writer.verify_chain()
+        audit_diagnostics = audit_writer.diagnostics()
+
+    assert [status for status, _ in responses] == [200, 200]
+    assert all(payload["completion_claimed"] is True for _, payload in responses)
+    assert len(diagnostics["attempts"]) == 2
+    assert {attempt["status"] for attempt in diagnostics["attempts"]} == {"completed"}
+    assert audit_verification.valid is True
+    assert audit_diagnostics["sqlite_event_count"] == audit_diagnostics["jsonl_line_count"]
+    assert audit_diagnostics["jsonl_head_hash"] == audit_verification.head_hash
 
 
 @pytest.mark.parametrize("source_drift", ["bytes", "symlink", "hardlink", "directory"])
@@ -1168,6 +1468,9 @@ def test_trusted_host_promotion_approval_decision_drift_is_terminal(
     assert apply.status_code == 409
     assert apply.json()["detail"] == "trusted-host promotion authority is stale"
     assert current["status"] == "authority_stale"
+    assert diagnostics["status"] == "stale"
+    assert diagnostics["conditions"] == ["stale"]
+    assert diagnostics["recommendations"][0]["retry_available"] is False
     assert diagnostics["attempts"] == []
     assert list(settings.trusted_host_staging_root.iterdir()) == []
 
@@ -1447,7 +1750,7 @@ def test_trusted_host_promotion_prewrite_root_drift_records_no_effect_failure(
     assert apply.json()["detail"] == "staging_root_namespace_drift"
     assert current["status"] == "failed"
     assert approval["status"] == "failed"
-    assert diagnostics["status"] == "ambiguous"
+    assert diagnostics["status"] == "incomplete"
     assert len(diagnostics["attempts"]) == 1
     assert diagnostics["attempts"][0]["status"] == "failed"
     assert diagnostics["attempts"][0]["failure_reason"] == "staging_root_namespace_drift"
@@ -1866,11 +2169,273 @@ def test_trusted_host_approval_audit_failure_terminally_closes_pair(
         )
         proposals = client.get("/trusted-host-promotions/proposals", headers=headers).json()
         approvals = client.get("/approvals", headers=headers).json()
+        diagnostics = client.get(
+            "/trusted-host-promotions/diagnostics",
+            headers=headers,
+        ).json()
 
     assert response.status_code == 400
     assert response.json()["detail"] == "approval_evidence_failed"
     assert proposals["promotion_proposals"][0]["status"] == "approval_evidence_failed"
     assert approvals["approvals"][0]["status"] == "superseded"
+    assert diagnostics["status"] == "incomplete"
+    assert diagnostics["conditions"] == ["incomplete"]
+    assert diagnostics["recommendations"][0]["retry_available"] is False
+
+
+@pytest.mark.parametrize("terminal_status", ["denied", "expired"])
+def test_trusted_host_diagnostics_use_terminal_approval_outcome_as_gateway_truth(
+    tmp_path: Path,
+    terminal_status: str,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+    app = promotion_ready_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id=f"sandbox-{terminal_status}"),
+            headers=headers,
+        ).json()
+        created = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": f"sandbox-{terminal_status}",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        ).json()
+        if terminal_status == "denied":
+            decision = client.post(
+                f"/approvals/{created['approval_id']}/deny",
+                json={"decision": "deny"},
+                headers=headers,
+            )
+            assert decision.status_code == 200
+        else:
+            with sqlite3.connect(settings.db_path) as connection:
+                connection.execute(
+                    "UPDATE approvals SET expires_at = ? WHERE approval_id = ?",
+                    ("2000-01-01T00:00:00+00:00", created["approval_id"]),
+                )
+                connection.commit()
+        proposal = client.get(
+            f"/trusted-host-promotions/proposals/{created['promotion_proposal_id']}",
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert proposal.status_code == 200
+    review = proposal.json()
+    assert review["status"] == "approval_required"
+    assert review["effective_status"] == f"approval_{terminal_status}"
+    assert review["approval_evidence_status"] == terminal_status
+    assert review["approval_evidence"]["status"] == terminal_status
+    if terminal_status == "denied":
+        assert review["approval_evidence"]["approver_decision"]["decision_hash"].startswith(
+            "sha256:"
+        )
+    else:
+        assert review["approval_evidence"]["approver_decision"] is None
+    payload = diagnostics.json()
+    assert payload["status"] == "incomplete"
+    assert payload["conditions"] == ["approval_terminal"]
+    assert payload["recommendations"][0]["condition"] == "approval_terminal"
+    assert payload["recommendations"][0]["retry_available"] is False
+    assert payload["recommendations"][0]["automatic_repair_available"] is False
+    assert "summary.txt" not in diagnostics.text
+
+
+def test_trusted_host_diagnostics_report_legacy_proposals_without_raw_source_labels(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    raw_source_label = "department/records/summary.txt"
+    source = settings.workspace_root / raw_source_label
+    source.parent.mkdir(parents=True)
+    source.write_text("bounded\n", encoding="utf-8")
+    app = promotion_ready_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-legacy-diagnostics"),
+            headers=headers,
+        ).json()
+        created = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-legacy-diagnostics",
+                "source_artifact_path": raw_source_label,
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        ).json()
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET status = 'legacy_unbound', authority_schema_version = NULL,
+                    authority_snapshot_json = NULL, authority_snapshot_hash = NULL,
+                    requester_principal_id = NULL, requester_principal_generation = NULL,
+                    executor_principal_id = NULL, executor_principal_generation = NULL
+                WHERE proposal_id = ?
+                """,
+                (created["promotion_proposal_id"],),
+            )
+            connection.commit()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert diagnostics.status_code == 200
+    payload = diagnostics.json()
+    assert payload["status"] == "legacy"
+    assert payload["conditions"] == ["legacy"]
+    assert payload["proposals"][0]["status"] == "legacy_unbound"
+    assert payload["proposals"][0]["authority_evidence"]["status"] == "legacy_unbound"
+    assert payload["recommendations"][0]["retry_available"] is False
+    assert raw_source_label not in diagnostics.text
+
+
+def test_trusted_host_diagnostics_never_hide_legacy_recovery_evidence(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+    app = promotion_ready_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-legacy-recovery"),
+            headers=headers,
+        ).json()
+        created = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-legacy-recovery",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        ).json()
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET status = 'legacy_failed', authority_schema_version = NULL,
+                    authority_snapshot_json = NULL, authority_snapshot_hash = NULL,
+                    requester_principal_id = NULL, requester_principal_generation = NULL,
+                    executor_principal_id = NULL, executor_principal_generation = NULL
+                WHERE proposal_id = ?
+                """,
+                (created["promotion_proposal_id"],),
+            )
+            connection.execute(
+                """
+                INSERT INTO trusted_host_promotion_attempts (
+                    attempt_id, approval_id, proposal_id, request_id, workspace_id,
+                    host_staging_label, artifact_sha256, staged_sha256, status,
+                    failure_reason, created_at, updated_at, metadata_json,
+                    record_version, authority_snapshot_hash, executor_principal_id,
+                    executor_principal_generation
+                ) VALUES (?, ?, ?, ?, 'default', 'host-staging://artifact', ?, ?,
+                    'legacy_recovery_required', 'legacy_recovery_evidence', ?, ?, '{}',
+                    '1', NULL, NULL, NULL)
+                """,
+                (
+                    "thpa_legacy_recovery",
+                    created["approval_id"],
+                    created["promotion_proposal_id"],
+                    created["request_id"],
+                    created["artifact_sha256"],
+                    created["artifact_sha256"],
+                    created["created_at"],
+                    created["updated_at"],
+                ),
+            )
+            connection.commit()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert diagnostics.status_code == 200
+    payload = diagnostics.json()
+    assert payload["status"] == "recovery_required"
+    assert payload["conditions"] == ["recovery_required", "legacy", "incomplete"]
+    assert payload["proposals"][0]["status"] == "legacy_failed"
+    assert payload["attempts"][0]["status"] == "legacy_recovery_required"
+    assert payload["recommendations"][0]["condition"] == "recovery_required"
+    assert all(
+        recommendation["retry_available"] is False
+        and recommendation["automatic_repair_available"] is False
+        for recommendation in payload["recommendations"]
+    )
+    assert "summary.txt" not in diagnostics.text
+
+
+@pytest.mark.parametrize(
+    "malformed_snapshot",
+    ["{}", "{", "[]", "private-authority-material"],
+)
+def test_trusted_host_diagnostics_fail_safe_for_malformed_authority_evidence(
+    tmp_path: Path,
+    malformed_snapshot: str,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text("bounded\n", encoding="utf-8")
+    app = promotion_ready_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-malformed-authority"),
+            headers=headers,
+        ).json()
+        created = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-malformed-authority",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://artifact",
+            },
+            headers=headers,
+        ).json()
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET authority_snapshot_json = ?
+                WHERE proposal_id = ?
+                """,
+                (malformed_snapshot, created["promotion_proposal_id"]),
+            )
+            connection.commit()
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert diagnostics.status_code == 200
+    payload = diagnostics.json()
+    assert payload["status"] == "stale"
+    assert payload["conditions"] == ["stale"]
+    assert payload["proposals"][0]["authority_evidence"]["status"] == "invalid"
+    assert payload["recommendations"][0]["automatic_repair_available"] is False
+    assert "Traceback" not in diagnostics.text
+    assert "private-authority-material" not in diagnostics.text
 
 
 def test_trusted_host_promotion_is_fail_closed_until_binding_is_complete(
@@ -2327,18 +2892,19 @@ def test_trusted_host_promotion_preserves_existing_destination(
     assert diagnostics.json()["attempts"] == []
 
 
-def test_trusted_host_promotion_emits_no_completion_audit_while_disabled(
+def test_trusted_host_promotion_audit_failure_leaves_completion_pending(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     settings = make_settings(tmp_path, token="correct-token")
     settings.workspace_root.mkdir()
     settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
     (settings.workspace_root / "summary.txt").write_text(
         "bounded output\n",
         encoding="utf-8",
     )
-    app = promotion_ready_app(settings)
+    app = promotion_ready_app(settings, placement_ready=True)
 
     with TestClient(app) as client:
         headers = {"Authorization": "Bearer correct-token"}
@@ -2384,15 +2950,32 @@ def test_trusted_host_promotion_emits_no_completion_audit_while_disabled(
             f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
             headers=headers,
         )
+        approval_response = client.get(f"/approvals/{approval_id}", headers=headers)
+        audit_response = client.get(
+            "/audit-events?tool_name=trusted_host.promotion.stage",
+            headers=headers,
+        )
 
     assert approve.status_code == 200
     assert apply_response.status_code == 409
+    assert apply_response.json()["detail"] == "completion_evidence_incomplete"
     assert diagnostics.status_code == 200
-    assert diagnostics.json()["status"] == "clean"
-    assert diagnostics.json()["attempts"] == []
+    assert diagnostics.json()["status"] == "incomplete"
+    assert diagnostics.json()["conditions"] == ["incomplete"]
+    assert diagnostics.json()["attempts"][0]["status"] == "staged"
+    assert diagnostics.json()["recommendations"][0]["retry_available"] is False
     assert proposal_response.status_code == 200
-    assert proposal_response.json()["status"] == "approval_required"
-    assert not settings.trusted_host_staging_root.exists()
+    assert proposal_response.json()["status"] == "completion_evidence_pending"
+    assert approval_response.json()["status"] == "executed"
+    assert "tool.execution.completed" not in {
+        event["event_type"] for event in audit_response.json()["audit_events"]
+    }
+    destination_dir = (
+        settings.trusted_host_staging_root
+        / "default"
+        / proposal["promotion_proposal_id"]
+    )
+    assert len(list(destination_dir.iterdir())) == 1
 
 
 def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> None:
@@ -4446,7 +5029,7 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
             """
         ).fetchall()
 
-    assert rows == [("minimum_writer_version", "2"), ("schema_version", "2")]
+    assert rows == [("minimum_writer_version", "3"), ("schema_version", "3")]
 
 
 def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Path) -> None:

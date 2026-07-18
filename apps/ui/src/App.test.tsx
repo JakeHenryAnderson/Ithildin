@@ -197,6 +197,22 @@ type FetchMockOptions = {
   proposalStatus?: "applied" | "proposed";
   runEvidenceFailure?: boolean;
   runEvidenceHashMismatch?: boolean;
+  trustedHostStatus?:
+    | "approval_required"
+    | "legacy_unbound"
+    | "authority_stale"
+    | "approval_evidence_failed"
+    | "completion_evidence_pending"
+    | "placement_evidence_recovery_required"
+    | "completed";
+  trustedHostApprovalStatus?:
+    | "pending"
+    | "approved"
+    | "denied"
+    | "expired"
+    | "superseded"
+    | "executed"
+    | "legacy_unbound";
 };
 
 type TestJsonValue = string | number | boolean | null | TestJsonValue[] | TestJsonObject;
@@ -222,6 +238,114 @@ async function testSha256(value: TestJsonValue) {
     new Uint8Array(digest),
     (byte) => byte.toString(16).padStart(2, "0"),
   ).join("")}`;
+}
+
+function trustedHostDiagnosticStatus(
+  status?: FetchMockOptions["trustedHostStatus"],
+  approvalStatus?: FetchMockOptions["trustedHostApprovalStatus"],
+) {
+  if (["denied", "expired", "superseded"].includes(approvalStatus ?? "")) {
+    return "incomplete";
+  }
+  if (status === "placement_evidence_recovery_required") return "recovery_required";
+  if (status === "completion_evidence_pending" || status === "approval_evidence_failed") {
+    return "incomplete";
+  }
+  if (status === "authority_stale") return "stale";
+  if (status === "legacy_unbound") return "legacy";
+  return "clean";
+}
+
+function trustedHostProposal(
+  status: NonNullable<FetchMockOptions["trustedHostStatus"]>,
+  approvalStatus?: FetchMockOptions["trustedHostApprovalStatus"],
+) {
+  const resolvedApprovalStatus =
+    approvalStatus ??
+    (status === "approval_required"
+      ? "pending"
+      : status === "legacy_unbound"
+        ? "legacy_unbound"
+        : status === "approval_evidence_failed"
+          ? "superseded"
+          : status === "authority_stale"
+            ? "approved"
+            : "executed");
+  const effectiveApprovalStatuses: Record<string, string> = {
+    approved: "approval_approved",
+    denied: "approval_denied",
+    expired: "approval_expired",
+    superseded: "approval_superseded",
+  };
+  const effectiveStatus =
+    status === "approval_required"
+      ? effectiveApprovalStatuses[resolvedApprovalStatus] ?? status
+      : status;
+  const decisionExists = ["approved", "denied", "executed"].includes(
+    resolvedApprovalStatus,
+  );
+  return {
+    promotion_proposal_id: "thp_1234567890abcdef",
+    request_id: "req_trustedhost123",
+    status,
+    effective_status: effectiveStatus,
+    created_at: "2026-07-18T12:00:00Z",
+    updated_at: "2026-07-18T12:05:00Z",
+    authority_binding_status: status === "legacy_unbound" ? "legacy_unbound" : "version_2_bound",
+    authority_snapshot_hash: status === "legacy_unbound" ? null : "sha256:authoritysnapshot",
+    requester_principal_id: status === "legacy_unbound" ? null : "admin:local-ui",
+    requester_principal_generation: status === "legacy_unbound" ? null : "sha256:requestergeneration",
+    executor_principal_id: decisionExists ? "admin:local-ui" : null,
+    executor_principal_generation: decisionExists ? "sha256:executorgeneration" : null,
+    proposal_hash: "sha256:promotionproposal",
+    workspace_id: "default",
+    sandbox_descriptor_id: "sdesc_1234567890abcdef",
+    sandbox_descriptor_hash: "sha256:sandboxdescriptor",
+    sandbox_id: "sandbox-demo",
+    source_artifact_reference_hash: "sha256:sourceartifactreference",
+    host_staging_label: "host-staging://artifact",
+    artifact_sha256: "sha256:artifact",
+    artifact_size_bytes: 128,
+    artifact_media_label: "text/plain",
+    authority_evidence: {
+      status: status === "legacy_unbound" ? "legacy_unbound" : "bound",
+      policy: {
+        policy_version: "promotion-v1",
+        policy_digest: "sha256:policy",
+      },
+      manifest: {
+        lock_version: "1",
+        lock_digest: "sha256:manifest",
+        tool_count: 24,
+      },
+      input_schema: {
+        schema_version: "2",
+        schema_digest: "sha256:schema",
+      },
+      runtime_candidate: {
+        candidate_id: "sha256:candidate",
+        review_packet_digest: "sha256:reviewpacket",
+      },
+      trusted_host: {
+        descriptor_hash: "sha256:trustedhost",
+      },
+    },
+    approval_evidence_status: resolvedApprovalStatus,
+    approval_evidence: {
+      approval_id: "appr_trustedhost123",
+      status: resolvedApprovalStatus,
+      request_hash: "sha256:request",
+      approval_scope_hash: "sha256:approvalscope",
+      requester_principal_id: "admin:local-ui",
+      approver_decision: decisionExists
+        ? {
+            deciding_principal_id: "admin:local-ui",
+            decision_hash: "sha256:decision",
+          }
+        : null,
+      executor_principal_id: resolvedApprovalStatus === "executed" ? "admin:local-ui" : null,
+    },
+  };
 }
 
 function installFetchMock(status = systemStatus(), options: FetchMockOptions = {}) {
@@ -332,6 +456,54 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
     }
     if (path === "/patch-apply-diagnostics") {
       return jsonResponse({ status: "clean", attempts: [], stuck_approvals: [], recommendations: [] });
+    }
+    if (path === "/trusted-host-promotions/proposals") {
+      return jsonResponse({
+        promotion_proposals: options.trustedHostStatus
+          ? [trustedHostProposal(options.trustedHostStatus, options.trustedHostApprovalStatus)]
+          : [],
+      });
+    }
+    if (path === "/trusted-host-promotions/diagnostics") {
+      const diagnosticStatus = trustedHostDiagnosticStatus(
+        options.trustedHostStatus,
+        options.trustedHostApprovalStatus,
+      );
+      const approvalTerminal = ["denied", "expired", "superseded"].includes(
+        options.trustedHostApprovalStatus ?? "",
+      );
+      return jsonResponse({
+        status: diagnosticStatus,
+        availability: "ready",
+        placement_available: true,
+        production_readiness: {
+          ready: true,
+          reason: "ready",
+          components: { verified_runtime_candidate: true },
+          operator_override_available: false,
+        },
+        conditions:
+          diagnosticStatus === "clean" ? [] : [approvalTerminal ? "approval_terminal" : diagnosticStatus],
+        proposals: options.trustedHostStatus
+          ? [trustedHostProposal(options.trustedHostStatus, options.trustedHostApprovalStatus)]
+          : [],
+        attempts: [],
+        stuck_approvals: [],
+        recommendations: [
+          {
+            type: diagnosticStatus === "clean" ? "none" : "manual_review",
+            condition: approvalTerminal ? "approval_terminal" : diagnosticStatus,
+            message:
+              diagnosticStatus === "clean"
+                ? "No incomplete trusted-host placement evidence is recorded."
+                : approvalTerminal
+                  ? "Gateway recorded a terminal approval outcome. No placement is authorized; use a new authorized workflow rather than retrying."
+                  : "Review Gateway evidence manually. Do not retry or repair automatically.",
+            retry_available: false,
+            automatic_repair_available: false,
+          },
+        ],
+      });
     }
     if (
       path === "/nodes/node_11111111111111111111111111111111/configurations"
@@ -783,6 +955,95 @@ describe("Review console interactions", () => {
     });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
   });
+
+  it.each([
+    ["legacy_unbound", "Historical record without version-2 authority binding"],
+    ["authority_stale", "Bound authority changed after approval"],
+    ["approval_evidence_failed", "Approval creation was not durably evidenced"],
+    ["completion_evidence_pending", "append-only completion evidence is not finalized"],
+    ["placement_evidence_recovery_required", "A placement effect may exist in a retained directory"],
+  ] as const)(
+    "shows %s as Gateway truth with manual guidance and no retry control",
+    async (trustedHostStatus, expectedGuidance) => {
+      installFetchMock(systemStatus(), { trustedHostStatus });
+      const user = await saveToken();
+
+      await user.click(screen.getByRole("link", { name: "Evidence" }));
+
+      const evidenceRegion = screen.getByRole("region", { name: "Gateway staging evidence" });
+      expect(evidenceRegion).toHaveFocus();
+      expect(screen.getByRole("heading", { name: "Gateway evidence and recovery" })).toBeInTheDocument();
+      expect(screen.getByText("Gateway truth · read-only consumer")).toBeInTheDocument();
+      expect(screen.getByText("all required components verified")).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(expectedGuidance, "i"))).toBeInTheDocument();
+      expect(
+        screen.getByRole("listitem", {
+          name: new RegExp(trustedHostStatus.replace(/_/g, " "), "i"),
+        }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /retry|repair/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/Do not retry or repair automatically/i)).toBeInTheDocument();
+    },
+  );
+
+  it("shows server-returned decision attribution only when decision evidence exists", async () => {
+    installFetchMock(systemStatus(), { trustedHostStatus: "completion_evidence_pending" });
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Evidence" }));
+
+    const decision = screen.getByRole("region", { name: "Server-recorded approval decision" });
+    expect(decision).toBeInTheDocument();
+    expect(within(decision).getByText("admin:local-ui")).toBeInTheDocument();
+    expect(within(decision).getByText("decision")).toBeInTheDocument();
+  });
+
+  it("does not fabricate a deciding principal for an undecided promotion", async () => {
+    installFetchMock(systemStatus(), { trustedHostStatus: "approval_evidence_failed" });
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Evidence" }));
+
+    expect(screen.queryByRole("region", { name: "Server-recorded approval decision" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/No server-recorded approval decision is present/i),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["denied", "Gateway denied this approval", true],
+    ["expired", "Gateway recorded this approval as expired", false],
+  ] as const)(
+    "renders a terminal %s approval as server-derived Gateway truth",
+    async (trustedHostApprovalStatus, expectedGuidance, hasDecision) => {
+      installFetchMock(systemStatus(), {
+        trustedHostStatus: "approval_required",
+        trustedHostApprovalStatus,
+      });
+      const user = await saveToken();
+      await user.click(screen.getByRole("link", { name: "Evidence" }));
+
+      expect(
+        screen.getByRole("listitem", {
+          name: new RegExp(`approval ${trustedHostApprovalStatus}`, "i"),
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(expectedGuidance, "i"))).toBeInTheDocument();
+      expect(
+        screen.getByText("Approval closed without placement", { selector: "strong" }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/terminal approval outcome/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Gateway is waiting for the exact one-time approval/i)).toBeNull();
+      expect(screen.queryByRole("button", { name: /retry|repair/i })).not.toBeInTheDocument();
+      const decision = screen.queryByRole("region", {
+        name: "Server-recorded approval decision",
+      });
+      if (hasDecision) {
+        expect(decision).toBeInTheDocument();
+        expect(within(decision as HTMLElement).getByText(trustedHostApprovalStatus)).toBeInTheDocument();
+      } else {
+        expect(decision).not.toBeInTheDocument();
+      }
+    },
+  );
 
   afterEach(() => {
     vi.restoreAllMocks();

@@ -34250,13 +34250,17 @@ def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
         assert leaked not in transcript_text
 
     for phrase in [
-        "Status: version-2 authority binding and descriptor-relative placement slice implemented",
-        "internal test fixture only -> atomic execution reservation",
+        "Status: `TGB-005` implementation candidate",
+        "fully verified local runtime posture -> one authority-bound proposal and approval",
         "Admin-only `POST /trusted-host-promotions/proposals`",
         "trusted_host.promotion.stage",
         "never a raw host path",
-        "does not repair, retry, roll back",
-        "Concurrent and sequential replay cannot reserve a second",
+        "They do not repair, retry, roll back",
+        "replay cannot reserve a second attempt",
+        "append-only completion event must then be serialized",
+        "Any false component keeps proposal/apply unavailable",
+        "source_artifact_reference_hash",
+        "raw source labels or paths",
     ]:
         assert phrase in doc
     for blocked in [

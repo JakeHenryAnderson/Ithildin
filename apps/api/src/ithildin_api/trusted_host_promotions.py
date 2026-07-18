@@ -13,10 +13,12 @@ from pathlib import Path
 from typing import Literal, cast
 from uuid import uuid4
 
+from ithildin_audit_core import AuditWriter
 from ithildin_policy_core import PolicyEngine
 from ithildin_schemas import (
     ApprovalRequest,
     ApprovalStatus,
+    AuditEventType,
     JsonObject,
     JsonValue,
     PolicyDecisionValue,
@@ -52,7 +54,11 @@ from ithildin_api.trusted_host_placement import (
     TrustedHostPlacementError,
     descriptor_relative_placement_supported,
 )
-from ithildin_api.trusted_host_promotion_v2_migration import initialize_or_migrate_database
+from ithildin_api.trusted_host_promotion_v2_migration import (
+    DatabaseMigrationError,
+    initialize_or_migrate_database,
+    verify_database_v2,
+)
 from ithildin_api.trusted_host_registry import (
     TrustedHostDescriptorRegistry,
     TrustedHostRegistryError,
@@ -181,8 +187,100 @@ class TrustedHostPromotionProposal:
             "requester_principal_generation": self.requester_principal_generation,
             "executor_principal_id": self.executor_principal_id,
             "executor_principal_generation": self.executor_principal_generation,
-            **self.scope_metadata(),
+            "proposal_hash": self.proposal_hash,
+            "workspace_id": self.workspace_id,
+            "sandbox_descriptor_id": self.sandbox_descriptor_id,
+            "sandbox_descriptor_hash": self.sandbox_descriptor_hash,
+            "sandbox_id": self.sandbox_id,
+            "source_artifact_reference_hash": sha256_digest(self.source_artifact_label),
+            "host_staging_label": self.host_staging_label,
+            "artifact_sha256": self.artifact_sha256,
+            "artifact_size_bytes": self.artifact_size_bytes,
+            "artifact_media_label": self.artifact_media_label,
+            "authority_evidence": self.authority_evidence(),
             "output_policy": _output_policy(),
+        }
+
+    def authority_evidence(self) -> JsonObject:
+        if self.authority_snapshot_json is None or self.authority_snapshot_hash is None:
+            return {
+                "status": "legacy_unbound",
+                "authority_snapshot_hash": None,
+            }
+        try:
+            snapshot = PromotionAuthoritySnapshot.model_validate(self.authority_snapshot_json)
+        except ValidationError:
+            return {
+                "status": "invalid",
+                "authority_snapshot_hash": self.authority_snapshot_hash,
+            }
+        return {
+            "status": (
+                "bound"
+                if snapshot.snapshot_hash == self.authority_snapshot_hash
+                else "hash_mismatch"
+            ),
+            "schema_version": snapshot.snapshot_schema_version,
+            "authority_snapshot_hash": self.authority_snapshot_hash,
+            "requester": {
+                "principal_id": snapshot.requesting_principal.principal_id,
+                "principal_generation": snapshot.requesting_principal.identity_generation,
+            },
+            "trusted_host": {
+                "descriptor_id": snapshot.trusted_host.descriptor_id,
+                "descriptor_hash": snapshot.trusted_host.descriptor_hash,
+                "descriptor_generation": snapshot.trusted_host.descriptor_generation,
+                "registry_schema_digest": snapshot.trusted_host.registry_schema_digest,
+            },
+            "workspace": {
+                "workspace_id": snapshot.workspace.workspace_id,
+                "record_hash": snapshot.workspace.workspace_record_hash,
+                "registry_generation": snapshot.workspace.workspace_registry_generation,
+            },
+            "sandbox": {
+                "descriptor_id": snapshot.sandbox.descriptor_id,
+                "descriptor_hash": snapshot.sandbox.descriptor_payload_hash,
+                "descriptor_generation": snapshot.sandbox.descriptor_generation,
+            },
+            "policy": {
+                "engine": snapshot.policy.engine,
+                "document_version": snapshot.policy.document_version,
+                "policy_version": snapshot.policy.policy_version,
+                "policy_digest": snapshot.policy.policy_digest,
+                "decision": snapshot.policy.decision,
+                "matched_rules": list(snapshot.policy.matched_rules),
+                "obligations_digest": snapshot.policy.obligations_digest,
+            },
+            "manifest": {
+                "lock_version": snapshot.manifest.lock_version,
+                "lock_digest": snapshot.manifest.lock_digest,
+                "tool_count": snapshot.manifest.tool_count,
+            },
+            "input_schema": {
+                "schema_id": snapshot.input_schema.schema_id,
+                "schema_version": snapshot.input_schema.schema_version,
+                "schema_digest": snapshot.input_schema.schema_digest,
+            },
+            "runtime_candidate": {
+                "posture": snapshot.runtime_candidate.posture,
+                "candidate_id": snapshot.runtime_candidate.candidate_id,
+                "source_commit": snapshot.runtime_candidate.source_commit,
+                "inventory_schema_version": (
+                    snapshot.runtime_candidate.inventory_schema_version
+                ),
+                "reviewed_inventory_digest": (
+                    snapshot.runtime_candidate.reviewed_inventory_digest
+                ),
+                "dependency_lock_digest": snapshot.runtime_candidate.dependency_lock_digest,
+                "release_artifact_digest": (
+                    snapshot.runtime_candidate.release_artifact_digest
+                ),
+                "review_packet_digest": snapshot.runtime_candidate.review_packet_digest,
+                "evidence_schema_version": (
+                    snapshot.runtime_candidate.evidence_schema_version
+                ),
+                "authorization_id": snapshot.runtime_candidate.authorization_id,
+            },
         }
 
 
@@ -221,6 +319,15 @@ class TrustedHostPromotionAttempt:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "metadata_keys": cast(JsonValue, sorted(self.metadata.keys())),
+            "completion_audit_event_id": _safe_metadata_string(
+                self.metadata, "completion_audit_event_id"
+            ),
+            "completion_audit_event_hash": _safe_metadata_string(
+                self.metadata, "completion_audit_event_hash"
+            ),
+            "completion_evidence_status": _safe_metadata_string(
+                self.metadata, "completion_evidence_status"
+            ),
             "record_version": self.record_version,
             "authority_snapshot_hash": self.authority_snapshot_hash,
             "executor_principal_id": self.executor_principal_id,
@@ -579,6 +686,66 @@ class TrustedHostPromotionStore:
             failure_reason=None,
         )
 
+    def complete_with_evidence(
+        self,
+        attempt_id: str,
+        *,
+        audit_event_id: str,
+        audit_event_hash: str,
+    ) -> TrustedHostPromotionAttempt:
+        """Complete only a staged attempt after append-only audit evidence exists."""
+        now = datetime.now(UTC).isoformat()
+        connection = sqlite3.connect(self.db_path, isolation_level=None)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                """
+                SELECT proposal_id, metadata_json
+                FROM trusted_host_promotion_attempts
+                WHERE attempt_id = ? AND status = 'v2_staged'
+                """,
+                (attempt_id,),
+            ).fetchone()
+            if row is None:
+                raise TrustedHostPromotionError("completion_evidence_not_applicable")
+            metadata = _json_object(str(row[1]), "promotion attempt metadata")
+            completion_metadata = {
+                **metadata,
+                "completion_audit_event_id": audit_event_id,
+                "completion_audit_event_hash": audit_event_hash,
+                "completion_evidence_status": "recorded",
+            }
+            attempt_updated = connection.execute(
+                """
+                UPDATE trusted_host_promotion_attempts
+                SET status = 'v2_completed', metadata_json = ?, updated_at = ?
+                WHERE attempt_id = ? AND status = 'v2_staged'
+                """,
+                (canonical_json(completion_metadata), now, attempt_id),
+            ).rowcount
+            proposal_updated = connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET status = 'v2_completed', updated_at = ?
+                WHERE proposal_id = ? AND status = 'v2_completion_evidence_pending'
+                """,
+                (now, str(row[0])),
+            ).rowcount
+            if attempt_updated != 1 or proposal_updated != 1:
+                raise TrustedHostPromotionError("completion_evidence_not_applicable")
+            connection.execute("COMMIT")
+        except TrustedHostPromotionError:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except sqlite3.DatabaseError as exc:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise TrustedHostPromotionError("completion_evidence_update_failed") from exc
+        finally:
+            connection.close()
+        return self.get_attempt(attempt_id)
+
     def record_placement_failure(
         self,
         attempt_id: str,
@@ -800,13 +967,18 @@ class TrustedHostPromotionService:
         descriptor_store: SandboxDescriptorStore,
         policy_engine: PolicyEngine,
         workspace_registry: WorkspaceRegistry,
+        workspace_registry_verified: bool,
         principal_registry: PrincipalRegistry,
+        principal_registry_verified: bool,
         tool_registry: ToolRegistry,
         manifest_lock_path: Path,
+        manifest_lock_verified: bool,
         trusted_host_registry: TrustedHostDescriptorRegistry,
+        audit_writer: AuditWriter,
         runtime_candidate: RuntimeCandidateRecord | None,
         staging_root: Path,
         governance_binding_ready: bool = False,
+        governance_test_fixture_ready: bool = False,
         placement_test_fixture_ready: bool = False,
     ) -> None:
         self.store = store
@@ -814,13 +986,18 @@ class TrustedHostPromotionService:
         self.descriptor_store = descriptor_store
         self.policy_engine = policy_engine
         self.workspace_registry = workspace_registry
+        self.workspace_registry_verified = workspace_registry_verified
         self.principal_registry = principal_registry
+        self.principal_registry_verified = principal_registry_verified
         self.tool_registry = tool_registry
         self.manifest_lock_path = manifest_lock_path
+        self.manifest_lock_verified = manifest_lock_verified
         self.trusted_host_registry = trusted_host_registry
+        self.audit_writer = audit_writer
         self.runtime_candidate = runtime_candidate
         self.staging_root = staging_root
         self.governance_binding_ready = governance_binding_ready
+        self.governance_test_fixture_ready = governance_test_fixture_ready
         self.placement_test_fixture_ready = placement_test_fixture_ready
         self.input_schema_authority = InputSchemaAuthorityRecord(
             schema_id=PROMOTION_INPUT_SCHEMA_ID,
@@ -828,8 +1005,9 @@ class TrustedHostPromotionService:
             schema_digest=sha256_digest(TrustedHostPromotionProposalInput.model_json_schema()),
         )
         self._manifest_authority_record: ManifestAuthorityRecord | None = None
-        if governance_binding_ready:
+        if governance_binding_ready and manifest_lock_verified:
             self._manifest_authority_record = self._manifest_authority()
+        self.production_readiness = self._production_readiness()
 
     def create_proposal(
         self,
@@ -838,7 +1016,7 @@ class TrustedHostPromotionService:
         approval_service: ApprovalService,
         context: AdminPrincipalContext,
     ) -> JsonObject:
-        self._require_governance_binding()
+        self._require_proposal_readiness()
         context = self._current_requesting_principal(context)
         filesystem = self._filesystem(payload.workspace_id)
         source_path = _safe_relative_path(
@@ -939,7 +1117,7 @@ class TrustedHostPromotionService:
             resource={
                 "type": "trusted_host_promotion",
                 "workspace_id": payload.workspace_id,
-                "source_artifact_label": source_label,
+                "source_artifact_reference_hash": sha256_digest(source_label),
                 "host_staging_label": payload.host_staging_label,
                 "in_scope": True,
             },
@@ -1106,6 +1284,10 @@ class TrustedHostPromotionService:
     def _manifest_authority(self) -> ManifestAuthorityRecord:
         if self._manifest_authority_record is not None:
             return self._manifest_authority_record
+        if not self.manifest_lock_verified:
+            raise TrustedHostPromotionError(
+                "trusted-host promotion manifest authority is unavailable"
+            )
         try:
             raw_lock = json.loads(
                 self.manifest_lock_path.read_text(encoding="utf-8"),
@@ -1330,46 +1512,117 @@ class TrustedHostPromotionService:
             "valid": not reasons,
             "reasons": cast(JsonValue, reasons),
             "binding": {
-                key: scope.get(key)
-                for key in [
-                    "promotion_proposal_id",
-                    "proposal_hash",
-                    "workspace_id",
-                    "sandbox_descriptor_id",
-                    "sandbox_descriptor_hash",
-                    "sandbox_id",
-                    "source_artifact_label",
-                    "host_staging_label",
-                    "artifact_sha256",
-                    "artifact_size_bytes",
-                    "artifact_media_label",
-                    "authority_snapshot_hash",
-                    "requesting_principal_id",
-                    "requesting_principal_generation",
-                    "trusted_host_descriptor_id",
-                    "trusted_host_descriptor_hash",
-                    "policy_engine",
-                    "policy_document_version",
-                    "policy_version",
-                    "policy_digest",
-                    "policy_decision",
-                    "policy_matched_rules",
-                    "policy_obligations",
-                    "manifest_lock_version",
-                    "manifest_lock_digest",
-                    "manifest_tool_count",
-                    "input_schema_id",
-                    "input_schema_version",
-                    "input_schema_digest",
-                    "runtime_candidate_posture",
-                    "runtime_candidate_id",
-                    "runtime_candidate_source_commit",
-                    "runtime_candidate_release_artifact_digest",
-                    "runtime_candidate_review_packet_digest",
-                    "required_approver_roles",
-                ]
+                **{
+                    key: scope.get(key)
+                    for key in [
+                        "promotion_proposal_id",
+                        "proposal_hash",
+                        "workspace_id",
+                        "sandbox_descriptor_id",
+                        "sandbox_descriptor_hash",
+                        "sandbox_id",
+                        "host_staging_label",
+                        "artifact_sha256",
+                        "artifact_size_bytes",
+                        "artifact_media_label",
+                        "authority_snapshot_hash",
+                        "requesting_principal_id",
+                        "requesting_principal_generation",
+                        "trusted_host_descriptor_id",
+                        "trusted_host_descriptor_hash",
+                        "policy_engine",
+                        "policy_document_version",
+                        "policy_version",
+                        "policy_digest",
+                        "policy_decision",
+                        "policy_matched_rules",
+                        "policy_obligations",
+                        "manifest_lock_version",
+                        "manifest_lock_digest",
+                        "manifest_tool_count",
+                        "input_schema_id",
+                        "input_schema_version",
+                        "input_schema_digest",
+                        "runtime_candidate_posture",
+                        "runtime_candidate_id",
+                        "runtime_candidate_source_commit",
+                        "runtime_candidate_release_artifact_digest",
+                        "runtime_candidate_review_packet_digest",
+                        "required_approver_roles",
+                    ]
+                },
+                "source_artifact_reference_hash": (
+                    sha256_digest(scope["source_artifact_label"])
+                    if isinstance(scope.get("source_artifact_label"), str)
+                    else None
+                ),
             },
             "output_policy": _output_policy(),
+        }
+
+    def proposal_review(
+        self,
+        proposal: TrustedHostPromotionProposal,
+        approval_service: ApprovalService,
+    ) -> JsonObject:
+        summary = proposal.summary()
+        approval_id = proposal.metadata.get("approval_id")
+        if not isinstance(approval_id, str):
+            return {
+                **summary,
+                "approval_evidence_status": "missing",
+                "approval_evidence": None,
+            }
+        try:
+            approval = approval_service.get(approval_id)
+        except ApprovalError:
+            return {
+                **summary,
+                "approval_evidence_status": "missing",
+                "approval_evidence": None,
+            }
+        evidence = self._safe_approval_evidence(approval)
+        return {
+            **summary,
+            "effective_status": _effective_proposal_status(
+                proposal.status,
+                approval.status.value,
+            ),
+            "approval_evidence_status": approval.status.value,
+            "approval_evidence": evidence,
+        }
+
+    @staticmethod
+    def _safe_approval_evidence(approval: ApprovalRequest) -> JsonObject:
+        decision: JsonObject | None = None
+        if approval.decision_hash is not None:
+            decision = {
+                "decided_at": (
+                    approval.decided_at.isoformat()
+                    if approval.decided_at is not None
+                    else None
+                ),
+                "deciding_principal_id": approval.deciding_principal_id,
+                "deciding_principal_generation": (
+                    approval.deciding_principal_generation
+                ),
+                "decision_reason_hash": approval.decision_reason_hash,
+                "decision_authority_snapshot_hash": (
+                    approval.decision_authority_snapshot_hash
+                ),
+                "decision_hash": approval.decision_hash,
+            }
+        return {
+            "approval_id": approval.approval_id,
+            "status": approval.status.value,
+            "contract_version": approval.approval_contract_version,
+            "request_hash": approval.request_hash,
+            "approval_scope_hash": sha256_digest(approval.one_time_scope),
+            "requester_principal_id": approval.requester_principal_id,
+            "requester_principal_generation": approval.requester_principal_generation,
+            "approver_decision": decision,
+            "executor_principal_id": approval.executor_principal_id,
+            "executor_principal_generation": approval.executor_principal_generation,
         }
 
     def apply_approved(
@@ -1414,13 +1667,7 @@ class TrustedHostPromotionService:
         ):
             self._terminally_stale(proposal.proposal_id)
             raise TrustedHostPromotionError("trusted-host promotion authority is stale")
-        if not self.placement_test_fixture_ready:
-            raise TrustedHostPromotionError(
-                "trusted-host promotion placement is not production-ready"
-            )
-        if not descriptor_relative_placement_supported():
-            raise TrustedHostPromotionError("descriptor_relative_placement_unsupported")
-
+        self._require_placement_readiness()
         payload = self._payload_from_proposal(proposal)
         try:
             source_bytes = _read_source_artifact(
@@ -1521,10 +1768,69 @@ class TrustedHostPromotionService:
             raise TrustedHostPromotionError(
                 "placement_evidence_recovery_required"
             ) from exc
+
+        completion_event_id = f"evt_{uuid4().hex}"
+        try:
+            completion_event = self.audit_writer.write_event(
+                event_id=completion_event_id,
+                event_type=AuditEventType.TOOL_EXECUTION_COMPLETED,
+                request_id=proposal.request_id,
+                principal={
+                    "id": current_context.principal_id,
+                    "identity_generation": current_context.identity_generation,
+                },
+                tool_name=TRUSTED_HOST_PROMOTION_TOOL,
+                resource={
+                    "type": "trusted_host_staging",
+                    "workspace_id": proposal.workspace_id,
+                    "host_staging_label": proposal.host_staging_label,
+                    "in_scope": True,
+                },
+                decision=PolicyDecisionValue.REQUIRE_APPROVAL,
+                policy_version=current_snapshot.policy.policy_version,
+                matched_rules=list(current_snapshot.policy.matched_rules),
+                input_hash=approval.request_hash,
+                metadata={
+                    "promotion_attempt_id": recorded.attempt_id,
+                    "promotion_proposal_id": proposal.proposal_id,
+                    "proposal_hash": proposal.proposal_hash,
+                    "approval_id": approval.approval_id,
+                    "approval_decision_hash": approval.decision_hash,
+                    "approval_scope_hash": sha256_digest(approval.one_time_scope),
+                    "authority_snapshot_hash": current_snapshot.snapshot_hash,
+                    "requester_principal_id": proposal.requester_principal_id,
+                    "approver_principal_id": approval.deciding_principal_id,
+                    "executor_principal_id": current_context.principal_id,
+                    "trusted_host_descriptor_hash": (
+                        current_snapshot.trusted_host.descriptor_hash
+                    ),
+                    "policy_digest": current_snapshot.policy.policy_digest,
+                    "manifest_lock_digest": current_snapshot.manifest.lock_digest,
+                    "input_schema_digest": current_snapshot.input_schema.schema_digest,
+                    "runtime_candidate_id": current_snapshot.runtime_candidate.candidate_id,
+                    "artifact_sha256": proposal.artifact_sha256,
+                    "staged_sha256": recorded.staged_sha256,
+                    "placement_mode": "create_exclusive",
+                    "zone": "host_staging",
+                    "completion_evidence_status": "recorded",
+                },
+            )
+        except Exception as exc:
+            raise TrustedHostPromotionError("completion_evidence_incomplete") from exc
+        try:
+            completed = self.store.complete_with_evidence(
+                recorded.attempt_id,
+                audit_event_id=completion_event.event_id,
+                audit_event_hash=completion_event.event_hash,
+            )
+        except TrustedHostPromotionError as exc:
+            raise TrustedHostPromotionError("completion_evidence_incomplete") from exc
         return {
-            "promotion_attempt": recorded.summary(),
-            "proposal_status": "completion_evidence_pending",
-            "completion_claimed": False,
+            "promotion_attempt": completed.summary(),
+            "proposal_status": "completed",
+            "completion_claimed": True,
+            "completion_audit_event_id": completion_event.event_id,
+            "completion_audit_event_hash": completion_event.event_hash,
             "output_policy": _output_policy(),
         }
 
@@ -1576,20 +1882,15 @@ class TrustedHostPromotionService:
         if not self.store.mark_authority_stale(proposal_id):
             raise TrustedHostPromotionError("proposal_not_applicable")
 
-    def complete_with_evidence(self, attempt_id: str) -> TrustedHostPromotionAttempt:
-        self._require_governance_binding()
-        raise TrustedHostPromotionError(
-            "trusted-host promotion completion evidence is not production-ready"
-        )
-
     def diagnostics(self, approval_service: ApprovalService) -> JsonObject:
+        proposals = [
+            self.proposal_review(proposal, approval_service)
+            for proposal in self.store.list_proposals()
+        ]
         attempts = [attempt.summary() for attempt in self.store.list_attempts()]
-        incomplete = [attempt for attempt in attempts if attempt["status"] != "completed"]
         stuck_approvals = [
             {
-                "approval_id": approval.approval_id,
-                "request_id": approval.request_id,
-                "status": approval.status.value,
+                **self._safe_approval_evidence(approval),
                 "proposal_id": approval.one_time_scope.get("promotion_proposal_id"),
                 "host_staging_label": approval.one_time_scope.get("host_staging_label"),
             }
@@ -1597,37 +1898,92 @@ class TrustedHostPromotionService:
             if approval.tool_name == TRUSTED_HOST_PROMOTION_TOOL
             and approval.status.value == "executing"
         ]
-        diagnostic_status = "clean"
-        if any(
-            attempt["status"] == "placement_evidence_recovery_required"
+        proposal_statuses = {
+            status
+            for proposal in proposals
+            if isinstance((status := proposal.get("status")), str)
+        }
+        attempt_statuses = {
+            status
             for attempt in attempts
+            if isinstance((status := attempt.get("status")), str)
+        }
+        authority_evidence_statuses = {
+            status
+            for proposal in proposals
+            if isinstance((evidence := proposal.get("authority_evidence")), dict)
+            and isinstance((status := evidence.get("status")), str)
+        }
+        effective_statuses = {
+            status
+            for proposal in proposals
+            if isinstance((status := proposal.get("effective_status")), str)
+        }
+        approval_terminal = bool(
+            effective_statuses
+            & {"approval_denied", "approval_expired", "approval_superseded"}
+        )
+        conditions: list[str] = []
+        if (
+            "placement_evidence_recovery_required" in proposal_statuses
+            or "placement_evidence_recovery_required" in attempt_statuses
+            or "legacy_recovery_required" in attempt_statuses
         ):
-            diagnostic_status = "recovery_required"
-        elif incomplete or stuck_approvals:
-            diagnostic_status = "ambiguous"
+            conditions.append("recovery_required")
+        if (
+            "authority_stale" in proposal_statuses
+            or authority_evidence_statuses & {"invalid", "hash_mismatch"}
+        ):
+            conditions.append("stale")
+        if any(status.startswith("legacy_") for status in proposal_statuses | attempt_statuses):
+            conditions.append("legacy")
+        if approval_terminal:
+            conditions.append("approval_terminal")
+        if (
+            proposal_statuses
+            & {
+                "approval_evidence_failed",
+                "completion_evidence_pending",
+                "executing",
+                "failed",
+            }
+            or attempt_statuses
+            & {
+                "prepared",
+                "staged",
+                "failed",
+                "legacy_prepared",
+                "legacy_staged",
+                "legacy_failed",
+            }
+            or "legacy_failed" in proposal_statuses
+            or stuck_approvals
+        ):
+            conditions.append("incomplete")
+        diagnostic_status = next(
+            (
+                condition
+                for condition in ("recovery_required", "incomplete", "stale", "legacy")
+                if condition in conditions
+            ),
+            "incomplete" if approval_terminal else "clean",
+        )
+        guidance = [
+            _diagnostic_guidance(condition)
+            for condition in conditions
+        ]
+        if not guidance:
+            guidance = [_diagnostic_guidance("clean")]
         return {
             "status": diagnostic_status,
             "availability": self._availability_reason(),
-            "placement_available": False,
+            "placement_available": self.production_readiness.get("ready") is True,
+            "production_readiness": self.production_readiness,
+            "conditions": cast(JsonValue, conditions),
+            "proposals": cast(JsonValue, proposals),
             "attempts": cast(JsonValue, attempts),
             "stuck_approvals": cast(JsonValue, stuck_approvals),
-            "recommendations": cast(
-                JsonValue,
-                [
-                    {
-                        "type": "manual_review",
-                        "message": (
-                            "Review proposal, approval, attempt, destination label, "
-                            "and audit evidence; do not retry or repair automatically."
-                        ),
-                    }
-                ],
-            )
-            if diagnostic_status != "clean"
-            else cast(
-                JsonValue,
-                [{"type": "none", "message": "No incomplete trusted-host attempts detected."}],
-            ),
+            "recommendations": cast(JsonValue, guidance),
             "output_policy": _output_policy(),
         }
 
@@ -1643,6 +1999,109 @@ class TrustedHostPromotionService:
                 PromotionReadinessReason.CANDIDATE_AUTHORIZATION_UNAVAILABLE.value
             )
 
+    def _require_proposal_readiness(self) -> None:
+        self._require_governance_binding()
+        if (
+            self.production_readiness.get("ready") is not True
+            and not self.governance_test_fixture_ready
+        ):
+            raise TrustedHostPromotionError("trusted_host_promotion_unavailable")
+
+    def _require_placement_readiness(self) -> None:
+        self._require_governance_binding()
+        if (
+            self.production_readiness.get("ready") is not True
+            and not self.placement_test_fixture_ready
+        ):
+            raise TrustedHostPromotionError(
+                "trusted-host promotion placement is not production-ready"
+            )
+        if not descriptor_relative_placement_supported():
+            raise TrustedHostPromotionError("descriptor_relative_placement_unsupported")
+
+    def _production_readiness(self) -> JsonObject:
+        candidate_verified = bool(
+            self.runtime_candidate is not None
+            and self.runtime_candidate.candidate_id_is_valid()
+        )
+        database_verified = False
+        try:
+            verify_database_v2(self.store.db_path)
+            database_verified = True
+        except DatabaseMigrationError:
+            pass
+        staging_root_verified = False
+        if descriptor_relative_placement_supported():
+            try:
+                with TrustedHostPlacement(self.staging_root):
+                    staging_root_verified = True
+            except TrustedHostPlacementError:
+                pass
+        principal_registry_ready = False
+        if self.principal_registry_verified and self.principal_registry.source_path.is_file():
+            try:
+                self.principal_registry.admin_context()
+                principal_registry_ready = True
+            except PrincipalRegistryError:
+                pass
+        workspace_registry_ready = False
+        if self.workspace_registry_verified and self.workspace_registry.path.is_file():
+            try:
+                self.workspace_registry.authority_record()
+                workspace_registry_ready = True
+            except WorkspaceRegistryError:
+                pass
+        trusted_host_status = self.trusted_host_registry.status()
+        trusted_host_registry_ready = bool(
+            self.trusted_host_registry.source_path.is_file()
+            and isinstance(trusted_host_status.get("enabled_count"), int)
+            and cast(int, trusted_host_status["enabled_count"]) > 0
+        )
+        components = cast(
+            JsonObject,
+            {
+                "verified_runtime_candidate": candidate_verified,
+                "detached_operator_authorization": bool(
+                    candidate_verified
+                    and self.runtime_candidate is not None
+                    and self.runtime_candidate.authorization_id
+                ),
+                "database_v2_contract": database_verified,
+                "yaml_policy": self.policy_engine.engine_name == "yaml",
+                "principal_registry": principal_registry_ready,
+                "workspace_registry": workspace_registry_ready,
+                "trusted_host_registry": trusted_host_registry_ready,
+                "manifest_lock": bool(
+                    self.manifest_lock_verified
+                    and self._manifest_authority_record is not None
+                    and self._manifest_authority_record.tool_count == 24
+                ),
+                "proposal_input_schema_v2": (
+                    self.input_schema_authority.schema_version == "2"
+                ),
+                "descriptor_relative_placement": (
+                    descriptor_relative_placement_supported()
+                ),
+                "staging_root_descriptor": staging_root_verified,
+                "internal_test_fixture_disabled": (
+                    not self.governance_test_fixture_ready
+                    and not self.placement_test_fixture_ready
+                ),
+            },
+        )
+        ready = all(value is True for value in components.values())
+        unavailable_reason = "ready"
+        if not ready:
+            unavailable_reason = next(
+                key for key, value in components.items() if value is not True
+            )
+        return {
+            "ready": ready,
+            "reason": unavailable_reason,
+            "components": components,
+            "operator_override_available": False,
+        }
+
     def _availability_reason(self) -> str:
         if self.policy_engine.engine_name != "yaml":
             return "unsupported_policy_engine_for_promotion"
@@ -1652,7 +2111,8 @@ class TrustedHostPromotionService:
             return PromotionReadinessReason.CANDIDATE_AUTHORIZATION_UNAVAILABLE.value
         if not self.runtime_candidate.candidate_id_is_valid():
             return PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
-        return PromotionReadinessReason.READY.value
+        reason = self.production_readiness.get("reason")
+        return reason if isinstance(reason, str) else "trusted_host_promotion_unavailable"
 
     def _payload_from_proposal(
         self,
@@ -1695,7 +2155,7 @@ class TrustedHostPromotionService:
 def _proposal_from_row(row: tuple[object, ...]) -> TrustedHostPromotionProposal:
     metadata = _json_object(str(row[15]), "promotion metadata")
     authority_snapshot_json = (
-        _json_object(str(row[17]), "promotion authority snapshot") if row[17] is not None else None
+        _safe_authority_snapshot(str(row[17])) if row[17] is not None else None
     )
     return TrustedHostPromotionProposal(
         proposal_id=str(row[0]),
@@ -1782,6 +2242,17 @@ def _proposal_display_status(status: str) -> str:
     return status.removeprefix("v2_") if status.startswith("v2_") else status
 
 
+def _effective_proposal_status(proposal_status: str, approval_status: str) -> str:
+    if proposal_status != "approval_required":
+        return proposal_status
+    return {
+        "approved": "approval_approved",
+        "denied": "approval_denied",
+        "expired": "approval_expired",
+        "superseded": "approval_superseded",
+    }.get(approval_status, proposal_status)
+
+
 def _attempt_storage_status(status: str) -> str:
     if status.startswith("legacy_"):
         raise TrustedHostPromotionError("legacy promotion attempt is immutable")
@@ -1809,6 +2280,17 @@ def _json_object(raw: str, label: str) -> JsonObject:
         raise TrustedHostPromotionError(f"failed to decode {label}") from exc
     if not isinstance(value, dict):
         raise TrustedHostPromotionError(f"failed to decode {label}")
+    return cast(JsonObject, value)
+
+
+def _safe_authority_snapshot(raw: str) -> JsonObject:
+    """Preserve malformed persisted authority as inert evidence for safe diagnostics."""
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return {"invalid_authority_evidence": True}
+    if not isinstance(value, dict):
+        return {"invalid_authority_evidence": True}
     return cast(JsonObject, value)
 
 
@@ -1892,17 +2374,59 @@ def _scope_string(scope: JsonObject, key: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _safe_metadata_string(metadata: JsonObject, key: str) -> str | None:
+    value = metadata.get(key)
+    return value if isinstance(value, str) else None
+
+
+def _diagnostic_guidance(condition: str) -> JsonObject:
+    guidance = {
+        "recovery_required": (
+            "A placement effect may exist in a retained directory. Isolate the staging zone and "
+            "correlate proposal, approval, attempt, and audit hashes manually. Do not retry, "
+            "delete, or repair automatically."
+        ),
+        "incomplete": (
+            "Gateway has incomplete placement or completion evidence. Review the recorded hashes "
+            "and append-only audit chain manually. Do not retry or repair automatically."
+        ),
+        "stale": (
+            "Bound authority changed after proposal or approval. This proposal is terminal; use a "
+            "new authorized workflow rather than retrying it."
+        ),
+        "legacy": (
+            "This historical proposal lacks version-2 authority binding and is read-only. It "
+            "cannot be applied, rebound, or retried."
+        ),
+        "approval_terminal": (
+            "Gateway recorded a terminal approval outcome. No placement is authorized; review "
+            "the server-recorded outcome and use a new authorized workflow rather than retrying."
+        ),
+        "clean": "No incomplete trusted-host placement evidence is recorded.",
+    }
+    return {
+        "type": "none" if condition == "clean" else "manual_review",
+        "condition": condition,
+        "message": guidance[condition],
+        "retry_available": False,
+        "automatic_repair_available": False,
+    }
+
+
 def _output_policy() -> JsonObject:
     return {
         "staging_only": True,
         "file_contents_included": False,
         "raw_host_paths_included": False,
         "raw_source_paths_included": False,
+        "source_labels_included": False,
         "diffs_included": False,
         "prompts_included": False,
         "model_outputs_included": False,
         "shell_output_included": False,
         "environment_values_included": False,
+        "bearer_material_included": False,
+        "stack_traces_included": False,
         "registry_urls_included": False,
         "dependency_names_included": False,
         "package_scripts_included": False,

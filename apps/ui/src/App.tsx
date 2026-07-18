@@ -367,6 +367,46 @@ type PatchApplyDiagnostics = {
   recommendations: JsonObject[];
 };
 
+type TrustedHostPromotionProposal = {
+  promotion_proposal_id: string;
+  request_id: string;
+  status: string;
+  effective_status?: string;
+  created_at: string;
+  updated_at: string;
+  authority_binding_status: string;
+  authority_snapshot_hash?: string | null;
+  requester_principal_id?: string | null;
+  requester_principal_generation?: string | null;
+  executor_principal_id?: string | null;
+  executor_principal_generation?: string | null;
+  proposal_hash: string;
+  workspace_id: string;
+  sandbox_descriptor_id: string;
+  sandbox_descriptor_hash: string;
+  sandbox_id: string;
+  source_artifact_reference_hash: string;
+  host_staging_label: string;
+  artifact_sha256: string;
+  artifact_size_bytes: number;
+  artifact_media_label: string;
+  authority_evidence: JsonObject;
+  approval_evidence_status: string;
+  approval_evidence: JsonObject | null;
+};
+
+type TrustedHostPromotionDiagnostics = {
+  status: "clean" | "legacy" | "stale" | "incomplete" | "recovery_required" | string;
+  availability: string;
+  placement_available: boolean;
+  production_readiness: JsonObject;
+  conditions: string[];
+  proposals: TrustedHostPromotionProposal[];
+  attempts: JsonObject[];
+  stuck_approvals: JsonObject[];
+  recommendations: JsonObject[];
+};
+
 type PolicyStatus = {
   engine: string;
   document_version: string;
@@ -519,6 +559,8 @@ type DashboardData = {
   approvalHistory: Approval[];
   patches: PatchProposal[];
   patchDiagnostics: PatchApplyDiagnostics | null;
+  trustedHostPromotions: TrustedHostPromotionProposal[];
+  trustedHostDiagnostics: TrustedHostPromotionDiagnostics | null;
   runs: AgentRun[];
   nodes: IthildinNode[];
   runSummary: AgentRunSummary | null;
@@ -594,6 +636,8 @@ function emptyDashboardData(): DashboardData {
     approvalHistory: [],
     patches: [],
     patchDiagnostics: null,
+    trustedHostPromotions: [],
+    trustedHostDiagnostics: null,
     runs: [],
     nodes: [],
     runSummary: null,
@@ -852,6 +896,8 @@ export function App() {
         approvalHistoryResponse,
         patchesResponse,
         patchDiagnostics,
+        trustedHostPromotionsResponse,
+        trustedHostDiagnostics,
         runsResponse,
         nodesResponse,
         auditResponse,
@@ -863,6 +909,14 @@ export function App() {
         apiRequest<{ approvals: Approval[] }>("/approvals", activeToken),
         apiRequest<{ patch_proposals: PatchProposal[] }>("/patch-proposals", activeToken),
         apiRequest<PatchApplyDiagnostics>("/patch-apply-diagnostics", activeToken),
+        apiRequest<{ promotion_proposals: TrustedHostPromotionProposal[] }>(
+          "/trusted-host-promotions/proposals",
+          activeToken,
+        ),
+        apiRequest<TrustedHostPromotionDiagnostics>(
+          "/trusted-host-promotions/diagnostics",
+          activeToken,
+        ),
         apiRequest<{ runs: AgentRun[]; summary: AgentRunSummary }>(
           runListPath(activeRunFilters),
           activeToken,
@@ -881,6 +935,8 @@ export function App() {
         approvalHistory: approvalHistoryResponse.approvals,
         patches: patchesResponse.patch_proposals,
         patchDiagnostics,
+        trustedHostPromotions: trustedHostPromotionsResponse.promotion_proposals,
+        trustedHostDiagnostics,
         runs: runsResponse.runs,
         nodes: nodesResponse.nodes,
         runSummary: runsResponse.summary,
@@ -2259,14 +2315,33 @@ export function App() {
       </section>
       ) : null}
 
-      {workspaceLens === "technical" ? (
-      <section className="integrity-section destination-screen" data-screen="evidence" id="evidence" aria-label="Technical evidence" tabIndex={-1}>
+      <section
+        className="trusted-host-evidence-section destination-screen"
+        data-screen="evidence"
+        id="evidence"
+        aria-label="Gateway staging evidence"
+        tabIndex={-1}
+      >
         <DestinationHeading
           eyebrow="Evidence reconstruction"
-          title="Recorded activity and integrity"
-          description="Verify the local audit chain, export bounded evidence, and inspect recovery diagnostics."
+          title="Gateway evidence and recovery"
+          description="Review the authority, placement, and completion state returned by Gateway without inferring external host or runner state."
           icon={<ScrollText size={24} />}
         />
+        <Panel
+          title="Trusted-host staging"
+          purpose="Read Gateway-owned staging evidence and manual-recovery guidance without adding a retry or repair path."
+          icon={<ShieldCheck size={18} />}
+        >
+          <TrustedHostPromotionEvidence
+            diagnostics={data.trustedHostDiagnostics}
+            proposals={data.trustedHostPromotions}
+          />
+        </Panel>
+      </section>
+
+      {workspaceLens === "technical" ? (
+      <section className="integrity-section destination-screen" data-screen="evidence" aria-label="Technical evidence">
         <Panel
           title="Audit Integrity"
           purpose="Reconstruct locally mediated activity and understand the limits of its evidence."
@@ -6088,6 +6163,19 @@ function ApprovalEvidence({
         ["Scope hash", scopeString(approval.metadata, "approval_scope_hash")],
       ]),
     },
+    {
+      title: "Server-recorded Decision",
+      items: approval.decision_hash
+        ? evidenceItems([
+            ["Deciding principal", approval.deciding_principal_id ?? ""],
+            ["Principal generation", approval.deciding_principal_generation ?? ""],
+            ["Decision time", approval.decided_at ?? ""],
+            ["Decision reason hash", approval.decision_reason_hash ?? ""],
+            ["Decision authority", approval.decision_authority_snapshot_hash ?? ""],
+            ["Decision hash", approval.decision_hash],
+          ])
+        : [],
+    },
   ].filter((group) => group.items.length > 0);
 
   if (groups.length === 0) {
@@ -6124,6 +6212,185 @@ function ApprovalEvidence({
       </div>
     </section>
   );
+}
+
+function TrustedHostPromotionEvidence({
+  diagnostics,
+  proposals,
+}: {
+  diagnostics: TrustedHostPromotionDiagnostics | null;
+  proposals: TrustedHostPromotionProposal[];
+}) {
+  if (!diagnostics) {
+    return <EmptyState text="Trusted-host staging evidence is unavailable." />;
+  }
+  const readiness = diagnostics.production_readiness;
+  const readinessReason = scopeString(readiness, "reason") || diagnostics.availability;
+  const readinessReasonLabel =
+    readiness.ready === true
+      ? "all required components verified"
+      : `missing ${readinessReason.replace(/_/g, " ")}`;
+  return (
+    <div className="trusted-host-evidence">
+      <div className="trusted-host-boundary">
+        <ShieldCheck aria-hidden="true" size={22} />
+        <div>
+          <strong>Gateway truth · read-only consumer</strong>
+          <p>
+            Command Center displays Gateway-returned authority and lifecycle evidence. It does not
+            infer policy validity, host placement, Node ownership, runner state, or model state.
+          </p>
+        </div>
+        <StatusPill status={diagnostics.status} />
+      </div>
+      <dl className="trusted-host-metrics" aria-label="Trusted-host staging evidence summary">
+        <div>
+          <dt>Production placement</dt>
+          <dd>{diagnostics.placement_available ? "available" : "unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Readiness reason</dt>
+          <dd>{readinessReasonLabel}</dd>
+        </div>
+        <div>
+          <dt>Loaded proposals</dt>
+          <dd>{proposals.length}</dd>
+        </div>
+        <div>
+          <dt>Automatic recovery</dt>
+          <dd>not available</dd>
+        </div>
+      </dl>
+      <div className="trusted-host-guidance" role="status" aria-live="polite">
+        <strong>{trustedHostDiagnosticHeading(diagnostics.status, diagnostics.conditions)}</strong>
+        {diagnostics.recommendations.map((recommendation, index) => (
+          <p key={`${scopeString(recommendation, "condition")}-${index}`}>
+            {scopeString(recommendation, "message") ||
+              "Review Gateway evidence manually. No automatic action is available."}
+          </p>
+        ))}
+      </div>
+      {proposals.length === 0 ? (
+        <EmptyState text="No trusted-host staging proposals are recorded in this Gateway." />
+      ) : (
+        <div className="trusted-host-proposal-list" role="list" aria-label="Trusted-host staging proposals">
+          {proposals.map((proposal) => {
+            const effectiveStatus = proposal.effective_status || proposal.status;
+            const authority = proposal.authority_evidence;
+            const policy = scopeObject(authority, "policy");
+            const manifest = scopeObject(authority, "manifest");
+            const inputSchema = scopeObject(authority, "input_schema");
+            const candidate = scopeObject(authority, "runtime_candidate");
+            const host = scopeObject(authority, "trusted_host");
+            const approval = proposal.approval_evidence;
+            const decision = scopeObject(approval ?? {}, "approver_decision");
+            return (
+              <article
+                className={`trusted-host-proposal trusted-host-${effectiveStatus.replace(/_/g, "-")}`}
+                key={proposal.promotion_proposal_id}
+                role="listitem"
+                aria-label={`Trusted-host proposal ${shortId(proposal.promotion_proposal_id)}: ${effectiveStatus.replace(/_/g, " ")}`}
+              >
+                <header>
+                  <div>
+                    <p className="eyebrow">{proposal.workspace_id} · {proposal.host_staging_label}</p>
+                    <h4>{shortId(proposal.promotion_proposal_id)}</h4>
+                  </div>
+                  <StatusPill status={effectiveStatus} />
+                </header>
+                <p className="trusted-host-state-guidance">
+                  {trustedHostProposalGuidance(effectiveStatus)}
+                </p>
+                <dl className="trusted-host-evidence-grid">
+                  <div><dt>Binding</dt><dd>{proposal.authority_binding_status.replace(/_/g, " ")}</dd></div>
+                  <div><dt>Authority</dt><dd>{shortHash(proposal.authority_snapshot_hash ?? "")}</dd></div>
+                  <div><dt>Requester</dt><dd>{proposal.requester_principal_id ?? "not recorded"}</dd></div>
+                  <div><dt>Proposal hash</dt><dd>{shortHash(proposal.proposal_hash)}</dd></div>
+                  <div><dt>Artifact hash</dt><dd>{shortHash(proposal.artifact_sha256)}</dd></div>
+                  <div><dt>Source reference</dt><dd>{shortHash(proposal.source_artifact_reference_hash)}</dd></div>
+                  <div><dt>Host descriptor</dt><dd>{shortHash(scopeString(host ?? {}, "descriptor_hash"))}</dd></div>
+                  <div><dt>Policy</dt><dd>{scopeString(policy ?? {}, "policy_version") || "not bound"} · {shortHash(scopeString(policy ?? {}, "policy_digest"))}</dd></div>
+                  <div><dt>Manifest</dt><dd>{scopeString(manifest ?? {}, "lock_version") || "not bound"} · {shortHash(scopeString(manifest ?? {}, "lock_digest"))}</dd></div>
+                  <div><dt>Input schema</dt><dd>{scopeString(inputSchema ?? {}, "schema_version") || "not bound"} · {shortHash(scopeString(inputSchema ?? {}, "schema_digest"))}</dd></div>
+                  <div><dt>Runtime candidate</dt><dd>{shortHash(scopeString(candidate ?? {}, "candidate_id"))}</dd></div>
+                  <div><dt>Updated</dt><dd>{formatDate(proposal.updated_at)}</dd></div>
+                </dl>
+                {decision ? (
+                  <section className="trusted-host-decision" aria-label="Server-recorded approval decision">
+                    <strong>Server-recorded decision</strong>
+                    <dl>
+                      <div>
+                        <dt>Decision outcome</dt>
+                        <dd>{scopeString(approval ?? {}, "status") || "not recorded"}</dd>
+                      </div>
+                      <div>
+                        <dt>Deciding principal</dt>
+                        <dd>{scopeString(decision, "deciding_principal_id") || "not recorded"}</dd>
+                      </div>
+                      <div>
+                        <dt>Decision hash</dt>
+                        <dd>{shortHash(scopeString(decision, "decision_hash"))}</dd>
+                      </div>
+                    </dl>
+                  </section>
+                ) : (
+                  <p className="trusted-host-no-decision">
+                    No server-recorded approval decision is present; Command Center does not assign one.
+                  </p>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function trustedHostDiagnosticHeading(status: string, conditions: string[]) {
+  if (conditions.includes("approval_terminal")) {
+    return "Approval closed without placement";
+  }
+  const headings: Record<string, string> = {
+    clean: "No incomplete staging evidence is recorded",
+    legacy: "Legacy authority evidence requires review",
+    stale: "Authority changed after binding",
+    incomplete: "Completion evidence is incomplete",
+    recovery_required: "Placement recovery review is required",
+  };
+  return headings[status] ?? "Review the Gateway diagnostic state";
+}
+
+function trustedHostProposalGuidance(status: string) {
+  const guidance: Record<string, string> = {
+    legacy_unbound:
+      "Historical record without version-2 authority binding. It cannot be applied, rebound, or retried.",
+    authority_stale:
+      "Bound authority changed after approval. This proposal is terminal; use a new authorized workflow.",
+    approval_evidence_failed:
+      "Approval creation was not durably evidenced. No placement or retry action is available.",
+    completion_evidence_pending:
+      "Placement was recorded, but append-only completion evidence is not finalized. Review manually and do not retry.",
+    placement_evidence_recovery_required:
+      "A placement effect may exist in a retained directory. Isolate and investigate manually; do not retry or delete automatically.",
+    completed:
+      "Gateway recorded placement and append-only completion evidence before marking this proposal complete.",
+    approval_required:
+      "Gateway is waiting for the exact one-time approval. This evidence view does not decide or apply it.",
+    approval_approved:
+      "Gateway recorded the exact one-time approval. Placement has not begun; this evidence view does not apply it.",
+    approval_denied:
+      "Gateway denied this approval. No placement is authorized; use a new authorized workflow rather than retrying.",
+    approval_expired:
+      "Gateway recorded this approval as expired. No placement is authorized; use a new authorized workflow rather than retrying.",
+    approval_superseded:
+      "Gateway superseded this approval. No placement is authorized; review the recorded evidence and do not retry it.",
+    executing:
+      "Gateway reserved the one-time execution. Wait for authoritative evidence; no retry is available.",
+    failed:
+      "Gateway recorded a terminal failure. Review evidence and use a new authorized workflow if needed.",
+  };
+  return guidance[status] ?? "Review the Gateway-returned lifecycle state before any separate action.";
 }
 
 function PatchDiagnosticsSummary({ diagnostics }: { diagnostics: PatchApplyDiagnostics }) {
