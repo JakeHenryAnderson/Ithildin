@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import os
 import shutil
 import sys
 import tempfile
@@ -50,9 +52,13 @@ def build_transcripts(output_dir: Path) -> Path:
         results = [
             _unauthenticated(root / "unauthenticated"),
             _hidden_source(root / "hidden-source"),
+            _symlink_source(root / "symlink-source"),
+            _hardlink_source(root / "hardlink-source"),
             _unsafe_staging_label(root / "unsafe-label"),
             _stale_artifact_hash(root / "stale-artifact"),
+            _mismatched_proposal_approval(root / "mismatched-binding"),
             _replayed_approval(root / "replayed-approval"),
+            _existing_destination(root / "existing-destination"),
             _unsupported_apply_field(root / "unsupported-apply-field"),
         ]
     transcript = output_dir / TRANSCRIPT_NAME
@@ -110,6 +116,47 @@ def _unsafe_staging_label(root: Path) -> ScenarioResult:
     )
 
 
+def _symlink_source(root: Path) -> ScenarioResult:
+    client, settings, descriptor_id = _client(root)
+    settings.workspace_root.joinpath("linked.txt").symlink_to(
+        settings.workspace_root / "summary.txt"
+    )
+    response = client.post(
+        "/trusted-host-promotions/proposals",
+        json={**_proposal_payload(descriptor_id), "source_artifact_path": "linked.txt"},
+        headers=_headers(),
+    )
+    return _scenario(
+        "Symlink Source Denial",
+        'proposal source_artifact_path="linked.txt" points to a symlink',
+        "400 without following the source object",
+        response.status_code,
+        _reason(response.json()),
+        "descriptor-bound no-follow source read rejected the symlink",
+    )
+
+
+def _hardlink_source(root: Path) -> ScenarioResult:
+    client, settings, descriptor_id = _client(root)
+    os.link(
+        settings.workspace_root / "summary.txt",
+        settings.workspace_root / "hardlinked.txt",
+    )
+    response = client.post(
+        "/trusted-host-promotions/proposals",
+        json={**_proposal_payload(descriptor_id), "source_artifact_path": "hardlinked.txt"},
+        headers=_headers(),
+    )
+    return _scenario(
+        "Hardlink Source Denial",
+        'proposal source_artifact_path="hardlinked.txt" has multiple links',
+        "400 without accepting an ambiguous source object",
+        response.status_code,
+        _reason(response.json()),
+        "opened source descriptor failed the single-link check",
+    )
+
+
 def _stale_artifact_hash(root: Path) -> ScenarioResult:
     client, settings, descriptor_id = _client(root)
     proposal = client.post(
@@ -136,6 +183,41 @@ def _stale_artifact_hash(root: Path) -> ScenarioResult:
         response.status_code,
         _reason(response.json()),
         "source artifact hash mismatch",
+    )
+
+
+def _mismatched_proposal_approval(root: Path) -> ScenarioResult:
+    client, _settings, descriptor_id = _client(root)
+    first = client.post(
+        "/trusted-host-promotions/proposals",
+        json=_proposal_payload(descriptor_id),
+        headers=_headers(),
+    ).json()
+    second = client.post(
+        "/trusted-host-promotions/proposals",
+        json={
+            **_proposal_payload(descriptor_id),
+            "host_staging_label": "host-staging://second-output",
+        },
+        headers=_headers(),
+    ).json()
+    client.post(
+        f"/approvals/{first['approval_id']}/approve",
+        json={"decision": "approve", "decided_by": "admin:local"},
+        headers=_headers(),
+    )
+    response = client.post(
+        f"/trusted-host-promotions/proposals/{second['promotion_proposal_id']}/apply",
+        json={"approval_id": first["approval_id"]},
+        headers=_headers(),
+    )
+    return _scenario(
+        "Mismatched Proposal Approval Denial",
+        "apply route proposal differs from the approval-bound proposal",
+        "409 before approval consumption or staging placement",
+        response.status_code,
+        _reason(response.json()),
+        "route, proposal, scope, request, and approval binding review failed closed",
     )
 
 
@@ -169,6 +251,46 @@ def _replayed_approval(root: Path) -> ScenarioResult:
         response.status_code,
         _reason(response.json()),
         "approval compare-and-set rejected replay",
+    )
+
+
+def _existing_destination(root: Path) -> ScenarioResult:
+    client, settings, descriptor_id = _client(root)
+    proposal = client.post(
+        "/trusted-host-promotions/proposals",
+        json=_proposal_payload(descriptor_id),
+        headers=_headers(),
+    ).json()
+    approval_id = proposal["approval_id"]
+    client.post(
+        f"/approvals/{approval_id}/approve",
+        json={"decision": "approve", "decided_by": "admin:local"},
+        headers=_headers(),
+    )
+    attempt_id = "thpa_" + hashlib.sha256(
+        proposal["promotion_proposal_id"].encode("utf-8")
+    ).hexdigest()[:32]
+    destination = (
+        settings.trusted_host_staging_root
+        / "default"
+        / proposal["promotion_proposal_id"]
+        / f"{attempt_id}-summary-output.artifact"
+    )
+    destination.parent.mkdir(parents=True)
+    destination.write_text("existing output\n", encoding="utf-8")
+    response = client.post(
+        f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+        json={"approval_id": approval_id},
+        headers=_headers(),
+    )
+    preserved = destination.read_text(encoding="utf-8") == "existing output\n"
+    return _scenario(
+        "Existing Destination Denial",
+        "deterministic final staging leaf already exists",
+        "409 without overwriting the existing destination",
+        response.status_code,
+        _reason(response.json()),
+        f"create-exclusive placement preserved existing destination: {str(preserved).lower()}",
     )
 
 

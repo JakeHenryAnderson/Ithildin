@@ -27,6 +27,7 @@ AREA_NAMESPACES = {
     "sandbox-vm-live-poc-runtime-gate-readiness": "LIVE-GATE",
     "sandbox-vm-live-poc-runtime-descriptor-only": "LIVE-DESC",
     "trusted-host-promotion": "TRUSTED-HOST",
+    "trusted-host-promotion-runtime": "TRUSTED-HOST-RUNTIME",
     "production-identity-storage": "PROD-IAM-STORAGE",
     "siem-export-adapter": "SIEM-ADAPTER",
     "compliance-mapping": "COMPLIANCE-MAPPING",

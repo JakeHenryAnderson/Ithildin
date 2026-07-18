@@ -1516,6 +1516,14 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 "output_policy": result.get("output_policy"),
             },
         )
+        attempt_id = result.get("promotion_attempt_id")
+        if not isinstance(attempt_id, str):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="trusted-host promotion completion evidence is unavailable",
+            )
+        promotion_service.complete_with_evidence(attempt_id)
+        result["status"] = "completed"
         return result
 
     @api.get("/trusted-host-promotions/diagnostics", dependencies=[Depends(require_admin_token)])

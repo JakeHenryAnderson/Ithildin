@@ -3,7 +3,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
@@ -704,7 +706,9 @@ def test_trusted_host_promotion_stages_single_artifact_after_approval(
     assert staged_files[0].read_text(encoding="utf-8") == "Hello World\n"
 
     assert replay_response.status_code == 409
-    assert "approval is not approved" in replay_response.json()["detail"]
+    assert replay_response.json()["detail"] == (
+        "trusted-host promotion proposal is not applicable"
+    )
     assert diagnostics_response.status_code == 200
     assert diagnostics_response.json()["status"] == "clean"
     assert list_response.status_code == 200
@@ -819,6 +823,356 @@ def test_trusted_host_promotion_denies_stale_and_unsafe_inputs(
     assert settings.trusted_host_staging_root.exists() is False
     assert diagnostics.status_code == 200
     assert diagnostics.json()["status"] == "clean"
+
+
+def test_trusted_host_promotion_binds_route_proposal_and_allows_one_attempt(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    (settings.workspace_root / "summary.txt").write_text("bounded output\n", encoding="utf-8")
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-demo"),
+            headers=headers,
+        ).json()
+
+        def create_proposal(host_staging_label: str) -> dict[str, Any]:
+            response = client.post(
+                "/trusted-host-promotions/proposals",
+                json={
+                    "workspace_id": "default",
+                    "sandbox_descriptor_id": descriptor["descriptor_id"],
+                    "sandbox_id": "sandbox-demo",
+                    "source_artifact_path": "summary.txt",
+                    "host_staging_label": host_staging_label,
+                },
+                headers=headers,
+            )
+            assert response.status_code == 200
+            return cast(dict[str, Any], response.json())
+
+        first = create_proposal("host-staging://first-output")
+        second = create_proposal("host-staging://second-output")
+        first_approval = client.get(
+            f"/approvals/{first['approval_id']}",
+            headers=headers,
+        ).json()
+        duplicate_approval_response = client.post(
+            "/approvals",
+            headers=headers,
+            json={
+                "principal": first_approval["principal"],
+                "tool_name": first_approval["tool_name"],
+                "resource": first_approval["resource"],
+                "summary": first_approval["summary"],
+                "one_time_scope": first_approval["one_time_scope"],
+                "request_id": first_approval["request_id"],
+                "request_hash": first_approval["request_hash"],
+                "expires_at": first_approval["expires_at"],
+                "metadata": first_approval["metadata"],
+            },
+        )
+        duplicate_approval = duplicate_approval_response.json()
+        for approval_id in [first["approval_id"], second["approval_id"]]:
+            approve = client.post(
+                f"/approvals/{approval_id}/approve",
+                json={"decision": "approve", "decided_by": "admin:local"},
+                headers=headers,
+            )
+            assert approve.status_code == 200
+        duplicate_approve = client.post(
+            f"/approvals/{duplicate_approval['approval_id']}/approve",
+            json={"decision": "approve", "decided_by": "admin:local"},
+            headers=headers,
+        )
+
+        mismatched = client.post(
+            f"/trusted-host-promotions/proposals/{second['promotion_proposal_id']}/apply",
+            json={"approval_id": first["approval_id"]},
+            headers=headers,
+        )
+        first_apply = client.post(
+            f"/trusted-host-promotions/proposals/{first['promotion_proposal_id']}/apply",
+            json={"approval_id": first["approval_id"]},
+            headers=headers,
+        )
+        duplicate_apply = client.post(
+            f"/trusted-host-promotions/proposals/{first['promotion_proposal_id']}/apply",
+            json={"approval_id": duplicate_approval["approval_id"]},
+            headers=headers,
+        )
+        second_apply = client.post(
+            f"/trusted-host-promotions/proposals/{second['promotion_proposal_id']}/apply",
+            json={"approval_id": second["approval_id"]},
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert duplicate_approval_response.status_code == 200
+    assert duplicate_approve.status_code == 409
+    assert duplicate_approve.json()["detail"] == (
+        "trusted-host promotion approval binding review failed"
+    )
+    assert mismatched.status_code == 409
+    assert mismatched.json()["detail"] == (
+        "trusted-host promotion approval binding review failed"
+    )
+    assert first_apply.status_code == 200
+    assert duplicate_apply.status_code == 409
+    assert duplicate_apply.json()["detail"] == (
+        "trusted-host promotion approval binding review failed"
+    )
+    assert second_apply.status_code == 200
+    for proposal, response in [(first, first_apply), (second, second_apply)]:
+        expected_attempt_id = "thpa_" + hashlib.sha256(
+            proposal["promotion_proposal_id"].encode("utf-8")
+        ).hexdigest()[:32]
+        assert response.json()["promotion_attempt_id"] == expected_attempt_id
+    assert len(list(settings.trusted_host_staging_root.rglob("*.artifact"))) == 2
+    assert diagnostics.status_code == 200
+    assert diagnostics.json()["status"] == "clean"
+    assert len(diagnostics.json()["attempts"]) == 2
+
+
+def test_trusted_host_promotion_rejects_unsafe_source_object_types(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    source = settings.workspace_root / "summary.txt"
+    source.write_text("bounded output\n", encoding="utf-8")
+    (settings.workspace_root / "linked.txt").symlink_to(source)
+    os.link(source, settings.workspace_root / "hardlinked.txt")
+    (settings.workspace_root / "directory.txt").mkdir()
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-demo"),
+            headers=headers,
+        ).json()
+
+        responses = []
+        for source_artifact_path in ["linked.txt", "hardlinked.txt", "directory.txt"]:
+            responses.append(
+                client.post(
+                    "/trusted-host-promotions/proposals",
+                    json={
+                        "workspace_id": "default",
+                        "sandbox_descriptor_id": descriptor["descriptor_id"],
+                        "sandbox_id": "sandbox-demo",
+                        "source_artifact_path": source_artifact_path,
+                        "host_staging_label": "host-staging://bounded-output",
+                    },
+                    headers=headers,
+                )
+            )
+
+    assert [response.status_code for response in responses] == [400, 400, 400]
+    assert all(
+        response.json()["detail"] == "source artifact cannot be safely read"
+        for response in responses
+    )
+    assert all("bounded output" not in response.text for response in responses)
+
+
+def test_trusted_host_promotion_concurrent_apply_stages_once(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    (settings.workspace_root / "summary.txt").write_text(
+        "bounded output\n",
+        encoding="utf-8",
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-demo"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://bounded-output",
+            },
+            headers=headers,
+        ).json()
+        approval_id = proposal["approval_id"]
+        approve = client.post(
+            f"/approvals/{approval_id}/approve",
+            json={"decision": "approve", "decided_by": "admin:local"},
+            headers=headers,
+        )
+
+        def apply_once() -> tuple[int, dict[str, Any]]:
+            response = client.post(
+                f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+                json={"approval_id": approval_id},
+                headers=headers,
+            )
+            return response.status_code, cast(dict[str, Any], response.json())
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            responses = list(executor.map(lambda _: apply_once(), range(2)))
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert approve.status_code == 200
+    assert sorted(status_code for status_code, _ in responses) == [200, 409]
+    successful = [payload for status_code, payload in responses if status_code == 200]
+    assert successful[0]["status"] == "completed"
+    assert len(list(settings.trusted_host_staging_root.rglob("*.artifact"))) == 1
+    assert diagnostics.status_code == 200
+    assert diagnostics.json()["status"] == "clean"
+    assert len(diagnostics.json()["attempts"]) == 1
+
+
+def test_trusted_host_promotion_preserves_existing_destination(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    (settings.workspace_root / "summary.txt").write_text(
+        "new output\n",
+        encoding="utf-8",
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-demo"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://bounded-output",
+            },
+            headers=headers,
+        ).json()
+        approval_id = proposal["approval_id"]
+        approve = client.post(
+            f"/approvals/{approval_id}/approve",
+            json={"decision": "approve", "decided_by": "admin:local"},
+            headers=headers,
+        )
+        attempt_id = "thpa_" + hashlib.sha256(
+            proposal["promotion_proposal_id"].encode("utf-8")
+        ).hexdigest()[:32]
+        destination = (
+            settings.trusted_host_staging_root
+            / "default"
+            / proposal["promotion_proposal_id"]
+            / f"{attempt_id}-bounded-output.artifact"
+        )
+        destination.parent.mkdir(parents=True)
+        destination.write_text("existing output\n", encoding="utf-8")
+        apply_response = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": approval_id},
+            headers=headers,
+        )
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+
+    assert approve.status_code == 200
+    assert apply_response.status_code == 409
+    assert apply_response.json()["detail"] == "trusted-host promotion did not complete"
+    assert destination.read_text(encoding="utf-8") == "existing output\n"
+    assert diagnostics.status_code == 200
+    assert diagnostics.json()["status"] == "ambiguous"
+    assert diagnostics.json()["attempts"][0]["status"] == "failed"
+
+
+def test_trusted_host_promotion_audit_failure_remains_incomplete(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    (settings.workspace_root / "summary.txt").write_text(
+        "bounded output\n",
+        encoding="utf-8",
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        descriptor = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-demo"),
+            headers=headers,
+        ).json()
+        proposal = client.post(
+            "/trusted-host-promotions/proposals",
+            json={
+                "workspace_id": "default",
+                "sandbox_descriptor_id": descriptor["descriptor_id"],
+                "sandbox_id": "sandbox-demo",
+                "source_artifact_path": "summary.txt",
+                "host_staging_label": "host-staging://bounded-output",
+            },
+            headers=headers,
+        ).json()
+        approval_id = proposal["approval_id"]
+        approve = client.post(
+            f"/approvals/{approval_id}/approve",
+            json={"decision": "approve", "decided_by": "admin:local"},
+            headers=headers,
+        )
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        original_write_event = audit_writer.write_event
+
+        def fail_completion_event(**kwargs: Any) -> Any:
+            if kwargs.get("event_type") == AuditEventType.TOOL_EXECUTION_COMPLETED:
+                raise RuntimeError("simulated promotion completion audit failure")
+            return original_write_event(**kwargs)
+
+        monkeypatch.setattr(audit_writer, "write_event", fail_completion_event)
+        with pytest.raises(
+            RuntimeError,
+            match="simulated promotion completion audit failure",
+        ):
+            client.post(
+                f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+                json={"approval_id": approval_id},
+                headers=headers,
+            )
+        monkeypatch.setattr(audit_writer, "write_event", original_write_event)
+        diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers)
+        proposal_response = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        )
+
+    assert approve.status_code == 200
+    assert diagnostics.status_code == 200
+    assert diagnostics.json()["status"] == "ambiguous"
+    assert diagnostics.json()["attempts"][0]["status"] == "staged"
+    assert proposal_response.status_code == 200
+    assert proposal_response.json()["status"] == "completion_evidence_pending"
+    assert len(list(settings.trusted_host_staging_root.rglob("*.artifact"))) == 1
 
 
 def test_run_endpoints_require_auth_and_return_safe_timeline(tmp_path: Path) -> None:

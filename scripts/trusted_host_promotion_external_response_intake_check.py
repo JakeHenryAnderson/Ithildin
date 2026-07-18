@@ -24,10 +24,13 @@ REQUIRED_PHRASES = [
     "Current selected capability: `not selected`.",
     "Finding namespace: `EXT-TRUSTED-HOST-###`.",
     "Reviewed area for normalization: `trusted-host-promotion`.",
+    "Runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`.",
+    "Runtime reviewed area: `trusted-host-promotion-runtime`.",
     "Required Disposition Answers",
     "Finding Extraction Table",
     "EXT-TRUSTED-HOST-###",
     "--area trusted-host-promotion",
+    "--area trusted-host-promotion-runtime",
     "mutates_findings: false",
     "closes_external_review: false",
     "continue_design_only",
@@ -154,6 +157,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("external response normalizer lacks trusted-host-promotion area")
     elif external_response_normalize.AREA_NAMESPACES["trusted-host-promotion"] != "TRUSTED-HOST":
         failures.append("external response normalizer uses wrong trusted-host namespace")
+    if "trusted-host-promotion-runtime" not in external_response_normalize.AREA_NAMESPACES:
+        failures.append("external response normalizer lacks trusted-host-promotion-runtime area")
+    elif (
+        external_response_normalize.AREA_NAMESPACES["trusted-host-promotion-runtime"]
+        != "TRUSTED-HOST-RUNTIME"
+    ):
+        failures.append("external response normalizer uses wrong trusted-host runtime namespace")
 
     if DOC_REL not in review_docs.REVIEW_DOCS:
         failures.append("trusted-host promotion intake doc is missing from review docs")
@@ -202,6 +212,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "area": "trusted-host-promotion",
         "finding_namespace": "EXT-TRUSTED-HOST-###",
+        "runtime_area": "trusted-host-promotion-runtime",
+        "runtime_finding_namespace": "EXT-TRUSTED-HOST-RUNTIME-###",
         "erg_005_status": "blocked",
         "mutates_findings": False,
         "closes_external_review": False,
@@ -231,6 +243,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         f"area: {report['area']}",
         f"finding_namespace: {report['finding_namespace']}",
+        f"runtime_area: {report['runtime_area']}",
+        f"runtime_finding_namespace: {report['runtime_finding_namespace']}",
         f"erg_005_status: {report['erg_005_status']}",
         f"mutates_findings: {str(report['mutates_findings']).lower()}",
         f"closes_external_review: {str(report['closes_external_review']).lower()}",

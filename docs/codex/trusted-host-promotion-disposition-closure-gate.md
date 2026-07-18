@@ -35,14 +35,21 @@ using the external response normalizer. The expected response shape is:
 
 - response type: `ithildin.external_review.normalized_response`;
 - reviewed area: `trusted-host-promotion`;
+- runtime reviewed area: `trusted-host-promotion-runtime`;
 - source access: `source-level` or `packet-and-source`;
 - finding namespace: `EXT-TRUSTED-HOST-###`;
+- runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`;
 - reviewed packet hash: `sha256:<64 lowercase hex chars>`;
 - `can_close_source_rows: true`;
 - `mutates_findings: false`;
 - `closes_external_review: false`;
 - no critical/high findings;
 - `disposition_outcome: continue_design_only`.
+
+The area and namespace must be a matching pair. The design-level packet uses
+`trusted-host-promotion` with `EXT-TRUSTED-HOST-###`; the implemented staging-only runtime packet
+uses `trusted-host-promotion-runtime` with `EXT-TRUSTED-HOST-RUNTIME-###`. Runtime findings must not
+be relabeled into the design namespace to pass intake.
 
 If that file is absent, malformed, packet-only/docs-only, missing the allowed disposition outcome,
 or contains critical/high findings, the gate must report:

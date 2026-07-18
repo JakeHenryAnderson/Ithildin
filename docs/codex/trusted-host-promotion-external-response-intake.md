@@ -24,6 +24,10 @@ Finding namespace: `EXT-TRUSTED-HOST-###`.
 
 Reviewed area for normalization: `trusted-host-promotion`.
 
+Runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`.
+
+Runtime reviewed area: `trusted-host-promotion-runtime`.
+
 ## Required Inputs
 
 - Reviewer name/model or human reviewer label:
@@ -85,6 +89,24 @@ uv run python scripts/external_response_normalize.py \
   --area trusted-host-promotion \
   --output var/review-runs/trusted-host-promotion/normalized-response.json
 ```
+
+For a response to the implemented staging-only runtime packet, preserve its dedicated area and
+finding namespace instead of relabeling runtime findings as design findings:
+
+```sh
+uv run python scripts/external_response_normalize.py \
+  path/to/raw-runtime-response.md \
+  --reviewer "reviewer label" \
+  --reviewer-type "independent-source-reviewer" \
+  --source-access packet-and-source \
+  --reviewed-commit "$(git rev-parse HEAD)" \
+  --reviewed-packet-hash "sha256:<packet-hash>" \
+  --area trusted-host-promotion-runtime \
+  --output var/review-runs/trusted-host-promotion/normalized-response.json
+```
+
+The closure gate accepts either the design-level area/namespace pair or the runtime-level
+area/namespace pair, but never a mixed pair. Both remain intake evidence only.
 
 The normalized response is intake evidence only. It sets `mutates_findings: false` and
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the

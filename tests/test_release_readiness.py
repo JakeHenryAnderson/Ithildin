@@ -25915,6 +25915,36 @@ def test_external_response_normalization_accepts_lane_specific_ids() -> None:
     )
     assert trusted_host_normalized["findings"][0]["area"] == "trusted-host-promotion"
 
+    trusted_host_runtime_response = "\n".join(
+        [
+            "# Trusted-Host Promotion Runtime Review",
+            "",
+            "| Finding ID | Severity | Area | Affected files/functions | "
+            "Blocking status | Disposition | Recommended fix |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            "| EXT-TRUSTED-HOST-RUNTIME-001 | low | trusted-host-promotion-runtime | "
+            "scripts/trusted_host_promotion_runtime_source_review_bundle.py | "
+            "should-fix | open | reject stale packet commit bindings |",
+        ]
+    )
+    trusted_host_runtime_normalized = external_response_normalize.normalize_response(
+        trusted_host_runtime_response,
+        reviewer="Independent source reviewer",
+        reviewer_type="external-model",
+        source_access="packet-and-source",
+        reviewed_commit="abcdef1234567890",
+        reviewed_packet_hash="sha256:" + "0" * 64,
+        area="trusted-host-promotion-runtime",
+    )
+    assert (
+        trusted_host_runtime_normalized["findings"][0]["finding_id"]
+        == "EXT-TRUSTED-HOST-RUNTIME-001"
+    )
+    assert (
+        trusted_host_runtime_normalized["findings"][0]["area"]
+        == "trusted-host-promotion-runtime"
+    )
+
     production_identity_storage_response = "\n".join(
         [
             "# Production Identity/Storage Review",
@@ -26155,6 +26185,33 @@ def test_reviewer_finding_intake_validates_records(tmp_path: Path) -> None:
         repo_root=tmp_path,
     )
     assert {record.finding_id for record in records} == {"ISR-003", "EXT-PA-001"}
+
+    findings_dir.joinpath("ext-trusted-host-runtime-001.md").write_text(
+        """# EXT-TRUSTED-HOST-RUNTIME-001 Example
+
+- Finding ID: EXT-TRUSTED-HOST-RUNTIME-001
+- Severity: high
+- Area: trusted-host-promotion-runtime
+- Affected files/functions: apps/api/src/ithildin_api/trusted_host_promotions.py
+- Claim being tested: runtime finding namespaces validate
+- Observed behavior: fixture
+- Risk: fixture risk
+- Recommended fix: fixture fix
+- Blocking status: blocking
+- Disposition: fixed
+- Verification notes: fixture verification
+""",
+        encoding="utf-8",
+    )
+    records = reviewer_findings.validate_findings(
+        findings_dir=findings_dir,
+        repo_root=tmp_path,
+    )
+    assert {record.finding_id for record in records} == {
+        "ISR-003",
+        "EXT-PA-001",
+        "EXT-TRUSTED-HOST-RUNTIME-001",
+    }
 
 
 def test_reviewer_finding_intake_rejects_invalid_records(tmp_path: Path) -> None:
@@ -32906,6 +32963,8 @@ def test_trusted_host_promotion_external_response_intake_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["area"] == "trusted-host-promotion"
     assert report["finding_namespace"] == "EXT-TRUSTED-HOST-###"
+    assert report["runtime_area"] == "trusted-host-promotion-runtime"
+    assert report["runtime_finding_namespace"] == "EXT-TRUSTED-HOST-RUNTIME-###"
     assert report["erg_005_status"] == "blocked"
     assert report["mutates_findings"] is False
     assert report["closes_external_review"] is False
@@ -32927,9 +32986,12 @@ def test_trusted_host_promotion_external_response_intake_is_wired() -> None:
         "Status: response-intake template for blocked `ERG-005`.",
         "Finding namespace: `EXT-TRUSTED-HOST-###`.",
         "Reviewed area for normalization: `trusted-host-promotion`.",
+        "Runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`.",
+        "Runtime reviewed area: `trusted-host-promotion-runtime`.",
         "Required Disposition Answers",
         "Finding Extraction Table",
         "--area trusted-host-promotion",
+        "--area trusted-host-promotion-runtime",
         "mutates_findings: false",
         "closes_external_review: false",
         "Only a later committed triage update may move `ERG-005` away from `blocked`",
@@ -33005,6 +33067,8 @@ def test_trusted_host_promotion_disposition_closure_gate_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["area"] == "trusted-host-promotion"
     assert report["finding_namespace"] == "EXT-TRUSTED-HOST-###"
+    assert report["runtime_area"] == "trusted-host-promotion-runtime"
+    assert report["runtime_finding_namespace"] == "EXT-TRUSTED-HOST-RUNTIME-###"
     assert report["normalized_response_present"] is False
     assert report["closure_ready"] is False
     assert report["disposition_outcome"] is None
@@ -33030,7 +33094,9 @@ def test_trusted_host_promotion_disposition_closure_gate_is_wired() -> None:
         "Current selected capability: `not selected`.",
         "var/review-runs/trusted-host-promotion/normalized-response.json",
         "reviewed area: `trusted-host-promotion`",
+        "runtime reviewed area: `trusted-host-promotion-runtime`",
         "finding namespace: `EXT-TRUSTED-HOST-###`",
+        "runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`",
         "can_close_source_rows: true",
         "mutates_findings: false",
         "closes_external_review: false",
@@ -33090,6 +33156,50 @@ def test_trusted_host_promotion_disposition_closure_gate_is_wired() -> None:
     assert "trusted-host-promotion-disposition-closure-gate.md" in intake
     assert "trusted-host-promotion-disposition-closure-gate.md" in disposition_packet
     assert "trusted-host-promotion-disposition-closure-gate.md" in readiness
+
+
+def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
+    tmp_path: Path,
+) -> None:
+    response_path = tmp_path / "normalized-response.json"
+    payload: dict[str, Any] = {
+        "response_type": "ithildin.external_review.normalized_response",
+        "area": "trusted-host-promotion-runtime",
+        "source_access": "packet-and-source",
+        "can_close_source_rows": True,
+        "mutates_findings": False,
+        "closes_external_review": False,
+        "reviewed_packet_hash": "sha256:" + "0" * 64,
+        "disposition_outcome": "continue_design_only",
+        "findings": [
+            {
+                "finding_id": "EXT-TRUSTED-HOST-RUNTIME-001",
+                "severity": "low",
+                "area": "trusted-host-promotion-runtime",
+            }
+        ],
+    }
+    response_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    runtime_report = (
+        trusted_host_promotion_disposition_closure_check._validate_normalized_response(
+            response_path
+        )
+    )
+    assert runtime_report["failures"] == []
+    assert runtime_report["closure_ready"] is True
+
+    payload["findings"][0]["finding_id"] = "EXT-TRUSTED-HOST-001"
+    response_path.write_text(json.dumps(payload), encoding="utf-8")
+    mixed_report = (
+        trusted_host_promotion_disposition_closure_check._validate_normalized_response(
+            response_path
+        )
+    )
+    assert mixed_report["closure_ready"] is False
+    assert "finding has wrong namespace: EXT-TRUSTED-HOST-001" in mixed_report[
+        "failures"
+    ]
 
 
 def test_trusted_host_promotion_response_dry_run_is_wired() -> None:
@@ -33303,10 +33413,13 @@ def test_trusted_host_promotion_response_kit_is_wired(tmp_path: Path) -> None:
     assert "does not approve trusted-host promotion" in index
     assert "does not approve implementation planning" in index
     assert "Finding namespace: `EXT-TRUSTED-HOST-###`" in guide
+    assert "Runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`" in guide
+    assert "Runtime reviewed area: `trusted-host-promotion-runtime`" in guide
     assert "var/review-runs/trusted-host-promotion/normalized-response.json" in guide
     assert "Only a later committed triage update may move `ERG-005`" in guide
     assert '"response_type": "ithildin.external_review.normalized_response"' in examples
     assert '"area": "trusted-host-promotion"' in examples
+    assert '"area": "trusted-host-promotion-runtime"' in examples
     assert '"source_access": "source-level"' in examples
     assert '"source_access": "packet-only"' in examples
     assert '"disposition_outcome": "continue_design_only"' in examples
@@ -33976,9 +34089,13 @@ def test_trusted_host_promotion_runtime_implementation_and_negatives_are_wired(
     for phrase in [
         "Unauthenticated Proposal Denial",
         "Hidden Source Denial",
+        "Symlink Source Denial",
+        "Hardlink Source Denial",
         "Unsafe Staging Label Denial",
         "Stale Artifact Hash Denial",
+        "Mismatched Proposal Approval Denial",
         "Replayed Approval Denial",
+        "Existing Destination Denial",
         "Unsupported Apply Field Denial",
     ]:
         assert phrase in transcript_text
@@ -34043,6 +34160,14 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert report["finding_namespace"] == "EXT-TRUSTED-HOST-RUNTIME-###"
     assert report["tool_count"] == 24
     assert report["runtime_slice"] == "staging_only_single_artifact"
+    if report["existing_packet"]["present"]:
+        assert report["existing_packet"]["commit_matches_head"] is True
+        assert report["existing_packet"]["generated_from_clean_tree"] is True
+        assert report["existing_packet"]["artifact_hashes_match_files"] is True
+    else:
+        assert report["existing_packet"]["commit_matches_head"] is None
+        assert report["existing_packet"]["generated_from_clean_tree"] is None
+        assert report["existing_packet"]["artifact_hashes_match_files"] is None
     assert report["broad_host_promotion_allowed"] is False
     assert report["new_governed_tool_allowed"] is False
 
@@ -34110,6 +34235,73 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     assert {record["path"] for record in hashes} == expected_files - {
         "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
     }
+
+
+def test_trusted_host_promotion_runtime_source_review_packet_rejects_stale_binding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_dir = tmp_path / "trusted-host-runtime-source-review"
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    generated_packet = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
+    assert generated_packet["present"] is True
+    assert generated_packet["commit_matches_head"] is True
+    assert generated_packet["artifact_hashes_match_files"] is True
+    stale_commit = "0" * 40
+    for name in [
+        "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md",
+        "01_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_PROMPT.md",
+    ]:
+        path = output_dir / name
+        current = path.read_text(encoding="utf-8")
+        path.write_text(
+            current.replace(
+                trusted_host_promotion_runtime_source_review_bundle._git(
+                    Path.cwd(), ["rev-parse", "HEAD"]
+                ),
+                stale_commit,
+            ),
+            encoding="utf-8",
+        )
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        output_dir
+        / "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
+        trusted_host_promotion_runtime_source_review_bundle._hashes(output_dir),
+    )
+
+    evidence = trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+        Path.cwd(),
+        output_dir,
+    )
+
+    assert evidence["present"] is True
+    assert evidence["commit"] == stale_commit
+    assert evidence["commit_matches_head"] is False
+    assert evidence["artifact_hashes_match_files"] is True
+
+    monkeypatch.setattr(
+        trusted_host_promotion_runtime_source_review_bundle,
+        "DEFAULT_OUTPUT_DIR",
+        output_dir,
+    )
+    report = trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+        Path.cwd()
+    )
+
+    assert report["valid"] is False
+    assert "existing runtime source-review packet is not bound to current HEAD" in report[
+        "failures"
+    ]
 
 
 def test_trusted_artifact_promotion_operator_demo_is_wired(tmp_path: Path) -> None:
@@ -34210,10 +34402,11 @@ def test_command_center_boundary_and_trusted_host_runtime_closure_are_wired() ->
     ]:
         assert phrase in closure
     for phrase in [
-        "Disposition: `local_disposition_ready_external_pending`",
+        "Disposition: `external_review_received_remediation_pending`",
+        "block_runtime_source_review_closure",
         "No critical, high, medium, low, or informational findings",
         "Command Center has no runtime authority",
-        "This is not external closure",
+        "exact-candidate independent re-review",
     ]:
         assert phrase in local_disposition
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in source_review

@@ -31,6 +31,7 @@ VALID_BLOCKING_STATUSES = {"blocking", "should-fix", "later", "accepted risk"}
 VALID_DISPOSITIONS = {"open", "fixed", "deferred", "rejected"}
 FINDING_ID_PATTERN = re.compile(
     r"^((ISR|EXT|SUB|AI)-\d{3}|EXT-(PA|FS|HTTP|SE|PR|MCP|UI|REL|MC-DISPLAY)-\d{3}|"
+    r"EXT-TRUSTED-HOST-RUNTIME-\d{3}|"
     r"SUB-GITMETA-\d{3}|XH-GITMETA-\d{3}|XH-GITTAG-\d{3}|XH-RELEASE-\d{3}|"
     r"XH-SANDBOX-(WRITE|PREFLIGHT)-\d{3}|"
     r"V03-(INT|EXT|DOCS)-[A-Z0-9]+-\d{3})$"

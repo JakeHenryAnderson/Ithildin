@@ -20,6 +20,12 @@ DOC_NAME = "trusted-host-promotion-disposition-closure-gate.md"
 NORMALIZED_RESPONSE_REL = "var/review-runs/trusted-host-promotion/normalized-response.json"
 EXPECTED_AREA = "trusted-host-promotion"
 EXPECTED_NAMESPACE = "EXT-TRUSTED-HOST-###"
+RUNTIME_AREA = "trusted-host-promotion-runtime"
+RUNTIME_NAMESPACE = "EXT-TRUSTED-HOST-RUNTIME-###"
+AREA_NAMESPACE_PREFIXES = {
+    EXPECTED_AREA: "EXT-TRUSTED-HOST-",
+    RUNTIME_AREA: "EXT-TRUSTED-HOST-RUNTIME-",
+}
 EXPECTED_OUTCOME = "continue_design_only"
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -31,8 +37,10 @@ REQUIRED_PHRASES = [
     NORMALIZED_RESPONSE_REL,
     "ithildin.external_review.normalized_response",
     "reviewed area: `trusted-host-promotion`",
+    "runtime reviewed area: `trusted-host-promotion-runtime`",
     "source-level` or `packet-and-source`",
     "finding namespace: `EXT-TRUSTED-HOST-###`",
+    "runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`",
     "can_close_source_rows: true",
     "mutates_findings: false",
     "closes_external_review: false",
@@ -182,6 +190,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "area": EXPECTED_AREA,
         "finding_namespace": EXPECTED_NAMESPACE,
+        "runtime_area": RUNTIME_AREA,
+        "runtime_finding_namespace": RUNTIME_NAMESPACE,
         "implementation_planning_allowed": False,
         "runtime_changes_allowed": False,
         "trusted_host_promotion_allowed": False,
@@ -222,8 +232,9 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
 
     if payload.get("response_type") != "ithildin.external_review.normalized_response":
         failures.append("normalized response has unexpected response_type")
-    if payload.get("area") != EXPECTED_AREA:
-        failures.append("normalized response area is not trusted-host-promotion")
+    area = payload.get("area")
+    if area not in AREA_NAMESPACE_PREFIXES:
+        failures.append("normalized response area is not an accepted trusted-host review area")
     if payload.get("source_access") not in {"source-level", "packet-and-source"}:
         failures.append("normalized response source_access is not sufficient for closure")
     if payload.get("can_close_source_rows") is not True:
@@ -249,9 +260,10 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
             failures.append("normalized response contains a non-object finding")
             continue
         finding_id = str(finding.get("finding_id", ""))
-        if not finding_id.startswith("EXT-TRUSTED-HOST-"):
+        expected_prefix = AREA_NAMESPACE_PREFIXES.get(str(area))
+        if expected_prefix is None or not finding_id.startswith(expected_prefix):
             failures.append(f"finding has wrong namespace: {finding_id}")
-        if finding.get("area") != EXPECTED_AREA:
+        if finding.get("area") != area:
             failures.append(f"{finding_id} has wrong area")
         if str(finding.get("severity", "")).lower() in {"critical", "high"}:
             failures.append(f"{finding_id} is critical/high and blocks closure")
@@ -277,6 +289,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"erg_005_status: {report['erg_005_status']}",
         f"allowed_closure_state: {report['allowed_closure_state']}",
         f"tool_count: {report['tool_count']}",
+        f"runtime_area: {report['runtime_area']}",
+        f"runtime_finding_namespace: {report['runtime_finding_namespace']}",
         "implementation_planning_allowed: "
         f"{str(report['implementation_planning_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",

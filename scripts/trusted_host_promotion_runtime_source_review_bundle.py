@@ -31,6 +31,7 @@ SOURCE_FILES = [
     "apps/api/src/ithildin_api/app.py",
     "apps/api/src/ithildin_api/config.py",
     "apps/api/src/ithildin_api/approvals.py",
+    "apps/api/src/ithildin_api/read_tools.py",
     "apps/api/src/ithildin_api/sandbox_descriptors.py",
 ]
 TEST_FILES = [
@@ -49,6 +50,12 @@ CONTRACT_DOCS = [
     "docs/codex/trusted-host-promotion-zone-contract.md",
     "docs/codex/trusted-host-promotion-negative-fixtures.md",
     "docs/codex/sandbox-promotion-evidence-contract.md",
+    "docs/codex/findings/ext-trusted-host-runtime-001-proposal-approval-binding.md",
+    "docs/codex/findings/ext-trusted-host-runtime-002-governance-bindings.md",
+    "docs/codex/findings/ext-trusted-host-runtime-003-source-object-race.md",
+    "docs/codex/findings/ext-trusted-host-runtime-004-completion-audit-state.md",
+    "docs/codex/findings/ext-trusted-host-runtime-005-packet-freshness.md",
+    "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md",
 ]
 FOCUSED_TEST_COMMAND = [
     "uv",
@@ -56,6 +63,11 @@ FOCUSED_TEST_COMMAND = [
     "pytest",
     "tests/test_api_service.py::test_trusted_host_promotion_stages_single_artifact_after_approval",
     "tests/test_api_service.py::test_trusted_host_promotion_denies_stale_and_unsafe_inputs",
+    "tests/test_api_service.py::test_trusted_host_promotion_binds_route_proposal_and_allows_one_attempt",
+    "tests/test_api_service.py::test_trusted_host_promotion_rejects_unsafe_source_object_types",
+    "tests/test_api_service.py::test_trusted_host_promotion_concurrent_apply_stages_once",
+    "tests/test_api_service.py::test_trusted_host_promotion_preserves_existing_destination",
+    "tests/test_api_service.py::test_trusted_host_promotion_audit_failure_remains_incomplete",
     "-q",
 ]
 
@@ -93,7 +105,11 @@ def main() -> int:
     return 0
 
 
-def build_check_report(repo_root: Path) -> dict[str, Any]:
+def build_check_report(
+    repo_root: Path,
+    *,
+    validate_existing_packet: bool = True,
+) -> dict[str, Any]:
     failures: list[str] = []
     _collect_missing(repo_root, SOURCE_FILES, "source", failures)
     _collect_missing(repo_root, TEST_FILES, "test", failures)
@@ -234,14 +250,29 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         failures.append("internal review does not record no critical/high findings")
     if "Disposition: `local_reviewed_external_pending`" not in closure_review:
         failures.append("closure review does not record local_reviewed_external_pending")
-    if "Disposition: `local_disposition_ready_external_pending`" not in local_disposition:
+    if "Disposition: `external_review_received_remediation_pending`" not in local_disposition:
         failures.append(
-            "local disposition does not record local_disposition_ready_external_pending"
+            "local disposition does not record external_review_received_remediation_pending"
         )
     if tool_surface.get("tool_count") != 24:
         failures.append(f"tool count changed: {tool_surface.get('tool_count')!r}")
     if decision.get("runtime_implementation_allowed_next") is not True:
         failures.append("runtime decision no longer allows the staging-only slice")
+
+    packet_evidence = _existing_packet_evidence(repo_root)
+    if validate_existing_packet and packet_evidence["present"]:
+        if not packet_evidence["commit_matches_head"]:
+            failures.append(
+                "existing runtime source-review packet is not bound to current HEAD"
+            )
+        if not packet_evidence["generated_from_clean_tree"]:
+            failures.append(
+                "existing runtime source-review packet was generated from a dirty tree"
+            )
+        if not packet_evidence["artifact_hashes_match_files"]:
+            failures.append(
+                "existing runtime source-review packet artifact hashes do not match files"
+            )
 
     return {
         "schema_version": "1",
@@ -252,6 +283,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": tool_surface.get("tool_count"),
         "runtime_slice": "staging_only_single_artifact",
         "source_review_status": "ready_for_external_source_review",
+        "existing_packet": packet_evidence,
         "broad_host_promotion_allowed": False,
         "new_governed_tool_allowed": False,
     }
@@ -265,7 +297,7 @@ def build_bundle(
     run_commands: bool = True,
 ) -> Path:
     _require_project_root(repo_root)
-    check = build_check_report(repo_root)
+    check = build_check_report(repo_root, validate_existing_packet=False)
     if check["failures"]:
         raise TrustedHostPromotionRuntimeSourceReviewBundleError(
             "; ".join(check["failures"])
@@ -522,6 +554,53 @@ def _hashes(output_dir: Path) -> list[dict[str, Any]]:
             }
         )
     return records
+
+
+def _existing_packet_evidence(
+    repo_root: Path,
+    output_dir: Path | None = None,
+) -> dict[str, Any]:
+    output_dir = output_dir or repo_root / DEFAULT_OUTPUT_DIR
+    if not output_dir.is_dir():
+        return {
+            "present": False,
+            "commit": None,
+            "commit_matches_head": None,
+            "generated_from_clean_tree": None,
+            "artifact_hashes_match_files": None,
+        }
+
+    head = _git(repo_root, ["rev-parse", "HEAD"])
+    index_path = output_dir / "00_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_INDEX.md"
+    prompt_path = output_dir / "01_TRUSTED_HOST_PROMOTION_RUNTIME_SOURCE_REVIEW_PROMPT.md"
+    manifest_path = output_dir / HASH_MANIFEST
+    index = index_path.read_text(encoding="utf-8") if index_path.is_file() else ""
+    prompt = prompt_path.read_text(encoding="utf-8") if prompt_path.is_file() else ""
+    packet_commit = _extract_packet_commit(index)
+    prompt_commit = _extract_packet_commit(prompt)
+
+    hashes_match = False
+    try:
+        recorded_hashes = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        recorded_hashes = None
+    if isinstance(recorded_hashes, list):
+        hashes_match = recorded_hashes == _hashes(output_dir)
+
+    return {
+        "present": True,
+        "commit": packet_commit,
+        "commit_matches_head": packet_commit == head and prompt_commit == head,
+        "generated_from_clean_tree": "Dirty at generation: `false`." in index,
+        "artifact_hashes_match_files": hashes_match,
+    }
+
+
+def _extract_packet_commit(text: str) -> str | None:
+    marker = "Reviewed commit: `"
+    if marker not in text:
+        return None
+    return text.partition(marker)[2].partition("`")[0] or None
 
 
 def _packet_text(text: str) -> str:

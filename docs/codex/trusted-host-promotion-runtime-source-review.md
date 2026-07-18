@@ -35,6 +35,12 @@ Validate packet wiring without regenerating command transcripts with:
 make trusted-host-promotion-runtime-source-review-bundle-check
 ```
 
+If a generated packet is present, the check also requires both packet commit labels to match the
+current `HEAD`, requires the packet to report a clean generation tree, and verifies every recorded
+artifact hash against the generated files. A missing generated packet does not fail source wiring
+checks in a fresh checkout; a present stale or internally modified packet does fail. Regenerate the
+packet on the exact clean candidate before review rather than relabeling packet files by hand.
+
 The generated packet lives under:
 
 ```text
@@ -73,6 +79,23 @@ It preserves the same staging-only local-preview boundary and marks the lane
 
 The current local proxy disposition is recorded in
 [`v3-trusted-host-promotion-runtime-local-disposition.md`](v3-trusted-host-promotion-runtime-local-disposition.md).
-It marks the staging-only runtime slice `local_disposition_ready_external_pending` for continued
-local-preview development and focused source-review handoff. It is not external closure and does
-not approve broader trusted-host promotion.
+It records the external review and current bounded remediation posture. It is not external closure
+and does not approve broader trusted-host promotion.
+
+## External Review Result
+
+An independent Sol xhigh packet-and-source review inspected exact commit
+`63c7ffd47853ed2f5f132772ca1af264555456be` and the packet identified by
+`sha256:4c4e741272339bd77cbc5174c0107db2ba2f77122276a00a2a2f3c385efc879f`.
+It recorded `EXT-TRUSTED-HOST-RUNTIME-001` through `006` and returned
+`block_runtime_source_review_closure`.
+
+The current bounded remediation candidate fixes the proposal/approval identity binding, source
+object read race, completion-audit state ordering, and packet freshness gate, and expands focused
+adversarial evidence. The full principal, trusted-host descriptor, policy, manifest, schema, and
+reviewed-candidate binding remains a deferred architecture decision. Consequently, ERG-005 and
+runtime source-review closure remain blocked and the remediation candidate still requires exact
+independent re-review.
+
+The committed finding records live under `docs/codex/findings/` with the
+`EXT-TRUSTED-HOST-RUNTIME-###` namespace.

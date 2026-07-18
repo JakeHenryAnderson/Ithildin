@@ -143,6 +143,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"response kit index is missing phrase: {phrase}")
     for phrase in [
         "Finding namespace: `EXT-TRUSTED-HOST-###`",
+        "Runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`",
+        "Runtime reviewed area: `trusted-host-promotion-runtime`",
         "var/review-runs/trusted-host-promotion/normalized-response.json",
         "trusted-host-promotion-external-response-intake.md",
         "Only a later committed triage update may move `ERG-005`",
@@ -152,6 +154,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         '"response_type": "ithildin.external_review.normalized_response"',
         '"area": "trusted-host-promotion"',
+        '"area": "trusted-host-promotion-runtime"',
         '"source_access": "source-level"',
         '"source_access": "packet-only"',
         '"disposition_outcome": "continue_design_only"',
@@ -345,6 +348,13 @@ Finding namespace: `EXT-TRUSTED-HOST-###`
 
 Reviewed area for normalization: `trusted-host-promotion`
 
+Runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`
+
+Runtime reviewed area: `trusted-host-promotion-runtime`
+
+Preserve the runtime area/namespace pair for responses to the implemented staging-only runtime
+packet. Do not relabel runtime findings into the design-level namespace.
+
 Response target:
 
 ```text
@@ -400,6 +410,17 @@ def _examples() -> str:
             }
         ],
     }
+    runtime_favorable = {
+        "response_type": "ithildin.external_review.normalized_response",
+        "area": "trusted-host-promotion-runtime",
+        "source_access": "packet-and-source",
+        "reviewed_packet_hash": "sha256:" + ("0" * 64),
+        "can_close_source_rows": True,
+        "mutates_findings": False,
+        "closes_external_review": False,
+        "disposition_outcome": "continue_design_only",
+        "findings": [],
+    }
     return (
         "# Normalized Response Examples\n\n"
         "These are shape examples only. Replace reviewer, packet, hash, and finding values with "
@@ -407,6 +428,10 @@ def _examples() -> str:
         "## Favorable Shape\n\n"
         "```json\n"
         f"{json.dumps(favorable, indent=2, sort_keys=True)}\n"
+        "```\n\n"
+        "## Favorable Runtime Shape\n\n"
+        "```json\n"
+        f"{json.dumps(runtime_favorable, indent=2, sort_keys=True)}\n"
         "```\n\n"
         "## Unfavorable Shape\n\n"
         "```json\n"

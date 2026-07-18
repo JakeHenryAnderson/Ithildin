@@ -7,9 +7,8 @@ import json
 import os
 import re
 import sqlite3
-import stat
 import unicodedata
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -20,7 +19,7 @@ from ithildin_schemas.models import StrictBaseModel
 from pydantic import Field, field_validator
 
 from ithildin_api.approvals import ApprovalError, ApprovalService, CreateApprovalInput
-from ithildin_api.read_tools import FilesystemReadTools, ReadToolExecutor
+from ithildin_api.read_tools import FilesystemReadTools, ReadToolError, ReadToolExecutor
 from ithildin_api.sandbox_descriptors import SandboxDescriptorStore
 
 TRUSTED_HOST_PROMOTION_TOOL = "trusted_host.promotion.stage"
@@ -293,6 +292,33 @@ class TrustedHostPromotionStore:
         if updated != 1:
             raise TrustedHostPromotionError("trusted-host promotion proposal not found")
 
+    def bind_proposal_approval(self, proposal_id: str, approval_id: str) -> None:
+        proposal = self.get_proposal(proposal_id)
+        existing = proposal.metadata.get("approval_id")
+        if existing is not None and existing != approval_id:
+            raise TrustedHostPromotionError(
+                "trusted-host promotion proposal approval binding conflict"
+            )
+        metadata = {**proposal.metadata, "approval_id": approval_id}
+        with sqlite3.connect(self.db_path) as connection:
+            updated = connection.execute(
+                """
+                UPDATE trusted_host_promotion_proposals
+                SET metadata_json = ?, updated_at = ?
+                WHERE proposal_id = ? AND status = 'approval_required'
+                """,
+                (
+                    canonical_json(metadata),
+                    datetime.now(UTC).isoformat(),
+                    proposal_id,
+                ),
+            ).rowcount
+            connection.commit()
+        if updated != 1:
+            raise TrustedHostPromotionError(
+                "trusted-host promotion proposal approval binding failed"
+            )
+
     def create_attempt(self, attempt: TrustedHostPromotionAttempt) -> None:
         try:
             with sqlite3.connect(self.db_path) as connection:
@@ -324,8 +350,27 @@ class TrustedHostPromotionStore:
                 connection.commit()
         except sqlite3.IntegrityError as exc:
             raise TrustedHostPromotionError(
-                "trusted-host promotion attempt already exists for approval"
+                "trusted-host promotion attempt already exists for approval or proposal"
             ) from exc
+
+    def get_attempt_for_proposal(
+        self,
+        proposal_id: str,
+    ) -> TrustedHostPromotionAttempt | None:
+        with sqlite3.connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT attempt_id, approval_id, proposal_id, request_id, workspace_id,
+                       host_staging_label, artifact_sha256, staged_sha256, status,
+                       failure_reason, created_at, updated_at, metadata_json
+                FROM trusted_host_promotion_attempts
+                WHERE proposal_id = ?
+                ORDER BY created_at ASC
+                LIMIT 1
+                """,
+                (proposal_id,),
+            ).fetchone()
+        return _attempt_from_row(row) if row is not None else None
 
     def set_attempt_status(
         self,
@@ -499,6 +544,7 @@ class TrustedHostPromotionService:
                 },
             )
         )
+        self.store.bind_proposal_approval(proposal_id, approval.approval_id)
         return {
             **proposal.summary(),
             "approval_id": approval.approval_id,
@@ -506,7 +552,12 @@ class TrustedHostPromotionService:
             "approval_expires_at": approval.expires_at.isoformat(),
         }
 
-    def approval_review(self, approval: ApprovalRequest) -> JsonObject:
+    def approval_review(
+        self,
+        approval: ApprovalRequest,
+        *,
+        expected_proposal_id: str | None = None,
+    ) -> JsonObject:
         reasons: list[str] = []
         scope = approval.one_time_scope
         proposal_id = _scope_string(scope, "promotion_proposal_id")
@@ -519,6 +570,8 @@ class TrustedHostPromotionService:
             reasons.append("approval is not for trusted-host staging")
         if _scope_string(scope, "tool_name") != TRUSTED_HOST_PROMOTION_TOOL:
             reasons.append("approval scope tool mismatch")
+        if expected_proposal_id is not None and proposal_id != expected_proposal_id:
+            reasons.append("approval scope proposal mismatch")
         if proposal is not None:
             for key, value in proposal.scope_metadata().items():
                 if scope.get(key) != value:
@@ -527,6 +580,23 @@ class TrustedHostPromotionService:
                 reasons.append("approval resource workspace mismatch")
             if approval.resource.get("host_staging_label") != proposal.host_staging_label:
                 reasons.append("approval resource staging label mismatch")
+            if approval.request_id != proposal.request_id:
+                reasons.append("approval request mismatch")
+            if proposal.metadata.get("approval_id") != approval.approval_id:
+                reasons.append("proposal approval mismatch")
+            if scope.get("request_hash") != sha256_digest(proposal.scope_metadata()):
+                reasons.append("approval scope request hash mismatch")
+            expected_approval_request_hash = sha256_digest(
+                {
+                    "request_id": approval.request_id,
+                    "principal": approval.principal,
+                    "tool_name": approval.tool_name,
+                    "resource": approval.resource,
+                    "one_time_scope": approval.one_time_scope,
+                }
+            )
+            if approval.request_hash != expected_approval_request_hash:
+                reasons.append("approval request hash mismatch")
         return {
             "valid": not reasons,
             "reasons": cast(JsonValue, reasons),
@@ -558,16 +628,25 @@ class TrustedHostPromotionService:
     ) -> JsonObject:
         proposal = self.store.get_proposal(proposal_id)
         approval = approval_service.get(approval_id)
-        review = self.approval_review(approval)
+        review = self.approval_review(
+            approval,
+            expected_proposal_id=proposal.proposal_id,
+        )
         if review["valid"] is not True:
             raise TrustedHostPromotionError("trusted-host promotion approval binding review failed")
+        if proposal.status != "approval_required":
+            raise TrustedHostPromotionError("trusted-host promotion proposal is not applicable")
+        if self.store.get_attempt_for_proposal(proposal.proposal_id) is not None:
+            raise TrustedHostPromotionError(
+                "trusted-host promotion proposal already has an attempt"
+            )
         artifact_bytes = _read_source_artifact(
             self._filesystem(proposal.workspace_id),
             proposal.source_artifact_label.split("/", 3)[-1],
         )
         if _sha256_bytes(artifact_bytes) != proposal.artifact_sha256:
             raise TrustedHostPromotionError("source artifact hash mismatch")
-        attempt_id = f"thpa_{uuid4().hex}"
+        attempt_id = _attempt_id_for_proposal(proposal.proposal_id)
         now = datetime.now(UTC).isoformat()
         attempt = TrustedHostPromotionAttempt(
             attempt_id=attempt_id,
@@ -591,10 +670,12 @@ class TrustedHostPromotionService:
         )
         placed = False
         execution_begun = False
+        attempt_created = False
         try:
             approval_service.begin_execution(approval_id, approval.request_hash)
             execution_begun = True
             self.store.create_attempt(attempt)
+            attempt_created = True
             destination = self._destination_for(proposal, attempt_id)
             _copy_without_overwrite(artifact_bytes, destination)
             placed = True
@@ -607,10 +688,12 @@ class TrustedHostPromotionService:
                 staged_sha256=staged_sha256,
             )
             approval_service.complete_execution(approval_id, success=True)
-            self.store.set_attempt_status(attempt_id, "completed", staged_sha256=staged_sha256)
-            self.store.set_proposal_status(proposal.proposal_id, "completed")
+            self.store.set_proposal_status(
+                proposal.proposal_id,
+                "completion_evidence_pending",
+            )
             return {
-                "status": "completed",
+                "status": "completion_evidence_pending",
                 "promotion_attempt_id": attempt_id,
                 "approval_id": approval_id,
                 "promotion_proposal_id": proposal.proposal_id,
@@ -624,20 +707,30 @@ class TrustedHostPromotionService:
             if not execution_begun:
                 raise
             status = "recovery_required" if placed else "failed"
-            try:
+            if attempt_created:
                 self.store.set_attempt_status(attempt_id, status, failure_reason=str(exc))
-            except TrustedHostPromotionError:
-                if not placed:
-                    self.store.create_attempt(
-                        replace(attempt, status=status, failure_reason=str(exc))
-                    )
             if not placed:
                 try:
                     approval_service.complete_execution(approval_id, success=False)
                 except ApprovalError:
                     pass
-                self.store.set_proposal_status(proposal.proposal_id, "failed")
+                if attempt_created:
+                    self.store.set_proposal_status(proposal.proposal_id, "failed")
             raise TrustedHostPromotionError("trusted-host promotion did not complete") from exc
+
+    def complete_with_evidence(self, attempt_id: str) -> TrustedHostPromotionAttempt:
+        attempt = self.store.get_attempt(attempt_id)
+        if attempt.status != "staged" or attempt.staged_sha256 != attempt.artifact_sha256:
+            raise TrustedHostPromotionError(
+                "trusted-host promotion completion evidence is not finalizable"
+            )
+        completed = self.store.set_attempt_status(
+            attempt_id,
+            "completed",
+            staged_sha256=attempt.staged_sha256,
+        )
+        self.store.set_proposal_status(attempt.proposal_id, "completed")
+        return completed
 
     def diagnostics(self, approval_service: ApprovalService) -> JsonObject:
         attempts = [attempt.summary() for attempt in self.store.list_attempts()]
@@ -753,15 +846,18 @@ def _sha256_bytes(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
+def _attempt_id_for_proposal(proposal_id: str) -> str:
+    digest = hashlib.sha256(proposal_id.encode("utf-8")).hexdigest()
+    return f"thpa_{digest[:32]}"
+
+
 def _read_source_artifact(filesystem: FilesystemReadTools, relative_path: str) -> bytes:
     safe_path = _safe_relative_path(relative_path, label="source_artifact_path")
     target = filesystem.workspace_root / safe_path
-    _ensure_under_workspace(filesystem, target)
-    _ensure_no_symlink_components(filesystem.workspace_root, Path(safe_path))
-    if not target.exists():
-        raise TrustedHostPromotionError("source artifact not found")
-    _ensure_regular_single_link_file(target)
-    data = target.read_bytes()
+    try:
+        data = filesystem.read_file_bytes(target)
+    except ReadToolError as exc:
+        raise TrustedHostPromotionError("source artifact cannot be safely read") from exc
     if len(data) > MAX_PROMOTION_ARTIFACT_BYTES:
         raise TrustedHostPromotionError("source artifact exceeds promotion limit")
     if b"\x00" in data:
@@ -812,32 +908,6 @@ def _ensure_not_sensitive_label(value: str) -> None:
     sensitive_markers = ("secret", "token", "password", "credential", "private")
     if lowered in sensitive_exact or any(marker in lowered for marker in sensitive_markers):
         raise ValueError("label is hidden or sensitive")
-
-
-def _ensure_no_symlink_components(root: Path, relative: Path) -> None:
-    current = root
-    for part in relative.parts:
-        current = current / part
-        if current.is_symlink():
-            raise TrustedHostPromotionError("source artifact path is a symlink")
-
-
-def _ensure_regular_single_link_file(path: Path) -> None:
-    try:
-        stat_result = path.stat()
-    except OSError as exc:
-        raise TrustedHostPromotionError("source artifact cannot be inspected") from exc
-    if not stat.S_ISREG(stat_result.st_mode):
-        raise TrustedHostPromotionError("source artifact is not a file")
-    if stat_result.st_nlink > 1:
-        raise TrustedHostPromotionError("hardlinked source artifacts are not allowed")
-
-
-def _ensure_under_workspace(filesystem: FilesystemReadTools, path: Path) -> None:
-    try:
-        path.resolve(strict=False).relative_to(filesystem.workspace_root)
-    except ValueError as exc:
-        raise TrustedHostPromotionError("source artifact escapes workspace scope") from exc
 
 
 def _ensure_under_root(root: Path, path: Path) -> None:
