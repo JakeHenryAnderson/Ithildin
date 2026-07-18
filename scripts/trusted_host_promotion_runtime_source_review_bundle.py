@@ -56,6 +56,7 @@ CONTRACT_DOCS = [
     "docs/codex/findings/ext-trusted-host-runtime-004-completion-audit-state.md",
     "docs/codex/findings/ext-trusted-host-runtime-005-packet-freshness.md",
     "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md",
+    "docs/codex/findings/ext-trusted-host-runtime-007-gate-evidence-serialization.md",
 ]
 FOCUSED_TEST_COMMAND = [
     "uv",

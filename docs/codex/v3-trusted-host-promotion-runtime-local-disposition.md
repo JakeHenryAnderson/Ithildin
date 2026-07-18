@@ -37,11 +37,16 @@ An independent packet-and-source review of exact commit
   should-fix;
 - the overall disposition was `block_runtime_source_review_closure`.
 
-The current remediation candidate fixes `001`, `003`, `004`, and `005`. `002` remains deferred
-because it requires an explicit architecture and public evidence-contract decision. `006` is
-partially remediated but remains deferred with the governance-drift evidence that depends on `002`.
-This status does not close the findings or ERG-005; exact-candidate independent re-review is still
-required.
+Exact-candidate re-review at commit `4dcf8ad26df4c3a6f4c2271d3fbe6c35566c67b6` confirmed
+`001`, `003`, `004`, and the original scope of `005` fixed. It kept `002` blocking and `006`
+partially remediated/deferred, and recorded a seventh finding,
+`EXT-TRUSTED-HOST-RUNTIME-007`, for contradictory embedded packet self-evidence.
+
+The current remediation candidate also fixes `007` with two-pass packet generation and final
+exact-candidate self-validation. `002` remains deferred because it requires an explicit architecture
+and public evidence-contract decision. `006` remains deferred with the governance-drift evidence
+that depends on `002`. This status does not close the findings or ERG-005; exact-candidate
+independent re-review is still required.
 
 ## Historical Local Disposition
 

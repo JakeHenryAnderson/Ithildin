@@ -90,12 +90,16 @@ An independent Sol xhigh packet-and-source review inspected exact commit
 It recorded `EXT-TRUSTED-HOST-RUNTIME-001` through `006` and returned
 `block_runtime_source_review_closure`.
 
-The current bounded remediation candidate fixes the proposal/approval identity binding, source
-object read race, completion-audit state ordering, and packet freshness gate, and expands focused
-adversarial evidence. The full principal, trusted-host descriptor, policy, manifest, schema, and
-reviewed-candidate binding remains a deferred architecture decision. Consequently, ERG-005 and
-runtime source-review closure remain blocked and the remediation candidate still requires exact
-independent re-review.
+Exact-candidate re-review at commit `4dcf8ad26df4c3a6f4c2271d3fbe6c35566c67b6` confirmed
+`001`, `003`, `004`, and the original scope of `005` fixed; it kept `002` blocking and `006`
+partially remediated/deferred, and recorded the new medium packet-integrity finding
+`EXT-TRUSTED-HOST-RUNTIME-007`.
+
+The current bounded remediation candidate also fixes `007` by making the generated packet embed
+self-evidence for the newly generated exact candidate. The full principal, trusted-host descriptor,
+policy, manifest, schema, and reviewed-candidate binding remains a deferred architecture decision.
+Consequently, ERG-005 and runtime source-review closure remain blocked and the current candidate
+still requires exact independent re-review.
 
 The committed finding records live under `docs/codex/findings/` with the
 `EXT-TRUSTED-HOST-RUNTIME-###` namespace.
