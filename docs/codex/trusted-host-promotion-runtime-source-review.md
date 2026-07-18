@@ -96,10 +96,15 @@ partially remediated/deferred, and recorded the new medium packet-integrity find
 `EXT-TRUSTED-HOST-RUNTIME-007`.
 
 The current bounded remediation candidate also fixes `007` by making the generated packet embed
-self-evidence for the newly generated exact candidate. The full principal, trusted-host descriptor,
-policy, manifest, schema, and reviewed-candidate binding remains a deferred architecture decision.
-Consequently, ERG-005 and runtime source-review closure remain blocked and the current candidate
-still requires exact independent re-review.
+self-evidence for the newly generated exact candidate. Re-review of commit
+`8755a39585993fc057cfd30564cb867098cf7f52` confirmed that behavior but recorded
+`EXT-TRUSTED-HOST-RUNTIME-008`: an interrupted, hash-consistent intermediate packet could still
+pass the public checker with contradictory embedded evidence. The current candidate fixes `008` by
+requiring embedded packet evidence to match live packet evidence.
+
+The full principal, trusted-host descriptor, policy, manifest, schema, and reviewed-candidate
+binding remains a deferred architecture decision. Consequently, ERG-005 and runtime source-review
+closure remain blocked and the current candidate still requires exact independent re-review.
 
 The committed finding records live under `docs/codex/findings/` with the
 `EXT-TRUSTED-HOST-RUNTIME-###` namespace.

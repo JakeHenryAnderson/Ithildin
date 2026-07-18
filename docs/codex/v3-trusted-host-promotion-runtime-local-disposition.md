@@ -43,10 +43,16 @@ partially remediated/deferred, and recorded a seventh finding,
 `EXT-TRUSTED-HOST-RUNTIME-007`, for contradictory embedded packet self-evidence.
 
 The current remediation candidate also fixes `007` with two-pass packet generation and final
-exact-candidate self-validation. `002` remains deferred because it requires an explicit architecture
-and public evidence-contract decision. `006` remains deferred with the governance-drift evidence
-that depends on `002`. This status does not close the findings or ERG-005; exact-candidate
-independent re-review is still required.
+exact-candidate self-validation. Re-review of commit
+`8755a39585993fc057cfd30564cb867098cf7f52` confirmed that behavior and recorded an eighth finding,
+`EXT-TRUSTED-HOST-RUNTIME-008`, because an interrupted, hash-consistent intermediate packet could
+still pass the public checker with contradictory embedded evidence. The current candidate fixes
+`008` by requiring embedded packet evidence to match live packet evidence.
+
+`002` remains deferred because it requires an explicit architecture and public evidence-contract
+decision. `006` remains deferred with the governance-drift evidence that depends on `002`. This
+status does not close the findings or ERG-005; exact-candidate independent re-review is still
+required.
 
 ## Historical Local Disposition
 

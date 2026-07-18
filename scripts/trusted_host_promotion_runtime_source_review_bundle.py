@@ -57,6 +57,7 @@ CONTRACT_DOCS = [
     "docs/codex/findings/ext-trusted-host-runtime-005-packet-freshness.md",
     "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md",
     "docs/codex/findings/ext-trusted-host-runtime-007-gate-evidence-serialization.md",
+    "docs/codex/findings/ext-trusted-host-runtime-008-interrupted-packet-generation.md",
 ]
 FOCUSED_TEST_COMMAND = [
     "uv",
@@ -273,6 +274,14 @@ def build_check_report(
         if not packet_evidence["artifact_hashes_match_files"]:
             failures.append(
                 "existing runtime source-review packet artifact hashes do not match files"
+            )
+        embedded_packet_evidence = _embedded_packet_evidence(
+            repo_root / DEFAULT_OUTPUT_DIR
+        )
+        if embedded_packet_evidence != packet_evidence:
+            failures.append(
+                "existing runtime source-review packet embedded gate evidence "
+                "does not match live packet evidence"
             )
 
     return {
@@ -622,6 +631,20 @@ def _existing_packet_evidence(
         "generated_from_clean_tree": "Dirty at generation: `false`." in index,
         "artifact_hashes_match_files": hashes_match,
     }
+
+
+def _embedded_packet_evidence(output_dir: Path) -> dict[str, Any] | None:
+    gate_evidence_path = (
+        output_dir / "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json"
+    )
+    try:
+        gate_evidence = json.loads(gate_evidence_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(gate_evidence, dict):
+        return None
+    packet_evidence = gate_evidence.get("existing_packet")
+    return packet_evidence if isinstance(packet_evidence, dict) else None
 
 
 def _extract_packet_commit(text: str) -> str | None:

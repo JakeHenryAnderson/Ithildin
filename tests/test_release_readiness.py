@@ -34341,6 +34341,77 @@ def test_trusted_host_promotion_runtime_source_review_packet_rejects_stale_bindi
     assert rebuilt_gate_evidence["existing_packet"] == rebuilt_packet
 
 
+def test_trusted_host_promotion_runtime_source_review_packet_rejects_interrupted_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_dir = tmp_path / "trusted-host-runtime-source-review"
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    gate_evidence_path = (
+        output_dir / "05_TRUSTED_HOST_PROMOTION_RUNTIME_GATE_EVIDENCE.json"
+    )
+    gate_evidence = json.loads(gate_evidence_path.read_text(encoding="utf-8"))
+    gate_evidence["existing_packet"]["artifact_hashes_match_files"] = False
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        gate_evidence_path,
+        gate_evidence,
+    )
+    trusted_host_promotion_runtime_source_review_bundle._write_json(
+        output_dir
+        / "trusted-host-promotion-runtime-source-review-artifact-hashes.json",
+        trusted_host_promotion_runtime_source_review_bundle._hashes(output_dir),
+    )
+    interrupted_packet = (
+        trusted_host_promotion_runtime_source_review_bundle._existing_packet_evidence(
+            Path.cwd(),
+            output_dir,
+        )
+    )
+    assert interrupted_packet["artifact_hashes_match_files"] is True
+
+    monkeypatch.setattr(
+        trusted_host_promotion_runtime_source_review_bundle,
+        "DEFAULT_OUTPUT_DIR",
+        output_dir,
+    )
+    report = trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+        Path.cwd()
+    )
+
+    assert report["valid"] is False
+    assert (
+        "existing runtime source-review packet embedded gate evidence "
+        "does not match live packet evidence"
+    ) in report["failures"]
+
+    original_git = trusted_host_promotion_runtime_source_review_bundle._git
+    monkeypatch.setattr(
+        trusted_host_promotion_runtime_source_review_bundle,
+        "_git",
+        lambda repo_root, args: (
+            "" if args == ["status", "--short"] else original_git(repo_root, args)
+        ),
+    )
+    trusted_host_promotion_runtime_source_review_bundle.build_bundle(
+        repo_root=Path.cwd(),
+        output_dir=output_dir,
+        allow_dirty=True,
+        run_commands=False,
+    )
+    rebuilt_report = (
+        trusted_host_promotion_runtime_source_review_bundle.build_check_report(
+            Path.cwd()
+        )
+    )
+
+    assert rebuilt_report["valid"] is True
+
+
 def test_trusted_artifact_promotion_operator_demo_is_wired(tmp_path: Path) -> None:
     report = trusted_artifact_promotion_operator_demo.build_check_report(Path.cwd())
     output_dir = tmp_path / "trusted-artifact-promotion-operator-demo"
