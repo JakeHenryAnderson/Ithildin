@@ -230,7 +230,7 @@ def _prepare_node(root: Path) -> tuple[NodeState, StoredNodeConfiguration]:
         enrollment_code=_required(issued, "enrollment_code"),
         node_version="0.1.0",
         runner_adapter="synthetic_external_runner",
-        deployment_topology="local_sidecar",
+        deployment_topology="local_process",
     )
     state.write_new(root / "client/state.json")
     _write(root / "evidence/enrollment-safe.json", state.safe_summary())
@@ -250,7 +250,7 @@ def _prepare_node(root: Path) -> tuple[NodeState, StoredNodeConfiguration]:
         state,
         node_version="0.1.0",
         runner_adapter="synthetic_external_runner",
-        deployment_topology="local_sidecar",
+        deployment_topology="local_process",
         configuration_digest=configuration.configuration_digest,
     )
     _write(
@@ -581,7 +581,7 @@ def _refresh_heartbeat(
         state,
         node_version="0.1.0",
         runner_adapter="synthetic_external_runner",
-        deployment_topology="local_sidecar",
+        deployment_topology="local_process",
         configuration_digest=configuration.configuration_digest,
     )
     if heartbeat.get("observed_state") != "observed_connected":

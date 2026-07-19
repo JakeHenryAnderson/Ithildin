@@ -59,6 +59,7 @@ def test_exact_sqlite_jsonl_comparison_rejects_edited_mirror(tmp_path: Path) -> 
 
 def test_poc_contract_and_candidate_gate_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
+    gitignore = Path(".gitignore").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     contract = Path(
@@ -68,6 +69,10 @@ def test_poc_contract_and_candidate_gate_are_wired() -> None:
     assert "mission-command-control-plane-poc:" in makefile
     assert "mission-command-control-plane-poc-check:" in makefile
     assert "review-candidate: mission-command-control-plane-poc-check" in makefile
+    assert "var/mission-command-control-plane-poc-*/" in gitignore
+    poc_source = Path("scripts/mission_command_control_plane_poc.py").read_text(encoding="utf-8")
+    assert 'deployment_topology="local_process"' in poc_source
+    assert "local_sidecar" not in poc_source
     assert "mission-command-control-plane-poc-evidence-contract.md" in readme
     assert "mission-command-control-plane-poc-evidence-contract.md" in index
     assert "mission_control_plane_candidate_ready_for_external_review" in contract
