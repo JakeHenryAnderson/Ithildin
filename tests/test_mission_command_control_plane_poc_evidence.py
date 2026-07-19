@@ -57,6 +57,27 @@ def test_exact_sqlite_jsonl_comparison_rejects_edited_mirror(tmp_path: Path) -> 
     assert not evidence_check._sqlite_jsonl_payloads_match(database, audit)
 
 
+def test_live_report_receipt_summary_uses_api_response_envelope() -> None:
+    summary = poc._receipt_summary(
+        {
+            "gateway_lifecycle_state": "runner_reported_running",
+            "receipt": {
+                "report_id": "mreport_" + ("a" * 32),
+                "receipt_disposition": "quarantined",
+                "evidence_status": "complete",
+                "receipt_posture": {"quarantine_reason_code": "node_revoked"},
+            },
+        }
+    )
+
+    assert summary == {
+        "report_id": "mreport_" + ("a" * 32),
+        "receipt_disposition": "quarantined",
+        "evidence_status": "complete",
+        "quarantine_reason_code": "node_revoked",
+    }
+
+
 def test_poc_contract_and_candidate_gate_are_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     gitignore = Path(".gitignore").read_text(encoding="utf-8")

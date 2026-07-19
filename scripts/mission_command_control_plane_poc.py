@@ -404,9 +404,7 @@ def _exercise_restart_and_success(
         root / "evidence/report-id-replay-after-restart.json",
         {
             "status_code": report_status,
-            "report_id": report_replay.get("report_id"),
-            "receipt_disposition": report_replay.get("receipt_disposition"),
-            "evidence_status": report_replay.get("evidence_status"),
+            **_receipt_summary(report_replay),
         },
     )
     admission_replay = _admin_request("/missions", cast(JsonObject, mission["admission"]))
@@ -558,16 +556,15 @@ def _exercise_revoked_late_report(
         "artifact_digest": sha256_digest({"artifact": "revoked-late-report"}),
     }
     quarantined = _signed_request(state, report_path, late, nonce="e2" * 16)
+    receipt = _receipt_summary(quarantined)
     detail = _admin_request(f"/missions/{mission_id}")
     _write(
         root / "evidence/revoked-late-report.json",
         {
             "mission_id": mission_id,
             "node_status": revoked.get("status"),
-            "receipt_disposition": quarantined.get("receipt_disposition"),
-            "quarantine_reason_code": cast(JsonObject, quarantined.get("receipt_posture", {})).get(
-                "quarantine_reason_code"
-            ),
+            "receipt_disposition": receipt.get("receipt_disposition"),
+            "quarantine_reason_code": receipt.get("quarantine_reason_code"),
             "final_projection": _mission_projection(detail),
         },
     )
@@ -746,6 +743,17 @@ def _governed_summary(result: JsonObject) -> JsonObject:
         "configuration_digest": result.get("configuration_digest"),
         "offline_fallback_used": result.get("offline_fallback_used"),
         "tool_output_included_in_saved_evidence": False,
+    }
+
+
+def _receipt_summary(result: JsonObject) -> JsonObject:
+    receipt = cast(JsonObject, result.get("receipt", {}))
+    posture = cast(JsonObject, receipt.get("receipt_posture", {}))
+    return {
+        "report_id": receipt.get("report_id"),
+        "receipt_disposition": receipt.get("receipt_disposition"),
+        "evidence_status": receipt.get("evidence_status"),
+        "quarantine_reason_code": posture.get("quarantine_reason_code"),
     }
 
 
